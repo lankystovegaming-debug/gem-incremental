@@ -1,68 +1,256 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #10141a;
-  color: white;
-}
+/* =========================================================
+   CRAFTING PAGE
+   ========================================================= */
 
-.crafting-page {
-  max-width: 900px;
-  margin: 60px auto;
-  padding: 24px;
-}
-
-.crafting-page a {
-  color: white;
-}
-
-.recipe-list {
-  margin-top: 30px;
-}
-
-.recipe-card {
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-}
-
-.requirements {
-  margin: 20px 0;
-}
-
-.requirement {
+.auto-banner {
   display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #333;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+
+  animation: card-in 0.3s ease-out;
 }
 
-.recipe-card button {
-  margin-right: 10px;
-  margin-top: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
+.auto-banner__icon {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  flex: none;
 }
 
-.craft-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.auto-banner__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.auto-banner__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.auto-banner__sub {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .crafting-tabs {
+  margin-bottom: var(--space-4);
+}
+
+
+/* ---------------------------------------------------------
+   RECIPE CARDS
+   --------------------------------------------------------- */
+
+.recipe-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .recipe-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.recipe-card {
   display: flex;
-  gap: 10px;
-  margin-top: 30px;
-  margin-bottom: 30px;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  animation: card-in 0.3s ease-out backwards;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.recipe-card--ready {
+  border-color: var(--positive);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--positive) 35%, transparent);
+}
+
+.recipe-card--owned {
+  opacity: 0.72;
+}
+
+.recipe-card--auto {
+  border-color: var(--accent);
+}
+
+.recipe-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.recipe-card__name {
+  font-size: 1.05rem;
+  font-weight: 660;
+  letter-spacing: -0.01em;
+}
+
+.recipe-card__tier {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.recipe-card__bonuses {
+  display: flex;
   flex-wrap: wrap;
+  gap: 6px;
 }
 
-.crafting-tab {
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 16px;
+
+/* ---------------------------------------------------------
+   REQUIREMENTS
+   --------------------------------------------------------- */
+
+.requirements {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
 }
 
-.crafting-tab.active {
-  font-weight: bold;
+.requirement {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.requirement__label {
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.requirement--done .requirement__label {
+  color: var(--text-muted);
+}
+
+.requirement__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.requirement__value {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.requirement__check {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--positive);
+  flex: none;
+}
+
+.requirement__check svg {
+  width: 16px;
+  height: 16px;
+}
+
+.requirement__check--missing {
+  color: var(--text-faint);
+  opacity: 0.5;
+}
+
+.requirement__bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--border-strong) 60%, transparent);
+  overflow: hidden;
+}
+
+.requirement__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.requirement--done .requirement__bar span {
+  background: var(--positive);
+}
+
+
+/* ---------------------------------------------------------
+   COST + ACTIONS
+   --------------------------------------------------------- */
+
+.recipe-cost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+
+  font-size: 0.88rem;
+}
+
+.recipe-cost__value {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.recipe-cost__value--short {
+  color: var(--negative);
+}
+
+.recipe-cost__value--ok {
+  color: var(--positive);
+}
+
+.recipe-card__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.recipe-card__actions .btn {
+  flex: 1;
+}
+
+.recipe-card__owned {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--positive);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.recipe-card__owned svg {
+  width: 17px;
+  height: 17px;
 }

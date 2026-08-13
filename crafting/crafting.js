@@ -6,1004 +6,651 @@ import {
   isRequirementComplete
 } from "../src/logic/crafting.js";
 
+import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadCloudCraftingState,
   manuallyDepositCloudRequirement,
   craftCloudRecipe,
   setCloudAutoCraft
 } from "../src/backend/cloudCrafting.js";
+import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
+import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
+import { mountShell } from "../src/ui/shell.js";
+import { icons } from "../src/ui/icons.js";
+import { notify } from "../src/ui/toast.js";
 import {
-  loadCloudEquipment
-} from "../src/backend/cloudEquipment.js";
-
-import {
-  loadCloudPlayerState
-} from "../src/backend/cloudInventory.js";
-
-import {
-  ensurePlayerAuth
-} from "../src/backend/auth.js";
+  formatMoney,
+  formatWeight,
+  formatCount,
+  escapeHtml
+} from "../src/ui/format.js";
 
 
-const recipeList =
-  document.getElementById(
-    "recipeList"
-  );
-
-const moneyDisplay =
-  document.getElementById(
-    "money"
-  );
-
-const craftingTabs =
-  document.querySelectorAll(
-    ".crafting-tab"
-  );
-
-
-let craftingState =
-  createCraftingState();
-
-let cloudEquipment =
-  [];
-
-let cloudMoney =
-  0;
-
-let selectedCategory =
-  "pickaxe";
+const shell = mountShell({ page: "crafting", base: "../" });
 
 
 // =========================================================
-// LOAD CLOUD PAGE STATE
+// DOM
 // =========================================================
 
-async function loadCraftingPageState() {
-  const user =
-    await ensurePlayerAuth();
+const recipeList = document.getElementById("recipeList");
+const subtitle = document.getElementById("craftingSubtitle");
+const categoryTabs = document.querySelectorAll("[data-category]");
+const hideOwned = document.getElementById("hideOwned");
 
-  if (!user) {
-    console.error(
-      "Could not authenticate player."
-    );
+const autoBanner = document.getElementById("autoCraftBanner");
+const autoBannerName = document.getElementById("autoCraftName");
+const autoBannerClear = document.getElementById("autoCraftClear");
 
-    return false;
-  }
-
-
-  const [
-    cloudState,
-    cloudPlayerState,
-    loadedEquipment
-  ] =
-    await Promise.all([
-      loadCloudCraftingState(),
-      loadCloudPlayerState(),
-      loadCloudEquipment()
-    ]);
-
-
-  if (
-    !cloudState ||
-    !cloudPlayerState ||
-    !loadedEquipment
-  ) {
-    console.error(
-      "Could not load crafting page state."
-    );
-
-    return false;
-  }
-
-
-  craftingState =
-    cloudState;
-
-  cloudMoney =
-    Number(
-      cloudPlayerState.money ??
-      0
-    );
-
-  cloudEquipment =
-    loadedEquipment;
-
-
-  return true;
-}
+document.getElementById("autoCraftIcon").innerHTML = icons.bolt;
 
 
 // =========================================================
-// EQUIPMENT HELPERS
+// STATE
 // =========================================================
 
-function hasCloudEquipment(
-  equipmentId
-) {
-  return cloudEquipment.some(
-    (equipment) =>
-      equipment.equipment_id ===
-      equipmentId
+const state = {
+  crafting: createCraftingState(),
+  equipment: [],
+  money: 0,
+  category: "pickaxe",
+  loading: true
+};
+
+
+// =========================================================
+// EQUIPMENT LOOKUPS
+// =========================================================
+
+function ownsEquipment(equipmentId) {
+  return state.equipment.some(
+    (item) => item.equipment_id === equipmentId
   );
 }
 
 
-function hasCloudEquipmentTierOrHigher(
-  category,
-  tier
-) {
-  return cloudEquipment.some(
-    (equipment) =>
-      equipment.category ===
-        category &&
-      Number(
-        equipment.tier
-      ) >=
-        tier
+function ownsTierOrHigher(category, tier) {
+  return state.equipment.some(
+    (item) => item.category === category && Number(item.tier) >= tier
   );
 }
 
 
+// The logic module expects a plain { id } shape.
+function equipmentContext() {
+  return {
+    equipment: state.equipment.map((item) => ({ id: item.equipment_id }))
+  };
+}
+
+
 // =========================================================
-// DISPLAY HELPERS
+// REQUIREMENT DISPLAY
 // =========================================================
 
-function formatBonuses(
-  bonus = {}
-) {
-  const bonuses = [];
-
-
-  if (bonus.luck) {
-    bonuses.push(
-      `+${(
-        bonus.luck *
-        100
-      ).toFixed(0)}% Luck`
-    );
-  }
-
-
-  if (bonus.rollSpeed) {
-    bonuses.push(
-      `+${(
-        bonus.rollSpeed *
-        100
-      ).toFixed(0)}% Roll Speed`
-    );
-  }
-
-
-  if (bonus.weightLuck) {
-    bonuses.push(
-      `+${(
-        bonus.weightLuck *
-        100
-      ).toFixed(0)}% Weight Luck`
-    );
-  }
-
-
-  if (
-    bonus.weightMultiplier
-  ) {
-    bonuses.push(
-      `+${(
-        bonus.weightMultiplier *
-        100
-      ).toFixed(0)}% Weight Multiplier`
-    );
-  }
-
-
-  return bonuses.length > 0
-    ? bonuses.join(", ")
-    : "None";
-}
-
-
-function formatRequirementLabel(
-  requirement
-) {
-  switch (
-    requirement.type
-  ) {
-    case "gem-count":
-      return requirement.gem;
-
-
-    case "equipment":
-      return (
-        `Required: ` +
-        (
-          requirement.equipmentName ??
-          requirement.equipmentId
-        )
-      );
-
-
-    case "gem-total-weight":
-      return (
-        `${requirement.gem} total weight`
-      );
-
-
-    case "gem-min-weight-multiplier":
-      return (
-        `${requirement.gem} ≥ ` +
-        `${requirement.minimumWeightMultiplier}× weight`
-      );
-
-
-    case "gem-max-weight-multiplier":
-      return (
-        `${requirement.gem} ≤ ` +
-        `${requirement.maximumWeightMultiplier}× weight`
-      );
-
-
-    case "specimen-condition":
-      return (
-        requirement.label ??
-        "Special specimen"
-      );
-
-
-    case "specimen-value-total":
-      return "Sacrifice value";
-
-
-    case "rarity-points":
-      return "Rarity points";
-
-
-    case "gem-range":
-      return (
-        requirement.label ??
-        "Gem collection"
-      );
-
-
-    default:
-      return requirement.type;
-  }
-}
-
-
-function formatRequirementProgress(
-  requirement,
-  progressValue
-) {
-  switch (
-    requirement.type
-  ) {
-    case "gem-count":
-      return (
-        `${progressValue ?? 0} / ` +
-        `${requirement.amount}`
-      );
-
-
-    case "gem-total-weight":
-      return (
-        `${Number(
-          progressValue ??
-          0
-        ).toFixed(2)}g / ` +
-        `${requirement.totalWeight}g`
-      );
-
-
-    case "gem-min-weight-multiplier":
-    case "gem-max-weight-multiplier":
-    case "specimen-condition":
-      return (
-        `${progressValue ?? 0} / ` +
-        `${requirement.amount ?? 1}`
-      );
-
-
-    case "specimen-value-total":
-      return (
-        `$${Number(
-          progressValue ??
-          0
-        ).toFixed(2)} / ` +
-        `$${Number(
-          requirement.totalValue
-        ).toFixed(2)}`
-      );
-
-
-    case "rarity-points": {
-      const points =
-        progressValue
-          ?.points ??
-        0;
-
-      const unique =
-        progressValue
-          ?.gemTypes
-          ?.length ??
-        0;
-
-      const minimumUnique =
-        requirement
-          .minimumUniqueGemTypes ??
-        0;
-
-
-      if (
-        minimumUnique > 0
-      ) {
-        return (
-          `${points} / ${requirement.points} points` +
-          ` | ${unique} / ${minimumUnique} gem types`
-        );
-      }
-
-
-      return (
-        `${points} / ${requirement.points}`
-      );
-    }
-
-
-    case "gem-range": {
-      const current =
-        progressValue ??
-        {};
-
-
-      const completed =
-        requirement.gems
-          .filter(
-            (gemName) =>
-              (
-                current[
-                  gemName
-                ] ??
-                0
-              ) >=
-              (
-                requirement
-                  .amountEach ??
-                1
-              )
-          )
-          .length;
-
-
-      return (
-        `${completed} / ` +
-        `${requirement.gems.length} gems`
-      );
-    }
-
-
-    default:
-      return "";
-  }
-}
-
-
-function getRequirementProgressKey(
-  requirement,
-  index
-) {
+function requirementKey(requirement, index) {
   if (requirement.id) {
     return requirement.id;
   }
 
-
-  if (
-    requirement.type ===
-    "gem-count"
-  ) {
+  if (requirement.type === "gem-count") {
     return requirement.gem;
   }
 
-
-  return (
-    `${requirement.type}-${index}`
-  );
+  return `${requirement.type}-${index}`;
 }
 
 
-// =========================================================
-// CLOUD RECIPE READY CHECK
-// =========================================================
+function describeRequirement(requirement, value) {
+  switch (requirement.type) {
+    case "gem-count":
+      return {
+        label: requirement.gem,
+        text: `${formatCount(value ?? 0)} / ${formatCount(requirement.amount)}`,
+        fraction: ratio(value, requirement.amount)
+      };
 
-function isCloudRecipeReady(
-  recipe
-) {
-  const requirementsComplete =
-    recipe.requirements.every(
-      (
-        requirement,
-        index
-      ) => {
-        if (
-          requirement.type ===
-          "equipment"
-        ) {
-          return hasCloudEquipment(
-            requirement.equipmentId
-          );
-        }
+    case "gem-total-weight":
+      return {
+        label: `${requirement.gem} — total weight`,
+        text: `${formatWeight(value ?? 0)} / ${formatWeight(
+          requirement.totalWeight
+        )}`,
+        fraction: ratio(value, requirement.totalWeight)
+      };
 
+    case "gem-min-weight-multiplier":
+      return {
+        label:
+          `${requirement.gem} at ` +
+          `${requirement.minimumWeightMultiplier}x weight or more`,
+        text: `${formatCount(value ?? 0)} / ${formatCount(
+          requirement.amount ?? 1
+        )}`,
+        fraction: ratio(value, requirement.amount ?? 1)
+      };
 
-        return isRequirementComplete(
-          craftingState,
-          recipe,
-          requirement,
-          index,
-          {
-            equipment:
-              cloudEquipment.map(
-                (equipment) => ({
-                  id:
-                    equipment
-                      .equipment_id
-                })
-              )
-          }
-        );
-      }
-    );
+    case "gem-max-weight-multiplier":
+      return {
+        label:
+          `${requirement.gem} at ` +
+          `${requirement.maximumWeightMultiplier}x weight or less`,
+        text: `${formatCount(value ?? 0)} / ${formatCount(
+          requirement.amount ?? 1
+        )}`,
+        fraction: ratio(value, requirement.amount ?? 1)
+      };
 
+    case "specimen-condition":
+      return {
+        label: requirement.label ?? "Special specimen",
+        text: `${formatCount(value ?? 0)} / ${formatCount(
+          requirement.amount ?? 1
+        )}`,
+        fraction: ratio(value, requirement.amount ?? 1)
+      };
 
-  const moneyComplete =
-    cloudMoney >=
-    recipe.moneyCost;
+    case "specimen-value-total":
+      return {
+        label: "Sacrificed value",
+        text: `${formatMoney(value ?? 0)} / ${formatMoney(
+          requirement.totalValue
+        )}`,
+        fraction: ratio(value, requirement.totalValue)
+      };
 
+    case "rarity-points": {
+      const points = value?.points ?? 0;
+      const unique = value?.gemTypes?.length ?? 0;
+      const minimumUnique = requirement.minimumUniqueGemTypes ?? 0;
 
-  return (
-    requirementsComplete &&
-    moneyComplete
-  );
-}
+      const text =
+        minimumUnique > 0
+          ? `${formatCount(points)} / ${formatCount(requirement.points)} pts · ` +
+            `${unique} / ${minimumUnique} types`
+          : `${formatCount(points)} / ${formatCount(requirement.points)} pts`;
 
-
-// =========================================================
-// CRAFTING CATEGORY TABS
-// =========================================================
-
-function setCraftingCategory(
-  category
-) {
-  selectedCategory =
-    category;
-
-
-  craftingTabs.forEach(
-    (tab) => {
-      tab.classList.toggle(
-        "active",
-        tab.dataset.category ===
-          category
-      );
+      return {
+        label: "Rarity points",
+        text,
+        fraction: ratio(points, requirement.points)
+      };
     }
-  );
 
+    case "gem-range": {
+      const current = value ?? {};
+      const each = requirement.amountEach ?? 1;
+
+      const done = requirement.gems.filter(
+        (gemName) => (current[gemName] ?? 0) >= each
+      ).length;
+
+      return {
+        label: requirement.label ?? "Gem collection",
+        text: `${done} / ${requirement.gems.length} gems`,
+        fraction: ratio(done, requirement.gems.length)
+      };
+    }
+
+    default:
+      return { label: requirement.type, text: "", fraction: 0 };
+  }
+}
+
+
+function ratio(value, target) {
+  const amount = Number(value ?? 0);
+  const goal = Number(target ?? 0);
+
+  if (!goal) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, amount / goal));
+}
+
+
+// =========================================================
+// RECIPE READINESS
+// =========================================================
+
+function isRecipeReady(recipe) {
+  const requirementsMet = recipe.requirements.every((requirement, index) => {
+    if (requirement.type === "equipment") {
+      return ownsEquipment(requirement.equipmentId);
+    }
+
+    return isRequirementComplete(
+      state.crafting,
+      recipe,
+      requirement,
+      index,
+      equipmentContext()
+    );
+  });
+
+  return requirementsMet && state.money >= recipe.moneyCost;
+}
+
+
+function formatBonuses(bonus = {}) {
+  const labels = [
+    ["luck", "Luck"],
+    ["rollSpeed", "Roll speed"],
+    ["weightLuck", "Weight luck"],
+    ["weightMultiplier", "Weight multiplier"]
+  ];
+
+  return labels
+    .filter(([key]) => bonus[key])
+    .map(
+      ([key, label]) =>
+        `<span class="badge badge--positive">+${(bonus[key] * 100).toFixed(
+          0
+        )}% ${label}</span>`
+    );
+}
+
+
+// =========================================================
+// RENDER
+// =========================================================
+
+function setCategory(category) {
+  state.category = category;
+
+  for (const tab of categoryTabs) {
+    tab.setAttribute(
+      "aria-selected",
+      String(tab.dataset.category === category)
+    );
+  }
 
   renderRecipes();
 }
 
 
-craftingTabs.forEach(
-  (tab) => {
-    tab.addEventListener(
-      "click",
-      () => {
-        setCraftingCategory(
-          tab.dataset.category
-        );
-      }
-    );
-  }
-);
-
-
-// =========================================================
-// RENDER RECIPES
-// =========================================================
-
-function renderRecipes() {
-  recipeList.innerHTML =
-    "";
-
-
-  moneyDisplay.textContent =
-    `$${cloudMoney.toFixed(2)}`;
-
-
-  const visibleRecipes =
-    recipes.filter(
-      (recipe) =>
-        recipe.category ===
-        selectedCategory
-    );
-
-
-  for (
-    const recipe
-    of visibleRecipes
-  ) {
-    const progress =
-      ensureRecipeProgress(
-        craftingState,
-        recipe
-      );
-
-
-    const owned =
-      hasCloudEquipmentTierOrHigher(
-        recipe.reward.category,
-        recipe.reward.tier
-      );
-
-
-    const requirementsHtml =
-      recipe.requirements
-        .map(
-          (
-            requirement,
-            index
-          ) => {
-            // ===============================================
-            // EQUIPMENT REQUIREMENT
-            // ===============================================
-
-            if (
-              requirement.type ===
-              "equipment"
-            ) {
-              const requirementMet =
-                hasCloudEquipment(
-                  requirement
-                    .equipmentId
-                );
-
-
-              const requiredRecipe =
-                recipes.find(
-                  (
-                    otherRecipe
-                  ) =>
-                    otherRecipe.reward
-                      ?.id ===
-                    requirement
-                      .equipmentId
-                );
-
-
-              const requiredName =
-                requiredRecipe
-                  ?.reward
-                  ?.name ??
-                requirement
-                  .equipmentName ??
-                requirement
-                  .equipmentId;
-
-
-              return `
-                <div class="requirement">
-                  <span>
-                    Required:
-                    ${requiredName}
-                  </span>
-
-                  <span>
-                    ${
-                      requirementMet
-                        ? "✓"
-                        : "✗"
-                    }
-                  </span>
-                </div>
-              `;
-            }
-
-
-            // ===============================================
-            // NORMAL / SPECIAL REQUIREMENT
-            // ===============================================
-
-            const key =
-              getRequirementProgressKey(
-                requirement,
-                index
-              );
-
-
-            const value =
-              progress[
-                key
-              ];
-
-
-            const complete =
-              isRequirementComplete(
-                craftingState,
-                recipe,
-                requirement,
-                index,
-                {
-                  equipment:
-                    cloudEquipment.map(
-                      (
-                        equipment
-                      ) => ({
-                        id:
-                          equipment
-                            .equipment_id
-                      })
-                    )
-                }
-              );
-
-
-            return `
-              <div class="requirement">
-                <span>
-                  ${formatRequirementLabel(
-                    requirement
-                  )}
-                </span>
-
-                <span>
-                  ${formatRequirementProgress(
-                    requirement,
-                    value
-                  )}
-
-                  ${
-                    complete
-                      ? "✓"
-                      : ""
-                  }
-
-                  ${
-                    !complete &&
-                    !owned
-                      ? `
-                        <button
-                          class="deposit-button"
-                          data-recipe="${recipe.id}"
-                          data-requirement-index="${index}"
-                        >
-                          Deposit
-                        </button>
-                      `
-                      : ""
-                  }
-                </span>
-              </div>
-            `;
-          }
-        )
-        .join("");
-
-
-    const moneyComplete =
-      cloudMoney >=
-      recipe.moneyCost;
-
-
-    const autoCraftEnabled =
-      craftingState
-        .activeAutoCraftRecipeId ===
-      recipe.id;
-
-
-    const ready =
-      isCloudRecipeReady(
-        recipe
-      );
-
-
-    const card =
-      document.createElement(
-        "div"
-      );
-
-
-    card.className =
-      "recipe-card";
-
-
-    card.innerHTML = `
-      <h2>
-        ${recipe.name}
-      </h2>
-
-      <p>
-        Bonus:
-        ${formatBonuses(
-          recipe.reward?.bonus
-        )}
-      </p>
-
-      ${
-        owned
-          ? `
-            <p>
-              ✓ Owned
-            </p>
-          `
-          : `
-            <div class="requirements">
-              ${requirementsHtml}
-
-              <div class="requirement">
-                <span>
-                  Money
-                </span>
-
-                <span>
-                  $${cloudMoney.toFixed(2)}
-                  /
-                  $${recipe.moneyCost.toFixed(2)}
-
-                  ${
-                    moneyComplete
-                      ? "✓"
-                      : ""
-                  }
-                </span>
-              </div>
-            </div>
-
-            <button
-              class="auto-craft-button"
-            >
-              Auto Craft:
-              ${
-                autoCraftEnabled
-                  ? "ON"
-                  : "OFF"
-              }
-            </button>
-
-            <button
-              class="craft-button"
-              ${
-                ready
-                  ? ""
-                  : "disabled"
-              }
-            >
-              Craft
-            </button>
-          `
-      }
-    `;
-
-
-    // =====================================================
-    // BUTTON EVENTS
-    // =====================================================
-
-    if (!owned) {
-      // -----------------------------------------------------
-      // CLOUD AUTO CRAFT TARGET
-      // -----------------------------------------------------
-
-      const autoCraftButton =
-        card.querySelector(
-          ".auto-craft-button"
-        );
-
-
-      autoCraftButton
-        ?.addEventListener(
-          "click",
-          async () => {
-            autoCraftButton.disabled =
-              true;
-
-
-            const currentlyEnabled =
-              craftingState
-                .activeAutoCraftRecipeId ===
-              recipe.id;
-
-
-            const newRecipeId =
-              currentlyEnabled
-                ? null
-                : recipe.id;
-
-
-            const result =
-              await setCloudAutoCraft(
-                newRecipeId
-              );
-
-
-            if (!result) {
-              autoCraftButton.disabled =
-                false;
-
-              return;
-            }
-
-
-            console.log(
-              "Cloud Auto Craft:",
-              result
-            );
-
-
-            const loaded =
-              await loadCraftingPageState();
-
-
-            if (!loaded) {
-              autoCraftButton.disabled =
-                false;
-
-              return;
-            }
-
-
-            renderRecipes();
-          }
-        );
-
-
-      // -----------------------------------------------------
-      // CLOUD CRAFT
-      // -----------------------------------------------------
-
-      const craftButton =
-        card.querySelector(
-          ".craft-button"
-        );
-
-
-      craftButton
-        ?.addEventListener(
-          "click",
-          async () => {
-            craftButton.disabled =
-              true;
-
-
-            const result =
-              await craftCloudRecipe(
-                recipe.id
-              );
-
-
-            if (!result) {
-              await loadCraftingPageState();
-
-              renderRecipes();
-
-              return;
-            }
-
-
-            console.log(
-              "Cloud craft:",
-              result
-            );
-
-
-            await loadCraftingPageState();
-
-            renderRecipes();
-          }
-        );
-
-
-      // -----------------------------------------------------
-      // CLOUD MANUAL DEPOSIT
-      // -----------------------------------------------------
-
-      card
-        .querySelectorAll(
-          ".deposit-button"
-        )
-        .forEach(
-          (button) => {
-            button.addEventListener(
-              "click",
-              async () => {
-                const recipeId =
-                  button.dataset
-                    .recipe;
-
-
-                const requirementIndex =
-                  Number(
-                    button.dataset
-                      .requirementIndex
-                  );
-
-
-                if (
-                  !recipeId ||
-                  !Number.isInteger(
-                    requirementIndex
-                  )
-                ) {
-                  return;
-                }
-
-
-                button.disabled =
-                  true;
-
-
-                const result =
-                  await manuallyDepositCloudRequirement(
-                    recipeId,
-                    requirementIndex
-                  );
-
-
-                if (!result) {
-                  button.disabled =
-                    false;
-
-                  return;
-                }
-
-
-                console.log(
-                  "Cloud deposit:",
-                  result
-                );
-
-
-                const loaded =
-                  await loadCraftingPageState();
-
-
-                if (!loaded) {
-                  button.disabled =
-                    false;
-
-                  return;
-                }
-
-
-                renderRecipes();
-              }
-            );
-          }
-        );
-    }
-
-
-    recipeList.appendChild(
-      card
-    );
-  }
+for (const tab of categoryTabs) {
+  tab.addEventListener("click", () => setCategory(tab.dataset.category));
 }
 
 
-// =========================================================
-// INITIALIZE PAGE
-// =========================================================
-
-async function initializeCraftingPage() {
-  const loaded =
-    await loadCraftingPageState();
+hideOwned.addEventListener("change", renderRecipes);
 
 
-  if (!loaded) {
+function renderAutoBanner() {
+  const activeId = state.crafting.activeAutoCraftRecipeId;
+
+  if (!activeId) {
+    autoBanner.classList.add("hidden");
+
     return;
   }
 
+  const recipe = recipes.find((entry) => entry.id === activeId);
+
+  autoBannerName.textContent = recipe?.name ?? activeId;
+
+  autoBanner.classList.remove("hidden");
+}
+
+
+function renderRecipes() {
+  shell.setWallet(state.money);
+
+  if (state.loading) {
+    recipeList.innerHTML = Array.from(
+      { length: 4 },
+      () => '<div class="skeleton" style="height:280px"></div>'
+    ).join("");
+
+    return;
+  }
+
+  renderAutoBanner();
+
+  const owned = recipes.filter((recipe) =>
+    ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
+  ).length;
+
+  subtitle.textContent =
+    `${formatCount(owned)} of ${formatCount(recipes.length)} crafted · ` +
+    `${formatMoney(state.money)} available`;
+
+  let visible = recipes.filter(
+    (recipe) => recipe.category === state.category
+  );
+
+  if (hideOwned.checked) {
+    visible = visible.filter(
+      (recipe) =>
+        !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
+    );
+  }
+
+  if (visible.length === 0) {
+    recipeList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.checkCircle}
+        <p class="empty__title">Everything here is crafted</p>
+        <p>Try another equipment type.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  recipeList.innerHTML = visible.map(recipeCard).join("");
+
+  for (const card of recipeList.querySelectorAll(".recipe-card")) {
+    wireRecipeCard(card);
+  }
+}
+
+
+function recipeCard(recipe) {
+  const progress = ensureRecipeProgress(state.crafting, recipe);
+
+  const owned = ownsTierOrHigher(
+    recipe.reward.category,
+    recipe.reward.tier
+  );
+
+  const ready = !owned && isRecipeReady(recipe);
+
+  const isAutoTarget = state.crafting.activeAutoCraftRecipeId === recipe.id;
+
+  const bonuses = formatBonuses(recipe.reward?.bonus);
+
+  const requirementsHtml = recipe.requirements
+    .map((requirement, index) => {
+      if (requirement.type === "equipment") {
+        const met = ownsEquipment(requirement.equipmentId);
+
+        const source = recipes.find(
+          (entry) => entry.reward?.id === requirement.equipmentId
+        );
+
+        const name =
+          source?.reward?.name ??
+          requirement.equipmentName ??
+          requirement.equipmentId;
+
+        return `
+          <div class="requirement${met ? " requirement--done" : ""}">
+            <span class="requirement__label">Requires ${escapeHtml(name)}</span>
+
+            <span class="requirement__right">
+              <span class="requirement__check${
+                met ? "" : " requirement__check--missing"
+              }">${met ? icons.check : icons.x}</span>
+            </span>
+          </div>
+        `;
+      }
+
+      const key = requirementKey(requirement, index);
+
+      const complete = isRequirementComplete(
+        state.crafting,
+        recipe,
+        requirement,
+        index,
+        equipmentContext()
+      );
+
+      const detail = describeRequirement(requirement, progress[key]);
+
+      return `
+        <div class="requirement${complete ? " requirement--done" : ""}">
+          <span class="requirement__label">${escapeHtml(detail.label)}</span>
+
+          <span class="requirement__right">
+            <span class="requirement__value">${escapeHtml(detail.text)}</span>
+
+            ${
+              complete
+                ? `<span class="requirement__check">${icons.check}</span>`
+                : owned
+                ? ""
+                : `<button
+                     class="btn btn--sm"
+                     data-action="deposit"
+                     data-index="${index}"
+                     type="button"
+                     title="Deposit matching gems from your inventory"
+                   >Deposit</button>`
+            }
+          </span>
+
+          <span class="requirement__bar">
+            <span style="width:${(complete ? 1 : detail.fraction) * 100}%"></span>
+          </span>
+        </div>
+      `;
+    })
+    .join("");
+
+  const affordable = state.money >= recipe.moneyCost;
+
+  return `
+    <article
+      class="recipe-card${ready ? " recipe-card--ready" : ""}${
+    owned ? " recipe-card--owned" : ""
+  }${isAutoTarget ? " recipe-card--auto" : ""}"
+      data-recipe="${escapeHtml(recipe.id)}"
+    >
+      <div class="recipe-card__head">
+        <div>
+          <div class="recipe-card__name">${escapeHtml(recipe.name)}</div>
+          <div class="recipe-card__tier">Tier ${recipe.reward.tier}</div>
+        </div>
+
+        ${
+          ready
+            ? '<span class="badge badge--positive">Ready</span>'
+            : isAutoTarget
+            ? '<span class="badge badge--accent">Auto Craft</span>'
+            : ""
+        }
+      </div>
+
+      <div class="recipe-card__bonuses">
+        ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
+      </div>
+
+      ${
+        owned
+          ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
+          : `
+            <div class="requirements">${requirementsHtml}</div>
+
+            <div class="recipe-cost">
+              <span>Cost</span>
+
+              <span class="recipe-cost__value ${
+                affordable ? "recipe-cost__value--ok" : "recipe-cost__value--short"
+              }">
+                ${formatMoney(recipe.moneyCost)}
+              </span>
+            </div>
+
+            <div class="recipe-card__actions">
+              <button class="btn" data-action="auto" type="button">
+                ${icons.bolt}
+                Auto ${isAutoTarget ? "on" : "off"}
+              </button>
+
+              <button
+                class="btn btn--primary"
+                data-action="craft"
+                type="button"
+                ${ready ? "" : "disabled"}
+              >
+                Craft
+              </button>
+            </div>
+          `
+      }
+    </article>
+  `;
+}
+
+
+// =========================================================
+// CARD ACTIONS
+// =========================================================
+
+function wireRecipeCard(card) {
+  const recipeId = card.dataset.recipe;
+
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+
+  if (!recipe) {
+    return;
+  }
+
+  card
+    .querySelector('[data-action="auto"]')
+    ?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+
+      button.disabled = true;
+
+      const enabled = state.crafting.activeAutoCraftRecipeId === recipeId;
+
+      const { error } = await setCloudAutoCraft(enabled ? null : recipeId);
+
+      if (error) {
+        notify.error("Could not change Auto Craft", error.message);
+
+        button.disabled = false;
+
+        return;
+      }
+
+      notify.success(
+        enabled ? "Auto Craft off" : "Auto Craft on",
+        enabled
+          ? "Rolled gems stay in your inventory."
+          : `New gems will feed ${recipe.name}.`
+      );
+
+      await refresh();
+    });
+
+  card
+    .querySelector('[data-action="craft"]')
+    ?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+
+      button.disabled = true;
+      button.textContent = "Crafting…";
+
+      const { error } = await craftCloudRecipe(recipeId);
+
+      if (error) {
+        notify.error("Could not craft", error.message);
+
+        await refresh();
+
+        return;
+      }
+
+      notify.success("Crafted", `${recipe.name} is now equipped.`);
+
+      await refresh();
+    });
+
+  for (const button of card.querySelectorAll('[data-action="deposit"]')) {
+    button.addEventListener("click", async () => {
+      const index = Number(button.dataset.index);
+
+      button.disabled = true;
+
+      const { error } = await manuallyDepositCloudRequirement(recipeId, index);
+
+      if (error) {
+        notify.error("Nothing deposited", error.message);
+
+        button.disabled = false;
+
+        return;
+      }
+
+      await refresh();
+    });
+  }
+}
+
+
+autoBannerClear.addEventListener("click", async () => {
+  autoBannerClear.disabled = true;
+
+  const { error } = await setCloudAutoCraft(null);
+
+  autoBannerClear.disabled = false;
+
+  if (error) {
+    notify.error("Could not turn off Auto Craft", error.message);
+
+    return;
+  }
+
+  notify.info("Auto Craft off", "Rolled gems stay in your inventory.");
+
+  await refresh();
+});
+
+
+// =========================================================
+// LOAD
+// =========================================================
+
+async function refresh() {
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    state.loading = false;
+
+    subtitle.textContent = "Could not sign you in. Refresh to try again.";
+
+    notify.error("Sign-in failed", "The game could not reach your account.");
+
+    return;
+  }
+
+  const [craftingState, playerState, equipment] = await Promise.all([
+    loadCloudCraftingState(),
+    loadCloudPlayerState(),
+    loadCloudEquipment()
+  ]);
+
+  state.loading = false;
+
+  if (craftingState) {
+    state.crafting = craftingState;
+  }
+
+  if (playerState) {
+    state.money = playerState.money;
+  }
+
+  if (equipment) {
+    state.equipment = equipment;
+  }
 
   renderRecipes();
 }
 
 
-initializeCraftingPage();
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    refresh();
+  }
+});
+
+
+renderRecipes();
+refresh();

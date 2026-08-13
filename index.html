@@ -3,54 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/x-icon" href="./src/assets/favicon.ico">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Roll for gems, build a collection, craft equipment and chase the rarest specimens in this incremental mining game.">
+
+  <meta property="og:title" content="Gem Incremental">
+  <meta property="og:description" content="Roll for gems, craft equipment and chase the rarest specimens.">
+  <meta property="og:type" content="website">
+
   <title>Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="./src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="./src/assets/fonts/inter-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="./src/styles/app.css">
   <link rel="stylesheet" href="./style.css">
+
+  <script>
+    // Paint the saved theme before first render.
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="game">
-    <h1>Gem Incremental</h1>
+  <main class="app-main app-main--narrow">
+    <!-- ================= ROLL STAGE ================= -->
 
-    <button id="rollButton">ROLL</button>
+    <section class="stage card" aria-labelledby="stageHeading">
+      <h1 class="visually-hidden" id="stageHeading">Roll for gems</h1>
 
-    <p>
-    <a href="./inventory/">Inventory</a>
-    </p>
+      <div class="stage__display" id="gemStage" aria-live="polite">
+        <div class="stage__idle">
+          <div class="stage__idle-mark" id="stageIdleMark"></div>
+          <p class="stage__idle-title">Ready to dig</p>
+          <p class="stage__idle-text">
+            Every roll pulls one gem from the deposit. Rarer gems
+            are worth more and unlock better equipment.
+          </p>
+        </div>
+      </div>
 
-    <p>
-    <a href="./crafting/">
-    Crafting
-    </a>
-    </p>
+      <div class="stage__controls">
+        <button
+          class="roll-button"
+          id="rollButton"
+          type="button"
+          disabled
+        >
+          <span class="roll-button__fill" id="rollButtonFill"></span>
+          <span class="roll-button__label" id="rollButtonLabel">
+            Loading
+          </span>
+        </button>
 
-    <p>
-      <a href="/gem-index/">
-        Gem Index
-      </a>
-    </p>
+        <p class="stage__hint" id="rollHint">
+          <kbd>R</kbd> or <kbd>Space</kbd> to roll
+        </p>
+      </div>
+    </section>
 
-    <p>
-      <a href="/leaderboards/">
-    Leaderboards
-      </a>
-    </p>
 
-    <p>
-      <a href="/account/">
-        Account
-      </a>
-    </p>
+    <!-- ================= SUMMARY ================= -->
 
-    <p>
-    <a href="./debug/">
-    Debug
-    </a>
-    </p>
+    <section class="stat-row" id="statRow" aria-label="Player summary">
+      <div class="stat">
+        <span class="stat__label">Money</span>
+        <span class="stat__value" id="statMoney">—</span>
+      </div>
 
-    <div id="result" class="result">
-      <p>Press ROLL to begin.</p>
-    </div>
+      <div class="stat">
+        <span class="stat__label">Inventory</span>
+        <span class="stat__value" id="statInventory">—</span>
+        <div class="meter" style="margin-top:8px">
+          <div class="meter__fill" id="inventoryMeter" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="stat">
+        <span class="stat__label">Total rolls</span>
+        <span class="stat__value" id="statRolls">—</span>
+      </div>
+    </section>
+
+
+    <!-- ================= AUTOMATION ================= -->
+
+    <section class="card automation" aria-labelledby="automationHeading">
+      <div class="automation__head">
+        <h2 id="automationHeading">Automation</h2>
+        <a class="automation__link" href="./settings/">All settings</a>
+      </div>
+
+      <label class="automation__row switch">
+        <input type="checkbox" id="autoRollToggle">
+        <span class="switch__track"></span>
+        <span class="automation__text">
+          <span class="automation__title">Auto roll</span>
+          <span class="automation__sub">
+            Rolls again the moment the cooldown ends.
+          </span>
+        </span>
+      </label>
+
+      <label class="automation__row switch">
+        <input type="checkbox" id="autoSellToggle">
+        <span class="switch__track"></span>
+        <span class="automation__text">
+          <span class="automation__title">Auto sell</span>
+          <span class="automation__sub">
+            Instantly sells low-tier gems so the inventory keeps space.
+          </span>
+        </span>
+      </label>
+
+      <div class="automation__row automation__row--select" id="autoSellTierRow">
+        <label class="automation__text" for="autoSellTier">
+          <span class="automation__title">Sell up to</span>
+          <span class="automation__sub">
+            Anything rarer is always kept.
+          </span>
+        </label>
+
+        <select class="select" id="autoSellTier"></select>
+      </div>
+    </section>
+
+
+    <!-- ================= HISTORY ================= -->
+
+    <section class="card" aria-labelledby="historyHeading">
+      <div class="automation__head">
+        <h2 id="historyHeading">This session</h2>
+        <button class="btn btn--ghost btn--sm" id="clearHistory" type="button">
+          Clear
+        </button>
+      </div>
+
+      <div id="historyList" class="history"></div>
+    </section>
   </main>
 
   <script type="module" src="./main.js"></script>

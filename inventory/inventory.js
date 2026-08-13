@@ -1,23 +1,4 @@
-import {
-  toggleGemLock,
-  removeGemFromInventory
-} from "../src/logic/inventory.js";
-
-import {
-  loadInventory,
-  saveInventory
-} from "../src/logic/storage.js";
-
-import {
-  createPlayer,
-  loadPlayer,
-  savePlayer
-} from "../src/logic/player.js";
-
-import {
-  ensurePlayerAuth
-} from "../src/backend/auth.js";
-
+import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadCloudGems,
   loadCloudPlayerState,
@@ -25,609 +6,638 @@ import {
   sellCloudGem,
   upgradeCloudInventory
 } from "../src/backend/cloudInventory.js";
+import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
 
+import { mountShell } from "../src/ui/shell.js";
+import { icons } from "../src/ui/icons.js";
+import { notify } from "../src/ui/toast.js";
+import { confirmDialog } from "../src/ui/dialog.js";
 import {
-  loadCloudEquipment
-} from "../src/backend/cloudEquipment.js";
+  rarityTier,
+  rarityLabel,
+  formatMoney,
+  formatWeight,
+  formatMultiplier,
+  formatCount,
+  formatRelativeTime,
+  escapeHtml
+} from "../src/ui/format.js";
 
 
-// =========================================================
-// DOM ELEMENTS
-// =========================================================
-
-const inventoryCount =
-  document.getElementById("inventoryCount");
-
-const moneyDisplay =
-  document.getElementById("money");
-
-const inventoryList =
-  document.getElementById("inventoryList");
-
-const equipmentList =
-  document.getElementById("equipmentList");
-
-const gemsTab =
-  document.getElementById("gemsTab");
-
-const equipmentTab =
-  document.getElementById("equipmentTab");
-
-const gemsSection =
-  document.getElementById("gemsSection");
-
-const equipmentSection =
-  document.getElementById("equipmentSection");
-
-const capacityStatus =
-  document.getElementById("capacityStatus");
-
-const capacityUpgradeInfo =
-  document.getElementById(
-    "capacityUpgradeInfo"
-  );
-
-const capacityUpgradeButton =
-  document.getElementById(
-    "capacityUpgradeButton"
-  );
-
-
-// =========================================================
-// SAVED STATE
-// =========================================================
-
-let inventory =
-  loadInventory() ?? {
-    capacity: 15,
-    gems: [],
-    equipment: []
-  };
-
-let player =
-  loadPlayer() ??
-  createPlayer();
-
-let cloudGems = [];
-
-let cloudCapacity = 15;
-
-let cloudMoney = 0;
-
-let cloudEquipment = [];
+const shell = mountShell({ page: "inventory", base: "../" });
 
 
 // =========================================================
 // CAPACITY UPGRADES
+//
+// Mirrors the server-side table. The server re-checks the
+// price, so this is only for display.
 // =========================================================
 
-const capacityUpgrades = [
-  {
-    from: 15,
-    to: 20,
-    cost: 1000
-  },
-  {
-    from: 20,
-    to: 25,
-    cost: 3000
-  },
-  {
-    from: 25,
-    to: 30,
-    cost: 8000
-  },
-  {
-    from: 30,
-    to: 40,
-    cost: 20000
-  },
-  {
-    from: 40,
-    to: 50,
-    cost: 50000
-  }
+const CAPACITY_UPGRADES = [
+  { from: 15, to: 20, cost: 1000 },
+  { from: 20, to: 25, cost: 3000 },
+  { from: 25, to: 30, cost: 8000 },
+  { from: 30, to: 40, cost: 20000 },
+  { from: 40, to: 50, cost: 50000 }
 ];
 
 
-function getNextCapacityUpgrade() {
-  return capacityUpgrades.find(
-    (upgrade) =>
-      upgrade.from ===
-      cloudCapacity
-  );
+// =========================================================
+// DOM
+// =========================================================
+
+const subtitle = document.getElementById("inventorySubtitle");
+const refreshButton = document.getElementById("refreshButton");
+
+const capacityUsed = document.getElementById("capacityUsed");
+const capacityTotal = document.getElementById("capacityTotal");
+const capacityMeter = document.getElementById("capacityMeter");
+const capacityUpgradeInfo = document.getElementById("capacityUpgradeInfo");
+const capacityUpgradeButton = document.getElementById("capacityUpgradeButton");
+
+const gemsTab = document.getElementById("gemsTab");
+const equipmentTab = document.getElementById("equipmentTab");
+const gemsSection = document.getElementById("gemsSection");
+const equipmentSection = document.getElementById("equipmentSection");
+
+const inventoryList = document.getElementById("inventoryList");
+const equipmentList = document.getElementById("equipmentList");
+
+const gemSearch = document.getElementById("gemSearch");
+const gemFilter = document.getElementById("gemFilter");
+const gemSort = document.getElementById("gemSort");
+const sellAllButton = document.getElementById("sellAllButton");
+
+document.getElementById("refreshIcon").innerHTML = icons.refresh;
+document.getElementById("searchIcon").innerHTML = icons.search;
+
+
+// =========================================================
+// STATE
+// =========================================================
+
+const state = {
+  gems: [],
+  equipment: [],
+  capacity: 15,
+  money: 0,
+  loading: true
+};
+
+
+// =========================================================
+// TABS
+// =========================================================
+
+function selectTab(tab) {
+  const gems = tab === "gems";
+
+  gemsTab.setAttribute("aria-selected", String(gems));
+  equipmentTab.setAttribute("aria-selected", String(!gems));
+
+  gemsSection.classList.toggle("hidden", !gems);
+  equipmentSection.classList.toggle("hidden", gems);
 }
 
-
-function renderCapacityUpgrade() {
-  capacityStatus.textContent =
-    `${cloudCapacity} slots`;
+gemsTab.addEventListener("click", () => selectTab("gems"));
+equipmentTab.addEventListener("click", () => selectTab("equipment"));
 
 
-  const nextUpgrade =
-    getNextCapacityUpgrade();
+// =========================================================
+// CAPACITY
+// =========================================================
 
+function renderCapacity() {
+  capacityUsed.textContent = formatCount(state.gems.length);
+  capacityTotal.textContent = formatCount(state.capacity);
 
-  if (!nextUpgrade) {
-    capacityUpgradeInfo.textContent =
-      "Maximum capacity reached.";
+  const filled = state.capacity
+    ? Math.min(100, (state.gems.length / state.capacity) * 100)
+    : 0;
 
-    capacityUpgradeButton.disabled =
-      true;
+  capacityMeter.style.width = `${filled}%`;
 
-    capacityUpgradeButton.textContent =
-      "MAXED";
+  capacityMeter.className =
+    "meter__fill" +
+    (filled >= 100
+      ? " meter__fill--negative"
+      : filled >= 80
+      ? " meter__fill--warning"
+      : "");
+
+  const next = CAPACITY_UPGRADES.find(
+    (upgrade) => upgrade.from === state.capacity
+  );
+
+  if (!next) {
+    capacityUpgradeInfo.textContent = "Maximum storage reached.";
+
+    capacityUpgradeButton.disabled = true;
+    capacityUpgradeButton.textContent = "Maxed";
 
     return;
   }
 
+  const affordable = state.money >= next.cost;
 
-  capacityUpgradeInfo.textContent =
-    `Next upgrade: ` +
-    `${nextUpgrade.to} slots — ` +
-    `$${nextUpgrade.cost.toLocaleString()}`;
+  capacityUpgradeInfo.textContent = affordable
+    ? `Ready to expand to ${next.to} slots for ${formatMoney(next.cost)}.`
+    : `${next.to} slots costs ${formatMoney(next.cost)} — ` +
+      `${formatMoney(next.cost - state.money)} to go.`;
 
-
-  capacityUpgradeButton.disabled =
-    cloudMoney <
-    nextUpgrade.cost;
-
-
-  capacityUpgradeButton.textContent =
-    "Upgrade Capacity";
+  capacityUpgradeButton.disabled = !affordable;
+  capacityUpgradeButton.textContent = `Upgrade to ${next.to}`;
 }
 
 
+capacityUpgradeButton.addEventListener("click", async () => {
+  const next = CAPACITY_UPGRADES.find(
+    (upgrade) => upgrade.from === state.capacity
+  );
+
+  if (!next) {
+    return;
+  }
+
+  const choice = await confirmDialog({
+    title: `Expand storage to ${next.to} slots?`,
+    body: `<p>This costs ${escapeHtml(
+      formatMoney(next.cost)
+    )} and cannot be undone.</p>`,
+    confirmLabel: "Buy upgrade"
+  });
+
+  if (choice !== "confirm") {
+    return;
+  }
+
+  capacityUpgradeButton.disabled = true;
+
+  const { error } = await upgradeCloudInventory();
+
+  if (error) {
+    notify.error("Upgrade failed", error.message);
+
+    renderCapacity();
+
+    return;
+  }
+
+  notify.success("Storage expanded", `You now have ${next.to} slots.`);
+
+  await refresh();
+});
+
+
 // =========================================================
-// INVENTORY TABS
+// GEM LIST
 // =========================================================
 
-function showGemsTab() {
-  gemsTab.classList.add(
-    "active"
-  );
+function visibleGems() {
+  const query = gemSearch.value.trim().toLowerCase();
 
-  equipmentTab.classList.remove(
-    "active"
-  );
+  let gems = state.gems.filter((gem) => {
+    if (query && !gem.gem_name.toLowerCase().includes(query)) {
+      return false;
+    }
 
-  gemsSection.classList.remove(
-    "hidden"
-  );
+    if (gemFilter.value === "locked" && !gem.locked) {
+      return false;
+    }
 
-  equipmentSection.classList.add(
-    "hidden"
-  );
+    if (gemFilter.value === "unlocked" && gem.locked) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const sorters = {
+    newest: (a, b) => new Date(b.created_at) - new Date(a.created_at),
+    oldest: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+    value: (a, b) => b.value - a.value,
+    rarity: (a, b) => b.rarity - a.rarity,
+    weight: (a, b) => b.final_weight - a.final_weight
+  };
+
+  gems = [...gems].sort(sorters[gemSort.value] ?? sorters.newest);
+
+  return gems;
 }
 
-
-function showEquipmentTab() {
-  equipmentTab.classList.add(
-    "active"
-  );
-
-  gemsTab.classList.remove(
-    "active"
-  );
-
-  equipmentSection.classList.remove(
-    "hidden"
-  );
-
-  gemsSection.classList.add(
-    "hidden"
-  );
-}
-
-
-gemsTab.addEventListener(
-  "click",
-  showGemsTab
-);
-
-
-equipmentTab.addEventListener(
-  "click",
-  showEquipmentTab
-);
-
-
-// =========================================================
-// RENDER GEM INVENTORY
-// =========================================================
 
 function renderGems() {
-  inventoryList.innerHTML = "";
+  const gems = visibleGems();
 
-  inventoryCount.textContent =
-    `${cloudGems.length} / ${cloudCapacity}`;
+  const unlocked = state.gems.filter((gem) => !gem.locked);
 
-  if (
-    cloudGems.length === 0
-  ) {
-    inventoryList.innerHTML =
-      "<p>Your gem inventory is empty.</p>";
+  sellAllButton.disabled = unlocked.length === 0;
+
+  sellAllButton.textContent =
+    unlocked.length === 0
+      ? "Sell unlocked"
+      : `Sell ${formatCount(unlocked.length)} unlocked`;
+
+  if (state.loading) {
+    inventoryList.innerHTML = Array.from(
+      { length: 6 },
+      () => '<div class="skeleton skeleton--card"></div>'
+    ).join("");
 
     return;
   }
 
-  cloudGems.forEach(
-    (gem) => {
-      const card =
-        document.createElement(
-          "div"
-        );
+  if (state.gems.length === 0) {
+    inventoryList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.bag}
+        <p class="empty__title">No gems yet</p>
+        <p>Head back to the deposit and roll your first specimen.</p>
+        <a class="btn btn--primary" href="../" style="margin-top:8px">Start rolling</a>
+      </div>
+    `;
 
-      card.className =
-        "inventory-item";
+    return;
+  }
 
-      card.innerHTML = `
-        <h2>
-          ${gem.gem_name}
-        </h2>
+  if (gems.length === 0) {
+    inventoryList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.search}
+        <p class="empty__title">Nothing matches</p>
+        <p>Try a different search or filter.</p>
+      </div>
+    `;
 
-        <p>
-          Rarity:
-          1 in
-          ${gem.rarity.toLocaleString()}
-        </p>
+    return;
+  }
 
-        <p>
-          Weight:
-          ${gem.final_weight.toFixed(2)}g
-        </p>
+  inventoryList.innerHTML = gems.map(gemCard).join("");
 
-        <p>
-          Weight Multiplier:
-          ${gem.rolled_weight_multiplier.toFixed(3)}x
-        </p>
+  for (const card of inventoryList.querySelectorAll(".gem-card")) {
+    wireGemCard(card);
+  }
+}
 
-        <p>
-          Value:
-          $${gem.value.toFixed(2)}
-        </p>
 
-        <p>
-          ${
-            gem.locked
-              ? "🔒 Locked"
-              : "🔓 Unlocked"
-          }
-        </p>
+function gemCard(gem) {
+  const tier = rarityTier(gem.rarity);
 
-        <button
-          class="lock-button"
-        >
-          ${
-            gem.locked
-              ? "🔓 Unlock"
-              : "🔒 Lock"
-          }
+  return `
+    <article
+      class="gem-card tier-${tier.id}${gem.locked ? " gem-card--locked" : ""}"
+      data-id="${gem.id}"
+    >
+      <div class="gem-card__head">
+        <div>
+          <div class="gem-card__name">${escapeHtml(gem.gem_name)}</div>
+          <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
+        </div>
+
+        <span class="badge badge--tier">${tier.name}</span>
+      </div>
+
+      <div class="gem-card__rows">
+        <div class="gem-card__row">
+          <span class="gem-card__key">Weight</span>
+          <span class="gem-card__val">${formatWeight(gem.final_weight)}</span>
+        </div>
+
+        <div class="gem-card__row">
+          <span class="gem-card__key">Multiplier</span>
+          <span class="gem-card__val">${formatMultiplier(
+            gem.rolled_weight_multiplier
+          )}</span>
+        </div>
+
+        <div class="gem-card__row">
+          <span class="gem-card__key">Value</span>
+          <span class="gem-card__val gem-card__val--money">${formatMoney(
+            gem.value
+          )}</span>
+        </div>
+
+        <div class="gem-card__row">
+          <span class="gem-card__key">Found</span>
+          <span class="gem-card__val">${escapeHtml(
+            formatRelativeTime(gem.created_at)
+          )}</span>
+        </div>
+      </div>
+
+      <div class="gem-card__actions">
+        <button class="btn btn--sm" data-action="lock" type="button">
+          ${gem.locked ? icons.unlock : icons.lock}
+          ${gem.locked ? "Unlock" : "Lock"}
         </button>
 
         <button
-          class="sell-button"
+          class="btn btn--sm btn--danger"
+          data-action="sell"
+          type="button"
           ${gem.locked ? "disabled" : ""}
+          title="${gem.locked ? "Unlock this gem before selling" : ""}"
         >
           Sell
         </button>
-      `;
-
-
-      // =================================
-      // LOCK / UNLOCK
-      // =================================
-
-      const lockButton =
-        card.querySelector(
-          ".lock-button"
-        );
-
-      lockButton.addEventListener(
-        "click",
-        async () => {
-          lockButton.disabled =
-            true;
-
-          const result =
-            await toggleCloudGemLock(
-              gem.id
-            );
-
-          if (!result) {
-            lockButton.disabled =
-              false;
-
-            return;
-          }
-
-          await refreshInventoryPage();
-        }
-      );
-
-
-      // =================================
-      // SELL GEM
-      // =================================
-
-      const sellButton =
-        card.querySelector(
-          ".sell-button"
-        );
-
-      sellButton.addEventListener(
-        "click",
-        async () => {
-          // Extra client-side guard.
-          // The server also checks this.
-          if (gem.locked) {
-            return;
-          }
-
-          sellButton.disabled =
-            true;
-
-          lockButton.disabled =
-            true;
-
-          const result =
-            await sellCloudGem(
-              gem.id
-            );
-
-          if (!result) {
-            sellButton.disabled =
-              false;
-
-            lockButton.disabled =
-              false;
-
-            return;
-          }
-
-          await refreshInventoryPage();
-        }
-      );
-
-
-      // =================================
-      // ADD CARD
-      // =================================
-
-      inventoryList.appendChild(
-        card
-      );
-    }
-  );
-}
-
-// =========================================================
-// RENDER EQUIPMENT
-// =========================================================
-
-function renderEquipment() {
-  equipmentList.innerHTML = "";
-
-  if (
-    cloudEquipment.length === 0
-  ) {
-    equipmentList.innerHTML =
-      "<p>You do not own any equipment yet.</p>";
-
-    return;
-  }
-
-  cloudEquipment.forEach(
-    (equipment) => {
-      const card =
-        document.createElement(
-          "div"
-        );
-
-      card.className =
-        "equipment-item";
-
-      const bonuses = [];
-
-      if (
-        equipment.luck_bonus !== 0
-      ) {
-        bonuses.push(
-          `+${(
-            equipment.luck_bonus *
-            100
-          ).toFixed(0)}% Luck`
-        );
-      }
-
-      if (
-        equipment.roll_speed_bonus !== 0
-      ) {
-        bonuses.push(
-          `+${(
-            equipment.roll_speed_bonus *
-            100
-          ).toFixed(0)}% Roll Speed`
-        );
-      }
-
-      if (
-        equipment.weight_luck_bonus !== 0
-      ) {
-        bonuses.push(
-          `+${(
-            equipment.weight_luck_bonus *
-            100
-          ).toFixed(0)}% Weight Luck`
-        );
-      }
-
-      if (
-        equipment.weight_multiplier_bonus !== 0
-      ) {
-        bonuses.push(
-          `+${(
-            equipment.weight_multiplier_bonus *
-            100
-          ).toFixed(0)}% Weight Multiplier`
-        );
-      }
-
-      card.innerHTML = `
-        <h2>
-          ${equipment.name}
-        </h2>
-
-        <p>
-          Type:
-          ${equipment.category}
-        </p>
-
-        <p>
-          Tier:
-          ${equipment.tier}
-        </p>
-
-        <p>
-          Bonus:
-          ${
-            bonuses.length > 0
-              ? bonuses.join(", ")
-              : "None"
-          }
-        </p>
-
-        <p>
-          Status:
-          ${
-            equipment.equipped
-              ? "Equipped"
-              : "Not Equipped"
-          }
-        </p>
-      `;
-
-      equipmentList.appendChild(
-        card
-      );
-    }
-  );
+      </div>
+    </article>
+  `;
 }
 
 
-// =========================================================
-// RENDER FULL INVENTORY PAGE
-// =========================================================
+function wireGemCard(card) {
+  const id = Number(card.dataset.id);
 
-function renderInventory() {
-  moneyDisplay.textContent =
-    `$${cloudMoney.toFixed(2)}`;
+  const lockButton = card.querySelector('[data-action="lock"]');
+  const sellButton = card.querySelector('[data-action="sell"]');
 
-  renderCapacityUpgrade();
+  lockButton.addEventListener("click", async () => {
+    lockButton.disabled = true;
 
-  renderGems();
+    const { error } = await toggleCloudGemLock(id);
 
-  renderEquipment();
-}
+    if (error) {
+      notify.error("Could not change the lock", error.message);
 
-
-// =========================================================
-// BUY CAPACITY UPGRADE
-// =========================================================
-
-capacityUpgradeButton.addEventListener(
-  "click",
-  async () => {
-    capacityUpgradeButton.disabled =
-      true;
-
-
-    const result =
-      await upgradeCloudInventory();
-
-
-    if (!result) {
-      await refreshInventoryPage();
+      lockButton.disabled = false;
 
       return;
     }
 
+    const gem = state.gems.find((entry) => entry.id === id);
 
-    await refreshInventoryPage();
-  }
-);
+    if (gem) {
+      gem.locked = !gem.locked;
+    }
 
-// =========================================================
-// REFRESH SAVED STATE
-// =========================================================
+    renderGems();
+  });
 
-async function refreshInventoryPage() {
-  inventory =
-    loadInventory() ?? {
-      capacity: 15,
-      gems: [],
-      equipment: []
-    };
+  sellButton.addEventListener("click", async () => {
+    const gem = state.gems.find((entry) => entry.id === id);
 
-  player =
-    loadPlayer() ??
-    createPlayer();
+    if (!gem || gem.locked) {
+      return;
+    }
 
+    sellButton.disabled = true;
+    lockButton.disabled = true;
 
-  const user =
-    await ensurePlayerAuth();
+    const { data, error } = await sellCloudGem(id);
 
-  if (!user) {
-    console.error(
-      "Could not authenticate player."
+    if (error) {
+      notify.error("Could not sell that gem", error.message);
+
+      sellButton.disabled = false;
+      lockButton.disabled = false;
+
+      return;
+    }
+
+    state.money = Number(data?.money ?? state.money);
+
+    card.classList.add("gem-card--leaving");
+
+    setTimeout(() => {
+      state.gems = state.gems.filter((entry) => entry.id !== id);
+
+      renderAll();
+    }, 180);
+
+    notify.success(
+      `Sold ${gem.gem_name}`,
+      `+${formatMoney(data?.soldValue ?? gem.value)}`
     );
+  });
+}
+
+
+// =========================================================
+// BULK SELL
+// =========================================================
+
+sellAllButton.addEventListener("click", async () => {
+  const unlocked = state.gems.filter((gem) => !gem.locked);
+
+  if (unlocked.length === 0) {
+    return;
+  }
+
+  const total = unlocked.reduce((sum, gem) => sum + Number(gem.value), 0);
+
+  const choice = await confirmDialog({
+    title: `Sell ${formatCount(unlocked.length)} gems?`,
+    body: `
+      <p>
+        Every unlocked gem will be sold for a total of about
+        <strong>${escapeHtml(formatMoney(total))}</strong>.
+      </p>
+      <p style="margin-top:10px">
+        Locked gems are kept. This cannot be undone.
+      </p>
+    `,
+    confirmLabel: "Sell them all",
+    tone: "danger"
+  });
+
+  if (choice !== "confirm") {
+    return;
+  }
+
+  sellAllButton.disabled = true;
+
+  let sold = 0;
+  let earned = 0;
+
+  for (const gem of unlocked) {
+    sellAllButton.textContent = `Selling ${sold + 1} of ${unlocked.length}…`;
+
+    const { data, error } = await sellCloudGem(gem.id);
+
+    if (error) {
+      notify.error("Bulk sell stopped", error.message);
+
+      break;
+    }
+
+    sold += 1;
+    earned += Number(data?.soldValue ?? gem.value);
+
+    state.money = Number(data?.money ?? state.money);
+    state.gems = state.gems.filter((entry) => entry.id !== gem.id);
+  }
+
+  renderAll();
+
+  if (sold > 0) {
+    notify.success(
+      `Sold ${formatCount(sold)} gems`,
+      `+${formatMoney(earned)}`
+    );
+  }
+});
+
+
+// =========================================================
+// EQUIPMENT LIST
+// =========================================================
+
+const BONUS_LABELS = [
+  ["luck_bonus", "Luck"],
+  ["roll_speed_bonus", "Roll speed"],
+  ["weight_luck_bonus", "Weight luck"],
+  ["weight_multiplier_bonus", "Weight multiplier"]
+];
+
+
+function renderEquipment() {
+  if (state.loading) {
+    equipmentList.innerHTML = Array.from(
+      { length: 3 },
+      () => '<div class="skeleton skeleton--card"></div>'
+    ).join("");
 
     return;
   }
 
+  if (state.equipment.length === 0) {
+    equipmentList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.anvil}
+        <p class="empty__title">No equipment yet</p>
+        <p>Craft your first tool to start improving your rolls.</p>
+        <a class="btn btn--primary" href="../crafting/" style="margin-top:8px">
+          Open crafting
+        </a>
+      </div>
+    `;
 
-  const loadedGems =
-    await loadCloudGems();
-
-  if (loadedGems) {
-    cloudGems =
-      loadedGems;
+    return;
   }
 
+  equipmentList.innerHTML = state.equipment
+    .map((item) => {
+      const bonuses = BONUS_LABELS.filter(
+        ([key]) => Number(item[key] ?? 0) !== 0
+      ).map(
+        ([key, label]) =>
+          `<span class="badge badge--positive">+${(
+            Number(item[key]) * 100
+          ).toFixed(0)}% ${label}</span>`
+      );
 
-  const cloudPlayerState =
-    await loadCloudPlayerState();
+      return `
+        <article class="equipment-card">
+          <div class="equipment-card__head">
+            <div>
+              <div class="equipment-card__name">${escapeHtml(item.name)}</div>
+              <div class="equipment-card__meta">
+                ${escapeHtml(item.category)} · Tier ${escapeHtml(
+        String(item.tier)
+      )}
+              </div>
+            </div>
 
-  if (cloudPlayerState) {
-    cloudCapacity =
-      cloudPlayerState
-        .inventory_capacity;
+            ${
+              item.equipped
+                ? `<span class="badge badge--accent">${icons.check} Equipped</span>`
+                : '<span class="badge badge--muted">Stored</span>'
+            }
+          </div>
 
-    cloudMoney =
-      cloudPlayerState.money;
-  
-    const loadedEquipment =
-      await loadCloudEquipment();
-  
-    if (loadedEquipment) {
-      cloudEquipment =
-        loadedEquipment;
-    }
-  }
-
-
-  renderInventory();
+          <div class="bonus-list">
+            ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 
-window.addEventListener(
-  "pageshow",
-  refreshInventoryPage
-);
+// =========================================================
+// RENDER
+// =========================================================
+
+function renderAll() {
+  shell.setWallet(state.money);
+
+  subtitle.textContent = state.loading
+    ? "Loading your collection…"
+    : `${formatCount(state.gems.length)} gems · ` +
+      `${formatCount(state.equipment.length)} equipment · ` +
+      `${formatMoney(state.money)}`;
+
+  renderCapacity();
+  renderGems();
+  renderEquipment();
+}
+
+
+for (const control of [gemSearch, gemFilter, gemSort]) {
+  control.addEventListener("input", renderGems);
+}
 
 
 // =========================================================
-// INITIAL RENDER
+// LOAD
 // =========================================================
 
-refreshInventoryPage();
+async function refresh() {
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    state.loading = false;
+
+    subtitle.textContent = "Could not sign you in. Refresh to try again.";
+
+    notify.error("Sign-in failed", "The game could not reach your account.");
+
+    return;
+  }
+
+  const [gems, playerState, equipment] = await Promise.all([
+    loadCloudGems(),
+    loadCloudPlayerState(),
+    loadCloudEquipment()
+  ]);
+
+  state.loading = false;
+
+  if (gems) {
+    state.gems = gems;
+  }
+
+  if (playerState) {
+    state.capacity = playerState.inventory_capacity;
+    state.money = playerState.money;
+  }
+
+  if (equipment) {
+    state.equipment = equipment;
+  }
+
+  renderAll();
+}
+
+
+refreshButton.addEventListener("click", async () => {
+  refreshButton.disabled = true;
+
+  await refresh();
+
+  refreshButton.disabled = false;
+});
+
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    refresh();
+  }
+});
+
+
+renderAll();
+refresh();

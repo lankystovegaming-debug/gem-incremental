@@ -1,64 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Create an account, set a username and keep your save across devices.">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <title>Account · Gem Incremental</title>
 
-  <title>
-    Account - Gem Incremental
-  </title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/inter-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./account.css">
 
-  <link
-    rel="stylesheet"
-    href="/account/account.css"
-  >
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
+  <main class="app-main app-main--narrow">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Account</h1>
+        <p class="page-head__sub">
+          An account keeps your save if you clear this browser or
+          switch device. Your player and every gem on it stay the same.
+        </p>
+      </div>
+    </div>
 
-  <main class="account-page">
-
-    <a
-      href="/"
-      class="back-link"
-    >
-      ← Back to Rolling
-    </a>
-
-
-    <h1>
-      Account
-    </h1>
-
-
-    <section
-      id="accountCard"
-      class="account-card"
-    >
-      <p>
-        Loading account...
-      </p>
+    <section id="accountCard" class="card account-card">
+      <div class="skeleton" style="height:28px;width:180px"></div>
+      <div class="skeleton" style="height:14px;margin-top:14px"></div>
+      <div class="skeleton" style="height:14px;margin-top:8px;width:70%"></div>
     </section>
 
-
-    <p
-      id="accountStatus"
-      class="account-status"
-    ></p>
-
+    <p id="accountStatus" class="account-status"></p>
   </main>
 
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
-  <script
-    type="module"
-    src="/account/account.js"
-  ></script>
+    const shell = mountShell({ page: "account", base: "../" });
 
+    loadCloudPlayerState().then((state) => {
+      if (state) {
+        shell.setWallet(state.money);
+      }
+    });
+  </script>
+
+  <script type="module" src="./account.js"></script>
 </body>
-
 </html>

@@ -1,0 +1,143 @@
+// =========================================================
+// GAMEPLAY SETTINGS
+//
+// Automation preferences live on the device rather than the
+// server: the server stays authoritative for every action,
+// these only decide when the client asks for one.
+//
+// The Roll page and the Settings page both bind to this
+// store, so a change in one updates the other immediately.
+// =========================================================
+
+
+const STORAGE_KEY = "gemIncremental.settings";
+
+
+export const SELL_TIERS = [
+  { id: "common", label: "Common only", rank: 0 },
+  { id: "uncommon", label: "Uncommon and below", rank: 1 },
+  { id: "rare", label: "Rare and below", rank: 2 },
+  { id: "epic", label: "Epic and below", rank: 3 }
+];
+
+
+const DEFAULTS = {
+  autoRoll: false,
+  autoSell: false,
+  autoSellTier: "common",
+  rollAnimations: true
+};
+
+
+let state = load();
+
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return { ...DEFAULTS };
+    }
+
+    const parsed = JSON.parse(raw);
+
+    return sanitise({ ...DEFAULTS, ...parsed });
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+
+
+function sanitise(value) {
+  const allowedTiers = SELL_TIERS.map((tier) => tier.id);
+
+  return {
+    autoRoll: Boolean(value.autoRoll),
+    autoSell: Boolean(value.autoSell),
+
+    autoSellTier: allowedTiers.includes(value.autoSellTier)
+      ? value.autoSellTier
+      : DEFAULTS.autoSellTier,
+
+    rollAnimations: value.rollAnimations !== false
+  };
+}
+
+
+export function getSettings() {
+  return { ...state };
+}
+
+
+export function updateSettings(patch) {
+  state = sanitise({ ...state, ...patch });
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Session-only settings are still better than none.
+  }
+
+  notify();
+
+  return getSettings();
+}
+
+
+// ---------------------------------------------------------
+// AUTO SELL RULE
+// ---------------------------------------------------------
+
+export function tierRank(tierId) {
+  const known = SELL_TIERS.find((tier) => tier.id === tierId);
+
+  if (known) {
+    return known.rank;
+  }
+
+  // Anything above the configurable range (legendary, mythic)
+  // is never auto-sold.
+  return Number.MAX_SAFE_INTEGER;
+}
+
+
+export function shouldAutoSell(gemTierId) {
+  if (!state.autoSell) {
+    return false;
+  }
+
+  return tierRank(gemTierId) <= tierRank(state.autoSellTier);
+}
+
+
+// ---------------------------------------------------------
+// CHANGE NOTIFICATIONS
+// ---------------------------------------------------------
+
+const listeners = new Set();
+
+
+export function onSettingsChange(callback) {
+  listeners.add(callback);
+
+  return () => listeners.delete(callback);
+}
+
+
+function notify() {
+  for (const listener of listeners) {
+    listener(getSettings());
+  }
+}
+
+
+window.addEventListener("storage", (event) => {
+  if (event.key !== STORAGE_KEY) {
+    return;
+  }
+
+  state = load();
+
+  notify();
+});

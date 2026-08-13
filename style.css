@@ -1,146 +1,483 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #10141a;
-  color: white;
+/* =========================================================
+   ROLL PAGE
+   ========================================================= */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+
+  padding: var(--space-6) var(--space-5);
+  margin-bottom: var(--space-4);
+
+  overflow: hidden;
 }
 
-.game {
-  max-width: 600px;
-  margin: 80px auto;
-  padding: 24px;
+
+/* ---------------------------------------------------------
+   DISPLAY AREA
+   --------------------------------------------------------- */
+
+.stage__display {
+  position: relative;
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+  min-height: 264px;
+}
+
+/* Tier-coloured bloom behind the gem. */
+.stage__display::before {
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 50%;
+
+  width: 300px;
+  height: 300px;
+
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--tier, var(--accent)) 30%, transparent),
+    transparent 65%
+  );
+
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.stage__display.is-revealed::before {
+  opacity: 1;
+}
+
+
+/* ---------------------------------------------------------
+   IDLE STATE
+   --------------------------------------------------------- */
+
+.stage__idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+
+  max-width: 360px;
   text-align: center;
 }
 
-h1 {
-  margin-bottom: 40px;
+.stage__idle-mark {
+  width: 92px;
+  height: 92px;
+  margin-bottom: var(--space-2);
+
+  color: var(--text-faint);
+  opacity: 0.55;
+
+  animation: float 5s ease-in-out infinite;
 }
 
-#rollButton {
-  font-size: 24px;
-  font-weight: bold;
-  padding: 18px 50px;
-  cursor: pointer;
+.stage__idle-mark svg {
+  width: 100%;
+  height: 100%;
 }
 
-.result {
-  margin-top: 30px;
-  padding: 24px;
-  border: 1px solid #444;
-  border-radius: 12px;
+.stage__idle-title {
+  font-size: 1.1rem;
+  font-weight: 650;
 }
 
-#legacyMigrationOverlay {
-  position: fixed;
-  inset: 0;
+.stage__idle-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
 
-  z-index: 9999;
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
 
+
+/* ---------------------------------------------------------
+   REVEALED GEM
+   --------------------------------------------------------- */
+
+.gem-reveal {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-3);
 
-  padding: 24px;
+  width: 100%;
+  text-align: center;
+}
 
-  background:
-    rgba(0, 0, 0, 0.72);
+.is-animating .gem-reveal {
+  animation: gem-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gem-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+}
+
+.gem-reveal__art {
+  width: 104px;
+  height: 104px;
+  color: var(--tier, var(--accent));
+  filter: drop-shadow(
+    0 6px 18px color-mix(in srgb, var(--tier, var(--accent)) 45%, transparent)
+  );
+}
+
+.gem-reveal__art svg {
+  width: 100%;
+  height: 100%;
+}
+
+.is-animating .gem-reveal__art {
+  animation: gem-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gem-pop {
+  0%   { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.gem-reveal__name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.gem-reveal__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  width: 100%;
+  max-width: 400px;
+  margin-top: var(--space-2);
+}
+
+.gem-fact {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.gem-fact__label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.gem-fact__value {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.gem-reveal__outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.gem-reveal__outcome svg {
+  width: 14px;
+  height: 14px;
 }
 
 
-.legacy-migration-modal {
-  width: min(
-    460px,
-    100%
-  );
+/* A rare pull deserves a moment. */
+.is-animating.is-big .stage__display::after {
+  content: "";
+  position: absolute;
+  top: 46%;
+  left: 50%;
 
-  padding: 28px;
+  width: 90px;
+  height: 90px;
 
-  border:
-    1px solid #555;
+  border: 2px solid var(--tier, var(--accent));
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 
-  border-radius:
-    16px;
+  animation: shockwave 0.9s ease-out;
+  pointer-events: none;
+}
 
-  background:
-    #11161c;
+@keyframes shockwave {
+  from { opacity: 0.85; transform: translate(-50%, -50%) scale(0.4); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(3.4); }
+}
+
+
+/* ---------------------------------------------------------
+   ROLL BUTTON
+   --------------------------------------------------------- */
+
+.stage__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.roll-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  width: min(340px, 100%);
+  height: 62px;
+
+  border: 0;
+  border-radius: var(--radius-pill);
+
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent-text);
+  background: var(--accent);
+
+  cursor: pointer;
 
   box-shadow:
-    0 20px 60px
-    rgba(0, 0, 0, 0.4);
+    0 10px 30px -12px var(--accent-ring),
+    inset 0 -2px 0 rgb(0 0 0 / 0.12);
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.roll-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px -12px var(--accent-ring);
+}
+
+.roll-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.roll-button:disabled {
+  cursor: not-allowed;
+}
+
+/* Cooldown: the button stays legible while the fill drains. */
+.roll-button--cooldown {
+  color: var(--text);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.roll-button--blocked {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.roll-button__fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  transform: scaleX(0);
+  transform-origin: left center;
+
+  background: var(--accent-soft);
+  transition: transform 0.12s linear;
+}
+
+.roll-button__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.roll-button--rolling .roll-button__label::after {
+  content: "";
+  width: 15px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.stage__hint {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
 }
 
 
-.legacy-migration-modal h2 {
-  margin-top: 0;
+/* ---------------------------------------------------------
+   AUTOMATION PANEL
+   --------------------------------------------------------- */
+
+.automation {
+  margin-top: var(--space-4);
+}
+
+.automation__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.automation__link {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.automation__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+}
+
+.automation__row--select {
+  justify-content: space-between;
+}
+
+.automation__row--muted {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.automation__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.automation__title {
+  font-weight: 600;
+}
+
+.automation__sub {
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 
 
-.legacy-migration-summary {
-  margin:
-    20px 0;
+/* ---------------------------------------------------------
+   SESSION HISTORY
+   --------------------------------------------------------- */
 
-  padding:
-    14px 18px;
+.history {
+  display: flex;
+  flex-direction: column;
+}
 
-  border-radius:
-    10px;
+.history__row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
 
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.05
-    );
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+
+  font-size: 0.88rem;
+  animation: row-in 0.3s ease-out;
+}
+
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+.history__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tier, var(--text-faint));
+}
+
+.history__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history__meta {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.history__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.history__empty {
+  padding: var(--space-4) 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 
-.legacy-migration-summary p {
-  margin:
-    6px 0;
-}
+@media (max-width: 520px) {
+  .gem-reveal__facts {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+  }
 
+  .gem-fact {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
 
-.legacy-migration-note {
-  opacity:
-    0.8;
-}
-
-
-.legacy-migration-actions {
-  display:
-    flex;
-
-  gap:
-    12px;
-
-  margin-top:
-    20px;
-
-  flex-wrap:
-    wrap;
-}
-
-
-.legacy-migration-actions button {
-  padding:
-    10px 16px;
-
-  cursor:
-    pointer;
-}
-
-
-.legacy-migration-actions button:disabled {
-  cursor:
-    not-allowed;
-
-  opacity:
-    0.6;
-}
-
-
-.legacy-migration-status {
-  margin-top:
-    16px;
+  .stage {
+    padding: var(--space-5) var(--space-4);
+  }
 }

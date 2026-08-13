@@ -2,44 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Your bonuses, lifetime records and account details.">
 
-  <link
-    rel="icon"
-    type="image/x-icon"
-    href="../src/assets/favicon.ico"
-  >
+  <title>Stats · Gem Incremental</title>
 
-  <title>
-    Debug - Gem Incremental
-  </title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/inter-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./debug.css">
 
-  <link
-    rel="stylesheet"
-    href="/debug/debug.css"
-  >
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="debug-page">
-    <h1>Debug</h1>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Stats</h1>
+        <p class="page-head__sub" id="statsSubtitle">Loading your record…</p>
+      </div>
 
-    <a href="../">
-      ← Back to Rolling
-    </a>
+      <button class="btn" id="refreshButton" type="button">
+        <span id="refreshIcon"></span>
+        Refresh
+      </button>
+    </div>
 
-    <div
-      id="debugStats"
-      class="debug-stats"
-    ></div>
+    <div id="statsContent" class="stats-grid"></div>
   </main>
 
-  <script
-    type="module"
-    src="/debug/debug.js"
-  ></script>
+  <script type="module" src="./debug.js"></script>
 </body>
 </html>

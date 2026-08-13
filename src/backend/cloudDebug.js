@@ -13,7 +13,7 @@ export async function loadCloudDebugState() {
   // -------------------------------------------------------
 
   const {
-    data: player,
+    data: playerRow,
     error: playerError
   } =
     await supabase
@@ -26,13 +26,10 @@ export async function loadCloudDebugState() {
         rarest_gem_name,
         rarest_gem_rarity
       `)
-      .single();
+      .maybeSingle();
 
 
-  if (
-    playerError ||
-    !player
-  ) {
+  if (playerError) {
     console.error(
       "Failed to load cloud player debug state:",
       playerError
@@ -40,6 +37,19 @@ export async function loadCloudDebugState() {
 
     return null;
   }
+
+
+  // A player who has only just signed in has no row yet; that
+  // is the starting state, not a failure.
+  const player =
+    playerRow ?? {
+      money: 0,
+      inventory_capacity: 15,
+      next_roll_at: null,
+      total_rolls: 0,
+      rarest_gem_name: null,
+      rarest_gem_rarity: null
+    };
 
 
   // -------------------------------------------------------

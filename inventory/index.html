@@ -3,77 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Your gem collection and crafted equipment.">
+
+  <title>Inventory · Gem Incremental</title>
+
   <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
-  <title>Inventory - Gem Incremental</title>
-  <link rel="stylesheet" href="../inventory/inventory.css">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/inter-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./inventory.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="inventory-page">
-    <h1>Inventory</h1>
-  
-    <p id="inventoryCount">0 / 15</p>
-  
-    <p id="money">$0.00</p>
-  
-    <a href="../index.html">← Back to Rolling</a>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Inventory</h1>
+        <p class="page-head__sub" id="inventorySubtitle">Loading your collection…</p>
+      </div>
 
-    <section class="capacity-upgrade">
-      <h2>Inventory Capacity</h2>
-    
-      <p id="capacityStatus">
-        15 slots
-      </p>
-    
-      <p id="capacityUpgradeInfo">
-        Next upgrade: 20 slots — $1,000
-      </p>
-    
-      <button id="capacityUpgradeButton">
-        Upgrade Capacity
-      </button>
-    </section>
-  
-    <div class="inventory-tabs">
-      <button
-        id="gemsTab"
-        class="tab-button active"
-      >
-        Gems
-      </button>
-  
-      <button
-        id="equipmentTab"
-        class="tab-button"
-      >
-        Equipment
-      </button>
+      <div class="row">
+        <button class="btn" id="refreshButton" type="button">
+          <span id="refreshIcon"></span>
+          Refresh
+        </button>
+      </div>
     </div>
-  
-    <section
-      id="gemsSection"
-      class="inventory-section"
-    >
-      <div
-        id="inventoryList"
-        class="inventory-list"
-      ></div>
+
+
+    <!-- ================= CAPACITY ================= -->
+
+    <section class="card capacity" aria-labelledby="capacityHeading">
+      <div class="capacity__info">
+        <h2 id="capacityHeading">Storage</h2>
+
+        <p class="capacity__count">
+          <span id="capacityUsed">0</span>
+          <span class="capacity__of">of</span>
+          <span id="capacityTotal">15</span>
+          <span class="capacity__of">slots used</span>
+        </p>
+
+        <div class="meter">
+          <div class="meter__fill" id="capacityMeter" style="width:0%"></div>
+        </div>
+
+        <p class="capacity__next" id="capacityUpgradeInfo">—</p>
+      </div>
+
+      <button class="btn btn--primary" id="capacityUpgradeButton" type="button" disabled>
+        Upgrade
+      </button>
     </section>
-  
-    <section
-      id="equipmentSection"
-      class="inventory-section hidden"
-    >
-      <div
-        id="equipmentList"
-        class="equipment-list"
-      ></div>
+
+
+    <!-- ================= TABS ================= -->
+
+    <div class="inventory-toolbar">
+      <div class="segmented" role="tablist" aria-label="Inventory sections">
+        <button
+          class="segmented__item"
+          id="gemsTab"
+          role="tab"
+          type="button"
+          aria-selected="true"
+          aria-controls="gemsSection"
+        >
+          Gems
+        </button>
+
+        <button
+          class="segmented__item"
+          id="equipmentTab"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="equipmentSection"
+        >
+          Equipment
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ================= GEMS ================= -->
+
+    <section id="gemsSection" role="tabpanel" aria-labelledby="gemsTab">
+      <div class="inventory-filters">
+        <label class="field gem-search">
+          <span id="searchIcon"></span>
+          <input
+            type="search"
+            id="gemSearch"
+            placeholder="Search gems"
+            aria-label="Search gems by name"
+          >
+        </label>
+
+        <select class="select" id="gemFilter" aria-label="Filter gems">
+          <option value="all">All gems</option>
+          <option value="unlocked">Unlocked only</option>
+          <option value="locked">Locked only</option>
+        </select>
+
+        <select class="select" id="gemSort" aria-label="Sort gems">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="value">Highest value</option>
+          <option value="rarity">Rarest first</option>
+          <option value="weight">Heaviest first</option>
+        </select>
+
+        <button class="btn btn--danger" id="sellAllButton" type="button" disabled>
+          Sell unlocked
+        </button>
+      </div>
+
+      <div id="inventoryList" class="grid grid--cards"></div>
+    </section>
+
+
+    <!-- ================= EQUIPMENT ================= -->
+
+    <section id="equipmentSection" class="hidden" role="tabpanel" aria-labelledby="equipmentTab">
+      <div id="equipmentList" class="grid grid--wide"></div>
     </section>
   </main>
 
-  <script
-    type="module"
-    src="/inventory/inventory.js"
-  ></script>
+  <script type="module" src="./inventory.js"></script>
 </body>
 </html>

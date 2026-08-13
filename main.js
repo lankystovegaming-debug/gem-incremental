@@ -1,799 +1,739 @@
-import recipes
-  from "./src/data/recipes.js";
+import recipes from "./src/data/recipes.js";
 
 import {
   ensurePlayerAuth,
   getLastAuthError
 } from "./src/backend/auth.js";
-
+import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
+import { invokeFunction } from "./src/backend/invoke.js";
+import { supabase } from "./src/backend/supabase.js";
+import { runLegacyMigrationGate } from "./src/backend/legacyMigration.js";
 import {
-  ensureCloudPlayer
-} from "./src/backend/playerCloud.js";
+  loadCloudPlayerState,
+  sellCloudGem
+} from "./src/backend/cloudInventory.js";
 
+import { mountShell } from "./src/ui/shell.js";
+import { icons } from "./src/ui/icons.js";
+import { notify } from "./src/ui/toast.js";
 import {
-  supabase
-} from "./src/backend/supabase.js";
-
+  getSettings,
+  updateSettings,
+  onSettingsChange,
+  shouldAutoSell,
+  SELL_TIERS
+} from "./src/ui/settings.js";
 import {
-  runLegacyMigrationGate
-} from "./src/backend/legacyMigration.js";
+  rarityTier,
+  rarityLabel,
+  formatMoney,
+  formatWeight,
+  formatMultiplier,
+  formatCount,
+  formatSeconds,
+  escapeHtml
+} from "./src/ui/format.js";
 
 
-const rollButton =
-  document.getElementById(
-    "rollButton"
-  );
-
-const result =
-  document.getElementById(
-    "result"
-  );
-
-let cooldownTimer =
-  null;
+const shell = mountShell({ page: "roll", base: "./" });
 
 
 // =========================================================
-// LOAD SERVER ROLL STATE
+// DOM
 // =========================================================
 
-async function loadServerRollState(userId) {
-  const [
-    playerResult,
-    inventoryResult
-  ] =
-    await Promise.all([
-      supabase
-        .from("players")
-        .select(`
-          inventory_capacity,
-          next_roll_at
-        `)
-        .eq(
-          "id",
-          userId
-        )
-        .maybeSingle(),
+const rollButton = document.getElementById("rollButton");
+const rollButtonLabel = document.getElementById("rollButtonLabel");
+const rollButtonFill = document.getElementById("rollButtonFill");
+const gemStage = document.getElementById("gemStage");
+const rollHint = document.getElementById("rollHint");
 
-      supabase
-        .from("inventory_gems")
-        .select(
-          "id",
-          {
-            count: "exact",
-            head: true
-          }
-        )
-    ]);
+const statMoney = document.getElementById("statMoney");
+const statInventory = document.getElementById("statInventory");
+const statRolls = document.getElementById("statRolls");
+const inventoryMeter = document.getElementById("inventoryMeter");
+
+const autoRollToggle = document.getElementById("autoRollToggle");
+const autoSellToggle = document.getElementById("autoSellToggle");
+const autoSellTier = document.getElementById("autoSellTier");
+const autoSellTierRow = document.getElementById("autoSellTierRow");
+
+const historyList = document.getElementById("historyList");
+const clearHistory = document.getElementById("clearHistory");
+
+document.getElementById("stageIdleMark").innerHTML = icons.gem;
 
 
-  if (playerResult.error) {
-    console.error(
-      "Failed to load player roll state:",
-      playerResult.error
-    );
+// =========================================================
+// LOCAL VIEW STATE
+// =========================================================
 
-    return null;
+const view = {
+  money: null,
+  inventoryCount: 0,
+  capacity: 15,
+  totalRolls: 0,
+  ready: false
+};
+
+const history = [];
+
+const MAX_HISTORY = 12;
+
+let cooldownTimer = null;
+let rollInFlight = false;
+let consecutiveFailures = 0;
+
+
+// =========================================================
+// SUMMARY
+// =========================================================
+
+function renderSummary() {
+  statMoney.textContent =
+    view.money == null ? "—" : formatMoney(view.money, { compact: true });
+
+  statInventory.textContent = `${formatCount(view.inventoryCount)} / ${formatCount(
+    view.capacity
+  )}`;
+
+  statRolls.textContent = formatCount(view.totalRolls);
+
+  shell.setWallet(view.money);
+
+  const filled = view.capacity
+    ? Math.min(100, (view.inventoryCount / view.capacity) * 100)
+    : 0;
+
+  inventoryMeter.style.width = `${filled}%`;
+
+  inventoryMeter.className =
+    "meter__fill" +
+    (filled >= 100
+      ? " meter__fill--negative"
+      : filled >= 80
+      ? " meter__fill--warning"
+      : "");
+}
+
+
+async function refreshPlayerState() {
+  const [playerState, inventoryResult] = await Promise.all([
+    loadCloudPlayerState(),
+
+    supabase
+      .from("inventory_gems")
+      .select("id", { count: "exact", head: true })
+  ]);
+
+  if (!playerState) {
+    return false;
   }
 
+  view.money = playerState.money;
+  view.capacity = playerState.inventory_capacity;
+  view.totalRolls = playerState.total_rolls;
 
-  if (inventoryResult.error) {
-    console.error(
-      "Failed to load inventory count:",
-      inventoryResult.error
-    );
-
-    return null;
+  if (!inventoryResult.error) {
+    view.inventoryCount = inventoryResult.count ?? 0;
   }
 
+  renderSummary();
 
-  // A completely fresh anonymous user may not
-  // have a row in public.players yet.
-  if (!playerResult.data) {
+  return true;
+}
+
+
+// =========================================================
+// ROLL BUTTON STATES
+// =========================================================
+
+function setButton({ mode, label, disabled }) {
+  rollButton.className = `roll-button${mode ? ` roll-button--${mode}` : ""}`;
+
+  rollButtonLabel.textContent = label;
+
+  rollButton.disabled = disabled;
+}
+
+
+function showReady() {
+  stopCooldown();
+
+  if (view.inventoryCount >= view.capacity) {
+    view.ready = false;
+
+    setButton({
+      mode: "blocked",
+      label: "Inventory full",
+      disabled: true
+    });
+
+    rollHint.innerHTML =
+      'Sell or craft to free a slot — <a href="./inventory/">open inventory</a>';
+
+    return;
+  }
+
+  view.ready = true;
+
+  setButton({ mode: "", label: "Roll", disabled: false });
+
+  rollButtonFill.style.transform = "scaleX(0)";
+
+  rollHint.innerHTML = "<kbd>R</kbd> or <kbd>Space</kbd> to roll";
+
+  maybeAutoRoll();
+}
+
+
+function showError(message) {
+  stopCooldown();
+
+  view.ready = false;
+
+  setButton({ mode: "blocked", label: "Unavailable", disabled: true });
+
+  rollHint.textContent = message;
+}
+
+
+// =========================================================
+// COOLDOWN
+// =========================================================
+
+function startCooldown(endsAt, totalMs) {
+  stopCooldown();
+
+  view.ready = false;
+
+  const span = totalMs ?? Math.max(1, endsAt - Date.now());
+
+  setButton({ mode: "cooldown", label: "Ready in 0.0s", disabled: true });
+
+  rollHint.innerHTML = getSettings().autoRoll
+    ? "Auto roll is on — the next roll fires automatically."
+    : "<kbd>R</kbd> or <kbd>Space</kbd> to roll";
+
+  function tick() {
+    const remaining = endsAt - Date.now();
+
+    if (remaining <= 0) {
+      showReady();
+
+      return;
+    }
+
+    rollButtonLabel.textContent = `Ready in ${formatSeconds(remaining / 1000)}`;
+
+    const progress = Math.min(1, Math.max(0, 1 - remaining / span));
+
+    rollButtonFill.style.transform = `scaleX(${progress})`;
+  }
+
+  tick();
+
+  cooldownTimer = setInterval(tick, 80);
+}
+
+
+function stopCooldown() {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+
+    cooldownTimer = null;
+  }
+}
+
+
+// =========================================================
+// GEM REVEAL
+// =========================================================
+
+function renderRoll(data, outcome) {
+  const tier = rarityTier(data.gem.rarity);
+
+  gemStage.className = `stage__display is-revealed tier-${tier.id}`;
+
+  gemStage.innerHTML = `
+    <div class="gem-reveal">
+      <div class="gem-reveal__art">${icons.gem}</div>
+
+      <span class="badge badge--tier">${tier.name}</span>
+
+      <h2 class="gem-reveal__name">${escapeHtml(data.gem.name)}</h2>
+
+      <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
+
+      <div class="gem-reveal__facts">
+        <div class="gem-fact">
+          <span class="gem-fact__label">Weight</span>
+          <span class="gem-fact__value">${formatWeight(data.finalWeight)}</span>
+        </div>
+
+        <div class="gem-fact">
+          <span class="gem-fact__label">Multiplier</span>
+          <span class="gem-fact__value">${formatMultiplier(
+            data.weightMultiplier
+          )}</span>
+        </div>
+
+        <div class="gem-fact">
+          <span class="gem-fact__label">Value</span>
+          <span class="gem-fact__value">${formatMoney(data.value)}</span>
+        </div>
+      </div>
+
+      <p class="gem-reveal__outcome">${outcome.icon}${escapeHtml(
+        outcome.text
+      )}</p>
+    </div>
+  `;
+
+  if (!getSettings().rollAnimations) {
+    return;
+  }
+
+  // Restart the reveal animation on every roll.
+  gemStage.classList.add("is-animating");
+
+  // Rare and above earn the shockwave.
+  if (tier.id !== "common" && tier.id !== "uncommon") {
+    gemStage.classList.add("is-big");
+  }
+
+  setTimeout(() => {
+    gemStage.classList.remove("is-animating", "is-big");
+  }, 950);
+}
+
+
+function addHistory(data, note) {
+  const tier = rarityTier(data.gem.rarity);
+
+  history.unshift({
+    name: data.gem.name,
+    tier,
+    weight: data.finalWeight,
+    value: data.value,
+    note
+  });
+
+  if (history.length > MAX_HISTORY) {
+    history.length = MAX_HISTORY;
+  }
+
+  renderHistory();
+}
+
+
+function renderHistory() {
+  if (history.length === 0) {
+    historyList.innerHTML =
+      '<p class="history__empty">Your rolls from this visit will appear here.</p>';
+
+    return;
+  }
+
+  historyList.innerHTML = history
+    .map(
+      (entry) => `
+        <div class="history__row tier-${entry.tier.id}">
+          <span class="history__dot"></span>
+
+          <span class="history__name">${escapeHtml(entry.name)}</span>
+
+          <span class="history__meta">${escapeHtml(
+            entry.note || formatWeight(entry.weight)
+          )}</span>
+
+          <span class="history__value">${formatMoney(entry.value)}</span>
+        </div>
+      `
+    )
+    .join("");
+}
+
+
+// =========================================================
+// ROLLING
+// =========================================================
+
+async function performRoll() {
+  if (rollInFlight || !view.ready) {
+    return;
+  }
+
+  rollInFlight = true;
+
+  stopCooldown();
+
+  setButton({ mode: "rolling", label: "Rolling", disabled: true });
+
+  const { data, error } = await invokeFunction("roll");
+
+  rollInFlight = false;
+
+  // -------------------------------------------------------
+  // ERRORS
+  // -------------------------------------------------------
+
+  if (error) {
+    if (error.code === "cooldown" && error.details?.nextRollAt) {
+      startCooldown(new Date(error.details.nextRollAt).getTime());
+
+      return;
+    }
+
+    if (error.code === "inventory_full") {
+      view.inventoryCount = view.capacity;
+
+      renderSummary();
+
+      showReady();
+
+      if (getSettings().autoRoll) {
+        updateSettings({ autoRoll: false });
+
+        notify.warning(
+          "Auto roll paused",
+          "Your inventory filled up."
+        );
+      }
+
+      return;
+    }
+
+    consecutiveFailures += 1;
+
+    notify.error("Roll failed", error.message);
+
+    if (consecutiveFailures >= 3 && getSettings().autoRoll) {
+      updateSettings({ autoRoll: false });
+
+      notify.warning(
+        "Auto roll stopped",
+        "Too many failed rolls in a row."
+      );
+    }
+
+    view.ready = true;
+
+    setButton({ mode: "", label: "Roll", disabled: false });
+
+    return;
+  }
+
+  consecutiveFailures = 0;
+
+  if (!data) {
+    showError("The server did not return a roll.");
+
+    return;
+  }
+
+  // -------------------------------------------------------
+  // APPLY RESULT
+  // -------------------------------------------------------
+
+  view.inventoryCount = data.inventory?.count ?? view.inventoryCount;
+  view.capacity = data.inventory?.capacity ?? view.capacity;
+  view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
+
+  const outcome = await resolveOutcome(data);
+
+  renderSummary();
+
+  renderRoll(data, outcome);
+
+  addHistory(data, outcome.note);
+
+  if (data.cooldown?.nextRollAt) {
+    startCooldown(
+      new Date(data.cooldown.nextRollAt).getTime(),
+      data.cooldown.durationMs
+    );
+  } else {
+    showReady();
+  }
+}
+
+
+// Decides what happened to the gem: deposited into a recipe by
+// the server, auto-sold by the player's own rule, or kept.
+async function resolveOutcome(data) {
+  if (data.autoCraft?.deposited) {
+    const recipe = recipes.find(
+      (entry) => entry.id === data.autoCraft.recipeId
+    );
+
     return {
-      capacity:
-        15,
-
-      nextRollAt:
-        null,
-
-      inventoryCount:
-        inventoryResult.count ??
-        0
+      icon: icons.anvil,
+      text: `Deposited into ${recipe?.name ?? "your Auto Craft target"}`,
+      note: "deposited"
     };
   }
 
+  const tier = rarityTier(data.gem.rarity);
+
+  if (shouldAutoSell(tier.id) && data.specimenId != null) {
+    const { data: sale, error } = await sellCloudGem(data.specimenId);
+
+    if (!error && sale) {
+      view.money = Number(sale.money ?? view.money);
+
+      view.inventoryCount = Math.max(0, view.inventoryCount - 1);
+
+      return {
+        icon: icons.coins,
+        text: `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`,
+        note: "auto sold"
+      };
+    }
+
+    if (error) {
+      notify.error("Auto sell failed", error.message);
+    }
+  }
 
   return {
-    capacity:
-      Number(
-        playerResult.data
-          .inventory_capacity ??
-        15
-      ),
-
-    nextRollAt:
-      playerResult.data
-        .next_roll_at,
-
-    inventoryCount:
-      inventoryResult.count ??
-      0
+    icon: icons.bag,
+    text: `Stored — ${formatCount(data.inventory?.count ?? 0)} of ${formatCount(
+      data.inventory?.capacity ?? view.capacity
+    )} slots used`,
+    note: ""
   };
 }
 
 
 // =========================================================
-// READY BUTTON
+// AUTOMATION
 // =========================================================
 
-async function showReadyButton() {
-  const {
-  data: {
-    user
+function maybeAutoRoll() {
+  if (!getSettings().autoRoll || !view.ready || rollInFlight) {
+    return;
   }
-} =
-  await supabase.auth.getUser();
 
-const state =
-  await loadServerRollState(
-    user?.id
+  if (document.hidden) {
+    // Background tabs throttle timers; pick up again on focus.
+    return;
+  }
+
+  // A short breath so the reveal is readable between rolls.
+  setTimeout(() => {
+    if (getSettings().autoRoll && view.ready && !rollInFlight) {
+      performRoll();
+    }
+  }, 350);
+}
+
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    maybeAutoRoll();
+  }
+});
+
+
+// =========================================================
+// AUTOMATION CONTROLS
+// =========================================================
+
+autoSellTier.innerHTML = SELL_TIERS.map(
+  (tier) => `<option value="${tier.id}">${tier.label}</option>`
+).join("");
+
+
+function paintSettings(settings) {
+  autoRollToggle.checked = settings.autoRoll;
+  autoSellToggle.checked = settings.autoSell;
+  autoSellTier.value = settings.autoSellTier;
+
+  autoSellTierRow.classList.toggle(
+    "automation__row--muted",
+    !settings.autoSell
   );
+}
 
 
-  if (!state) {
-    rollButton.disabled =
-      true;
+autoRollToggle.addEventListener("change", () => {
+  const settings = updateSettings({ autoRoll: autoRollToggle.checked });
 
-    rollButton.textContent =
-      "ERROR";
+  if (settings.autoRoll) {
+    notify.info("Auto roll on", "Rolling continues while this tab is open.");
 
+    maybeAutoRoll();
+  }
+});
+
+
+autoSellToggle.addEventListener("change", () => {
+  updateSettings({ autoSell: autoSellToggle.checked });
+});
+
+
+autoSellTier.addEventListener("change", () => {
+  updateSettings({ autoSellTier: autoSellTier.value });
+});
+
+
+onSettingsChange((settings) => {
+  paintSettings(settings);
+
+  if (settings.autoRoll) {
+    maybeAutoRoll();
+  }
+});
+
+
+paintSettings(getSettings());
+
+
+// =========================================================
+// INPUT
+// =========================================================
+
+rollButton.addEventListener("click", () => performRoll());
+
+
+clearHistory.addEventListener("click", () => {
+  history.length = 0;
+
+  renderHistory();
+});
+
+
+document.addEventListener("keydown", (event) => {
+  if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) {
     return;
   }
 
+  const target = event.target;
 
   if (
-    state.inventoryCount >=
-    state.capacity
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName))
   ) {
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "INVENTORY FULL";
-
     return;
   }
 
+  if (event.code === "Space" || event.key.toLowerCase() === "r") {
+    event.preventDefault();
 
-  rollButton.disabled =
-    false;
-
-  rollButton.textContent =
-    "ROLL";
-}
+    performRoll();
+  }
+});
 
 
 // =========================================================
-// COOLDOWN DISPLAY
-// =========================================================
-
-function startCooldown(
-  cooldownEnd
-) {
-  if (cooldownTimer) {
-    clearInterval(
-      cooldownTimer
-    );
-  }
-
-
-  rollButton.disabled =
-    true;
-
-
-  function updateCooldown() {
-    const remaining =
-      cooldownEnd -
-      Date.now();
-
-
-    if (
-      remaining <= 0
-    ) {
-      clearInterval(
-        cooldownTimer
-      );
-
-      cooldownTimer =
-        null;
-
-
-      showReadyButton();
-
-      return;
-    }
-
-
-    rollButton.textContent =
-      `ROLL (${(
-        remaining /
-        1000
-      ).toFixed(1)}s)`;
-  }
-
-
-  updateCooldown();
-
-
-  cooldownTimer =
-    setInterval(
-      updateCooldown,
-      100
-    );
-}
-
-
-// =========================================================
-// RESTORE SERVER STATE
-// =========================================================
-
-async function restoreGameState() {
-  const {
-  data: {
-    user
-  }
-} =
-  await supabase.auth.getUser();
-
-const state =
-  await loadServerRollState(
-    user?.id
-  );
-
-
-  if (!state) {
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "ERROR";
-
-    return;
-  }
-
-
-  if (
-    state.nextRollAt
-  ) {
-    const cooldownEnd =
-      new Date(
-        state.nextRollAt
-      ).getTime();
-
-
-    if (
-      cooldownEnd >
-      Date.now()
-    ) {
-      startCooldown(
-        cooldownEnd
-      );
-
-      return;
-    }
-  }
-
-
-  await showReadyButton();
-}
-
-
-// =========================================================
-// SERVER ROLL
-// =========================================================
-
-async function performServerRoll() {
-  rollButton.disabled =
-    true;
-
-  rollButton.textContent =
-    "ROLLING...";
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .functions
-      .invoke(
-        "roll"
-      );
-
-
-  // =======================================================
-  // HANDLE SERVER ERROR
-  // =======================================================
-
-  if (error) {
-    console.error(
-      "Server roll failed:",
-      error
-    );
-
-
-    if (
-      error.name ===
-      "FunctionsHttpError"
-    ) {
-      try {
-        const details =
-          await error.context
-            .json();
-
-
-        console.error(
-          "Server response:",
-          details
-        );
-
-
-        // ---------------------------------
-        // COOLDOWN
-        // ---------------------------------
-
-        if (
-          details.error ===
-          "cooldown"
-        ) {
-          if (
-            details.nextRollAt
-          ) {
-            startCooldown(
-              new Date(
-                details.nextRollAt
-              ).getTime()
-            );
-          }
-
-          return;
-        }
-
-
-        // ---------------------------------
-        // INVENTORY FULL
-        // ---------------------------------
-
-        if (
-          details.error ===
-          "inventory_full"
-        ) {
-          rollButton.disabled =
-            true;
-
-          rollButton.textContent =
-            "INVENTORY FULL";
-
-          return;
-        }
-      } catch (
-        parseError
-      ) {
-        console.error(
-          "Could not read server error:",
-          parseError
-        );
-      }
-    }
-
-
-    rollButton.disabled =
-      false;
-
-    rollButton.textContent =
-      "ROLL";
-
-    return;
-  }
-
-
-  if (!data) {
-    console.error(
-      "Server returned no roll."
-    );
-
-    await showReadyButton();
-
-    return;
-  }
-
-
-  // =======================================================
-  // NORMALIZE SERVER RESULT
-  // =======================================================
-
-  const rolled = {
-    gem: {
-      name:
-        data.gem.name,
-
-      rarity:
-        data.gem.rarity,
-
-      baseWeight:
-        data.gem.baseWeight,
-
-      valuePerGram:
-        data.gem.valuePerGram
-    },
-
-    weightMultiplier:
-      data.weightMultiplier,
-
-    rolledWeight:
-      data.rolledWeight,
-
-    finalWeight:
-      data.finalWeight,
-
-    value:
-      data.value
-  };
-
-
-  // =======================================================
-  // DISPLAY RESULT
-  // =======================================================
-
-  const autoDeposited =
-    data.autoCraft?.deposited ===
-    true;
-
-
-  const autoCraftRecipe =
-    autoDeposited
-      ? recipes.find(
-          (recipe) =>
-            recipe.id ===
-            data.autoCraft.recipeId
-        )
-      : null;
-
-
-  const autoCraftName =
-    autoCraftRecipe?.name ??
-    data.autoCraft?.recipeId ??
-    "crafting";
-
-
-  result.innerHTML = `
-    <h2>
-      ${rolled.gem.name}
-    </h2>
-
-    <p>
-      Rarity:
-      1 in
-      ${rolled.gem.rarity.toLocaleString()}
-    </p>
-
-    <p>
-      Weight:
-      ${rolled.finalWeight.toFixed(2)}g
-      (${rolled.weightMultiplier.toFixed(3)}x)
-    </p>
-
-    <p>
-      Value:
-      $${rolled.value.toFixed(2)}
-    </p>
-
-    ${
-      autoDeposited
-        ? `
-          <p>
-            Auto-deposited into
-            <strong>${autoCraftName}</strong>.
-          </p>
-        `
-        : `
-          <p>
-            Inventory:
-            ${data.inventory.count}
-            /
-            ${data.inventory.capacity}
-          </p>
-        `
-    }
-  `;
-
-
-  // =======================================================
-  // SERVER COOLDOWN
-  // =======================================================
-
-  if (
-    data.cooldown
-      ?.nextRollAt
-  ) {
-    startCooldown(
-      new Date(
-        data.cooldown
-          .nextRollAt
-      ).getTime()
-    );
-  } else {
-    await showReadyButton();
-  }
-}
-
-
-// =========================================================
-// ROLL BUTTON
-// =========================================================
-
-rollButton.addEventListener(
-  "click",
-  async (event) => {
-    if (!event.isTrusted) {
-      return;
-    }
-
-
-    await performServerRoll();
-  }
-);
-
-
-// =========================================================
-// START GAME
+// STARTUP
 // =========================================================
 
 async function startGame() {
-  rollButton.disabled =
-    true;
+  setButton({ mode: "blocked", label: "Loading", disabled: true });
 
-  rollButton.textContent =
-    "LOADING...";
+  renderHistory();
 
-
-  // =================================
-  // AUTH
-  // =================================
-
-  const user =
-    await ensurePlayerAuth();
-
+  const user = await ensurePlayerAuth();
 
   if (!user) {
-    const authError =
-      getLastAuthError();
+    // Which stage failed matters when diagnosing a player who
+    // cannot start at all, so it is shown rather than buried in
+    // the console.
+    const authError = getLastAuthError();
 
-
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "AUTH ERROR";
-
-
-    result.innerHTML = `
-      <h2>
-        Authentication Error
-      </h2>
-
-      <p>
-        Could not authenticate player.
-      </p>
-
-      ${
-        authError
-          ? `
-            <hr>
-
-            <p>
-              <strong>Stage:</strong>
-              ${authError.stage ?? "Unknown"}
-            </p>
-
-            <p>
-              <strong>Status:</strong>
-              ${authError.status ?? "Unknown"}
-            </p>
-
-            <p>
-              <strong>Code:</strong>
-              ${authError.code ?? "Unknown"}
-            </p>
-
-            <p>
-              <strong>Message:</strong>
-              ${authError.message ?? "Unknown error"}
-            </p>
-
-
-            ${
-              authError.diagnostics
-                ? `
-                  <hr>
-
-                  <h3>
-                    Connection Test
-                  </h3>
-
-                  <p>
-                    <strong>
-                      Supabase REST:
-                    </strong>
-
-                    ${
-                      authError
-                        .diagnostics
-                        .rest
-                        .reachable
-                        ? `REACHABLE (${authError.diagnostics.rest.status})`
-                        : "FAILED"
-                    }
-                  </p>
-
-                  <p>
-                    <strong>
-                      Supabase Auth:
-                    </strong>
-
-                    ${
-                      authError
-                        .diagnostics
-                        .auth
-                        .reachable
-                        ? `REACHABLE (${authError.diagnostics.auth.status})`
-                        : "FAILED"
-                    }
-                  </p>
-
-
-                  ${
-                    !authError
-                      .diagnostics
-                      .rest
-                      .reachable
-                      ? `
-                        <p>
-                          <strong>
-                            REST Error:
-                          </strong>
-
-                          ${
-                            authError
-                              .diagnostics
-                              .rest
-                              .message ??
-                            "Unknown"
-                          }
-                        </p>
-                      `
-                      : ""
-                  }
-
-
-                  ${
-                    !authError
-                      .diagnostics
-                      .auth
-                      .reachable
-                      ? `
-                        <p>
-                          <strong>
-                            Auth Error:
-                          </strong>
-
-                          ${
-                            authError
-                              .diagnostics
-                              .auth
-                              .message ??
-                            "Unknown"
-                          }
-                        </p>
-                      `
-                      : ""
-                  }
-                `
-                : ""
-            }
-          `
-          : `
-            <p>
-              No additional error information
-              was provided.
-            </p>
-          `
-      }
-    `;
-
-
-    return;
-  }
-
-
-  // =================================
-  // ENSURE CLOUD PLAYER ROW
-  // =================================
-  // A freshly authenticated user (especially anonymous)
-  // may not have a row in public.players yet. The roll
-  // edge function requires one to exist, so create/load
-  // it here before anything else touches player data.
-
-  const cloudPlayer =
-    await ensureCloudPlayer(
-      user
+    showError(
+      authError
+        ? `Could not start your save (${authError.stage}): ${authError.message}`
+        : "Could not sign you in. Refresh to try again."
     );
 
-
-  if (!cloudPlayer) {
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "ERROR";
-
-    result.innerHTML = `
-      <h2>
-        Player Setup Failed
-      </h2>
-
-      <p>
-        Could not create or load your
-        player record. Please refresh
-        and try again.
-      </p>
-    `;
+    notify.error(
+      "Sign-in failed",
+      authError?.message ?? "The game could not reach the account service."
+    );
 
     return;
   }
 
+  // The Edge Functions reject every call with "Player record
+  // not found." until public.players holds a row for this user,
+  // so the row is created before anything else reads the save.
+  const cloudPlayer = await ensureCloudPlayer(user);
 
-  // =================================
-  // LEGACY MIGRATION GATE
-  // =================================
+  if (!cloudPlayer) {
+    showError("Could not set up your save. Refresh to try again.");
+
+    notify.error(
+      "Save unavailable",
+      "Your player record could not be created."
+    );
+
+    return;
+  }
 
   try {
     await runLegacyMigrationGate();
   } catch (error) {
-    console.error(
-      "Legacy migration gate failed:",
-      error
-    );
+    console.error("Legacy migration gate failed:", error);
+  }
 
+  const loaded = await refreshPlayerState();
 
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "ERROR";
-
-
-    result.innerHTML = `
-      <p>
-        Could not check save migration status.
-      </p>
-    `;
-
+  if (!loaded) {
+    showError("Could not load your save. Refresh to try again.");
 
     return;
   }
 
-
-  // =================================
-  // LOAD CLOUD GAME STATE
-  // =================================
-
-  await restoreGameState();
+  await restoreCooldown(user.id);
 }
 
-// =========================================================
-// INITIAL START
-// =========================================================
+
+async function restoreCooldown(userId) {
+  const { data, error } = await supabase
+    .from("players")
+    .select("next_roll_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Could not read roll cooldown:", error);
+  }
+
+  const nextRollAt = data?.next_roll_at
+    ? new Date(data.next_roll_at).getTime()
+    : 0;
+
+  if (nextRollAt > Date.now()) {
+    startCooldown(nextRollAt);
+
+    return;
+  }
+
+  showReady();
+}
+
+
+window.addEventListener("pageshow", async (event) => {
+  // Returning through the back/forward cache: the save may have
+  // changed on another page.
+  if (!event.persisted) {
+    return;
+  }
+
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    return;
+  }
+
+  await refreshPlayerState();
+
+  await restoreCooldown(user.id);
+});
+
 
 startGame();

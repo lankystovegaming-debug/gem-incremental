@@ -2,6 +2,10 @@ import {
   supabase
 } from "../src/backend/supabase.js";
 
+import {
+  ensurePlayerAuth
+} from "../src/backend/auth.js";
+
 
 const leaderboardStatus =
   document.getElementById(
@@ -123,21 +127,11 @@ function formatMoney(
 }
 
 
+// The top three are marked by colour and weight in the
+// stylesheet rather than medal emoji.
 function rankDisplay(
   rank
 ) {
-  if (rank === 1) {
-    return "🥇";
-  }
-
-  if (rank === 2) {
-    return "🥈";
-  }
-
-  if (rank === 3) {
-    return "🥉";
-  }
-
   return `#${rank}`;
 }
 
@@ -590,6 +584,29 @@ lifetimeEarningsTab.addEventListener(
 
 // =========================================================
 // START
+//
+// The leaderboards function needs a signed-in caller. A player
+// arriving here first — from a shared link, say — has no session
+// yet, so one is created before the board is requested.
 // =========================================================
 
-loadLeaderboards();
+async function startLeaderboards() {
+  const user =
+    await ensurePlayerAuth();
+
+
+  if (!user) {
+    setStatus(
+      "Could not sign you in. Refresh to try again.",
+      true
+    );
+
+    return;
+  }
+
+
+  await loadLeaderboards();
+}
+
+
+startLeaderboards();
