@@ -1,5 +1,7 @@
 import {
-  supabase
+  supabase,
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
 } from "./supabase.js";
 
 
@@ -13,6 +15,130 @@ let lastAuthError =
 
 export function getLastAuthError() {
   return lastAuthError;
+}
+
+
+// =========================================================
+// FETCH WITH TIMEOUT
+// =========================================================
+
+async function probeUrl(
+  url
+) {
+  const controller =
+    new AbortController();
+
+
+  const timeout =
+    setTimeout(
+      () => {
+        controller.abort();
+      },
+      8000
+    );
+
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          method:
+            "GET",
+
+          headers: {
+            apikey:
+              SUPABASE_PUBLISHABLE_KEY
+          },
+
+          signal:
+            controller.signal
+        }
+      );
+
+
+    return {
+      reachable:
+        true,
+
+      status:
+        response.status,
+
+      message:
+        null
+    };
+  } catch (error) {
+    return {
+      reachable:
+        false,
+
+      status:
+        0,
+
+      message:
+        error?.message ??
+        String(error)
+    };
+  } finally {
+    clearTimeout(
+      timeout
+    );
+  }
+}
+
+
+// =========================================================
+// SUPABASE CONNECTIVITY DIAGNOSTICS
+// =========================================================
+
+async function checkSupabaseConnectivity() {
+  const [
+    restResult,
+    authResult
+  ] =
+    await Promise.all([
+      probeUrl(
+        `${SUPABASE_URL}/rest/v1/`
+      ),
+
+      probeUrl(
+        `${SUPABASE_URL}/auth/v1/settings`
+      )
+    ]);
+
+
+  const diagnostics = {
+    rest: {
+      reachable:
+        restResult.reachable,
+
+      status:
+        restResult.status,
+
+      message:
+        restResult.message
+    },
+
+    auth: {
+      reachable:
+        authResult.reachable,
+
+      status:
+        authResult.status,
+
+      message:
+        authResult.message
+    }
+  };
+
+
+  console.log(
+    "[AUTH] Supabase connectivity diagnostics:",
+    diagnostics
+  );
+
+
+  return diagnostics;
 }
 
 
@@ -31,7 +157,7 @@ export async function ensurePlayerAuth() {
 
 
   // =======================================================
-  // EXISTING SESSION
+  // CHECK EXISTING SESSION
   // =======================================================
 
   const {
@@ -61,6 +187,9 @@ export async function ensurePlayerAuth() {
 
       code:
         sessionError.code ??
+        null,
+
+      diagnostics:
         null
     };
 
@@ -74,6 +203,10 @@ export async function ensurePlayerAuth() {
     return null;
   }
 
+
+  // =======================================================
+  // EXISTING USER
+  // =======================================================
 
   if (
     sessionData.session?.user
@@ -91,11 +224,36 @@ export async function ensurePlayerAuth() {
 
 
   // =======================================================
+  // NO SESSION
+  // =======================================================
+
+  console.log(
+    "[AUTH] No session found."
+  );
+
+
+  console.log(
+    "[AUTH] Testing Supabase connectivity..."
+  );
+
+
+  const diagnostics =
+    await checkSupabaseConnectivity();
+
+
+  // IMPORTANT:
+  // We still attempt authentication even if a probe fails.
+  //
+  // The probes are diagnostic only and should never become
+  // another condition that prevents a player from signing in.
+
+
+  // =======================================================
   // CREATE ANONYMOUS USER
   // =======================================================
 
   console.log(
-    "[AUTH] No session found. Creating anonymous user..."
+    "[AUTH] Creating anonymous user..."
   );
 
 
@@ -122,11 +280,13 @@ export async function ensurePlayerAuth() {
 
       status:
         error.status ??
-        null,
+        0,
 
       code:
         error.code ??
-        null
+        null,
+
+      diagnostics
     };
 
 
@@ -139,6 +299,10 @@ export async function ensurePlayerAuth() {
     return null;
   }
 
+
+  // =======================================================
+  // MISSING USER
+  // =======================================================
 
   if (!data.user) {
     lastAuthError = {
@@ -155,18 +319,25 @@ export async function ensurePlayerAuth() {
         null,
 
       code:
-        null
+        null,
+
+      diagnostics
     };
 
 
     console.error(
-      "[AUTH] Anonymous sign-in returned no user."
+      "[AUTH] Anonymous sign-in returned no user.",
+      lastAuthError
     );
 
 
     return null;
   }
 
+
+  // =======================================================
+  // SUCCESS
+  // =======================================================
 
   console.log(
     "[AUTH] Anonymous user created:",
