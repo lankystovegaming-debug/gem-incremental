@@ -593,32 +593,115 @@ async function startGame() {
             <hr>
 
             <p>
-              <strong>
-                Stage:
-              </strong>
+              <strong>Stage:</strong>
               ${authError.stage ?? "Unknown"}
             </p>
 
             <p>
-              <strong>
-                Status:
-              </strong>
+              <strong>Status:</strong>
               ${authError.status ?? "Unknown"}
             </p>
 
             <p>
-              <strong>
-                Code:
-              </strong>
+              <strong>Code:</strong>
               ${authError.code ?? "Unknown"}
             </p>
 
             <p>
-              <strong>
-                Message:
-              </strong>
+              <strong>Message:</strong>
               ${authError.message ?? "Unknown error"}
             </p>
+
+
+            ${
+              authError.diagnostics
+                ? `
+                  <hr>
+
+                  <h3>
+                    Connection Test
+                  </h3>
+
+                  <p>
+                    <strong>
+                      Supabase REST:
+                    </strong>
+
+                    ${
+                      authError
+                        .diagnostics
+                        .rest
+                        .reachable
+                        ? `REACHABLE (${authError.diagnostics.rest.status})`
+                        : "FAILED"
+                    }
+                  </p>
+
+                  <p>
+                    <strong>
+                      Supabase Auth:
+                    </strong>
+
+                    ${
+                      authError
+                        .diagnostics
+                        .auth
+                        .reachable
+                        ? `REACHABLE (${authError.diagnostics.auth.status})`
+                        : "FAILED"
+                    }
+                  </p>
+
+
+                  ${
+                    !authError
+                      .diagnostics
+                      .rest
+                      .reachable
+                      ? `
+                        <p>
+                          <strong>
+                            REST Error:
+                          </strong>
+
+                          ${
+                            authError
+                              .diagnostics
+                              .rest
+                              .message ??
+                            "Unknown"
+                          }
+                        </p>
+                      `
+                      : ""
+                  }
+
+
+                  ${
+                    !authError
+                      .diagnostics
+                      .auth
+                      .reachable
+                      ? `
+                        <p>
+                          <strong>
+                            Auth Error:
+                          </strong>
+
+                          ${
+                            authError
+                              .diagnostics
+                              .auth
+                              .message ??
+                            "Unknown"
+                          }
+                        </p>
+                      `
+                      : ""
+                  }
+                `
+                : ""
+            }
           `
           : `
             <p>
@@ -632,32 +715,7 @@ async function startGame() {
 
     return;
   }
-  // =================================
-  // ENSURE CLOUD PLAYER EXISTS
-  // =================================
 
-  const cloudPlayer =
-    await ensureCloudPlayer(user);
-
-  if (!cloudPlayer) {
-    rollButton.disabled =
-      true;
-
-    rollButton.textContent =
-      "SAVE ERROR";
-
-    result.innerHTML = `
-      <h2>
-        Save Error
-      </h2>
-
-      <p>
-        Could not create or load your cloud save.
-      </p>
-    `;
-
-    return;
-  }
 
   // =================================
   // LEGACY MIGRATION GATE
@@ -696,23 +754,6 @@ async function startGame() {
 
   await restoreGameState();
 }
-
-
-// =========================================================
-// PAGE EVENTS
-// =========================================================
-
-window.addEventListener(
-  "pageshow",
-  async (event) => {
-    if (
-      event.persisted
-    ) {
-      await restoreGameState();
-    }
-  }
-);
-
 
 // =========================================================
 // INITIAL START
