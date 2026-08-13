@@ -447,8 +447,9 @@ function showMigrationChoice(
           );
 
 
-          localStorage.removeItem(
-            FRESH_CHOICE_KEY
+          localStorage.setItem(
+            FRESH_CHOICE_KEY,
+            "migrated"
           );
 
 
@@ -624,18 +625,26 @@ export async function runLegacyMigrationGate() {
 
   // Player explicitly chose a new save
   // on this browser.
-  if (
+  const migrationChoice =
     localStorage.getItem(
       FRESH_CHOICE_KEY
-    ) ===
-    "fresh"
+    );
+  
+  
+  if (
+    migrationChoice ===
+      "fresh" ||
+    migrationChoice ===
+      "migrated"
   ) {
     return {
       migrated:
-        false,
-
+        migrationChoice ===
+          "migrated",
+  
       startedFresh:
-        true
+        migrationChoice ===
+          "fresh"
     };
   }
 
