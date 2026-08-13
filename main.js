@@ -718,6 +718,43 @@ async function startGame() {
 
 
   // =================================
+  // ENSURE CLOUD PLAYER ROW
+  // =================================
+  // A freshly authenticated user (especially anonymous)
+  // may not have a row in public.players yet. The roll
+  // edge function requires one to exist, so create/load
+  // it here before anything else touches player data.
+
+  const cloudPlayer =
+    await ensureCloudPlayer(
+      user
+    );
+
+
+  if (!cloudPlayer) {
+    rollButton.disabled =
+      true;
+
+    rollButton.textContent =
+      "ERROR";
+
+    result.innerHTML = `
+      <h2>
+        Player Setup Failed
+      </h2>
+
+      <p>
+        Could not create or load your
+        player record. Please refresh
+        and try again.
+      </p>
+    `;
+
+    return;
+  }
+
+
+  // =================================
   // LEGACY MIGRATION GATE
   // =================================
 
