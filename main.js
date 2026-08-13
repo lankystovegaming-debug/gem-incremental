@@ -582,51 +582,89 @@ async function startGame() {
       <h2>
         Authentication Error
       </h2>
-
+    
       <p>
         Could not authenticate player.
       </p>
-
+    
+      ${
+        authError
+          ?.diagnostics &&
+        !authError
+          .diagnostics
+          .rest
+          .reachable &&
+        !authError
+          .diagnostics
+          .auth
+          .reachable
+          ? `
+            <hr>
+    
+            <h3>
+              Backend Connection Blocked
+            </h3>
+    
+            <p>
+              This device could not connect
+              to the game's backend.
+            </p>
+    
+            <p>
+              If you are using a managed
+              school or work device, access
+              to the required backend domain
+              may be restricted.
+            </p>
+    
+            <p>
+              Try using Gem Incremental on
+              another unrestricted device.
+            </p>
+          `
+          : ""
+      }
+    
       ${
         authError
           ? `
             <hr>
-
+    
             <p>
               <strong>Stage:</strong>
               ${authError.stage ?? "Unknown"}
             </p>
-
+    
             <p>
               <strong>Status:</strong>
               ${authError.status ?? "Unknown"}
             </p>
-
+    
             <p>
               <strong>Code:</strong>
               ${authError.code ?? "Unknown"}
             </p>
-
+    
             <p>
               <strong>Message:</strong>
               ${authError.message ?? "Unknown error"}
             </p>
-
-
+    
+    
             ${
               authError.diagnostics
                 ? `
                   <hr>
-
+    
                   <h3>
                     Connection Test
                   </h3>
-
+    
                   <p>
                     <strong>
                       Supabase REST:
                     </strong>
-
+    
                     ${
                       authError
                         .diagnostics
@@ -636,12 +674,12 @@ async function startGame() {
                         : "FAILED"
                     }
                   </p>
-
+    
                   <p>
                     <strong>
                       Supabase Auth:
                     </strong>
-
+    
                     ${
                       authError
                         .diagnostics
@@ -651,8 +689,8 @@ async function startGame() {
                         : "FAILED"
                     }
                   </p>
-
-
+    
+    
                   ${
                     !authError
                       .diagnostics
@@ -663,7 +701,7 @@ async function startGame() {
                           <strong>
                             REST Error:
                           </strong>
-
+    
                           ${
                             authError
                               .diagnostics
@@ -675,8 +713,8 @@ async function startGame() {
                       `
                       : ""
                   }
-
-
+    
+    
                   ${
                     !authError
                       .diagnostics
@@ -687,7 +725,7 @@ async function startGame() {
                           <strong>
                             Auth Error:
                           </strong>
-
+    
                           ${
                             authError
                               .diagnostics
@@ -711,7 +749,6 @@ async function startGame() {
           `
       }
     `;
-
 
     return;
   }
