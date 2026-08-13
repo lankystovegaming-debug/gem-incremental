@@ -644,15 +644,27 @@ async function startGame() {
     // the console.
     const authError = getLastAuthError();
 
+    // Both backend probes failing usually points to a managed
+    // school or work device blocking the backend domain, rather
+    // than a genuine auth fault, so the message says so.
+    const backendBlocked =
+      authError?.diagnostics &&
+      !authError.diagnostics.rest.reachable &&
+      !authError.diagnostics.auth.reachable;
+
     showError(
-      authError
+      backendBlocked
+        ? "Could not reach the game's backend. If this is a school or work device, the backend domain may be blocked — try another device."
+        : authError
         ? `Could not start your save (${authError.stage}): ${authError.message}`
         : "Could not sign you in. Refresh to try again."
     );
 
     notify.error(
       "Sign-in failed",
-      authError?.message ?? "The game could not reach the account service."
+      backendBlocked
+        ? "The backend may be blocked on this device."
+        : authError?.message ?? "The game could not reach the account service."
     );
 
     return;
