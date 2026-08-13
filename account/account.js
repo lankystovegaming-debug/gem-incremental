@@ -619,53 +619,72 @@ function renderRegistered(
       <h2>
         Registered Account
       </h2>
-
+  
       <div class="account-info">
         <p>
           <strong>
             Status:
           </strong>
-
+  
           Registered
         </p>
-
+  
         <p>
           <strong>
             Email:
           </strong>
-
+  
           ${escapeHtml(
             user.email ??
             "Unknown"
           )}
         </p>
-
+  
         <p>
           <strong>
             Player ID:
           </strong>
-
+  
           <span class="player-id">
             ${escapeHtml(user.id)}
           </span>
         </p>
-
+  
         <p>
           <strong>
             Password:
           </strong>
-
+  
           Set
         </p>
       </div>
-
+  
       <p class="account-note">
         Your account can now be used to
         log in on other browsers and devices.
       </p>
+  
+      <hr>
+  
+      <button
+        id="logoutButton"
+        type="button"
+      >
+        Log Out
+      </button>
     `;
-
-
+  
+  
+    document
+      .getElementById(
+        "logoutButton"
+      )
+      .addEventListener(
+        "click",
+        logoutAccount
+      );
+  
+  
     return;
   }
 
@@ -895,6 +914,59 @@ async function setPassword() {
   await renderAccount();
 }
 
+// =========================================================
+// LOG OUT
+// =========================================================
+
+async function logoutAccount() {
+  const confirmed =
+    window.confirm(
+      "Log out of this account?\n\nYour cloud save will remain safe and can be accessed again by logging back in."
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  setStatus(
+    "Logging out..."
+  );
+
+
+  const {
+    error
+  } =
+    await supabase.auth
+      .signOut();
+
+
+  if (error) {
+    console.error(
+      "Logout failed:",
+      error
+    );
+
+
+    setStatus(
+      error.message ??
+      "Could not log out.",
+      true
+    );
+
+
+    return;
+  }
+
+
+  setStatus(
+    "Logged out successfully."
+  );
+
+
+  renderLogin();
+}
 
 // =========================================================
 // RENDER ACCOUNT
