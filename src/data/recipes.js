@@ -15,7 +15,7 @@ const recipes = [
       { type: "gem-count", gem: "Amethyst", amount: 1 }
     ],
 
-    moneyCost: 250,
+    moneyCost: 225,
 
     reward: {
       id: "crude-pickaxe",
@@ -45,7 +45,7 @@ const recipes = [
       { type: "gem-count", gem: "Peridot", amount: 1 }
     ],
 
-    moneyCost: 1000,
+    moneyCost: 900,
 
     reward: {
       id: "reinforced-pickaxe",
@@ -75,7 +75,7 @@ const recipes = [
       { type: "gem-count", gem: "Aquamarine", amount: 1 }
     ],
 
-    moneyCost: 3500,
+    moneyCost: 3150,
 
     reward: {
       id: "polished-pickaxe",
@@ -105,7 +105,7 @@ const recipes = [
       { type: "gem-count", gem: "Opal", amount: 1 }
     ],
 
-    moneyCost: 7500,
+    moneyCost: 6750,
 
     reward: {
       id: "refined-pickaxe",
@@ -136,7 +136,7 @@ const recipes = [
       { type: "gem-count", gem: "Sapphire", amount: 1 }
     ],
 
-    moneyCost: 20000,
+    moneyCost: 18000,
 
     reward: {
       id: "masterwork-pickaxe",
@@ -167,7 +167,7 @@ const recipes = [
       { type: "gem-count", gem: "Jasper", amount: 1 }
     ],
 
-    moneyCost: 250,
+    moneyCost: 225,
 
     reward: {
       id: "dim-lantern",
@@ -197,7 +197,7 @@ const recipes = [
       { type: "gem-count", gem: "Garnet", amount: 1 }
     ],
 
-    moneyCost: 1000,
+    moneyCost: 900,
 
     reward: {
       id: "bright-lantern",
@@ -224,7 +224,7 @@ const recipes = [
       { type: "gem-count", gem: "Peridot", amount: 3 }
     ],
 
-    moneyCost: 3500,
+    moneyCost: 3150,
 
     reward: {
       id: "radiant-lantern",
@@ -282,7 +282,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 8000,
+    moneyCost: 7200,
 
     reward: {
       id: "beacon-lantern",
@@ -315,7 +315,7 @@ const recipes = [
       { type: "gem-count", gem: "Emerald", amount: 1 }
     ],
 
-    moneyCost: 20000,
+    moneyCost: 18000,
 
     reward: {
       id: "eternal-lantern",
@@ -346,7 +346,7 @@ const recipes = [
       { type: "gem-count", gem: "Jasper", amount: 1 }
     ],
 
-    moneyCost: 250,
+    moneyCost: 225,
 
     reward: {
       id: "miners-boots",
@@ -377,7 +377,7 @@ const recipes = [
       { type: "gem-count", gem: "Amethyst", amount: 1 }
     ],
 
-    moneyCost: 1000,
+    moneyCost: 900,
 
     reward: {
       id: "reinforced-boots",
@@ -424,7 +424,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 3500,
+    moneyCost: 3150,
 
     reward: {
       id: "prospectors-boots",
@@ -490,7 +490,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 8000,
+    moneyCost: 7200,
 
     reward: {
       id: "fortune-boots",
@@ -525,7 +525,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 20000,
+    moneyCost: 18000,
 
     reward: {
       id: "gravity-boots",
@@ -556,7 +556,7 @@ const recipes = [
       { type: "gem-count", gem: "Amethyst", amount: 1 }
     ],
 
-    moneyCost: 400,
+    moneyCost: 360,
 
     reward: {
       id: "worn-bag",
@@ -587,7 +587,7 @@ const recipes = [
       { type: "gem-count", gem: "Garnet", amount: 1 }
     ],
 
-    moneyCost: 1500,
+    moneyCost: 1350,
 
     reward: {
       id: "sturdy-bag",
@@ -619,7 +619,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 2500,
+    moneyCost: 2250,
 
     reward: {
       id: "reinforced-bag",
@@ -652,7 +652,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 10000,
+    moneyCost: 9000,
 
     reward: {
       id: "gemkeeper-bag",
@@ -706,7 +706,7 @@ const recipes = [
       }
     ],
 
-    moneyCost: 25000,
+    moneyCost: 22500,
 
     reward: {
       id: "bottomless-bag",
