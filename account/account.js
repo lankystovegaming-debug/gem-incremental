@@ -71,8 +71,6 @@ function escapeHtml(
 
 // =========================================================
 // LOGIN SCREEN
-//
-// Used when there is NO current session.
 // =========================================================
 
 function renderLogin() {
@@ -141,12 +139,6 @@ function renderLogin() {
 
 // =========================================================
 // GUEST LOGIN SCREEN
-//
-// IMPORTANT:
-// We do NOT sign the guest out before login.
-//
-// If login fails, their current guest
-// account remains active.
 // =========================================================
 
 function renderGuestLogin(
@@ -336,15 +328,47 @@ async function loginExistingAccount() {
   }
 
 
-  if (
-    !data.user
-  ) {
+  if (!data.user) {
     setStatus(
       "Login succeeded but no user was returned.",
       true
     );
 
     return;
+  }
+
+
+  // Successful password login proves that
+  // this account has a working password.
+  if (
+    data.user.user_metadata
+      ?.gem_incremental_password_set !==
+    true
+  ) {
+    const {
+      error: metadataError
+    } =
+      await supabase.auth
+        .updateUser({
+          data: {
+            ...(
+              data.user
+                .user_metadata ??
+              {}
+            ),
+
+            gem_incremental_password_set:
+              true
+          }
+        });
+
+
+    if (metadataError) {
+      console.error(
+        "Could not mark password as configured:",
+        metadataError
+      );
+    }
   }
 
 
@@ -580,6 +604,76 @@ function renderRegistered(
     null;
 
 
+  const passwordSet =
+    user.user_metadata
+      ?.gem_incremental_password_set ===
+    true;
+
+
+  // =======================================================
+  // PASSWORD ALREADY SET
+  // =======================================================
+
+  if (passwordSet) {
+    accountCard.innerHTML = `
+      <h2>
+        Registered Account
+      </h2>
+
+      <div class="account-info">
+        <p>
+          <strong>
+            Status:
+          </strong>
+
+          Registered
+        </p>
+
+        <p>
+          <strong>
+            Email:
+          </strong>
+
+          ${escapeHtml(
+            user.email ??
+            "Unknown"
+          )}
+        </p>
+
+        <p>
+          <strong>
+            Player ID:
+          </strong>
+
+          <span class="player-id">
+            ${escapeHtml(user.id)}
+          </span>
+        </p>
+
+        <p>
+          <strong>
+            Password:
+          </strong>
+
+          Set
+        </p>
+      </div>
+
+      <p class="account-note">
+        Your account can now be used to
+        log in on other browsers and devices.
+      </p>
+    `;
+
+
+    return;
+  }
+
+
+  // =======================================================
+  // EMAIL VERIFIED, PASSWORD NOT SET
+  // =======================================================
+
   accountCard.innerHTML = `
     <h2>
       Registered Account
@@ -623,8 +717,9 @@ function renderRegistered(
     </h3>
 
     <p>
-      If you have just verified your email,
-      create a password below.
+      Your email has been verified.
+      Create a password to finish
+      setting up your account.
     </p>
 
     <label>
@@ -719,6 +814,10 @@ async function setPassword() {
   );
 
 
+  // =======================================================
+  // SET PASSWORD
+  // =======================================================
+
   const {
     data,
     error
@@ -747,10 +846,45 @@ async function setPassword() {
   }
 
 
-  console.log(
-    "Permanent account user:",
+  // =======================================================
+  // MARK PASSWORD AS CONFIGURED
+  // =======================================================
+
+  const existingMetadata =
     data.user
-  );
+      ?.user_metadata ??
+    {};
+
+
+  const {
+    error: metadataError
+  } =
+    await supabase.auth
+      .updateUser({
+        data: {
+          ...existingMetadata,
+
+          gem_incremental_password_set:
+            true
+        }
+      });
+
+
+  if (metadataError) {
+    console.error(
+      "Could not save account setup state:",
+      metadataError
+    );
+
+
+    setStatus(
+      "Password was created, but the account page could not update its status. Refresh the page.",
+      true
+    );
+
+
+    return;
+  }
 
 
   setStatus(
@@ -801,9 +935,8 @@ async function renderAccount() {
     sessionData.session;
 
 
-  // IMPORTANT:
   // Do not automatically create an
-  // anonymous user on this page.
+  // anonymous user on the account page.
   if (!session?.user) {
     renderLogin();
 
@@ -811,7 +944,6 @@ async function renderAccount() {
   }
 
 
-  // Fetch fresh Auth information.
   const {
     data: userData,
     error: userError
@@ -858,7 +990,12 @@ async function renderAccount() {
         user.email,
 
       isAnonymous:
-        user.is_anonymous
+        user.is_anonymous,
+
+      passwordSet:
+        user.user_metadata
+          ?.gem_incremental_password_set ===
+        true
     }
   );
 
