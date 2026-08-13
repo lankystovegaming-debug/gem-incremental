@@ -14,6 +14,10 @@ const accountStatus =
   );
 
 
+let currentGuestUser =
+  null;
+
+
 // =========================================================
 // STATUS
 // =========================================================
@@ -67,16 +71,23 @@ function escapeHtml(
 
 // =========================================================
 // LOGIN SCREEN
+//
+// Used when there is NO current session.
 // =========================================================
 
 function renderLogin() {
+  currentGuestUser =
+    null;
+
+
   accountCard.innerHTML = `
     <h2>
       Log In
     </h2>
 
     <p>
-      Log in to an existing Gem Incremental account.
+      Log in to an existing
+      Gem Incremental account.
     </p>
 
     <label>
@@ -108,35 +119,145 @@ function renderLogin() {
       Log In
     </button>
 
-    <hr>
-
-    <p>
-      Don't have an account yet?
-    </p>
-
-    <a href="/">
-      Return to the game
-    </a>
-
     <p class="account-note">
-      If you already have guest progress,
-      open the game in the browser where
-      that progress is stored, then create
-      an account from there.
+      If your game progress is still
+      stored under a guest account,
+      create an account from that
+      browser first.
     </p>
   `;
 
 
-  const loginButton =
-    document.getElementById(
+  document
+    .getElementById(
       "loginButton"
+    )
+    .addEventListener(
+      "click",
+      loginExistingAccount
+    );
+}
+
+
+// =========================================================
+// GUEST LOGIN SCREEN
+//
+// IMPORTANT:
+// We do NOT sign the guest out before login.
+//
+// If login fails, their current guest
+// account remains active.
+// =========================================================
+
+function renderGuestLogin(
+  user
+) {
+  currentGuestUser =
+    user;
+
+
+  accountCard.innerHTML = `
+    <h2>
+      Log In to Existing Account
+    </h2>
+
+    <p>
+      You are currently using a guest
+      account.
+    </p>
+
+    <div class="account-info">
+      <p>
+        <strong>
+          Current Guest Player ID:
+        </strong>
+
+        <span class="player-id">
+          ${escapeHtml(user.id)}
+        </span>
+      </p>
+    </div>
+
+    <p class="account-note">
+      Logging in successfully will switch
+      this browser to your registered
+      account.
+    </p>
+
+    <p class="account-note">
+      Any progress stored only on this
+      guest account will remain attached
+      to the guest Player ID and will not
+      automatically merge into your
+      registered account.
+    </p>
+
+    <hr>
+
+    <label>
+      Email
+
+      <input
+        id="loginEmail"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+      >
+    </label>
+
+    <label>
+      Password
+
+      <input
+        id="loginPassword"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Password"
+      >
+    </label>
+
+    <button
+      id="loginButton"
+      type="button"
+    >
+      Log In
+    </button>
+
+    <button
+      id="cancelLoginButton"
+      type="button"
+    >
+      Back
+    </button>
+  `;
+
+
+  document
+    .getElementById(
+      "loginButton"
+    )
+    .addEventListener(
+      "click",
+      loginExistingAccount
     );
 
 
-  loginButton.addEventListener(
-    "click",
-    loginExistingAccount
-  );
+  document
+    .getElementById(
+      "cancelLoginButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus(
+          ""
+        );
+
+        renderAnonymous(
+          user
+        );
+      }
+    );
 }
 
 
@@ -145,20 +266,27 @@ function renderLogin() {
 // =========================================================
 
 async function loginExistingAccount() {
+  const emailElement =
+    document.getElementById(
+      "loginEmail"
+    );
+
+  const passwordElement =
+    document.getElementById(
+      "loginPassword"
+    );
+
+
   const email =
-    document
-      .getElementById(
-        "loginEmail"
-      )
-      .value
-      .trim();
+    emailElement
+      ?.value
+      .trim() ??
+    "";
 
   const password =
-    document
-      .getElementById(
-        "loginPassword"
-      )
-      .value;
+    passwordElement
+      ?.value ??
+    "";
 
 
   if (
@@ -220,6 +348,18 @@ async function loginExistingAccount() {
   }
 
 
+  console.log(
+    "Logged in account:",
+    {
+      id:
+        data.user.id,
+
+      email:
+        data.user.email
+    }
+  );
+
+
   setStatus(
     "Logged in successfully."
   );
@@ -236,6 +376,10 @@ async function loginExistingAccount() {
 function renderAnonymous(
   user
 ) {
+  currentGuestUser =
+    user;
+
+
   accountCard.innerHTML = `
     <h2>
       Guest Account
@@ -301,6 +445,30 @@ function renderAnonymous(
       return to this page to create
       your password.
     </p>
+
+    <hr>
+
+    <h3>
+      Already Have an Account?
+    </h3>
+
+    <p>
+      Log in to a registered account
+      instead of converting this guest
+      account.
+    </p>
+
+    <button
+      id="guestLoginButton"
+      type="button"
+    >
+      Log In Instead
+    </button>
+
+    <p class="account-note">
+      Guest progress is not automatically
+      merged when switching accounts.
+    </p>
   `;
 
 
@@ -311,6 +479,24 @@ function renderAnonymous(
     .addEventListener(
       "click",
       linkEmail
+    );
+
+
+  document
+    .getElementById(
+      "guestLoginButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus(
+          ""
+        );
+
+        renderGuestLogin(
+          user
+        );
+      }
     );
 }
 
@@ -382,13 +568,18 @@ async function linkEmail() {
   );
 }
 
+
 // =========================================================
-// REGISTERED / VERIFIED ACCOUNT
+// REGISTERED ACCOUNT
 // =========================================================
 
 function renderRegistered(
   user
 ) {
+  currentGuestUser =
+    null;
+
+
   accountCard.innerHTML = `
     <h2>
       Registered Account
@@ -556,14 +747,14 @@ async function setPassword() {
   }
 
 
-  setStatus(
-    "Account setup complete."
-  );
-
-
   console.log(
     "Permanent account user:",
     data.user
+  );
+
+
+  setStatus(
+    "Account setup complete."
   );
 
 
@@ -610,10 +801,9 @@ async function renderAccount() {
     sessionData.session;
 
 
-  // No session:
-  // IMPORTANT — do not automatically create
-  // an anonymous user here. This page must
-  // allow existing users to log in.
+  // IMPORTANT:
+  // Do not automatically create an
+  // anonymous user on this page.
   if (!session?.user) {
     renderLogin();
 
@@ -621,7 +811,7 @@ async function renderAccount() {
   }
 
 
-  // Fetch fresh user data from Auth.
+  // Fetch fresh Auth information.
   const {
     data: userData,
     error: userError
