@@ -619,7 +619,7 @@ async function startGame() {
     
             <p>
               Try using Gem Incremental on
-              another unrestricted device.
+              another unrestricted device. Sorry!
             </p>
           `
           : ""
