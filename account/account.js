@@ -381,3 +381,336 @@ async function linkEmail() {
     "Verification email sent. Check your inbox."
   );
 }
+
+// =========================================================
+// REGISTERED / VERIFIED ACCOUNT
+// =========================================================
+
+function renderRegistered(
+  user
+) {
+  accountCard.innerHTML = `
+    <h2>
+      Registered Account
+    </h2>
+
+    <div class="account-info">
+      <p>
+        <strong>
+          Status:
+        </strong>
+
+        Registered
+      </p>
+
+      <p>
+        <strong>
+          Email:
+        </strong>
+
+        ${escapeHtml(
+          user.email ??
+          "Unknown"
+        )}
+      </p>
+
+      <p>
+        <strong>
+          Player ID:
+        </strong>
+
+        <span class="player-id">
+          ${escapeHtml(user.id)}
+        </span>
+      </p>
+    </div>
+
+    <hr>
+
+    <h3>
+      Set Password
+    </h3>
+
+    <p>
+      If you have just verified your email,
+      create a password below.
+    </p>
+
+    <label>
+      Password
+
+      <input
+        id="newPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="At least 8 characters"
+      >
+    </label>
+
+    <label>
+      Confirm Password
+
+      <input
+        id="confirmPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Repeat password"
+      >
+    </label>
+
+    <button
+      id="setPasswordButton"
+      type="button"
+    >
+      Set Password
+    </button>
+  `;
+
+
+  document
+    .getElementById(
+      "setPasswordButton"
+    )
+    .addEventListener(
+      "click",
+      setPassword
+    );
+}
+
+
+// =========================================================
+// SET PASSWORD
+// =========================================================
+
+async function setPassword() {
+  const password =
+    document
+      .getElementById(
+        "newPassword"
+      )
+      .value;
+
+  const confirmation =
+    document
+      .getElementById(
+        "confirmPassword"
+      )
+      .value;
+
+
+  if (
+    password.length < 8
+  ) {
+    setStatus(
+      "Password must be at least 8 characters.",
+      true
+    );
+
+    return;
+  }
+
+
+  if (
+    password !==
+    confirmation
+  ) {
+    setStatus(
+      "Passwords do not match.",
+      true
+    );
+
+    return;
+  }
+
+
+  setStatus(
+    "Setting password..."
+  );
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth
+      .updateUser({
+        password
+      });
+
+
+  if (error) {
+    console.error(
+      "Password creation failed:",
+      error
+    );
+
+
+    setStatus(
+      error.message ??
+      "Could not set password.",
+      true
+    );
+
+
+    return;
+  }
+
+
+  setStatus(
+    "Account setup complete."
+  );
+
+
+  console.log(
+    "Permanent account user:",
+    data.user
+  );
+
+
+  await renderAccount();
+}
+
+
+// =========================================================
+// RENDER ACCOUNT
+// =========================================================
+
+async function renderAccount() {
+  setStatus(
+    ""
+  );
+
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabase.auth
+      .getSession();
+
+
+  if (sessionError) {
+    console.error(
+      "Account session error:",
+      sessionError
+    );
+
+
+    setStatus(
+      "Could not load account session.",
+      true
+    );
+
+
+    return;
+  }
+
+
+  const session =
+    sessionData.session;
+
+
+  // No session:
+  // IMPORTANT — do not automatically create
+  // an anonymous user here. This page must
+  // allow existing users to log in.
+  if (!session?.user) {
+    renderLogin();
+
+    return;
+  }
+
+
+  // Fetch fresh user data from Auth.
+  const {
+    data: userData,
+    error: userError
+  } =
+    await supabase.auth
+      .getUser();
+
+
+  if (userError) {
+    console.error(
+      "Could not load account user:",
+      userError
+    );
+
+
+    setStatus(
+      "Could not load account information.",
+      true
+    );
+
+
+    return;
+  }
+
+
+  const user =
+    userData.user;
+
+
+  if (!user) {
+    renderLogin();
+
+    return;
+  }
+
+
+  console.log(
+    "Account user:",
+    {
+      id:
+        user.id,
+
+      email:
+        user.email,
+
+      isAnonymous:
+        user.is_anonymous
+    }
+  );
+
+
+  if (
+    user.is_anonymous
+  ) {
+    renderAnonymous(
+      user
+    );
+
+    return;
+  }
+
+
+  renderRegistered(
+    user
+  );
+}
+
+
+// =========================================================
+// AUTH CHANGES
+// =========================================================
+
+supabase.auth
+  .onAuthStateChange(
+    (
+      event,
+      session
+    ) => {
+      console.log(
+        "Account auth event:",
+        event,
+        session?.user?.id
+      );
+    }
+  );
+
+
+// =========================================================
+// START
+// =========================================================
+
+renderAccount();
