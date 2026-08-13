@@ -14,7 +14,7 @@ export async function loadCloudCraftingState() {
         .select(`
           active_auto_craft
         `)
-        .single(),
+        .maybeSingle(),
 
       supabase
         .from("crafting_progress")
