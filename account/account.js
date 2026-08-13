@@ -70,6 +70,312 @@ function escapeHtml(
 
 
 // =========================================================
+// USERNAME
+// =========================================================
+
+async function loadUsername(
+  userId
+) {
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "players"
+      )
+      .select(
+        "username"
+      )
+      .eq(
+        "id",
+        userId
+      )
+      .maybeSingle();
+
+
+  if (error) {
+    console.error(
+      "Could not load username:",
+      error
+    );
+
+    return null;
+  }
+
+
+  return (
+    data?.username ??
+    null
+  );
+}
+
+
+function usernameSection(
+  username
+) {
+  const hasUsername =
+    Boolean(
+      username
+    );
+
+
+  return `
+    <hr>
+
+    <h3>
+      Username
+    </h3>
+
+    ${
+      hasUsername
+        ? `
+          <p>
+            Your current username is:
+          </p>
+
+          <div class="account-info">
+            <p>
+              <strong>
+                ${escapeHtml(
+                  username
+                )}
+              </strong>
+            </p>
+          </div>
+
+          <p>
+            Change Username
+          </p>
+        `
+        : `
+          <p>
+            Choose a public username
+            for leaderboards.
+          </p>
+        `
+    }
+
+    <label>
+      Username
+
+      <input
+        id="usernameInput"
+        type="text"
+        maxlength="20"
+        autocomplete="off"
+        value="${escapeHtml(
+          username ??
+          ""
+        )}"
+        placeholder="Username"
+      >
+    </label>
+
+    <p class="account-note">
+      3–20 characters.
+      Letters, numbers and underscores only.
+    </p>
+
+    <button
+      id="saveUsernameButton"
+      type="button"
+    >
+      ${
+        hasUsername
+          ? "Change Username"
+          : "Save Username"
+      }
+    </button>
+  `;
+}
+
+
+function attachUsernameListener() {
+  const button =
+    document.getElementById(
+      "saveUsernameButton"
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  button.addEventListener(
+    "click",
+    saveUsername
+  );
+}
+
+
+async function saveUsername() {
+  const input =
+    document.getElementById(
+      "usernameInput"
+    );
+
+
+  const username =
+    input?.value
+      .trim() ??
+    "";
+
+
+  // =======================================================
+  // VALIDATION
+  // =======================================================
+
+  if (
+    username.length < 3 ||
+    username.length > 20
+  ) {
+    setStatus(
+      "Username must be between 3 and 20 characters.",
+      true
+    );
+
+    return;
+  }
+
+
+  if (
+    !/^[A-Za-z0-9_]+$/.test(
+      username
+    )
+  ) {
+    setStatus(
+      "Username can only contain letters, numbers and underscores.",
+      true
+    );
+
+    return;
+  }
+
+
+  // =======================================================
+  // GET CURRENT USER
+  // =======================================================
+
+  const {
+    data: userData,
+    error: userError
+  } =
+    await supabase.auth
+      .getUser();
+
+
+  if (
+    userError ||
+    !userData.user
+  ) {
+    console.error(
+      "Could not identify user while saving username:",
+      userError
+    );
+
+
+    setStatus(
+      "Could not identify your account.",
+      true
+    );
+
+    return;
+  }
+
+
+  const user =
+    userData.user;
+
+
+  setStatus(
+    "Saving username..."
+  );
+
+
+  // =======================================================
+  // SAVE USERNAME
+  // =======================================================
+
+  const {
+    error
+  } =
+    await supabase
+      .from(
+        "players"
+      )
+      .upsert(
+        {
+          id:
+            user.id,
+
+          username
+        },
+        {
+          onConflict:
+            "id"
+        }
+      );
+
+
+  if (error) {
+    console.error(
+      "Username save failed:",
+      error
+    );
+
+
+    // PostgreSQL unique violation.
+    // This includes the case-insensitive
+    // unique username index.
+    if (
+      error.code ===
+      "23505"
+    ) {
+      setStatus(
+        "That username is already taken.",
+        true
+      );
+
+      return;
+    }
+
+
+    // Database constraint fallback.
+    if (
+      error.code ===
+      "23514"
+    ) {
+      setStatus(
+        "That username is not valid.",
+        true
+      );
+
+      return;
+    }
+
+
+    setStatus(
+      "Could not save username.",
+      true
+    );
+
+
+    return;
+  }
+
+
+  setStatus(
+    "Username saved successfully."
+  );
+
+
+  await renderAccount();
+}
+
+
+// =========================================================
 // LOGIN SCREEN
 // =========================================================
 
@@ -165,7 +471,9 @@ function renderGuestLogin(
         </strong>
 
         <span class="player-id">
-          ${escapeHtml(user.id)}
+          ${escapeHtml(
+            user.id
+          )}
         </span>
       </p>
     </div>
@@ -240,13 +548,21 @@ function renderGuestLogin(
     )
     .addEventListener(
       "click",
-      () => {
+      async () => {
         setStatus(
           ""
         );
 
+
+        const username =
+          await loadUsername(
+            user.id
+          );
+
+
         renderAnonymous(
-          user
+          user,
+          username
         );
       }
     );
@@ -338,8 +654,6 @@ async function loginExistingAccount() {
   }
 
 
-  // Successful password login proves that
-  // this account has a working password.
   if (
     data.user.user_metadata
       ?.gem_incremental_password_set !==
@@ -398,7 +712,8 @@ async function loginExistingAccount() {
 // =========================================================
 
 function renderAnonymous(
-  user
+  user,
+  username
 ) {
   currentGuestUser =
     user;
@@ -429,10 +744,16 @@ function renderAnonymous(
         </strong>
 
         <span class="player-id">
-          ${escapeHtml(user.id)}
+          ${escapeHtml(
+            user.id
+          )}
         </span>
       </p>
     </div>
+
+    ${usernameSection(
+      username
+    )}
 
     <hr>
 
@@ -494,6 +815,9 @@ function renderAnonymous(
       merged when switching accounts.
     </p>
   `;
+
+
+  attachUsernameListener();
 
 
   document
@@ -598,7 +922,8 @@ async function linkEmail() {
 // =========================================================
 
 function renderRegistered(
-  user
+  user,
+  username
 ) {
   currentGuestUser =
     null;
@@ -619,53 +944,59 @@ function renderRegistered(
       <h2>
         Registered Account
       </h2>
-  
+
       <div class="account-info">
         <p>
           <strong>
             Status:
           </strong>
-  
+
           Registered
         </p>
-  
+
         <p>
           <strong>
             Email:
           </strong>
-  
+
           ${escapeHtml(
             user.email ??
             "Unknown"
           )}
         </p>
-  
+
         <p>
           <strong>
             Player ID:
           </strong>
-  
+
           <span class="player-id">
-            ${escapeHtml(user.id)}
+            ${escapeHtml(
+              user.id
+            )}
           </span>
         </p>
-  
+
         <p>
           <strong>
             Password:
           </strong>
-  
+
           Set
         </p>
       </div>
-  
+
+      ${usernameSection(
+        username
+      )}
+
+      <hr>
+
       <p class="account-note">
         Your account can now be used to
         log in on other browsers and devices.
       </p>
-  
-      <hr>
-  
+
       <button
         id="logoutButton"
         type="button"
@@ -673,8 +1004,11 @@ function renderRegistered(
         Log Out
       </button>
     `;
-  
-  
+
+
+    attachUsernameListener();
+
+
     document
       .getElementById(
         "logoutButton"
@@ -683,8 +1017,8 @@ function renderRegistered(
         "click",
         logoutAccount
       );
-  
-  
+
+
     return;
   }
 
@@ -724,10 +1058,16 @@ function renderRegistered(
         </strong>
 
         <span class="player-id">
-          ${escapeHtml(user.id)}
+          ${escapeHtml(
+            user.id
+          )}
         </span>
       </p>
     </div>
+
+    ${usernameSection(
+      username
+    )}
 
     <hr>
 
@@ -770,6 +1110,9 @@ function renderRegistered(
       Set Password
     </button>
   `;
+
+
+  attachUsernameListener();
 
 
   document
@@ -833,10 +1176,6 @@ async function setPassword() {
   );
 
 
-  // =======================================================
-  // SET PASSWORD
-  // =======================================================
-
   const {
     data,
     error
@@ -864,10 +1203,6 @@ async function setPassword() {
     return;
   }
 
-
-  // =======================================================
-  // MARK PASSWORD AS CONFIGURED
-  // =======================================================
 
   const existingMetadata =
     data.user
@@ -913,6 +1248,7 @@ async function setPassword() {
 
   await renderAccount();
 }
+
 
 // =========================================================
 // LOG OUT
@@ -967,6 +1303,7 @@ async function logoutAccount() {
 
   renderLogin();
 }
+
 
 // =========================================================
 // RENDER ACCOUNT
@@ -1052,6 +1389,12 @@ async function renderAccount() {
   }
 
 
+  const username =
+    await loadUsername(
+      user.id
+    );
+
+
   console.log(
     "Account user:",
     {
@@ -1067,7 +1410,9 @@ async function renderAccount() {
       passwordSet:
         user.user_metadata
           ?.gem_incremental_password_set ===
-        true
+        true,
+
+      username
     }
   );
 
@@ -1076,7 +1421,8 @@ async function renderAccount() {
     user.is_anonymous
   ) {
     renderAnonymous(
-      user
+      user,
+      username
     );
 
     return;
@@ -1084,7 +1430,8 @@ async function renderAccount() {
 
 
   renderRegistered(
-    user
+    user,
+    username
   );
 }
 
