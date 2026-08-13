@@ -21,6 +21,7 @@ import {
   onAccountChange,
   loadUsername
 } from "../backend/account.js";
+import { initDevPanel } from "./devpanel.js";
 
 
 // =========================================================
@@ -393,6 +394,8 @@ export function mountShell({ page, base = "./" }) {
   });
 
   reportOAuthErrorFromUrl();
+
+  initDevPanel();
 
 
   return {

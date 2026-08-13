@@ -1725,3 +1725,111 @@ a.btn--icon[aria-current="page"] {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* =========================================================
+   MAINTENANCE PANEL
+   ========================================================= */
+
+.devpanel {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 250;
+
+  width: min(300px, calc(100vw - 32px));
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+
+  animation: menu-in 0.14s ease-out;
+}
+
+@media (max-width: 780px) {
+  .devpanel {
+    bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}
+
+.devpanel__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.devpanel__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.devpanel__close {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.devpanel__close:hover {
+  color: var(--text);
+}
+
+.devpanel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.devpanel__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.devpanel__field input {
+  width: 140px;
+  padding: 7px 10px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.devpanel__field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.devpanel__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.devpanel__actions .btn {
+  flex: 1;
+}
+
+.devpanel__note {
+  min-height: 16px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
