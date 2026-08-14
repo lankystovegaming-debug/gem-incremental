@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/potion-crafting-test.mjs && node tests/gem-expansion-test.mjs && node tests/admin-panel-test.mjs && node tests/equipment-unequip-test.mjs"
+  }
+}
