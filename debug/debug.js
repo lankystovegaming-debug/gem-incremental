@@ -29,6 +29,7 @@ document.getElementById("refreshIcon").innerHTML = icons.refresh;
 // A slow poll keeps the cooldown honest without hammering the
 // database the way a half-second timer would.
 const POLL_INTERVAL = 15000;
+const BASE_ROLL_COOLDOWN_SECONDS = 2.5;
 
 let pollTimer = null;
 
@@ -125,6 +126,10 @@ function render(cloudState) {
     ? rarityTier(cloudState.lifetime.rarestGemRarity)
     : null;
 
+  const rollCooldown =
+    BASE_ROLL_COOLDOWN_SECONDS /
+    Math.max(1, Number(cloudState.stats.rollSpeed) || 1);
+
   content.innerHTML = [
     card(
       "Bonuses",
@@ -199,12 +204,10 @@ function render(cloudState) {
 
         statsRow(
           "Roll cooldown",
-          cloudState.rolling.cooldownRemaining > 0
-            ? formatSeconds(cloudState.rolling.cooldownRemaining)
-            : "Ready"
+          formatSeconds(rollCooldown)
         )
       ].join(""),
-      "Auto roll and auto sell are set on the Roll page."
+      "Cooldown includes equipped roll-speed bonuses. Auto roll and auto sell are set on the Roll page."
     )
   ].join("");
 }
