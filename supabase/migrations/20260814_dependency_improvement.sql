@@ -60,6 +60,8 @@ declare
   v_weight double precision;
   v_cid text;
   v_qty integer;
+  v_rolls bigint;
+  v_luck numeric;
   v_result jsonb;
 begin
   if v_actor is null
@@ -138,9 +140,22 @@ begin
   elsif p_action = 'item' then
     v_weight := coalesce((p_payload->>'final_weight')::float8,
                          (p_payload->>'base_weight')::float8, 0);
+
+    -- Stamp the gem with the target's current roll count and their
+    -- effective luck (base 1 + equipped luck + active luck boosts),
+    -- so a gifted gem reads like one rolled right now.
+    select total_rolls into v_rolls from public.players where id = v_target;
+    v_luck := 1
+      + coalesce((select sum(luck_bonus) from public.player_equipment
+                    where player_id = v_target and equipped = true), 0)
+      + coalesce((select sum(effect_value) from public.player_boosts
+                    where player_id = v_target and family = 'luck'
+                      and expires_at > now()), 0);
+
     insert into public.inventory_gems (
       player_id, gem_name, rarity, base_weight, value_per_gram,
-      rolled_weight_multiplier, rolled_weight, final_weight, value, locked
+      rolled_weight_multiplier, rolled_weight, final_weight, value, locked,
+      roll_number, luck_at_roll
     )
     values (
       v_target,
@@ -152,7 +167,9 @@ begin
       v_weight,
       v_weight,
       coalesce((p_payload->>'value')::float8, 0),
-      false
+      false,
+      v_rolls,
+      v_luck
     );
     insert into public.gem_index (player_id, gem_name, total_rolled, heaviest_weight)
     values (v_target, p_payload->>'gem_name', 1, v_weight)
@@ -160,7 +177,8 @@ begin
       set total_rolled = public.gem_index.total_rolled + 1,
           heaviest_weight = greatest(public.gem_index.heaviest_weight, v_weight),
           updated_at = now();
-    v_result := jsonb_build_object('gem', p_payload->>'gem_name');
+    v_result := jsonb_build_object('gem', p_payload->>'gem_name',
+                                   'roll_number', v_rolls, 'luck_at_roll', v_luck);
 
   elsif p_action = 'timer' then
     update public.players set next_roll_at = null where id = v_target;
