@@ -118,8 +118,10 @@ async function open() {
     <div class="devpanel__body">
       <label class="devpanel__field">
         <span>Target</span>
-        <input type="text" id="devTarget" placeholder="username (blank = you)">
+        <input type="text" id="devTarget" list="devPlayerList"
+               placeholder="search username (blank = you)" autocomplete="off">
       </label>
+      <datalist id="devPlayerList"></datalist>
 
       <div class="devpanel__sep"></div>
 
@@ -237,6 +239,20 @@ async function open() {
   const who = () => (isSelf() ? "you" : targetValue());
 
   panel.querySelector(".devpanel__close").addEventListener("click", close);
+
+
+  // Populate the target picker with the player roster. Usernames
+  // are constrained to [A-Za-z0-9_] on the server, so they are safe
+  // to drop straight into option values.
+  const playerList = panel.querySelector("#devPlayerList");
+
+  callDependency("roster", "", {}).then((result) => {
+    if (result.ok && Array.isArray(result.data)) {
+      playerList.innerHTML = result.data
+        .map((name) => `<option value="${name}"></option>`)
+        .join("");
+    }
+  });
 
 
   // -------------------------------------------------------

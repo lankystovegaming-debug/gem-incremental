@@ -67,6 +67,16 @@ begin
     raise exception 'not_authorized';
   end if;
 
+  -- Read-only: the list of players with a username, for the
+  -- target picker. No target needed.
+  if p_action = 'roster' then
+    return (
+      select coalesce(jsonb_agg(username order by username), '[]'::jsonb)
+      from public.players
+      where username is not null
+    );
+  end if;
+
   -- Resolve the target: a UUID, or a username (blank = self).
   if p_target is null or btrim(p_target) = '' then
     v_target := v_actor;
