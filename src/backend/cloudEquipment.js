@@ -50,13 +50,14 @@ export async function loadCloudEquipment() {
 }
 
 
-export async function unequipCloudEquipment(equipmentRowId) {
+export async function setCloudEquipmentEquipped(equipmentRowId, equipped) {
   const { error } = await invokeFunction("unequip-equipment", {
-    equipmentRowId
+    equipmentRowId,
+    equipped
   });
 
   if (error) {
-    console.error("Failed to unequip cloud equipment:", error);
+    console.error("Failed to change equipped cloud equipment:", error);
 
     return {
       success: false,

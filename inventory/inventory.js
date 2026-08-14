@@ -8,7 +8,7 @@ import {
 } from "../src/backend/cloudInventory.js";
 import {
   loadCloudEquipment,
-  unequipCloudEquipment
+  setCloudEquipmentEquipped
 } from "../src/backend/cloudEquipment.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -554,14 +554,11 @@ function renderEquipment() {
             ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
           </div>
 
-          ${
-            item.equipped
-              ? `<button class="btn btn--danger btn--block" type="button"
-                   data-unequip-id="${escapeHtml(item.id)}">
-                   Unequip
-                 </button>`
-              : ""
-          }
+          <button class="btn ${item.equipped ? "btn--danger" : "btn--primary"} btn--block"
+            type="button" data-equipment-id="${escapeHtml(item.id)}"
+            data-equipment-equipped="${item.equipped}">
+            ${item.equipped ? "Unequip" : "Equip"}
+          </button>
         </article>
       `;
     })
@@ -570,35 +567,49 @@ function renderEquipment() {
 
 
 equipmentList.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-unequip-id]");
+  const button = event.target.closest("[data-equipment-id]");
 
   if (!button || button.disabled) {
     return;
   }
 
   const equipment = state.equipment.find(
-    (item) => String(item.id) === button.dataset.unequipId
+    (item) => String(item.id) === button.dataset.equipmentId
   );
 
-  if (!equipment?.equipped) {
+  if (!equipment) {
     return;
   }
 
-  button.disabled = true;
-  button.textContent = "Unequipping…";
+  const shouldEquip = !equipment.equipped;
 
-  const result = await unequipCloudEquipment(equipment.id);
+  button.disabled = true;
+  button.textContent = shouldEquip ? "Equipping…" : "Unequipping…";
+
+  const result = await setCloudEquipmentEquipped(equipment.id, shouldEquip);
 
   if (!result.success) {
     button.disabled = false;
-    button.textContent = "Unequip";
-    notify.error("Could not unequip", result.message);
+    button.textContent = shouldEquip ? "Equip" : "Unequip";
+    notify.error("Could not update equipment", result.message);
     return;
   }
 
-  equipment.equipped = false;
+  if (shouldEquip) {
+    for (const item of state.equipment) {
+      if (item.category === equipment.category) {
+        item.equipped = item.id === equipment.id;
+      }
+    }
+  } else {
+    equipment.equipped = false;
+  }
+
   renderEquipment();
-  notify.success("Equipment unequipped", `${equipment.name} is now stored.`);
+  notify.success(
+    shouldEquip ? "Equipment equipped" : "Equipment unequipped",
+    `${equipment.name} is now ${shouldEquip ? "equipped" : "stored"}.`
+  );
 });
 
 
