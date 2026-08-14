@@ -37,13 +37,25 @@ const shell = mountShell({ page: "inventory", base: "../" });
 // price, so this is only for display.
 // =========================================================
 
-const CAPACITY_UPGRADES = [
-  { from: 15, to: 20, cost: 1000 },
-  { from: 20, to: 25, cost: 3000 },
-  { from: 25, to: 30, cost: 8000 },
-  { from: 30, to: 40, cost: 20000 },
-  { from: 40, to: 50, cost: 50000 }
-];
+function nextCapacityUpgrade(capacity) {
+  const earlyUpgrades = {
+    15: { to: 20, cost: 1000 },
+    20: { to: 25, cost: 3000 },
+    25: { to: 30, cost: 8000 },
+    30: { to: 40, cost: 20000 }
+  };
+
+  if (earlyUpgrades[capacity]) {
+    return earlyUpgrades[capacity];
+  }
+
+  const level = Math.max(0, Math.floor((capacity - 40) / 10));
+
+  return {
+    to: capacity + 10,
+    cost: Math.round((50000 * (1.5 ** level)) / 1000) * 1000
+  };
+}
 
 
 // =========================================================
@@ -129,18 +141,7 @@ function renderCapacity() {
       ? " meter__fill--warning"
       : "");
 
-  const next = CAPACITY_UPGRADES.find(
-    (upgrade) => upgrade.from === state.capacity
-  );
-
-  if (!next) {
-    capacityUpgradeInfo.textContent = "Maximum storage reached.";
-
-    capacityUpgradeButton.disabled = true;
-    capacityUpgradeButton.textContent = "Maxed";
-
-    return;
-  }
+  const next = nextCapacityUpgrade(state.capacity);
 
   const affordable = state.money >= next.cost;
 
@@ -155,13 +156,7 @@ function renderCapacity() {
 
 
 capacityUpgradeButton.addEventListener("click", async () => {
-  const next = CAPACITY_UPGRADES.find(
-    (upgrade) => upgrade.from === state.capacity
-  );
-
-  if (!next) {
-    return;
-  }
+  const next = nextCapacityUpgrade(state.capacity);
 
   const choice = await confirmDialog({
     title: `Expand storage to ${next.to} slots?`,

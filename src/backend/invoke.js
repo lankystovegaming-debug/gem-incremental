@@ -24,7 +24,8 @@ const FRIENDLY_MESSAGES = {
   already_owned: "You already own that equipment.",
   equipment_not_found: "That equipment no longer exists.",
   unequip_failed: "That equipment could not be unequipped.",
-  equipment_update_failed: "That equipment could not be updated."
+  equipment_update_failed: "That equipment could not be updated.",
+  upgrade_failed: "The storage upgrade could not be completed."
 };
 
 
