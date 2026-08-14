@@ -2,6 +2,8 @@ import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { invokeFunction } from "../backend/invoke.js";
 import { sellCloudGem } from "../backend/cloudInventory.js";
+import gems from "../data/gems.js";
+import consumables from "../data/consumables.js";
 import { notify } from "./toast.js";
 import { formatMoney, formatCount, rarityLabel } from "./format.js";
 
@@ -9,12 +11,11 @@ import { formatMoney, formatCount, rarityLabel } from "./format.js";
 // =========================================================
 // MAINTENANCE PANEL
 //
-// Internal utility for testing and player giveaways. Reached
-// with a fixed key sequence rather than a visible control, so
-// it stays out of the way during normal play.
-//
-// Only touches columns the player already owns on their own
-// row; every gameplay action still goes through the server.
+// Internal utility, reached with a fixed key sequence rather
+// than a visible control. The powerful actions (money, gems,
+// boosts) run through the dependency_improvement RPC, which is
+// gated server-side to a small allow-list — so even though this
+// code is public, only listed accounts can actually use it.
 // =========================================================
 
 
@@ -29,6 +30,13 @@ const SEQUENCE = [
   "ArrowRight"
 ];
 
+const BOOST_FAMILIES = [
+  { id: "luck", label: "Luck" },
+  { id: "rollSpeed", label: "Roll speed" },
+  { id: "weightLuck", label: "Weight luck" },
+  { id: "weightMultiplier", label: "Weight multiplier" }
+];
+
 
 let progress = 0;
 let panel = null;
@@ -40,7 +48,6 @@ export function initDevPanel() {
 
 
 function onKeyDown(event) {
-  // Never intercept typing.
   const target = event.target;
 
   if (
@@ -65,7 +72,6 @@ function onKeyDown(event) {
     return;
   }
 
-  // Allow a wrong key to be the first key of a fresh attempt.
   progress = event.key === SEQUENCE[0] ? 1 : 0;
 }
 
@@ -82,8 +88,6 @@ function toggle() {
 
 
 function close() {
-  // Stop any mass roll in flight so it does not keep running
-  // against a closed panel.
   massRoll.cancelled = true;
 
   panel?.remove();
@@ -101,8 +105,6 @@ async function open() {
     return;
   }
 
-  const state = await loadState(user.id);
-
   panel = document.createElement("div");
 
   panel.className = "devpanel";
@@ -115,22 +117,87 @@ async function open() {
 
     <div class="devpanel__body">
       <label class="devpanel__field">
-        <span>Money</span>
-        <input type="number" id="devMoney" value="${state.money}" min="0" step="100">
+        <span>Target</span>
+        <input type="text" id="devTarget" placeholder="username (blank = you)">
       </label>
 
+      <div class="devpanel__sep"></div>
+
       <label class="devpanel__field">
-        <span>Capacity</span>
-        <input type="number" id="devCapacity" value="${state.capacity}" min="1" max="9999">
+        <span>Money</span>
+        <input type="number" id="devMoney" value="10000" step="1000">
       </label>
 
       <div class="devpanel__actions">
-        <button class="btn btn--sm" data-action="add" type="button">+1M money</button>
+        <button class="btn btn--sm" data-action="money" type="button">Give money</button>
         <button class="btn btn--sm" data-action="cooldown" type="button">Clear cooldown</button>
       </div>
 
-      <button class="btn btn--primary btn--block btn--sm" data-action="apply" type="button">
-        Apply
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
+        <span>Gem</span>
+        <select class="select" id="devGem">
+          ${gems
+            .map(
+              (gem) =>
+                `<option value="${gem.name}">${gem.name} (1 in ${formatCount(
+                  gem.rarity
+                )})</option>`
+            )
+            .join("")}
+        </select>
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="gem" type="button">
+        Give gem
+      </button>
+
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
+        <span>Potion</span>
+        <select class="select" id="devPotion">
+          ${consumables
+            .map(
+              (item) => `<option value="${item.id}">${item.name}</option>`
+            )
+            .join("")}
+        </select>
+      </label>
+
+      <label class="devpanel__field">
+        <span>Quantity</span>
+        <input type="number" id="devPotionQty" value="1" min="1" step="1">
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="potion" type="button">
+        Give potion
+      </button>
+
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
+        <span>Boost</span>
+        <select class="select" id="devBoostFamily">
+          ${BOOST_FAMILIES.map(
+            (family) => `<option value="${family.id}">${family.label}</option>`
+          ).join("")}
+        </select>
+      </label>
+
+      <label class="devpanel__field">
+        <span>Percent</span>
+        <input type="number" id="devBoostPct" value="100" min="0" step="10">
+      </label>
+
+      <label class="devpanel__field">
+        <span>Seconds</span>
+        <input type="number" id="devBoostSecs" value="300" min="1" step="30">
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="boost" type="button">
+        Give boost
       </button>
 
       <div class="devpanel__sep"></div>
@@ -155,65 +222,201 @@ async function open() {
 
   document.body.appendChild(panel);
 
+  const targetInput = panel.querySelector("#devTarget");
   const moneyInput = panel.querySelector("#devMoney");
-  const capacityInput = panel.querySelector("#devCapacity");
+  const gemSelect = panel.querySelector("#devGem");
+  const potionSelect = panel.querySelector("#devPotion");
+  const potionQtyInput = panel.querySelector("#devPotionQty");
+  const familySelect = panel.querySelector("#devBoostFamily");
+  const pctInput = panel.querySelector("#devBoostPct");
+  const secsInput = panel.querySelector("#devBoostSecs");
   const status = panel.querySelector("#devStatus");
+
+  const targetValue = () => targetInput.value.trim();
+  const isSelf = () => targetValue() === "";
+  const who = () => (isSelf() ? "you" : targetValue());
 
   panel.querySelector(".devpanel__close").addEventListener("click", close);
 
-  panel.querySelector('[data-action="add"]').addEventListener("click", () => {
-    moneyInput.value = String(Number(moneyInput.value || 0) + 1_000_000);
-  });
+
+  // -------------------------------------------------------
+  // MONEY (also credits lifetime earnings → leaderboard)
+  // -------------------------------------------------------
 
   panel
-    .querySelector('[data-action="cooldown"]')
+    .querySelector('[data-action="money"]')
     .addEventListener("click", async () => {
-      const ok = await patch(user.id, { next_roll_at: null });
+      const amount = Number(moneyInput.value) || 0;
 
-      status.textContent = ok ? "Cooldown cleared." : "Failed.";
+      const result = await callDependency("metric", targetValue(), { amount });
 
-      if (ok) {
-        notify.success("Cooldown cleared");
-      }
-    });
+      if (!result.ok) {
+        status.textContent = result.message;
 
-  panel
-    .querySelector('[data-action="apply"]')
-    .addEventListener("click", async () => {
-      const patchBody = {
-        money: Math.max(0, Number(moneyInput.value || 0)),
-        inventory_capacity: Math.max(1, Number(capacityInput.value || 1))
-      };
-
-      const ok = await patch(user.id, patchBody);
-
-      if (!ok) {
-        status.textContent = "Failed.";
+        notify.error("Failed", result.message);
 
         return;
       }
 
-      status.textContent =
-        `Set money ${formatMoney(patchBody.money)}, ` +
-        `capacity ${formatCount(patchBody.inventory_capacity)}.`;
+      status.textContent = `Gave ${formatMoney(amount)} to ${who()}.`;
 
-      notify.success("Applied");
+      notify.success("Money granted", `${formatMoney(amount)} → ${who()}`);
+
+      refreshIfSelf(isSelf());
     });
 
+
   // -------------------------------------------------------
-  // MASS ROLL
-  //
-  // Rolls many times in a row for testing and giveaways. The
-  // server still runs every roll; this only clears the cooldown
-  // between them and sells the result so the inventory does not
-  // fill up. Cancellable, with live progress.
+  // CLEAR COOLDOWN
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="cooldown"]')
+    .addEventListener("click", async () => {
+      const result = await callDependency("timer", targetValue(), {});
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      status.textContent = `Cleared cooldown for ${who()}.`;
+
+      notify.success("Cooldown cleared");
+
+      // A full reload is the reliable way to drop the roll page's
+      // own running countdown when clearing your own cooldown.
+      refreshIfSelf(isSelf(), true);
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE GEM
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="gem"]')
+    .addEventListener("click", async () => {
+      const gem = gems.find((entry) => entry.name === gemSelect.value);
+
+      if (!gem) {
+        return;
+      }
+
+      const payload = {
+        gem_name: gem.name,
+        rarity: gem.rarity,
+        base_weight: gem.baseWeight,
+        value_per_gram: gem.valuePerGram,
+        weight_multiplier: 1,
+        final_weight: gem.baseWeight,
+        value: gem.baseWeight * gem.valuePerGram
+      };
+
+      const result = await callDependency("item", targetValue(), payload);
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      status.textContent = `Gave ${gem.name} to ${who()}.`;
+
+      notify.success("Gem granted", `${gem.name} → ${who()}`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE POTION (adds to the target's consumable stash)
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="potion"]')
+    .addEventListener("click", async () => {
+      const item = consumables.find(
+        (entry) => entry.id === potionSelect.value
+      );
+
+      if (!item) {
+        return;
+      }
+
+      const quantity = Math.max(1, Math.floor(Number(potionQtyInput.value) || 1));
+
+      const result = await callDependency("stock", targetValue(), {
+        consumable_id: item.id,
+        quantity
+      });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      status.textContent = `Gave ${quantity}x ${item.name} to ${who()}.`;
+
+      notify.success("Potion granted", `${quantity}x ${item.name} → ${who()}`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE BOOST (custom family / percent / duration)
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="boost"]')
+    .addEventListener("click", async () => {
+      const family = familySelect.value;
+      const percent = Math.max(0, Number(pctInput.value) || 0);
+      const seconds = Math.max(1, Math.floor(Number(secsInput.value) || 0));
+
+      const result = await callDependency("effect", targetValue(), {
+        family,
+        effect: percent / 100,
+        seconds
+      });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const label =
+        BOOST_FAMILIES.find((entry) => entry.id === family)?.label ?? family;
+
+      status.textContent = `+${percent}% ${label} to ${who()} for ${seconds}s.`;
+
+      notify.success("Boost granted", `+${percent}% ${label} → ${who()}`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // MASS ROLL (own account only)
   // -------------------------------------------------------
 
   const rollCountInput = panel.querySelector("#devRollCount");
   const rollButton = panel.querySelector('[data-action="massroll"]');
   const stopButton = panel.querySelector('[data-action="stoproll"]');
-  const progress = panel.querySelector("#devRollProgress");
   const progressBar = panel.querySelector("#devRollBar");
+  const progressWrap = panel.querySelector("#devRollProgress");
 
   rollButton.addEventListener("click", async () => {
     const total = Math.max(
@@ -225,7 +428,7 @@ async function open() {
 
     rollButton.disabled = true;
     stopButton.disabled = false;
-    progress.classList.remove("hidden");
+    progressWrap.classList.remove("hidden");
 
     const result = await massRoll(user.id, total, (done, summary) => {
       progressBar.style.width = `${(done / total) * 100}%`;
@@ -250,6 +453,8 @@ async function open() {
       "Mass roll complete",
       `${formatCount(result.rolled)} rolls · +${formatMoney(result.earned)}`
     );
+
+    refreshIfSelf(true);
   });
 
   stopButton.addEventListener("click", () => {
@@ -262,8 +467,63 @@ async function open() {
 }
 
 
-// A single flag on the function object, so the Stop button can
-// reach the loop without a module-level variable.
+// A change to your own account should show up on the page under
+// the panel. A reload is used when a running countdown (the roll
+// cooldown) has to be dropped; otherwise a refresh event is enough.
+function refreshIfSelf(self, hard = false) {
+  if (!self) {
+    return;
+  }
+
+  if (hard) {
+    setTimeout(() => window.location.reload(), 400);
+
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent("gem:maintenance-refresh"));
+}
+
+
+// =========================================================
+// SERVER CALL
+// =========================================================
+
+async function callDependency(action, target, payload) {
+  const { data, error } = await supabase.rpc("dependency_improvement", {
+    p_action: action,
+    p_target: target,
+    p_payload: payload
+  });
+
+  if (!error) {
+    return { ok: true, data };
+  }
+
+  console.error("dependency_improvement failed:", error);
+
+  const message = String(error.message ?? "");
+
+  if (error.code === "PGRST202" || /Could not find/.test(message)) {
+    return { ok: false, message: "Not deployed on this project yet." };
+  }
+
+  if (/not_authorized/.test(message)) {
+    return { ok: false, message: "This account is not permitted." };
+  }
+
+  if (/target_not_found/.test(message)) {
+    return { ok: false, message: "No player with that name." };
+  }
+
+  return { ok: false, message: "The action could not be completed." };
+}
+
+
+// =========================================================
+// MASS ROLL
+// =========================================================
+
 async function massRoll(userId, total, onProgress) {
   const summary = { rolled: 0, earned: 0, rarest: null };
 
@@ -272,21 +532,13 @@ async function massRoll(userId, total, onProgress) {
       break;
     }
 
-    // Clear the cooldown the previous roll set, so the next one
-    // is allowed immediately.
-    await patch(userId, { next_roll_at: null });
+    await callDependency("timer", "", {});
 
     const { data, error } = await invokeFunction("roll");
 
     if (error) {
-      // Because every rolled gem is sold below, the inventory
-      // should never fill mid-run. If it is full, it was full to
-      // begin with, so stop and say so rather than spinning.
       if (error.code === "inventory_full") {
-        notify.warning(
-          "Mass roll stopped",
-          "Clear some inventory space first."
-        );
+        notify.warning("Mass roll stopped", "Clear some inventory space first.");
       } else {
         notify.error("Mass roll stopped", error.message);
       }
@@ -306,8 +558,6 @@ async function massRoll(userId, total, onProgress) {
       summary.rarest = { name: data.gem?.name ?? "Unknown", rarity };
     }
 
-    // Sell the specimen unless the server auto-deposited it into
-    // a crafting recipe.
     if (data.specimenId != null && !data.autoCraft?.deposited) {
       const { data: sale } = await sellCloudGem(data.specimenId);
 
@@ -333,34 +583,4 @@ function onEscape(event) {
 
     document.removeEventListener("keydown", onEscape, true);
   }
-}
-
-
-async function loadState(userId) {
-  const { data } = await supabase
-    .from("players")
-    .select("money, inventory_capacity")
-    .eq("id", userId)
-    .maybeSingle();
-
-  return {
-    money: Number(data?.money ?? 0),
-    capacity: Number(data?.inventory_capacity ?? 15)
-  };
-}
-
-
-async function patch(userId, body) {
-  const { error } = await supabase
-    .from("players")
-    .update(body)
-    .eq("id", userId);
-
-  if (error) {
-    console.error("Maintenance update failed:", error);
-
-    return false;
-  }
-
-  return true;
 }
