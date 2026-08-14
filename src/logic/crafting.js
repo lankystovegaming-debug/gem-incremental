@@ -62,8 +62,8 @@ export function ensureRecipeProgress(
       }
 
       if (
-        requirement.type !==
-        "equipment"
+        requirement.type !== "equipment" &&
+        requirement.type !== "consumable"
       ) {
         progress[key] = 0;
       }
@@ -179,6 +179,14 @@ export function isRequirementComplete(
     );
   }
 
+  if (requirement.type === "consumable") {
+    const owned = inventory.consumables?.find(
+      (item) => item.consumable_id === requirement.consumableId
+    );
+
+    return Number(owned?.quantity ?? 0) >= requirement.amount;
+  }
+
   if (
     requirement.type ===
     "gem-count"
@@ -197,6 +205,10 @@ export function isRequirementComplete(
       (progress[key] ?? 0) >=
       requirement.totalWeight
     );
+  }
+
+  if (requirement.type === "specimen-total-weight") {
+    return (progress[key] ?? 0) >= requirement.totalWeight;
   }
 
   if (
@@ -293,6 +305,11 @@ function depositSpecimen(
     progress[key] +=
       specimen.finalWeight;
 
+    return true;
+  }
+
+  if (requirement.type === "specimen-total-weight") {
+    progress[key] += specimen.finalWeight;
     return true;
   }
 
@@ -395,8 +412,8 @@ export function tryAutoDeposit(
       recipe.requirements[index];
 
     if (
-      requirement.type ===
-      "equipment"
+      requirement.type === "equipment" ||
+      requirement.type === "consumable"
     ) {
       continue;
     }
@@ -431,6 +448,8 @@ export function tryAutoDeposit(
         "specimen-value-total" &&
       requirement.type !==
         "rarity-points" &&
+      requirement.type !==
+        "specimen-total-weight" &&
       !specimenMatches(
         requirement,
         specimen
@@ -472,8 +491,8 @@ export function manuallyDepositRequirement(
   }
 
   if (
-    requirement.type ===
-    "equipment"
+    requirement.type === "equipment" ||
+    requirement.type === "consumable"
   ) {
     return false;
   }
@@ -505,7 +524,9 @@ export function manuallyDepositRequirement(
           requirement.type ===
           "specimen-value-total" ||
           requirement.type ===
-          "rarity-points"
+          "rarity-points" ||
+          requirement.type ===
+          "specimen-total-weight"
         ) {
           return true;
         }

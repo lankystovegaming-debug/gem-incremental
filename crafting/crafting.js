@@ -1,4 +1,5 @@
 import recipes from "../src/data/recipes.js";
+import { getConsumableById } from "../src/data/consumables.js";
 
 import {
   createCraftingState,
@@ -11,7 +12,9 @@ import {
   loadCloudCraftingState,
   manuallyDepositCloudRequirement,
   craftCloudRecipe,
-  setCloudAutoCraft
+  craftCloudConsumableRecipe,
+  setCloudAutoCraft,
+  loadCloudConsumables
 } from "../src/backend/cloudCrafting.js";
 import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
@@ -53,6 +56,7 @@ document.getElementById("autoCraftIcon").innerHTML = icons.bolt;
 const state = {
   crafting: createCraftingState(),
   equipment: [],
+  consumables: [],
   money: 0,
   category: "pickaxe",
   loading: true
@@ -80,7 +84,8 @@ function ownsTierOrHigher(category, tier) {
 // The logic module expects a plain { id } shape.
 function equipmentContext() {
   return {
-    equipment: state.equipment.map((item) => ({ id: item.equipment_id }))
+    equipment: state.equipment.map((item) => ({ id: item.equipment_id })),
+    consumables: state.consumables
   };
 }
 
@@ -104,6 +109,19 @@ function requirementKey(requirement, index) {
 
 function describeRequirement(requirement, value) {
   switch (requirement.type) {
+    case "consumable": {
+      const item = getConsumableById(requirement.consumableId);
+      const owned = state.consumables.find(
+        (entry) => entry.consumable_id === requirement.consumableId
+      );
+
+      return {
+        label: item?.name ?? requirement.consumableId,
+        text: `${formatCount(owned?.quantity ?? 0)} / ${formatCount(requirement.amount)}`,
+        fraction: ratio(owned?.quantity ?? 0, requirement.amount)
+      };
+    }
+
     case "gem-count":
       return {
         label: requirement.gem,
@@ -117,6 +135,13 @@ function describeRequirement(requirement, value) {
         text: `${formatWeight(value ?? 0)} / ${formatWeight(
           requirement.totalWeight
         )}`,
+        fraction: ratio(value, requirement.totalWeight)
+      };
+
+    case "specimen-total-weight":
+      return {
+        label: requirement.label ?? "Sacrificed gem weight",
+        text: `${formatWeight(value ?? 0)} / ${formatWeight(requirement.totalWeight)}`,
         fraction: ratio(value, requirement.totalWeight)
       };
 
@@ -233,6 +258,10 @@ function isRecipeReady(recipe) {
   return requirementsMet && state.money >= recipe.moneyCost;
 }
 
+function isConsumableRecipe(recipe) {
+  return recipe.reward?.type === "consumable";
+}
+
 
 function formatBonuses(bonus = {}) {
   const labels = [
@@ -250,6 +279,24 @@ function formatBonuses(bonus = {}) {
           0
         )}% ${label}</span>`
     );
+}
+
+function formatReward(recipe) {
+  if (!isConsumableRecipe(recipe)) {
+    return formatBonuses(recipe.reward?.bonus);
+  }
+
+  const statNames = {
+    luck: "Luck",
+    rollSpeed: "Roll speed",
+    weightLuck: "Weight luck",
+    weightMultiplier: "Weight multiplier"
+  };
+
+  return [
+    `<span class="badge badge--positive">+${(recipe.reward.effectValue * 100).toFixed(0)}% ${escapeHtml(statNames[recipe.reward.family] ?? recipe.reward.family)}</span>`,
+    '<span class="badge badge--muted">60 seconds</span>'
+  ];
 }
 
 
@@ -310,12 +357,13 @@ function renderRecipes() {
 
   renderAutoBanner();
 
-  const owned = recipes.filter((recipe) =>
+  const equipmentRecipes = recipes.filter((recipe) => !isConsumableRecipe(recipe));
+  const owned = equipmentRecipes.filter((recipe) =>
     ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
   ).length;
 
   subtitle.textContent =
-    `${formatCount(owned)} of ${formatCount(recipes.length)} crafted · ` +
+    `${formatCount(owned)} of ${formatCount(equipmentRecipes.length)} equipment crafted · ` +
     `${formatMoney(state.money)} available`;
 
   let visible = recipes.filter(
@@ -325,6 +373,7 @@ function renderRecipes() {
   if (hideOwned.checked) {
     visible = visible.filter(
       (recipe) =>
+        isConsumableRecipe(recipe) ||
         !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
     );
   }
@@ -352,7 +401,7 @@ function renderRecipes() {
 function recipeCard(recipe) {
   const progress = ensureRecipeProgress(state.crafting, recipe);
 
-  const owned = ownsTierOrHigher(
+  const owned = !isConsumableRecipe(recipe) && ownsTierOrHigher(
     recipe.reward.category,
     recipe.reward.tier
   );
@@ -361,7 +410,7 @@ function recipeCard(recipe) {
 
   const isAutoTarget = state.crafting.activeAutoCraftRecipeId === recipe.id;
 
-  const bonuses = formatBonuses(recipe.reward?.bonus);
+  const bonuses = formatReward(recipe);
 
   const requirementsHtml = recipe.requirements
     .map((requirement, index) => {
@@ -386,6 +435,26 @@ function recipeCard(recipe) {
                 met ? "" : " requirement__check--missing"
               }">${met ? icons.check : icons.x}</span>
             </span>
+          </div>
+        `;
+      }
+
+      if (requirement.type === "consumable") {
+        const detail = describeRequirement(requirement);
+        const complete = isRequirementComplete(
+          state.crafting, recipe, requirement, index, equipmentContext()
+        );
+
+        return `
+          <div class="requirement${complete ? " requirement--done" : ""}">
+            <span class="requirement__label">${escapeHtml(detail.label)}</span>
+            <span class="requirement__right">
+              <span class="requirement__value">${escapeHtml(detail.text)}</span>
+              <span class="requirement__check${complete ? "" : " requirement__check--missing"}">
+                ${complete ? icons.check : icons.x}
+              </span>
+            </span>
+            <span class="requirement__bar"><span style="width:${detail.fraction * 100}%"></span></span>
           </div>
         `;
       }
@@ -444,7 +513,7 @@ function recipeCard(recipe) {
       <div class="recipe-card__head">
         <div>
           <div class="recipe-card__name">${escapeHtml(recipe.name)}</div>
-          <div class="recipe-card__tier">Tier ${recipe.reward.tier}</div>
+          <div class="recipe-card__tier">Tier ${recipe.reward.tier}${isConsumableRecipe(recipe) ? " · Repeatable" : ""}</div>
         </div>
 
         ${
@@ -477,10 +546,14 @@ function recipeCard(recipe) {
             </div>
 
             <div class="recipe-card__actions">
-              <button class="btn" data-action="auto" type="button">
-                ${icons.bolt}
-                Auto ${isAutoTarget ? "on" : "off"}
-              </button>
+              ${
+                isConsumableRecipe(recipe)
+                  ? ""
+                  : `<button class="btn" data-action="auto" type="button">
+                       ${icons.bolt}
+                       Auto ${isAutoTarget ? "on" : "off"}
+                     </button>`
+              }
 
               <button
                 class="btn btn--primary"
@@ -548,7 +621,9 @@ function wireRecipeCard(card) {
       button.disabled = true;
       button.textContent = "Crafting…";
 
-      const { error } = await craftCloudRecipe(recipeId);
+      const { error } = isConsumableRecipe(recipe)
+        ? await craftCloudConsumableRecipe(recipeId)
+        : await craftCloudRecipe(recipeId);
 
       if (error) {
         notify.error("Could not craft", error.message);
@@ -558,7 +633,12 @@ function wireRecipeCard(card) {
         return;
       }
 
-      notify.success("Crafted", `${recipe.name} is now equipped.`);
+      notify.success(
+        "Crafted",
+        isConsumableRecipe(recipe)
+          ? `${recipe.name} was added to your consumables.`
+          : `${recipe.name} is now equipped.`
+      );
 
       await refresh();
     });
@@ -621,10 +701,11 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
-    loadCloudEquipment()
+    loadCloudEquipment(),
+    loadCloudConsumables()
   ]);
 
   state.loading = false;
@@ -639,6 +720,10 @@ async function refresh() {
 
   if (equipment) {
     state.equipment = equipment;
+  }
+
+  if (consumables) {
+    state.consumables = consumables;
   }
 
   renderRecipes();

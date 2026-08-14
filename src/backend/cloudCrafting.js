@@ -58,6 +58,27 @@ export function craftCloudRecipe(recipeId) {
 }
 
 
+export function craftCloudConsumableRecipe(recipeId) {
+  return supabase.rpc("craft_consumable_recipe", {
+    p_recipe_id: recipeId
+  });
+}
+
+
 export function setCloudAutoCraft(recipeId) {
   return invokeFunction("set-auto-craft", { recipeId });
+}
+
+
+export async function loadCloudConsumables() {
+  const { data, error } = await supabase
+    .from("player_consumables")
+    .select("consumable_id, quantity");
+
+  if (error) {
+    console.error("Failed to load cloud consumables:", error);
+    return null;
+  }
+
+  return data ?? [];
 }

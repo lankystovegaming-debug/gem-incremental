@@ -718,6 +718,89 @@ const recipes = [
         weightMultiplier: 0.15
       }
     }
+  },
+
+  // =========================================================
+  // POTIONS — REPEATABLE CONSUMABLE RECIPES
+  // =========================================================
+
+  {
+    id: "lucky-potion-2", name: "Lucky Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-1", amount: 2 },
+      { type: "gem-count", gem: "Amethyst", amount: 3 }
+    ],
+    moneyCost: 300,
+    reward: { type: "consumable", id: "lucky-potion-2", name: "Lucky Potion II", family: "luck", tier: 2, amount: 1, effectValue: 0.25 }
+  },
+  {
+    id: "lucky-potion-3", name: "Lucky Potion III", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-2", amount: 2 },
+      { type: "gem-count", gem: "Topaz", amount: 3 },
+      { type: "gem-count", gem: "Opal", amount: 2 }
+    ],
+    moneyCost: 1000,
+    reward: { type: "consumable", id: "lucky-potion-3", name: "Lucky Potion III", family: "luck", tier: 3, amount: 1, effectValue: 0.50 }
+  },
+  {
+    id: "speed-potion-2", name: "Speed Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "speed-potion-1", amount: 2 },
+      { type: "gem-count", gem: "Garnet", amount: 3 }
+    ],
+    moneyCost: 250,
+    reward: { type: "consumable", id: "speed-potion-2", name: "Speed Potion II", family: "rollSpeed", tier: 2, amount: 1, effectValue: 0.25 }
+  },
+  {
+    id: "speed-potion-3", name: "Speed Potion III", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "speed-potion-2", amount: 2 },
+      { type: "gem-count", gem: "Topaz", amount: 3 },
+      { type: "gem-count", gem: "Aquamarine", amount: 2 }
+    ],
+    moneyCost: 750,
+    reward: { type: "consumable", id: "speed-potion-3", name: "Speed Potion III", family: "rollSpeed", tier: 3, amount: 1, effectValue: 0.50 }
+  },
+  {
+    id: "fortune-potion-2", name: "Fortune Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "fortune-potion-1", amount: 2 },
+      { type: "gem-count", gem: "Amethyst", amount: 2 },
+      { id: "fortune-potion-2-heavy", type: "specimen-condition", label: "Any gem at 2.0x weight or more", minimumWeightMultiplier: 2, amount: 1 }
+    ],
+    moneyCost: 250,
+    reward: { type: "consumable", id: "fortune-potion-2", name: "Fortune Potion II", family: "weightLuck", tier: 2, amount: 1, effectValue: 0.25 }
+  },
+  {
+    id: "fortune-potion-3", name: "Fortune Potion III", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "fortune-potion-2", amount: 2 },
+      { type: "gem-count", gem: "Aquamarine", amount: 2 },
+      { id: "fortune-potion-3-heavy", type: "specimen-condition", label: "Any gem at 3.0x weight or more", minimumWeightMultiplier: 3, amount: 1 }
+    ],
+    moneyCost: 750,
+    reward: { type: "consumable", id: "fortune-potion-3", name: "Fortune Potion III", family: "weightLuck", tier: 3, amount: 1, effectValue: 0.50 }
+  },
+  {
+    id: "mass-potion-2", name: "Mass Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "mass-potion-1", amount: 2 },
+      { type: "gem-count", gem: "Topaz", amount: 2 },
+      { id: "mass-potion-2-weight", type: "specimen-total-weight", label: "Additional sacrificed gem weight", totalWeight: 7500 }
+    ],
+    moneyCost: 400,
+    reward: { type: "consumable", id: "mass-potion-2", name: "Mass Potion II", family: "weightMultiplier", tier: 2, amount: 1, effectValue: 0.15 }
+  },
+  {
+    id: "mass-potion-3", name: "Mass Potion III", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "mass-potion-2", amount: 2 },
+      { type: "gem-count", gem: "Opal", amount: 2 },
+      { id: "mass-potion-3-weight", type: "specimen-total-weight", label: "Additional sacrificed gem weight", totalWeight: 20000 }
+    ],
+    moneyCost: 1000,
+    reward: { type: "consumable", id: "mass-potion-3", name: "Mass Potion III", family: "weightMultiplier", tier: 3, amount: 1, effectValue: 0.25 }
   }
 ];
 
