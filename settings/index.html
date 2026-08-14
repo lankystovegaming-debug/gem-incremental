@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Appearance, automation and account settings.">
+
+  <title>Settings · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./settings.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main app-main--narrow">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Settings</h1>
+        <p class="page-head__sub">
+          Appearance and automation are saved on this device.
+        </p>
+      </div>
+    </div>
+
+
+    <!-- ================= APPEARANCE ================= -->
+
+    <section class="card setting-group" aria-labelledby="appearanceHeading">
+      <div class="setting-group__head">
+        <span id="appearanceIcon"></span>
+        <h2 id="appearanceHeading">Appearance</h2>
+      </div>
+
+      <div class="setting">
+        <div class="setting__text">
+          <span class="setting__title">Theme</span>
+          <span class="setting__sub">
+            Neon adds a glow to rarities, values and headings.
+          </span>
+        </div>
+
+        <div class="segmented" id="modePicker" role="radiogroup" aria-label="Theme"></div>
+      </div>
+
+      <div class="setting">
+        <div class="setting__text">
+          <span class="setting__title">Accent colour</span>
+          <span class="setting__sub">Used for buttons, links and highlights.</span>
+        </div>
+
+        <div class="swatches" id="accentPicker" role="radiogroup" aria-label="Accent colour"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= AUTOMATION ================= -->
+
+    <section class="card setting-group" aria-labelledby="automationHeading">
+      <div class="setting-group__head">
+        <span id="automationIcon"></span>
+        <h2 id="automationHeading">Automation</h2>
+      </div>
+
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Auto roll</span>
+          <span class="setting__sub">
+            Rolls again as soon as the cooldown ends, while the
+            Roll page is open.
+          </span>
+        </span>
+
+        <span class="setting__control">
+          <input type="checkbox" id="autoRollToggle">
+          <span class="switch__track"></span>
+        </span>
+      </label>
+
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Auto sell</span>
+          <span class="setting__sub">
+            Sells low-tier gems the moment they are rolled, so your
+            storage never fills up.
+          </span>
+        </span>
+
+        <span class="setting__control">
+          <input type="checkbox" id="autoSellToggle">
+          <span class="switch__track"></span>
+        </span>
+      </label>
+
+      <div class="setting" id="autoSellTierRow">
+        <div class="setting__text">
+          <label class="setting__title" for="autoSellTier">Auto sell up to</label>
+          <span class="setting__sub">
+            Anything rarer than this is always kept. Locked gems are
+            never sold.
+          </span>
+        </div>
+
+        <select class="select" id="autoSellTier"></select>
+      </div>
+
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Roll animations</span>
+          <span class="setting__sub">
+            Turn off for a calmer, faster reveal.
+          </span>
+        </span>
+
+        <span class="setting__control">
+          <input type="checkbox" id="animationsToggle">
+          <span class="switch__track"></span>
+        </span>
+      </label>
+    </section>
+
+
+    <!-- ================= ACCOUNT ================= -->
+
+    <section class="card setting-group" aria-labelledby="accountHeading">
+      <div class="setting-group__head">
+        <span id="accountIcon"></span>
+        <h2 id="accountHeading">Account</h2>
+      </div>
+
+      <div class="account-panel" id="accountPanel"></div>
+    </section>
+
+
+    <!-- ================= ABOUT ================= -->
+
+    <section class="card setting-group" aria-labelledby="aboutHeading">
+      <div class="setting-group__head">
+        <span id="aboutIcon"></span>
+        <h2 id="aboutHeading">Controls</h2>
+      </div>
+
+      <div class="shortcuts">
+        <div class="shortcut">
+          <span><kbd>R</kbd> or <kbd>Space</kbd></span>
+          <span class="setting__sub">Roll a gem</span>
+        </div>
+
+        <div class="shortcut">
+          <span><kbd>Esc</kbd></span>
+          <span class="setting__sub">Close a menu or dialog</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./settings.js"></script>
+</body>
+</html>

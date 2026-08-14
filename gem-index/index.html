@@ -2,43 +2,87 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Every gem in the deposit, with your discovery records.">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <title>Gem Index · Gem Incremental</title>
 
-  <title>
-    Gem Index - Gem Incremental
-  </title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./index.css">
 
-  <link
-    rel="stylesheet"
-    href="/gem-index/index.css"
-  >
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="index-page">
-    <h1>Gem Index</h1>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Gem Index</h1>
+        <p class="page-head__sub" id="discoveryCount">Loading discoveries…</p>
+      </div>
+    </div>
 
-    <p id="discoveryCount">
-      0 / 31 discovered
-    </p>
+    <div class="card discovery">
+      <div class="discovery__bar">
+        <div class="meter">
+          <div class="meter__fill meter__fill--positive" id="discoveryMeter" style="width:0%"></div>
+        </div>
+      </div>
 
-    <a href="/">
-      ← Back to Rolling
-    </a>
+      <div class="discovery__tiers" id="tierBreakdown"></div>
+    </div>
 
-    <div
-      id="gemList"
-      class="gem-list"
-    ></div>
+    <div class="index-filters">
+      <label class="field index-search">
+        <span id="searchIcon"></span>
+        <input
+          type="search"
+          id="gemSearch"
+          placeholder="Search gems"
+          aria-label="Search the gem index"
+        >
+      </label>
+
+      <select class="select" id="gemFilter" aria-label="Filter gems">
+        <option value="all">All gems</option>
+        <option value="discovered">Discovered</option>
+        <option value="undiscovered">Not found yet</option>
+      </select>
+
+      <select class="select" id="gemSort" aria-label="Sort gems">
+        <option value="rarity">Common first</option>
+        <option value="rarity-desc">Rarest first</option>
+        <option value="name">Name</option>
+        <option value="found">Most found</option>
+      </select>
+    </div>
+
+    <div id="gemList" class="grid grid--cards"></div>
   </main>
 
-  <script
-    type="module"
-    src="/gem-index/index.js"
-  ></script>
+  <script type="module" src="./index.js"></script>
 </body>
 </html>

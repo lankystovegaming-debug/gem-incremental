@@ -1,289 +1,304 @@
 import gems from "../src/data/gems.js";
 
+import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { supabase } from "../src/backend/supabase.js";
+import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+
+import { mountShell } from "../src/ui/shell.js";
+import { icons } from "../src/ui/icons.js";
+import { notify } from "../src/ui/toast.js";
 import {
-  ensurePlayerAuth
-} from "../src/backend/auth.js";
+  rarityTier,
+  rarityLabel,
+  formatMoney,
+  formatWeight,
+  formatCount,
+  escapeHtml
+} from "../src/ui/format.js";
 
-import {
-  supabase
-} from "../src/backend/supabase.js";
 
-
-const gemList =
-  document.getElementById(
-    "gemList"
-  );
-
-const discoveryCount =
-  document.getElementById(
-    "discoveryCount"
-  );
+const shell = mountShell({ page: "gem-index", base: "../" });
 
 
 // =========================================================
-// LOAD CLOUD GEM INDEX
+// DOM
 // =========================================================
 
-async function loadCloudGemIndex() {
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from(
-        "gem_index"
-      )
-      .select(`
-        gem_name,
-        total_rolled,
-        heaviest_weight
-      `);
+const gemList = document.getElementById("gemList");
+const discoveryCount = document.getElementById("discoveryCount");
+const discoveryMeter = document.getElementById("discoveryMeter");
+const tierBreakdown = document.getElementById("tierBreakdown");
 
+const gemSearch = document.getElementById("gemSearch");
+const gemFilter = document.getElementById("gemFilter");
+const gemSort = document.getElementById("gemSort");
+
+document.getElementById("searchIcon").innerHTML = icons.search;
+
+
+// =========================================================
+// STATE
+// =========================================================
+
+const state = {
+  index: {},
+  loading: true
+};
+
+
+// =========================================================
+// LOAD
+// =========================================================
+
+async function loadIndex() {
+  const { data, error } = await supabase
+    .from("gem_index")
+    .select("gem_name, total_rolled, heaviest_weight");
 
   if (error) {
-    console.error(
-      "Failed to load cloud Gem Index:",
-      error
-    );
+    console.error("Failed to load the Gem Index:", error);
 
     return null;
   }
 
+  const byName = {};
 
-  const indexByName =
-    {};
-
-
-  for (
-    const entry
-    of data ?? []
-  ) {
-    indexByName[
-      entry.gem_name
-    ] = {
-      totalRolled:
-        Number(
-          entry.total_rolled ??
-          0
-        ),
-
-      heaviestWeight:
-        Number(
-          entry.heaviest_weight ??
-          0
-        )
+  for (const entry of data ?? []) {
+    byName[entry.gem_name] = {
+      totalRolled: Number(entry.total_rolled ?? 0),
+      heaviestWeight: Number(entry.heaviest_weight ?? 0)
     };
   }
 
-
-  return indexByName;
+  return byName;
 }
 
 
 // =========================================================
-// RENDER GEM INDEX
+// RENDER
 // =========================================================
 
-async function renderIndex() {
-  // =================================
-  // AUTH
-  // =================================
+function renderSummary() {
+  const discovered = gems.filter((gem) => state.index[gem.name]).length;
 
-  const user =
-    await ensurePlayerAuth();
+  discoveryCount.textContent = `${formatCount(discovered)} of ${formatCount(
+    gems.length
+  )} gems discovered`;
 
+  discoveryMeter.style.width = `${(discovered / gems.length) * 100}%`;
 
-  if (!user) {
-    discoveryCount.textContent =
-      "Could not authenticate player.";
+  // Discovery split per rarity tier.
+  const tiers = new Map();
 
-    gemList.innerHTML =
-      "";
+  for (const gem of gems) {
+    const tier = rarityTier(gem.rarity);
 
-    return;
-  }
+    const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
 
+    bucket.total += 1;
 
-  // =================================
-  // LOAD CLOUD INDEX
-  // =================================
-
-  const gemIndex =
-    await loadCloudGemIndex();
-
-
-  if (!gemIndex) {
-    discoveryCount.textContent =
-      "Could not load Gem Index.";
-
-    gemList.innerHTML =
-      "";
-
-    return;
-  }
-
-
-  // =================================
-  // DISCOVERY COUNT
-  // =================================
-
-  const discovered =
-    gems.filter(
-      (gem) =>
-        Boolean(
-          gemIndex[
-            gem.name
-          ]
-        )
-    ).length;
-
-
-  discoveryCount.textContent =
-    `${discovered} / ${gems.length} discovered`;
-
-
-  // =================================
-  // RENDER CARDS
-  // =================================
-
-  gemList.innerHTML =
-    "";
-
-
-  for (
-    const gem
-    of gems
-  ) {
-    const entry =
-      gemIndex[
-        gem.name
-      ];
-
-
-    const isDiscovered =
-      Boolean(
-        entry
-      );
-
-
-    const card =
-      document.createElement(
-        "div"
-      );
-
-
-    card.className =
-      "gem-card";
-
-
-    // =================================
-    // UNDISCOVERED GEM
-    // =================================
-
-    if (
-      !isDiscovered
-    ) {
-      card.classList.add(
-        "undiscovered"
-      );
-
-
-      card.innerHTML = `
-        <h2>
-          ???
-        </h2>
-
-        <p>
-          Rarity:
-          ???
-        </p>
-
-        <p>
-          Not yet discovered.
-        </p>
-      `;
-
-
-      gemList.appendChild(
-        card
-      );
-
-
-      continue;
+    if (state.index[gem.name]) {
+      bucket.found += 1;
     }
 
+    tiers.set(tier.id, bucket);
+  }
 
-    // =================================
-    // DISCOVERED GEM
-    // =================================
+  tierBreakdown.innerHTML = [...tiers.entries()]
+    .map(
+      ([id, bucket]) => `
+        <div class="tier-stat tier-${id}">
+          <span class="tier-stat__name">${bucket.name}</span>
+          <span class="tier-stat__value">${bucket.found} / ${bucket.total}</span>
+        </div>
+      `
+    )
+    .join("");
+}
 
-    const baseValue =
-      gem.baseWeight *
-      gem.valuePerGram;
+
+function visibleGems() {
+  const query = gemSearch.value.trim().toLowerCase();
+
+  let list = gems.filter((gem) => {
+    const found = Boolean(state.index[gem.name]);
+
+    // An undiscovered gem's name is a spoiler, so it never
+    // matches a search.
+    if (query && !(found && gem.name.toLowerCase().includes(query))) {
+      return false;
+    }
+
+    if (gemFilter.value === "discovered" && !found) {
+      return false;
+    }
+
+    if (gemFilter.value === "undiscovered" && found) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const sorters = {
+    rarity: (a, b) => a.rarity - b.rarity,
+    "rarity-desc": (a, b) => b.rarity - a.rarity,
+    name: (a, b) => a.name.localeCompare(b.name),
+    found: (a, b) =>
+      (state.index[b.name]?.totalRolled ?? 0) -
+      (state.index[a.name]?.totalRolled ?? 0)
+  };
+
+  return [...list].sort(sorters[gemSort.value] ?? sorters.rarity);
+}
 
 
-    card.innerHTML = `
-      <h2>
-        ${gem.name}
-      </h2>
+function renderList() {
+  if (state.loading) {
+    gemList.innerHTML = Array.from(
+      { length: 8 },
+      () => '<div class="skeleton skeleton--card"></div>'
+    ).join("");
 
-      <p>
-        Rarity:
-        1 in
-        ${gem.rarity.toLocaleString()}
-      </p>
+    return;
+  }
 
-      <p>
-        Base Weight:
-        ${gem.baseWeight.toFixed(2)}g
-      </p>
+  const list = visibleGems();
 
-      <p>
-        Value per Gram:
-        $${gem.valuePerGram.toFixed(3)}
-      </p>
-
-      <p>
-        Base Value:
-        $${baseValue.toFixed(2)}
-      </p>
-
-      <p class="gem-description">
-        ${
-          gem.description ??
-          "No description available."
-        }
-      </p>
-
-      <hr>
-
-      <p>
-        Total Rolled:
-        ${entry.totalRolled.toLocaleString()}
-      </p>
-
-      <p>
-        Heaviest Ever:
-        ${entry.heaviestWeight.toFixed(2)}g
-      </p>
+  if (list.length === 0) {
+    gemList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.search}
+        <p class="empty__title">Nothing matches</p>
+        <p>Undiscovered gems stay hidden from search.</p>
+      </div>
     `;
 
-
-    gemList.appendChild(
-      card
-    );
+    return;
   }
+
+  gemList.innerHTML = list.map(gemCard).join("");
+}
+
+
+function gemCard(gem) {
+  const tier = rarityTier(gem.rarity);
+  const entry = state.index[gem.name];
+
+  if (!entry) {
+    return `
+      <article class="index-card index-card--locked tier-${tier.id}">
+        <div class="index-card__head">
+          <div>
+            <div class="index-card__name">???</div>
+            <div class="index-card__rarity">${rarityLabel(gem.rarity)}</div>
+          </div>
+
+          <span class="badge badge--tier">${tier.name}</span>
+        </div>
+
+        <p class="index-card__hidden">
+          Roll this gem at least once to reveal its entry.
+        </p>
+      </article>
+    `;
+  }
+
+  const baseValue = gem.baseWeight * gem.valuePerGram;
+
+  return `
+    <article class="index-card tier-${tier.id}">
+      <div class="index-card__head">
+        <div>
+          <div class="index-card__name">${escapeHtml(gem.name)}</div>
+          <div class="index-card__rarity">${rarityLabel(gem.rarity)}</div>
+        </div>
+
+        <span class="badge badge--tier">${tier.name}</span>
+      </div>
+
+      <p class="index-card__desc">
+        ${escapeHtml(gem.description ?? "No description available.")}
+      </p>
+
+      <div class="index-card__rows">
+        <div class="index-card__row">
+          <span class="index-card__key">Base weight</span>
+          <span class="index-card__val">${formatWeight(gem.baseWeight)}</span>
+        </div>
+
+        <div class="index-card__row">
+          <span class="index-card__key">Base value</span>
+          <span class="index-card__val">${formatMoney(baseValue)}</span>
+        </div>
+
+        <div class="index-card__row">
+          <span class="index-card__key">Times found</span>
+          <span class="index-card__val">${formatCount(entry.totalRolled)}</span>
+        </div>
+
+        <div class="index-card__row">
+          <span class="index-card__key">Heaviest</span>
+          <span class="index-card__val">${formatWeight(
+            entry.heaviestWeight
+          )}</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+
+for (const control of [gemSearch, gemFilter, gemSort]) {
+  control.addEventListener("input", renderList);
 }
 
 
 // =========================================================
-// PAGE EVENTS
+// STARTUP
 // =========================================================
 
-window.addEventListener(
-  "pageshow",
-  renderIndex
-);
+async function refresh() {
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    state.loading = false;
+
+    discoveryCount.textContent = "Could not sign you in. Refresh to try again.";
+
+    notify.error("Sign-in failed", "The game could not reach your account.");
+
+    return;
+  }
+
+  const [index, playerState] = await Promise.all([
+    loadIndex(),
+    loadCloudPlayerState()
+  ]);
+
+  state.loading = false;
+
+  if (index) {
+    state.index = index;
+  } else {
+    notify.error("Could not load the index", "Try refreshing the page.");
+  }
+
+  if (playerState) {
+    shell.setWallet(playerState.money);
+  }
+
+  renderSummary();
+  renderList();
+}
 
 
-renderIndex();
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    refresh();
+  }
+});
+
+
+renderList();
+refresh();

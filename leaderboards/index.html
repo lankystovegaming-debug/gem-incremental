@@ -2,55 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="See how players rank across Gem Incremental.">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <title>Leaderboards · Gem Incremental</title>
 
-  <title>
-    Leaderboards - Gem Incremental
-  </title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./leaderboards.css">
 
-  <link
-    rel="stylesheet"
-    href="/leaderboards/leaderboards.css"
-  >
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="page">
-    <div class="page-header">
-      <div>
-        <h1>
-          Leaderboards
-        </h1>
-
-        <p class="subtitle">
-          See how players rank across
-          Gem Incremental.
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Leaderboards</h1>
+        <p class="page-head__sub">
+          How you rank against every other player.
         </p>
       </div>
-
-      <a
-        class="back-link"
-        href="/"
-      >
-        Back to Rolling
-      </a>
     </div>
 
+    <div id="leaderboardStatus" class="status"></div>
 
-    <div
-      id="leaderboardStatus"
-      class="status"
-    ></div>
-
-
-    <div class="tabs">
+    <div class="segmented tabs" role="tablist" aria-label="Leaderboard">
       <button
         id="totalRollsTab"
-        class="tab-button active"
+        class="segmented__item tab-button active"
+        role="tab"
         type="button"
       >
         Total Rolls
@@ -58,7 +61,8 @@
 
       <button
         id="rarestGemTab"
-        class="tab-button"
+        class="segmented__item tab-button"
+        role="tab"
         type="button"
       >
         Rarest Gem
@@ -66,28 +70,34 @@
 
       <button
         id="lifetimeEarningsTab"
-        class="tab-button"
+        class="segmented__item tab-button"
+        role="tab"
         type="button"
       >
         Lifetime Earnings
       </button>
     </div>
 
-
-    <section
-      id="leaderboardCard"
-      class="leaderboard-card"
-    >
-      <p>
-        Loading leaderboard...
-      </p>
+    <section id="leaderboardCard" class="card leaderboard-card">
+      <div class="skeleton" style="height:56px"></div>
+      <div class="skeleton" style="height:44px;margin-top:10px"></div>
+      <div class="skeleton" style="height:44px;margin-top:10px"></div>
     </section>
   </main>
 
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
-  <script
-    type="module"
-    src="/leaderboards/leaderboards.js"
-  ></script>
+    const shell = mountShell({ page: "leaderboards", base: "../" });
+
+    loadCloudPlayerState().then((state) => {
+      if (state) {
+        shell.setWallet(state.money);
+      }
+    });
+  </script>
+
+  <script type="module" src="./leaderboards.js"></script>
 </body>
 </html>

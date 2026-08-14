@@ -1,256 +1,295 @@
-import recipes
-  from "../src/data/recipes.js";
+import recipes from "../src/data/recipes.js";
 
+import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { loadCloudDebugState } from "../src/backend/cloudDebug.js";
+
+import { mountShell } from "../src/ui/shell.js";
+import { icons } from "../src/ui/icons.js";
+import { notify } from "../src/ui/toast.js";
 import {
-  ensurePlayerAuth
-} from "../src/backend/auth.js";
+  rarityTier,
+  rarityLabel,
+  formatMoney,
+  formatCount,
+  formatSeconds,
+  escapeHtml
+} from "../src/ui/format.js";
 
-import {
-  loadCloudDebugState
-} from "../src/backend/cloudDebug.js";
+
+const shell = mountShell({ page: "stats", base: "../" });
 
 
-const debugStats =
-  document.getElementById(
-    "debugStats"
-  );
+const subtitle = document.getElementById("statsSubtitle");
+const content = document.getElementById("statsContent");
+const refreshButton = document.getElementById("refreshButton");
+
+document.getElementById("refreshIcon").innerHTML = icons.refresh;
+
+
+// A slow poll keeps the cooldown honest without hammering the
+// database the way a half-second timer would.
+const POLL_INTERVAL = 15000;
+
+let pollTimer = null;
 
 
 // =========================================================
-// RENDER DEBUG PAGE
+// BONUS BARS
+//
+// Every bonus starts at 1.00x, so the bar shows how far past
+// the baseline the player's equipment has pushed it.
 // =========================================================
 
-async function renderDebug() {
-  // =================================
-  // AUTH
-  // =================================
-
-  const user =
-    await ensurePlayerAuth();
-
-
-  if (!user) {
-    debugStats.innerHTML = `
-      <section class="debug-card">
-        <h2>
-          Error
-        </h2>
-
-        <p>
-          Could not authenticate player.
-        </p>
-      </section>
-    `;
-
-    return;
-  }
+const BONUS_ROWS = [
+  ["luck", "Luck", "Improves the odds of rarer gems"],
+  ["rollSpeed", "Roll speed", "Shortens the cooldown between rolls"],
+  ["weightLuck", "Weight luck", "Biases the weight roll upward"],
+  ["weightMultiplier", "Weight multiplier", "Scales the final weight"]
+];
 
 
-  // =================================
-  // LOAD CLOUD STATE
-  // =================================
+function bonusRow(value, label) {
+  const amount = Number(value ?? 1);
 
-  const cloudState =
-    await loadCloudDebugState();
+  const boosted = amount > 1.0001;
 
+  // 3.00x fills the bar.
+  const filled = Math.min(100, ((amount - 1) / 2) * 100);
 
-  if (!cloudState) {
-    debugStats.innerHTML = `
-      <section class="debug-card">
-        <h2>
-          Error
-        </h2>
+  return `
+    <div class="bonus-row">
+      <div class="bonus-row__head">
+        <span class="bonus-row__key">${escapeHtml(label)}</span>
+        <span class="bonus-row__val${
+          boosted ? " bonus-row__val--boosted" : ""
+        }">${amount.toFixed(2)}x</span>
+      </div>
 
-        <p>
-          Could not load cloud debug state.
-        </p>
-      </section>
-    `;
-
-    return;
-  }
-
-
-  // =================================
-  // AUTO CRAFT DISPLAY
-  // =================================
-
-  const activeAutoCraftId =
-    cloudState
-      .crafting
-      .activeAutoCraftRecipeId;
+      <div class="meter">
+        <div
+          class="meter__fill${boosted ? " meter__fill--positive" : ""}"
+          style="width:${filled}%"
+        ></div>
+      </div>
+    </div>
+  `;
+}
 
 
-  const activeAutoCraftRecipe =
-    activeAutoCraftId
-      ? recipes.find(
-          (recipe) =>
-            recipe.id ===
-            activeAutoCraftId
-        )
-      : null;
+function statsRow(key, value, modifier = "") {
+  return `
+    <div class="stats-row">
+      <span class="stats-row__key">${escapeHtml(key)}</span>
+      <span class="stats-row__val${modifier}">${value}</span>
+    </div>
+  `;
+}
 
 
-  const activeAutoCraftText =
-    activeAutoCraftRecipe
-      ?.name ??
-    activeAutoCraftId ??
-    "None";
+function card(title, icon, body, note = "") {
+  return `
+    <section class="stats-card">
+      <div class="stats-card__head">
+        ${icon}
+        <h2>${escapeHtml(title)}</h2>
+      </div>
 
+      ${body}
 
-  // =================================
-  // RAREST GEM DISPLAY
-  // =================================
-
-  let rarestGemText =
-    "None";
-
-
-  if (
-    cloudState
-      .lifetime
-      .rarestGemName
-  ) {
-    const name =
-      cloudState
-        .lifetime
-        .rarestGemName;
-
-
-    const rarity =
-      cloudState
-        .lifetime
-        .rarestGemRarity;
-
-
-    rarestGemText =
-      rarity
-        ? `${name} (1 in ${rarity.toLocaleString()})`
-        : name;
-  }
-
-
-  // =================================
-  // RENDER PAGE
-  // =================================
-
-  debugStats.innerHTML = `
-    <section class="debug-card">
-      <h2>
-        Player Stats
-      </h2>
-
-      <p>
-        Luck:
-        ${cloudState.stats.luck.toFixed(2)}x
-      </p>
-
-      <p>
-        Roll Speed:
-        ${cloudState.stats.rollSpeed.toFixed(2)}x
-      </p>
-
-      <p>
-        Weight Luck:
-        ${cloudState.stats.weightLuck.toFixed(2)}x
-      </p>
-
-      <p>
-        Weight Multiplier:
-        ${cloudState.stats.weightMultiplier.toFixed(2)}x
-      </p>
-    </section>
-
-
-    <section class="debug-card">
-      <h2>
-        Player
-      </h2>
-
-      <p>
-        Money:
-        $${cloudState.player.money.toFixed(2)}
-      </p>
-
-      <p>
-        Gems:
-        ${cloudState.player.gemCount}
-        /
-        ${cloudState.player.inventoryCapacity}
-      </p>
-
-      <p>
-        Equipment Owned:
-        ${cloudState.player.equipmentCount}
-      </p>
-    </section>
-
-
-    <section class="debug-card">
-      <h2>
-        Crafting
-      </h2>
-
-      <p>
-        Active Auto Craft:
-        ${activeAutoCraftText}
-      </p>
-    </section>
-
-
-    <section class="debug-card">
-      <h2>
-        Rolling
-      </h2>
-
-      <p>
-        Cooldown Remaining:
-        ${cloudState.rolling.cooldownRemaining.toFixed(1)}s
-      </p>
-    </section>
-
-
-    <section class="debug-card">
-      <h2>
-        Lifetime Stats
-      </h2>
-
-      <p>
-        Total Rolls:
-        ${cloudState.lifetime.totalRolls.toLocaleString()}
-      </p>
-
-      <p>
-        Rarest Gem:
-        ${rarestGemText}
-      </p>
+      ${note ? `<p class="stats-note">${escapeHtml(note)}</p>` : ""}
     </section>
   `;
 }
 
 
 // =========================================================
-// INITIAL LOAD
+// RENDER
 // =========================================================
 
-renderDebug();
+function render(cloudState) {
+  shell.setWallet(cloudState.player.money);
+
+  subtitle.textContent =
+    `${formatCount(cloudState.lifetime.totalRolls)} rolls · ` +
+    `${formatCount(cloudState.player.equipmentCount)} equipment owned`;
+
+  const autoCraftId = cloudState.crafting.activeAutoCraftRecipeId;
+
+  const autoCraftRecipe = autoCraftId
+    ? recipes.find((recipe) => recipe.id === autoCraftId)
+    : null;
+
+  const rarest = cloudState.lifetime.rarestGemName;
+
+  const rarestTier = cloudState.lifetime.rarestGemRarity
+    ? rarityTier(cloudState.lifetime.rarestGemRarity)
+    : null;
+
+  content.innerHTML = [
+    card(
+      "Bonuses",
+      icons.sparkle,
+      BONUS_ROWS.map(([key, label]) =>
+        bonusRow(cloudState.stats[key], label)
+      ).join(""),
+      "Bonuses come from equipment you have crafted and equipped."
+    ),
+
+    card(
+      "Account",
+      icons.coins,
+      [
+        statsRow(
+          "Money",
+          formatMoney(cloudState.player.money),
+          " stats-row__val--positive"
+        ),
+        statsRow(
+          "Gems stored",
+          `${formatCount(cloudState.player.gemCount)} / ${formatCount(
+            cloudState.player.inventoryCapacity
+          )}`
+        ),
+        statsRow(
+          "Equipment owned",
+          formatCount(cloudState.player.equipmentCount)
+        )
+      ].join("")
+    ),
+
+    card(
+      "Lifetime records",
+      icons.chart,
+      [
+        statsRow("Total rolls", formatCount(cloudState.lifetime.totalRolls)),
+
+        statsRow(
+          "Rarest gem",
+          rarest
+            ? `${escapeHtml(rarest)}${
+                rarestTier
+                  ? ` <span class="badge badge--tier tier-${rarestTier.id}">${rarestTier.name}</span>`
+                  : ""
+              }`
+            : "None yet"
+        ),
+
+        statsRow(
+          "Rarest odds",
+          cloudState.lifetime.rarestGemRarity
+            ? rarityLabel(cloudState.lifetime.rarestGemRarity)
+            : "—"
+        )
+      ].join("")
+    ),
+
+    card(
+      "Automation",
+      icons.bolt,
+      [
+        statsRow(
+          "Auto Craft target",
+          autoCraftRecipe
+            ? escapeHtml(autoCraftRecipe.name)
+            : autoCraftId
+            ? escapeHtml(autoCraftId)
+            : "Off",
+          autoCraftRecipe ? " stats-row__val--accent" : ""
+        ),
+
+        statsRow(
+          "Roll cooldown",
+          cloudState.rolling.cooldownRemaining > 0
+            ? formatSeconds(cloudState.rolling.cooldownRemaining)
+            : "Ready"
+        )
+      ].join(""),
+      "Auto roll and auto sell are set on the Roll page."
+    )
+  ].join("");
+}
+
+
+function renderSkeleton() {
+  content.innerHTML = Array.from(
+    { length: 4 },
+    () => '<div class="skeleton" style="height:220px"></div>'
+  ).join("");
+}
 
 
 // =========================================================
-// REFRESH WHEN RETURNING TO PAGE
+// LOAD
 // =========================================================
 
-window.addEventListener(
-  "pageshow",
-  renderDebug
-);
+async function refresh({ quiet = false } = {}) {
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    subtitle.textContent = "Could not sign you in. Refresh to try again.";
+
+    if (!quiet) {
+      notify.error("Sign-in failed", "The game could not reach your account.");
+    }
+
+    return;
+  }
+
+  const cloudState = await loadCloudDebugState();
+
+  if (!cloudState) {
+    subtitle.textContent = "Could not load your stats.";
+
+    if (!quiet) {
+      notify.error("Could not load stats", "Try refreshing the page.");
+    }
+
+    return;
+  }
+
+  render(cloudState);
+}
 
 
-// =========================================================
-// LIVE DEBUG REFRESH
-// =========================================================
+refreshButton.addEventListener("click", async () => {
+  refreshButton.disabled = true;
 
-setInterval(
-  renderDebug,
-  500
-);
+  await refresh();
+
+  refreshButton.disabled = false;
+});
+
+
+// Only poll while the tab is actually being looked at.
+function startPolling() {
+  stopPolling();
+
+  pollTimer = setInterval(() => refresh({ quiet: true }), POLL_INTERVAL);
+}
+
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+
+    pollTimer = null;
+  }
+}
+
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopPolling();
+
+    return;
+  }
+
+  refresh({ quiet: true });
+
+  startPolling();
+});
+
+
+renderSkeleton();
+refresh();
+startPolling();

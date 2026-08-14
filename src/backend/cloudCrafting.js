@@ -1,39 +1,18 @@
-import {
-  supabase
-} from "./supabase.js";
+import { supabase } from "./supabase.js";
+import { invokeFunction } from "./invoke.js";
 
 
 export async function loadCloudCraftingState() {
-  const [
-    craftingResult,
-    progressResult
-  ] =
-    await Promise.all([
-      supabase
-        .from("player_crafting")
-        .select(`
-          active_auto_craft
-        `)
-        .maybeSingle(),
+  const [craftingResult, progressResult] = await Promise.all([
+    supabase
+      .from("player_crafting")
+      .select("active_auto_craft")
+      .maybeSingle(),
 
-      supabase
-        .from("crafting_progress")
-        .select(`
-          recipe_id,
-          progress
-        `)
-    ]);
-
-
-  if (craftingResult.error) {
-    console.error(
-      "Failed to load cloud crafting state:",
-      craftingResult.error
-    );
-
-    return null;
-  }
-
+    supabase
+      .from("crafting_progress")
+      .select("recipe_id, progress")
+  ]);
 
   if (progressResult.error) {
     console.error(
@@ -44,123 +23,41 @@ export async function loadCloudCraftingState() {
     return null;
   }
 
+  // The player_crafting row is created server-side the first
+  // time Auto Craft is set. Until then there is simply no row,
+  // which is not an error worth blocking the page for.
+  if (craftingResult.error) {
+    console.warn(
+      "Could not read Auto Craft target:",
+      craftingResult.error
+    );
+  }
 
   const progress = {};
 
-
-  for (
-    const row
-    of progressResult.data ?? []
-  ) {
-    progress[
-      row.recipe_id
-    ] =
-      row.progress ?? {};
+  for (const row of progressResult.data ?? []) {
+    progress[row.recipe_id] = row.progress ?? {};
   }
-
 
   return {
     activeAutoCraftRecipeId:
-      craftingResult.data
-        ?.active_auto_craft ??
-      null,
+      craftingResult.data?.active_auto_craft ?? null,
 
     progress
   };
 }
 
-export async function manuallyDepositCloudRequirement(
-  recipeId,
-  requirementIndex
-) {
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .functions
-      .invoke(
-        "manual-deposit",
-        {
-          body: {
-            recipeId,
-            requirementIndex
-          }
-        }
-      );
 
-
-  if (error) {
-    console.error(
-      "Cloud manual deposit failed:",
-      error
-    );
-
-    return null;
-  }
-
-
-  return data;
+export function manuallyDepositCloudRequirement(recipeId, requirementIndex) {
+  return invokeFunction("manual-deposit", { recipeId, requirementIndex });
 }
 
-export async function craftCloudRecipe(
-  recipeId
-) {
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .functions
-      .invoke(
-        "craft-recipe",
-        {
-          body: {
-            recipeId
-          }
-        }
-      );
 
-  if (error) {
-    console.error(
-      "Cloud craft failed:",
-      error
-    );
-
-    return null;
-  }
-
-  return data;
+export function craftCloudRecipe(recipeId) {
+  return invokeFunction("craft-recipe", { recipeId });
 }
 
-export async function setCloudAutoCraft(
-  recipeId
-) {
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .functions
-      .invoke(
-        "set-auto-craft",
-        {
-          body: {
-            recipeId
-          }
-        }
-      );
 
-
-  if (error) {
-    console.error(
-      "Failed to set cloud Auto Craft:",
-      error
-    );
-
-    return null;
-  }
-
-
-  return data;
+export function setCloudAutoCraft(recipeId) {
+  return invokeFunction("set-auto-craft", { recipeId });
 }

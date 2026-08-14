@@ -3,42 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Craft pickaxes, lanterns, boots and bags to improve your rolls.">
+
+  <title>Crafting · Gem Incremental</title>
+
   <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
-  <title>Crafting - Gem Incremental</title>
-  <link rel="stylesheet" href="../crafting/crafting.css">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./crafting.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
 </head>
 
 <body>
-  <main class="crafting-page">
-    <h1>Crafting</h1>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Crafting</h1>
+        <p class="page-head__sub" id="craftingSubtitle">Loading recipes…</p>
+      </div>
 
-    <p id="money">$0.00</p>
+      <div class="row">
+        <label class="switch" title="Only show recipes you have not crafted yet">
+          <input type="checkbox" id="hideOwned">
+          <span class="switch__track"></span>
+          <span>Hide crafted</span>
+        </label>
+      </div>
+    </div>
 
-    <a href="../index.html">← Back to Rolling</a>
 
-    <div class="crafting-tabs">
-      <button class="crafting-tab active" data-category="pickaxe">
+    <!-- ================= AUTO CRAFT BANNER ================= -->
+
+    <div id="autoCraftBanner" class="auto-banner hidden">
+      <span id="autoCraftIcon" class="auto-banner__icon"></span>
+
+      <div class="auto-banner__text">
+        <strong>Auto Craft:</strong>
+        <span id="autoCraftName">None</span>
+        <span class="auto-banner__sub">
+          Matching gems are deposited the moment you roll them.
+        </span>
+      </div>
+
+      <button class="btn btn--sm" id="autoCraftClear" type="button">
+        Turn off
+      </button>
+    </div>
+
+
+    <!-- ================= CATEGORY TABS ================= -->
+
+    <div class="segmented crafting-tabs" role="tablist" aria-label="Equipment type">
+      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-category="pickaxe">
         Pickaxes
       </button>
-    
-      <button class="crafting-tab" data-category="lantern">
+
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="lantern">
         Lanterns
       </button>
-    
-      <button class="crafting-tab" data-category="boots">
+
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="boots">
         Boots
       </button>
-    
-      <button class="crafting-tab" data-category="bag">
+
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="bag">
         Bags
       </button>
     </div>
-  
-  <div id="recipeList" class="recipe-list"></div>
+
 
     <div id="recipeList" class="recipe-list"></div>
   </main>
 
-  <script type="module" src="../crafting/crafting.js"></script>
+  <script type="module" src="./crafting.js"></script>
 </body>
 </html>

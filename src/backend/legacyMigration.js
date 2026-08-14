@@ -6,6 +6,10 @@ import {
   ensurePlayerAuth
 } from "./auth.js";
 
+import {
+  confirmDialog
+} from "../ui/dialog.js";
+
 
 const LEGACY_KEYS = {
   player:
@@ -223,8 +227,8 @@ function createMigrationModal(
     );
 
 
-  overlay.id =
-    "legacyMigrationOverlay";
+  overlay.className = "dialog-overlay";
+  overlay.id = "legacyMigrationOverlay";
 
 
   const totalRolls =
@@ -260,58 +264,56 @@ function createMigrationModal(
 
 
   overlay.innerHTML = `
-    <div class="legacy-migration-modal">
-      <h2>
-        Existing Save Detected
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="legacyMigrationTitle"
+    >
+      <h2 class="dialog__title" id="legacyMigrationTitle">
+        We found an older save
       </h2>
 
-      <p>
-        We found progress from the previous
-        version of the game.
-      </p>
-
-      <div class="legacy-migration-summary">
+      <div class="dialog__body">
         <p>
-          Money:
-          $${money.toFixed(2)}
+          This browser still holds progress from the version of
+          the game that saved locally.
         </p>
 
-        <p>
-          Total Rolls:
-          ${totalRolls.toLocaleString()}
+        <div class="panel" style="margin-top:16px">
+          <div class="stats-row-lite">
+            <span>Money</span>
+            <strong class="num">$${money.toFixed(2)}</strong>
+          </div>
+
+          <div class="stats-row-lite">
+            <span>Total rolls</span>
+            <strong class="num">${totalRolls.toLocaleString()}</strong>
+          </div>
+
+          <div class="stats-row-lite">
+            <span>Gems stored</span>
+            <strong class="num">${gemCount}</strong>
+          </div>
+        </div>
+
+        <p style="margin-top:16px">
+          Move it into your cloud save, or start over with a clean
+          account. Your local save is not deleted either way.
         </p>
 
-        <p>
-          Inventory Gems:
-          ${gemCount}
-        </p>
+        <p id="legacyMigrationStatus" style="margin-top:12px"></p>
       </div>
 
-      <p class="legacy-migration-note">
-        You can migrate this progress into
-        the new cloud save, or start fresh.
-      </p>
-
-      <div class="legacy-migration-actions">
-        <button
-          id="legacyMigrateButton"
-          type="button"
-        >
-          Migrate Save
+      <div class="dialog__actions">
+        <button class="btn" id="legacyFreshButton" type="button">
+          Start fresh
         </button>
 
-        <button
-          id="legacyFreshButton"
-          type="button"
-        >
-          Start Fresh
+        <button class="btn btn--primary" id="legacyMigrateButton" type="button">
+          Migrate my save
         </button>
       </div>
-
-      <p
-        id="legacyMigrationStatus"
-        class="legacy-migration-status"
-      ></p>
     </div>
   `;
 
@@ -447,9 +449,8 @@ function showMigrationChoice(
           );
 
 
-          localStorage.setItem(
-            FRESH_CHOICE_KEY,
-            "migrated"
+          localStorage.removeItem(
+            FRESH_CHOICE_KEY
           );
 
 
@@ -483,13 +484,27 @@ function showMigrationChoice(
       freshButton.addEventListener(
         "click",
         async () => {
-          const confirmed =
-            window.confirm(
-              "Start a new cloud save instead?\n\nYour old local save will NOT be deleted, but this migration prompt will no longer appear on this browser."
-            );
+          const choice =
+            await confirmDialog({
+              title:
+                "Start a new save?",
+
+              body: `
+                <p>
+                  Your old local save is not deleted, but this
+                  prompt will not appear again on this browser.
+                </p>
+              `,
+
+              confirmLabel:
+                "Start fresh",
+
+              cancelLabel:
+                "Go back"
+            });
 
 
-          if (!confirmed) {
+          if (choice !== "confirm") {
             return;
           }
 
@@ -625,26 +640,18 @@ export async function runLegacyMigrationGate() {
 
   // Player explicitly chose a new save
   // on this browser.
-  const migrationChoice =
+  if (
     localStorage.getItem(
       FRESH_CHOICE_KEY
-    );
-  
-  
-  if (
-    migrationChoice ===
-      "fresh" ||
-    migrationChoice ===
-      "migrated"
+    ) ===
+    "fresh"
   ) {
     return {
       migrated:
-        migrationChoice ===
-          "migrated",
-  
+        false,
+
       startedFresh:
-        migrationChoice ===
-          "fresh"
+        true
     };
   }
 

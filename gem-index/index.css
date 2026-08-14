@@ -1,55 +1,178 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #10141a;
-  color: white;
+/* =========================================================
+   GEM INDEX PAGE
+   ========================================================= */
+
+.discovery {
+  margin-bottom: var(--space-4);
 }
 
-.index-page {
-  max-width: 1200px;
-  margin: 60px auto;
-  padding: 24px;
+.discovery__bar {
+  margin-bottom: var(--space-4);
 }
 
-.index-page a {
-  color: white;
-}
-
-.gem-list {
-  margin-top: 30px;
-
+.discovery__tiers {
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(260px, 1fr)
-    );
-
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--space-3);
 }
 
-.gem-card {
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 20px;
+.tier-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.gem-card h2 {
-  margin-top: 0;
+.tier-stat__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tier, var(--text-faint));
 }
 
-.gem-card hr {
-  border: none;
-  border-top: 1px solid #333;
-  margin: 18px 0;
+.tier-stat__name::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tier, var(--text-faint));
 }
 
-.gem-card.undiscovered {
-  opacity: 0.55;
+.tier-stat__value {
+  font-size: 1.05rem;
+  font-weight: 660;
+  font-variant-numeric: tabular-nums;
 }
 
-.gem-description {
+
+/* ---------------------------------------------------------
+   FILTERS
+   --------------------------------------------------------- */
+
+.index-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.index-search {
+  flex: 1;
+  min-width: 190px;
+}
+
+
+/* ---------------------------------------------------------
+   GEM CARDS
+   --------------------------------------------------------- */
+
+.index-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  animation: card-in 0.28s ease-out backwards;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.index-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tier, var(--accent)) 55%, var(--border));
+  box-shadow: var(--shadow-md);
+}
+
+.index-card::before {
+  content: "";
+  position: absolute;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: 0;
+
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--tier, var(--text-faint));
+}
+
+.index-card--locked {
+  border-style: dashed;
+  background: transparent;
+}
+
+.index-card--locked::before {
+  opacity: 0.3;
+}
+
+.index-card--locked:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.index-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.index-card__name {
+  font-size: 1.02rem;
+  font-weight: 660;
+}
+
+.index-card__rarity {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.index-card__desc {
+  color: var(--text-muted);
+  font-size: 0.84rem;
   line-height: 1.5;
-  opacity: 0.85;
+}
+
+.index-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+
+  font-size: 0.84rem;
+}
+
+.index-card__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.index-card__key {
+  color: var(--text-muted);
+}
+
+.index-card__val {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.index-card__hidden {
+  color: var(--text-faint);
+  font-size: 0.84rem;
 }
