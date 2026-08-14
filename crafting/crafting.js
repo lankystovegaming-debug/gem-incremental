@@ -503,6 +503,12 @@ function recipeCard(recipe) {
 
   const affordable = state.money >= recipe.moneyCost;
 
+  // A "Deposit all" shortcut is offered whenever more than one
+  // requirement still has its own Deposit button.
+  const depositCount = (
+    requirementsHtml.match(/data-action="deposit"/g) ?? []
+  ).length;
+
   return `
     <article
       class="recipe-card${ready ? " recipe-card--ready" : ""}${
@@ -534,6 +540,14 @@ function recipeCard(recipe) {
           ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
           : `
             <div class="requirements">${requirementsHtml}</div>
+
+            ${
+              depositCount > 1
+                ? `<button class="btn btn--block" data-action="deposit-all" type="button">
+                     Deposit all (${depositCount})
+                   </button>`
+                : ""
+            }
 
             <div class="recipe-cost">
               <span>Cost</span>
@@ -662,6 +676,52 @@ function wireRecipeCard(card) {
       await refresh();
     });
   }
+
+  // Deposit into every remaining requirement at once. Each deposit
+  // is still its own server call; this just saves the clicking.
+  card
+    .querySelector('[data-action="deposit-all"]')
+    ?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+
+      const indexes = [
+        ...card.querySelectorAll('[data-action="deposit"]')
+      ].map((depositButton) => Number(depositButton.dataset.index));
+
+      button.disabled = true;
+      button.textContent = "Depositing…";
+
+      let deposited = 0;
+      let firstError = null;
+
+      for (const index of indexes) {
+        const { error } = await manuallyDepositCloudRequirement(
+          recipeId,
+          index
+        );
+
+        if (error) {
+          // "Nothing to deposit" for one requirement should not
+          // stop the others.
+          firstError = firstError ?? error;
+
+          continue;
+        }
+
+        deposited += 1;
+      }
+
+      if (deposited === 0 && firstError) {
+        notify.error("Nothing deposited", firstError.message);
+      } else {
+        notify.success(
+          "Deposited",
+          `Filled ${deposited} requirement${deposited === 1 ? "" : "s"}.`
+        );
+      }
+
+      await refresh();
+    });
 }
 
 

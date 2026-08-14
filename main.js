@@ -748,4 +748,20 @@ window.addEventListener("pageshow", async (event) => {
 });
 
 
+// The maintenance panel can change this account's save while the
+// page is open; re-read state so the totals and roll button stay
+// current instead of showing stale numbers.
+window.addEventListener("gem:maintenance-refresh", async () => {
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    return;
+  }
+
+  await refreshPlayerState();
+
+  await restoreCooldown(user.id);
+});
+
+
 startGame();
