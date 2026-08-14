@@ -1,9 +1,15 @@
 import { withSupabase } from "npm:@supabase/server";
 
 
-const ADMIN_IDS = new Set([
-  "004d883f-edbc-4610-b5e3-9068a0de0ca2"
-]);
+// Admins are stored in the public.admins table, not hardcoded, so
+// the list can change without a redeploy and no UUID is baked into
+// the source or the client bundle.
+async function isAdmin(ctx: any, id: string | undefined) {
+  if (!id) return false;
+  const { data } = await ctx.supabaseAdmin
+    .from("admins").select("user_id").eq("user_id", id).maybeSingle();
+  return Boolean(data);
+}
 
 const GEM_CATALOG = [
   ["Quartz",2,100,0.0575],["Calcite",3,110,0.0736],
@@ -103,10 +109,6 @@ export default {
     async (req, ctx) => {
       const adminId = ctx.userClaims?.id;
 
-      if (!adminId || !ADMIN_IDS.has(adminId)) {
-        return response({ error: "admin_forbidden" }, 403);
-      }
-
       let body: any;
       try {
         body = await req.json();
@@ -116,6 +118,16 @@ export default {
 
       const action = body?.action;
       const targetId = body?.targetId;
+
+      // Any authenticated user may ask whether they are an admin, so
+      // the client can gate its UI without knowing any admin id.
+      if (action === "whoami") {
+        return response({ isAdmin: await isAdmin(ctx, adminId) });
+      }
+
+      if (!(await isAdmin(ctx, adminId))) {
+        return response({ error: "admin_forbidden" }, 403);
+      }
 
       if (action === "search") {
         const query = String(body.query ?? "").trim().toLowerCase();
