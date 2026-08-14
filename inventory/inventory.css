@@ -277,3 +277,61 @@
   color: var(--text-muted);
   font-size: 0.82rem;
 }
+
+
+/* ---------------------------------------------------------
+   ACTIVE POTION EFFECTS
+   --------------------------------------------------------- */
+
+.active-boosts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.active-boosts__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.active-boosts__label svg {
+  width: 15px;
+  height: 15px;
+}
+
+.active-boosts__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.active-boost {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+
+  font-size: 0.84rem;
+}
+
+.active-boost__time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}

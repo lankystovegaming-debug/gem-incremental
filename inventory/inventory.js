@@ -7,7 +7,11 @@ import {
   upgradeCloudInventory
 } from "../src/backend/cloudInventory.js";
 import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
-import { loadCloudConsumables } from "../src/backend/cloudConsumables.js";
+import {
+  loadCloudConsumables,
+  useCloudConsumable,
+  loadActiveBoosts
+} from "../src/backend/cloudConsumables.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -86,6 +90,7 @@ const state = {
   gems: [],
   equipment: [],
   consumables: [],
+  boosts: [],
   capacity: 15,
   money: 0,
   loading: true
@@ -591,6 +596,96 @@ function totalPotions() {
 }
 
 
+function activeBoost(family) {
+  return state.boosts.find(
+    (boost) =>
+      boost.family === family &&
+      new Date(boost.expires_at).getTime() > Date.now()
+  );
+}
+
+
+function formatRemaining(expiresAt) {
+  const seconds = Math.max(
+    0,
+    Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000)
+  );
+
+  if (seconds >= 60) {
+    return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(
+      2,
+      "0"
+    )}s`;
+  }
+
+  return `${seconds}s`;
+}
+
+
+// A single ticker keeps every countdown and the Use-button
+// disabled states current without re-fetching.
+let boostTicker = null;
+
+function startBoostTicker() {
+  if (boostTicker) {
+    return;
+  }
+
+  boostTicker = setInterval(() => {
+    const live = state.boosts.some(
+      (boost) => new Date(boost.expires_at).getTime() > Date.now()
+    );
+
+    // Only the potions tab needs the live update.
+    if (!potionsSection.classList.contains("hidden")) {
+      renderConsumables();
+    }
+
+    if (!live) {
+      clearInterval(boostTicker);
+
+      boostTicker = null;
+    }
+  }, 1000);
+}
+
+
+function renderActiveBoosts() {
+  const live = state.boosts.filter(
+    (boost) => new Date(boost.expires_at).getTime() > Date.now()
+  );
+
+  if (live.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="active-boosts" style="grid-column:1/-1">
+      <div class="active-boosts__label">${icons.bolt} Active effects</div>
+
+      <div class="active-boosts__list">
+        ${live
+          .map(
+            (boost) => `
+              <span class="active-boost">
+                <strong>+${Math.round(
+                  Number(boost.effect_value) * 100
+                )}% ${escapeHtml(
+              POTION_STATS[boost.family] ?? boost.family
+            )}</strong>
+                <span class="active-boost__time">${formatRemaining(
+                  boost.expires_at
+                )}</span>
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+
 function renderConsumables() {
   if (state.loading) {
     consumableList.innerHTML = Array.from(
@@ -629,11 +724,14 @@ function renderConsumables() {
     return;
   }
 
-  consumableList.innerHTML = owned
-    .map(({ row, def }) => {
-      const stat = POTION_STATS[def.family] ?? def.family;
+  consumableList.innerHTML =
+    renderActiveBoosts() +
+    owned
+      .map(({ row, def }) => {
+        const stat = POTION_STATS[def.family] ?? def.family;
+        const active = activeBoost(def.family);
 
-      return `
+        return `
         <article class="potion-owned tier-badge-${def.tier}">
           <div class="potion-owned__head">
             <span class="potion-owned__icon">${icons.potion}</span>
@@ -651,7 +749,11 @@ function renderConsumables() {
 
           <p class="potion-owned__note">
             ${
-              def.tier < 3
+              active
+                ? `${escapeHtml(stat)} boost active — ${escapeHtml(
+                    formatRemaining(active.expires_at)
+                  )} left.`
+                : def.tier < 3
                 ? `Craft with gems to reach ${escapeHtml(
                     `${def.name.split(" ").slice(0, -1).join(" ")} ${
                       POTION_NUMERALS[def.tier + 1]
@@ -660,10 +762,88 @@ function renderConsumables() {
                 : "Highest tier for this family."
             }
           </p>
+
+          <button
+            class="btn btn--primary btn--sm btn--block"
+            type="button"
+            data-use="${escapeHtml(def.id)}"
+          >
+            ${icons.potion}
+            ${active ? "Extend boost" : "Use potion"}
+          </button>
         </article>
       `;
-    })
-    .join("");
+      })
+      .join("");
+
+  for (const button of consumableList.querySelectorAll("[data-use]")) {
+    button.addEventListener("click", () => usePotion(button));
+  }
+}
+
+
+// =========================================================
+// USE A POTION
+// =========================================================
+
+async function usePotion(button) {
+  const def = getConsumableById(button.dataset.use);
+
+  if (!def) {
+    return;
+  }
+
+  button.disabled = true;
+
+  const { data, error } = await useCloudConsumable(def.id);
+
+  if (error) {
+    notify.error("Could not use potion", error.message);
+
+    button.disabled = false;
+
+    return;
+  }
+
+  // Trust the server's returned quantity and boost, so the tab
+  // updates without a full reload.
+  const row = state.consumables.find(
+    (entry) => entry.consumable_id === def.id
+  );
+
+  if (row) {
+    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - 1));
+  }
+
+  const boost = data?.boost;
+
+  if (boost) {
+    const existing = state.boosts.find((entry) => entry.family === boost.family);
+
+    if (existing) {
+      existing.effect_value = boost.effectValue;
+      existing.tier = boost.tier;
+      existing.expires_at = boost.expiresAt;
+    } else {
+      state.boosts.push({
+        family: boost.family,
+        tier: boost.tier,
+        effect_value: boost.effectValue,
+        expires_at: boost.expiresAt
+      });
+    }
+  }
+
+  notify.success(
+    "Potion used",
+    `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% ${
+      POTION_STATS[def.family] ?? def.family
+    } for 60 seconds.`
+  );
+
+  startBoostTicker();
+
+  renderAll();
 }
 
 
@@ -709,11 +889,12 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment, potions] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
-    loadCloudConsumables()
+    loadCloudConsumables(),
+    loadActiveBoosts()
   ]);
 
   state.loading = false;
@@ -733,6 +914,14 @@ async function refresh() {
 
   if (potions) {
     state.consumables = potions;
+  }
+
+  if (boosts) {
+    state.boosts = boosts;
+
+    if (boosts.length > 0) {
+      startBoostTicker();
+    }
   }
 
   renderAll();
