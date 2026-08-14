@@ -47,3 +47,35 @@ export async function loadCloudEquipment() {
 
   return data;
 }
+
+
+export async function unequipCloudEquipment(equipmentRowId) {
+  const {
+    data,
+    error
+  } = await supabase
+    .from("player_equipment")
+    .update({ equipped: false })
+    .eq("id", equipmentRowId)
+    .eq("equipped", true)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to unequip cloud equipment:", error);
+
+    return {
+      success: false,
+      message: "That equipment could not be unequipped."
+    };
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      message: "That equipment is already unequipped or no longer exists."
+    };
+  }
+
+  return { success: true };
+}
