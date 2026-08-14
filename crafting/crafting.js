@@ -131,7 +131,7 @@ function describeRequirement(requirement, value) {
 
     case "gem-total-weight":
       return {
-        label: `${requirement.gem} — total weight`,
+        label: requirement.label ?? `${requirement.gem} — total weight`,
         text: `${formatWeight(value ?? 0)} / ${formatWeight(
           requirement.totalWeight
         )}`,
