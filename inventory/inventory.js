@@ -10,6 +10,12 @@ import {
   loadCloudEquipment,
   setCloudEquipmentEquipped
 } from "../src/backend/cloudEquipment.js";
+import {
+  loadCloudConsumables,
+  useCloudConsumable,
+  loadActiveBoosts
+} from "../src/backend/cloudConsumables.js";
+import { getConsumableById } from "../src/data/consumables.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -73,11 +79,14 @@ const capacityUpgradeButton = document.getElementById("capacityUpgradeButton");
 
 const gemsTab = document.getElementById("gemsTab");
 const equipmentTab = document.getElementById("equipmentTab");
+const potionsTab = document.getElementById("potionsTab");
 const gemsSection = document.getElementById("gemsSection");
 const equipmentSection = document.getElementById("equipmentSection");
+const potionsSection = document.getElementById("potionsSection");
 
 const inventoryList = document.getElementById("inventoryList");
 const equipmentList = document.getElementById("equipmentList");
+const consumableList = document.getElementById("consumableList");
 
 const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
@@ -95,6 +104,8 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 const state = {
   gems: [],
   equipment: [],
+  consumables: [],
+  boosts: [],
   capacity: 15,
   money: 0,
   loading: true
@@ -105,18 +116,34 @@ const state = {
 // TABS
 // =========================================================
 
-function selectTab(tab) {
-  const gems = tab === "gems";
+const TABS = [
+  { id: "gems", tab: gemsTab, section: gemsSection },
+  { id: "equipment", tab: equipmentTab, section: equipmentSection },
+  { id: "potions", tab: potionsTab, section: potionsSection }
+];
 
-  gemsTab.setAttribute("aria-selected", String(gems));
-  equipmentTab.setAttribute("aria-selected", String(!gems));
+function selectTab(active) {
+  for (const entry of TABS) {
+    if (!entry.tab || !entry.section) {
+      continue;
+    }
 
-  gemsSection.classList.toggle("hidden", !gems);
-  equipmentSection.classList.toggle("hidden", gems);
+    const on = entry.id === active;
+
+    entry.tab.setAttribute("aria-selected", String(on));
+    entry.section.classList.toggle("hidden", !on);
+  }
+
+  // Re-render potions on entry so a boost that expired while
+  // another tab was open shows its current countdown.
+  if (active === "potions" && !state.loading) {
+    renderConsumables();
+  }
 }
 
-gemsTab.addEventListener("click", () => selectTab("gems"));
-equipmentTab.addEventListener("click", () => selectTab("equipment"));
+for (const entry of TABS) {
+  entry.tab?.addEventListener("click", () => selectTab(entry.id));
+}
 
 
 // =========================================================
@@ -627,6 +654,269 @@ equipmentList.addEventListener("click", async (event) => {
 
 
 // =========================================================
+// POTIONS
+// =========================================================
+
+const POTION_STATS = {
+  luck: "Luck",
+  rollSpeed: "Roll speed",
+  weightLuck: "Weight luck",
+  weightMultiplier: "Weight multiplier"
+};
+
+const POTION_NUMERALS = ["", "I", "II", "III"];
+
+let boostTicker = null;
+
+
+function totalPotions() {
+  return state.consumables.reduce(
+    (sum, row) => sum + Number(row.quantity ?? 0),
+    0
+  );
+}
+
+
+function activeBoost(family) {
+  return state.boosts.find(
+    (boost) =>
+      boost.family === family &&
+      new Date(boost.expires_at).getTime() > Date.now()
+  );
+}
+
+
+function formatRemaining(expiresAt) {
+  const seconds = Math.max(
+    0,
+    Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000)
+  );
+
+  if (seconds >= 60) {
+    return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(
+      2,
+      "0"
+    )}s`;
+  }
+
+  return `${seconds}s`;
+}
+
+
+function startBoostTicker() {
+  if (boostTicker) {
+    return;
+  }
+
+  boostTicker = setInterval(() => {
+    const live = state.boosts.some(
+      (boost) => new Date(boost.expires_at).getTime() > Date.now()
+    );
+
+    if (!potionsSection.classList.contains("hidden")) {
+      renderConsumables();
+    }
+
+    if (!live) {
+      clearInterval(boostTicker);
+
+      boostTicker = null;
+    }
+  }, 1000);
+}
+
+
+function renderActiveBoosts() {
+  const live = state.boosts.filter(
+    (boost) => new Date(boost.expires_at).getTime() > Date.now()
+  );
+
+  if (live.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="active-boosts" style="grid-column:1/-1">
+      <div class="active-boosts__label">${icons.bolt} Active effects</div>
+
+      <div class="active-boosts__list">
+        ${live
+          .map(
+            (boost) => `
+              <span class="active-boost">
+                <strong>+${Math.round(
+                  Number(boost.effect_value) * 100
+                )}% ${escapeHtml(
+              POTION_STATS[boost.family] ?? boost.family
+            )}</strong>
+                <span class="active-boost__time">${formatRemaining(
+                  boost.expires_at
+                )}</span>
+              </span>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+
+function renderConsumables() {
+  if (!consumableList) {
+    return;
+  }
+
+  if (state.loading) {
+    consumableList.innerHTML = Array.from(
+      { length: 4 },
+      () => '<div class="skeleton skeleton--card"></div>'
+    ).join("");
+
+    return;
+  }
+
+  const owned = state.consumables
+    .map((row) => ({ row, def: getConsumableById(row.consumable_id) }))
+    .filter((entry) => entry.def && Number(entry.row.quantity) > 0)
+    .sort(
+      (a, b) =>
+        a.def.family.localeCompare(b.def.family) || a.def.tier - b.def.tier
+    );
+
+  if (owned.length === 0) {
+    consumableList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.potion ?? icons.sparkle}
+        <p class="empty__title">No potions yet</p>
+        <p>Buy Tier 1 potions in the shop, then craft them up.</p>
+        <a class="btn btn--primary" href="../boosts/" style="margin-top:8px">
+          Open potion shop
+        </a>
+      </div>
+    `;
+
+    return;
+  }
+
+  consumableList.innerHTML =
+    renderActiveBoosts() +
+    owned
+      .map(({ row, def }) => {
+        const stat = POTION_STATS[def.family] ?? def.family;
+        const active = activeBoost(def.family);
+
+        return `
+        <article class="potion-owned tier-badge-${def.tier}">
+          <div class="potion-owned__head">
+            <span class="potion-owned__icon">${icons.potion ?? icons.sparkle}</span>
+            <span class="badge badge--muted">×${formatCount(row.quantity)}</span>
+          </div>
+
+          <div class="potion-owned__name">${escapeHtml(def.name)}</div>
+
+          <div class="potion-owned__meta">
+            <span class="badge badge--positive">+${Math.round(
+              def.effectValue * 100
+            )}% ${escapeHtml(stat)}</span>
+            <span class="badge badge--muted">Tier ${def.tier}</span>
+          </div>
+
+          <p class="potion-owned__note">
+            ${
+              active
+                ? `${escapeHtml(stat)} boost active — ${escapeHtml(
+                    formatRemaining(active.expires_at)
+                  )} left.`
+                : def.tier < 3
+                ? `Craft with gems to reach ${escapeHtml(
+                    `${def.name.split(" ").slice(0, -1).join(" ")} ${
+                      POTION_NUMERALS[def.tier + 1]
+                    }`
+                  )}.`
+                : "Highest tier for this family."
+            }
+          </p>
+
+          <button
+            class="btn btn--primary btn--sm btn--block"
+            type="button"
+            data-use="${escapeHtml(def.id)}"
+          >
+            ${icons.potion ?? icons.sparkle}
+            ${active ? "Extend boost" : "Use potion"}
+          </button>
+        </article>
+      `;
+      })
+      .join("");
+
+  for (const button of consumableList.querySelectorAll("[data-use]")) {
+    button.addEventListener("click", () => usePotion(button));
+  }
+}
+
+
+async function usePotion(button) {
+  const def = getConsumableById(button.dataset.use);
+
+  if (!def) {
+    return;
+  }
+
+  button.disabled = true;
+
+  const { data, error } = await useCloudConsumable(def.id);
+
+  if (error) {
+    notify.error("Could not use potion", error.message);
+
+    button.disabled = false;
+
+    return;
+  }
+
+  const row = state.consumables.find(
+    (entry) => entry.consumable_id === def.id
+  );
+
+  if (row) {
+    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - 1));
+  }
+
+  const boost = data?.boost;
+
+  if (boost) {
+    const existing = state.boosts.find((entry) => entry.family === boost.family);
+
+    if (existing) {
+      existing.effect_value = boost.effectValue;
+      existing.tier = boost.tier;
+      existing.expires_at = boost.expiresAt;
+    } else {
+      state.boosts.push({
+        family: boost.family,
+        tier: boost.tier,
+        effect_value: boost.effectValue,
+        expires_at: boost.expiresAt
+      });
+    }
+  }
+
+  notify.success(
+    "Potion used",
+    `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% ${
+      POTION_STATS[def.family] ?? def.family
+    } for 60 seconds.`
+  );
+
+  startBoostTicker();
+
+  renderAll();
+}
+
+
+// =========================================================
 // RENDER
 // =========================================================
 
@@ -637,11 +927,12 @@ function renderAll() {
     ? "Loading your collection…"
     : `${formatCount(state.gems.length)} gems · ` +
       `${formatCount(state.equipment.length)} equipment · ` +
-      `${formatMoney(state.money)}`;
+      `${formatCount(totalPotions())} potions`;
 
   renderCapacity();
   renderGems();
   renderEquipment();
+  renderConsumables();
 }
 
 
@@ -667,10 +958,12 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
-    loadCloudEquipment()
+    loadCloudEquipment(),
+    loadCloudConsumables(),
+    loadActiveBoosts()
   ]);
 
   state.loading = false;
@@ -686,6 +979,18 @@ async function refresh() {
 
   if (equipment) {
     state.equipment = equipment;
+  }
+
+  if (potions) {
+    state.consumables = potions;
+  }
+
+  if (boosts) {
+    state.boosts = boosts;
+
+    if (boosts.length > 0) {
+      startBoostTicker();
+    }
   }
 
   renderAll();
