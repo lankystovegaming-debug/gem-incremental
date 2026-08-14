@@ -21,6 +21,8 @@ export async function loadCloudGems() {
       rolled_weight,
       final_weight,
       value,
+      roll_number,
+      luck_at_roll,
       locked,
       created_at
     `)

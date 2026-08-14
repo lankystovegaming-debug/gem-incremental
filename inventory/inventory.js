@@ -322,6 +322,24 @@ function gemCard(gem) {
             formatRelativeTime(gem.created_at)
           )}</span>
         </div>
+
+        <div class="gem-card__row">
+          <span class="gem-card__key">Rolled at</span>
+          <span class="gem-card__val">${
+            gem.roll_number == null
+              ? "—"
+              : `${formatCount(gem.roll_number)} rolls`
+          }</span>
+        </div>
+
+        <div class="gem-card__row">
+          <span class="gem-card__key">Luck</span>
+          <span class="gem-card__val">${
+            gem.luck_at_roll == null
+              ? "—"
+              : formatMultiplier(gem.luck_at_roll)
+          }</span>
+        </div>
       </div>
 
       <div class="gem-card__actions">
