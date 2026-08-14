@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Admin · Gem Incremental</title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./admin.css">
+  <script>
+    (function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon"].includes(m))document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",a||"indigo")}catch(e){}})();
+  </script>
+</head>
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Admin Panel</h1>
+        <p class="page-head__sub" id="adminStatus">Verifying administrator access…</p>
+      </div>
+      <button class="btn" id="auditButton" type="button" disabled>Audit log</button>
+    </div>
+
+    <section class="card admin-search">
+      <label class="field">
+        <span>Find a player</span>
+        <input id="playerSearch" type="search" autocomplete="off"
+          placeholder="Username, email, or Player ID">
+      </label>
+      <button class="btn btn--primary" id="searchButton" type="button" disabled>Search</button>
+    </section>
+
+    <section id="searchResults" class="admin-results"></section>
+    <section id="playerPanel" class="hidden"></section>
+    <section id="auditPanel" class="hidden"></section>
+  </main>
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>

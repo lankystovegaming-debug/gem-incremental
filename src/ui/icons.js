@@ -48,6 +48,11 @@ export const icons = {
     <circle cx="10" cy="17" r=".8" fill="currentColor" stroke="none" />
   `),
 
+  shield: svg(`
+    <path d="M12 3 20 6v5c0 5.2-3.4 8.3-8 10-4.6-1.7-8-4.8-8-10V6Z" />
+    <path d="m8.8 12 2.1 2.1 4.5-4.6" />
+  `),
+
   book: svg(`
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z" />
     <path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5Z" />

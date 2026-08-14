@@ -41,8 +41,15 @@ const PAGES = [
   { id: "boosts", label: "Potion Shop", short: "Shop", href: "boosts/", icon: icons.potion },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
-  { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart }
+  { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
+  { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true }
 ];
+
+const ADMIN_IDS = new Set([
+  "004d883f-edbc-4610-b5e3-9068a0de0ca2"
+]);
+
+const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly);
 
 
 const MODE_ICONS = {
@@ -66,7 +73,7 @@ export function mountShell({ page, base = "./" }) {
       </a>
 
       <nav class="nav" aria-label="Primary">
-        ${PAGES.map((item) => navLink(item, page, base, "nav__link")).join("")}
+        ${PUBLIC_PAGES.map((item) => navLink(item, page, base, "nav__link")).join("")}
       </nav>
 
       <div class="topbar__spacer"></div>
@@ -125,7 +132,7 @@ export function mountShell({ page, base = "./" }) {
   tabbar.className = "tabbar";
   tabbar.setAttribute("aria-label", "Primary");
 
-  tabbar.innerHTML = PAGES.map((item) =>
+  tabbar.innerHTML = PUBLIC_PAGES.map((item) =>
     navLink(item, page, base, "tabbar__link", true)
   ).join("");
 
@@ -186,6 +193,22 @@ export function mountShell({ page, base = "./" }) {
     const user = data.session?.user ?? null;
 
     paintAccount(user);
+
+    if (user && ADMIN_IDS.has(user.id)) {
+      const adminPage = PAGES.find((item) => item.id === "admin");
+
+      if (adminPage) {
+        header.querySelector(".nav")?.insertAdjacentHTML(
+          "beforeend",
+          navLink(adminPage, page, base, "nav__link")
+        );
+
+        tabbar.insertAdjacentHTML(
+          "beforeend",
+          navLink(adminPage, page, base, "tabbar__link", true)
+        );
+      }
+    }
 
     if (user) {
       currentUsername = await loadUsername(user.id);
