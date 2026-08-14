@@ -1,6 +1,7 @@
 import {
   supabase
 } from "./supabase.js";
+import { invokeFunction } from "./invoke.js";
 
 
 export async function loadCloudEquipment() {
@@ -50,30 +51,16 @@ export async function loadCloudEquipment() {
 
 
 export async function unequipCloudEquipment(equipmentRowId) {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("player_equipment")
-    .update({ equipped: false })
-    .eq("id", equipmentRowId)
-    .eq("equipped", true)
-    .select("id")
-    .maybeSingle();
+  const { error } = await invokeFunction("unequip-equipment", {
+    equipmentRowId
+  });
 
   if (error) {
     console.error("Failed to unequip cloud equipment:", error);
 
     return {
       success: false,
-      message: "That equipment could not be unequipped."
-    };
-  }
-
-  if (!data) {
-    return {
-      success: false,
-      message: "That equipment is already unequipped or no longer exists."
+      message: error.message
     };
   }
 

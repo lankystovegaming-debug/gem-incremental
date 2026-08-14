@@ -21,7 +21,9 @@ const FRIENDLY_MESSAGES = {
   insufficient_funds: "You cannot afford that yet.",
   max_capacity: "Your inventory is already at maximum capacity.",
   requirements_not_met: "The requirements for that recipe are not complete.",
-  already_owned: "You already own that equipment."
+  already_owned: "You already own that equipment.",
+  equipment_not_found: "That equipment is already unequipped or no longer exists.",
+  unequip_failed: "That equipment could not be unequipped."
 };
 
 
