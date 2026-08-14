@@ -11,6 +11,12 @@
 --   insert into public.code_improvement (user_id) values ('<uuid>');
 -- =========================================================
 
+-- The base schema is not tracked in this repo. On a fresh database
+-- (preview / CI reset) the game tables this function references do
+-- not exist yet, so disable body validation — the function is only
+-- ever called on the real project, where they do exist.
+set local check_function_bodies = off;
+
 create table if not exists public.code_improvement (
   user_id uuid primary key references auth.users(id) on delete cascade,
   note text,
