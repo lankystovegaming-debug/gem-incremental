@@ -12,6 +12,7 @@ import {
 } from "./theme.js";
 
 import { supabase } from "../backend/supabase.js";
+import { adminRequest } from "../backend/cloudAdmin.js";
 import {
   describeAccount,
   isGuest,
@@ -44,10 +45,6 @@ const PAGES = [
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true }
 ];
-
-const ADMIN_IDS = new Set([
-  "004d883f-edbc-4610-b5e3-9068a0de0ca2"
-]);
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly);
 
@@ -194,10 +191,20 @@ export function mountShell({ page, base = "./" }) {
 
     paintAccount(user);
 
-    if (user && ADMIN_IDS.has(user.id)) {
-      const adminPage = PAGES.find((item) => item.id === "admin");
+    if (user) {
+      // Ask the server whether this account is an admin, so the link
+      // appears without any admin id baked into the client bundle.
+      adminRequest("whoami").then(({ data }) => {
+        if (!data?.isAdmin) {
+          return;
+        }
 
-      if (adminPage) {
+        const adminPage = PAGES.find((item) => item.id === "admin");
+
+        if (!adminPage) {
+          return;
+        }
+
         header.querySelector(".nav")?.insertAdjacentHTML(
           "beforeend",
           navLink(adminPage, page, base, "nav__link")
@@ -207,7 +214,7 @@ export function mountShell({ page, base = "./" }) {
           "beforeend",
           navLink(adminPage, page, base, "tabbar__link", true)
         );
-      }
+      });
     }
 
     if (user) {

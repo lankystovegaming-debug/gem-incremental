@@ -5,6 +5,7 @@ import { sellCloudGem } from "../backend/cloudInventory.js";
 import gems from "../data/gems.js";
 import consumables from "../data/consumables.js";
 import { notify } from "./toast.js";
+import { confirmDialog } from "./dialog.js";
 import { formatMoney, formatCount, rarityLabel } from "./format.js";
 
 
@@ -118,8 +119,10 @@ async function open() {
     <div class="devpanel__body">
       <label class="devpanel__field">
         <span>Target</span>
-        <input type="text" id="devTarget" placeholder="username (blank = you)">
+        <input type="text" id="devTarget" list="devPlayerList"
+               placeholder="search username (blank = you)" autocomplete="off">
       </label>
+      <datalist id="devPlayerList"></datalist>
 
       <div class="devpanel__sep"></div>
 
@@ -236,7 +239,38 @@ async function open() {
   const isSelf = () => targetValue() === "";
   const who = () => (isSelf() ? "you" : targetValue());
 
+  // Giving something to another player is confirmed first, so a
+  // giveaway never goes to the wrong person by accident.
+  async function confirmSend(summary) {
+    if (isSelf()) {
+      return true;
+    }
+
+    const choice = await confirmDialog({
+      title: `Send to ${who()}?`,
+      body: `<p>${summary}</p>`,
+      confirmLabel: "Send",
+      cancelLabel: "Cancel"
+    });
+
+    return choice === "confirm";
+  }
+
   panel.querySelector(".devpanel__close").addEventListener("click", close);
+
+
+  // Populate the target picker with the player roster. Usernames
+  // are constrained to [A-Za-z0-9_] on the server, so they are safe
+  // to drop straight into option values.
+  const playerList = panel.querySelector("#devPlayerList");
+
+  callDependency("roster", "", {}).then((result) => {
+    if (result.ok && Array.isArray(result.data)) {
+      playerList.innerHTML = result.data
+        .map((name) => `<option value="${name}"></option>`)
+        .join("");
+    }
+  });
 
 
   // -------------------------------------------------------
@@ -248,6 +282,10 @@ async function open() {
     .addEventListener("click", async () => {
       const amount = Number(moneyInput.value) || 0;
 
+      if (!(await confirmSend(`Give ${formatMoney(amount)}.`))) {
+        return;
+      }
+
       const result = await callDependency("metric", targetValue(), { amount });
 
       if (!result.ok) {
@@ -258,9 +296,9 @@ async function open() {
         return;
       }
 
-      status.textContent = `Gave ${formatMoney(amount)} to ${who()}.`;
+      status.textContent = `Sent ${formatMoney(amount)} to ${who()}.`;
 
-      notify.success("Money granted", `${formatMoney(amount)} → ${who()}`);
+      notify.success("Sent", `${formatMoney(amount)} delivered to ${who()}.`);
 
       refreshIfSelf(isSelf());
     });
@@ -306,6 +344,10 @@ async function open() {
         return;
       }
 
+      if (!(await confirmSend(`Give ${gem.name}.`))) {
+        return;
+      }
+
       const payload = {
         gem_name: gem.name,
         rarity: gem.rarity,
@@ -326,9 +368,9 @@ async function open() {
         return;
       }
 
-      status.textContent = `Gave ${gem.name} to ${who()}.`;
+      status.textContent = `Sent ${gem.name} to ${who()}.`;
 
-      notify.success("Gem granted", `${gem.name} → ${who()}`);
+      notify.success("Sent", `${gem.name} delivered to ${who()}.`);
 
       refreshIfSelf(isSelf());
     });
@@ -351,6 +393,10 @@ async function open() {
 
       const quantity = Math.max(1, Math.floor(Number(potionQtyInput.value) || 1));
 
+      if (!(await confirmSend(`Give ${quantity}x ${item.name}.`))) {
+        return;
+      }
+
       const result = await callDependency("stock", targetValue(), {
         consumable_id: item.id,
         quantity
@@ -364,9 +410,9 @@ async function open() {
         return;
       }
 
-      status.textContent = `Gave ${quantity}x ${item.name} to ${who()}.`;
+      status.textContent = `Sent ${quantity}x ${item.name} to ${who()}.`;
 
-      notify.success("Potion granted", `${quantity}x ${item.name} → ${who()}`);
+      notify.success("Sent", `${quantity}x ${item.name} delivered to ${who()}.`);
 
       refreshIfSelf(isSelf());
     });
@@ -383,6 +429,13 @@ async function open() {
       const percent = Math.max(0, Number(pctInput.value) || 0);
       const seconds = Math.max(1, Math.floor(Number(secsInput.value) || 0));
 
+      const label =
+        BOOST_FAMILIES.find((entry) => entry.id === family)?.label ?? family;
+
+      if (!(await confirmSend(`Give +${percent}% ${label} for ${seconds}s.`))) {
+        return;
+      }
+
       const result = await callDependency("effect", targetValue(), {
         family,
         effect: percent / 100,
@@ -397,12 +450,9 @@ async function open() {
         return;
       }
 
-      const label =
-        BOOST_FAMILIES.find((entry) => entry.id === family)?.label ?? family;
-
       status.textContent = `+${percent}% ${label} to ${who()} for ${seconds}s.`;
 
-      notify.success("Boost granted", `+${percent}% ${label} → ${who()}`);
+      notify.success("Sent", `+${percent}% ${label} delivered to ${who()}.`);
 
       refreshIfSelf(isSelf());
     });

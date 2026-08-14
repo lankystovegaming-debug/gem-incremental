@@ -1,9 +1,15 @@
 import { withSupabase } from "npm:@supabase/server";
 
 
-const ADMIN_IDS = new Set([
-  "004d883f-edbc-4610-b5e3-9068a0de0ca2"
-]);
+// Admins are stored in the public.admins table, not hardcoded, so
+// the list can change without a redeploy and no UUID is baked into
+// the source or the client bundle.
+async function isAdmin(ctx: any, id: string | undefined) {
+  if (!id) return false;
+  const { data } = await ctx.supabaseAdmin
+    .from("admins").select("user_id").eq("user_id", id).maybeSingle();
+  return Boolean(data);
+}
 
 const GEM_CATALOG = [
   ["Quartz",2,100,0.0575],["Calcite",3,110,0.0736],
@@ -103,10 +109,6 @@ export default {
     async (req, ctx) => {
       const adminId = ctx.userClaims?.id;
 
-      if (!adminId || !ADMIN_IDS.has(adminId)) {
-        return response({ error: "admin_forbidden" }, 403);
-      }
-
       let body: any;
       try {
         body = await req.json();
@@ -116,6 +118,16 @@ export default {
 
       const action = body?.action;
       const targetId = body?.targetId;
+
+      // Any authenticated user may ask whether they are an admin, so
+      // the client can gate its UI without knowing any admin id.
+      if (action === "whoami") {
+        return response({ isAdmin: await isAdmin(ctx, adminId) });
+      }
+
+      if (!(await isAdmin(ctx, adminId))) {
+        return response({ error: "admin_forbidden" }, 403);
+      }
 
       if (action === "search") {
         const query = String(body.query ?? "").trim().toLowerCase();
@@ -207,13 +219,19 @@ export default {
         }
 
         const { data: player } = await ctx.supabaseAdmin
-          .from("players").select("money").eq("id", targetId).maybeSingle();
+          .from("players").select("money, lifetime_earnings").eq("id", targetId).maybeSingle();
         if (!player) return response({ error: "player_not_found" }, 404);
 
         const before = Number(player.money ?? 0);
         const after = Math.max(0, before + amount);
+        // Credit lifetime earnings too (only for additions), so granted
+        // money is reflected on the leaderboard.
+        const lifetimeBefore = Number(player.lifetime_earnings ?? 0);
+        const lifetimeAfter = Math.max(0, lifetimeBefore + Math.max(0, amount));
         const { error } = await ctx.supabaseAdmin
-          .from("players").update({ money: after }).eq("id", targetId);
+          .from("players")
+          .update({ money: after, lifetime_earnings: lifetimeAfter })
+          .eq("id", targetId);
         if (error) return response({ error: "money_update_failed" }, 500);
 
         await audit(ctx, adminId, targetId, "money_adjusted", { amount, before, after });
@@ -229,6 +247,21 @@ export default {
 
         const finalWeight = gem.baseWeight * multiplier;
         const value = finalWeight * gem.valuePerGram;
+
+        // Stamp the gem with the target's current roll count and their
+        // effective luck (base 1 + equipped luck + active luck boosts),
+        // so a granted gem reads like one rolled right now instead of
+        // showing "—".
+        const [playerStat, equipStat, boostStat] = await Promise.all([
+          ctx.supabaseAdmin.from("players").select("total_rolls").eq("id", targetId).maybeSingle(),
+          ctx.supabaseAdmin.from("player_equipment").select("luck_bonus").eq("player_id", targetId).eq("equipped", true),
+          ctx.supabaseAdmin.from("player_boosts").select("effect_value").eq("player_id", targetId).eq("family", "luck").gt("expires_at", new Date().toISOString())
+        ]);
+        const rollNumber = Number(playerStat.data?.total_rolls ?? 0);
+        const luckAtRoll = 1
+          + (equipStat.data ?? []).reduce((sum: number, e: any) => sum + Number(e.luck_bonus ?? 0), 0)
+          + (boostStat.data ?? []).reduce((sum: number, b: any) => sum + Number(b.effect_value ?? 0), 0);
+
         const { data, error } = await ctx.supabaseAdmin
           .from("inventory_gems")
           .insert({
@@ -241,7 +274,9 @@ export default {
             rolled_weight: finalWeight,
             final_weight: finalWeight,
             value,
-            locked: false
+            locked: false,
+            roll_number: rollNumber,
+            luck_at_roll: luckAtRoll
           })
           .select("id").single();
         if (error) return response({ error: "gem_grant_failed", message: error.message }, 500);

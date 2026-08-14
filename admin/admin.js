@@ -7,7 +7,6 @@ import { mountShell } from "../src/ui/shell.js";
 import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
 import { notify } from "../src/ui/toast.js";
 
-const ADMIN_ID = "004d883f-edbc-4610-b5e3-9068a0de0ca2";
 const shell = mountShell({ page: "admin", base: "../" });
 
 const status = document.getElementById("adminStatus");
@@ -271,7 +270,13 @@ searchInput.addEventListener("keydown", (event) => {
 auditButton.addEventListener("click", loadAudit);
 
 const user = await ensurePlayerAuth();
-if (!user || user.id !== ADMIN_ID) {
+
+// Admin status comes from the server, not a hardcoded id. Every
+// admin action is enforced server-side regardless, so this only
+// controls what the page shows.
+const { data: whoami } = user ? await adminRequest("whoami") : { data: null };
+
+if (!user || !whoami?.isAdmin) {
   status.textContent = "You do not have permission to use this page.";
   notify.error("Access denied", "Administrator access is required.");
 } else {

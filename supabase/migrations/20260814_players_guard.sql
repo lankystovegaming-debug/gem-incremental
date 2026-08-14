@@ -56,7 +56,19 @@ begin
 end;
 $$;
 
-drop trigger if exists players_guard_trg on public.players;
-create trigger players_guard_trg
-  before insert or update on public.players
-  for each row execute function public.players_guard();
+-- The base schema is not tracked in this repo, so on a fresh
+-- database (a preview/CI reset) public.players may not exist yet.
+-- Only attach the trigger when the table is present; on the real
+-- project the table exists and this runs normally.
+do $$
+begin
+  if to_regclass('public.players') is null then
+    return;
+  end if;
+
+  execute 'drop trigger if exists players_guard_trg on public.players';
+  execute 'create trigger players_guard_trg
+    before insert or update on public.players
+    for each row execute function public.players_guard()';
+end;
+$$;
