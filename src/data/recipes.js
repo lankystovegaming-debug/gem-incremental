@@ -150,6 +150,75 @@ const recipes = [
     }
   },
 
+  {
+    id: "mythic-pickaxe",
+    name: "Mythic Pickaxe",
+    category: "pickaxe",
+
+    requirements: [
+      { type: "equipment", equipmentId: "masterwork-pickaxe" },
+      { type: "gem-count", gem: "Diamond", amount: 2 },
+      { type: "gem-count", gem: "Tanzanite", amount: 2 },
+      { type: "gem-count", gem: "Alexandrite", amount: 1 }
+    ],
+
+    moneyCost: 25000,
+
+    reward: {
+      id: "mythic-pickaxe",
+      name: "Mythic Pickaxe",
+      category: "pickaxe",
+      tier: 6,
+      bonus: { luck: 2.50 }
+    }
+  },
+
+  {
+    id: "aether-pickaxe",
+    name: "Aether Pickaxe",
+    category: "pickaxe",
+
+    requirements: [
+      { type: "equipment", equipmentId: "mythic-pickaxe" },
+      { type: "gem-count", gem: "Benitoite", amount: 2 },
+      { type: "gem-count", gem: "Red Beryl", amount: 2 },
+      { type: "gem-count", gem: "Black Opal", amount: 1 }
+    ],
+
+    moneyCost: 40000,
+
+    reward: {
+      id: "aether-pickaxe",
+      name: "Aether Pickaxe",
+      category: "pickaxe",
+      tier: 7,
+      bonus: { luck: 4.00 }
+    }
+  },
+
+  {
+    id: "voidbreaker-pickaxe",
+    name: "Voidbreaker Pickaxe",
+    category: "pickaxe",
+
+    requirements: [
+      { type: "equipment", equipmentId: "aether-pickaxe" },
+      { type: "gem-count", gem: "Grandidierite", amount: 2 },
+      { type: "gem-count", gem: "Taaffeite", amount: 1 },
+      { type: "gem-count", gem: "Musgravite", amount: 1 }
+    ],
+
+    moneyCost: 65000,
+
+    reward: {
+      id: "voidbreaker-pickaxe",
+      name: "Voidbreaker Pickaxe",
+      category: "pickaxe",
+      tier: 8,
+      bonus: { luck: 7.00 }
+    }
+  },
+
 
   // =========================================================
   // LANTERNS — ROLL SPEED
@@ -326,6 +395,75 @@ const recipes = [
       bonus: {
         rollSpeed: 0.60
       }
+    }
+  },
+
+  {
+    id: "celestial-lantern",
+    name: "Celestial Lantern",
+    category: "lantern",
+
+    requirements: [
+      { type: "equipment", equipmentId: "eternal-lantern" },
+      { type: "gem-count", gem: "Diamond", amount: 2 },
+      { type: "gem-count", gem: "Tanzanite", amount: 1 },
+      { type: "gem-count", gem: "Alexandrite", amount: 1 }
+    ],
+
+    moneyCost: 22000,
+
+    reward: {
+      id: "celestial-lantern",
+      name: "Celestial Lantern",
+      category: "lantern",
+      tier: 6,
+      bonus: { rollSpeed: 0.80 }
+    }
+  },
+
+  {
+    id: "aether-lantern",
+    name: "Aether Lantern",
+    category: "lantern",
+
+    requirements: [
+      { type: "equipment", equipmentId: "celestial-lantern" },
+      { type: "gem-count", gem: "Benitoite", amount: 2 },
+      { type: "gem-count", gem: "Red Beryl", amount: 1 },
+      { type: "gem-count", gem: "Black Opal", amount: 1 }
+    ],
+
+    moneyCost: 35000,
+
+    reward: {
+      id: "aether-lantern",
+      name: "Aether Lantern",
+      category: "lantern",
+      tier: 7,
+      bonus: { rollSpeed: 1.25 }
+    }
+  },
+
+  {
+    id: "void-lantern",
+    name: "Void Lantern",
+    category: "lantern",
+
+    requirements: [
+      { type: "equipment", equipmentId: "aether-lantern" },
+      { type: "gem-count", gem: "Grandidierite", amount: 1 },
+      { type: "gem-count", gem: "Taaffeite", amount: 1 },
+      { type: "gem-count", gem: "Musgravite", amount: 1 }
+    ],
+
+    moneyCost: 55000,
+
+    reward: {
+      id: "void-lantern",
+      name: "Void Lantern",
+      category: "lantern",
+      tier: 8,
+      bonus: { rollSpeed: 1.80 }
     }
   },
 
