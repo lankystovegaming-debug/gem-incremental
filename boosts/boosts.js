@@ -59,26 +59,35 @@ function render() {
     const price = potion.shop.price;
     const affordable = state.money >= price;
     const stat = STAT_NAMES[potion.family] ?? potion.family;
+    const effect = Math.round(potion.effectValue * 100);
+    const owned = ownedQuantity(potion.id);
 
     return `
       <article class="potion-card potion-card--${escapeHtml(potion.family)}">
         <div class="potion-card__head">
           <span class="potion-card__icon">${icons.potion}</span>
-          <span class="potion-card__owned">Owned ×${formatCount(ownedQuantity(potion.id))}</span>
+          ${
+            owned > 0
+              ? `<span class="badge badge--accent">Owned ×${formatCount(owned)}</span>`
+              : '<span class="badge badge--muted">Tier 1</span>'
+          }
         </div>
 
         <div>
           <h2 class="potion-card__name">${escapeHtml(potion.name)}</h2>
           <p class="potion-card__description">
-            Temporarily increases ${escapeHtml(stat)} by
-            ${formatCount(potion.effectValue * 100)}%.
+            Temporarily increases ${escapeHtml(stat)} by ${effect}%.
           </p>
         </div>
 
         <div class="potion-card__details">
-          <span class="badge badge--positive">+${formatCount(potion.effectValue * 100)}% ${escapeHtml(stat)}</span>
+          <span class="badge badge--positive">+${effect}% ${escapeHtml(stat)}</span>
           <span class="badge badge--muted">60 seconds</span>
         </div>
+
+        <p class="potion-card__chain">
+          Craft with gems to reach Tier II and III.
+        </p>
 
         <div class="potion-card__purchase">
           <span class="potion-card__price">${formatMoney(price)}</span>
@@ -87,7 +96,7 @@ function render() {
             type="button"
             data-buy="${escapeHtml(potion.id)}"
             ${affordable ? "" : "disabled"}
-          >Buy potion</button>
+          >${affordable ? "Buy potion" : "Not enough money"}</button>
         </div>
       </article>
     `;

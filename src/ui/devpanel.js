@@ -1,7 +1,9 @@
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
+import { invokeFunction } from "../backend/invoke.js";
+import { sellCloudGem } from "../backend/cloudInventory.js";
 import { notify } from "./toast.js";
-import { formatMoney, formatCount } from "./format.js";
+import { formatMoney, formatCount, rarityLabel } from "./format.js";
 
 
 // =========================================================
@@ -80,6 +82,10 @@ function toggle() {
 
 
 function close() {
+  // Stop any mass roll in flight so it does not keep running
+  // against a closed panel.
+  massRoll.cancelled = true;
+
   panel?.remove();
 
   panel = null;
@@ -126,6 +132,22 @@ async function open() {
       <button class="btn btn--primary btn--block btn--sm" data-action="apply" type="button">
         Apply
       </button>
+
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
+        <span>Mass roll</span>
+        <input type="number" id="devRollCount" value="1000" min="1" max="100000" step="100">
+      </label>
+
+      <div class="devpanel__actions">
+        <button class="btn btn--sm" data-action="massroll" type="button">Roll &amp; sell</button>
+        <button class="btn btn--sm" data-action="stoproll" type="button" disabled>Stop</button>
+      </div>
+
+      <div class="devpanel__progress hidden" id="devRollProgress">
+        <div class="devpanel__progress-fill" id="devRollBar"></div>
+      </div>
 
       <p class="devpanel__note" id="devStatus"></p>
     </div>
@@ -178,7 +200,130 @@ async function open() {
       notify.success("Applied");
     });
 
+  // -------------------------------------------------------
+  // MASS ROLL
+  //
+  // Rolls many times in a row for testing and giveaways. The
+  // server still runs every roll; this only clears the cooldown
+  // between them and sells the result so the inventory does not
+  // fill up. Cancellable, with live progress.
+  // -------------------------------------------------------
+
+  const rollCountInput = panel.querySelector("#devRollCount");
+  const rollButton = panel.querySelector('[data-action="massroll"]');
+  const stopButton = panel.querySelector('[data-action="stoproll"]');
+  const progress = panel.querySelector("#devRollProgress");
+  const progressBar = panel.querySelector("#devRollBar");
+
+  rollButton.addEventListener("click", async () => {
+    const total = Math.max(
+      1,
+      Math.min(100000, Math.floor(Number(rollCountInput.value) || 0))
+    );
+
+    massRoll.cancelled = false;
+
+    rollButton.disabled = true;
+    stopButton.disabled = false;
+    progress.classList.remove("hidden");
+
+    const result = await massRoll(user.id, total, (done, summary) => {
+      progressBar.style.width = `${(done / total) * 100}%`;
+
+      status.textContent =
+        `Rolled ${formatCount(done)} / ${formatCount(total)} · ` +
+        `+${formatMoney(summary.earned)}`;
+    });
+
+    rollButton.disabled = false;
+    stopButton.disabled = true;
+
+    const rarest = result.rarest
+      ? `${result.rarest.name} (${rarityLabel(result.rarest.rarity)})`
+      : "none";
+
+    status.textContent =
+      `Done: ${formatCount(result.rolled)} rolls, ` +
+      `+${formatMoney(result.earned)}. Rarest: ${rarest}.`;
+
+    notify.success(
+      "Mass roll complete",
+      `${formatCount(result.rolled)} rolls · +${formatMoney(result.earned)}`
+    );
+  });
+
+  stopButton.addEventListener("click", () => {
+    massRoll.cancelled = true;
+
+    stopButton.disabled = true;
+  });
+
   document.addEventListener("keydown", onEscape, true);
+}
+
+
+// A single flag on the function object, so the Stop button can
+// reach the loop without a module-level variable.
+async function massRoll(userId, total, onProgress) {
+  const summary = { rolled: 0, earned: 0, rarest: null };
+
+  for (let i = 0; i < total; i += 1) {
+    if (massRoll.cancelled) {
+      break;
+    }
+
+    // Clear the cooldown the previous roll set, so the next one
+    // is allowed immediately.
+    await patch(userId, { next_roll_at: null });
+
+    const { data, error } = await invokeFunction("roll");
+
+    if (error) {
+      // Because every rolled gem is sold below, the inventory
+      // should never fill mid-run. If it is full, it was full to
+      // begin with, so stop and say so rather than spinning.
+      if (error.code === "inventory_full") {
+        notify.warning(
+          "Mass roll stopped",
+          "Clear some inventory space first."
+        );
+      } else {
+        notify.error("Mass roll stopped", error.message);
+      }
+
+      break;
+    }
+
+    if (!data) {
+      continue;
+    }
+
+    summary.rolled += 1;
+
+    const rarity = Number(data.gem?.rarity ?? 0);
+
+    if (!summary.rarest || rarity > summary.rarest.rarity) {
+      summary.rarest = { name: data.gem?.name ?? "Unknown", rarity };
+    }
+
+    // Sell the specimen unless the server auto-deposited it into
+    // a crafting recipe.
+    if (data.specimenId != null && !data.autoCraft?.deposited) {
+      const { data: sale } = await sellCloudGem(data.specimenId);
+
+      if (sale) {
+        summary.earned += Number(sale.soldValue ?? 0);
+      }
+    }
+
+    if (i % 5 === 0 || i === total - 1) {
+      onProgress(summary.rolled, summary);
+    }
+  }
+
+  onProgress(summary.rolled, summary);
+
+  return summary;
 }
 
 
