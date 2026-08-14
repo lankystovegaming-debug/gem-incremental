@@ -276,6 +276,142 @@ const gems = [
     valuePerGram: 200,
     description:
       "This should not be here. Whatever you rolled, it probably is not a mineral."
+  },
+
+  {
+    name: "Citrine",
+    rarity: 90,
+    baseWeight: 290,
+    valuePerGram: 0.34,
+    description:
+      "A golden variety of quartz whose warm colour ranges from pale yellow to deep amber. Its sunny appearance has made it a popular decorative gemstone."
+  },
+
+  {
+    name: "Moonstone",
+    rarity: 750,
+    baseWeight: 440,
+    valuePerGram: 1.43,
+    description:
+      "A softly glowing feldspar gemstone that appears to hold drifting moonlight beneath its surface. The effect becomes especially striking as the stone moves."
+  },
+
+  {
+    name: "Demantoid",
+    rarity: 6800,
+    baseWeight: 690,
+    valuePerGram: 7.6,
+    description:
+      "A brilliant green variety of garnet prized for its vivid colour and intense sparkle. High-quality specimens can rival even diamond in their flashes of light."
+  },
+
+  {
+    name: "Jeremejevite",
+    rarity: 14000,
+    baseWeight: 850,
+    valuePerGram: 12,
+    description:
+      "An exceptionally rare crystal usually found in delicate shades of blue or nearly colourless forms. Clear gem-quality specimens are particularly difficult to obtain."
+  },
+
+  {
+    name: "Poudretteite",
+    rarity: 22000,
+    baseWeight: 925,
+    valuePerGram: 16,
+    description:
+      "A remarkably rare mineral with gentle pink and violet tones. Its subtle colour contrasts with the extraordinary scarcity of usable crystals."
+  },
+
+  {
+    name: "Serendibite",
+    rarity: 35000,
+    baseWeight: 1000,
+    valuePerGram: 22,
+    description:
+      "A rare mineral ranging from deep blue-green to almost black. Transparent specimens are exceptionally scarce and highly sought after."
+  },
+
+  {
+    name: "Blue Garnet",
+    rarity: 55000,
+    baseWeight: 1100,
+    valuePerGram: 30,
+    description:
+      "An extraordinary garnet variety capable of displaying rich blue-green tones under certain lighting. Its unusual colour makes it one of the rarest members of the garnet family."
+  },
+
+  {
+    name: "Kyawthuite",
+    rarity: 85000,
+    baseWeight: 1200,
+    valuePerGram: 42,
+    description:
+      "An extremely rare reddish-orange mineral known from only a tiny number of specimens. Its scarcity has given it an almost legendary reputation among collectors."
+  },
+
+  {
+    name: "Aether Quartz",
+    rarity: 140000,
+    baseWeight: 1350,
+    valuePerGram: 54,
+    description:
+      "Quartz transformed by prolonged exposure to concentrated aether. Pale energy drifts through its crystal structure like luminous mist trapped beneath glass."
+  },
+
+  {
+    name: "Void Opal",
+    rarity: 250000,
+    baseWeight: 1550,
+    valuePerGram: 76.5,
+    description:
+      "An opal formed where ordinary light begins to fail. Its surface displays shifting colours surrounding patches of darkness that seem deeper than the stone itself."
+  },
+
+  {
+    name: "Chronite",
+    rarity: 480000,
+    baseWeight: 1800,
+    valuePerGram: 112.5,
+    description:
+      "A crystal that resonates faintly out of sequence with the present. Light passing through it sometimes appears a fraction of a second before the crystal is moved."
+  },
+
+  {
+    name: "Neutron Crystal",
+    rarity: 800000,
+    baseWeight: 2200,
+    valuePerGram: 157.5,
+    description:
+      "An impossibly dense crystalline structure created under crushing cosmic pressure. Despite its compact form, it carries the weight of something far larger."
+  },
+
+  {
+    name: "Antimatter Crystal",
+    rarity: 1800000,
+    baseWeight: 2900,
+    valuePerGram: 270,
+    description:
+      "A volatile crystal held together by an unknown containment field. Its surface flickers as nearby matter narrowly avoids contact with the energy sealed inside."
+  },
+
+  {
+    name: "Singularity Shard",
+    rarity: 4000000,
+    baseWeight: 3600,
+    valuePerGram: 472.5,
+    description:
+      "A fragment formed around the edge of a collapsed point in space. Light bends across its surface, and its true weight seems impossible to measure."
+  },
+
+  {
+    name: "Lanky Gem",
+    rarity: 10000000,
+    baseWeight: 40500,
+    valuePerGram: 111.1111,
+    hideRarityUntilDiscovered: true,
+    description:
+      "Named after the creator of Gem Incremental, the sheer weight of this \"gem\" represents his actual value in real life. also how did you even get this"
   }
 ];
 

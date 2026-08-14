@@ -186,15 +186,23 @@ function gemCard(gem) {
   const entry = state.index[gem.name];
 
   if (!entry) {
+    const hiddenRarity = gem.hideRarityUntilDiscovered === true;
+
     return `
-      <article class="index-card index-card--locked tier-${tier.id}">
+      <article class="index-card index-card--locked ${
+        hiddenRarity ? "tier-unknown" : `tier-${tier.id}`
+      }">
         <div class="index-card__head">
           <div>
             <div class="index-card__name">???</div>
-            <div class="index-card__rarity">${rarityLabel(gem.rarity)}</div>
+            <div class="index-card__rarity">${
+              hiddenRarity ? "Unknown rarity" : rarityLabel(gem.rarity)
+            }</div>
           </div>
 
-          <span class="badge badge--tier">${tier.name}</span>
+          <span class="badge badge--tier">${
+            hiddenRarity ? "Unknown" : tier.name
+          }</span>
         </div>
 
         <p class="index-card__hidden">

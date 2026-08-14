@@ -9,10 +9,12 @@
 const RARITY_TIERS = [
   { id: "common",     name: "Common",     max: 10 },
   { id: "uncommon",   name: "Uncommon",   max: 50 },
-  { id: "rare",       name: "Rare",       max: 250 },
-  { id: "epic",       name: "Epic",       max: 2000 },
-  { id: "legendary",  name: "Legendary",  max: 20000 },
-  { id: "mythic",     name: "Mythic",     max: Infinity }
+  { id: "rare",       name: "Rare",       max: 100 },
+  { id: "epic",       name: "Epic",       max: 1000 },
+  { id: "legendary",  name: "Legendary",  max: 10000 },
+  { id: "mythic",     name: "Mythic",     max: 100000 },
+  { id: "exotic",     name: "Exotic",     max: 1000000 },
+  { id: "cosmic",     name: "Cosmic",     max: Infinity }
 ];
 
 

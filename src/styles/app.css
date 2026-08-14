@@ -126,6 +126,8 @@
   --rarity-epic: #c084fc;
   --rarity-legendary: #fbbf24;
   --rarity-mythic: #fb7185;
+  --rarity-exotic: #22d3ee;
+  --rarity-cosmic: #f472b6;
 
   /* Accent — overridden per data-accent below. */
   --accent: #7c8cf8;
@@ -205,6 +207,8 @@
   --rarity-epic: #8b3fd4;
   --rarity-legendary: #b47209;
   --rarity-mythic: #d4356b;
+  --rarity-exotic: #0891b2;
+  --rarity-cosmic: #be185d;
 }
 
 /* Only "System" leaves data-theme unset, so this must not
@@ -244,6 +248,8 @@
     --rarity-epic: #8b3fd4;
     --rarity-legendary: #b47209;
     --rarity-mythic: #d4356b;
+    --rarity-exotic: #0891b2;
+    --rarity-cosmic: #be185d;
   }
 }
 
@@ -289,6 +295,8 @@
   --rarity-epic: #c07bff;
   --rarity-legendary: #ffc93c;
   --rarity-mythic: #ff5f9e;
+  --rarity-exotic: #22e7ff;
+  --rarity-cosmic: #ff71ce;
 
   --accent: #7d8dff;
   --accent-strong: #6b7bff;
@@ -1115,6 +1123,9 @@ a.btn--icon[aria-current="page"] {
 .tier-epic       { --tier: var(--rarity-epic); }
 .tier-legendary  { --tier: var(--rarity-legendary); }
 .tier-mythic     { --tier: var(--rarity-mythic); }
+.tier-exotic     { --tier: var(--rarity-exotic); }
+.tier-cosmic     { --tier: var(--rarity-cosmic); }
+.tier-unknown    { --tier: var(--text-faint); }
 
 .badge--tier {
   color: var(--tier, var(--text-muted));
