@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Buy Tier 1 potions to boost your gem rolls.">
+
+  <title>Potion Shop · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./boosts.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+        document.documentElement.setAttribute("data-accent", accent || "indigo");
+      } catch (error) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Potion Shop</h1>
+        <p class="page-head__sub" id="shopSubtitle">Loading potions…</p>
+      </div>
+
+      <button class="btn" id="refreshButton" type="button">
+        <span id="refreshIcon"></span>
+        Refresh
+      </button>
+    </div>
+
+    <section class="shop-note">
+      <span id="shopNoteIcon"></span>
+      <div>
+        <strong>Tier 1 potions start each crafting path.</strong>
+        <p>Buy them here, then combine them with gems in Crafting to make Tier 2 and Tier 3 potions.</p>
+      </div>
+    </section>
+
+    <div id="potionList" class="potion-grid" aria-live="polite"></div>
+  </main>
+
+  <script type="module" src="./boosts.js"></script>
+</body>
+</html>

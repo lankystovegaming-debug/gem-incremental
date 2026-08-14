@@ -1,0 +1,128 @@
+.shop-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.shop-note > span {
+  color: var(--accent);
+  flex: none;
+}
+
+.shop-note svg {
+  width: 22px;
+  height: 22px;
+}
+
+.shop-note p {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.potion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.potion-card {
+  --potion-color: var(--accent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 300px;
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  overflow: hidden;
+  animation: card-in 0.28s ease-out backwards;
+}
+
+.potion-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--potion-color);
+}
+
+.potion-card--luck { --potion-color: #a78bfa; }
+.potion-card--rollSpeed { --potion-color: #60a5fa; }
+.potion-card--weightLuck { --potion-color: #34d399; }
+.potion-card--weightMultiplier { --potion-color: #f59e0b; }
+
+.potion-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.potion-card__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--potion-color);
+  background: color-mix(in srgb, var(--potion-color) 14%, transparent);
+}
+
+.potion-card__icon svg { width: 24px; height: 24px; }
+
+.potion-card__owned {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.potion-card__name {
+  font-size: 1.12rem;
+  font-weight: 680;
+}
+
+.potion-card__description {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.potion-card__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.potion-card__purchase {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.potion-card__price {
+  color: var(--positive);
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (max-width: 520px) {
+  .potion-card { min-height: 260px; }
+  .potion-card__purchase { align-items: stretch; flex-direction: column; }
+  .potion-card__purchase .btn { width: 100%; }
+}

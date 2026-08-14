@@ -41,6 +41,13 @@ export const icons = {
     <path d="M6 21h12" />
   `),
 
+  potion: svg(`
+    <path d="M9 3h6" />
+    <path d="M10 3v5l-4.8 8.1A3.2 3.2 0 0 0 8 21h8a3.2 3.2 0 0 0 2.8-4.9L14 8V3" />
+    <path d="M7.8 14h8.4" />
+    <circle cx="10" cy="17" r=".8" fill="currentColor" stroke="none" />
+  `),
+
   book: svg(`
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z" />
     <path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5Z" />
