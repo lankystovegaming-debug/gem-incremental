@@ -787,7 +787,7 @@ const recipes = [
     requirements: [
       { type: "consumable", consumableId: "mass-potion-1", amount: 2 },
       { type: "gem-count", gem: "Topaz", amount: 2 },
-      { id: "mass-potion-2-weight", type: "specimen-total-weight", label: "Additional sacrificed gem weight", totalWeight: 7500 }
+      { id: "mass-potion-2-weight", type: "gem-total-weight", label: "Additional sacrificed gem weight", totalWeight: 7500 }
     ],
     moneyCost: 400,
     reward: { type: "consumable", id: "mass-potion-2", name: "Mass Potion II", family: "weightMultiplier", tier: 2, amount: 1, effectValue: 0.15 }
@@ -797,7 +797,7 @@ const recipes = [
     requirements: [
       { type: "consumable", consumableId: "mass-potion-2", amount: 2 },
       { type: "gem-count", gem: "Opal", amount: 2 },
-      { id: "mass-potion-3-weight", type: "specimen-total-weight", label: "Additional sacrificed gem weight", totalWeight: 20000 }
+      { id: "mass-potion-3-weight", type: "gem-total-weight", label: "Additional sacrificed gem weight", totalWeight: 20000 }
     ],
     moneyCost: 1000,
     reward: { type: "consumable", id: "mass-potion-3", name: "Mass Potion III", family: "weightMultiplier", tier: 3, amount: 1, effectValue: 0.25 }
