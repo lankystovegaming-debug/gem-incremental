@@ -101,6 +101,12 @@
   gap: 6px;
 }
 
+.potion-card__chain {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .potion-card__purchase {
   display: flex;
   align-items: center;

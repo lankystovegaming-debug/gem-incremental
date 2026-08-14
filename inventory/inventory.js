@@ -7,6 +7,8 @@ import {
   upgradeCloudInventory
 } from "../src/backend/cloudInventory.js";
 import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
+import { loadCloudConsumables } from "../src/backend/cloudConsumables.js";
+import consumables, { getConsumableById } from "../src/data/consumables.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -58,11 +60,14 @@ const capacityUpgradeButton = document.getElementById("capacityUpgradeButton");
 
 const gemsTab = document.getElementById("gemsTab");
 const equipmentTab = document.getElementById("equipmentTab");
+const potionsTab = document.getElementById("potionsTab");
 const gemsSection = document.getElementById("gemsSection");
 const equipmentSection = document.getElementById("equipmentSection");
+const potionsSection = document.getElementById("potionsSection");
 
 const inventoryList = document.getElementById("inventoryList");
 const equipmentList = document.getElementById("equipmentList");
+const consumableList = document.getElementById("consumableList");
 
 const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
@@ -80,6 +85,7 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 const state = {
   gems: [],
   equipment: [],
+  consumables: [],
   capacity: 15,
   money: 0,
   loading: true
@@ -90,18 +96,24 @@ const state = {
 // TABS
 // =========================================================
 
-function selectTab(tab) {
-  const gems = tab === "gems";
+const TABS = [
+  { id: "gems", tab: gemsTab, section: gemsSection },
+  { id: "equipment", tab: equipmentTab, section: equipmentSection },
+  { id: "potions", tab: potionsTab, section: potionsSection }
+];
 
-  gemsTab.setAttribute("aria-selected", String(gems));
-  equipmentTab.setAttribute("aria-selected", String(!gems));
+function selectTab(active) {
+  for (const entry of TABS) {
+    const on = entry.id === active;
 
-  gemsSection.classList.toggle("hidden", !gems);
-  equipmentSection.classList.toggle("hidden", gems);
+    entry.tab.setAttribute("aria-selected", String(on));
+    entry.section.classList.toggle("hidden", !on);
+  }
 }
 
-gemsTab.addEventListener("click", () => selectTab("gems"));
-equipmentTab.addEventListener("click", () => selectTab("equipment"));
+for (const entry of TABS) {
+  entry.tab.addEventListener("click", () => selectTab(entry.id));
+}
 
 
 // =========================================================
@@ -558,6 +570,104 @@ function renderEquipment() {
 
 
 // =========================================================
+// POTIONS
+// =========================================================
+
+const POTION_STATS = {
+  luck: "Luck",
+  rollSpeed: "Roll speed",
+  weightLuck: "Weight luck",
+  weightMultiplier: "Weight multiplier"
+};
+
+const POTION_NUMERALS = ["", "I", "II", "III"];
+
+
+function totalPotions() {
+  return state.consumables.reduce(
+    (sum, row) => sum + Number(row.quantity ?? 0),
+    0
+  );
+}
+
+
+function renderConsumables() {
+  if (state.loading) {
+    consumableList.innerHTML = Array.from(
+      { length: 4 },
+      () => '<div class="skeleton skeleton--card"></div>'
+    ).join("");
+
+    return;
+  }
+
+  // Only rows the player actually owns, newest tiers alongside
+  // their base, ordered by family then tier.
+  const owned = state.consumables
+    .map((row) => ({
+      row,
+      def: getConsumableById(row.consumable_id)
+    }))
+    .filter((entry) => entry.def && Number(entry.row.quantity) > 0)
+    .sort(
+      (a, b) =>
+        a.def.family.localeCompare(b.def.family) || a.def.tier - b.def.tier
+    );
+
+  if (owned.length === 0) {
+    consumableList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.potion}
+        <p class="empty__title">No potions yet</p>
+        <p>Buy Tier 1 potions in the shop, then craft them up.</p>
+        <a class="btn btn--primary" href="../boosts/" style="margin-top:8px">
+          Open potion shop
+        </a>
+      </div>
+    `;
+
+    return;
+  }
+
+  consumableList.innerHTML = owned
+    .map(({ row, def }) => {
+      const stat = POTION_STATS[def.family] ?? def.family;
+
+      return `
+        <article class="potion-owned tier-badge-${def.tier}">
+          <div class="potion-owned__head">
+            <span class="potion-owned__icon">${icons.potion}</span>
+            <span class="badge badge--muted">×${formatCount(row.quantity)}</span>
+          </div>
+
+          <div class="potion-owned__name">${escapeHtml(def.name)}</div>
+
+          <div class="potion-owned__meta">
+            <span class="badge badge--positive">+${Math.round(
+              def.effectValue * 100
+            )}% ${escapeHtml(stat)}</span>
+            <span class="badge badge--muted">Tier ${def.tier}</span>
+          </div>
+
+          <p class="potion-owned__note">
+            ${
+              def.tier < 3
+                ? `Craft with gems to reach ${escapeHtml(
+                    `${def.name.split(" ").slice(0, -1).join(" ")} ${
+                      POTION_NUMERALS[def.tier + 1]
+                    }`
+                  )}.`
+                : "Highest tier for this family."
+            }
+          </p>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+
+// =========================================================
 // RENDER
 // =========================================================
 
@@ -568,11 +678,12 @@ function renderAll() {
     ? "Loading your collection…"
     : `${formatCount(state.gems.length)} gems · ` +
       `${formatCount(state.equipment.length)} equipment · ` +
-      `${formatMoney(state.money)}`;
+      `${formatCount(totalPotions())} potions`;
 
   renderCapacity();
   renderGems();
   renderEquipment();
+  renderConsumables();
 }
 
 
@@ -598,10 +709,11 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment] = await Promise.all([
+  const [gems, playerState, equipment, potions] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
-    loadCloudEquipment()
+    loadCloudEquipment(),
+    loadCloudConsumables()
   ]);
 
   state.loading = false;
@@ -617,6 +729,10 @@ async function refresh() {
 
   if (equipment) {
     state.equipment = equipment;
+  }
+
+  if (potions) {
+    state.consumables = potions;
   }
 
   renderAll();

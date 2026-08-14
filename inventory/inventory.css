@@ -225,3 +225,55 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+
+
+/* ---------------------------------------------------------
+   OWNED POTIONS
+   --------------------------------------------------------- */
+
+.potion-owned {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+
+  animation: card-in 0.28s ease-out backwards;
+}
+
+.potion-owned__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.potion-owned__icon {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.potion-owned__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.potion-owned__name {
+  font-weight: 660;
+  font-size: 1.02rem;
+}
+
+.potion-owned__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.potion-owned__note {
+  margin-top: auto;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}

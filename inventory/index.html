@@ -104,6 +104,17 @@
         >
           Equipment
         </button>
+
+        <button
+          class="segmented__item"
+          id="potionsTab"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="potionsSection"
+        >
+          Potions
+        </button>
       </div>
     </div>
 
@@ -149,6 +160,13 @@
 
     <section id="equipmentSection" class="hidden" role="tabpanel" aria-labelledby="equipmentTab">
       <div id="equipmentList" class="grid grid--wide"></div>
+    </section>
+
+
+    <!-- ================= POTIONS ================= -->
+
+    <section id="potionsSection" class="hidden" role="tabpanel" aria-labelledby="potionsTab">
+      <div id="consumableList" class="grid grid--cards"></div>
     </section>
   </main>
 
