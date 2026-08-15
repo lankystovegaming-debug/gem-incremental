@@ -8,6 +8,16 @@ const DEFAULT_PLAYER_STATE = {
 
 
 export async function loadCloudGems() {
+  const {
+    data: { user },
+    error: userError
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("Failed to get current user:", userError);
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("inventory_gems")
     .select(`
@@ -25,17 +35,16 @@ export async function loadCloudGems() {
       locked,
       created_at
     `)
+    .eq("player_id", user.id)
     .order("created_at", { ascending: true });
 
   if (error) {
     console.error("Failed to load cloud gems:", error);
-
     return null;
   }
 
   return data ?? [];
 }
-
 
 // A player who has just signed in may not have a row yet, so a
 // missing one is the starting state rather than a failure.
