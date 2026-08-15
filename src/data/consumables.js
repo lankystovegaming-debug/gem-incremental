@@ -20,6 +20,29 @@ const consumables = [
   }))
 );
 
+consumables.push(
+  {
+    id: "legendary-potion",
+    name: "Legendary Potion",
+    family: "luck",
+    tier: 4,
+    durationMs: null,
+    effectValue: 1000,
+    oneRoll: true,
+    shop: { purchasable: false, price: null }
+  },
+  {
+    id: "mythic-potion",
+    name: "Mythic Potion",
+    family: "luck",
+    tier: 4,
+    durationMs: null,
+    effectValue: 10000,
+    oneRoll: true,
+    shop: { purchasable: false, price: null }
+  }
+);
+
 export function getConsumableById(id) {
   return consumables.find((item) => item.id === id) ?? null;
 }

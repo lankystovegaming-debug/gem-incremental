@@ -1052,6 +1052,28 @@ const recipes = [
     reward: { type: "consumable", id: "lucky-potion-3", name: "Lucky Potion III", family: "luck", tier: 3, amount: 1, effectValue: 0.50 }
   },
   {
+    id: "legendary-potion", name: "Legendary Potion", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-3", amount: 2 },
+      { type: "gem-count", gem: "Amethyst", amount: 5 },
+      { type: "gem-count", gem: "Topaz", amount: 3 },
+      { type: "gem-count", gem: "Sapphire", amount: 2 }
+    ],
+    moneyCost: 0,
+    reward: { type: "consumable", id: "legendary-potion", name: "Legendary Potion", family: "luck", tier: 4, amount: 1, effectValue: 1000, oneRoll: true }
+  },
+  {
+    id: "mythic-potion", name: "Mythic Potion", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "legendary-potion", amount: 3 },
+      { type: "gem-count", gem: "Ruby", amount: 5 },
+      { type: "gem-count", gem: "Diamond", amount: 3 },
+      { type: "gem-count", gem: "Black Opal", amount: 2 }
+    ],
+    moneyCost: 0,
+    reward: { type: "consumable", id: "mythic-potion", name: "Mythic Potion", family: "luck", tier: 4, amount: 1, effectValue: 10000, oneRoll: true }
+  },
+  {
     id: "speed-potion-2", name: "Speed Potion II", category: "potion",
     requirements: [
       { type: "consumable", consumableId: "speed-potion-1", amount: 2 },

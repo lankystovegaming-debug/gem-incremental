@@ -313,7 +313,9 @@ function formatReward(recipe) {
 
   return [
     `<span class="badge badge--positive">+${(recipe.reward.effectValue * 100).toFixed(0)}% ${escapeHtml(statNames[recipe.reward.family] ?? recipe.reward.family)}</span>`,
-    '<span class="badge badge--muted">60 seconds</span>'
+    recipe.reward.oneRoll
+      ? '<span class="badge badge--muted">Next successful roll</span>'
+      : '<span class="badge badge--muted">60 seconds</span>'
   ];
 }
 
