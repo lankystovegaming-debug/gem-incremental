@@ -8,7 +8,7 @@ import {
 } from "../src/logic/crafting.js";
 
 const potionRecipes = recipes.filter((recipe) => recipe.category === "potion");
-assert.equal(potionRecipes.length, 8);
+assert.equal(potionRecipes.length, 10);
 assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
@@ -42,8 +42,26 @@ assert.equal(ensureRecipeProgress(massState, mass)["mass-potion-2-weight"], 7600
 assert.equal(isRequirementComplete(massState, mass, mass.requirements[2], 2, massInventory), true);
 
 const lucky = recipes.find((recipe) => recipe.id === "lucky-potion-2");
-assert.equal(isRequirementComplete(createCraftingState(), lucky, lucky.requirements[0], 0, {
-  equipment: [], consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }]
-}), true);
+const luckyState = createCraftingState();
+const luckyInventory = {
+  equipment: [],
+  consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }],
+  gems: []
+};
+assert.equal(
+  manuallyDepositRequirement(luckyState, lucky, luckyInventory, 0),
+  true
+);
+assert.equal(luckyInventory.consumables[0].quantity, 0);
+assert.equal(
+  isRequirementComplete(
+    luckyState,
+    lucky,
+    lucky.requirements[0],
+    0,
+    luckyInventory
+  ),
+  true
+);
 
 console.log("Potion crafting tests passed.");

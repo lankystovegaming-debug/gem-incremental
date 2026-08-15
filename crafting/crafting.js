@@ -41,6 +41,7 @@ const recipeList = document.getElementById("recipeList");
 const subtitle = document.getElementById("craftingSubtitle");
 const categoryTabs = document.querySelectorAll("[data-category]");
 const hideOwned = document.getElementById("hideOwned");
+const hideOwnedRow = document.getElementById("hideOwnedRow");
 
 const autoBanner = document.getElementById("autoCraftBanner");
 const autoBannerName = document.getElementById("autoCraftName");
@@ -350,6 +351,10 @@ function formatReward(recipe) {
 function setCategory(category) {
   state.category = category;
 
+  if (hideOwnedRow) {
+    hideOwnedRow.hidden = category === "potion";
+  }
+
   for (const tab of categoryTabs) {
     tab.setAttribute(
       "aria-selected",
@@ -482,7 +487,14 @@ function recipeCard(recipe) {
       }
 
       if (requirement.type === "consumable") {
-        const detail = describeRequirement(requirement);
+        const key = requirementKey(requirement, index);
+        const deposited = Number(progress[key] ?? 0);
+        const current = deposited;
+        const detail = {
+          label: getConsumableById(requirement.consumableId)?.name ?? requirement.consumableId,
+          text: `${formatCount(current)} / ${formatCount(requirement.amount)}`,
+          fraction: ratio(current, requirement.amount)
+        };
         const complete = isRequirementComplete(
           state.crafting, recipe, requirement, index, equipmentContext()
         );
@@ -492,9 +504,17 @@ function recipeCard(recipe) {
             <span class="requirement__label">${escapeHtml(detail.label)}</span>
             <span class="requirement__right">
               <span class="requirement__value">${escapeHtml(detail.text)}</span>
-              <span class="requirement__check${complete ? "" : " requirement__check--missing"}">
-                ${complete ? icons.check : icons.x}
-              </span>
+              ${
+                complete
+                  ? `<span class="requirement__check">${icons.check}</span>`
+                  : `<button
+                       class="btn btn--sm"
+                       data-action="deposit"
+                       data-index="${index}"
+                       type="button"
+                       title="Deposit matching potion from your consumables"
+                     >Deposit</button>`
+              }
             </span>
             <span class="requirement__bar"><span style="width:${detail.fraction * 100}%"></span></span>
           </div>
@@ -879,7 +899,7 @@ async function runPotionAutoCraftOnce() {
     // Keep feeding the potion recipe from the player's unlocked inventory.
     for (let index = 0; index < recipe.requirements.length; index += 1) {
       const requirement = recipe.requirements[index];
-      if (["equipment", "consumable", "lifetime-rolls"].includes(requirement.type)) {
+      if (["equipment", "lifetime-rolls"].includes(requirement.type)) {
         continue;
       }
 
@@ -972,6 +992,10 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 
+
+if (hideOwnedRow) {
+  hideOwnedRow.hidden = state.category === "potion";
+}
 
 renderRecipes();
 refresh().then(() => startPotionAutoCraftLoop());

@@ -54,7 +54,12 @@ const MODE_ICONS = {
   system: icons.monitor,
   light: icons.sun,
   dark: icons.moon,
-  neon: icons.bolt
+  neon: icons.bolt,
+  gradient: icons.sparkle,
+  ocean: icons.droplet ?? icons.sparkle,
+  forest: icons.leaf ?? icons.sparkle,
+  sunset: icons.sunset ?? icons.sun,
+  ice: icons.snowflake ?? icons.sparkle
 };
 
 
