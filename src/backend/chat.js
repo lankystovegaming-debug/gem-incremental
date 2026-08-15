@@ -5,20 +5,10 @@ const MAX_MESSAGE_LENGTH = 500;
 
 let chatChannel = null;
 
-/**
- * Send a global chat message.
- *
- * The 5-second cooldown is enforced by PostgreSQL, not this client.
- * This function therefore cannot bypass the cooldown by changing
- * browser-side JavaScript.
- */
 export async function sendChatMessage(message) {
   const text = String(message ?? "").trim();
 
-  if (!text) {
-    throw new Error("Message cannot be empty.");
-  }
-
+  if (!text) throw new Error("Message cannot be empty.");
   if (text.length > MAX_MESSAGE_LENGTH) {
     throw new Error(`Message cannot exceed ${MAX_MESSAGE_LENGTH} characters.`);
   }
@@ -35,9 +25,6 @@ export async function sendChatMessage(message) {
   return data;
 }
 
-/**
- * Load the most recent global chat messages.
- */
 export async function loadChatMessages(limit = 50) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
@@ -63,20 +50,12 @@ export async function loadChatMessages(limit = 50) {
   return (data ?? []).reverse().map(normalizeMessage);
 }
 
-/**
- * Subscribe to new global chat messages.
- *
- * Realtime handles new messages, so the client does not poll the database.
- */
 export function subscribeToChat(onMessage) {
   if (typeof onMessage !== "function") {
     throw new TypeError("subscribeToChat requires a callback.");
   }
 
-  if (chatChannel) {
-    console.warn("[CHAT] Already subscribed to global chat.");
-    return chatChannel;
-  }
+  if (chatChannel) return chatChannel;
 
   chatChannel = supabase
     .channel(CHAT_CHANNEL)
@@ -89,14 +68,9 @@ export function subscribeToChat(onMessage) {
       },
       async (payload) => {
         try {
-          // Realtime INSERT payloads contain the new row, but not necessarily
-          // the joined player username. Fetch the username only for this
-          // newly-created message.
           const message = await getMessageWithUsername(payload.new);
 
-          if (message) {
-            onMessage(message);
-          }
+          if (message) onMessage(message);
         } catch (error) {
           console.error("[CHAT] Failed to process realtime message:", error);
         }
@@ -115,19 +89,12 @@ export function subscribeToChat(onMessage) {
   return chatChannel;
 }
 
-/**
- * Stop the Realtime subscription.
- */
 export async function unsubscribeFromChat() {
   if (!chatChannel) return;
-
   await supabase.removeChannel(chatChannel);
   chatChannel = null;
 }
 
-/**
- * Fetch the player username for a newly received message.
- */
 async function getMessageWithUsername(row) {
   if (!row?.id) return null;
 
@@ -145,10 +112,7 @@ async function getMessageWithUsername(row) {
     .eq("id", row.id)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data ? normalizeMessage(data) : null;
 }
 
@@ -161,10 +125,3 @@ function normalizeMessage(row) {
     created_at: row.created_at
   };
 }
-
-export default {
-  loadChatMessages,
-  sendChatMessage,
-  subscribeToChat,
-  unsubscribeFromChat
-};
