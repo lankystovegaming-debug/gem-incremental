@@ -58,6 +58,7 @@ const state = {
   equipment: [],
   consumables: [],
   money: 0,
+  totalRolls: 0,
   category: "pickaxe",
   loading: true
 };
@@ -85,7 +86,8 @@ function ownsTierOrHigher(category, tier) {
 function equipmentContext() {
   return {
     equipment: state.equipment.map((item) => ({ id: item.equipment_id })),
-    consumables: state.consumables
+    consumables: state.consumables,
+    totalRolls: state.totalRolls
   };
 }
 
@@ -127,6 +129,13 @@ function describeRequirement(requirement, value) {
         label: requirement.gem,
         text: `${formatCount(value ?? 0)} / ${formatCount(requirement.amount)}`,
         fraction: ratio(value, requirement.amount)
+      };
+
+    case "lifetime-rolls":
+      return {
+        label: "Lifetime rolls",
+        text: `${formatCount(state.totalRolls)} / ${formatCount(requirement.rolls)}`,
+        fraction: ratio(state.totalRolls, requirement.rolls)
       };
 
     case "gem-total-weight":
@@ -492,6 +501,8 @@ function recipeCard(recipe) {
                 ? `<span class="requirement__check">${icons.check}</span>`
                 : owned
                 ? ""
+                : requirement.type === "lifetime-rolls"
+                ? `<span class="requirement__check requirement__check--missing">${icons.x}</span>`
                 : `<button
                      class="btn btn--sm"
                      data-action="deposit"
@@ -733,6 +744,7 @@ async function refresh() {
 
   if (playerState) {
     state.money = playerState.money;
+    state.totalRolls = playerState.total_rolls;
   }
 
   if (equipment) {

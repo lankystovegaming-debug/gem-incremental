@@ -63,7 +63,8 @@ export function ensureRecipeProgress(
 
       if (
         requirement.type !== "equipment" &&
-        requirement.type !== "consumable"
+        requirement.type !== "consumable" &&
+        requirement.type !== "lifetime-rolls"
       ) {
         progress[key] = 0;
       }
@@ -185,6 +186,10 @@ export function isRequirementComplete(
     );
 
     return Number(owned?.quantity ?? 0) >= requirement.amount;
+  }
+
+  if (requirement.type === "lifetime-rolls") {
+    return Number(inventory?.totalRolls ?? 0) >= Number(requirement.rolls ?? 0);
   }
 
   if (
@@ -413,7 +418,8 @@ export function tryAutoDeposit(
 
     if (
       requirement.type === "equipment" ||
-      requirement.type === "consumable"
+      requirement.type === "consumable" ||
+      requirement.type === "lifetime-rolls"
     ) {
       continue;
     }
@@ -492,7 +498,8 @@ export function manuallyDepositRequirement(
 
   if (
     requirement.type === "equipment" ||
-    requirement.type === "consumable"
+    requirement.type === "consumable" ||
+    requirement.type === "lifetime-rolls"
   ) {
     return false;
   }

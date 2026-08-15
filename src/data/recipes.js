@@ -219,6 +219,54 @@ const recipes = [
     }
   },
 
+  {
+    id: "veteran-pickaxe",
+    name: "Veteran Pickaxe",
+    category: "pickaxe",
+
+    requirements: [
+      { type: "equipment", equipmentId: "voidbreaker-pickaxe" },
+      { type: "gem-count", gem: "Quartz", amount: 200 },
+      { type: "gem-count", gem: "Amethyst", amount: 100 },
+      { type: "gem-count", gem: "Sapphire", amount: 50 },
+      { type: "lifetime-rolls", rolls: 2500 }
+    ],
+
+    moneyCost: 110000,
+
+    reward: {
+      id: "veteran-pickaxe",
+      name: "Veteran Pickaxe",
+      category: "pickaxe",
+      tier: 9,
+      bonus: { luck: 10.00 }
+    }
+  },
+
+  {
+    id: "ascendant-pickaxe",
+    name: "Ascendant Pickaxe",
+    category: "pickaxe",
+
+    requirements: [
+      { type: "equipment", equipmentId: "veteran-pickaxe" },
+      { type: "gem-count", gem: "Quartz", amount: 500 },
+      { type: "gem-count", gem: "Amethyst", amount: 250 },
+      { type: "gem-count", gem: "Sapphire", amount: 100 },
+      { type: "lifetime-rolls", rolls: 5000 }
+    ],
+
+    moneyCost: 225000,
+
+    reward: {
+      id: "ascendant-pickaxe",
+      name: "Ascendant Pickaxe",
+      category: "pickaxe",
+      tier: 10,
+      bonus: { luck: 14.00 }
+    }
+  },
+
 
   // =========================================================
   // LANTERNS — ROLL SPEED
