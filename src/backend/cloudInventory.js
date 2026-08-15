@@ -1,7 +1,6 @@
 import { supabase } from "./supabase.js";
 import { invokeFunction } from "./invoke.js";
 
-
 const DEFAULT_PLAYER_STATE = {
   inventory_capacity: 15,
   money: 0
@@ -41,6 +40,16 @@ export async function loadCloudGems() {
 // A player who has just signed in may not have a row yet, so a
 // missing one is the starting state rather than a failure.
 export async function loadCloudPlayerState() {
+  const {
+    data: { user },
+    error: userError
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("Failed to get current user:", userError);
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("players")
     .select(`
@@ -48,11 +57,11 @@ export async function loadCloudPlayerState() {
       money,
       total_rolls
     `)
+    .eq("id", user.id)
     .maybeSingle();
 
   if (error) {
     console.error("Failed to load cloud player state:", error);
-
     return null;
   }
 
@@ -64,9 +73,7 @@ export async function loadCloudPlayerState() {
     inventory_capacity: Number(
       data.inventory_capacity ?? DEFAULT_PLAYER_STATE.inventory_capacity
     ),
-
     money: Number(data.money ?? 0),
-
     total_rolls: Number(data.total_rolls ?? 0)
   };
 }
