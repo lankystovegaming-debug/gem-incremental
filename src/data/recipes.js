@@ -228,7 +228,8 @@ const recipes = [
       { type: "equipment", equipmentId: "voidbreaker-pickaxe" },
       { type: "gem-count", gem: "Quartz", amount: 200 },
       { type: "gem-count", gem: "Amethyst", amount: 100 },
-      { type: "gem-count", gem: "Sapphire", amount: 50 },
+      { type: "gem-count", gem: "Aquamarine", amount: 50 },
+      { type: "gem-count", gem: "Painite", amount: 1 },
       { type: "lifetime-rolls", rolls: 2500 }
     ],
 
@@ -252,7 +253,8 @@ const recipes = [
       { type: "equipment", equipmentId: "veteran-pickaxe" },
       { type: "gem-count", gem: "Quartz", amount: 500 },
       { type: "gem-count", gem: "Amethyst", amount: 250 },
-      { type: "gem-count", gem: "Sapphire", amount: 100 },
+      { type: "gem-count", gem: "Aquamarine", amount: 100 },
+      { type: "gem-count", gem: "Poudretteite", amount: 1 },
       { type: "lifetime-rolls", rolls: 5000 }
     ],
 
