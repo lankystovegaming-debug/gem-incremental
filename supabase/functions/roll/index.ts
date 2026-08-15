@@ -1355,7 +1355,7 @@ export default {
         error:
           boostError
       } =
-        await ctx.supabase
+        await ctx.supabaseAdmin
           .from(
             "player_boosts"
           )
