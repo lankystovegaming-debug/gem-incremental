@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -166,7 +167,7 @@
 
     <section class="card chat-card" aria-labelledby="chatHeading">
       <div class="chat-card__head">
-        <h2 class="chat-card__title" id="chatHeading">Global Chat</h2>
+        <h2 class="chat-card__title" id="chatHeading">Chat</h2>
         <span class="chat-card__status" id="chatStatus">Connecting…</span>
       </div>
 
@@ -187,7 +188,7 @@
           type="text"
           maxlength="500"
           autocomplete="off"
-          placeholder="Type a message…"
+          placeholder="Message globally, or use /msg username message…"
           aria-label="Chat message"
         >
         <button class="btn btn--primary chat-send" id="chatSend" type="submit">
@@ -196,85 +197,15 @@
       </form>
 
       <div class="chat-hint" id="chatHint" aria-live="polite">
-        You can send one message every 5 seconds.
+        Global chat is public. Use /msg username message for a private message.
       </div>
     </section>
 
-    <!-- ================= PRIVATE MESSAGES ================= -->
 
-    <section class="card dm-card" aria-labelledby="dmHeading">
-      <div class="dm-card__head">
-        <div>
-          <h2 class="dm-card__title" id="dmHeading">Private Messages</h2>
-          <p class="dm-card__sub">Send a message directly to another player.</p>
-        </div>
-        <span class="dm-card__status" id="dmStatus">Connecting…</span>
-      </div>
-
-      <div class="dm-layout">
-        <aside class="dm-sidebar" aria-label="Private conversations">
-          <div class="dm-search">
-            <input
-              class="field"
-              id="dmPlayerSearch"
-              type="search"
-              maxlength="50"
-              autocomplete="off"
-              placeholder="Search players…"
-              aria-label="Search players"
-            >
-            <div class="dm-search-results" id="dmSearchResults" hidden></div>
-          </div>
-
-          <div class="dm-conversations" id="dmConversations">
-            <div class="dm-list-empty">Loading conversations…</div>
-          </div>
-        </aside>
-
-        <div class="dm-conversation-panel">
-          <div class="dm-conversation-head">
-            <strong id="dmConversationTitle">Select a player</strong>
-          </div>
-
-          <div
-            class="dm-messages"
-            id="dmMessages"
-            role="log"
-            aria-live="polite"
-            aria-label="Private messages"
-          >
-            <div class="dm-empty-loading" id="dmEmpty">
-              Search for a player or select an existing conversation.
-            </div>
-          </div>
-
-          <form class="dm-form" id="dmForm">
-            <input
-              class="field dm-input"
-              id="dmInput"
-              type="text"
-              maxlength="500"
-              autocomplete="off"
-              placeholder="Write a private message…"
-              aria-label="Private message"
-              disabled
-            >
-            <button class="btn btn--primary" id="dmSend" type="submit" disabled>
-              Send
-            </button>
-          </form>
-
-          <div class="dm-hint" id="dmHint" aria-live="polite">
-            Select a player to start a private conversation.
-          </div>
-        </div>
-      </div>
-    </section>
 
   </main>
 
   <script type="module" src="./main.js"></script>
   <script type="module" src="./chat-ui.js"></script>
-  <script type="module" src="./private-messages-ui.js"></script>
 </body>
 </html>
