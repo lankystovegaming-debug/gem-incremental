@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Support Gem Incremental and help cover its server costs.">
+
+  <title>Support · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./support.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+        document.documentElement.setAttribute("data-accent", accent || "indigo");
+      } catch (error) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main support-page">
+    <section class="support-hero">
+      <div class="support-hero__glow" aria-hidden="true"></div>
+
+      <div class="support-hero__icon" id="supportHeart"></div>
+
+      <p class="support-hero__eyebrow">Support Gem Incremental</p>
+      <h1>Help keep the gems rolling</h1>
+
+      <p class="support-hero__copy">
+        Gem Incremental is independently developed and uses paid server
+        infrastructure. Optional donations help cover those running costs and
+        give the project more room to grow.
+      </p>
+
+      <a
+        class="btn btn--primary support-hero__button"
+        href="https://buymeacoffee.com/lankystove"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span id="supportButtonIcon"></span>
+        Buy Lanky a coffee
+      </a>
+
+      <p class="support-hero__fineprint">
+        You will be taken to Buy Me a Coffee to complete your donation.
+      </p>
+    </section>
+
+    <section class="support-grid" aria-label="How support helps">
+      <article class="support-card">
+        <span class="support-card__icon" id="serverIcon"></span>
+        <h2>Server costs</h2>
+        <p>Support helps pay for Supabase Pro and the services that keep player data and game systems online.</p>
+      </article>
+
+      <article class="support-card">
+        <span class="support-card__icon" id="updateIcon"></span>
+        <h2>Future updates</h2>
+        <p>More breathing room means more time for new gems, equipment, features, balancing, and bug fixes.</p>
+      </article>
+
+      <article class="support-card">
+        <span class="support-card__icon" id="fairIcon"></span>
+        <h2>Always optional</h2>
+        <p>Donating gives no gameplay advantage, exclusive equipment, or improved odds. Gem Incremental remains fair for everyone.</p>
+      </article>
+    </section>
+
+    <section class="support-thanks card">
+      <div id="thanksIcon"></div>
+      <div>
+        <h2>Thank you for playing</h2>
+        <p>Playing the game, reporting bugs, and sharing it with friends already helps enormously. Donations are appreciated, but never expected.</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./support.js"></script>
+</body>
+</html>
