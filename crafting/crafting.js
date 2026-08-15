@@ -207,14 +207,23 @@ function describeRequirement(requirement, value) {
       const current = value ?? {};
       const each = requirement.amountEach ?? 1;
 
-      const done = requirement.gems.filter(
-        (gemName) => (current[gemName] ?? 0) >= each
-      ).length;
+      const missing = requirement.gems.flatMap((gemName) => {
+        const remaining = Math.max(0, each - Number(current[gemName] ?? 0));
+
+        if (remaining === 0) {
+          return [];
+        }
+
+        return [each > 1 ? `${gemName} ×${remaining}` : gemName];
+      });
+
+      const done = requirement.gems.length - missing.length;
 
       return {
         label: requirement.label ?? "Gem collection",
         text: `${done} / ${requirement.gems.length} gems`,
-        fraction: ratio(done, requirement.gems.length)
+        fraction: ratio(done, requirement.gems.length),
+        missing
       };
     }
 
@@ -493,6 +502,14 @@ function recipeCard(recipe) {
             }
           </span>
 
+          ${
+            detail.missing?.length
+              ? `<div class="requirement__missing">
+                   <span>Missing:</span> ${escapeHtml(detail.missing.join(", "))}
+                 </div>`
+              : ""
+          }
+
           <span class="requirement__bar">
             <span style="width:${(complete ? 1 : detail.fraction) * 100}%"></span>
           </span>
@@ -502,12 +519,6 @@ function recipeCard(recipe) {
     .join("");
 
   const affordable = state.money >= recipe.moneyCost;
-
-  // A "Deposit all" shortcut is offered whenever more than one
-  // requirement still has its own Deposit button.
-  const depositCount = (
-    requirementsHtml.match(/data-action="deposit"/g) ?? []
-  ).length;
 
   return `
     <article
@@ -540,14 +551,6 @@ function recipeCard(recipe) {
           ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
           : `
             <div class="requirements">${requirementsHtml}</div>
-
-            ${
-              depositCount > 1
-                ? `<button class="btn btn--block" data-action="deposit-all" type="button">
-                     Deposit all (${depositCount})
-                   </button>`
-                : ""
-            }
 
             <div class="recipe-cost">
               <span>Cost</span>
@@ -676,52 +679,6 @@ function wireRecipeCard(card) {
       await refresh();
     });
   }
-
-  // Deposit into every remaining requirement at once. Each deposit
-  // is still its own server call; this just saves the clicking.
-  card
-    .querySelector('[data-action="deposit-all"]')
-    ?.addEventListener("click", async (event) => {
-      const button = event.currentTarget;
-
-      const indexes = [
-        ...card.querySelectorAll('[data-action="deposit"]')
-      ].map((depositButton) => Number(depositButton.dataset.index));
-
-      button.disabled = true;
-      button.textContent = "Depositing…";
-
-      let deposited = 0;
-      let firstError = null;
-
-      for (const index of indexes) {
-        const { error } = await manuallyDepositCloudRequirement(
-          recipeId,
-          index
-        );
-
-        if (error) {
-          // "Nothing to deposit" for one requirement should not
-          // stop the others.
-          firstError = firstError ?? error;
-
-          continue;
-        }
-
-        deposited += 1;
-      }
-
-      if (deposited === 0 && firstError) {
-        notify.error("Nothing deposited", firstError.message);
-      } else {
-        notify.success(
-          "Deposited",
-          `Filled ${deposited} requirement${deposited === 1 ? "" : "s"}.`
-        );
-      }
-
-      await refresh();
-    });
 }
 
 

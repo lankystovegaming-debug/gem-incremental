@@ -181,6 +181,18 @@
   opacity: 0.5;
 }
 
+.requirement__missing {
+  grid-column: 1 / -1;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.requirement__missing span {
+  color: var(--text-faint);
+  font-weight: 650;
+}
+
 .requirement__bar {
   grid-column: 1 / -1;
   height: 4px;
