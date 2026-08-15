@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Report a bug or send feedback about Gem Incremental.">
+
+  <title>Report a bug · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./bugs.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accent || "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main app-main--narrow">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Report a bug</h1>
+        <p class="page-head__sub">
+          Found something broken or have an idea? Tell us here — or
+          text us if that's easier.
+        </p>
+      </div>
+    </div>
+
+
+    <!-- ================= FORM ================= -->
+
+    <section class="card" id="bugFormCard">
+      <form id="bugForm" novalidate>
+        <label class="bug-label" for="bugCategory">What kind of report is this?</label>
+        <select class="select" id="bugCategory">
+          <option value="bug">Bug — something isn't working</option>
+          <option value="visual">Visual glitch</option>
+          <option value="suggestion">Suggestion / idea</option>
+          <option value="account">Account or save problem</option>
+          <option value="other">Other</option>
+        </select>
+
+        <label class="bug-label" for="bugBody">Describe it</label>
+        <textarea
+          id="bugBody"
+          class="bug-textarea"
+          rows="6"
+          maxlength="4000"
+          placeholder="What happened, what you expected, and how to reproduce it if you can."
+          required
+        ></textarea>
+
+        <label class="bug-label" for="bugContact">
+          Contact <span class="bug-optional">(optional)</span>
+        </label>
+        <input
+          type="text"
+          id="bugContact"
+          class="bug-input"
+          maxlength="200"
+          placeholder="Email or username, if you'd like a reply"
+          autocomplete="off"
+        >
+
+        <button class="btn btn--primary btn--block" id="bugSubmit" type="submit">
+          Send report
+        </button>
+
+        <p class="account-status" id="bugStatus"></p>
+      </form>
+    </section>
+
+
+    <!-- ================= SUCCESS ================= -->
+
+    <section class="card hidden" id="bugSuccess">
+      <div class="bug-success">
+        <div class="bug-success__mark" id="bugSuccessMark"></div>
+        <h2>Thanks — report received</h2>
+        <p>
+          Your report was sent to the team. If you left a contact, we
+          may reach out for more detail.
+        </p>
+        <button class="btn" id="bugAnother" type="button">Send another</button>
+      </div>
+    </section>
+
+
+    <!-- ================= TEXT OPTION ================= -->
+
+    <section class="card bug-sms">
+      <div class="bug-sms__text">
+        <h2>Prefer to text?</h2>
+        <p class="page-head__sub">
+          Message <strong>80805828</strong> with the details and we'll
+          pick it up.
+        </p>
+      </div>
+
+      <a class="btn btn--primary" href="sms:80805828">Text 80805828</a>
+    </section>
+  </main>
+
+  <script type="module" src="./bugs.js"></script>
+</body>
+</html>

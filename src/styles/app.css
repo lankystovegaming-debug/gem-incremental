@@ -1840,6 +1840,16 @@ a.btn--icon[aria-current="page"] {
   gap: var(--space-2);
 }
 
+.devpanel__row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.devpanel__row .devpanel__field {
+  flex: 1;
+  min-width: 0;
+}
+
 .devpanel__actions .btn {
   flex: 1;
 }
@@ -1869,4 +1879,146 @@ a.btn--icon[aria-current="page"] {
   border-radius: inherit;
   background: var(--accent);
   transition: width 0.1s linear;
+}
+
+
+/* =========================================================
+   ANNOUNCEMENTS
+   ========================================================= */
+
+.announce-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.announce {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: 10px var(--space-4);
+
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.announce__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.announce__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.announce__body {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.announce__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+
+  width: 26px;
+  height: 26px;
+  padding: 0;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+
+  color: var(--text-faint);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.announce__close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.announce--info    { border-left: 3px solid var(--accent); }
+.announce--info .announce__icon { color: var(--accent); }
+
+.announce--warning { border-left: 3px solid var(--warning); }
+.announce--warning .announce__icon { color: var(--warning); }
+
+.announce--positive { border-left: 3px solid var(--positive); }
+.announce--positive .announce__icon { color: var(--positive); }
+
+
+/* =========================================================
+   CONTRIBUTE / REPORT-BUG DOCK (bottom-left)
+   ========================================================= */
+
+.contribute-dock {
+  position: fixed;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 40;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contribute-dock__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 7px 12px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+  backdrop-filter: blur(6px);
+
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.contribute-dock__link:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.contribute-dock__link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The mobile tab bar sits at the very bottom, so lift the dock
+   above it on small screens and let it hug the edge. */
+@media (max-width: 720px) {
+  .contribute-dock {
+    left: var(--space-3);
+    bottom: calc(var(--space-3) + 68px);
+  }
+
+  .contribute-dock__link span {
+    display: none;
+  }
+
+  .contribute-dock__link {
+    padding: 9px;
+  }
 }

@@ -40,7 +40,7 @@ authorises every individual roll and sale.
   touched.
 
 ### Accounts and saves
- 
+
 Players start as an anonymous guest so the game is playable
 immediately. That guest session is the **only** key to that
 save — there is no way to sign back into an anonymous user once

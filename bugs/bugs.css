@@ -1,0 +1,119 @@
+/* =========================================================
+   REPORT A BUG
+   ========================================================= */
+
+.bug-label {
+  display: block;
+  margin: var(--space-4) 0 6px;
+
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.bug-label:first-child {
+  margin-top: 0;
+}
+
+.bug-optional {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.bug-textarea,
+.bug-input {
+  width: 100%;
+  padding: 10px 12px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.bug-textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+.bug-textarea::placeholder,
+.bug-input::placeholder {
+  color: var(--text-faint);
+}
+
+.bug-textarea:focus,
+.bug-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+#bugSubmit {
+  margin-top: var(--space-5);
+}
+
+
+/* ---------------------------------------------------------
+   SUCCESS
+   --------------------------------------------------------- */
+
+.bug-success {
+  display: grid;
+  place-items: center;
+  gap: var(--space-3);
+
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.bug-success__mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--positive) 16%, transparent);
+  color: var(--positive);
+}
+
+.bug-success__mark svg {
+  width: 30px;
+  height: 30px;
+}
+
+.bug-success p {
+  max-width: 40ch;
+  color: var(--text-muted);
+}
+
+.bug-success .btn {
+  margin-top: var(--space-2);
+}
+
+
+/* ---------------------------------------------------------
+   TEXT OPTION
+   --------------------------------------------------------- */
+
+.bug-sms {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+
+  margin-top: var(--space-4);
+}
+
+.bug-sms__text h2 {
+  margin-bottom: 4px;
+  font-size: 1.05rem;
+}
+
+.bug-sms .btn {
+  flex: none;
+}

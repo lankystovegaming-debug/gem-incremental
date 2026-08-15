@@ -66,6 +66,27 @@
 .admin-control--two { grid-template-columns: 1fr auto; }
 .admin-control input, .admin-control select { min-width: 0; width: 100%; }
 
+.admin-textarea {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: 10px 12px;
+  resize: vertical;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.admin-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
 .badge--danger {
   color: var(--negative);
   border-color: transparent;

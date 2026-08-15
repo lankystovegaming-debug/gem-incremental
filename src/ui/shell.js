@@ -136,6 +136,14 @@ export function mountShell({ page, base = "./" }) {
   document.body.appendChild(tabbar);
 
 
+  // Announcement banner (admins post these; everyone sees them).
+  renderAnnouncements(header);
+
+
+  // Bottom-left dock: contribute on GitHub / report a bug.
+  mountContributeDock(base);
+
+
   const walletPill = header.querySelector("#shellWallet");
   const walletValue = header.querySelector("#shellWalletValue");
   const avatar = header.querySelector("#shellAvatar");
@@ -520,6 +528,134 @@ function reportOAuthErrorFromUrl() {
 
       return;
     }
+  }
+}
+
+
+// =========================================================
+// ANNOUNCEMENTS
+//
+// Admins post short messages (post_announcement RPC); the active
+// ones are a public read. Each is dismissible per-device, and a
+// dismissed id is remembered so it does not return until an admin
+// posts a new one.
+// =========================================================
+
+const DISMISSED_KEY = "gemIncremental.dismissedAnnouncements";
+
+// The game's public issue tracker (upstream repo).
+const CONTRIBUTE_URL =
+  "https://github.com/lankystovegaming-debug/gem-incremental/issues";
+
+
+// Fixed bottom-left links so players can contribute or flag a bug
+// from any page without cluttering the header.
+function mountContributeDock(base) {
+  if (document.querySelector(".contribute-dock")) {
+    return;
+  }
+
+  const dock = document.createElement("div");
+
+  dock.className = "contribute-dock";
+
+  dock.innerHTML = `
+    <a
+      class="contribute-dock__link"
+      href="${CONTRIBUTE_URL}"
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Contribute on GitHub"
+    >
+      ${icons.github}
+      <span>Contribute</span>
+    </a>
+
+    <a
+      class="contribute-dock__link"
+      href="${base}bugs/"
+      title="Report a bug"
+    >
+      ${icons.bug}
+      <span>Report a bug</span>
+    </a>
+  `;
+
+  document.body.appendChild(dock);
+}
+
+
+async function renderAnnouncements(header) {
+  let dismissed = [];
+
+  try {
+    dismissed = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]");
+  } catch {
+    dismissed = [];
+  }
+
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("id, body, tone, created_at")
+    .eq("active", true)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error || !Array.isArray(data)) {
+    return;
+  }
+
+  const visible = data.filter((entry) => !dismissed.includes(entry.id));
+
+  if (visible.length === 0) {
+    return;
+  }
+
+  const bar = document.createElement("div");
+
+  bar.className = "announce-bar";
+
+  bar.innerHTML = visible
+    .map(
+      (entry) => `
+        <div class="announce announce--${
+          ["info", "warning", "positive"].includes(entry.tone)
+            ? entry.tone
+            : "info"
+        }" data-id="${entry.id}">
+          <span class="announce__icon">${icons.megaphone}</span>
+          <span class="announce__body">${escapeHtml(entry.body)}</span>
+          <button class="announce__close" type="button" aria-label="Dismiss">×</button>
+        </div>
+      `
+    )
+    .join("");
+
+  header.after(bar);
+
+  for (const item of bar.querySelectorAll(".announce")) {
+    item.querySelector(".announce__close").addEventListener("click", () => {
+      const id = Number(item.dataset.id);
+
+      try {
+        const set = JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]");
+
+        if (!set.includes(id)) {
+          set.push(id);
+        }
+
+        // Keep the list bounded.
+        localStorage.setItem(DISMISSED_KEY, JSON.stringify(set.slice(-100)));
+      } catch {
+        /* localStorage unavailable — the dismissal is not remembered. */
+      }
+
+      item.remove();
+
+      if (!bar.querySelector(".announce")) {
+        bar.remove();
+      }
+    });
   }
 }
 

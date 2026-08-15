@@ -263,6 +263,78 @@ async function loadAudit() {
     </section>`;
 }
 
+// =========================================================
+// ANNOUNCEMENTS (admin only)
+// =========================================================
+
+function wireAnnouncements() {
+  const panel = document.getElementById("announcePanel");
+
+  if (!panel) {
+    return;
+  }
+
+  panel.hidden = false;
+
+  const body = document.getElementById("announceBody");
+  const tone = document.getElementById("announceTone");
+  const postButton = document.getElementById("announcePost");
+  const clearButton = document.getElementById("announceClear");
+  const announceStatus = document.getElementById("announceStatus");
+
+  postButton.addEventListener("click", async () => {
+    const text = body.value.trim();
+
+    if (!text) {
+      notify.error("Nothing to post", "Write a message first.");
+      return;
+    }
+
+    postButton.disabled = true;
+
+    const { error } = await supabase.rpc("post_announcement", {
+      p_body: text,
+      p_tone: tone.value
+    });
+
+    postButton.disabled = false;
+
+    if (error) {
+      notify.error("Could not post", error.message);
+      announceStatus.textContent = "";
+      announceStatus.classList.add("error");
+      return;
+    }
+
+    body.value = "";
+    announceStatus.classList.remove("error");
+    announceStatus.textContent = "Announcement posted.";
+    notify.success("Posted", "Players see it at the top of the game.");
+  });
+
+  clearButton.addEventListener("click", async () => {
+    if (!window.confirm("Clear all active announcements?")) {
+      return;
+    }
+
+    clearButton.disabled = true;
+
+    const { data, error } = await supabase.rpc("clear_announcements", {});
+
+    clearButton.disabled = false;
+
+    if (error) {
+      notify.error("Could not clear", error.message);
+      return;
+    }
+
+    announceStatus.classList.remove("error");
+    announceStatus.textContent = `Cleared ${data ?? 0} announcement(s).`;
+    notify.success("Cleared", "No announcements are showing now.");
+  });
+}
+
+
 searchButton.addEventListener("click", searchPlayers);
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchPlayers();
@@ -289,5 +361,6 @@ if (!user || !whoami?.isAdmin) {
   status.textContent = "Administrator access verified.";
   searchButton.disabled = false;
   auditButton.disabled = false;
+  wireAnnouncements();
   searchInput.focus();
 }

@@ -7,6 +7,8 @@ export const SUPABASE_URL =
   "https://igrddscmrdrrwtvyspbf.supabase.co";
 
 
+// Publishable (anon) key for the project above. Public by design —
+// it is shipped in the client bundle and safe to commit.
 export const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_RXjn6yN0RuJn1CdJ_nJTCQ_0aixEAqI";
 

@@ -90,6 +90,7 @@ const consumableList = document.getElementById("consumableList");
 
 const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
+const gemRarity = document.getElementById("gemRarity");
 const gemSort = document.getElementById("gemSort");
 const sellAllButton = document.getElementById("sellAllButton");
 
@@ -235,6 +236,13 @@ function visibleGems() {
       return false;
     }
 
+    if (
+      gemRarity.value !== "all" &&
+      rarityTier(gem.rarity).id !== gemRarity.value
+    ) {
+      return false;
+    }
+
     return true;
   });
 
@@ -255,14 +263,21 @@ function visibleGems() {
 function renderGems() {
   const gems = visibleGems();
 
-  const unlocked = state.gems.filter((gem) => !gem.locked);
+  // Sell all operates on the current view, so the rarity / search /
+  // lock filters double as a "sell only these" selector.
+  const sellable = gems.filter((gem) => !gem.locked);
 
-  sellAllButton.disabled = unlocked.length === 0;
+  const filtered =
+    gemSearch.value.trim() !== "" ||
+    gemFilter.value !== "all" ||
+    gemRarity.value !== "all";
+
+  sellAllButton.disabled = sellable.length === 0;
 
   sellAllButton.textContent =
-    unlocked.length === 0
+    sellable.length === 0
       ? "Sell unlocked"
-      : `Sell ${formatCount(unlocked.length)} unlocked`;
+      : `Sell ${formatCount(sellable.length)}${filtered ? " filtered" : " unlocked"}`;
 
   if (state.loading) {
     inventoryList.innerHTML = Array.from(
@@ -462,11 +477,18 @@ function wireGemCard(card) {
 // =========================================================
 
 sellAllButton.addEventListener("click", async () => {
-  const unlocked = state.gems.filter((gem) => !gem.locked);
+  // The visible (filtered) unlocked gems — so a rarity / search
+  // filter narrows exactly what gets sold.
+  const unlocked = visibleGems().filter((gem) => !gem.locked);
 
   if (unlocked.length === 0) {
     return;
   }
+
+  const filtered =
+    gemSearch.value.trim() !== "" ||
+    gemFilter.value !== "all" ||
+    gemRarity.value !== "all";
 
   const total = unlocked.reduce((sum, gem) => sum + Number(gem.value), 0);
 
@@ -474,7 +496,11 @@ sellAllButton.addEventListener("click", async () => {
     title: `Sell ${formatCount(unlocked.length)} gems?`,
     body: `
       <p>
-        Every unlocked gem will be sold for a total of about
+        ${
+          filtered
+            ? "Every unlocked gem matching your current filters"
+            : "Every unlocked gem"
+        } will be sold for a total of about
         <strong>${escapeHtml(formatMoney(total))}</strong>.
       </p>
       <p style="margin-top:10px">
@@ -936,7 +962,7 @@ function renderAll() {
 }
 
 
-for (const control of [gemSearch, gemFilter, gemSort]) {
+for (const control of [gemSearch, gemFilter, gemRarity, gemSort]) {
   control.addEventListener("input", renderGems);
 }
 
