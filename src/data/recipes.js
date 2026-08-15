@@ -677,6 +677,66 @@ const recipes = [
     }
   },
 
+  {
+    id: "astral-boots",
+    name: "Astral Boots",
+    category: "boots",
+    requirements: [
+      { type: "equipment", equipmentId: "gravity-boots" },
+      { type: "gem-count", gem: "Diamond", amount: 1 },
+      { type: "gem-count", gem: "Tanzanite", amount: 2 },
+      { type: "gem-count", gem: "Alexandrite", amount: 1 }
+    ],
+    moneyCost: 22000,
+    reward: {
+      id: "astral-boots",
+      name: "Astral Boots",
+      category: "boots",
+      tier: 6,
+      bonus: { weightLuck: 1.75 }
+    }
+  },
+
+  {
+    id: "aetherstep-boots",
+    name: "Aetherstep Boots",
+    category: "boots",
+    requirements: [
+      { type: "equipment", equipmentId: "astral-boots" },
+      { type: "gem-count", gem: "Benitoite", amount: 1 },
+      { type: "gem-count", gem: "Red Beryl", amount: 2 },
+      { type: "gem-count", gem: "Black Opal", amount: 1 }
+    ],
+    moneyCost: 35000,
+    reward: {
+      id: "aetherstep-boots",
+      name: "Aetherstep Boots",
+      category: "boots",
+      tier: 7,
+      bonus: { weightLuck: 2.50 }
+    }
+  },
+
+  {
+    id: "voidwalker-boots",
+    name: "Voidwalker Boots",
+    category: "boots",
+    requirements: [
+      { type: "equipment", equipmentId: "aetherstep-boots" },
+      { type: "gem-count", gem: "Grandidierite", amount: 1 },
+      { type: "gem-count", gem: "Taaffeite", amount: 1 },
+      { type: "gem-count", gem: "Musgravite", amount: 1 }
+    ],
+    moneyCost: 55000,
+    reward: {
+      id: "voidwalker-boots",
+      name: "Voidwalker Boots",
+      category: "boots",
+      tier: 8,
+      bonus: { weightLuck: 4.00 }
+    }
+  },
+
 
   // =========================================================
   // BAGS — WEIGHT MULTIPLIER
@@ -855,6 +915,66 @@ const recipes = [
       bonus: {
         weightMultiplier: 0.15
       }
+    }
+  },
+
+  {
+    id: "colossal-bag",
+    name: "Colossal Bag",
+    category: "bag",
+    requirements: [
+      { type: "equipment", equipmentId: "bottomless-bag" },
+      { type: "gem-count", gem: "Alexandrite", amount: 2 },
+      { type: "gem-count", gem: "Benitoite", amount: 2 },
+      { type: "gem-count", gem: "Black Opal", amount: 1 }
+    ],
+    moneyCost: 45000,
+    reward: {
+      id: "colossal-bag",
+      name: "Colossal Bag",
+      category: "bag",
+      tier: 6,
+      bonus: { weightMultiplier: 0.25 }
+    }
+  },
+
+  {
+    id: "aetherwoven-bag",
+    name: "Aetherwoven Bag",
+    category: "bag",
+    requirements: [
+      { type: "equipment", equipmentId: "colossal-bag" },
+      { type: "gem-count", gem: "Musgravite", amount: 2 },
+      { type: "gem-count", gem: "Painite", amount: 1 },
+      { type: "gem-count", gem: "Jeremejevite", amount: 1 }
+    ],
+    moneyCost: 90000,
+    reward: {
+      id: "aetherwoven-bag",
+      name: "Aetherwoven Bag",
+      category: "bag",
+      tier: 7,
+      bonus: { weightMultiplier: 0.40 }
+    }
+  },
+
+  {
+    id: "dimensional-bag",
+    name: "Dimensional Bag",
+    category: "bag",
+    requirements: [
+      { type: "equipment", equipmentId: "aetherwoven-bag" },
+      { type: "gem-count", gem: "Poudretteite", amount: 1 },
+      { type: "gem-count", gem: "Serendibite", amount: 1 },
+      { type: "gem-count", gem: "Blue Garnet", amount: 1 }
+    ],
+    moneyCost: 175000,
+    reward: {
+      id: "dimensional-bag",
+      name: "Dimensional Bag",
+      category: "bag",
+      tier: 8,
+      bonus: { weightMultiplier: 0.65 }
     }
   },
 
