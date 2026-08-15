@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap");
+
+:root {
+  color-scheme: dark;
+  --bg:#0b0e14; --bg-glow:#151b2b; --surface:#121720;
+  --surface-hover:#1c2331; --border:#242c3b; --border-strong:#323c50;
+  --text:#e8ecf4; --text-muted:#9aa5ba; --text-faint:#6b7689;
+  --accent:#7c8cf8; --accent-strong:#6675f0; --accent-soft:#7c8cf82e;
+  --shadow-md:0 6px 20px -6px rgb(0 0 0 / .55);
+  --radius:12px; --radius-lg:18px; --nav-height:60px;
+  --font:"Exo 2","Segoe UI",Arial,sans-serif;
+  --font-display:"Orbitron","Exo 2","Segoe UI",sans-serif;
+}
+:root[data-theme="light"] {
+  color-scheme:light;
+  --bg:#f4f6fb; --bg-glow:#e6ebf7; --surface:#fff; --surface-hover:#f0f3fa;
+  --border:#dde3ee; --border-strong:#c3cbdb; --text:#131824;
+  --text-muted:#5a6478; --text-faint:#8b95a8; --shadow-md:0 6px 20px -8px rgb(19 24 36 / .18);
+}
+:root[data-theme="neon"] {
+  --bg:#04060c; --bg-glow:#0a1428; --surface:#080d18; --surface-hover:#121c31;
+  --border:#16223c; --border-strong:#26395f; --text:#d9e4ff; --text-muted:#7f90b8;
+  --text-faint:#56668c; --accent:#7d8dff; --accent-strong:#6b7bff; --accent-soft:#7d8dff26;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{
+  min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font);
+  background-image:radial-gradient(900px 520px at 50% -10%,var(--bg-glow),transparent 70%);
+}
+:root[data-theme="neon"] body{
+  background-image:radial-gradient(900px 520px at 50% -10%,var(--bg-glow),transparent 70%),
+    linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:auto,46px 46px,46px 46px;
+}
+.topbar{
+  position:sticky;top:0;z-index:20;height:var(--nav-height);
+  border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(18px);
+}
+.topbar__inner{
+  width:min(1280px,calc(100% - 32px));height:100%;margin:auto;
+  display:flex;align-items:center;gap:24px;
+}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:800;white-space:nowrap}
+.brand__mark{
+  width:30px;height:30px;display:grid;place-items:center;border-radius:9px;
+  background:var(--accent-soft);color:var(--accent);font-size:18px;
+}
+.brand__name{font-family:var(--font-display);letter-spacing:.02em}
+.nav{display:flex;align-items:center;gap:4px;overflow:auto}
+.nav__link{
+  color:var(--text-muted);text-decoration:none;font-size:.84rem;font-weight:600;
+  padding:8px 10px;border-radius:8px;white-space:nowrap;transition:.15s ease;
+}
+.nav__link:hover{color:var(--text);background:var(--surface-hover)}
+.topbar__spacer{flex:1}
+.topbar__tools{display:flex;align-items:center;gap:8px}
+.wallet{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);
+  border-radius:999px;color:var(--text-muted);font-size:.82rem;font-weight:700;white-space:nowrap;
+}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--border);
+  border-radius:9px;background:transparent;color:var(--text);text-decoration:none;font:600 .84rem var(--font);
+  cursor:pointer;transition:.15s ease;
+}
+.btn--ghost{border-color:transparent;color:var(--text-muted)}
+.btn--ghost:hover{background:var(--surface-hover);color:var(--text)}
+.btn--icon{width:36px;height:36px;padding:0;font-size:16px}
+.account-btn{
+  display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);border-radius:10px;padding:5px 9px 5px 5px;font:600 .82rem var(--font);
+}
+.avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-size:.72rem;font-weight:800}
+.app-main{width:min(900px,calc(100% - 32px));margin:0 auto;padding:clamp(64px,10vh,110px) 0 80px}
+.error-card{text-align:center}
+.error-code{
+  margin:0;font-family:var(--font-display);font-size:clamp(6rem,18vw,12rem);line-height:.9;
+  letter-spacing:-.045em;color:var(--text);text-shadow:0 0 40px var(--accent-soft);
+}
+.error-title{margin:26px 0 0;font-size:clamp(1.35rem,3vw,2rem);font-weight:700}
+.error-message{margin:10px auto 0;max-width:580px;color:var(--text-muted);font-size:1rem;line-height:1.6}
+.error-actions{margin-top:34px}
+.roll-back{
+  display:inline-flex;align-items:center;justify-content:center;min-width:190px;height:48px;padding:0 24px;
+  border:1px solid var(--accent);border-radius:var(--radius);background:var(--accent);
+  color:#0b0e14;text-decoration:none;font:800 .9rem var(--font-display);
+  box-shadow:0 8px 28px -10px var(--accent);transition:transform .16s ease,filter .16s ease;
+}
+.roll-back:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.roll-back:focus-visible,.nav__link:focus-visible,.btn:focus-visible,.account-btn:focus-visible{
+  outline:2px solid var(--accent);outline-offset:3px
+}
+.footer-note{margin-top:26px;color:var(--text-faint);font-size:.78rem}
+@media(max-width:900px){
+  .nav{display:none}.topbar__inner{width:min(100% - 20px,1280px);gap:12px}.brand__name{display:none}
+  .wallet{display:none}.app-main{width:min(100% - 24px,900px);padding-top:72px}
+}
+@media(max-width:480px){
+  .account-btn__name{display:none}.topbar__tools{margin-left:auto}.error-code{font-size:clamp(5rem,25vw,8rem)}
+}
