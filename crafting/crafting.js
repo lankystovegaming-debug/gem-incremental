@@ -63,6 +63,29 @@ const state = {
   loading: true
 };
 
+const POTION_AUTO_STORAGE_KEY = "gemIncremental.crafting.autoPotionRecipe";
+let potionAutoTimer = null;
+let potionAutoBusy = false;
+
+function getAutoPotionRecipeId() {
+  try {
+    return localStorage.getItem(POTION_AUTO_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+function setAutoPotionRecipeId(recipeId) {
+  try {
+    if (recipeId) localStorage.setItem(POTION_AUTO_STORAGE_KEY, recipeId);
+    else localStorage.removeItem(POTION_AUTO_STORAGE_KEY);
+  } catch {}
+}
+
+function isPotionAutoTarget(recipeId) {
+  return isConsumableRecipe(recipes.find((entry) => entry.id === recipeId));
+}
+
 
 // =========================================================
 // EQUIPMENT LOOKUPS
@@ -347,18 +370,15 @@ hideOwned.addEventListener("change", renderRecipes);
 
 
 function renderAutoBanner() {
-  const activeId = state.crafting.activeAutoCraftRecipeId;
+  const activeId = state.crafting.activeAutoCraftRecipeId || getAutoPotionRecipeId();
 
   if (!activeId) {
     autoBanner.classList.add("hidden");
-
     return;
   }
 
   const recipe = recipes.find((entry) => entry.id === activeId);
-
   autoBannerName.textContent = recipe?.name ?? activeId;
-
   autoBanner.classList.remove("hidden");
 }
 
@@ -428,7 +448,9 @@ function recipeCard(recipe) {
 
   const ready = !owned && isRecipeReady(recipe);
 
-  const isAutoTarget = state.crafting.activeAutoCraftRecipeId === recipe.id;
+  const isAutoTarget =
+    state.crafting.activeAutoCraftRecipeId === recipe.id ||
+    getAutoPotionRecipeId() === recipe.id;
 
   const bonuses = formatReward(recipe);
 
@@ -576,14 +598,10 @@ function recipeCard(recipe) {
             </div>
 
             <div class="recipe-card__actions">
-              ${
-                isConsumableRecipe(recipe)
-                  ? ""
-                  : `<button class="btn" data-action="auto" type="button">
-                       ${icons.bolt}
-                       Auto ${isAutoTarget ? "on" : "off"}
-                     </button>`
-              }
+              <button class="btn" data-action="auto" type="button">
+                ${icons.bolt}
+                Auto ${isAutoTarget ? "on" : "off"}
+              </button>
 
               <button
                 class="btn btn--primary"
@@ -677,15 +695,31 @@ function wireRecipeCard(card) {
 
       button.disabled = true;
 
-      const enabled = state.crafting.activeAutoCraftRecipeId === recipeId;
+      const enabled = isConsumableRecipe(recipe)
+        ? getAutoPotionRecipeId() === recipeId
+        : state.crafting.activeAutoCraftRecipeId === recipeId;
+
+      if (isConsumableRecipe(recipe)) {
+        setAutoPotionRecipeId(enabled ? null : recipeId);
+
+        notify.success(
+          enabled ? "Auto Craft off" : "Auto Craft on",
+          enabled
+            ? "Potion crafting has been stopped."
+            : `${recipe.name} will be deposited and crafted automatically while this page is open.`
+        );
+
+        button.disabled = false;
+        renderRecipes();
+        startPotionAutoCraftLoop();
+        return;
+      }
 
       const { error } = await setCloudAutoCraft(enabled ? null : recipeId);
 
       if (error) {
         notify.error("Could not change Auto Craft", error.message);
-
         button.disabled = false;
-
         return;
       }
 
@@ -803,21 +837,87 @@ function wireRecipeCard(card) {
 autoBannerClear.addEventListener("click", async () => {
   autoBannerClear.disabled = true;
 
-  const { error } = await setCloudAutoCraft(null);
+  const potionId = getAutoPotionRecipeId();
+  let error = null;
+
+  if (potionId) {
+    setAutoPotionRecipeId(null);
+  } else {
+    const result = await setCloudAutoCraft(null);
+    error = result.error;
+  }
 
   autoBannerClear.disabled = false;
 
   if (error) {
     notify.error("Could not turn off Auto Craft", error.message);
-
     return;
   }
 
-  notify.info("Auto Craft off", "Rolled gems stay in your inventory.");
-
+  notify.info("Auto Craft off", "Automatic crafting has been stopped.");
   await refresh();
 });
 
+
+// =========================================================
+// POTION AUTO CRAFT
+// =========================================================
+
+async function runPotionAutoCraftOnce() {
+  const recipeId = getAutoPotionRecipeId();
+  if (!recipeId || potionAutoBusy || state.loading) return;
+
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+  if (!recipe || !isConsumableRecipe(recipe)) {
+    setAutoPotionRecipeId(null);
+    return;
+  }
+
+  potionAutoBusy = true;
+
+  try {
+    // Keep feeding the potion recipe from the player's unlocked inventory.
+    for (let index = 0; index < recipe.requirements.length; index += 1) {
+      const requirement = recipe.requirements[index];
+      if (["equipment", "consumable", "lifetime-rolls"].includes(requirement.type)) {
+        continue;
+      }
+
+      await depositRequirementFully(recipeId, index);
+    }
+
+    const fresh = await loadCloudCraftingState();
+    if (fresh) state.crafting = fresh;
+
+    if (isRecipeReady(recipe)) {
+      const { error } = await craftCloudConsumableRecipe(recipeId);
+
+      if (!error) {
+        notify.success("Potion crafted", `${recipe.name} was added to your consumables.`);
+      } else if (!String(error.message ?? "").toLowerCase().includes("requirements")) {
+        console.error("[CRAFT] Auto potion craft failed:", error);
+      }
+
+      await refresh();
+    }
+  } catch (error) {
+    console.error("[CRAFT] Auto potion cycle failed:", error);
+  } finally {
+    potionAutoBusy = false;
+  }
+}
+
+function startPotionAutoCraftLoop() {
+  if (potionAutoTimer) {
+    clearInterval(potionAutoTimer);
+    potionAutoTimer = null;
+  }
+
+  if (!getAutoPotionRecipeId()) return;
+
+  runPotionAutoCraftOnce();
+  potionAutoTimer = setInterval(runPotionAutoCraftOnce, 2000);
+}
 
 // =========================================================
 // LOAD
@@ -868,10 +968,10 @@ async function refresh() {
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    refresh();
+    refresh().then(() => startPotionAutoCraftLoop());
   }
 });
 
 
 renderRecipes();
-refresh();
+refresh().then(() => startPotionAutoCraftLoop());

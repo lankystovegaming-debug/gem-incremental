@@ -2,26 +2,27 @@
 // THEME
 //
 // Two independent choices:
-//   mode   — system | light | dark
+//   mode   — system | light | dark | neon | gradient | ocean |
+//            forest | sunset | ice
 //   accent — the highlight colour used across the UI
 //
-// Both live in localStorage and are applied to <html>. Each
-// page also runs a tiny inline copy of applyStored() in its
-// <head> so the correct theme paints on the first frame.
+// Both live in localStorage and are applied to <html>.
 // =========================================================
-
 
 export const MODE_KEY = "gemIncremental.theme.mode";
 export const ACCENT_KEY = "gemIncremental.theme.accent";
-
 
 export const MODES = [
   { id: "system", label: "System" },
   { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
-  { id: "neon", label: "Neon" }
+  { id: "neon", label: "Neon" },
+  { id: "gradient", label: "Gradient" },
+  { id: "ocean", label: "Ocean" },
+  { id: "forest", label: "Forest" },
+  { id: "sunset", label: "Sunset" },
+  { id: "ice", label: "Cyber Ice" }
 ];
-
 
 export const ACCENTS = [
   { id: "indigo", label: "Indigo", swatch: "#7c8cf8" },
@@ -31,10 +32,8 @@ export const ACCENTS = [
   { id: "cyan", label: "Cyan", swatch: "#38bdf8" }
 ];
 
-
 const DEFAULT_MODE = "system";
 const DEFAULT_ACCENT = "indigo";
-
 
 function read(key, fallback, allowed) {
   try {
@@ -42,11 +41,9 @@ function read(key, fallback, allowed) {
 
     return allowed.includes(value) ? value : fallback;
   } catch {
-    // Private browsing can throw on access.
     return fallback;
   }
 }
-
 
 export function getMode() {
   return read(
@@ -56,7 +53,6 @@ export function getMode() {
   );
 }
 
-
 export function getAccent() {
   return read(
     ACCENT_KEY,
@@ -64,7 +60,6 @@ export function getAccent() {
     ACCENTS.map((accent) => accent.id)
   );
 }
-
 
 export function applyTheme() {
   const root = document.documentElement;
@@ -79,8 +74,11 @@ export function applyTheme() {
   root.setAttribute("data-accent", getAccent());
 }
 
-
 export function setMode(mode) {
+  if (!MODES.some((entry) => entry.id === mode)) {
+    return;
+  }
+
   try {
     localStorage.setItem(MODE_KEY, mode);
   } catch {
@@ -88,12 +86,14 @@ export function setMode(mode) {
   }
 
   applyTheme();
-
   notify();
 }
 
-
 export function setAccent(accent) {
+  if (!ACCENTS.some((entry) => entry.id === accent)) {
+    return;
+  }
+
   try {
     localStorage.setItem(ACCENT_KEY, accent);
   } catch {
@@ -101,10 +101,8 @@ export function setAccent(accent) {
   }
 
   applyTheme();
-
   notify();
 }
-
 
 // ---------------------------------------------------------
 // CHANGE NOTIFICATIONS
@@ -112,29 +110,28 @@ export function setAccent(accent) {
 
 const listeners = new Set();
 
-
 export function onThemeChange(callback) {
   listeners.add(callback);
 
   return () => listeners.delete(callback);
 }
 
-
 function notify() {
   for (const listener of listeners) {
-    listener({ mode: getMode(), accent: getAccent() });
+    listener({
+      mode: getMode(),
+      accent: getAccent()
+    });
   }
 }
-
 
 // Keep other tabs in sync.
 window.addEventListener("storage", (event) => {
   if (event.key === MODE_KEY || event.key === ACCENT_KEY) {
     applyTheme();
-
     notify();
   }
 });
 
-
+// Apply immediately when this module loads.
 applyTheme();
