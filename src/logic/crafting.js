@@ -63,7 +63,6 @@ export function ensureRecipeProgress(
 
       if (
         requirement.type !== "equipment" &&
-        requirement.type !== "consumable" &&
         requirement.type !== "lifetime-rolls"
       ) {
         progress[key] = 0;
@@ -181,11 +180,7 @@ export function isRequirementComplete(
   }
 
   if (requirement.type === "consumable") {
-    const owned = inventory.consumables?.find(
-      (item) => item.consumable_id === requirement.consumableId
-    );
-
-    return Number(owned?.quantity ?? 0) >= requirement.amount;
+    return Number(progress[key] ?? 0) >= Number(requirement.amount ?? 0);
   }
 
   if (requirement.type === "lifetime-rolls") {
@@ -496,9 +491,32 @@ export function manuallyDepositRequirement(
     return false;
   }
 
+  const progress = ensureRecipeProgress(craftingState, recipe);
+
+  if (requirement.type === "consumable") {
+    const key = getRequirementKey(requirement, requirementIndex);
+    const current = Number(progress[key] ?? 0);
+    const target = Number(requirement.amount ?? 0);
+    const owned = inventory.consumables?.find(
+      (item) => item.consumable_id === requirement.consumableId
+    );
+
+    if (!owned || current >= target || Number(owned.quantity ?? 0) <= 0) {
+      return false;
+    }
+
+    const move = Math.min(
+      Number(owned.quantity ?? 0),
+      target - current
+    );
+
+    progress[key] = current + move;
+    owned.quantity = Number(owned.quantity ?? 0) - move;
+    return move > 0;
+  }
+
   if (
     requirement.type === "equipment" ||
-    requirement.type === "consumable" ||
     requirement.type === "lifetime-rolls"
   ) {
     return false;
