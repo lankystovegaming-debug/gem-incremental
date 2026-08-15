@@ -140,7 +140,10 @@
 #saveUsernameButton,
 #linkEmailButton,
 #loginButton,
-#setPasswordButton {
+#setPasswordButton,
+#createAccountSubmitButton,
+#sendResetButton,
+#saveAvatarButton {
   color: var(--accent-text);
   background: var(--accent);
   border-color: var(--accent);
@@ -149,7 +152,10 @@
 #saveUsernameButton:hover,
 #linkEmailButton:hover,
 #loginButton:hover,
-#setPasswordButton:hover {
+#setPasswordButton:hover,
+#createAccountSubmitButton:hover,
+#sendResetButton:hover,
+#saveAvatarButton:hover {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
@@ -168,6 +174,52 @@
   color: var(--text-faint);
   font-size: 0.82rem;
   line-height: 1.5;
+}
+
+
+/* ---------------------------------------------------------
+   PROFILE PICTURE
+   --------------------------------------------------------- */
+
+.profile-picture {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+
+  margin-top: var(--space-3);
+}
+
+.profile-picture__preview {
+  display: grid;
+  place-items: center;
+
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text-faint);
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.profile-picture__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-picture .account-note {
+  margin-bottom: 0;
+}
+
+@media (max-width: 420px) {
+  .profile-picture {
+    grid-template-columns: 1fr;
+  }
 }
 
 

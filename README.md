@@ -55,6 +55,10 @@ player id, so nothing is lost:
 - **Google**, which links the identity to the existing guest
   user rather than creating a second one.
 
+Players without a guest save can create a new email/password account
+from the Account page. Registered players can upload a profile picture
+there and request a password-reset email when they lose their password.
+
 The Google button only appears when the provider is actually
 enabled on the project — the client reads `/auth/v1/settings`
 and hides what is not configured, so nothing is offered that

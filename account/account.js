@@ -13,8 +13,31 @@ const accountStatus =
     "accountStatus"
   );
 
+const AVATAR_BUCKET =
+  "avatars";
+
+const MAX_AVATAR_BYTES =
+  2 * 1024 * 1024;
+
+const AVATAR_TYPES =
+  new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ]);
+
 
 let currentGuestUser =
+  null;
+
+let passwordRecoveryMode =
+  new URLSearchParams(
+    window.location.search
+  ).get(
+    "reset"
+  ) === "1";
+
+let avatarPreviewUrl =
   null;
 
 
@@ -188,6 +211,298 @@ function usernameSection(
       }
     </button>
   `;
+}
+
+
+// =========================================================
+// PROFILE PICTURE
+// =========================================================
+
+function profilePictureSection(
+  user
+) {
+  const avatarUrl =
+    user.user_metadata
+      ?.avatar_url ??
+    null;
+
+  return `
+    <hr>
+
+    <h3>
+      Profile Picture
+    </h3>
+
+    <div class="profile-picture">
+      <div class="profile-picture__preview" id="avatarPreview">
+        ${
+          avatarUrl
+            ? `<img src="${escapeHtml(
+                avatarUrl
+              )}" alt="Current profile picture">`
+            : '<span aria-hidden="true">?</span>'
+        }
+      </div>
+
+      <div>
+        <p>
+          Upload a square image for your account menu.
+        </p>
+
+        <label>
+          Image
+
+          <input
+            id="avatarInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          >
+        </label>
+
+        <p class="account-note">
+          JPG, PNG, or WebP. Maximum size: 2 MB.
+        </p>
+
+        <button
+          id="saveAvatarButton"
+          type="button"
+        >
+          Save Picture
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+
+function attachProfilePictureListener(
+  user
+) {
+  const input =
+    document.getElementById(
+      "avatarInput"
+    );
+
+  const button =
+    document.getElementById(
+      "saveAvatarButton"
+    );
+
+  input?.addEventListener(
+    "change",
+    previewProfilePicture
+  );
+
+  button?.addEventListener(
+    "click",
+    () => uploadProfilePicture(user)
+  );
+}
+
+
+function accountPageUrl() {
+  return `${window.location.origin}/account/`;
+}
+
+
+function clearPasswordRecoveryMode() {
+  passwordRecoveryMode =
+    false;
+
+  const cleanUrl =
+    new URL(
+      window.location.href
+    );
+
+  cleanUrl.searchParams.delete(
+    "reset"
+  );
+
+  cleanUrl.hash =
+    "";
+
+  window.history.replaceState(
+    {},
+    document.title,
+    `${cleanUrl.pathname}${cleanUrl.search}`
+  );
+}
+
+
+function avatarValidationMessage(
+  file
+) {
+  if (!file) {
+    return "Choose an image first.";
+  }
+
+  if (!AVATAR_TYPES.has(file.type)) {
+    return "Choose a JPG, PNG, or WebP image.";
+  }
+
+  if (file.size > MAX_AVATAR_BYTES) {
+    return "Profile pictures must be 2 MB or smaller.";
+  }
+
+  return null;
+}
+
+
+function previewProfilePicture() {
+  const input =
+    document.getElementById(
+      "avatarInput"
+    );
+
+  const file =
+    input?.files?.[0] ??
+    null;
+
+  const validationError =
+    avatarValidationMessage(file);
+
+  if (validationError) {
+    setStatus(validationError, true);
+
+    return;
+  }
+
+  if (avatarPreviewUrl) {
+    URL.revokeObjectURL(avatarPreviewUrl);
+  }
+
+  avatarPreviewUrl =
+    URL.createObjectURL(file);
+
+  const preview =
+    document.getElementById(
+      "avatarPreview"
+    );
+
+  if (preview) {
+    preview.innerHTML = `<img src="${escapeHtml(
+      avatarPreviewUrl
+    )}" alt="Selected profile picture preview">`;
+  }
+}
+
+
+async function uploadProfilePicture(
+  user
+) {
+  const input =
+    document.getElementById(
+      "avatarInput"
+    );
+
+  const file =
+    input?.files?.[0] ??
+    null;
+
+  const validationError =
+    avatarValidationMessage(file);
+
+  if (validationError) {
+    setStatus(validationError, true);
+
+    return;
+  }
+
+  setStatus(
+    "Uploading profile picture..."
+  );
+
+  const objectPath =
+    `${user.id}/avatar`;
+
+  const {
+    error: uploadError
+  } =
+    await supabase.storage
+      .from(
+        AVATAR_BUCKET
+      )
+      .upload(
+        objectPath,
+        file,
+        {
+          cacheControl: "31536000",
+          contentType: file.type,
+          upsert: true
+        }
+      );
+
+  if (uploadError) {
+    console.error(
+      "Profile picture upload failed:",
+      uploadError
+    );
+
+    setStatus(
+      uploadError.message ??
+      "Could not upload profile picture.",
+      true
+    );
+
+    return;
+  }
+
+  const {
+    data: urlData
+  } =
+    supabase.storage
+      .from(
+        AVATAR_BUCKET
+      )
+      .getPublicUrl(
+        objectPath
+      );
+
+  const avatarUrl =
+    `${urlData.publicUrl}?v=${Date.now()}`;
+
+  const {
+    error: profileError
+  } =
+    await supabase.auth
+      .updateUser({
+        data: {
+          ...(
+            user.user_metadata ??
+            {}
+          ),
+
+          avatar_url: avatarUrl
+        }
+      });
+
+  if (profileError) {
+    console.error(
+      "Could not save profile picture:",
+      profileError
+    );
+
+    setStatus(
+      profileError.message ??
+      "Picture uploaded, but could not save it to your profile.",
+      true
+    );
+
+    return;
+  }
+
+  if (avatarPreviewUrl) {
+    URL.revokeObjectURL(avatarPreviewUrl);
+
+    avatarPreviewUrl =
+      null;
+  }
+
+  await renderAccount();
+
+  setStatus(
+    "Profile picture saved."
+  );
 }
 
 
@@ -423,6 +738,20 @@ function renderLogin() {
       Log In
     </button>
 
+    <button
+      id="createAccountButton"
+      type="button"
+    >
+      Create Account
+    </button>
+
+    <button
+      id="forgotPasswordButton"
+      type="button"
+    >
+      Forgot Password?
+    </button>
+
     <p class="account-note">
       If your game progress is still
       stored under a guest account,
@@ -440,6 +769,360 @@ function renderLogin() {
       "click",
       loginExistingAccount
     );
+
+
+  document
+    .getElementById(
+      "createAccountButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus("");
+
+        renderCreateAccount();
+      }
+    );
+
+
+  document
+    .getElementById(
+      "forgotPasswordButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus("");
+
+        renderPasswordResetRequest();
+      }
+    );
+}
+
+
+// =========================================================
+// CREATE ACCOUNT
+// =========================================================
+
+function renderCreateAccount() {
+  currentGuestUser =
+    null;
+
+
+  accountCard.innerHTML = `
+    <h2>
+      Create Account
+    </h2>
+
+    <p>
+      Create a new account to play across browsers and devices.
+    </p>
+
+    <label>
+      Email
+
+      <input
+        id="createEmail"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+      >
+    </label>
+
+    <label>
+      Password
+
+      <input
+        id="createPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="At least 8 characters"
+      >
+    </label>
+
+    <label>
+      Confirm Password
+
+      <input
+        id="createPasswordConfirmation"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Repeat password"
+      >
+    </label>
+
+    <button
+      id="createAccountSubmitButton"
+      type="button"
+    >
+      Create Account
+    </button>
+
+    <button
+      id="backToLoginButton"
+      type="button"
+    >
+      Back to Log In
+    </button>
+  `;
+
+
+  document
+    .getElementById(
+      "createAccountSubmitButton"
+    )
+    .addEventListener(
+      "click",
+      createAccount
+    );
+
+
+  document
+    .getElementById(
+      "backToLoginButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus("");
+
+        renderLogin();
+      }
+    );
+}
+
+
+async function createAccount() {
+  const email =
+    document
+      .getElementById(
+        "createEmail"
+      )
+      ?.value
+      .trim() ??
+    "";
+
+  const password =
+    document
+      .getElementById(
+        "createPassword"
+      )
+      ?.value ??
+    "";
+
+  const confirmation =
+    document
+      .getElementById(
+        "createPasswordConfirmation"
+      )
+      ?.value ??
+    "";
+
+  if (!email) {
+    setStatus(
+      "Enter an email address.",
+      true
+    );
+
+    return;
+  }
+
+  if (password.length < 8) {
+    setStatus(
+      "Password must be at least 8 characters.",
+      true
+    );
+
+    return;
+  }
+
+  if (password !== confirmation) {
+    setStatus(
+      "Passwords do not match.",
+      true
+    );
+
+    return;
+  }
+
+  setStatus(
+    "Creating account..."
+  );
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth
+      .signUp({
+        email,
+        password,
+        options: {
+          data: {
+            gem_incremental_password_set:
+              true
+          },
+
+          emailRedirectTo:
+            accountPageUrl()
+        }
+      });
+
+  if (error) {
+    console.error(
+      "Account creation failed:",
+      error
+    );
+
+    setStatus(
+      error.message ??
+      "Could not create account.",
+      true
+    );
+
+    return;
+  }
+
+  if (!data.session) {
+    setStatus(
+      "Check your inbox to verify your email, then log in."
+    );
+
+    return;
+  }
+
+  await renderAccount();
+
+  setStatus(
+    "Account created successfully."
+  );
+}
+
+
+// =========================================================
+// PASSWORD RESET REQUEST
+// =========================================================
+
+function renderPasswordResetRequest() {
+  currentGuestUser =
+    null;
+
+
+  accountCard.innerHTML = `
+    <h2>
+      Reset Password
+    </h2>
+
+    <p>
+      Enter your account email and we will send a reset link.
+    </p>
+
+    <label>
+      Email
+
+      <input
+        id="resetEmail"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+      >
+    </label>
+
+    <button
+      id="sendResetButton"
+      type="button"
+    >
+      Send Reset Email
+    </button>
+
+    <button
+      id="backFromResetButton"
+      type="button"
+    >
+      Back to Log In
+    </button>
+  `;
+
+
+  document
+    .getElementById(
+      "sendResetButton"
+    )
+    .addEventListener(
+      "click",
+      requestPasswordReset
+    );
+
+
+  document
+    .getElementById(
+      "backFromResetButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        setStatus("");
+
+        renderLogin();
+      }
+    );
+}
+
+
+async function requestPasswordReset() {
+  const email =
+    document
+      .getElementById(
+        "resetEmail"
+      )
+      ?.value
+      .trim() ??
+    "";
+
+  if (!email) {
+    setStatus(
+      "Enter an email address.",
+      true
+    );
+
+    return;
+  }
+
+  setStatus(
+    "Sending reset email..."
+  );
+
+  const {
+    error
+  } =
+    await supabase.auth
+      .resetPasswordForEmail(
+        email,
+        {
+          redirectTo:
+            `${accountPageUrl()}?reset=1`
+        }
+      );
+
+  if (error) {
+    console.error(
+      "Password reset request failed:",
+      error
+    );
+
+    setStatus(
+      "Could not send a reset email. Please try again.",
+      true
+    );
+
+    return;
+  }
+
+  // This wording intentionally does not reveal whether the email
+  // belongs to a registered account.
+  setStatus(
+    "If an account uses that email, a reset link is on its way."
+  );
 }
 
 
@@ -888,7 +1571,7 @@ async function linkEmail() {
         },
         {
           emailRedirectTo:
-            `${window.location.origin}/account/`
+            accountPageUrl()
         }
       );
 
@@ -933,6 +1616,12 @@ function renderRegistered(
     user.user_metadata
       ?.gem_incremental_password_set ===
     true;
+
+  if (passwordRecoveryMode) {
+    renderPasswordResetForm(user);
+
+    return;
+  }
 
 
   // =======================================================
@@ -990,6 +1679,10 @@ function renderRegistered(
         username
       )}
 
+      ${profilePictureSection(
+        user
+      )}
+
       <hr>
 
       <p class="account-note">
@@ -1007,6 +1700,8 @@ function renderRegistered(
 
 
     attachUsernameListener();
+
+    attachProfilePictureListener(user);
 
 
     document
@@ -1069,6 +1764,10 @@ function renderRegistered(
       username
     )}
 
+    ${profilePictureSection(
+      user
+    )}
+
     <hr>
 
     <h3>
@@ -1114,6 +1813,69 @@ function renderRegistered(
 
   attachUsernameListener();
 
+  attachProfilePictureListener(user);
+
+
+  document
+    .getElementById(
+      "setPasswordButton"
+    )
+    .addEventListener(
+      "click",
+      setPassword
+    );
+}
+
+
+function renderPasswordResetForm(
+  user
+) {
+  currentGuestUser =
+    null;
+
+
+  accountCard.innerHTML = `
+    <h2>
+      Choose a New Password
+    </h2>
+
+    <p>
+      Resetting the password for ${escapeHtml(
+        user.email ??
+        "your account"
+      )}.
+    </p>
+
+    <label>
+      New Password
+
+      <input
+        id="newPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="At least 8 characters"
+      >
+    </label>
+
+    <label>
+      Confirm New Password
+
+      <input
+        id="confirmPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Repeat password"
+      >
+    </label>
+
+    <button
+      id="setPasswordButton"
+      type="button"
+    >
+      Update Password
+    </button>
+  `;
+
 
   document
     .getElementById(
@@ -1131,6 +1893,9 @@ function renderRegistered(
 // =========================================================
 
 async function setPassword() {
+  const isPasswordReset =
+    passwordRecoveryMode;
+
   const password =
     document
       .getElementById(
@@ -1172,7 +1937,9 @@ async function setPassword() {
 
 
   setStatus(
-    "Setting password..."
+    isPasswordReset
+      ? "Updating password..."
+      : "Setting password..."
   );
 
 
@@ -1188,14 +1955,14 @@ async function setPassword() {
 
   if (error) {
     console.error(
-      "Password creation failed:",
+      "Password update failed:",
       error
     );
 
 
     setStatus(
       error.message ??
-      "Could not set password.",
+      "Could not update password.",
       true
     );
 
@@ -1232,7 +1999,7 @@ async function setPassword() {
 
 
     setStatus(
-      "Password was created, but the account page could not update its status. Refresh the page.",
+      "Password was updated, but the account page could not update its status. Refresh the page.",
       true
     );
 
@@ -1241,12 +2008,18 @@ async function setPassword() {
   }
 
 
-  setStatus(
-    "Account setup complete."
-  );
+  if (isPasswordReset) {
+    clearPasswordRecoveryMode();
+  }
 
 
   await renderAccount();
+
+  setStatus(
+    isPasswordReset
+      ? "Password updated successfully."
+      : "Account setup complete."
+  );
 }
 
 
@@ -1451,6 +2224,23 @@ supabase.auth
         event,
         session?.user?.id
       );
+
+      if (event === "PASSWORD_RECOVERY") {
+        passwordRecoveryMode =
+          true;
+      }
+
+      if (
+        event === "PASSWORD_RECOVERY" ||
+        event === "SIGNED_IN"
+      ) {
+        // Defer until Supabase releases its internal auth lock.
+        queueMicrotask(
+          () => {
+            renderAccount();
+          }
+        );
+      }
     }
   );
 
