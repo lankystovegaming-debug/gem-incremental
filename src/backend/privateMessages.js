@@ -255,6 +255,73 @@ export function subscribeToPrivateMessages(onMessage) {
   return privateChannel;
 }
 
+
+export async function findPlayerByUsername(username) {
+  const name = String(username ?? "").trim();
+  if (!name) return null;
+
+  const { data, error } = await supabase
+    .from("players")
+    .select("id, username")
+    .ilike("username", name)
+    .limit(5);
+
+  if (error) throw error;
+
+  return (data ?? []).find(
+    player => String(player.username ?? "").toLowerCase() === name.toLowerCase()
+  ) ?? null;
+}
+
+export async function loadRecentPrivateMessages(limit = 50) {
+  const userId = await getCurrentUserId();
+  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
+  const { data, error } = await supabase
+    .from("private_messages")
+    .select("id, sender_id, recipient_id, message, created_at, read_at")
+    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+    .order("created_at", { ascending: false })
+    .limit(safeLimit);
+
+  if (error) throw error;
+
+  const ids = [...new Set(
+    (data ?? []).flatMap(row => [row.sender_id, row.recipient_id])
+  )];
+
+  const profiles = {};
+  if (ids.length) {
+    const result = await supabase.rpc("get_chat_profiles", {
+      p_user_ids: ids
+    });
+    if (result.error) throw result.error;
+    Object.assign(profiles, result.data ?? {});
+  }
+
+  return (data ?? []).map(row => {
+    const otherId =
+      row.sender_id === userId ? row.recipient_id : row.sender_id;
+    const other = profiles[otherId] ?? {};
+    const sender = profiles[row.sender_id] ?? {};
+
+    return {
+      id: `private-${row.id}`,
+      private_id: row.id,
+      source: "private",
+      sender_id: row.sender_id,
+      recipient_id: row.recipient_id,
+      username: sender.username ?? "Unknown",
+      avatar_url: sender.avatar_url ?? null,
+      other_username: other.username ?? "Unknown",
+      other_avatar_url: other.avatar_url ?? null,
+      message: row.message,
+      created_at: row.created_at,
+      read_at: row.read_at
+    };
+  }).reverse();
+}
+
 export async function unsubscribeFromPrivateMessages() {
   if (!privateChannel) return;
   await supabase.removeChannel(privateChannel);
