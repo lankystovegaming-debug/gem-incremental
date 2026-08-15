@@ -3,6 +3,8 @@
    ========================================================= */
 
 .stage {
+  position: relative;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,6 +14,135 @@
   margin-bottom: var(--space-4);
 
   overflow: hidden;
+}
+
+
+/* ---------------------------------------------------------
+   ACTIVE POTION EFFECTS HUD
+   --------------------------------------------------------- */
+
+.effect-hud {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 3;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  width: min(220px, 60%);
+  pointer-events: none;
+}
+
+.effect-hud:not(.is-active) {
+  display: none;
+}
+
+.effect-chip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: center;
+
+  padding: 7px 9px;
+
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  backdrop-filter: blur(4px);
+
+  animation: effect-in 0.25s ease-out backwards;
+}
+
+@keyframes effect-in {
+  from { opacity: 0; transform: translateX(6px); }
+}
+
+.effect-chip__icon {
+  grid-row: 1 / span 2;
+
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+}
+
+.effect-chip__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.effect-chip__body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.effect-chip__name {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.effect-chip__time {
+  flex: none;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.effect-chip__bar {
+  grid-column: 2;
+
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.effect-chip__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.9s linear;
+}
+
+/* Per-family accent so the effects read apart at a glance. */
+.effect-chip--luck            { border-left-color: #45c78a; }
+.effect-chip--luck .effect-chip__icon { color: #45c78a; }
+.effect-chip--luck .effect-chip__bar > span { background-color: #45c78a; }
+
+.effect-chip--rollSpeed       { border-left-color: #5aa6f0; }
+.effect-chip--rollSpeed .effect-chip__icon { color: #5aa6f0; }
+.effect-chip--rollSpeed .effect-chip__bar > span { background-color: #5aa6f0; }
+
+.effect-chip--weightLuck      { border-left-color: #e5a94a; }
+.effect-chip--weightLuck .effect-chip__icon { color: #e5a94a; }
+.effect-chip--weightLuck .effect-chip__bar > span { background-color: #e5a94a; }
+
+.effect-chip--weightMultiplier { border-left-color: #c98cf8; }
+.effect-chip--weightMultiplier .effect-chip__icon { color: #c98cf8; }
+.effect-chip--weightMultiplier .effect-chip__bar > span { background-color: #c98cf8; }
+
+@media (max-width: 560px) {
+  .effect-hud {
+    width: min(180px, 55%);
+  }
+
+  .effect-chip__name {
+    font-size: 0.72rem;
+  }
 }
 
 

@@ -44,6 +44,10 @@ let activeLeaderboard =
   "totalRolls";
 
 
+// username -> avatar URL, filled once the boards load.
+let avatarMap = {};
+
+
 // =========================================================
 // STATUS
 // =========================================================
@@ -92,6 +96,79 @@ function escapeHtml(
       "'",
       "&#039;"
     );
+}
+
+
+// =========================================================
+// AVATARS
+//
+// The leaderboards function returns names + stats but no
+// picture. A single SECURITY DEFINER RPC maps the ranked
+// usernames to their avatar URLs (public bucket / Google URLs),
+// so the board can show profile pictures without exposing any
+// other player data.
+// =========================================================
+
+function avatarHtml(
+  username
+) {
+  const url =
+    avatarMap[username];
+
+  const initial =
+    String(username ?? "?")
+      .trim()
+      .charAt(0)
+      .toUpperCase() || "?";
+
+  if (url) {
+    return `<span class="lb-avatar"><img src="${escapeHtml(
+      url
+    )}" alt="" referrerpolicy="no-referrer"></span>`;
+  }
+
+  return `<span class="lb-avatar lb-avatar--fallback">${escapeHtml(
+    initial
+  )}</span>`;
+}
+
+
+async function loadAvatars() {
+  const names = new Set();
+
+  for (const key of [
+    "totalRolls",
+    "rarestGem",
+    "lifetimeEarnings"
+  ]) {
+    for (const player of leaderboardData[key]) {
+      if (player.username) {
+        names.add(player.username);
+      }
+    }
+  }
+
+  if (names.size === 0) {
+    avatarMap = {};
+
+    return;
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_leaderboard_avatars",
+      {
+        p_usernames: [...names]
+      }
+    );
+
+  avatarMap =
+    !error && data && typeof data === "object"
+      ? data
+      : {};
 }
 
 
@@ -196,9 +273,12 @@ function renderTotalRolls() {
           </div>
 
           <div class="player-name">
-            ${escapeHtml(
+            ${avatarHtml(
               player.username
             )}
+            <span class="lb-name-text">${escapeHtml(
+              player.username
+            )}</span>
           </div>
 
           <div class="score">
@@ -284,9 +364,12 @@ function renderRarestGem() {
           </div>
 
           <div class="player-name">
-            ${escapeHtml(
+            ${avatarHtml(
               player.username
             )}
+            <span class="lb-name-text">${escapeHtml(
+              player.username
+            )}</span>
           </div>
 
           <div class="score gem-score">
@@ -383,9 +466,12 @@ function renderLifetimeEarnings() {
           </div>
 
           <div class="player-name">
-            ${escapeHtml(
+            ${avatarHtml(
               player.username
             )}
+            <span class="lb-name-text">${escapeHtml(
+              player.username
+            )}</span>
           </div>
 
           <div class="score">
@@ -534,6 +620,11 @@ async function loadLeaderboards() {
         ? data.lifetimeEarnings
         : []
   };
+
+
+  // Profile pictures for the ranked players (best-effort — the
+  // board still renders if this fails).
+  await loadAvatars();
 
 
   setStatus(

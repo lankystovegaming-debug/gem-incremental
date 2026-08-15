@@ -139,6 +139,25 @@ async function open() {
 
       <div class="devpanel__sep"></div>
 
+      <div class="devpanel__row">
+        <label class="devpanel__field">
+          <span>Inventory slots</span>
+          <input type="number" id="devSlots" value="10" step="5">
+        </label>
+
+        <label class="devpanel__field">
+          <span>Rolls</span>
+          <input type="number" id="devRolls" value="1000" step="100">
+        </label>
+      </div>
+
+      <div class="devpanel__actions">
+        <button class="btn btn--sm" data-action="slots" type="button">Give slots</button>
+        <button class="btn btn--sm" data-action="rolls" type="button">Add rolls</button>
+      </div>
+
+      <div class="devpanel__sep"></div>
+
       <label class="devpanel__field">
         <span>Gem</span>
         <select class="select" id="devGem">
@@ -152,6 +171,18 @@ async function open() {
             .join("")}
         </select>
       </label>
+
+      <div class="devpanel__row">
+        <label class="devpanel__field">
+          <span>Quantity</span>
+          <input type="number" id="devGemQty" value="1" min="1" max="500" step="1">
+        </label>
+
+        <label class="devpanel__field">
+          <span>Multiplier</span>
+          <input type="number" id="devGemMult" placeholder="random" min="0.01" step="0.1">
+        </label>
+      </div>
 
       <button class="btn btn--block btn--sm" data-action="gem" type="button">
         Give gem
@@ -228,7 +259,11 @@ async function open() {
 
   const targetInput = panel.querySelector("#devTarget");
   const moneyInput = panel.querySelector("#devMoney");
+  const slotsInput = panel.querySelector("#devSlots");
+  const rollsInput = panel.querySelector("#devRolls");
   const gemSelect = panel.querySelector("#devGem");
+  const gemQtyInput = panel.querySelector("#devGemQty");
+  const gemMultInput = panel.querySelector("#devGemMult");
   const potionSelect = panel.querySelector("#devPotion");
   const potionQtyInput = panel.querySelector("#devPotionQty");
   const familySelect = panel.querySelector("#devBoostFamily");
@@ -333,7 +368,88 @@ async function open() {
 
 
   // -------------------------------------------------------
-  // GIVE GEM
+  // GIVE INVENTORY SLOTS
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="slots"]')
+    .addEventListener("click", async () => {
+      const slots = Math.trunc(Number(slotsInput.value) || 0);
+
+      if (slots === 0) {
+        return;
+      }
+
+      const noun = `slot${Math.abs(slots) === 1 ? "" : "s"}`;
+
+      if (!(await confirmSend(`Give ${slots} inventory ${noun}.`))) {
+        return;
+      }
+
+      const result = await callDependency("capacity", targetValue(), { slots });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const cap = result.data?.inventory_capacity;
+
+      status.textContent = `${who()} now has ${formatCount(cap)} slots.`;
+
+      notify.success("Sent", `${slots > 0 ? "+" : ""}${slots} ${noun} for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // ADD ROLLS (shows on the Total Rolls leaderboard)
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="rolls"]')
+    .addEventListener("click", async () => {
+      const amount = Math.trunc(Number(rollsInput.value) || 0);
+
+      if (amount === 0) {
+        return;
+      }
+
+      if (!(await confirmSend(`Add ${formatCount(amount)} rolls.`))) {
+        return;
+      }
+
+      const result = await callDependency("rolls", targetValue(), { amount });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const total = result.data?.total_rolls;
+
+      status.textContent = `${who()} now has ${formatCount(total)} rolls.`;
+
+      notify.success("Sent", `+${formatCount(amount)} rolls for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE GEM — quantity + custom/random weight multiplier
+  //
+  // A blank multiplier rolls a fresh random weight for each gem
+  // (like a real roll); a number pins every gem to that exact
+  // multiplier. Each gem is its own insert so per-gem randomness
+  // and the server-side roll/luck stamping both work.
   // -------------------------------------------------------
 
   panel
@@ -345,36 +461,69 @@ async function open() {
         return;
       }
 
-      if (!(await confirmSend(`Give ${gem.name}.`))) {
+      const quantity = Math.max(
+        1,
+        Math.min(500, Math.floor(Number(gemQtyInput.value) || 1))
+      );
+
+      const raw = gemMultInput.value.trim();
+      const customMult = raw === "" ? null : Math.max(0.01, Number(raw));
+      const fixed = customMult != null && Number.isFinite(customMult);
+
+      const label = quantity > 1 ? `${quantity}x ${gem.name}` : gem.name;
+      const multNote = fixed ? ` at ${customMult}x` : " at random weights";
+
+      if (!(await confirmSend(`Give ${label}${multNote}.`))) {
         return;
       }
 
-      const weightMultiplier = rollWeightMultiplier();
-      const finalWeight = gem.baseWeight * weightMultiplier;
+      let sent = 0;
+      let firstError = null;
 
-      const payload = {
-        gem_name: gem.name,
-        rarity: gem.rarity,
-        base_weight: gem.baseWeight,
-        value_per_gram: gem.valuePerGram,
-        weight_multiplier: weightMultiplier,
-        final_weight: finalWeight,
-        value: finalWeight * gem.valuePerGram
-      };
+      for (let i = 0; i < quantity; i += 1) {
+        const m = fixed ? customMult : rollWeightMultiplier();
+        const finalWeight = gem.baseWeight * m;
 
-      const result = await callDependency("item", targetValue(), payload);
+        const payload = {
+          gem_name: gem.name,
+          rarity: gem.rarity,
+          base_weight: gem.baseWeight,
+          value_per_gram: gem.valuePerGram,
+          weight_multiplier: m,
+          final_weight: finalWeight,
+          value: finalWeight * gem.valuePerGram
+        };
 
-      if (!result.ok) {
-        status.textContent = result.message;
+        const result = await callDependency("item", targetValue(), payload);
 
-        notify.error("Failed", result.message);
+        if (!result.ok) {
+          firstError = result.message;
+
+          break;
+        }
+
+        sent += 1;
+
+        if (quantity > 1) {
+          status.textContent = `Sending ${label}… ${sent}/${quantity}`;
+        }
+      }
+
+      if (sent === 0) {
+        const message = firstError ?? "The action could not be completed.";
+
+        status.textContent = message;
+
+        notify.error("Failed", message);
 
         return;
       }
 
-      status.textContent = `Sent ${gem.name} to ${who()}.`;
+      const prefix = sent > 1 ? `${sent}x ` : "";
 
-      notify.success("Sent", `${gem.name} delivered to ${who()}.`);
+      status.textContent = `Sent ${prefix}${gem.name} to ${who()}.`;
+
+      notify.success("Sent", `${prefix}${gem.name} delivered to ${who()}.`);
 
       refreshIfSelf(isSelf());
     });

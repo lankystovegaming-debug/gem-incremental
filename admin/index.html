@@ -33,6 +33,33 @@
       <button class="btn btn--primary" id="searchButton" type="button" disabled>Search</button>
     </section>
 
+    <section class="card admin-announce" id="announcePanel" hidden>
+      <h2>Announcements</h2>
+      <p class="page-head__sub">
+        Posted to the top of the game for every player, including guests.
+      </p>
+
+      <textarea
+        id="announceBody"
+        class="admin-textarea"
+        rows="2"
+        maxlength="500"
+        placeholder="e.g. Maintenance at 8pm — rolls may be briefly unavailable."
+      ></textarea>
+
+      <div class="admin-control" style="margin-top:12px">
+        <select id="announceTone" class="select">
+          <option value="info">Info</option>
+          <option value="positive">Good news</option>
+          <option value="warning">Warning</option>
+        </select>
+        <button class="btn btn--primary" id="announcePost" type="button">Post announcement</button>
+        <button class="btn btn--danger" id="announceClear" type="button">Clear all</button>
+      </div>
+
+      <p class="account-status" id="announceStatus"></p>
+    </section>
+
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>

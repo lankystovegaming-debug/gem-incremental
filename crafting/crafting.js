@@ -589,6 +589,62 @@ function recipeCard(recipe) {
 // CARD ACTIONS
 // =========================================================
 
+// Deposit matching gems into one requirement until it is either
+// complete or nothing more can be added. This keeps working whether
+// the server deposits every matching gem in a single call or one at
+// a time — it repeats until the stored progress stops changing, so
+// "10 held + 20 in inventory" ends at 30 rather than stopping early.
+async function depositRequirementFully(recipeId, index) {
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+  let deposited = 0;
+
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const before = JSON.stringify(state.crafting.progress[recipeId] ?? {});
+
+    const { error } = await manuallyDepositCloudRequirement(recipeId, index);
+
+    if (error) {
+      // "Nothing to deposit" once we have already moved some gems is
+      // just the natural end; only surface an error if nothing moved.
+      return { deposited, error: deposited === 0 ? error : null };
+    }
+
+    deposited += 1;
+
+    const fresh = await loadCloudCraftingState();
+
+    if (fresh) {
+      state.crafting = fresh;
+    }
+
+    const after = JSON.stringify(state.crafting.progress[recipeId] ?? {});
+
+    // No change means the server has nothing left to move here.
+    if (before === after) {
+      break;
+    }
+
+    // Stop as soon as the requirement is satisfied.
+    const requirement = recipe?.requirements?.[index];
+
+    if (
+      requirement &&
+      isRequirementComplete(
+        state.crafting,
+        recipe,
+        requirement,
+        index,
+        equipmentContext()
+      )
+    ) {
+      break;
+    }
+  }
+
+  return { deposited, error: null };
+}
+
+
 function wireRecipeCard(card) {
   const recipeId = card.dataset.recipe;
 
@@ -663,9 +719,9 @@ function wireRecipeCard(card) {
 
       button.disabled = true;
 
-      const { error } = await manuallyDepositCloudRequirement(recipeId, index);
+      const { deposited, error } = await depositRequirementFully(recipeId, index);
 
-      if (error) {
+      if (error && deposited === 0) {
         notify.error("Nothing deposited", error.message);
 
         button.disabled = false;
@@ -691,16 +747,17 @@ function wireRecipeCard(card) {
       button.disabled = true;
       button.textContent = "Depositing…";
 
-      let deposited = 0;
+      let filled = 0;
       let firstError = null;
 
       for (const index of indexes) {
-        const { error } = await manuallyDepositCloudRequirement(
+        // Each requirement is topped up fully, not just nudged once.
+        const { deposited, error } = await depositRequirementFully(
           recipeId,
           index
         );
 
-        if (error) {
+        if (error && deposited === 0) {
           // "Nothing to deposit" for one requirement should not
           // stop the others.
           firstError = firstError ?? error;
@@ -708,15 +765,17 @@ function wireRecipeCard(card) {
           continue;
         }
 
-        deposited += 1;
+        if (deposited > 0) {
+          filled += 1;
+        }
       }
 
-      if (deposited === 0 && firstError) {
+      if (filled === 0 && firstError) {
         notify.error("Nothing deposited", firstError.message);
       } else {
         notify.success(
           "Deposited",
-          `Filled ${deposited} requirement${deposited === 1 ? "" : "s"}.`
+          `Filled ${filled} requirement${filled === 1 ? "" : "s"}.`
         );
       }
 

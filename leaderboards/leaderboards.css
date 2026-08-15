@@ -107,10 +107,41 @@
 .leaderboard-row:nth-child(3) .rank { color: #b87545; font-size: 1.02rem; }
 
 .player-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   font-weight: 600;
+}
+
+.lb-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lb-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-sunken);
+
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.lb-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .score {

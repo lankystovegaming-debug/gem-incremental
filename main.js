@@ -12,6 +12,7 @@ import {
   loadCloudPlayerState,
   sellCloudGem
 } from "./src/backend/cloudInventory.js";
+import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
 
 import { mountShell } from "./src/ui/shell.js";
 import { icons } from "./src/ui/icons.js";
@@ -47,6 +48,7 @@ const rollButtonLabel = document.getElementById("rollButtonLabel");
 const rollButtonFill = document.getElementById("rollButtonFill");
 const gemStage = document.getElementById("gemStage");
 const rollHint = document.getElementById("rollHint");
+const effectHud = document.getElementById("effectHud");
 
 const statMoney = document.getElementById("statMoney");
 const statInventory = document.getElementById("statInventory");
@@ -507,6 +509,142 @@ async function resolveOutcome(data) {
 
 
 // =========================================================
+// ACTIVE POTION EFFECTS (Minecraft-style HUD)
+//
+// Shows each running boost with a live countdown in the corner
+// of the stage, so timed potions are visible while rolling.
+// =========================================================
+
+const EFFECT_STATS = {
+  luck: "Luck",
+  rollSpeed: "Roll speed",
+  weightLuck: "Weight luck",
+  weightMultiplier: "Weight multiplier"
+};
+
+let activeBoosts = [];
+let effectTicker = null;
+
+// family -> { end, total } so the bar can deplete smoothly even
+// though the server only reports an expiry, not a start time.
+const effectBaseline = new Map();
+
+
+function liveBoosts() {
+  const now = Date.now();
+
+  return activeBoosts.filter(
+    (boost) => new Date(boost.expires_at).getTime() > now
+  );
+}
+
+
+function formatEffectRemaining(ms) {
+  const seconds = Math.max(0, Math.round(ms / 1000));
+
+  if (seconds >= 60) {
+    return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(
+      2,
+      "0"
+    )}s`;
+  }
+
+  return `${seconds}s`;
+}
+
+
+function renderEffects() {
+  if (!effectHud) {
+    return;
+  }
+
+  const live = liveBoosts();
+
+  if (live.length === 0) {
+    effectHud.innerHTML = "";
+    effectHud.classList.remove("is-active");
+
+    return;
+  }
+
+  effectHud.classList.add("is-active");
+
+  const now = Date.now();
+
+  effectHud.innerHTML = live
+    .map((boost) => {
+      const end = new Date(boost.expires_at).getTime();
+      const remaining = Math.max(0, end - now);
+
+      const prev = effectBaseline.get(boost.family);
+      let total;
+
+      if (!prev || prev.end !== end) {
+        total = remaining || 1;
+        effectBaseline.set(boost.family, { end, total });
+      } else {
+        total = Math.max(prev.total, remaining);
+      }
+
+      const fraction = Math.max(0, Math.min(1, remaining / total));
+      const percent = Math.round(Number(boost.effect_value) * 100);
+
+      return `
+        <div class="effect-chip effect-chip--${boost.family}">
+          <span class="effect-chip__icon">${icons.potion ?? icons.bolt}</span>
+
+          <span class="effect-chip__body">
+            <span class="effect-chip__name">+${percent}% ${escapeHtml(
+        EFFECT_STATS[boost.family] ?? boost.family
+      )}</span>
+            <span class="effect-chip__time">${formatEffectRemaining(
+              remaining
+            )}</span>
+          </span>
+
+          <span class="effect-chip__bar">
+            <span style="width:${fraction * 100}%"></span>
+          </span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+
+function startEffectTicker() {
+  if (effectTicker) {
+    return;
+  }
+
+  effectTicker = setInterval(() => {
+    renderEffects();
+
+    if (liveBoosts().length === 0) {
+      clearInterval(effectTicker);
+
+      effectTicker = null;
+    }
+  }, 1000);
+}
+
+
+async function refreshEffects() {
+  const boosts = await loadActiveBoosts();
+
+  if (boosts) {
+    activeBoosts = boosts;
+  }
+
+  renderEffects();
+
+  if (liveBoosts().length > 0) {
+    startEffectTicker();
+  }
+}
+
+
+// =========================================================
 // AUTOMATION
 // =========================================================
 
@@ -532,6 +670,9 @@ function maybeAutoRoll() {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     maybeAutoRoll();
+
+    // Potions may have been used on another page/tab.
+    refreshEffects();
   }
 });
 
@@ -700,6 +841,8 @@ async function startGame() {
     return;
   }
 
+  refreshEffects();
+
   await restoreCooldown(user.id);
 }
 
@@ -744,6 +887,8 @@ window.addEventListener("pageshow", async (event) => {
 
   await refreshPlayerState();
 
+  refreshEffects();
+
   await restoreCooldown(user.id);
 });
 
@@ -759,6 +904,8 @@ window.addEventListener("gem:maintenance-refresh", async () => {
   }
 
   await refreshPlayerState();
+
+  refreshEffects();
 
   await restoreCooldown(user.id);
 });
