@@ -580,6 +580,15 @@ function mountContributeDock(base) {
       ${icons.bug}
       <span>Report a bug</span>
     </a>
+
+    <a
+      class="contribute-dock__link"
+      href="${base}support/"
+      title="Support Gem Incremental"
+    >
+      ${icons.heart}
+      <span>Support the game</span>
+    </a>
   `;
 
   document.body.appendChild(dock);
