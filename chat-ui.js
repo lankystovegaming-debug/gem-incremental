@@ -4,6 +4,7 @@ import {
   subscribeToChat,
   unsubscribeFromChat
 } from "./src/backend/chat.js";
+import { ensurePlayerAuth } from "./src/backend/auth.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -15,6 +16,12 @@ const hintEl = document.querySelector("#chatHint");
 
 if (messagesEl && formEl && inputEl) {
   let sending = false;
+  let ready = false;
+
+  // Do not allow an unauthenticated submit while the anonymous session is
+  // being created. The database intentionally denies those requests.
+  inputEl.disabled = true;
+  if (sendEl) sendEl.disabled = true;
 
   function escapeHtml(value) {
     return String(value)
@@ -74,6 +81,12 @@ if (messagesEl && formEl && inputEl) {
 
   async function init() {
     try {
+      const user = await ensurePlayerAuth();
+
+      if (!user) {
+        throw new Error("Could not sign you in. Refresh to try again.");
+      }
+
       const messages = await loadChatMessages();
 
       messagesEl.innerHTML = "";
@@ -96,6 +109,9 @@ if (messagesEl && formEl && inputEl) {
         renderMessage(message);
       });
 
+      ready = true;
+      inputEl.disabled = false;
+      if (sendEl) sendEl.disabled = false;
       setStatus("Live");
       setHint("You can send one message every 5 seconds.");
     } catch (error) {
@@ -108,7 +124,7 @@ if (messagesEl && formEl && inputEl) {
   formEl.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (sending) return;
+    if (sending || !ready) return;
 
     const text = inputEl.value.trim();
     if (!text) return;

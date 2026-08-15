@@ -12,6 +12,7 @@ import {
 } from "./theme.js";
 
 import { supabase } from "../backend/supabase.js";
+import { ensurePlayerAuth } from "../backend/auth.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
 import {
   describeAccount,
@@ -586,6 +587,14 @@ function mountContributeDock(base) {
 
 
 async function renderAnnouncements(header) {
+  // mountShell() runs before each page's own startup routine. Wait for the
+  // shared auth bootstrap so this request is covered by the RLS policy.
+  const user = await ensurePlayerAuth();
+
+  if (!user) {
+    return;
+  }
+
   let dismissed = [];
 
   try {
