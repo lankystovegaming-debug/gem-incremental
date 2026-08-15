@@ -1346,6 +1346,54 @@ export default {
 
 
       // =====================================================
+      // LOAD ACTIVE PLAYER BOOSTS
+      // =====================================================
+
+      const {
+        data:
+          activeBoosts,
+        error:
+          boostError
+      } =
+        await ctx.supabaseAdmin
+          .from(
+            "player_boosts"
+          )
+          .select(
+            "family, effect_value"
+          )
+          .eq(
+            "player_id",
+            playerId
+          )
+          .gt(
+            "expires_at",
+            now.toISOString()
+          );
+
+
+      if (
+        boostError
+      ) {
+        console.error(
+          "Failed to load active boosts:",
+          boostError
+        );
+
+
+        return Response.json(
+          {
+            error:
+              "Failed to load active boosts."
+          },
+          {
+            status: 500
+          }
+        );
+      }
+
+
+      // =====================================================
       // CALCULATE PLAYER STATS
       // =====================================================
 
@@ -1394,6 +1442,55 @@ export default {
               .weight_multiplier_bonus ??
             0
           );
+      }
+
+
+      for (
+        const boost
+        of activeBoosts ??
+        []
+      ) {
+        const effectValue =
+          Number(
+            boost.effect_value ??
+            0
+          );
+
+
+        if (
+          !Number.isFinite(
+            effectValue
+          ) ||
+          effectValue <=
+          0
+        ) {
+          continue;
+        }
+
+
+        switch (
+          boost.family
+        ) {
+          case "luck":
+            luck +=
+              effectValue;
+            break;
+
+          case "rollSpeed":
+            rollSpeed +=
+              effectValue;
+            break;
+
+          case "weightLuck":
+            weightLuck +=
+              effectValue;
+            break;
+
+          case "weightMultiplier":
+            weightMultiplier +=
+              effectValue;
+            break;
+        }
       }
 
 

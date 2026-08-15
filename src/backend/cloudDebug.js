@@ -116,6 +116,37 @@ export async function loadCloudDebugState() {
 
 
   // -------------------------------------------------------
+  // ACTIVE BOOSTS
+  // -------------------------------------------------------
+
+  const {
+    data: boosts,
+    error: boostsError
+  } =
+    await supabase
+      .from(
+        "player_boosts"
+      )
+      .select(
+        "family, effect_value"
+      )
+      .gt(
+        "expires_at",
+        new Date().toISOString()
+      );
+
+
+  if (boostsError) {
+    console.error(
+      "Failed to load active boosts:",
+      boostsError
+    );
+
+    return null;
+  }
+
+
+  // -------------------------------------------------------
   // CRAFTING
   // -------------------------------------------------------
 
@@ -141,7 +172,6 @@ export async function loadCloudDebugState() {
 
     return null;
   }
-
 
   // -------------------------------------------------------
   // CALCULATE STATS
@@ -194,6 +224,51 @@ export async function loadCloudDebugState() {
         item.weight_multiplier_bonus ??
         0
       );
+  }
+
+
+  for (
+    const boost
+    of boosts ??
+    []
+  ) {
+    const effectValue =
+      Number(
+        boost.effect_value ??
+        0
+      );
+
+
+    if (
+      !Number.isFinite(
+        effectValue
+      ) ||
+      effectValue <=
+      0
+    ) {
+      continue;
+    }
+
+
+    switch (
+      boost.family
+    ) {
+      case "luck":
+        luck += effectValue;
+        break;
+
+      case "rollSpeed":
+        rollSpeed += effectValue;
+        break;
+
+      case "weightLuck":
+        weightLuck += effectValue;
+        break;
+
+      case "weightMultiplier":
+        weightMultiplier += effectValue;
+        break;
+    }
   }
 
 
