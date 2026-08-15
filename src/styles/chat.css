@@ -61,6 +61,42 @@
   overflow: hidden;
 }
 
+.chat-message--system {
+  position: relative;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--positive) 45%, var(--border));
+  background: color-mix(in srgb, var(--positive) 8%, var(--surface-sunken));
+}
+
+.chat-message--system .chat-message__name,
+.chat-system-tag {
+  color: var(--positive);
+}
+
+.chat-message--system .chat-message__text {
+  color: var(--text);
+}
+
+.chat-avatar--system {
+  border-color: color-mix(in srgb, var(--positive) 55%, var(--border));
+  background: color-mix(in srgb, var(--positive) 14%, var(--surface-sunken));
+  color: var(--positive);
+}
+
+.chat-system-tag {
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.chat-message--private .chat-message__name {
+  color: var(--accent);
+}
+
+.chat-message--private.chat-message--mine {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+
 .chat-message--hundredk {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
