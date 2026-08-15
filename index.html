@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,6 +19,7 @@
         href="./src/assets/fonts/exo2-latin.woff2" crossorigin>
   <link rel="stylesheet" href="./src/styles/app.css">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./src/styles/chat.css">
 
   <script>
     // Paint the saved theme before first render.
@@ -160,8 +162,48 @@
 
       <div id="historyList" class="history"></div>
     </section>
+
+    <!-- ================= GLOBAL CHAT ================= -->
+
+    <section class="card chat-card" aria-labelledby="chatHeading">
+      <div class="chat-card__head">
+        <h2 class="chat-card__title" id="chatHeading">Global Chat</h2>
+        <span class="chat-card__status" id="chatStatus">Connecting…</span>
+      </div>
+
+      <div
+        class="chat-messages"
+        id="chatMessages"
+        role="log"
+        aria-live="polite"
+        aria-label="Global chat messages"
+      >
+        <div class="chat-empty" id="chatEmpty">Loading chat…</div>
+      </div>
+
+      <form class="chat-form" id="chatForm">
+        <input
+          class="field chat-input"
+          id="chatInput"
+          type="text"
+          maxlength="500"
+          autocomplete="off"
+          placeholder="Type a message…"
+          aria-label="Chat message"
+        >
+        <button class="btn btn--primary chat-send" id="chatSend" type="submit">
+          Send
+        </button>
+      </form>
+
+      <div class="chat-hint" id="chatHint" aria-live="polite">
+        You can send one message every 5 seconds.
+      </div>
+    </section>
+
   </main>
 
   <script type="module" src="./main.js"></script>
+  <script type="module" src="./chat-ui.js"></script>
 </body>
 </html>

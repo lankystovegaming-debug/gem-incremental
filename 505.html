@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0e14">
+<title>505 HTTP Version Not Supported · Gem Incremental</title>
+<link rel="stylesheet" href="./error.css">
+<script>
+(function(){
+  try {
+    const mode=localStorage.getItem("gemIncremental.theme.mode");
+    if(["light","dark","neon"].includes(mode)) document.documentElement.setAttribute("data-theme",mode);
+  } catch(e) {}
+})();
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="brand" href="index.html" aria-label="Gem Incremental home">
+      <span class="brand__mark">◆</span>
+      <span class="brand__name">Gem Incremental</span>
+    </a>
+    <nav class="nav" aria-label="Primary"><a class="nav__link" href="index.html">Roll</a><a class="nav__link" href="inventory/">Inventory</a><a class="nav__link" href="crafting/">Crafting</a><a class="nav__link" href="boosts/">Potion Shop</a><a class="nav__link" href="gem-index/">Gem Index</a><a class="nav__link" href="leaderboards/">Leaderboards</a><a class="nav__link" href="debug/">Stats</a></nav>
+    <div class="topbar__spacer"></div>
+    <div class="topbar__tools">
+      <span class="wallet" title="Money">◈<span>—</span></span>
+      <a class="btn btn--ghost btn--icon" href="settings/" title="Settings" aria-label="Settings">⚙</a>
+      <button class="btn btn--ghost btn--icon" type="button" title="Appearance" aria-label="Appearance settings" onclick="cycleTheme()">◐</button>
+      <button class="account-btn" type="button" aria-label="Account: Guest">
+        <span class="avatar">?</span><span class="account-btn__name">Guest</span>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="app-main">
+  <section class="error-card" aria-labelledby="errorTitle">
+    <p class="error-code" aria-label="Error 505">505</p>
+    <h1 class="error-title" id="errorTitle">HTTP Version Not Supported</h1>
+    <p class="error-message">The requested HTTP version isn&#x27;t supported.</p>
+    <div class="error-actions">
+      <a class="roll-back" href="index.html">Back to Rolling</a>
+    </div>
+    <p class="footer-note">Gem Incremental</p>
+  </section>
+</main>
+<script>
+function cycleTheme(){
+  const modes=["system","light","dark","neon"];
+  const current=localStorage.getItem("gemIncremental.theme.mode")||"system";
+  const next=modes[(modes.indexOf(current)+1)%modes.length];
+  if(next==="system"){localStorage.removeItem("gemIncremental.theme.mode");document.documentElement.removeAttribute("data-theme");}
+  else{localStorage.setItem("gemIncremental.theme.mode",next);document.documentElement.setAttribute("data-theme",next);}
+}
+</script>
+</body>
+</html>

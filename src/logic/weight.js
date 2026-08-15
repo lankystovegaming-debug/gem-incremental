@@ -15,6 +15,22 @@ function randomBetween(
 }
 
 
+export function highWeightChance(
+  weightLuck = 1
+) {
+  const safeWeightLuck =
+    Math.max(
+      0,
+      weightLuck
+    );
+
+  return (
+    safeWeightLuck /
+    (safeWeightLuck + 3)
+  );
+}
+
+
 export function rollWeightMultiplier(
   weightLuck = 1
 ) {
@@ -24,14 +40,11 @@ export function rollWeightMultiplier(
       weightLuck
     );
 
-  const baseHighChance =
-    0.25;
-
+  // Diminishing returns: preserves the 25% baseline at 1x
+  // while ensuring high-weight rolls are never guaranteed.
   const highChance =
-    Math.min(
-      baseHighChance *
-      safeWeightLuck,
-      1
+    highWeightChance(
+      safeWeightLuck
     );
 
   const lowChance =

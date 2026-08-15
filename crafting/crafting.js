@@ -58,6 +58,7 @@ const state = {
   equipment: [],
   consumables: [],
   money: 0,
+  totalRolls: 0,
   category: "pickaxe",
   loading: true
 };
@@ -85,7 +86,8 @@ function ownsTierOrHigher(category, tier) {
 function equipmentContext() {
   return {
     equipment: state.equipment.map((item) => ({ id: item.equipment_id })),
-    consumables: state.consumables
+    consumables: state.consumables,
+    totalRolls: state.totalRolls
   };
 }
 
@@ -127,6 +129,13 @@ function describeRequirement(requirement, value) {
         label: requirement.gem,
         text: `${formatCount(value ?? 0)} / ${formatCount(requirement.amount)}`,
         fraction: ratio(value, requirement.amount)
+      };
+
+    case "lifetime-rolls":
+      return {
+        label: "Lifetime rolls",
+        text: `${formatCount(state.totalRolls)} / ${formatCount(requirement.rolls)}`,
+        fraction: ratio(state.totalRolls, requirement.rolls)
       };
 
     case "gem-total-weight":
@@ -207,14 +216,23 @@ function describeRequirement(requirement, value) {
       const current = value ?? {};
       const each = requirement.amountEach ?? 1;
 
-      const done = requirement.gems.filter(
-        (gemName) => (current[gemName] ?? 0) >= each
-      ).length;
+      const missing = requirement.gems.flatMap((gemName) => {
+        const remaining = Math.max(0, each - Number(current[gemName] ?? 0));
+
+        if (remaining === 0) {
+          return [];
+        }
+
+        return [each > 1 ? `${gemName} ×${remaining}` : gemName];
+      });
+
+      const done = requirement.gems.length - missing.length;
 
       return {
         label: requirement.label ?? "Gem collection",
         text: `${done} / ${requirement.gems.length} gems`,
-        fraction: ratio(done, requirement.gems.length)
+        fraction: ratio(done, requirement.gems.length),
+        missing
       };
     }
 
@@ -483,6 +501,8 @@ function recipeCard(recipe) {
                 ? `<span class="requirement__check">${icons.check}</span>`
                 : owned
                 ? ""
+                : requirement.type === "lifetime-rolls"
+                ? `<span class="requirement__check requirement__check--missing">${icons.x}</span>`
                 : `<button
                      class="btn btn--sm"
                      data-action="deposit"
@@ -493,6 +513,14 @@ function recipeCard(recipe) {
             }
           </span>
 
+          ${
+            detail.missing?.length
+              ? `<div class="requirement__missing">
+                   <span>Missing:</span> ${escapeHtml(detail.missing.join(", "))}
+                 </div>`
+              : ""
+          }
+
           <span class="requirement__bar">
             <span style="width:${(complete ? 1 : detail.fraction) * 100}%"></span>
           </span>
@@ -502,12 +530,6 @@ function recipeCard(recipe) {
     .join("");
 
   const affordable = state.money >= recipe.moneyCost;
-
-  // A "Deposit all" shortcut is offered whenever more than one
-  // requirement still has its own Deposit button.
-  const depositCount = (
-    requirementsHtml.match(/data-action="deposit"/g) ?? []
-  ).length;
 
   return `
     <article
@@ -540,14 +562,6 @@ function recipeCard(recipe) {
           ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
           : `
             <div class="requirements">${requirementsHtml}</div>
-
-            ${
-              depositCount > 1
-                ? `<button class="btn btn--block" data-action="deposit-all" type="button">
-                     Deposit all (${depositCount})
-                   </button>`
-                : ""
-            }
 
             <div class="recipe-cost">
               <span>Cost</span>
@@ -835,6 +849,7 @@ async function refresh() {
 
   if (playerState) {
     state.money = playerState.money;
+    state.totalRolls = playerState.total_rolls;
   }
 
   if (equipment) {
