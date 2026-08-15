@@ -9,6 +9,13 @@ let lastAuthError =
   null;
 
 
+// Multiple page features initialise at the same time. Keep their first
+// session check/sign-in in one shared promise so no feature issues a
+// database request before the anonymous session is ready.
+let authPromise =
+  null;
+
+
 // =========================================================
 // GET LAST AUTH ERROR
 // =========================================================
@@ -146,7 +153,18 @@ async function checkSupabaseConnectivity() {
 // AUTHENTICATE PLAYER
 // =========================================================
 
-export async function ensurePlayerAuth() {
+export function ensurePlayerAuth() {
+  if (!authPromise) {
+    authPromise = ensurePlayerAuthInternal().finally(() => {
+      authPromise = null;
+    });
+  }
+
+  return authPromise;
+}
+
+
+async function ensurePlayerAuthInternal() {
   lastAuthError =
     null;
 
