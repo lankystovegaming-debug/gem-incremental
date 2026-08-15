@@ -53,8 +53,25 @@ export function manuallyDepositCloudRequirement(recipeId, requirementIndex) {
 }
 
 
-export function craftCloudRecipe(recipeId) {
-  return invokeFunction("craft-recipe", { recipeId });
+export async function craftCloudRecipe(recipeId) {
+  // The primary path is the server-side Edge Function. Some deployments
+  // of the backend expose the atomic equipment craft as an RPC instead,
+  // so fall back to it when the function is unavailable.
+  const primary = await invokeFunction("craft-recipe", { recipeId });
+
+  if (!primary.error) {
+    return primary;
+  }
+
+  const fallback = await supabase.rpc("craft_equipment_recipe", {
+    p_recipe_id: recipeId
+  });
+
+  if (!fallback.error) {
+    return { data: fallback.data, error: null };
+  }
+
+  return primary;
 }
 
 
