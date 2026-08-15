@@ -4,6 +4,7 @@ import { invokeFunction } from "../backend/invoke.js";
 import { sellCloudGem } from "../backend/cloudInventory.js";
 import gems from "../data/gems.js";
 import consumables from "../data/consumables.js";
+import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
 import { confirmDialog } from "./dialog.js";
 import { formatMoney, formatCount, rarityLabel } from "./format.js";
@@ -348,14 +349,17 @@ async function open() {
         return;
       }
 
+      const weightMultiplier = rollWeightMultiplier();
+      const finalWeight = gem.baseWeight * weightMultiplier;
+
       const payload = {
         gem_name: gem.name,
         rarity: gem.rarity,
         base_weight: gem.baseWeight,
         value_per_gram: gem.valuePerGram,
-        weight_multiplier: 1,
-        final_weight: gem.baseWeight,
-        value: gem.baseWeight * gem.valuePerGram
+        weight_multiplier: weightMultiplier,
+        final_weight: finalWeight,
+        value: finalWeight * gem.valuePerGram
       };
 
       const result = await callDependency("item", targetValue(), payload);
