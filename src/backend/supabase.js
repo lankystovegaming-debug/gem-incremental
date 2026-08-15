@@ -4,11 +4,11 @@ import {
 
 
 export const SUPABASE_URL =
-  "https://fuzidbblwzrhhbonjqjm.supabase.co";
+  "https://igrddscmrdrrwtvyspbf.supabase.co";
 
 
 export const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_sCiiZxMP5DG8_gjGLg9qUg_HnWVD27U";
+  "sb_publishable_RXjn6yN0RuJn1CdJ_nJTCQ_0aixEAqI";
 
 
 export const supabase =
