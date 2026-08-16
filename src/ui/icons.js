@@ -210,6 +210,12 @@ export const icons = {
     <path d="M7 10h.01M11 10h.01M15 10h.01M8.5 14h7" />
   `),
 
+  box: svg(`
+    <path d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5Z" />
+    <path d="M3 8.5 12 13l9-4.5" />
+    <path d="M12 13v7" />
+  `),
+
   megaphone: svg(`
     <path d="M3 11v2a1 1 0 0 0 1 1h2l9 5V5L6 10H4a1 1 0 0 0-1 1Z" />
     <path d="M18 8a4 4 0 0 1 0 8" />

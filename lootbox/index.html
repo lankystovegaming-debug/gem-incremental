@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Spend coins on loot boxes for gems, money, inventory space and potions.">
+
+  <title>Loot Boxes · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./lootbox.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+        document.documentElement.setAttribute("data-accent", accent || "indigo");
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Loot Boxes</h1>
+        <p class="page-head__sub" id="lootSubtitle">
+          Spend coins for gems, money, inventory space and potions.
+        </p>
+      </div>
+    </div>
+
+
+    <!-- ================= COINS ================= -->
+
+    <section class="card coin-bar">
+      <div class="coin-bar__balance">
+        <span class="coin-bar__icon" id="coinIcon"></span>
+        <div>
+          <div class="coin-bar__count"><span id="coinCount">—</span> coins</div>
+          <div class="coin-bar__sub" id="coinMoney">1 coin = $100,000</div>
+        </div>
+      </div>
+
+      <div class="coin-bar__buy">
+        <input type="number" id="coinBuyQty" min="1" step="1" value="1" aria-label="Coins to buy">
+        <button class="btn btn--primary" id="coinBuyButton" type="button">Buy with money</button>
+        <button class="btn" id="coinBuyRealButton" type="button" title="Not available yet">
+          Buy with real money
+        </button>
+      </div>
+
+      <p class="account-status" id="coinStatus"></p>
+    </section>
+
+
+    <!-- ================= BOXES ================= -->
+
+    <section id="boxList" class="grid grid--wide"></section>
+  </main>
+
+
+  <!-- ================= CONTENTS MODAL ================= -->
+
+  <div class="lb-modal hidden" id="contentsModal">
+    <div class="lb-modal__panel">
+      <div class="lb-modal__head">
+        <h2 id="contentsTitle">Contents</h2>
+        <button class="lb-modal__close" id="contentsClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="lb-droprates" id="contentsBody"></div>
+    </div>
+  </div>
+
+
+  <!-- ================= OPEN / WHEEL OVERLAY ================= -->
+
+  <div class="lb-overlay hidden" id="wheelOverlay">
+    <div class="lb-overlay__inner">
+      <h2 class="lb-overlay__title" id="wheelTitle">Opening…</h2>
+
+      <div class="wheel" id="wheel">
+        <div class="wheel__marker"></div>
+        <div class="wheel__fade wheel__fade--left"></div>
+        <div class="wheel__fade wheel__fade--right"></div>
+        <div class="wheel__track" id="wheelTrack"></div>
+      </div>
+
+      <div class="lb-result hidden" id="wheelResult"></div>
+
+      <div class="lb-overlay__actions">
+        <button class="btn" id="wheelClose" type="button" hidden>Close</button>
+        <button class="btn btn--primary" id="wheelAgain" type="button" hidden>Open again</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./lootbox.js"></script>
+</body>
+</html>
