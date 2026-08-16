@@ -314,3 +314,102 @@
     display: none;
   }
 }
+
+
+/* =========================================================
+   FLOATING CHAT DOCK + FAB  (declutter — chat is hidden
+   behind a button instead of taking a full card on the page)
+   ========================================================= */
+
+.chat-fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 60;
+
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.08s ease;
+}
+
+.chat-fab:hover { background: var(--accent-strong); }
+.chat-fab:active { transform: translateY(1px); }
+.chat-fab svg { width: 24px; height: 24px; }
+.chat-fab.is-open { display: none; }
+
+.chat-fab__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--negative);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.chat-dock {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 61;
+  width: min(360px, calc(100vw - 2 * var(--space-4)));
+}
+
+.chat-dock .chat-card {
+  display: flex;
+  flex-direction: column;
+  height: min(68vh, 560px);
+  margin: 0;
+  box-shadow: var(--shadow-lg);
+}
+
+.chat-dock .chat-messages {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+.chat-dock__close {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-dock__close:hover { background: var(--surface-hover); color: var(--text); }
+
+/* Sit above the mobile tab bar, and go near-full-width on phones. */
+@media (max-width: 720px) {
+  .chat-fab {
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + 64px);
+  }
+  .chat-dock {
+    left: var(--space-2);
+    right: var(--space-2);
+    bottom: calc(var(--space-2) + 64px);
+    width: auto;
+  }
+  .chat-dock .chat-card { height: 62vh; }
+}

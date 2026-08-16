@@ -798,8 +798,13 @@ a:hover {
     bottom: 0;
     z-index: 50;
 
+    /* Many tabs now, so scroll horizontally instead of squishing. */
     display: flex;
-    justify-content: space-around;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
 
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
 
@@ -809,15 +814,19 @@ a:hover {
     -webkit-backdrop-filter: blur(14px);
   }
 
+  .tabbar::-webkit-scrollbar { display: none; }
+
   .tabbar__link {
     display: flex;
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 20vw;
     flex-direction: column;
     align-items: center;
     gap: 3px;
 
     padding: 6px 2px;
     border-radius: var(--radius-sm);
+    scroll-snap-align: center;
 
     color: var(--text-faint);
     font-size: 0.68rem;
