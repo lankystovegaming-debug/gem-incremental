@@ -287,73 +287,26 @@ function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
 
   const rarity = Number(data.gem.rarity ?? 0);
-  const isUltraRare = rarity >= 100000;
-  const isEpicRollEffect = rarity >= 10000 && !isUltraRare;
-
-  // Every gem gets a deterministic visual identity. The same gem always
-  // produces the same palette/animation family, while different gems feel
-  // genuinely different without maintaining a giant per-gem stylesheet.
-  const gemName = String(data.gem.name ?? "Gem");
-  let gemHash = 0;
-  for (let i = 0; i < gemName.length; i += 1) {
-    gemHash = (gemHash * 31 + gemName.charCodeAt(i)) >>> 0;
-  }
-  const visualVariant = gemHash % 8;
-  const visualHue = gemHash % 360;
-  const visualSpeed = (0.82 + ((gemHash >>> 8) % 35) / 100).toFixed(2);
+  const isUltraRare = rarity >= 100000; // 1/100k+ gets the cinematic reveal.
 
   gemStage.className = [
     "stage__display",
     "is-revealed",
     `tier-${tier.id}`,
-    `visual-variant-${visualVariant}`,
-    isEpicRollEffect ? "is-epic-roll" : "",
     isUltraRare ? "is-ultra-rare" : ""
   ].filter(Boolean).join(" ");
-  gemStage.style.setProperty("--gem-hue", `${visualHue}`);
-  gemStage.style.setProperty("--gem-speed", visualSpeed);
 
   gemStage.innerHTML = `
-    ${isEpicRollEffect ? `
-      <div class="epic-roll-effect" aria-hidden="true">
-        <span class="epic-roll-effect__backdrop"></span>
-        <span class="epic-roll-effect__halo epic-roll-effect__halo--1"></span>
-        <span class="epic-roll-effect__halo epic-roll-effect__halo--2"></span>
-        <span class="epic-roll-effect__halo epic-roll-effect__halo--3"></span>
-        <span class="epic-roll-effect__ring epic-roll-effect__ring--1"></span>
-        <span class="epic-roll-effect__ring epic-roll-effect__ring--2"></span>
-        <span class="epic-roll-effect__ring epic-roll-effect__ring--3"></span>
-        <span class="epic-roll-effect__ring epic-roll-effect__ring--4"></span>
-        <span class="epic-roll-effect__beam epic-roll-effect__beam--1"></span>
-        <span class="epic-roll-effect__beam epic-roll-effect__beam--2"></span>
-        <span class="epic-roll-effect__beam epic-roll-effect__beam--3"></span>
-        <span class="epic-roll-effect__spark-field"></span>
-        <span class="epic-roll-effect__burst"></span>
-        <span class="epic-roll-effect__shockwave"></span>
-        <span class="epic-roll-effect__flash"></span>
-      </div>
-    ` : ""}
     ${isUltraRare ? `
       <div class="ultra-cutscene" aria-hidden="true">
         <span class="ultra-cutscene__veil"></span>
         <span class="ultra-cutscene__stars"></span>
-        <span class="ultra-cutscene__stars ultra-cutscene__stars--2"></span>
-        <span class="ultra-cutscene__stars ultra-cutscene__stars--3"></span>
         <span class="ultra-cutscene__shards"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--one"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--two"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--three"></span>
-        <span class="ultra-cutscene__ring ultra-cutscene__ring--four"></span>
         <span class="ultra-cutscene__beam ultra-cutscene__beam--one"></span>
         <span class="ultra-cutscene__beam ultra-cutscene__beam--two"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--three"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--four"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--one"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--two"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--three"></span>
-        <span class="ultra-cutscene__runes"></span>
-        <span class="ultra-cutscene__energy"></span>
-        <span class="ultra-cutscene__core"></span>
         <span class="ultra-cutscene__burst"></span>
         <span class="ultra-cutscene__flash"></span>
         <span class="ultra-cutscene__vignette"></span>
@@ -400,9 +353,8 @@ function renderRoll(data, outcome) {
   // Restart the reveal animation on every roll.
   gemStage.classList.add("is-animating");
 
-  // 1/10k+ gets the upgraded roll effect; 1/100k+ replaces it with the
-  // full cinematic. Lower rarities keep the lighter legacy reveal.
-  if (isEpicRollEffect || isUltraRare) {
+  // Rare and above earn the shockwave. 1/100k+ gets the full cinematic.
+  if (tier.id !== "common" && tier.id !== "uncommon") {
     gemStage.classList.add("is-big");
   }
 
@@ -417,10 +369,8 @@ function renderRoll(data, outcome) {
     // The CSS owns the visuals; JS only owns the lock/timing.
     return new Promise((resolve) => {
       cinematicTimer = setTimeout(() => {
-        gemStage.classList.remove("is-animating", "is-big", "is-cinematic", "is-ultra-rare");
+        gemStage.classList.remove("is-animating", "is-big", "is-cinematic");
         gemStage.style.removeProperty("--cinematic-duration");
-        gemStage.style.removeProperty("--gem-hue");
-        gemStage.style.removeProperty("--gem-speed");
         endCinematic();
         resolve();
       }, duration);
@@ -428,10 +378,8 @@ function renderRoll(data, outcome) {
   }
 
   setTimeout(() => {
-    gemStage.classList.remove("is-animating", "is-big", "is-epic-roll");
-    gemStage.style.removeProperty("--gem-hue");
-    gemStage.style.removeProperty("--gem-speed");
-  }, isEpicRollEffect ? 3300 : 950);
+    gemStage.classList.remove("is-animating", "is-big");
+  }, 950);
 
   return Promise.resolve();
 }
