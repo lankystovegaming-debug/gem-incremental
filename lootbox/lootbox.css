@@ -308,6 +308,10 @@
   background: var(--surface-raised);
 }
 
+.wheel-item--winner {
+  box-shadow: 0 0 18px -2px var(--item-color, var(--accent));
+}
+
 .wheel-item__icon { color: var(--item-color, var(--accent)); }
 .wheel-item__icon svg { width: 28px; height: 28px; }
 
