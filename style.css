@@ -969,3 +969,247 @@ html, body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* =========================================================
+   FULL-SCREEN GEM CINEMATICS v3
+   IMPORTANT: this compositor is portaled directly to <body>.
+   It is NOT inside .stage, so PC fullscreen means the entire
+   viewport, not merely the roll card.
+   ========================================================= */
+html.is-cinematic-active,
+html.is-cinematic-active body {
+  overflow: hidden !important;
+}
+
+#ultra-cutscene-overlay {
+  --scene-c: hsl(var(--gem-hue, 210) 90% 65%);
+  --scene-c2: hsl(calc(var(--gem-hue, 210) + 55) 95% 72%);
+  --scene-c3: hsl(calc(var(--gem-hue, 210) + 145) 90% 68%);
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-width: 100vw !important;
+  min-height: 100dvh !important;
+  z-index: 2147483000 !important;
+  overflow: hidden !important;
+  pointer-events: all !important;
+  isolation: isolate;
+  contain: strict;
+  background: #02030a;
+  color: white;
+  opacity: 0;
+  transform: none !important;
+  transition: opacity .22s ease;
+  font-family: inherit;
+}
+
+#ultra-cutscene-overlay.is-playing { opacity: 1; }
+#ultra-cutscene-overlay *,
+#ultra-cutscene-overlay *::before,
+#ultra-cutscene-overlay *::after { box-sizing: border-box; }
+
+#ultra-cutscene-overlay .scene__backdrop,
+#ultra-cutscene-overlay .scene__world,
+#ultra-cutscene-overlay .scene__flash,
+#ultra-cutscene-overlay .scene__vignette,
+#ultra-cutscene-overlay .scene__scanlines,
+#ultra-cutscene-overlay .scene__reveal,
+#ultra-cutscene-overlay .scene__letterbox {
+  position: absolute;
+  inset: 0;
+}
+
+#ultra-cutscene-overlay .scene__world,
+#ultra-cutscene-overlay .scene__world > span { pointer-events: none; }
+#ultra-cutscene-overlay .scene__world { overflow: hidden; }
+#ultra-cutscene-overlay .scene__world > span { position: absolute; display: block; }
+
+.scene__backdrop {
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 48%, var(--scene-c) 0, transparent 17%),
+    radial-gradient(circle at 50% 50%, #080b1d 0, #010207 72%);
+  animation: sceneBackdrop 8.2s ease both;
+}
+
+.scene__flash { z-index: 40; background: white; opacity: 0; mix-blend-mode: screen; animation: sceneFlash 8.2s ease both; }
+.scene__vignette { z-index: 41; background: radial-gradient(circle, transparent 18%, rgb(0 0 0 / .12) 48%, rgb(0 0 0 / .92) 100%); animation: sceneVignette 8.2s ease both; }
+.scene__scanlines { z-index: 42; opacity: .08; background: repeating-linear-gradient(to bottom, white 0 1px, transparent 1px 5px); mix-blend-mode: overlay; animation: scanMove .18s linear infinite; }
+.scene__letterbox { z-index: 43; inset-inline: 0; height: 0; background: #000; animation: letterbox 8.2s cubic-bezier(.2,.8,.2,1) both; }
+.scene__letterbox-top { bottom: auto; top: 0; }
+.scene__letterbox-bottom { top: auto; bottom: 0; }
+
+.scene__reveal {
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  padding: 8vh 8vw;
+  opacity: 0;
+  animation: sceneReveal 8.2s cubic-bezier(.12,.8,.15,1) both;
+}
+.scene__gem {
+  width: clamp(120px, 22vw, 280px);
+  height: clamp(120px, 22vw, 280px);
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 0 12px var(--scene-c)) drop-shadow(0 0 42px var(--scene-c)) drop-shadow(0 0 110px var(--scene-c2));
+  animation: gemHero 8.2s cubic-bezier(.12,.8,.15,1) both;
+}
+.scene__gem svg { width: 100%; height: 100%; }
+.scene__tier {
+  margin-top: 2vh;
+  font-size: clamp(12px, 1.4vw, 20px);
+  font-weight: 900;
+  letter-spacing: .42em;
+  text-transform: uppercase;
+  color: var(--scene-c2);
+  text-shadow: 0 0 16px var(--scene-c), 0 0 40px var(--scene-c);
+  animation: textRise 8.2s ease both;
+}
+.scene__name {
+  margin: .2em 0 0;
+  max-width: 92vw;
+  font-size: clamp(38px, 7vw, 104px);
+  line-height: .94;
+  font-weight: 1000;
+  letter-spacing: -.04em;
+  color: #fff;
+  text-shadow: 0 0 10px #fff, 0 0 28px var(--scene-c), 0 0 75px var(--scene-c2), 0 0 130px var(--scene-c);
+  animation: nameHero 8.2s cubic-bezier(.12,.8,.15,1) both;
+}
+.scene__rarity { margin-top: 1.2vh; font-size: clamp(15px, 2vw, 28px); font-weight: 800; letter-spacing: .08em; text-shadow: 0 0 20px var(--scene-c); }
+.scene__outcome { margin-top: 2vh; font-size: clamp(13px, 1.4vw, 19px); opacity: .92; animation: textRise 8.2s ease both; }
+
+@keyframes sceneBackdrop { 0% { filter: brightness(.15) saturate(.3); transform: scale(1.12); } 12% { filter: brightness(1) saturate(1.8); } 34% { transform: scale(1); } 72% { filter: brightness(1.25) saturate(1.3); } 100% { filter: brightness(.8); } }
+@keyframes sceneFlash { 0%,18%,36%,58% { opacity:0 } 20% { opacity:.92 } 22% {opacity:0} 38% {opacity:.72} 40%{opacity:0} 60%{opacity:.35} 62%,100%{opacity:0} }
+@keyframes sceneVignette { 0%,100%{opacity:.3} 35%{opacity:.85} 55%{opacity:.45} }
+@keyframes scanMove { from{transform:translateY(0)} to{transform:translateY(5px)} }
+@keyframes letterbox { 0%,7%{height:0} 14%,88%{height:7vh} 100%{height:0} }
+@keyframes sceneReveal { 0%,31%{opacity:0; transform:scale(.72) translateY(7vh); filter:blur(18px)} 43%{opacity:1; transform:scale(1.06); filter:blur(0)} 52%,100%{opacity:1; transform:scale(1)} }
+@keyframes gemHero { 0%,28%{opacity:0;transform:scale(.1) rotate(-80deg)} 41%{opacity:1;transform:scale(1.22) rotate(8deg)} 49%{transform:scale(.94) rotate(-2deg)} 58%,100%{transform:scale(1) rotate(0)} }
+@keyframes textRise { 0%,43%{opacity:0;transform:translateY(22px)} 55%,100%{opacity:1;transform:translateY(0)} }
+@keyframes nameHero { 0%,42%{opacity:0;transform:scale(.7);filter:blur(12px)} 54%{opacity:1;transform:scale(1.08);filter:blur(0)} 62%,100%{opacity:1;transform:scale(1)} }
+
+/* ---------- 0: ECLIPSE ---------- */
+.ultra-scene-0 .scene__eclipse { left:50%;top:50%;width:42vmin;height:42vmin;border-radius:50%;transform:translate(-50%,-50%);background:#000;box-shadow:0 0 0 2px var(--scene-c),0 0 35px var(--scene-c),0 0 100px var(--scene-c2),0 0 220px var(--scene-c); animation:eclipse 8.2s ease both; }
+.ultra-scene-0 .scene__corona { left:50%;top:50%;width:70vmin;height:70vmin;border-radius:50%;transform:translate(-50%,-50%);border:4px solid var(--scene-c);box-shadow:inset 0 0 60px var(--scene-c),0 0 70px var(--scene-c);animation:corona 8.2s ease both; }
+.ultra-scene-0 .scene__orbit { left:50%;top:50%;border-radius:50%;border:1px solid var(--scene-c2);animation:orbitSpin 8.2s linear both; }
+.ultra-scene-0 .scene__orbit-a{width:92vmin;height:34vmin;transform:translate(-50%,-50%) rotate(24deg)}
+.ultra-scene-0 .scene__orbit-b{width:110vmin;height:45vmin;transform:translate(-50%,-50%) rotate(-41deg);border-style:dashed}
+.ultra-scene-0 .scene__stars{inset:-10%;background-image:radial-gradient(circle,#fff 0 1px,transparent 1.7px);background-size:31px 31px;animation:starDrift 8.2s linear both}
+.ultra-scene-0 .scene__particles{inset:0;background:conic-gradient(from 0deg,transparent,var(--scene-c),transparent 20%,transparent 60%,var(--scene-c2),transparent);mix-blend-mode:screen;animation:particleSpin 8.2s linear both}
+@keyframes eclipse{0%,20%{transform:translate(-50%,-50%) scale(.05);opacity:0}35%{opacity:1}55%{transform:translate(-50%,-50%) scale(1.2)}100%{transform:translate(-50%,-50%) scale(2.2);opacity:.15}}
+@keyframes corona{0%,20%{transform:translate(-50%,-50%) scale(.1) rotate(0);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.8) rotate(360deg);opacity:.1}}
+@keyframes orbitSpin{from{transform:translate(-50%,-50%) rotate(0) scale(.3);opacity:0}30%{opacity:1}to{transform:translate(-50%,-50%) rotate(540deg) scale(1.4);opacity:0}}
+@keyframes starDrift{from{transform:scale(.5) translate(0,0);opacity:0}30%{opacity:.9}to{transform:scale(1.5) translate(-8vw,5vh);opacity:.15}}
+@keyframes particleSpin{from{transform:rotate(0) scale(.2);opacity:0}30%{opacity:.9}to{transform:rotate(720deg) scale(1.6);opacity:0}}
+
+/* ---------- 1: CELESTIAL GATE ---------- */
+.ultra-scene-1 .scene__gate{left:50%;top:50%;border-radius:50%;border:clamp(3px,.4vw,8px) solid var(--scene-c);box-shadow:0 0 20px var(--scene-c),inset 0 0 30px var(--scene-c2);transform:translate(-50%,-50%);animation:gateOpen 8.2s cubic-bezier(.1,.8,.1,1) both}
+.ultra-scene-1 .scene__gate-a{width:22vmin;height:22vmin}.ultra-scene-1 .scene__gate-b{width:48vmin;height:48vmin;border-style:dashed}.ultra-scene-1 .scene__gate-c{width:82vmin;height:82vmin;border-width:1px}
+.ultra-scene-1 .scene__constellation{inset:5%;background:linear-gradient(35deg,transparent 49.7%,var(--scene-c) 50%,transparent 50.3%),linear-gradient(145deg,transparent 49.7%,var(--scene-c2) 50%,transparent 50.3%);animation:constellation 8.2s ease both}
+.ultra-scene-1 .scene__comets{inset:-20%;background:radial-gradient(ellipse at 20% 80%,var(--scene-c) 0 2px,transparent 3px),radial-gradient(ellipse at 80% 20%,var(--scene-c2) 0 2px,transparent 3px);animation:comets 8.2s ease both}
+@keyframes gateOpen{0%,15%{transform:translate(-50%,-50%) scale(.02) rotate(-180deg);opacity:0}34%{opacity:1}62%{transform:translate(-50%,-50%) scale(1.3) rotate(180deg)}100%{transform:translate(-50%,-50%) scale(2.4) rotate(420deg);opacity:0}}
+@keyframes constellation{0%,20%{transform:scale(.1) rotate(-45deg);opacity:0}40%{opacity:.9}100%{transform:scale(1.6) rotate(45deg);opacity:0}}
+@keyframes comets{0%{transform:translate(-70vw,60vh) scale(.2);opacity:0}25%{opacity:1}55%{transform:translate(20vw,-20vh) scale(1.2)}100%{transform:translate(80vw,-70vh) scale(1.8);opacity:0}}
+
+/* ---------- 2: PRISM FRACTURE ---------- */
+.ultra-scene-2 .scene__prism{left:50%;top:50%;width:32vmin;height:32vmin;transform:translate(-50%,-50%) rotate(45deg);background:conic-gradient(from 30deg,var(--scene-c),#fff,var(--scene-c2),var(--scene-c3),var(--scene-c));clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);filter:drop-shadow(0 0 35px var(--scene-c));animation:prism 8.2s cubic-bezier(.1,.9,.1,1) both}
+.ultra-scene-2 .scene__fracture{left:50%;top:50%;width:160vw;height:2px;background:linear-gradient(90deg,transparent,var(--scene-c),#fff,var(--scene-c2),transparent);transform:translate(-50%,-50%) rotate(24deg);box-shadow:0 0 30px var(--scene-c);animation:fracture 8.2s ease both}.ultra-scene-2 .scene__fracture-b{transform:translate(-50%,-50%) rotate(-38deg);animation-delay:.12s}.ultra-scene-2 .scene__rainbow{inset:-30%;background:conic-gradient(from 0deg,transparent,var(--scene-c),transparent,var(--scene-c2),transparent,var(--scene-c3),transparent);mix-blend-mode:screen;animation:rainbow 8.2s linear both}.ultra-scene-2 .scene__shards{inset:-10%;background:linear-gradient(32deg,transparent 45%,var(--scene-c) 46%,transparent 47%),linear-gradient(128deg,transparent 55%,var(--scene-c2) 56%,transparent 57%),linear-gradient(72deg,transparent 65%,#fff 66%,transparent 67%);animation:shardFall 8.2s ease both}
+@keyframes prism{0%,20%{transform:translate(-50%,-50%) rotate(45deg) scale(.02);opacity:0}42%{opacity:1}56%{transform:translate(-50%,-50%) rotate(225deg) scale(1.5)}100%{transform:translate(-50%,-50%) rotate(585deg) scale(.25);opacity:0}}
+@keyframes fracture{0%,20%{transform:translate(-50%,-50%) rotate(24deg) scaleX(0);opacity:0}34%{opacity:1}60%{transform:translate(-50%,-50%) rotate(24deg) scaleX(1.1)}100%{transform:translate(-50%,-50%) rotate(24deg) scaleX(1.7);opacity:0}}
+@keyframes rainbow{from{transform:rotate(0) scale(.4);opacity:0}25%{opacity:.8}to{transform:rotate(720deg) scale(1.5);opacity:0}}
+@keyframes shardFall{0%,25%{transform:translateY(-50vh) rotate(-20deg);opacity:0}35%{opacity:.9}100%{transform:translateY(40vh) rotate(80deg);opacity:0}}
+
+/* ---------- 3: VOID RIFT ---------- */
+.ultra-scene-3 .scene__rift{left:50%;top:50%;width:45vmin;height:45vmin;transform:translate(-50%,-50%) rotate(25deg);border-radius:48% 52% 62% 38%;background:#000;box-shadow:0 0 0 2px var(--scene-c3),0 0 40px var(--scene-c3),0 0 150px var(--scene-c);animation:rift 8.2s ease both}
+.ultra-scene-3 .scene__rift-ring{left:50%;top:50%;width:100vmin;height:100vmin;border-radius:50%;border:2px solid var(--scene-c3);transform:translate(-50%,-50%);box-shadow:0 0 50px var(--scene-c3);animation:riftRing 8.2s ease both}
+.ultra-scene-3 .scene__tentacles{inset:-20%;background:repeating-conic-gradient(from 12deg,transparent 0 9deg,var(--scene-c3) 10deg 11deg,transparent 12deg 28deg);filter:blur(3px);animation:voidSpin 8.2s linear both}
+.ultra-scene-3 .scene__void-stars{inset:0;background-image:radial-gradient(circle,#fff 0 1px,transparent 1.5px);background-size:23px 29px;animation:voidStars 8.2s linear both}
+.ultra-scene-3 .scene__shockwaves{left:50%;top:50%;width:15vmin;height:15vmin;border:5px solid var(--scene-c3);border-radius:50%;transform:translate(-50%,-50%);animation:voidShock 8.2s ease-out both}
+@keyframes rift{0%,22%{transform:translate(-50%,-50%) scaleX(.02) scaleY(.2) rotate(25deg);opacity:0}37%{opacity:1}55%{transform:translate(-50%,-50%) scaleX(1.5) scaleY(.8) rotate(-18deg)}100%{transform:translate(-50%,-50%) scaleX(2.2) scaleY(1.2) rotate(55deg);opacity:0}}
+@keyframes riftRing{0%,25%{transform:translate(-50%,-50%) scale(.02);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-50%) scale(2);opacity:0}}
+@keyframes voidSpin{from{transform:rotate(0) scale(.2);opacity:0}30%{opacity:1}to{transform:rotate(-900deg) scale(1.7);opacity:0}}
+@keyframes voidStars{from{transform:scale(.2) rotate(0);opacity:0}30%{opacity:.8}to{transform:scale(1.8) rotate(180deg);opacity:.1}}
+@keyframes voidShock{0%,36%{transform:translate(-50%,-50%) scale(.1);opacity:0}44%{opacity:1}100%{transform:translate(-50%,-50%) scale(13);opacity:0}}
+
+/* ---------- 4: DIVINE BEAM ---------- */
+.ultra-scene-4 .scene__sky{inset:0;background:linear-gradient(180deg,var(--scene-c) -10%,transparent 45%),radial-gradient(ellipse at 50% 0,#fff 0,transparent 38%);animation:skyOpen 8.2s ease both}
+.ultra-scene-4 .scene__beam{top:-20%;left:50%;width:16vmin;height:140%;transform:translateX(-50%) rotate(var(--beam-rot,0));background:linear-gradient(90deg,transparent,var(--scene-c),#fff,var(--scene-c2),transparent);filter:blur(5px);box-shadow:0 0 80px var(--scene-c);animation:divineBeam 8.2s ease both}
+.ultra-scene-4 .scene__beam-a{--beam-rot:0deg}.ultra-scene-4 .scene__beam-b{--beam-rot:27deg;width:5vmin;animation-delay:.15s}.ultra-scene-4 .scene__beam-c{--beam-rot:-31deg;width:3vmin;animation-delay:.28s}
+.ultra-scene-4 .scene__halo{left:50%;top:35%;width:60vmin;height:20vmin;border-radius:50%;border:4px solid var(--scene-c2);transform:translate(-50%,-50%);box-shadow:0 0 50px var(--scene-c2);animation:divineHalo 8.2s ease both}
+.ultra-scene-4 .scene__feathers{inset:0;background:radial-gradient(ellipse at 15% 70%,transparent 0 8%,var(--scene-c) 8.2% 8.4%,transparent 8.6%),radial-gradient(ellipse at 85% 70%,transparent 0 8%,var(--scene-c2) 8.2% 8.4%,transparent 8.6%);animation:featherRise 8.2s ease both}
+@keyframes skyOpen{0%{opacity:0;filter:brightness(.1)}25%{opacity:1}55%{filter:brightness(1.8)}100%{opacity:.3}}
+@keyframes divineBeam{0%,18%{transform:translateX(-50%) scaleX(.01) rotate(var(--beam-rot));opacity:0}32%{opacity:1}55%{transform:translateX(-50%) scaleX(1.3) rotate(var(--beam-rot))}100%{transform:translateX(-50%) scaleX(.15) rotate(var(--beam-rot));opacity:0}}
+@keyframes divineHalo{0%,28%{transform:translate(-50%,-50%) scale(.05);opacity:0}45%{opacity:1}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
+@keyframes featherRise{0%,25%{transform:scale(.3) translateY(25vh);opacity:0}45%{opacity:.7}100%{transform:scale(1.6) translateY(-20vh);opacity:0}}
+
+/* ---------- 5: ARCANE SPELL ---------- */
+.ultra-scene-5 .scene__magic-circle{left:50%;top:50%;border-radius:50%;border:2px solid var(--scene-c);transform:translate(-50%,-50%);box-shadow:0 0 18px var(--scene-c),inset 0 0 22px var(--scene-c);background:repeating-conic-gradient(from 0deg,transparent 0 9deg,var(--scene-c) 9.5deg 10deg,transparent 10.5deg 20deg)}
+.ultra-scene-5 .scene__magic-circle-a{width:30vmin;height:30vmin;animation:spellCircleA 8.2s linear both}.ultra-scene-5 .scene__magic-circle-b{width:72vmin;height:72vmin;border-style:dashed;animation:spellCircleB 8.2s linear both}
+.ultra-scene-5 .scene__runes{left:50%;top:50%;width:90vmin;height:90vmin;transform:translate(-50%,-50%);background:repeating-conic-gradient(var(--scene-c2) 0 1deg,transparent 1deg 14deg);mask:radial-gradient(circle,transparent 0 30%,#000 31% 32%,transparent 33% 48%,#000 49% 50%,transparent 51%);animation:runeTurn 8.2s linear both}
+.ultra-scene-5 .scene__sigils{inset:10%;border:1px solid var(--scene-c2);clip-path:polygon(50% 0,62% 34%,100% 50%,62% 66%,50% 100%,38% 66%,0 50%,38% 34%);animation:sigilPulse 8.2s ease both}
+.ultra-scene-5 .scene__arcane-sparks{inset:0;background:radial-gradient(circle at 20% 30%,var(--scene-c) 0 2px,transparent 3px),radial-gradient(circle at 80% 70%,var(--scene-c2) 0 2px,transparent 3px),radial-gradient(circle at 70% 20%,#fff 0 1px,transparent 2px);animation:sparkOrbit 8.2s ease both}
+@keyframes spellCircleA{0%,20%{transform:translate(-50%,-50%) scale(.01) rotate(0);opacity:0}35%{opacity:1}100%{transform:translate(-50%,-50%) scale(2.8) rotate(1080deg);opacity:0}}
+@keyframes spellCircleB{0%,25%{transform:translate(-50%,-50%) scale(.01) rotate(180deg);opacity:0}40%{opacity:.8}100%{transform:translate(-50%,-50%) scale(1.7) rotate(-720deg);opacity:0}}
+@keyframes runeTurn{from{transform:translate(-50%,-50%) scale(.2) rotate(0);opacity:0}35%{opacity:1}to{transform:translate(-50%,-50%) scale(1.4) rotate(1440deg);opacity:0}}
+@keyframes sigilPulse{0%,25%{transform:scale(.1) rotate(0);opacity:0}42%{opacity:1}60%{transform:scale(1.3) rotate(180deg)}100%{transform:scale(2) rotate(360deg);opacity:0}}
+@keyframes sparkOrbit{from{transform:rotate(0) scale(.2);opacity:0}30%{opacity:1}to{transform:rotate(-720deg) scale(1.7);opacity:0}}
+
+/* ---------- 6: SUPERNOVA ---------- */
+.ultra-scene-6 .scene__supernova{left:50%;top:50%;width:12vmin;height:12vmin;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 25px #fff,0 0 80px var(--scene-c),0 0 200px var(--scene-c2);animation:supernova 8.2s ease both}
+.ultra-scene-6 .scene__shockwave{left:50%;top:50%;border:3px solid var(--scene-c);border-radius:50%;transform:translate(-50%,-50%);animation:novaWave 8.2s cubic-bezier(.1,.9,.1,1) both}.ultra-scene-6 .scene__shockwave-a{width:20vmin;height:20vmin}.ultra-scene-6 .scene__shockwave-b{width:12vmin;height:12vmin;border-color:var(--scene-c2);animation-delay:.18s}
+.ultra-scene-6 .scene__solar-flare{inset:-20%;background:conic-gradient(from 0deg,transparent 0 10%,var(--scene-c) 12%,transparent 15% 30%,var(--scene-c2) 32%,transparent 35% 60%,var(--scene-c3) 62%,transparent 65%);filter:blur(8px);animation:solar 8.2s linear both}
+.ultra-scene-6 .scene__debris{inset:0;background:radial-gradient(circle at 30% 30%,#fff 0 1px,transparent 2px),radial-gradient(circle at 70% 60%,var(--scene-c) 0 2px,transparent 3px),radial-gradient(circle at 40% 80%,var(--scene-c2) 0 1px,transparent 2px);animation:debris 8.2s ease both}
+@keyframes supernova{0%,30%{transform:translate(-50%,-50%) scale(.02);opacity:0}40%{opacity:1}46%{transform:translate(-50%,-50%) scale(4)}55%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(8);opacity:0}}
+@keyframes novaWave{0%,35%{transform:translate(-50%,-50%) scale(.05);opacity:0}43%{opacity:1}100%{transform:translate(-50%,-50%) scale(16);opacity:0}}
+@keyframes solar{from{transform:rotate(0) scale(.2);opacity:0}30%{opacity:1}to{transform:rotate(900deg) scale(1.5);opacity:0}}
+@keyframes debris{0%,25%{transform:scale(.1);opacity:0}45%{opacity:1}100%{transform:scale(2) rotate(180deg);opacity:0}}
+
+/* ---------- 7: CRYSTAL CATHEDRAL ---------- */
+.ultra-scene-7 .scene__cathedral{inset:0;background:linear-gradient(60deg,transparent 35%,var(--scene-c) 35.5%,transparent 36%),linear-gradient(120deg,transparent 35%,var(--scene-c2) 35.5%,transparent 36%),linear-gradient(90deg,transparent 49.5%,#fff 50%,transparent 50.5%);mask:linear-gradient(to bottom,transparent,#000 18% 82%,transparent);animation:cathedral 8.2s ease both}
+.ultra-scene-7 .scene__crystal-cracks{inset:0;background:linear-gradient(22deg,transparent 48%,var(--scene-c) 49%,transparent 50%),linear-gradient(158deg,transparent 48%,var(--scene-c2) 49%,transparent 50%),linear-gradient(74deg,transparent 54%,#fff 55%,transparent 56%);animation:cracks 8.2s ease both}
+.ultra-scene-7 .scene__crystal-rays{left:50%;top:50%;width:120vw;height:10vmin;transform:translate(-50%,-50%);background:linear-gradient(90deg,transparent,var(--scene-c),#fff,var(--scene-c2),transparent);filter:blur(5px);animation:crystalRay 8.2s ease both}
+.ultra-scene-7 .scene__floating-gems{inset:0;background:radial-gradient(circle at 22% 35%,var(--scene-c) 0 7px,transparent 8px),radial-gradient(circle at 77% 61%,var(--scene-c2) 0 9px,transparent 10px),radial-gradient(circle at 65% 22%,#fff 0 4px,transparent 5px);animation:floatingGems 8.2s ease both}
+.ultra-scene-7 .scene__dust{inset:0;background-image:radial-gradient(circle,#fff 0 1px,transparent 1.5px);background-size:27px 41px;opacity:.5;animation:dustRise 8.2s linear both}
+@keyframes cathedral{0%,20%{transform:scale(.1) translateY(30vh);opacity:0}40%{opacity:1}100%{transform:scale(1.7) translateY(-5vh);opacity:0}}
+@keyframes cracks{0%,25%{transform:scale(.2) rotate(-20deg);opacity:0}40%{opacity:1}100%{transform:scale(1.5) rotate(12deg);opacity:0}}
+@keyframes crystalRay{0%,28%{transform:translate(-50%,-50%) scaleX(0);opacity:0}45%{opacity:1}100%{transform:translate(-50%,-50%) scaleX(1.5);opacity:0}}
+@keyframes floatingGems{0%,30%{transform:translateY(25vh) scale(.2);opacity:0}45%{opacity:1}100%{transform:translateY(-25vh) scale(1.8);opacity:0}}
+@keyframes dustRise{from{transform:translateY(20vh)}to{transform:translateY(-30vh);opacity:0}}
+
+/* ---------- 8: GALAXY SPIRAL ---------- */
+.ultra-scene-8 .scene__galaxy{left:50%;top:50%;width:130vmin;height:130vmin;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(from 0deg,transparent 0 8%,var(--scene-c) 10%,transparent 16%,var(--scene-c2) 22%,transparent 29%,var(--scene-c3) 36%,transparent 44%,var(--scene-c) 52%,transparent 60%,var(--scene-c2) 68%,transparent 78%,var(--scene-c3) 86%,transparent 94%);filter:blur(7px);mask:radial-gradient(ellipse,#000 0 15%,transparent 60%);animation:galaxy 8.2s linear both}
+.ultra-scene-8 .scene__galaxy-core{left:50%;top:50%;width:18vmin;height:18vmin;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 40px #fff,0 0 120px var(--scene-c);animation:galaxyCore 8.2s ease both}
+.ultra-scene-8 .scene__galaxy-arms{inset:0;background:conic-gradient(from 25deg,transparent 0 12%,rgb(255 255 255 / .5) 14%,transparent 17% 42%,rgb(255 255 255 / .4) 44%,transparent 47% 72%,rgb(255 255 255 / .35) 74%,transparent 77%);filter:blur(4px);animation:arms 8.2s linear both}
+.ultra-scene-8 .scene__nebula{inset:-30%;background:radial-gradient(ellipse at 30% 40%,var(--scene-c) 0,transparent 35%),radial-gradient(ellipse at 70% 60%,var(--scene-c2) 0,transparent 35%);filter:blur(30px);opacity:.5;animation:nebula 8.2s ease both}
+@keyframes galaxy{from{transform:translate(-50%,-50%) rotate(0) scale(.05);opacity:0}25%{opacity:1}to{transform:translate(-50%,-50%) rotate(1080deg) scale(1.5);opacity:0}}
+@keyframes galaxyCore{0%,30%{transform:translate(-50%,-50%) scale(.02);opacity:0}42%{transform:translate(-50%,-50%) scale(1.4);opacity:1}55%{transform:translate(-50%,-50%) scale(.8)}100%{transform:translate(-50%,-50%) scale(4);opacity:0}}
+@keyframes arms{from{transform:rotate(0) scale(.2);opacity:0}30%{opacity:.9}to{transform:rotate(-720deg) scale(1.7);opacity:0}}
+@keyframes nebula{from{transform:scale(.3);opacity:0}35%{opacity:.8}to{transform:scale(1.5) rotate(80deg);opacity:0}}
+
+/* ---------- 9: REALITY COLLAPSE ---------- */
+.ultra-scene-9 .scene__grid{inset:-20%;background:linear-gradient(var(--scene-c) 1px,transparent 1px),linear-gradient(90deg,var(--scene-c2) 1px,transparent 1px);background-size:7vw 7vw;transform:perspective(500px) rotateX(62deg) translateY(25vh) scale(2);transform-origin:center bottom;opacity:.55;animation:gridCollapse 8.2s ease both}
+.ultra-scene-9 .scene__collapse{left:50%;top:50%;width:10vmin;height:10vmin;transform:translate(-50%,-50%);background:#000;clip-path:polygon(50% 0,62% 36%,100% 50%,62% 64%,50% 100%,38% 64%,0 50%,38% 36%);box-shadow:0 0 40px var(--scene-c),0 0 140px var(--scene-c2);animation:collapseCore 8.2s cubic-bezier(.05,.9,.05,1) both}
+.ultra-scene-9 .scene__glitch-rings{left:50%;top:50%;width:90vmin;height:90vmin;transform:translate(-50%,-50%);border:5px double var(--scene-c);border-radius:47% 53% 42% 58%;filter:drop-shadow(8px 0 var(--scene-c2));animation:glitchRing 8.2s steps(12,end) both}
+.ultra-scene-9 .scene__energy-blades{inset:-30%;background:repeating-conic-gradient(from 0deg,transparent 0 6deg,var(--scene-c) 7deg 8deg,transparent 9deg 18deg);mask:radial-gradient(circle,transparent 0 25%,#000 26% 50%,transparent 51%);animation:bladeCollapse 8.2s linear both}
+.ultra-scene-9 .scene__afterimage{inset:0;background:linear-gradient(90deg,transparent 0 45%,var(--scene-c) 48%,transparent 51%),linear-gradient(90deg,transparent 49%,var(--scene-c2) 52%,transparent 55%);mix-blend-mode:screen;animation:afterImage 8.2s ease both}
+@keyframes gridCollapse{0%{transform:perspective(500px) rotateX(62deg) translateY(70vh) scale(4);opacity:0}35%{opacity:.8}70%{transform:perspective(500px) rotateX(62deg) translateY(0) scale(1.3)}100%{transform:perspective(500px) rotateX(62deg) translateY(-30vh) scale(.5);opacity:0}}
+@keyframes collapseCore{0%,25%{transform:translate(-50%,-50%) scale(7);opacity:0}40%{opacity:1}50%{transform:translate(-50%,-50%) scale(.4)}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+@keyframes glitchRing{0%,25%{transform:translate(-50%,-50%) scale(.05) skew(0);opacity:0}35%{opacity:1}45%{transform:translate(-52%,-50%) scale(1.2) skew(4deg)}55%{transform:translate(-48%,-51%) scale(.8) skew(-7deg)}100%{transform:translate(-50%,-50%) scale(2.2) skew(0);opacity:0}}
+@keyframes bladeCollapse{from{transform:rotate(0) scale(2);opacity:0}30%{opacity:.8}to{transform:rotate(-1080deg) scale(.3);opacity:0}}
+@keyframes afterImage{0%,30%{opacity:0;transform:scaleX(.1)}45%{opacity:.8}55%{transform:scaleX(1.4)}100%{opacity:0;transform:scaleX(.2)}}
+
+@media (max-width:700px),(pointer:coarse){
+  #ultra-cutscene-overlay .scene__reveal{padding:7vh 5vw}
+  #ultra-cutscene-overlay .scene__gem{width:clamp(105px,38vw,210px);height:clamp(105px,38vw,210px)}
+  #ultra-cutscene-overlay .scene__name{font-size:clamp(34px,10vw,68px)}
+  .scene__letterbox-top,.scene__letterbox-bottom{height:5vh}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #ultra-cutscene-overlay *,#ultra-cutscene-overlay::before,#ultra-cutscene-overlay::after{animation-duration:1ms!important;animation-iteration-count:1!important}
+}
