@@ -1147,7 +1147,8 @@ export default {
           .select(`
             id,
             next_roll_at,
-            inventory_capacity
+            inventory_capacity,
+            total_rolls
           `)
           .eq(
             "id",
@@ -1397,6 +1398,12 @@ export default {
       // CALCULATE PLAYER STATS
       // =====================================================
 
+      // Keep the luck recorded on a specimen independent from temporary
+      // boosts. A gifted potion can improve the odds of this roll, but the
+      // gem should still show the player's normal (equipment) luck level.
+      let baseLuck =
+        1;
+
       let luck =
         1;
 
@@ -1415,12 +1422,18 @@ export default {
         of equippedEquipment ??
         []
       ) {
-        luck +=
+        const equipmentLuck =
           Number(
             equipment
               .luck_bonus ??
             0
           );
+
+        baseLuck +=
+          equipmentLuck;
+
+        luck +=
+          equipmentLuck;
 
         rollSpeed +=
           Number(
@@ -1925,7 +1938,17 @@ export default {
               value,
 
               locked:
-                false
+                false,
+
+              roll_number:
+                Number(
+                  player.total_rolls ??
+                  0
+                ) +
+                1,
+
+              luck_at_roll:
+                baseLuck
             })
             .select()
             .single();
