@@ -129,6 +129,21 @@ function requirementKey(requirement, index) {
     return requirement.gem;
   }
 
+  if (
+    requirement.type === "consumable" ||
+    requirement.type === "consumable-count" ||
+    requirement.type === "potion" ||
+    requirement.type === "potion-count"
+  ) {
+    return (
+      requirement.consumableId ??
+      requirement.consumable_id ??
+      requirement.potionId ??
+      requirement.potion_id ??
+      `${requirement.type}-${index}`
+    );
+  }
+
   return `${requirement.type}-${index}`;
 }
 
