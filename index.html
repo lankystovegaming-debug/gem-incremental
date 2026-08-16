@@ -164,12 +164,26 @@
       <div id="historyList" class="history"></div>
     </section>
 
-    <!-- ================= GLOBAL CHAT ================= -->
+  </main>
 
+
+  <!-- ================= CHAT (floating, toggled to declutter) ================= -->
+
+  <button class="chat-fab" id="chatFab" type="button" aria-label="Open chat"
+          aria-expanded="false" title="Chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-5.7A8.38 8.38 0 0 1 4.1 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z" />
+    </svg>
+    <span class="chat-fab__badge hidden" id="chatFabBadge"></span>
+  </button>
+
+  <div class="chat-dock hidden" id="chatDock">
     <section class="card chat-card" aria-labelledby="chatHeading">
       <div class="chat-card__head">
         <h2 class="chat-card__title" id="chatHeading">Chat</h2>
         <span class="chat-card__status" id="chatStatus">Connecting…</span>
+        <button class="chat-dock__close" id="chatDockClose" type="button" aria-label="Close chat">×</button>
       </div>
 
       <div
@@ -189,7 +203,7 @@
           type="text"
           maxlength="500"
           autocomplete="off"
-          placeholder="Message globally, or use /msg username message…"
+          placeholder="Message globally, or /msg username message…"
           aria-label="Chat message"
         >
         <button class="btn btn--primary chat-send" id="chatSend" type="submit">
@@ -201,10 +215,33 @@
         Global chat is public. Use /msg username message for a private message.
       </div>
     </section>
+  </div>
 
+  <script>
+    (function () {
+      var fab = document.getElementById("chatFab");
+      var dock = document.getElementById("chatDock");
+      var close = document.getElementById("chatDockClose");
+      var badge = document.getElementById("chatFabBadge");
+      if (!fab || !dock) return;
 
+      function setOpen(open) {
+        dock.classList.toggle("hidden", !open);
+        fab.setAttribute("aria-expanded", open ? "true" : "false");
+        fab.classList.toggle("is-open", open);
+        if (open) {
+          if (badge) badge.classList.add("hidden");
+          var input = document.getElementById("chatInput");
+          if (input) setTimeout(function () { input.focus(); }, 50);
+        }
+      }
 
-  </main>
+      fab.addEventListener("click", function () {
+        setOpen(dock.classList.contains("hidden"));
+      });
+      if (close) close.addEventListener("click", function () { setOpen(false); });
+    })();
+  </script>
 
   <script type="module" src="./main.js"></script>
   <script type="module" src="./chat-ui.js"></script>
