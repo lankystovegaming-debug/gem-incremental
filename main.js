@@ -6,7 +6,12 @@ import {
 } from "./src/backend/auth.js";
 import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
 import { invokeFunction } from "./src/backend/invoke.js";
-import { createRollSession } from "./src/backend/rollSession.js";
+import {
+  startRollSession,
+  isRollSessionActive,
+  onRollSessionChange,
+  getRollSessionId
+} from "./src/backend/rollSession.js";
 import { supabase } from "./src/backend/supabase.js";
 import { runLegacyMigrationGate } from "./src/backend/legacyMigration.js";
 import {
@@ -92,11 +97,6 @@ let rollInFlight = false;
 let cinematicActive = false;
 let cinematicTimer = null;
 
-// Only the server-approved active tab may roll. The lease is refreshed
-// by rollSession.js every 25 seconds.
-let rollSession = null;
-let rollSessionActive = false;
-
 function cinematicDuration() {
   // Give phones a little more breathing room because the reveal is
   // deliberately composed for a full-screen mobile presentation.
@@ -122,6 +122,7 @@ function endCinematic() {
 }
 
 let consecutiveFailures = 0;
+let rollSessionActive = false;
 
 
 // =========================================================
@@ -198,21 +199,6 @@ function setButton({ mode, label, disabled }) {
 
 function showReady() {
   stopCooldown();
-
-  if (!rollSessionActive) {
-    view.ready = false;
-
-    setButton({
-      mode: "blocked",
-      label: "Another tab is rolling",
-      disabled: true
-    });
-
-    rollHint.textContent =
-      "Only one tab can roll this account at a time.";
-
-    return;
-  }
 
   if (view.inventoryCount >= view.capacity) {
     view.ready = false;
@@ -508,12 +494,7 @@ function renderHistory() {
 // =========================================================
 
 async function performRoll() {
-  if (
-    rollInFlight ||
-    cinematicActive ||
-    !view.ready ||
-    !rollSessionActive
-  ) {
+  if (rollInFlight || cinematicActive || !view.ready || !rollSessionActive) {
     return;
   }
 
@@ -524,7 +505,7 @@ async function performRoll() {
   setButton({ mode: "rolling", label: "Rolling", disabled: true });
 
   const { data, error } = await invokeFunction("roll", {
-    sessionId: rollSession?.sessionId ?? null
+    sessionId: getRollSessionId()
   });
 
   rollInFlight = false;
@@ -536,25 +517,6 @@ async function performRoll() {
   if (error) {
     if (error.code === "cooldown" && error.details?.nextRollAt) {
       startCooldown(new Date(error.details.nextRollAt).getTime());
-
-      return;
-    }
-
-    if (
-      error.code === "roll_session_active" ||
-      error.code === "roll_session_required"
-    ) {
-      rollSessionActive = false;
-      setButton({
-        mode: "blocked",
-        label: "Another tab is rolling",
-        disabled: true
-      });
-
-      notify.warning(
-        "Roll locked",
-        error.message
-      );
 
       return;
     }
@@ -831,6 +793,7 @@ async function refreshEffects() {
 function maybeAutoRoll() {
   if (
     !getSettings().autoRoll ||
+    !rollSessionActive ||
     !view.ready ||
     rollInFlight ||
     cinematicActive
@@ -1012,47 +975,30 @@ async function startGame() {
     return;
   }
 
-  rollSession = createRollSession({
-    onActive: () => {
-      rollSessionActive = true;
+  // One active rolling tab per account. This uses a lightweight
+  // Supabase database RPC rather than an Edge Function heartbeat.
+  rollSessionActive = await startRollSession();
 
-      if (
-        !rollInFlight &&
-        !cinematicActive &&
-        !cooldownTimer
-      ) {
-        showReady();
+  onRollSessionChange((active) => {
+    rollSessionActive = active;
+
+    if (!active) {
+      if (!rollInFlight && !cinematicActive) {
+        setButton({
+          mode: "blocked",
+          label: "Another tab is rolling",
+          disabled: true
+        });
       }
-    },
 
-    onInactive: () => {
-      rollSessionActive = false;
-      view.ready = false;
+      return;
+    }
 
-      setButton({
-        mode: "blocked",
-        label: "Another tab is rolling",
-        disabled: true
-      });
+    if (!rollInFlight && !cinematicActive && !cooldownTimer) {
+      showReady();
     }
   });
 
-  const sessionStarted = await rollSession.start();
-
-  if (!sessionStarted) {
-    rollSessionActive = false;
-
-    notify.warning(
-      "Another tab is active",
-      "Only one tab can roll this account at a time. This tab will retry automatically."
-    );
-
-    setButton({
-      mode: "blocked",
-      label: "Another tab is rolling",
-      disabled: true
-    });
-  }
 
   try {
     await runLegacyMigrationGate();
@@ -1116,8 +1062,6 @@ window.addEventListener("pageshow", async (event) => {
 
   refreshEffects();
 
-  await rollSession?.refreshNow();
-
   await restoreCooldown(user.id);
 });
 
@@ -1135,8 +1079,6 @@ window.addEventListener("gem:maintenance-refresh", async () => {
   await refreshPlayerState();
 
   refreshEffects();
-
-  await rollSession?.refreshNow();
 
   await restoreCooldown(user.id);
 });
