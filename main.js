@@ -17,6 +17,7 @@ import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
 import { mountShell } from "./src/ui/shell.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
+import { gemNameHtml } from "./src/ui/gemStyle.js";
 import {
   getSettings,
   updateSettings,
@@ -263,7 +264,7 @@ function renderRoll(data, outcome) {
 
       <span class="badge badge--tier">${tier.name}</span>
 
-      <h2 class="gem-reveal__name">${escapeHtml(data.gem.name)}</h2>
+      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
 
       <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
 
@@ -343,7 +344,7 @@ function renderHistory() {
         <div class="history__row tier-${entry.tier.id}">
           <span class="history__dot"></span>
 
-          <span class="history__name">${escapeHtml(entry.name)}</span>
+          <span class="history__name">${gemNameHtml(entry.name, escapeHtml)}</span>
 
           <span class="history__meta">${escapeHtml(
             entry.note || formatWeight(entry.weight)

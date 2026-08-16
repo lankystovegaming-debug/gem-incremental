@@ -2225,3 +2225,32 @@ a.btn--icon[aria-current="page"] {
     animation: none;
   }
 }
+
+/* =========================================================
+   PER-GEM STYLING
+   Each gem name gets its own font + colour, applied inline
+   via src/ui/gemStyle.js. This just adds the shared behaviour
+   (gradient text animation, smooth transitions) around it.
+   ========================================================= */
+
+.gem-styled {
+  display: inline;
+  background-repeat: no-repeat;
+  transition: filter 0.15s ease;
+}
+
+.gem-styled--animated {
+  animation: gemShimmer 3.5s ease-in-out infinite;
+}
+
+@keyframes gemShimmer {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem-styled--animated {
+    animation: none;
+  }
+}

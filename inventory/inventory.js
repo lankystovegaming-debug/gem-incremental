@@ -22,6 +22,7 @@ import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { confirmDialog } from "../src/ui/dialog.js";
+import { gemNameHtml } from "../src/ui/gemStyle.js";
 import {
   rarityTier,
   rarityLabel,
@@ -333,7 +334,7 @@ function gemCard(gem) {
     >
       <div class="gem-card__head">
         <div>
-          <div class="gem-card__name">${escapeHtml(gem.gem_name)}</div>
+          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml)}</div>
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
