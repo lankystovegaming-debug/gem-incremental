@@ -85,17 +85,15 @@
   </div>
 
 
-  <!-- ================= OPEN / WHEEL OVERLAY ================= -->
+  <!-- ================= OPEN / REWARD OVERLAY ================= -->
 
   <div class="lb-overlay hidden" id="wheelOverlay">
     <div class="lb-overlay__inner">
       <h2 class="lb-overlay__title" id="wheelTitle">Opening…</h2>
 
-      <div class="wheel" id="wheel">
-        <div class="wheel__marker"></div>
-        <div class="wheel__fade wheel__fade--left"></div>
-        <div class="wheel__fade wheel__fade--right"></div>
-        <div class="wheel__track" id="wheelTrack"></div>
+      <div class="lb-opening" id="openingState" aria-live="polite">
+        <span class="lb-opening__icon" id="openingIcon" aria-hidden="true"></span>
+        <p class="lb-opening__message" id="openingMessage">Opening your loot box…</p>
       </div>
 
       <div class="lb-result hidden" id="wheelResult"></div>
