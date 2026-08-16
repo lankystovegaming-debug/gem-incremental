@@ -14,6 +14,13 @@ function getRequirementKey(requirement, index) {
     return requirement.gem;
   }
 
+  // Consumable/potion requirements are deposited too, keyed by the
+  // consumable id — this must match the server (craft_consumable_recipe
+  // and manual-deposit), which stores progress under consumableId.
+  if (requirement.type === "consumable") {
+    return requirement.consumableId ?? `${requirement.type}-${index}`;
+  }
+
   return `${requirement.type}-${index}`;
 }
 
@@ -63,9 +70,9 @@ export function ensureRecipeProgress(
 
       if (
         requirement.type !== "equipment" &&
-        requirement.type !== "consumable" &&
         requirement.type !== "lifetime-rolls"
       ) {
+        // Consumables are deposit-tracked like gems, so they start at 0.
         progress[key] = 0;
       }
     }
@@ -181,11 +188,9 @@ export function isRequirementComplete(
   }
 
   if (requirement.type === "consumable") {
-    const owned = inventory.consumables?.find(
-      (item) => item.consumable_id === requirement.consumableId
-    );
-
-    return Number(owned?.quantity ?? 0) >= requirement.amount;
+    // Checked against deposit progress, not ownership: the potion is
+    // consumed when deposited (the server enforces the same).
+    return Number(progress[key] ?? 0) >= Number(requirement.amount ?? 0);
   }
 
   if (requirement.type === "lifetime-rolls") {
@@ -498,10 +503,36 @@ export function manuallyDepositRequirement(
 
   if (
     requirement.type === "equipment" ||
-    requirement.type === "consumable" ||
     requirement.type === "lifetime-rolls"
   ) {
     return false;
+  }
+
+  // Consumables deposit from the player's bag into recipe progress.
+  if (requirement.type === "consumable") {
+    const progress = ensureRecipeProgress(craftingState, recipe);
+    const key = getRequirementKey(requirement, requirementIndex);
+    const current = Number(progress[key] ?? 0);
+    const target = Number(requirement.amount ?? 0);
+
+    const owned = inventory.consumables?.find(
+      (item) => item.consumable_id === requirement.consumableId
+    );
+
+    if (!owned || current >= target || Number(owned.quantity ?? 0) <= 0) {
+      return false;
+    }
+
+    const move = Math.min(Number(owned.quantity ?? 0), target - current);
+
+    if (move <= 0) {
+      return false;
+    }
+
+    progress[key] = current + move;
+    owned.quantity = Number(owned.quantity ?? 0) - move;
+
+    return true;
   }
 
   if (

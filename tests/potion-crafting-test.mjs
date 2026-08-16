@@ -41,9 +41,25 @@ assert.equal(manuallyDepositRequirement(massState, mass, massInventory, 2), true
 assert.equal(ensureRecipeProgress(massState, mass)["mass-potion-2-weight"], 7600);
 assert.equal(isRequirementComplete(massState, mass, mass.requirements[2], 2, massInventory), true);
 
+// Consumable requirements are deposited into the recipe (the potion is
+// consumed on deposit), matching what the server enforces — owning the
+// potions is not enough on its own.
 const lucky = recipes.find((recipe) => recipe.id === "lucky-potion-2");
-assert.equal(isRequirementComplete(createCraftingState(), lucky, lucky.requirements[0], 0, {
-  equipment: [], consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }]
-}), true);
+const luckyState = createCraftingState();
+const luckyInventory = {
+  equipment: [],
+  consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }]
+};
+
+assert.equal(
+  isRequirementComplete(luckyState, lucky, lucky.requirements[0], 0, luckyInventory),
+  false
+);
+assert.equal(manuallyDepositRequirement(luckyState, lucky, luckyInventory, 0), true);
+assert.equal(luckyInventory.consumables[0].quantity, 0);
+assert.equal(
+  isRequirementComplete(luckyState, lucky, lucky.requirements[0], 0, luckyInventory),
+  true
+);
 
 console.log("Potion crafting tests passed.");

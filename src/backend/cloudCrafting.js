@@ -53,8 +53,44 @@ export function manuallyDepositCloudRequirement(recipeId, requirementIndex) {
 }
 
 
-export function craftCloudRecipe(recipeId) {
-  return invokeFunction("craft-recipe", { recipeId });
+export async function craftCloudRecipe(recipeId) {
+  // Primary path: the server-side Edge Function.
+  const primary = await invokeFunction("craft-recipe", { recipeId });
+
+  if (!primary.error) {
+    return primary;
+  }
+
+  // Fallback: on this backend the craft-recipe function can fail with
+  // "player not found". The atomic equipment craft is also exposed as
+  // a self-scoped RPC (scoped to auth.uid(), recipe read server-side
+  // from game_recipes), so use it when the function is unavailable.
+  const fallback = await supabase.rpc("craft_equipment_recipe", {
+    p_recipe_id: recipeId
+  });
+
+  if (!fallback.error) {
+    return { data: fallback.data, error: null };
+  }
+
+  const message = String(fallback.error.message ?? "");
+
+  const code = (message.match(
+    /(not_enough_money|requirements_not_met|recipe_not_found|not_authenticated|player_not_found)/
+  ) ?? [])[1];
+
+  const friendly = {
+    not_enough_money: "You cannot afford that yet.",
+    requirements_not_met: "The requirements for that recipe are not complete.",
+    recipe_not_found: "That recipe could not be found.",
+    not_authenticated: "Your session expired. Refresh and try again.",
+    player_not_found: "Your save could not be found."
+  }[code];
+
+  return {
+    data: null,
+    error: { code: code ?? "craft_failed", message: friendly ?? "Could not craft that recipe." }
+  };
 }
 
 
