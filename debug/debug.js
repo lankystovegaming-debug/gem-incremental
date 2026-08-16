@@ -137,7 +137,7 @@ function render(cloudState) {
       BONUS_ROWS.map(([key, label]) =>
         bonusRow(cloudState.stats[key], label)
       ).join(""),
-      "Bonuses come from equipment you have crafted and equipped."
+      "Shows equipped items, active potions, pending one-roll Luck, and global Admin Events."
     ),
 
     card(

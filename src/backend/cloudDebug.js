@@ -1,6 +1,7 @@
 import {
   supabase
 } from "./supabase.js";
+import { loadActiveAdminEvent } from "./cloudAdminEvents.js";
 
 
 // =========================================================
@@ -156,6 +157,29 @@ export async function loadCloudDebugState() {
 
 
   // -------------------------------------------------------
+  // PENDING ONE-ROLL BOOST + GLOBAL ADMIN EVENT
+  // -------------------------------------------------------
+
+  const [oneRollResult, adminEventResult] = await Promise.all([
+    supabase
+      .from("player_one_roll_boosts")
+      .select("effect_value")
+      .eq("player_id", user.id)
+      .maybeSingle(),
+    loadActiveAdminEvent()
+  ]);
+
+  if (oneRollResult.error) {
+    console.error("Failed to load pending one-roll boost:", oneRollResult.error);
+  }
+
+  const oneRollBoost = oneRollResult.data ?? null;
+  const activeAdminEvent = Array.isArray(adminEventResult.data)
+    ? adminEventResult.data[0] ?? null
+    : adminEventResult.data ?? null;
+
+
+  // -------------------------------------------------------
   // CRAFTING
   // -------------------------------------------------------
 
@@ -279,6 +303,30 @@ export async function loadCloudDebugState() {
         weightMultiplier += effectValue;
         break;
     }
+  }
+
+
+  if (oneRollBoost) {
+    luck += Number(oneRollBoost.effect_value ?? 0);
+  }
+
+
+  if (activeAdminEvent) {
+    luck =
+      (luck + Number(activeAdminEvent.luck_bonus ?? 0)) *
+      Number(activeAdminEvent.luck_multiplier ?? 1);
+
+    rollSpeed =
+      (rollSpeed + Number(activeAdminEvent.roll_speed_bonus ?? 0)) *
+      Number(activeAdminEvent.roll_speed_multiplier ?? 1);
+
+    weightLuck =
+      (weightLuck + Number(activeAdminEvent.weight_luck_bonus ?? 0)) *
+      Number(activeAdminEvent.weight_luck_multiplier ?? 1);
+
+    weightMultiplier =
+      (weightMultiplier + Number(activeAdminEvent.weight_multiplier_bonus ?? 0)) *
+      Number(activeAdminEvent.weight_multiplier_multiplier ?? 1);
   }
 
 
