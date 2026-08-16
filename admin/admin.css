@@ -101,8 +101,20 @@
 .audit-table th, .audit-table td { padding: 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .audit-table td { overflow-wrap: anywhere; }
 
+.admin-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-codes { margin-bottom: var(--space-4); }
+.admin-code-form { display: grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.admin-code-form input, .admin-code-form select { width: 100%; margin-top: 6px; }
+.admin-code-form .btn { align-self: end; }
+.admin-code-list { display: grid; gap: 8px; margin-top: var(--space-4); }
+.admin-code-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(180px, auto) auto; align-items: center; gap: var(--space-3); padding: 12px; border-radius: var(--radius-sm); background: var(--surface-sunken); }
+.admin-code-row strong, .admin-code-row span { display: block; }
+.admin-code-row span { margin-top: 2px; color: var(--text-muted); font-size: .78rem; }
+
 @media (max-width: 600px) {
   .admin-search { align-items: stretch; flex-direction: column; }
   .admin-control { grid-template-columns: 1fr 1fr; }
   .admin-control input, .admin-control select { grid-column: 1 / -1; }
+  .admin-code-form { grid-template-columns: 1fr; }
+  .admin-code-row { grid-template-columns: 1fr; }
 }

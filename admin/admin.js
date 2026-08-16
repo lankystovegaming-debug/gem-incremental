@@ -2,6 +2,7 @@ import gems from "../src/data/gems.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { adminRequest } from "../src/backend/cloudAdmin.js";
+import { createAdminCode, loadAdminCodes, setAdminCodeActive } from "../src/backend/cloudCodes.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
@@ -263,6 +264,118 @@ async function loadAudit() {
     </section>`;
 }
 
+function wireCodes() {
+  const panel = document.getElementById("codesPanel");
+  const potion = document.getElementById("codePotion");
+  const quantity = document.getElementById("codePotionQuantity");
+  const createButton = document.getElementById("codeCreate");
+  const refreshButton = document.getElementById("codesRefresh");
+
+  panel.hidden = false;
+  potion.innerHTML = `<option value="">No potion</option>${consumables.map((item) =>
+    `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`
+  ).join("")}`;
+
+  potion.addEventListener("change", () => {
+    if (!potion.value) quantity.value = "0";
+    else if (Number(quantity.value) < 1) quantity.value = "1";
+  });
+
+  document.getElementById("newCode").addEventListener("input", (event) => {
+    event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+  });
+
+  createButton.addEventListener("click", createCode);
+  refreshButton.addEventListener("click", loadCodes);
+  loadCodes();
+}
+
+async function createCode() {
+  const button = document.getElementById("codeCreate");
+  const code = document.getElementById("newCode").value.trim();
+  const moneyReward = Math.max(0, Number(document.getElementById("codeMoney").value) || 0);
+  const consumableId = document.getElementById("codePotion").value || null;
+  const consumableQuantity = consumableId
+    ? Math.max(0, Math.trunc(Number(document.getElementById("codePotionQuantity").value) || 0))
+    : 0;
+  const expiresValue = document.getElementById("codeExpires").value;
+  const limitValue = document.getElementById("codeLimit").value;
+
+  if (code.length < 3) {
+    notify.error("Invalid code", "Use at least three letters or numbers.");
+    return;
+  }
+  if (moneyReward <= 0 && consumableQuantity <= 0) {
+    notify.error("No rewards", "Add money, a potion reward, or both.");
+    return;
+  }
+
+  button.disabled = true;
+  const { error } = await createAdminCode({
+    code,
+    moneyReward,
+    consumableId,
+    consumableQuantity,
+    expiresAt: expiresValue ? new Date(expiresValue).toISOString() : null,
+    maxRedemptions: limitValue ? Math.max(1, Math.trunc(Number(limitValue))) : null
+  });
+  button.disabled = false;
+
+  if (error) {
+    notify.error("Could not create code", error.message);
+    return;
+  }
+
+  document.getElementById("newCode").value = "";
+  notify.success("Code created", `${code} is ready to redeem.`);
+  await loadCodes();
+}
+
+async function loadCodes() {
+  const list = document.getElementById("codesList");
+  const { data, error } = await loadAdminCodes();
+
+  if (error) {
+    list.innerHTML = `<p class="page-head__sub">Could not load codes.</p>`;
+    return;
+  }
+
+  list.innerHTML = (data ?? []).map((code) => {
+    const potionName = code.consumable_id
+      ? getConsumableById(code.consumable_id)?.name ?? code.consumable_id
+      : null;
+    const rewards = [
+      Number(code.money_reward) > 0 ? formatMoney(code.money_reward) : null,
+      potionName ? `${formatCount(code.consumable_quantity)}× ${potionName}` : null
+    ].filter(Boolean).join(" + ");
+    const limit = code.max_redemptions == null
+      ? `${formatCount(code.redemption_count)} uses`
+      : `${formatCount(code.redemption_count)} / ${formatCount(code.max_redemptions)} uses`;
+    const expiry = code.expires_at
+      ? `Expires ${new Date(code.expires_at).toLocaleString()}`
+      : "No expiry";
+
+    return `<div class="admin-code-row">
+      <div><strong>${escapeHtml(code.code)}</strong><span>${escapeHtml(rewards)}</span></div>
+      <div><span>${escapeHtml(limit)}</span><span>${escapeHtml(expiry)}</span></div>
+      <button class="btn ${code.active ? "btn--danger" : "btn--primary"}"
+        data-code-id="${escapeHtml(code.id)}" data-code-active="${code.active}" type="button">
+        ${code.active ? "Disable" : "Enable"}
+      </button>
+    </div>`;
+  }).join("") || `<p class="page-head__sub">No codes created yet.</p>`;
+
+  for (const button of list.querySelectorAll("[data-code-id]")) {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      const active = button.dataset.codeActive !== "true";
+      const { error: toggleError } = await setAdminCodeActive(button.dataset.codeId, active);
+      if (toggleError) notify.error("Could not update code", toggleError.message);
+      else await loadCodes();
+    });
+  }
+}
+
 // =========================================================
 // ANNOUNCEMENTS (admin only)
 // =========================================================
@@ -345,22 +458,10 @@ const user = await ensurePlayerAuth();
 
 // Admin status comes from the server, not a hardcoded id. Every
 // admin action is enforced server-side regardless, so this only
-// controls what the page shows. The whoami edge function is primary;
-// if it isn't deployed on this project, fall back to the am_i_admin()
-// RPC that reads the same allow-list table.
-let hasAdminAccess = false;
+// controls what the page shows.
+const { data: whoami } = user ? await adminRequest("whoami") : { data: null };
 
-if (user) {
-  const { data: whoami } = await adminRequest("whoami");
-  hasAdminAccess = whoami?.isAdmin === true;
-
-  if (!hasAdminAccess) {
-    const { data: rpcAdmin } = await supabase.rpc("am_i_admin");
-    hasAdminAccess = rpcAdmin === true;
-  }
-}
-
-if (!user || !hasAdminAccess) {
+if (!user || !whoami?.isAdmin) {
   status.textContent = "You do not have permission to use this page.";
   notify.error("Access denied", "Administrator access is required.");
 } else {
@@ -374,5 +475,6 @@ if (!user || !hasAdminAccess) {
   searchButton.disabled = false;
   auditButton.disabled = false;
   wireAnnouncements();
+  wireCodes();
   searchInput.focus();
 }
