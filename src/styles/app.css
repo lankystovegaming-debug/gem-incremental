@@ -2595,7 +2595,7 @@ html.is-cinematic-active {
    geometric face; "plain" uses the body font. Both override
    the inline per-gem style with !important, and reset gradient text
    so names stay visible in a solid colour.
-   ========================================================= */
+   ========================================================= 
 
   (Settings → Appearance)
 
