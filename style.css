@@ -619,3 +619,305 @@ kbd {
     padding: var(--space-5) var(--space-4);
   }
 }
+
+/* =========================================================
+   NEXT-GEN RARE ROLL FX
+   1/10k–1/100k: deliberately much larger than the normal shockwave.
+   Everything is generated with CSS so it stays lightweight on mobile.
+   ========================================================= */
+
+.is-epic-roll .epic-roll-effect,
+.is-ultra-rare .ultra-cutscene {
+  --fx-color: hsl(var(--gem-hue, 200) 92% 68%);
+  --fx-color-2: hsl(calc(var(--gem-hue, 200) + 70) 96% 62%);
+  --fx-color-3: hsl(calc(var(--gem-hue, 200) + 145) 100% 72%);
+  --fx-speed: var(--gem-speed, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.is-epic-roll .epic-roll-effect {
+  animation: epic-fade 3.15s both;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--fx-color) 26%, transparent), transparent 34%),
+    radial-gradient(circle at 50% 50%, transparent 0 19%, color-mix(in srgb, var(--fx-color-2) 14%, transparent) 34%, transparent 62%);
+}
+
+.epic-roll-effect__backdrop {
+  position: absolute;
+  inset: -20%;
+  background:
+    conic-gradient(from 0deg at 50% 50%, transparent, color-mix(in srgb, var(--fx-color) 18%, transparent), transparent 16%, color-mix(in srgb, var(--fx-color-3) 14%, transparent), transparent 38%, color-mix(in srgb, var(--fx-color-2) 16%, transparent), transparent 62%);
+  animation: epic-spin calc(1.5s / var(--fx-speed)) linear infinite;
+  filter: blur(2px);
+}
+
+.epic-roll-effect__halo,
+.epic-roll-effect__ring,
+.epic-roll-effect__beam,
+.epic-roll-effect__burst,
+.epic-roll-effect__shockwave,
+.epic-roll-effect__flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.epic-roll-effect__halo {
+  width: 30vmin;
+  height: 30vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--fx-color) 32%, transparent), transparent 66%);
+  filter: blur(10px);
+  animation: epic-halo 1.5s calc(var(--i, 0) * -0.18s) ease-out both;
+}
+.epic-roll-effect__halo--1 { --i: 0; }
+.epic-roll-effect__halo--2 { --i: 1; transform: translate(-50%, -50%) scale(1.7); }
+.epic-roll-effect__halo--3 { --i: 2; transform: translate(-50%, -50%) scale(2.5); }
+
+.epic-roll-effect__ring {
+  width: 13vmin;
+  height: 13vmin;
+  border: 2px solid color-mix(in srgb, var(--fx-color) 92%, white);
+  border-radius: 50%;
+  box-shadow: 0 0 22px var(--fx-color), inset 0 0 18px color-mix(in srgb, var(--fx-color-2) 70%, transparent);
+  animation: epic-ring 2.5s calc(var(--d, 0) * -0.22s) cubic-bezier(.12,.8,.18,1) both;
+}
+.epic-roll-effect__ring--1 { --d: 0; }
+.epic-roll-effect__ring--2 { --d: 1; border-style: dashed; transform: translate(-50%, -50%) rotate(24deg); }
+.epic-roll-effect__ring--3 { --d: 2; border-width: 1px 3px; transform: translate(-50%, -50%) rotate(61deg); }
+.epic-roll-effect__ring--4 { --d: 3; border-color: var(--fx-color-3); transform: translate(-50%, -50%) rotate(112deg); }
+
+.epic-roll-effect__beam {
+  width: 180vw;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--fx-color), white, var(--fx-color-2), transparent);
+  box-shadow: 0 0 20px var(--fx-color), 0 0 55px var(--fx-color-2);
+  animation: epic-beam 2.1s calc(var(--d, 0) * .12s) cubic-bezier(.2,.8,.2,1) both;
+}
+.epic-roll-effect__beam--1 { --d: 0; transform: translate(-50%, -50%) rotate(12deg) scaleX(.05); }
+.epic-roll-effect__beam--2 { --d: 1; transform: translate(-50%, -50%) rotate(78deg) scaleX(.05); }
+.epic-roll-effect__beam--3 { --d: 2; transform: translate(-50%, -50%) rotate(143deg) scaleX(.05); }
+
+.epic-roll-effect__spark-field,
+.ultra-cutscene__stars,
+.ultra-cutscene__shards {
+  position: absolute;
+  inset: -30%;
+  background-image:
+    radial-gradient(circle, white 0 1px, transparent 2px),
+    radial-gradient(circle, var(--fx-color) 0 1px, transparent 2px),
+    radial-gradient(circle, var(--fx-color-2) 0 1.5px, transparent 2.5px);
+  background-size: 73px 97px, 113px 131px, 181px 167px;
+  animation: particle-drift calc(2.5s / var(--fx-speed)) linear both;
+  opacity: .9;
+}
+.epic-roll-effect__burst {
+  width: 8vmin;
+  height: 8vmin;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 30px 14px var(--fx-color), 0 0 100px 45px color-mix(in srgb, var(--fx-color-2) 55%, transparent);
+  animation: epic-burst 2.7s both;
+}
+.epic-roll-effect__shockwave {
+  width: 5vmin;
+  height: 5vmin;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 25px var(--fx-color);
+  animation: epic-shock 2.8s both;
+}
+.epic-roll-effect__flash {
+  inset: 0;
+  background: white;
+  opacity: 0;
+  animation: epic-flash 3.1s both;
+}
+
+@keyframes epic-fade { 0% { opacity: 0; } 10% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes epic-spin { to { transform: rotate(360deg); } }
+@keyframes epic-halo { 0% { opacity: 0; scale: .2; } 28% { opacity: 1; } 100% { opacity: 0; scale: 3.2; } }
+@keyframes epic-ring { 0% { opacity: 0; scale: .1; } 18% { opacity: 1; } 100% { opacity: 0; scale: 8; rotate: 180deg; } }
+@keyframes epic-beam { 0% { opacity: 0; scaleX: .02; } 25% { opacity: 1; } 75% { opacity: .8; scaleX: 1; } 100% { opacity: 0; scaleX: 1.3; } }
+@keyframes epic-burst { 0% { opacity: 0; scale: .1; } 18% { opacity: 1; } 35% { opacity: .7; scale: 2; } 100% { opacity: 0; scale: 9; } }
+@keyframes epic-shock { 0% { opacity: 0; scale: .1; } 18% { opacity: 1; } 100% { opacity: 0; scale: 14; } }
+@keyframes epic-flash { 0%, 12% { opacity: 0; } 15% { opacity: .9; } 18% { opacity: 0; } 52% { opacity: .28; } 54% { opacity: 0; } }
+@keyframes particle-drift { from { transform: scale(.7) rotate(0deg); } to { transform: scale(1.35) rotate(9deg); } }
+
+/* =========================================================
+   ULTRA CINEMATIC
+   Each gem uses its own deterministic hue + one of eight motion
+   families. The composition is intentionally layered like a full
+   screen game reveal rather than a simple roll animation.
+   ========================================================= */
+
+.is-ultra-rare .ultra-cutscene {
+  animation: cinematic-fade var(--cinematic-duration, 7200ms) both;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--fx-color) 20%, transparent), transparent 28%),
+    radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--fx-color-2) 13%, transparent), transparent 36%),
+    radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--fx-color-3) 12%, transparent), transparent 38%),
+    #02030a;
+}
+
+.ultra-cutscene__veil,
+.ultra-cutscene__vignette,
+.ultra-cutscene__flash,
+.ultra-cutscene__energy,
+.ultra-cutscene__core,
+.ultra-cutscene__runes,
+.ultra-cutscene__burst,
+.ultra-cutscene__ring,
+.ultra-cutscene__beam,
+.ultra-cutscene__orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ultra-cutscene__veil {
+  inset: 0;
+  background:
+    conic-gradient(from 0deg, transparent 0 9%, color-mix(in srgb, var(--fx-color) 12%, transparent) 10%, transparent 16% 28%, color-mix(in srgb, var(--fx-color-2) 12%, transparent) 30%, transparent 39% 54%, color-mix(in srgb, var(--fx-color-3) 10%, transparent) 56%, transparent 67% 82%, color-mix(in srgb, var(--fx-color) 12%, transparent) 84%, transparent 91%);
+  animation: veil-spin calc(7s / var(--fx-speed)) linear infinite;
+  mix-blend-mode: screen;
+}
+
+.ultra-cutscene__stars { opacity: .95; animation-duration: calc(6s / var(--fx-speed)); }
+.ultra-cutscene__stars--2 { transform: rotate(19deg) scale(1.15); opacity: .65; animation-duration: calc(4.4s / var(--fx-speed)); }
+.ultra-cutscene__stars--3 { transform: rotate(-31deg) scale(1.35); opacity: .4; animation-duration: calc(8s / var(--fx-speed)); }
+
+.ultra-cutscene__shards {
+  clip-path: polygon(50% 0, 54% 45%, 100% 50%, 55% 56%, 50% 100%, 45% 56%, 0 50%, 45% 44%);
+  background: repeating-conic-gradient(from 0deg, transparent 0 7deg, color-mix(in srgb, var(--fx-color) 38%, transparent) 8deg 10deg, transparent 11deg 19deg);
+  filter: blur(.5px);
+  animation: shard-spin 5s linear infinite;
+}
+
+.ultra-cutscene__ring {
+  width: 24vmin;
+  height: 24vmin;
+  border: 1px solid color-mix(in srgb, var(--fx-color) 90%, white);
+  border-radius: 50%;
+  box-shadow: 0 0 28px var(--fx-color), inset 0 0 25px color-mix(in srgb, var(--fx-color-2) 45%, transparent);
+  animation: cinematic-ring var(--ring-speed, 5.5s) cubic-bezier(.2,.8,.2,1) both;
+}
+.ultra-cutscene__ring--one { --ring-speed: 5.4s; }
+.ultra-cutscene__ring--two { --ring-speed: 6.2s; border-style: dashed; transform: translate(-50%, -50%) rotate(37deg) scale(.78); }
+.ultra-cutscene__ring--three { --ring-speed: 4.8s; border-width: 3px 1px; transform: translate(-50%, -50%) rotate(83deg) scale(1.55); }
+.ultra-cutscene__ring--four { --ring-speed: 7s; border-color: var(--fx-color-3); transform: translate(-50%, -50%) rotate(121deg) scale(2.15); opacity: .55; }
+
+.ultra-cutscene__beam {
+  width: 170vw;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fx-color) 20%, transparent), white, var(--fx-color-2), transparent);
+  box-shadow: 0 0 22px var(--fx-color), 0 0 70px var(--fx-color-2);
+  animation: cinematic-beam 4.8s cubic-bezier(.2,.8,.2,1) both;
+}
+.ultra-cutscene__beam--one { transform: translate(-50%, -50%) rotate(0deg) scaleX(.01); }
+.ultra-cutscene__beam--two { transform: translate(-50%, -50%) rotate(45deg) scaleX(.01); animation-delay: .35s; }
+.ultra-cutscene__beam--three { transform: translate(-50%, -50%) rotate(90deg) scaleX(.01); animation-delay: .7s; }
+.ultra-cutscene__beam--four { transform: translate(-50%, -50%) rotate(135deg) scaleX(.01); animation-delay: 1.05s; }
+
+.ultra-cutscene__orbit {
+  width: 36vmin;
+  height: 15vmin;
+  border: 1px solid color-mix(in srgb, var(--fx-color-2) 80%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--fx-color-2) 55%, transparent);
+  animation: orbit-spin 5.5s linear infinite;
+}
+.ultra-cutscene__orbit--one { transform: translate(-50%, -50%) rotate(20deg); }
+.ultra-cutscene__orbit--two { transform: translate(-50%, -50%) rotate(80deg) scale(.86); animation-duration: 7.2s; }
+.ultra-cutscene__orbit--three { transform: translate(-50%, -50%) rotate(140deg) scale(1.3); animation-duration: 9s; }
+
+.ultra-cutscene__runes {
+  width: 48vmin;
+  height: 48vmin;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, transparent 0 8deg, color-mix(in srgb, var(--fx-color) 50%, transparent) 8.5deg 9deg, transparent 9.5deg 18deg);
+  mask: radial-gradient(circle, transparent 55%, #000 56% 57%, transparent 58%);
+  animation: rune-spin 18s linear infinite;
+}
+
+.ultra-cutscene__energy {
+  width: 22vmin;
+  height: 22vmin;
+  border-radius: 50%;
+  background: conic-gradient(from 20deg, var(--fx-color), transparent 16%, var(--fx-color-2), transparent 35%, var(--fx-color-3), transparent 55%, var(--fx-color));
+  filter: blur(7px);
+  mix-blend-mode: screen;
+  animation: energy-pulse 2.1s ease-in-out infinite;
+}
+
+.ultra-cutscene__core {
+  width: 9vmin;
+  height: 9vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, white 0 8%, color-mix(in srgb, var(--fx-color) 90%, white) 18%, var(--fx-color-2) 42%, transparent 72%);
+  box-shadow: 0 0 35px 15px var(--fx-color), 0 0 110px 45px color-mix(in srgb, var(--fx-color-2) 45%, transparent);
+  animation: core-pulse 2.4s ease-in-out infinite;
+}
+
+.ultra-cutscene__burst {
+  width: 4vmin;
+  height: 4vmin;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 25px 14px var(--fx-color), 0 0 120px 55px color-mix(in srgb, var(--fx-color-3) 55%, transparent);
+  animation: final-burst calc(var(--cinematic-duration, 7200ms) * .38) ease-out both;
+}
+
+.ultra-cutscene__flash {
+  inset: 0;
+  background: white;
+  opacity: 0;
+  animation: cinematic-flashes var(--cinematic-duration, 7200ms) both;
+}
+
+.ultra-cutscene__vignette {
+  inset: 0;
+  background: radial-gradient(circle, transparent 28%, rgb(0 0 0 / .25) 62%, rgb(0 0 0 / .92) 100%);
+}
+
+@keyframes cinematic-fade { 0% { opacity: 0; } 7% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes veil-spin { to { transform: rotate(360deg) scale(1.05); } }
+@keyframes shard-spin { to { transform: rotate(360deg) scale(1.2); } }
+@keyframes cinematic-ring { 0% { opacity: 0; scale: .08; rotate: 0deg; } 16% { opacity: 1; } 75% { opacity: .8; } 100% { opacity: 0; scale: 5.2; rotate: 360deg; } }
+@keyframes cinematic-beam { 0% { opacity: 0; scaleX: .01; } 24% { opacity: 1; scaleX: .85; } 70% { opacity: .75; scaleX: 1.1; } 100% { opacity: 0; scaleX: 1.35; } }
+@keyframes orbit-spin { to { rotate: 360deg; } }
+@keyframes rune-spin { to { rotate: -360deg; } }
+@keyframes energy-pulse { 0%, 100% { scale: .65; rotate: 0deg; opacity: .45; } 50% { scale: 1.55; rotate: 180deg; opacity: 1; } }
+@keyframes core-pulse { 0%, 100% { scale: .65; } 50% { scale: 1.45; } }
+@keyframes final-burst { 0% { opacity: 0; scale: .1; } 35% { opacity: 1; } 100% { opacity: 0; scale: 15; } }
+@keyframes cinematic-flashes { 0%, 16% { opacity: 0; } 18% { opacity: .95; } 20% { opacity: 0; } 42% { opacity: .22; } 44% { opacity: 0; } 68% { opacity: .38; } 70% { opacity: 0; } 82% { opacity: .8; } 84% { opacity: 0; } }
+
+/* Eight deterministic composition families make gems feel distinct. */
+.visual-variant-1 .ultra-cutscene__ring--two { border-radius: 18% 82% 42% 58%; }
+.visual-variant-2 .ultra-cutscene__orbit--one { transform: translate(-50%, -50%) rotate(72deg) scaleY(.55); }
+.visual-variant-3 .ultra-cutscene__energy { border-radius: 28% 72% 62% 38%; }
+.visual-variant-4 .ultra-cutscene__runes { mask: radial-gradient(circle, transparent 48%, #000 49% 51%, transparent 52%); }
+.visual-variant-5 .ultra-cutscene__beam--two { transform: translate(-50%, -50%) rotate(23deg) scaleX(.01); }
+.visual-variant-6 .ultra-cutscene__ring--three { border-style: dotted; border-width: 5px; }
+.visual-variant-7 .ultra-cutscene__shards { clip-path: polygon(50% 0, 61% 36%, 100% 50%, 61% 64%, 50% 100%, 39% 64%, 0 50%, 39% 36%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .epic-roll-effect *,
+  .ultra-cutscene * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .is-ultra-rare .ultra-cutscene { animation-duration: var(--cinematic-duration, 8200ms); }
+  .ultra-cutscene__ring { width: 34vmin; height: 34vmin; }
+  .ultra-cutscene__orbit { width: 52vmin; height: 22vmin; }
+  .ultra-cutscene__runes { width: 70vmin; height: 70vmin; }
+  .ultra-cutscene__core { width: 14vmin; height: 14vmin; }
+  .epic-roll-effect__ring { width: 19vmin; height: 19vmin; }
+}
