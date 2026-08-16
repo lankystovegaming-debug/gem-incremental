@@ -14,6 +14,7 @@ import {
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
+import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
 import {
   describeAccount,
   isGuest,
@@ -41,7 +42,6 @@ const PAGES = [
   { id: "inventory", label: "Inventory", short: "Items", href: "inventory/", icon: icons.bag },
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
   { id: "boosts", label: "Potion Shop", short: "Shop", href: "boosts/", icon: icons.potion },
-  { id: "lootbox", label: "Loot Boxes", short: "Boxes", href: "lootbox/", icon: icons.box },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
@@ -140,6 +140,7 @@ export function mountShell({ page, base = "./" }) {
 
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
+  renderActiveAdminEvent(header);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -685,6 +686,69 @@ async function renderAnnouncements(header) {
       }
     });
   }
+}
+
+async function renderActiveAdminEvent(header) {
+  const user = await ensurePlayerAuth();
+  if (!user) return;
+
+  const { data, error } = await loadActiveAdminEvent();
+  const event = Array.isArray(data) ? data[0] : data;
+  if (error || !event) return;
+
+  const boosts = [
+    Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
+    Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
+    Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
+    Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null
+  ].filter(Boolean);
+
+  const banner = document.createElement("div");
+  banner.className = "admin-event-banner";
+  banner.innerHTML = `
+    <span class="admin-event-banner__icon">${icons.sparkle}</span>
+    <span class="admin-event-banner__content">
+      <strong>${escapeHtml(event.name)}</strong>
+      <span>${escapeHtml(boosts.join(" · "))}</span>
+    </span>
+    <strong class="admin-event-banner__timer" aria-label="Time remaining"></strong>
+  `;
+
+  const existingAnnouncements = document.querySelector(".announce-bar");
+  if (existingAnnouncements) existingAnnouncements.after(banner);
+  else header.after(banner);
+
+  const timer = banner.querySelector(".admin-event-banner__timer");
+  const endsAt = new Date(event.ends_at).getTime();
+
+  const update = () => {
+    const remaining = endsAt - Date.now();
+    if (remaining <= 0) {
+      banner.remove();
+      clearInterval(interval);
+      return;
+    }
+    timer.textContent = eventTime(remaining);
+  };
+
+  const interval = setInterval(update, 1000);
+  update();
+}
+
+function eventPercent(value) {
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
+function eventTime(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
 
 

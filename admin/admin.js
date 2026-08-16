@@ -3,6 +3,7 @@ import consumables, { getConsumableById } from "../src/data/consumables.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { adminRequest } from "../src/backend/cloudAdmin.js";
 import { createAdminCode, deleteAdminCode, loadAdminCodes, setAdminCodeActive } from "../src/backend/cloudCodes.js";
+import { canManageAdminEvents, loadAdminEvents, startAdminEvent, stopAdminEvent } from "../src/backend/cloudAdminEvents.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
@@ -290,6 +291,100 @@ function wireCodes() {
   loadCodes();
 }
 
+async function tryWireAdminEvents() {
+  const { data: allowed, error } = await canManageAdminEvents();
+  if (error || !allowed) return;
+
+  const panel = document.getElementById("eventsPanel");
+  panel.hidden = false;
+  document.getElementById("eventStart").addEventListener("click", startEvent);
+  document.getElementById("eventsRefresh").addEventListener("click", loadEvents);
+  await loadEvents();
+}
+
+async function startEvent() {
+  const button = document.getElementById("eventStart");
+  const event = {
+    name: document.getElementById("eventName").value.trim(),
+    durationMinutes: Math.trunc(Number(document.getElementById("eventDuration").value)),
+    luckBonus: Math.max(0, Number(document.getElementById("eventLuck").value) || 0) / 100,
+    rollSpeedBonus: Math.max(0, Number(document.getElementById("eventRollSpeed").value) || 0) / 100,
+    weightLuckBonus: Math.max(0, Number(document.getElementById("eventWeightLuck").value) || 0) / 100,
+    weightMultiplierBonus: Math.max(0, Number(document.getElementById("eventWeightMultiplier").value) || 0) / 100
+  };
+
+  if (event.name.length < 3) {
+    notify.error("Invalid event", "Enter an event name of at least three characters.");
+    return;
+  }
+  if (!Number.isFinite(event.durationMinutes) || event.durationMinutes < 1 || event.durationMinutes > 10080) {
+    notify.error("Invalid duration", "Choose between 1 minute and 7 days.");
+    return;
+  }
+  if (event.luckBonus + event.rollSpeedBonus + event.weightLuckBonus + event.weightMultiplierBonus <= 0) {
+    notify.error("No boosts", "Set at least one event boost above 0%.");
+    return;
+  }
+  if (!window.confirm(`Start ${event.name} now? This will stop any currently active event.`)) return;
+
+  button.disabled = true;
+  const { error } = await startAdminEvent(event);
+  button.disabled = false;
+
+  if (error) {
+    notify.error("Could not start event", error.message);
+    return;
+  }
+
+  document.getElementById("eventName").value = "";
+  notify.success("Event started", `${event.name} is now active for every player.`);
+  await loadEvents();
+}
+
+async function loadEvents() {
+  const list = document.getElementById("eventsList");
+  const { data, error } = await loadAdminEvents();
+
+  if (error) {
+    list.innerHTML = `<p class="page-head__sub">Could not load events.</p>`;
+    return;
+  }
+
+  const now = Date.now();
+  list.innerHTML = (data ?? []).map((event) => {
+    const running = event.active && new Date(event.ends_at).getTime() > now;
+    const boosts = [
+      Number(event.luck_bonus) > 0 ? `+${formatPercent(event.luck_bonus)} Luck` : null,
+      Number(event.roll_speed_bonus) > 0 ? `+${formatPercent(event.roll_speed_bonus)} Roll speed` : null,
+      Number(event.weight_luck_bonus) > 0 ? `+${formatPercent(event.weight_luck_bonus)} Weight luck` : null,
+      Number(event.weight_multiplier_bonus) > 0 ? `+${formatPercent(event.weight_multiplier_bonus)} Weight multiplier` : null
+    ].filter(Boolean).join(" · ");
+
+    return `<div class="admin-event-row">
+      <div><strong>${escapeHtml(event.name)}</strong><span>${escapeHtml(boosts)}</span></div>
+      <div><span>${running ? "Active" : "Ended"}</span><span>${escapeHtml(new Date(event.ends_at).toLocaleString())}</span></div>
+      ${running ? `<button class="btn btn--danger" data-event-stop="${escapeHtml(event.id)}" type="button">Stop event</button>` : ""}
+    </div>`;
+  }).join("") || `<p class="page-head__sub">No events have been run yet.</p>`;
+
+  for (const button of list.querySelectorAll("[data-event-stop]")) {
+    button.addEventListener("click", async () => {
+      if (!window.confirm("Stop this event immediately?")) return;
+      button.disabled = true;
+      const { error: stopError } = await stopAdminEvent(button.dataset.eventStop);
+      if (stopError) notify.error("Could not stop event", stopError.message);
+      else {
+        notify.success("Event stopped", "The global boosts are no longer active.");
+        await loadEvents();
+      }
+    });
+  }
+}
+
+function formatPercent(value) {
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
 async function createCode() {
   const button = document.getElementById("codeCreate");
   const code = document.getElementById("newCode").value.trim();
@@ -499,5 +594,6 @@ if (!user || !whoami?.isAdmin) {
   auditButton.disabled = false;
   wireAnnouncements();
   wireCodes();
+  tryWireAdminEvents();
   searchInput.focus();
 }

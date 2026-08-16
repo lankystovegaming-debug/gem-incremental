@@ -82,6 +82,28 @@
       <div class="admin-code-list" id="codesList"></div>
     </section>
 
+    <section class="card admin-events" id="eventsPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Admin Events</h2>
+          <p class="page-head__sub">Owner-only global boosts. Starting an event stops the current one.</p>
+        </div>
+        <button class="btn" id="eventsRefresh" type="button">Refresh</button>
+      </div>
+
+      <div class="admin-event-form">
+        <label class="field"><span>Event name</span><input id="eventName" maxlength="80" placeholder="Lucky Hour"></label>
+        <label class="field"><span>Duration (minutes)</span><input id="eventDuration" type="number" min="1" max="10080" step="1" value="60"></label>
+        <label class="field"><span>Luck bonus (%)</span><input id="eventLuck" type="number" min="0" step="1" value="0"></label>
+        <label class="field"><span>Roll speed bonus (%)</span><input id="eventRollSpeed" type="number" min="0" step="1" value="0"></label>
+        <label class="field"><span>Weight luck bonus (%)</span><input id="eventWeightLuck" type="number" min="0" step="1" value="0"></label>
+        <label class="field"><span>Weight multiplier bonus (%)</span><input id="eventWeightMultiplier" type="number" min="0" step="1" value="0"></label>
+        <button class="btn btn--primary" id="eventStart" type="button">Start event</button>
+      </div>
+
+      <div class="admin-event-list" id="eventsList"></div>
+    </section>
+
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>
