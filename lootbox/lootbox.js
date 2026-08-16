@@ -275,14 +275,21 @@ function weightedPick(pool) {
   return pool[pool.length - 1];
 }
 
-function wheelItemHtml(entry) {
+function wheelItemHtml(entry, isWinner = false) {
   return `
-    <div class="wheel-item" style="--item-color:${entryColor(entry)}">
+    <div class="wheel-item${isWinner ? " wheel-item--winner" : ""}" style="--item-color:${entryColor(
+    entry
+  )}">
       <span class="wheel-item__icon">${entryIcon(entry)}</span>
       <span class="wheel-item__label">${escapeHtml(entryLabel(entry))}</span>
     </div>
   `;
 }
+
+const WON_INDEX = 52;
+const STRIP_LENGTH = 60;
+const SPIN_MS = 4800;
+
 
 async function openBox(boxId) {
   if (state.spinning) return;
@@ -299,7 +306,7 @@ async function openBox(boxId) {
   state.spinning = true;
   renderWallet();
 
-  // Open overlay in its resting state.
+  // Open the overlay in its resting state.
   wheelOverlay.classList.remove("hidden");
   wheelTitle.textContent = `Opening ${box.name}…`;
   wheelResult.classList.add("hidden");
@@ -307,74 +314,101 @@ async function openBox(boxId) {
   wheelClose.hidden = true;
   wheelAgain.hidden = true;
 
-  // Ask the server for the outcome (authoritative).
-  const { data, error } = await openLootBox(boxId);
+  let data = null;
+  let error = null;
 
-  if (error) {
-    wheelOverlay.classList.add("hidden");
+  try {
+    ({ data, error } = await openLootBox(boxId));
+  } catch (thrown) {
+    console.error("open_loot_box threw:", thrown);
+    error = { message: "Network error — please try again." };
+  }
+
+  // Any failure: close the overlay cleanly (never leave it stuck open).
+  if (error || !data || !data.reward) {
     state.spinning = false;
+    wheelOverlay.classList.add("hidden");
     renderWallet();
-    notify.error("Could not open", error.message);
+    notify.error("Could not open", error?.message ?? "Please try again.");
     return;
   }
 
   const won = data.reward;
 
-  // Build the strip: filler items + the won item near the end.
-  const WON_INDEX = 52;
-  const TOTAL = 60;
-  const items = [];
-  for (let i = 0; i < TOTAL; i += 1) {
-    items.push(i === WON_INDEX ? won : weightedPick(box.pool));
+  // Spin the wheel. The reward reveal is DECOUPLED from the animation:
+  // even if the transition fails to run for any reason, the result is
+  // always shown afterwards, so the player never just sees a blur.
+  try {
+    await spinWheel(box, won);
+  } catch (thrown) {
+    console.error("wheel animation error:", thrown);
   }
 
-  wheelTrack.style.transition = "none";
-  wheelTrack.style.transform = "translateX(0)";
-  wheelTrack.innerHTML = items.map(wheelItemHtml).join("");
+  showResult(won, data);
 
-  // Measure the true step (item width + gap). Reading layout here also
-  // flushes the reset transform above.
-  const first = wheelTrack.children[0];
-  const second = wheelTrack.children[1];
-  const step =
-    second && first ? second.offsetLeft - first.offsetLeft : 128;
-  const itemWidth = first ? first.offsetWidth : 120;
+  state.wallet.coins = Number(data.coins ?? state.wallet.coins);
+  refreshWallet();
 
-  const jitter = (Math.random() - 0.5) * itemWidth * 0.6;
-  const target =
-    WON_INDEX * step + itemWidth / 2 - wheel.clientWidth / 2 + jitter;
+  state.spinning = false;
+  wheelClose.hidden = false;
+  wheelAgain.hidden = false;
+  wheelAgain.dataset.box = boxId;
+}
 
-  // Force the browser to commit translateX(0) with no transition, then
-  // animate to the target on the next frame so the transition runs
-  // reliably (the two-step reset/animate pattern).
-  void wheelTrack.offsetWidth;
 
-  requestAnimationFrame(() => {
-    wheelTrack.style.transition =
-      "transform 4.6s cubic-bezier(0.08, 0.82, 0.16, 1)";
-    wheelTrack.style.transform = `translateX(${-target}px)`;
+// Builds the strip and animates it so the won item lands under the
+// centre marker. Resolves when the spin ends (transitionend) or after
+// a hard timeout, whichever comes first — so it always resolves.
+function spinWheel(box, won) {
+  return new Promise((resolve) => {
+    const items = [];
+    for (let i = 0; i < STRIP_LENGTH; i += 1) {
+      items.push(i === WON_INDEX ? won : weightedPick(box.pool));
+    }
+
+    wheelTrack.style.transition = "none";
+    wheelTrack.style.transform = "translateX(0)";
+    wheelTrack.innerHTML = items
+      .map((entry, i) => wheelItemHtml(entry, i === WON_INDEX))
+      .join("");
+
+    // Measure after layout (reading offsets flushes the reset above).
+    const first = wheelTrack.children[0];
+    const second = wheelTrack.children[1];
+    const step = first && second ? second.offsetLeft - first.offsetLeft : 138;
+    const itemWidth = first ? first.offsetWidth : 128;
+    const wheelWidth =
+      wheel.getBoundingClientRect().width || wheel.offsetWidth || 700;
+
+    const jitter = (Math.random() - 0.5) * itemWidth * 0.5;
+    const target = WON_INDEX * step + itemWidth / 2 - wheelWidth / 2 + jitter;
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      wheelTrack.removeEventListener("transitionend", onEnd);
+      resolve();
+    };
+    const onEnd = (event) => {
+      if (event.propertyName === "transform") finish();
+    };
+    wheelTrack.addEventListener("transitionend", onEnd);
+
+    // Commit the reset, then animate on a later frame so the browser
+    // registers a transition (two rAFs for good measure).
+    void wheelTrack.offsetWidth;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        wheelTrack.style.transition =
+          `transform ${SPIN_MS}ms cubic-bezier(0.08, 0.82, 0.16, 1)`;
+        wheelTrack.style.transform = `translateX(${-target}px)`;
+      });
+    });
+
+    // Guarantee resolution even if transitionend never fires.
+    setTimeout(finish, SPIN_MS + 500);
   });
-
-  const finish = () => {
-    wheelTrack.removeEventListener("transitionend", finish);
-    showResult(won, data);
-
-    // Reflect the new balance the server reported.
-    state.wallet.coins = Number(data.coins ?? state.wallet.coins);
-    refreshWallet();
-
-    state.spinning = false;
-    wheelClose.hidden = false;
-    wheelAgain.hidden = false;
-    wheelAgain.dataset.box = boxId;
-  };
-
-  wheelTrack.addEventListener("transitionend", finish, { once: true });
-
-  // Safety net in case transitionend doesn't fire.
-  setTimeout(() => {
-    if (state.spinning) finish();
-  }, 5200);
 }
 
 
@@ -415,11 +449,6 @@ wheelAgain.addEventListener("click", () => {
   const boxId = wheelAgain.dataset.box;
   if (boxId) openBox(boxId);
 });
-
-
-function nextFrame() {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
-}
 
 
 // =========================================================
