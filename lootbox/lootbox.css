@@ -72,8 +72,6 @@
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-.coin-bar #coinBuyRealButton { color: var(--text-muted); }
-
 .account-status#coinStatus { flex-basis: 100%; margin-top: 0; }
 
 @media (max-width: 640px) {

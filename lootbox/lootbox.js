@@ -30,7 +30,6 @@ const coinCount = document.getElementById("coinCount");
 const coinMoney = document.getElementById("coinMoney");
 const coinBuyQty = document.getElementById("coinBuyQty");
 const coinBuyButton = document.getElementById("coinBuyButton");
-const coinBuyRealButton = document.getElementById("coinBuyRealButton");
 const coinStatus = document.getElementById("coinStatus");
 const boxList = document.getElementById("boxList");
 
@@ -141,15 +140,6 @@ coinBuyButton.addEventListener("click", async () => {
   notify.success(
     "Coins added",
     `Bought ${formatCount(count)} coin${count === 1 ? "" : "s"}.`
-  );
-});
-
-
-// Real-money purchases need a payment provider; not wired up yet.
-coinBuyRealButton.addEventListener("click", () => {
-  notify.info(
-    "Coming soon",
-    "Buying coins with real money isn't available yet."
   );
 });
 
