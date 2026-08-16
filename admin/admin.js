@@ -2,7 +2,7 @@ import gems from "../src/data/gems.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { adminRequest } from "../src/backend/cloudAdmin.js";
-import { createAdminCode, loadAdminCodes, setAdminCodeActive } from "../src/backend/cloudCodes.js";
+import { createAdminCode, deleteAdminCode, loadAdminCodes, setAdminCodeActive } from "../src/backend/cloudCodes.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
@@ -358,20 +358,43 @@ async function loadCodes() {
     return `<div class="admin-code-row">
       <div><strong>${escapeHtml(code.code)}</strong><span>${escapeHtml(rewards)}</span></div>
       <div><span>${escapeHtml(limit)}</span><span>${escapeHtml(expiry)}</span></div>
-      <button class="btn ${code.active ? "btn--danger" : "btn--primary"}"
-        data-code-id="${escapeHtml(code.id)}" data-code-active="${code.active}" type="button">
-        ${code.active ? "Disable" : "Enable"}
-      </button>
+      <div class="admin-code-actions">
+        <button class="btn ${code.active ? "btn--danger" : "btn--primary"}"
+          data-code-toggle="${escapeHtml(code.id)}" data-code-active="${code.active}" type="button">
+          ${code.active ? "Disable" : "Enable"}
+        </button>
+        <button class="btn btn--danger" data-code-delete="${escapeHtml(code.id)}"
+          data-code-name="${escapeHtml(code.code)}" type="button">Delete</button>
+      </div>
     </div>`;
   }).join("") || `<p class="page-head__sub">No codes created yet.</p>`;
 
-  for (const button of list.querySelectorAll("[data-code-id]")) {
+  for (const button of list.querySelectorAll("[data-code-toggle]")) {
     button.addEventListener("click", async () => {
       button.disabled = true;
       const active = button.dataset.codeActive !== "true";
-      const { error: toggleError } = await setAdminCodeActive(button.dataset.codeId, active);
+      const { error: toggleError } = await setAdminCodeActive(button.dataset.codeToggle, active);
       if (toggleError) notify.error("Could not update code", toggleError.message);
       else await loadCodes();
+    });
+  }
+
+  for (const button of list.querySelectorAll("[data-code-delete]")) {
+    button.addEventListener("click", async () => {
+      const codeName = button.dataset.codeName;
+      if (!window.confirm(`Permanently delete code ${codeName} and its redemption history?`)) return;
+
+      button.disabled = true;
+      const { data: deleted, error: deleteError } = await deleteAdminCode(button.dataset.codeDelete);
+
+      if (deleteError || !deleted) {
+        notify.error("Could not delete code", deleteError?.message ?? "The code no longer exists.");
+        button.disabled = false;
+        return;
+      }
+
+      notify.success("Code deleted", `${codeName} was permanently deleted.`);
+      await loadCodes();
     });
   }
 }

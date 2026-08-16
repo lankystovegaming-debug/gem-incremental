@@ -25,3 +25,7 @@ export async function setAdminCodeActive(codeId, active) {
     p_active: active
   });
 }
+
+export async function deleteAdminCode(codeId) {
+  return supabase.rpc("admin_delete_code", { p_code_id: codeId });
+}

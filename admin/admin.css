@@ -110,6 +110,7 @@
 .admin-code-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(180px, auto) auto; align-items: center; gap: var(--space-3); padding: 12px; border-radius: var(--radius-sm); background: var(--surface-sunken); }
 .admin-code-row strong, .admin-code-row span { display: block; }
 .admin-code-row span { margin-top: 2px; color: var(--text-muted); font-size: .78rem; }
+.admin-code-actions { display: flex; gap: 6px; }
 
 @media (max-width: 600px) {
   .admin-search { align-items: stretch; flex-direction: column; }
@@ -117,4 +118,5 @@
   .admin-control input, .admin-control select { grid-column: 1 / -1; }
   .admin-code-form { grid-template-columns: 1fr; }
   .admin-code-row { grid-template-columns: 1fr; }
+  .admin-code-actions .btn { flex: 1; }
 }
