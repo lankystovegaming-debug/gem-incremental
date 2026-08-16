@@ -310,7 +310,11 @@ async function startEvent() {
     luckBonus: Math.max(0, Number(document.getElementById("eventLuck").value) || 0) / 100,
     rollSpeedBonus: Math.max(0, Number(document.getElementById("eventRollSpeed").value) || 0) / 100,
     weightLuckBonus: Math.max(0, Number(document.getElementById("eventWeightLuck").value) || 0) / 100,
-    weightMultiplierBonus: Math.max(0, Number(document.getElementById("eventWeightMultiplier").value) || 0) / 100
+    weightMultiplierBonus: Math.max(0, Number(document.getElementById("eventWeightMultiplier").value) || 0) / 100,
+    luckMultiplier: readEventMultiplier("eventLuckMultiplier"),
+    rollSpeedMultiplier: readEventMultiplier("eventRollSpeedMultiplier"),
+    weightLuckMultiplier: readEventMultiplier("eventWeightLuckMultiplier"),
+    weightMultiplierMultiplier: readEventMultiplier("eventWeightMultiplierMultiplier")
   };
 
   if (event.name.length < 3) {
@@ -321,8 +325,21 @@ async function startEvent() {
     notify.error("Invalid duration", "Choose between 1 minute and 7 days.");
     return;
   }
-  if (event.luckBonus + event.rollSpeedBonus + event.weightLuckBonus + event.weightMultiplierBonus <= 0) {
-    notify.error("No boosts", "Set at least one event boost above 0%.");
+  const multipliers = [
+    event.luckMultiplier,
+    event.rollSpeedMultiplier,
+    event.weightLuckMultiplier,
+    event.weightMultiplierMultiplier
+  ];
+  if (multipliers.some((value) => !Number.isFinite(value) || value < 0.01 || value > 10000)) {
+    notify.error("Invalid multiplier", "Multipliers must be between 0.01× and 10,000×.");
+    return;
+  }
+  if (
+    event.luckBonus + event.rollSpeedBonus + event.weightLuckBonus + event.weightMultiplierBonus <= 0 &&
+    multipliers.every((value) => value === 1)
+  ) {
+    notify.error("No boosts", "Set an additive bonus or change at least one multiplier.");
     return;
   }
   if (!window.confirm(`Start ${event.name} now? This will stop any currently active event.`)) return;
@@ -357,7 +374,11 @@ async function loadEvents() {
       Number(event.luck_bonus) > 0 ? `+${formatPercent(event.luck_bonus)} Luck` : null,
       Number(event.roll_speed_bonus) > 0 ? `+${formatPercent(event.roll_speed_bonus)} Roll speed` : null,
       Number(event.weight_luck_bonus) > 0 ? `+${formatPercent(event.weight_luck_bonus)} Weight luck` : null,
-      Number(event.weight_multiplier_bonus) > 0 ? `+${formatPercent(event.weight_multiplier_bonus)} Weight multiplier` : null
+      Number(event.weight_multiplier_bonus) > 0 ? `+${formatPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
+      Number(event.luck_multiplier) !== 1 ? `${formatEventMultiplier(event.luck_multiplier)} Luck` : null,
+      Number(event.roll_speed_multiplier) !== 1 ? `${formatEventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
+      Number(event.weight_luck_multiplier) !== 1 ? `${formatEventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
+      Number(event.weight_multiplier_multiplier) !== 1 ? `${formatEventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
     ].filter(Boolean).join(" · ");
 
     return `<div class="admin-event-row">
@@ -383,6 +404,15 @@ async function loadEvents() {
 
 function formatPercent(value) {
   return `${Math.round(Number(value) * 100)}%`;
+}
+
+function readEventMultiplier(id) {
+  const value = Number(document.getElementById(id).value);
+  return Number.isFinite(value) ? value : 1;
+}
+
+function formatEventMultiplier(value) {
+  return `×${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 async function createCode() {

@@ -701,7 +701,11 @@ async function renderActiveAdminEvent(header) {
     Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
     Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
     Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
-    Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null
+    Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
+    Number(event.luck_multiplier) !== 1 ? `${eventMultiplier(event.luck_multiplier)} Luck` : null,
+    Number(event.roll_speed_multiplier) !== 1 ? `${eventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
+    Number(event.weight_luck_multiplier) !== 1 ? `${eventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
+    Number(event.weight_multiplier_multiplier) !== 1 ? `${eventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
   ].filter(Boolean);
 
   const banner = document.createElement("div");
@@ -738,6 +742,10 @@ async function renderActiveAdminEvent(header) {
 
 function eventPercent(value) {
   return `${Math.round(Number(value) * 100)}%`;
+}
+
+function eventMultiplier(value) {
+  return `×${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 function eventTime(milliseconds) {

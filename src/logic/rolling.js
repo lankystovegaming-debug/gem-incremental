@@ -18,16 +18,17 @@ import {
  * @returns {object} The gem that was rolled.
  */
 export function rollGem(luck = 1) {
-  // Luck should never be negative.
-  const safeLuck = Math.max(0, luck);
+  const safeLuck = Math.max(1, luck);
+  const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
+  const rarityFloor = Math.min(safeLuck, maximumRarity);
 
-  // Quartz is our fallback gem.
-  const fallbackGem = gems.find((gem) => gem.name === "Quartz");
-
-  // Check everything except Quartz, rarest first.
+  // Luck sets the minimum eligible rarity. A gem at exactly the Luck
+  // denominator remains eligible; only more-common gems are removed.
   const rollableGems = gems
-    .filter((gem) => gem.name !== "Quartz")
+    .filter((gem) => gem.rarity >= rarityFloor)
     .sort((a, b) => b.rarity - a.rarity);
+
+  const fallbackGem = rollableGems[rollableGems.length - 1];
 
   for (const gem of rollableGems) {
     // Prevent probability from ever exceeding 100%.

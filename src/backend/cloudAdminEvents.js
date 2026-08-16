@@ -19,7 +19,11 @@ export async function startAdminEvent(event) {
     p_luck_bonus: event.luckBonus,
     p_roll_speed_bonus: event.rollSpeedBonus,
     p_weight_luck_bonus: event.weightLuckBonus,
-    p_weight_multiplier_bonus: event.weightMultiplierBonus
+    p_weight_multiplier_bonus: event.weightMultiplierBonus,
+    p_luck_multiplier: event.luckMultiplier,
+    p_roll_speed_multiplier: event.rollSpeedMultiplier,
+    p_weight_luck_multiplier: event.weightLuckMultiplier,
+    p_weight_multiplier_multiplier: event.weightMultiplierMultiplier
   });
 }
 
