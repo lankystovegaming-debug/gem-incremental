@@ -8,6 +8,7 @@ import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
 import { invokeFunction } from "./src/backend/invoke.js";
 import {
   startRollSession,
+  refreshRollSession,
   isRollSessionActive,
   onRollSessionChange,
   getRollSessionId
@@ -200,7 +201,19 @@ function setButton({ mode, label, disabled }) {
 function showReady() {
   stopCooldown();
 
-  if (view.inventoryCount >= view.capacity) {
+  if (!rollSessionActive) {
+    view.ready = false;
+
+    setButton({
+      mode: "blocked",
+      label: "Connecting...",
+      disabled: true
+    });
+
+    return;
+  }
+
+  if (view.inventoryCount >= view.capacity) {  
     view.ready = false;
 
     setButton({
@@ -494,8 +507,26 @@ function renderHistory() {
 // =========================================================
 
 async function performRoll() {
-  if (rollInFlight || cinematicActive || !view.ready || !rollSessionActive) {
+  if (rollInFlight || cinematicActive || !view.ready) {
     return;
+  }
+
+  // If the 20-second heartbeat temporarily failed or the page
+  // was backgrounded, try to reclaim/renew the lease immediately
+  // instead of silently doing nothing.
+  if (!rollSessionActive) {
+    const refreshed = await refreshRollSession();
+
+    if (!refreshed) {
+      notify.error(
+        "Roll unavailable",
+        "This tab does not own the roll session. Check that you aren't rolling in another tab."
+      );
+
+      return;
+    }
+
+    rollSessionActive = true;
   }
 
   rollInFlight = true;
