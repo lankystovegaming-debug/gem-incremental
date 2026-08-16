@@ -619,3 +619,353 @@ kbd {
     padding: var(--space-5) var(--space-4);
   }
 }
+
+
+/* =========================================================
+   ULTRA-RARE CINEMATIC — SAFE FULL-SCREEN COMPOSITOR
+   The entire effect is clipped to the stage viewport.  This
+   prevents transformed rings/beams from painting into a
+   quarter of the page or producing the "cracked screen" bug.
+   ========================================================= */
+
+html, body {
+  overflow-x: hidden;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.stage__display {
+  overflow: hidden;
+  isolation: isolate;
+  contain: paint;
+}
+
+.stage__display.is-cinematic {
+  min-height: 420px;
+}
+
+.stage__display.is-cinematic::before {
+  z-index: 0;
+  width: 120%;
+  height: 120%;
+  opacity: 1;
+  background:
+    radial-gradient(circle at 50% 48%,
+      color-mix(in srgb, var(--tier, var(--accent)) 20%, transparent) 0%,
+      transparent 42%),
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--tier, var(--accent)) 10%, transparent),
+      transparent 70%);
+  animation: ultra-bg-pulse var(--cinematic-duration, 7200ms) ease-in-out both;
+}
+
+.ultra-cutscene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  isolation: isolate;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 50%,
+      color-mix(in srgb, var(--tier, var(--accent)) 18%, transparent) 0%,
+      transparent 28%),
+    radial-gradient(circle at 50% 50%,
+      rgb(4 6 14 / 0.12) 0%,
+      rgb(2 3 10 / 0.88) 100%);
+}
+
+.ultra-cutscene > span {
+  position: absolute;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+}
+
+.ultra-cutscene__veil {
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(115deg,
+      transparent 0 32%,
+      color-mix(in srgb, var(--tier, var(--accent)) 13%, transparent) 43%,
+      transparent 54%),
+    linear-gradient(65deg,
+      transparent 0 38%,
+      rgb(255 255 255 / 0.05) 50%,
+      transparent 62%);
+  mix-blend-mode: screen;
+  animation: ultra-veil var(--cinematic-duration, 7200ms) ease-in-out both;
+}
+
+.ultra-cutscene__stars {
+  inset: -5%;
+  z-index: 2;
+  background-image:
+    radial-gradient(circle, rgb(255 255 255 / .9) 0 1px, transparent 1.5px),
+    radial-gradient(circle, color-mix(in srgb, var(--tier, var(--accent)) 85%, white) 0 1px, transparent 1.6px);
+  background-size: 47px 47px, 83px 83px;
+  background-position: 7px 11px, 31px 37px;
+  opacity: .55;
+  animation: ultra-stars 7s linear infinite;
+}
+
+.ultra-cutscene__shards {
+  inset: -15%;
+  z-index: 3;
+  background:
+    linear-gradient(35deg, transparent 0 47%, color-mix(in srgb, var(--tier, var(--accent)) 55%, transparent) 48% 48.4%, transparent 49%),
+    linear-gradient(145deg, transparent 0 55%, rgb(255 255 255 / .18) 55.5% 55.8%, transparent 56%);
+  filter: blur(.2px);
+  opacity: .5;
+  animation: ultra-shards var(--cinematic-duration, 7200ms) cubic-bezier(.2,.8,.2,1) both;
+}
+
+.ultra-cutscene__ring {
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--tier, var(--accent)) 75%, white);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--tier, var(--accent)) 65%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--tier, var(--accent)) 20%, transparent);
+  z-index: 4;
+}
+
+.ultra-cutscene__ring--one {
+  width: min(70vw, 330px);
+  height: min(70vw, 330px);
+  transform: translate(-50%, -50%) scale(.2);
+  animation: ultra-ring-one var(--cinematic-duration, 7200ms) cubic-bezier(.12,.75,.18,1) both;
+}
+
+.ultra-cutscene__ring--two {
+  width: min(52vw, 245px);
+  height: min(52vw, 245px);
+  border-style: dashed;
+  opacity: .8;
+  transform: translate(-50%, -50%) scale(.15) rotate(15deg);
+  animation: ultra-ring-two var(--cinematic-duration, 7200ms) cubic-bezier(.12,.75,.18,1) both;
+}
+
+.ultra-cutscene__ring--three {
+  width: min(88vw, 420px);
+  height: min(88vw, 420px);
+  border-width: 2px;
+  opacity: .32;
+  transform: translate(-50%, -50%) scale(.1);
+  animation: ultra-ring-three var(--cinematic-duration, 7200ms) cubic-bezier(.12,.75,.18,1) both;
+}
+
+.ultra-cutscene__beam {
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 150%;
+  z-index: 5;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--tier, var(--accent)) 75%, white),
+    transparent
+  );
+  filter: blur(2px);
+  opacity: 0;
+}
+
+.ultra-cutscene__beam--one {
+  transform: translate(-50%, -50%) rotate(18deg) scaleY(.1);
+  animation: ultra-beam-one var(--cinematic-duration, 7200ms) ease-in-out both;
+}
+
+.ultra-cutscene__beam--two {
+  transform: translate(-50%, -50%) rotate(-32deg) scaleY(.1);
+  width: 3px;
+  opacity: .75;
+  animation: ultra-beam-two var(--cinematic-duration, 7200ms) ease-in-out both;
+}
+
+.ultra-cutscene__burst {
+  left: 50%;
+  top: 50%;
+  width: min(25vw, 120px);
+  height: min(25vw, 120px);
+  z-index: 6;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    white 0 5%,
+    color-mix(in srgb, var(--tier, var(--accent)) 95%, white) 10%,
+    color-mix(in srgb, var(--tier, var(--accent)) 40%, transparent) 38%,
+    transparent 70%);
+  transform: translate(-50%, -50%) scale(.05);
+  filter: blur(.5px);
+  opacity: 0;
+  animation: ultra-burst var(--cinematic-duration, 7200ms) cubic-bezier(.12,.8,.18,1) both;
+}
+
+.ultra-cutscene__flash {
+  inset: 0;
+  z-index: 8;
+  background: white;
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: ultra-flash var(--cinematic-duration, 7200ms) ease-out both;
+}
+
+.ultra-cutscene__vignette {
+  inset: 0;
+  z-index: 9;
+  background: radial-gradient(circle,
+    transparent 25%,
+    rgb(0 0 0 / .18) 58%,
+    rgb(0 0 0 / .82) 100%);
+  animation: ultra-vignette var(--cinematic-duration, 7200ms) ease-in-out both;
+}
+
+.stage__display.is-cinematic .gem-reveal {
+  z-index: 10;
+  position: relative;
+  animation: ultra-gem-reveal var(--cinematic-duration, 7200ms) cubic-bezier(.12,.8,.18,1) both;
+}
+
+.stage__display.is-cinematic .gem-reveal__art {
+  filter:
+    drop-shadow(0 0 10px color-mix(in srgb, var(--tier, var(--accent)) 95%, white))
+    drop-shadow(0 0 35px color-mix(in srgb, var(--tier, var(--accent)) 75%, transparent))
+    drop-shadow(0 0 75px color-mix(in srgb, var(--tier, var(--accent)) 35%, transparent));
+  animation: ultra-gem-art var(--cinematic-duration, 7200ms) cubic-bezier(.12,.8,.18,1) both;
+}
+
+.stage__display.is-cinematic .gem-reveal__name {
+  text-shadow:
+    0 0 8px color-mix(in srgb, var(--tier, var(--accent)) 90%, white),
+    0 0 25px color-mix(in srgb, var(--tier, var(--accent)) 70%, transparent),
+    0 0 55px color-mix(in srgb, var(--tier, var(--accent)) 40%, transparent);
+}
+
+@keyframes ultra-bg-pulse {
+  0%,100% { opacity: .25; transform: scale(.92); }
+  35% { opacity: 1; transform: scale(1); }
+  60% { opacity: .7; transform: scale(1.04); }
+}
+
+@keyframes ultra-veil {
+  0% { opacity: 0; transform: scale(1.08); }
+  18% { opacity: .75; }
+  65% { opacity: .35; }
+  100% { opacity: 0; }
+}
+
+@keyframes ultra-stars {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to { transform: translate3d(-35px,25px,0) scale(1.04); }
+}
+
+@keyframes ultra-shards {
+  0% { opacity: 0; transform: rotate(-8deg) scale(.7); }
+  25% { opacity: .55; }
+  70% { opacity: .25; transform: rotate(8deg) scale(1.05); }
+  100% { opacity: 0; transform: rotate(14deg) scale(1.12); }
+}
+
+@keyframes ultra-ring-one {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.15) rotate(0); }
+  18% { opacity: 1; }
+  55% { opacity: .8; transform: translate(-50%,-50%) scale(1) rotate(170deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.35) rotate(360deg); }
+}
+
+@keyframes ultra-ring-two {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.1) rotate(0); }
+  20% { opacity: .9; }
+  65% { opacity: .65; transform: translate(-50%,-50%) scale(1.15) rotate(-260deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5) rotate(-420deg); }
+}
+
+@keyframes ultra-ring-three {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(.05) rotate(0); }
+  25% { opacity: .45; }
+  70% { opacity: .3; transform: translate(-50%,-50%) scale(1.05) rotate(130deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5) rotate(280deg); }
+}
+
+@keyframes ultra-beam-one {
+  0%,18% { opacity: 0; }
+  30% { opacity: .7; }
+  50% { opacity: .25; }
+  70% { opacity: .8; transform: translate(-50%,-50%) rotate(190deg) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%,-50%) rotate(235deg) scaleY(1.15); }
+}
+
+@keyframes ultra-beam-two {
+  0%,25% { opacity: 0; }
+  38% { opacity: .55; }
+  68% { opacity: .25; }
+  100% { opacity: 0; transform: translate(-50%,-50%) rotate(160deg) scaleY(1.2); }
+}
+
+@keyframes ultra-burst {
+  0%,32% { opacity: 0; transform: translate(-50%,-50%) scale(.05); }
+  43% { opacity: 1; transform: translate(-50%,-50%) scale(.8); }
+  54% { opacity: .8; transform: translate(-50%,-50%) scale(1.8); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(3.8); }
+}
+
+@keyframes ultra-flash {
+  0%,39%,55% { opacity: 0; }
+  42% { opacity: .9; }
+  44% { opacity: 0; }
+  53% { opacity: .55; }
+  56%,100% { opacity: 0; }
+}
+
+@keyframes ultra-vignette {
+  0%,100% { opacity: .2; }
+  40% { opacity: .75; }
+  60% { opacity: .5; }
+}
+
+@keyframes ultra-gem-reveal {
+  0%,28% { opacity: 0; transform: translateY(30px) scale(.55); filter: blur(14px); }
+  48% { opacity: 1; transform: translateY(0) scale(1.05); filter: blur(0); }
+  58%,100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes ultra-gem-art {
+  0%,30% { transform: scale(.45) rotate(-18deg); }
+  48% { transform: scale(1.18) rotate(5deg); }
+  60% { transform: scale(.96) rotate(-2deg); }
+  72%,100% { transform: scale(1) rotate(0); }
+}
+
+/* Keep the cinematic inside the actual viewport on phones. */
+@media (max-width: 700px), (pointer: coarse) {
+  .stage__display.is-cinematic {
+    min-height: min(78vh, 620px);
+  }
+
+  .ultra-cutscene__ring--one {
+    width: min(78vw, 330px);
+    height: min(78vw, 330px);
+  }
+
+  .ultra-cutscene__ring--three {
+    width: min(104vw, 430px);
+    height: min(104vw, 430px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ultra-cutscene *,
+  .stage__display.is-cinematic::before,
+  .stage__display.is-cinematic .gem-reveal,
+  .stage__display.is-cinematic .gem-reveal__art {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
