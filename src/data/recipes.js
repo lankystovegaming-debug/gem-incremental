@@ -1054,7 +1054,6 @@ const recipes = [
   {
     id: "legendary-potion", name: "Legendary Potion", category: "potion",
     requirements: [
-      { type: "lifetime-rolls", rolls: 500 },
       { type: "consumable", consumableId: "lucky-potion-3", amount: 2 },
       { type: "gem-count", gem: "Amethyst", amount: 5 },
       { type: "gem-count", gem: "Topaz", amount: 3 },
@@ -1066,7 +1065,6 @@ const recipes = [
   {
     id: "mythic-potion", name: "Mythic Potion", category: "potion",
     requirements: [
-      { type: "lifetime-rolls", rolls: 2500 },
       { type: "consumable", consumableId: "legendary-potion", amount: 3 },
       { type: "gem-count", gem: "Ruby", amount: 5 },
       { type: "gem-count", gem: "Diamond", amount: 3 },

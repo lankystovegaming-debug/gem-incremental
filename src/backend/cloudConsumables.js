@@ -55,16 +55,21 @@ export async function useCloudConsumable(consumableId) {
     return { data, error: null };
   }
 
-  const code = error.message?.match(
-    /(consumable_[a-z_]+|not_owned|none_owned)/
-  )?.[1];
+  const rollRequirement = error.message?.match(/lifetime_rolls_required:(\d+)/)?.[1];
+  const code = rollRequirement
+    ? "lifetime_rolls_required"
+    : error.message?.match(
+      /(consumable_[a-z_]+|not_owned|none_owned)/
+    )?.[1];
 
   return {
     data: null,
     error: {
       code: code ?? error.code,
       message:
-        code === "consumable_not_owned" || code === "none_owned"
+        code === "lifetime_rolls_required"
+          ? `You need ${Number(rollRequirement).toLocaleString()} lifetime rolls to use this potion.`
+          : code === "consumable_not_owned" || code === "none_owned"
           ? "You do not have that potion."
           : "The potion could not be used."
     }
