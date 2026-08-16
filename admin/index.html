@@ -60,6 +60,28 @@
       <p class="account-status" id="announceStatus"></p>
     </section>
 
+    <section class="card admin-codes" id="codesPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Promotional Codes</h2>
+          <p class="page-head__sub">Create codes for money, potions, or both.</p>
+        </div>
+        <button class="btn" id="codesRefresh" type="button">Refresh</button>
+      </div>
+
+      <div class="admin-code-form">
+        <label class="field"><span>Code</span><input id="newCode" maxlength="32" placeholder="WELCOME"></label>
+        <label class="field"><span>Money</span><input id="codeMoney" type="number" min="0" step="0.01" value="0"></label>
+        <label class="field"><span>Potion</span><select id="codePotion"></select></label>
+        <label class="field"><span>Quantity</span><input id="codePotionQuantity" type="number" min="0" step="1" value="0"></label>
+        <label class="field"><span>Expires (optional)</span><input id="codeExpires" type="datetime-local"></label>
+        <label class="field"><span>Use limit (optional)</span><input id="codeLimit" type="number" min="1" step="1" placeholder="Unlimited"></label>
+        <button class="btn btn--primary" id="codeCreate" type="button">Create code</button>
+      </div>
+
+      <div class="admin-code-list" id="codesList"></div>
+    </section>
+
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>

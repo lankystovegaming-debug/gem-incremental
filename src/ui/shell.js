@@ -54,12 +54,7 @@ const MODE_ICONS = {
   system: icons.monitor,
   light: icons.sun,
   dark: icons.moon,
-  neon: icons.bolt,
-  gradient: icons.sparkle,
-  ocean: icons.droplet ?? icons.sparkle,
-  forest: icons.leaf ?? icons.sparkle,
-  sunset: icons.sunset ?? icons.sun,
-  ice: icons.snowflake ?? icons.sparkle
+  neon: icons.bolt
 };
 
 
@@ -208,17 +203,8 @@ export function mountShell({ page, base = "./" }) {
     if (user) {
       // Ask the server whether this account is an admin, so the link
       // appears without any admin id baked into the client bundle.
-      // Falls back to the am_i_admin() RPC when the admin edge
-      // function isn't deployed.
-      adminRequest("whoami").then(async ({ data }) => {
-        let admin = data?.isAdmin === true;
-
-        if (!admin) {
-          const { data: rpcAdmin } = await supabase.rpc("am_i_admin");
-          admin = rpcAdmin === true;
-        }
-
-        if (!admin) {
+      adminRequest("whoami").then(({ data }) => {
+        if (!data?.isAdmin) {
           return;
         }
 
@@ -593,6 +579,15 @@ function mountContributeDock(base) {
     >
       ${icons.bug}
       <span>Report a bug</span>
+    </a>
+
+    <a
+      class="contribute-dock__link"
+      href="${base}codes/"
+      title="Redeem a code"
+    >
+      ${icons.sparkle}
+      <span>Codes</span>
     </a>
 
     <a
