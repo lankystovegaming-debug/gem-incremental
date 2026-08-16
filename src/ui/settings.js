@@ -17,7 +17,9 @@ export const SELL_TIERS = [
   { id: "common", label: "Common only", rank: 0 },
   { id: "uncommon", label: "Uncommon and below", rank: 1 },
   { id: "rare", label: "Rare and below", rank: 2 },
-  { id: "epic", label: "Epic and below", rank: 3 }
+  { id: "epic", label: "Epic and below", rank: 3 },
+  { id: "legendary", label: "Legendary and below", rank: 4 },
+  { id: "mythic", label: "Mythic and below", rank: 5 }
 ];
 
 
@@ -96,7 +98,7 @@ export function tierRank(tierId) {
     return known.rank;
   }
 
-  // Anything above the configurable range (legendary, mythic)
+  // Anything above the configurable range (exotic, cosmic)
   // is never auto-sold.
   return Number.MAX_SAFE_INTEGER;
 }
