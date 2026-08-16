@@ -208,8 +208,17 @@ export function mountShell({ page, base = "./" }) {
     if (user) {
       // Ask the server whether this account is an admin, so the link
       // appears without any admin id baked into the client bundle.
-      adminRequest("whoami").then(({ data }) => {
-        if (!data?.isAdmin) {
+      // Falls back to the am_i_admin() RPC when the admin edge
+      // function isn't deployed.
+      adminRequest("whoami").then(async ({ data }) => {
+        let admin = data?.isAdmin === true;
+
+        if (!admin) {
+          const { data: rpcAdmin } = await supabase.rpc("am_i_admin");
+          admin = rpcAdmin === true;
+        }
+
+        if (!admin) {
           return;
         }
 

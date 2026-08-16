@@ -345,10 +345,22 @@ const user = await ensurePlayerAuth();
 
 // Admin status comes from the server, not a hardcoded id. Every
 // admin action is enforced server-side regardless, so this only
-// controls what the page shows.
-const { data: whoami } = user ? await adminRequest("whoami") : { data: null };
+// controls what the page shows. The whoami edge function is primary;
+// if it isn't deployed on this project, fall back to the am_i_admin()
+// RPC that reads the same allow-list table.
+let hasAdminAccess = false;
 
-if (!user || !whoami?.isAdmin) {
+if (user) {
+  const { data: whoami } = await adminRequest("whoami");
+  hasAdminAccess = whoami?.isAdmin === true;
+
+  if (!hasAdminAccess) {
+    const { data: rpcAdmin } = await supabase.rpc("am_i_admin");
+    hasAdminAccess = rpcAdmin === true;
+  }
+}
+
+if (!user || !hasAdminAccess) {
   status.textContent = "You do not have permission to use this page.";
   notify.error("Access denied", "Administrator access is required.");
 } else {
