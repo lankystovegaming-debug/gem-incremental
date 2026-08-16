@@ -7,6 +7,7 @@ import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
+import { gemNameHtml } from "../src/ui/gemStyle.js";
 import {
   rarityTier,
   rarityLabel,
@@ -218,7 +219,7 @@ function gemCard(gem) {
     <article class="index-card tier-${tier.id}">
       <div class="index-card__head">
         <div>
-          <div class="index-card__name">${escapeHtml(gem.name)}</div>
+          <div class="index-card__name">${gemNameHtml(gem.name, escapeHtml)}</div>
           <div class="index-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
