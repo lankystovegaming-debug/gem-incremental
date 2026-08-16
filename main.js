@@ -85,6 +85,36 @@ const MAX_HISTORY = 12;
 
 let cooldownTimer = null;
 let rollInFlight = false;
+// Ultra-rare cinematic lock. 1/100k+ reveals own the input while the
+// cinematic is playing, so auto-roll and keyboard/manual rolling cannot
+// interrupt the reveal.
+let cinematicActive = false;
+let cinematicTimer = null;
+
+function cinematicDuration() {
+  // Give phones a little more breathing room because the reveal is
+  // deliberately composed for a full-screen mobile presentation.
+  return window.matchMedia("(max-width: 700px), (pointer: coarse)").matches
+    ? 8200
+    : 7200;
+}
+
+function endCinematic() {
+  cinematicActive = false;
+  document.documentElement.classList.remove("is-cinematic-active");
+
+  if (cinematicTimer) {
+    clearTimeout(cinematicTimer);
+    cinematicTimer = null;
+  }
+
+  // If the normal cooldown already expired while the cinematic was
+  // playing, make the roll button available now.
+  if (!cooldownTimer && !rollInFlight) {
+    showReady();
+  }
+}
+
 let consecutiveFailures = 0;
 
 
@@ -270,13 +300,16 @@ function renderRoll(data, outcome) {
     ${isUltraRare ? `
       <div class="ultra-cutscene" aria-hidden="true">
         <span class="ultra-cutscene__veil"></span>
+        <span class="ultra-cutscene__stars"></span>
+        <span class="ultra-cutscene__shards"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--one"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--two"></span>
         <span class="ultra-cutscene__ring ultra-cutscene__ring--three"></span>
-        <span class="ultra-cutscene__stars"></span>
         <span class="ultra-cutscene__beam ultra-cutscene__beam--one"></span>
         <span class="ultra-cutscene__beam ultra-cutscene__beam--two"></span>
         <span class="ultra-cutscene__burst"></span>
+        <span class="ultra-cutscene__flash"></span>
+        <span class="ultra-cutscene__vignette"></span>
       </div>
     ` : ""}
     <div class="gem-reveal">
@@ -314,7 +347,7 @@ function renderRoll(data, outcome) {
   `;
 
   if (!getSettings().rollAnimations) {
-    return;
+    return Promise.resolve();
   }
 
   // Restart the reveal animation on every roll.
@@ -326,12 +359,29 @@ function renderRoll(data, outcome) {
   }
 
   if (isUltraRare) {
+    const duration = cinematicDuration();
+
+    cinematicActive = true;
+    document.documentElement.classList.add("is-cinematic-active");
+    gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
     gemStage.classList.add("is-cinematic");
+
+    // The CSS owns the visuals; JS only owns the lock/timing.
+    return new Promise((resolve) => {
+      cinematicTimer = setTimeout(() => {
+        gemStage.classList.remove("is-animating", "is-big", "is-cinematic");
+        gemStage.style.removeProperty("--cinematic-duration");
+        endCinematic();
+        resolve();
+      }, duration);
+    });
   }
 
   setTimeout(() => {
-    gemStage.classList.remove("is-animating", "is-big", "is-cinematic");
-  }, isUltraRare ? 4200 : 950);
+    gemStage.classList.remove("is-animating", "is-big");
+  }, 950);
+
+  return Promise.resolve();
 }
 
 
@@ -387,7 +437,7 @@ function renderHistory() {
 // =========================================================
 
 async function performRoll() {
-  if (rollInFlight || !view.ready) {
+  if (rollInFlight || cinematicActive || !view.ready) {
     return;
   }
 
@@ -471,7 +521,7 @@ async function performRoll() {
 
   renderSummary();
 
-  renderRoll(data, outcome);
+  const cinematicPromise = renderRoll(data, outcome);
 
   addHistory(data, outcome.note);
 
@@ -480,7 +530,14 @@ async function performRoll() {
       new Date(data.cooldown.nextRollAt).getTime(),
       data.cooldown.durationMs
     );
-  } else {
+  }
+
+  // Keep the roll locked for the entire 1/100k+ cinematic. If the server
+  // cooldown is shorter, its timer will wait for the cinematic lock before
+  // allowing the next roll.
+  await cinematicPromise;
+
+  if (!data.cooldown?.nextRollAt) {
     showReady();
   }
 }
@@ -675,7 +732,12 @@ async function refreshEffects() {
 // =========================================================
 
 function maybeAutoRoll() {
-  if (!getSettings().autoRoll || !view.ready || rollInFlight) {
+  if (
+    !getSettings().autoRoll ||
+    !view.ready ||
+    rollInFlight ||
+    cinematicActive
+  ) {
     return;
   }
 
