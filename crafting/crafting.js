@@ -682,6 +682,10 @@ async function depositRequirementFully(recipeId, index) {
 
     if (fresh) {
       state.crafting = fresh;
+      // Auto potion deposits happen one item at a time. Repaint after every
+      // server-confirmed deposit so the UI visibly advances (1/3, 2/3, 3/3)
+      // instead of jumping straight from 0 to the next cycle after crafting.
+      renderRecipes();
     }
 
     const after = JSON.stringify(state.crafting.progress[recipeId] ?? {});

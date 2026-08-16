@@ -17,6 +17,7 @@ import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
 import { mountShell } from "./src/ui/shell.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
+import { gemNameHtml } from "./src/ui/gemStyle.js";
 import {
   getSettings,
   updateSettings,
@@ -255,15 +256,35 @@ function stopCooldown() {
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
 
-  gemStage.className = `stage__display is-revealed tier-${tier.id}`;
+  const rarity = Number(data.gem.rarity ?? 0);
+  const isUltraRare = rarity >= 100000; // 1/100k+ gets the cinematic reveal.
+
+  gemStage.className = [
+    "stage__display",
+    "is-revealed",
+    `tier-${tier.id}`,
+    isUltraRare ? "is-ultra-rare" : ""
+  ].filter(Boolean).join(" ");
 
   gemStage.innerHTML = `
+    ${isUltraRare ? `
+      <div class="ultra-cutscene" aria-hidden="true">
+        <span class="ultra-cutscene__veil"></span>
+        <span class="ultra-cutscene__ring ultra-cutscene__ring--one"></span>
+        <span class="ultra-cutscene__ring ultra-cutscene__ring--two"></span>
+        <span class="ultra-cutscene__ring ultra-cutscene__ring--three"></span>
+        <span class="ultra-cutscene__stars"></span>
+        <span class="ultra-cutscene__beam ultra-cutscene__beam--one"></span>
+        <span class="ultra-cutscene__beam ultra-cutscene__beam--two"></span>
+        <span class="ultra-cutscene__burst"></span>
+      </div>
+    ` : ""}
     <div class="gem-reveal">
       <div class="gem-reveal__art">${icons.gem}</div>
 
       <span class="badge badge--tier">${tier.name}</span>
 
-      <h2 class="gem-reveal__name">${escapeHtml(data.gem.name)}</h2>
+      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
 
       <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
 
@@ -299,14 +320,18 @@ function renderRoll(data, outcome) {
   // Restart the reveal animation on every roll.
   gemStage.classList.add("is-animating");
 
-  // Rare and above earn the shockwave.
+  // Rare and above earn the shockwave. 1/100k+ gets the full cinematic.
   if (tier.id !== "common" && tier.id !== "uncommon") {
     gemStage.classList.add("is-big");
   }
 
+  if (isUltraRare) {
+    gemStage.classList.add("is-cinematic");
+  }
+
   setTimeout(() => {
-    gemStage.classList.remove("is-animating", "is-big");
-  }, 950);
+    gemStage.classList.remove("is-animating", "is-big", "is-cinematic");
+  }, isUltraRare ? 4200 : 950);
 }
 
 
@@ -343,7 +368,7 @@ function renderHistory() {
         <div class="history__row tier-${entry.tier.id}">
           <span class="history__dot"></span>
 
-          <span class="history__name">${escapeHtml(entry.name)}</span>
+          <span class="history__name">${gemNameHtml(entry.name, escapeHtml)}</span>
 
           <span class="history__meta">${escapeHtml(
             entry.note || formatWeight(entry.weight)
@@ -461,8 +486,9 @@ async function performRoll() {
 }
 
 
-// Decides what happened to the gem: deposited into a recipe by
-// the server, auto-sold by the player's own rule, or kept.
+// Decides what happened to the gem: Auto Craft always wins first because
+// the server deposits matching rolls before the client can auto-sell them.
+// Only gems that remain in inventory can reach the Auto Sell rule.
 async function resolveOutcome(data) {
   if (data.autoCraft?.deposited) {
     const recipe = recipes.find(

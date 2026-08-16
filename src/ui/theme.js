@@ -38,10 +38,12 @@ export const ACCENTS = [
 ];
 
 
-// Display font (used for the wordmark, headings, roll button and gem
-// names). "orbitron" is the game's classic geometric face; "plain"
-// uses the body font for a calmer look.
+// Display / gem-name font.
+//   gem      — each gem keeps its own hand-picked font (default)
+//   orbitron — the game's classic geometric face for every name
+//   plain    — the body font, for the calmest look
 export const FONTS = [
+  { id: "gem", label: "Per-gem" },
   { id: "orbitron", label: "Orbitron" },
   { id: "plain", label: "Plain" }
 ];
@@ -49,7 +51,7 @@ export const FONTS = [
 
 const DEFAULT_MODE = "system";
 const DEFAULT_ACCENT = "indigo";
-const DEFAULT_FONT = "orbitron";
+const DEFAULT_FONT = "gem";
 
 
 function read(key, fallback, allowed) {

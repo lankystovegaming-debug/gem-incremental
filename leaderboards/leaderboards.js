@@ -6,6 +6,8 @@ import {
   ensurePlayerAuth
 } from "../src/backend/auth.js";
 
+import { gemNameHtml } from "../src/ui/gemStyle.js";
+
 
 const leaderboardStatus =
   document.getElementById(
@@ -374,10 +376,9 @@ function renderRarestGem() {
 
           <div class="score gem-score">
             <strong>
-              ${escapeHtml(
-                player.gemName ??
-                "Unknown"
-              )}
+              ${player.gemName
+                ? gemNameHtml(player.gemName, escapeHtml)
+                : "Unknown"}
             </strong>
 
             <span>
