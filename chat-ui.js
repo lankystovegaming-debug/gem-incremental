@@ -12,6 +12,7 @@ import {
   subscribeToPrivateMessages,
   unsubscribeFromPrivateMessages
 } from "./src/backend/privateMessages.js";
+import { gemNameHtml } from "./src/ui/gemStyle.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -88,6 +89,21 @@ if (messagesEl && formEl && inputEl) {
     `;
   }
 
+  function systemMessageHtml(message) {
+    if (!message.roller_username || !message.gem_name) {
+      return escapeHtml(message.message);
+    }
+
+    const rarity = Number(message.rarity ?? 0);
+
+    return `<strong>${escapeHtml(
+      message.roller_username
+    )}</strong> rolled a rare ${gemNameHtml(
+      message.gem_name,
+      escapeHtml
+    )} — 1 in ${escapeHtml(rarity.toLocaleString("en-US"))}!`;
+  }
+
   function renderMessage(message, shouldScroll = true) {
     if (!message?.id) return;
 
@@ -133,7 +149,11 @@ if (messagesEl && formEl && inputEl) {
             message.username ?? "Unknown"
           )}`;
     } else if (isSystem) {
-      label = `<span class="chat-system-tag">[SYSTEM]</span>`;
+      label = message.roller_username
+        ? `<span class="chat-system-tag">[SYSTEM]</span> · ${escapeHtml(
+            message.roller_username
+          )}`
+        : `<span class="chat-system-tag">[SYSTEM]</span>`;
     } else {
       label = escapeHtml(message.username ?? "Unknown");
     }
@@ -161,7 +181,7 @@ if (messagesEl && formEl && inputEl) {
         </div>
 
         <div class="chat-message__text">
-          ${escapeHtml(message.message)}
+          ${isSystem ? systemMessageHtml(message) : escapeHtml(message.message)}
         </div>
       </div>
     `;
