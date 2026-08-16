@@ -2416,3 +2416,41 @@ a.btn--icon[aria-current="page"] {
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   DISPLAY FONT  (Settings → Appearance)
+
+   Players can pin the display font instead of the per-gem
+   styling. Default ("gem") keeps each gem's own font (see
+   PER-GEM STYLING / gemStyle.js). "orbitron" forces the classic
+   geometric face; "plain" uses the body font. Both override the
+   inline per-gem style with !important, and reset gradient text
+   so names stay visible in a solid colour.
+   ========================================================= */
+
+:root[data-font="plain"] {
+  --font-display: var(--font);
+}
+
+:root[data-font="orbitron"] .gem-styled,
+:root[data-font="orbitron"] .gem-reveal__name,
+:root[data-font="plain"] .gem-styled,
+:root[data-font="plain"] .gem-reveal__name {
+  font-style: normal !important;
+  letter-spacing: 0.01em !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--gem-color, currentColor) !important;
+  animation: none !important;
+}
+
+:root[data-font="orbitron"] .gem-styled,
+:root[data-font="orbitron"] .gem-reveal__name {
+  font-family: "Orbitron", "Exo 2", "Segoe UI", sans-serif !important;
+}
+
+:root[data-font="plain"] .gem-styled,
+:root[data-font="plain"] .gem-reveal__name {
+  font-family: var(--font) !important;
+}

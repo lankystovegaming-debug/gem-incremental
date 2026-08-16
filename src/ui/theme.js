@@ -13,6 +13,7 @@
 
 export const MODE_KEY = "gemIncremental.theme.mode";
 export const ACCENT_KEY = "gemIncremental.theme.accent";
+export const FONT_KEY = "gemIncremental.theme.font";
 
 
 export const MODES = [
@@ -37,8 +38,20 @@ export const ACCENTS = [
 ];
 
 
+// Display / gem-name font.
+//   gem      — each gem keeps its own hand-picked font (default)
+//   orbitron — the game's classic geometric face for every name
+//   plain    — the body font, for the calmest look
+export const FONTS = [
+  { id: "gem", label: "Per-gem" },
+  { id: "orbitron", label: "Orbitron" },
+  { id: "plain", label: "Plain" }
+];
+
+
 const DEFAULT_MODE = "system";
 const DEFAULT_ACCENT = "indigo";
+const DEFAULT_FONT = "gem";
 
 
 function read(key, fallback, allowed) {
@@ -71,6 +84,15 @@ export function getAccent() {
 }
 
 
+export function getFont() {
+  return read(
+    FONT_KEY,
+    DEFAULT_FONT,
+    FONTS.map((font) => font.id)
+  );
+}
+
+
 export function applyTheme() {
   const root = document.documentElement;
   const mode = getMode();
@@ -82,6 +104,7 @@ export function applyTheme() {
   }
 
   root.setAttribute("data-accent", getAccent());
+  root.setAttribute("data-font", getFont());
 }
 
 
@@ -111,6 +134,19 @@ export function setAccent(accent) {
 }
 
 
+export function setFont(font) {
+  try {
+    localStorage.setItem(FONT_KEY, font);
+  } catch {
+    // Ignore — see setMode().
+  }
+
+  applyTheme();
+
+  notify();
+}
+
+
 // ---------------------------------------------------------
 // CHANGE NOTIFICATIONS
 // ---------------------------------------------------------
@@ -127,14 +163,18 @@ export function onThemeChange(callback) {
 
 function notify() {
   for (const listener of listeners) {
-    listener({ mode: getMode(), accent: getAccent() });
+    listener({ mode: getMode(), accent: getAccent(), font: getFont() });
   }
 }
 
 
 // Keep other tabs in sync.
 window.addEventListener("storage", (event) => {
-  if (event.key === MODE_KEY || event.key === ACCENT_KEY) {
+  if (
+    event.key === MODE_KEY ||
+    event.key === ACCENT_KEY ||
+    event.key === FONT_KEY
+  ) {
     applyTheme();
 
     notify();
