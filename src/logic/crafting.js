@@ -198,9 +198,14 @@ export function isRequirementComplete(
   }
 
   if (requirement.type === "consumable") {
-    // Checked against deposit progress, not ownership: the potion is
-    // consumed when deposited (the server enforces the same).
-    return Number(progress[key] ?? 0) >= Number(requirement.amount ?? 0);
+    // Ownership-based: you just need to OWN the required potions — the
+    // server (craft_consumable_recipe) consumes them at craft time.
+    // (Consumables are NOT deposited; depositing them would empty your
+    // bag and then the craft's ownership check would fail.)
+    const owned = inventory.consumables?.find(
+      (item) => item.consumable_id === requirement.consumableId
+    );
+    return Number(owned?.quantity ?? 0) >= Number(requirement.amount ?? 0);
   }
 
   if (requirement.type === "lifetime-rolls") {
@@ -513,60 +518,13 @@ export function manuallyDepositRequirement(
 
   const progress = ensureRecipeProgress(craftingState, recipe);
 
-  if (requirement.type === "consumable") {
-    const key = getRequirementKey(requirement, requirementIndex);
-    const current = Number(progress[key] ?? 0);
-    const target = Number(requirement.amount ?? 0);
-    const owned = inventory.consumables?.find(
-      (item) => item.consumable_id === requirement.consumableId
-    );
-
-    if (!owned || current >= target || Number(owned.quantity ?? 0) <= 0) {
-      return false;
-    }
-
-    const move = Math.min(
-      Number(owned.quantity ?? 0),
-      target - current
-    );
-
-    progress[key] = current + move;
-    owned.quantity = Number(owned.quantity ?? 0) - move;
-    return move > 0;
-  }
-
+  // Consumables are owned, not deposited — nothing to deposit.
   if (
+    requirement.type === "consumable" ||
     requirement.type === "equipment" ||
     requirement.type === "lifetime-rolls"
   ) {
     return false;
-  }
-
-  // Consumables deposit from the player's bag into recipe progress.
-  if (requirement.type === "consumable") {
-    const progress = ensureRecipeProgress(craftingState, recipe);
-    const key = getRequirementKey(requirement, requirementIndex);
-    const current = Number(progress[key] ?? 0);
-    const target = Number(requirement.amount ?? 0);
-
-    const owned = inventory.consumables?.find(
-      (item) => item.consumable_id === requirement.consumableId
-    );
-
-    if (!owned || current >= target || Number(owned.quantity ?? 0) <= 0) {
-      return false;
-    }
-
-    const move = Math.min(Number(owned.quantity ?? 0), target - current);
-
-    if (move <= 0) {
-      return false;
-    }
-
-    progress[key] = current + move;
-    owned.quantity = Number(owned.quantity ?? 0) - move;
-
-    return true;
   }
 
   if (

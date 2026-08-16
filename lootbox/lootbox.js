@@ -105,7 +105,7 @@ function entryLabel(entry) {
 
 function renderWallet() {
   coinCount.textContent = formatCount(state.wallet.coins);
-  coinMoney.textContent = `1 coin = $100,000 · you have ${formatMoney(
+  coinMoney.textContent = `1 coin = $10,000 · you have ${formatMoney(
     state.wallet.money,
     { compact: true }
   )}`;
