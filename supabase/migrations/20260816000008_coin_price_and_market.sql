@@ -71,10 +71,10 @@ declare
   v_shares bigint; v_money double precision; v_last timestamptz;
   v_impact numeric; v_cost numeric := 0; v_proceeds numeric := 0;
   v_fee numeric := 0.02;
-  v_max_qty int := 100; v_hold_cap bigint := 10000;
+  v_max_qty int := 10000; v_hold_cap bigint := 10000000;
   v_cooldown interval := interval '3 seconds';
   v_baseline numeric := 10; v_band_lo numeric := 3; v_band_hi numeric := 30;
-  v_impact_per numeric := 0.001; v_revert numeric;
+  v_impact_per numeric := 0.00005; v_revert numeric;
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
   if p_action not in ('buy','sell') then raise exception 'invalid_action'; end if;
