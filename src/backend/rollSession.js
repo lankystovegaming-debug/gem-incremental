@@ -1,131 +1,115 @@
-import { invokeFunction } from "./invoke.js";
+import { supabase } from "./supabase.js";
 
+const HEARTBEAT_MS = 20_000;
+const LEASE_SECONDS = 45;
 
-// =========================================================
-// SINGLE ACTIVE ROLL TAB
-//
-// The server owns the lease. Each browser tab gets its own
-// sessionStorage UUID, so opening another tab creates a different
-// session ID. The client heartbeat is only a keep-alive request;
-// the roll Edge Function independently verifies the same lease
-// immediately before generating a roll.
-//
-// Heartbeat: every 25 seconds.
-// Server lease: 45 seconds.
-// =========================================================
+const sessionId =
+  globalThis.crypto?.randomUUID?.() ??
+  `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
 
-const HEARTBEAT_MS = 25_000;
+let active = false;
+let started = false;
+let timer = null;
+let inFlight = false;
 
-function getSessionId() {
-  const key = "gem_roll_session_id";
+const listeners = new Set();
 
-  let id = sessionStorage.getItem(key);
-
-  if (!id) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem(key, id);
+function emit() {
+  for (const listener of listeners) {
+    try {
+      listener(active);
+    } catch (error) {
+      console.error("Roll session listener failed:", error);
+    }
   }
-
-  return id;
 }
 
-export function createRollSession({ onActive, onInactive } = {}) {
-  const sessionId = getSessionId();
+export function getRollSessionId() {
+  return sessionId;
+}
 
-  let timer = null;
-  let stopped = false;
-  let active = false;
-  let requestInFlight = false;
+export function isRollSessionActive() {
+  return active;
+}
 
-  function setActive(next) {
-    if (active === next) {
-      return;
-    }
+export function onRollSessionChange(listener) {
+  listeners.add(listener);
 
-    active = next;
+  return () => listeners.delete(listener);
+}
 
-    if (active) {
-      onActive?.();
-    } else {
-      onInactive?.();
-    }
+async function heartbeat() {
+  if (inFlight) {
+    return active;
   }
 
-  async function heartbeat() {
-    if (stopped || requestInFlight) {
-      return active;
-    }
+  inFlight = true;
 
-    requestInFlight = true;
-
-    try {
-      const { data, error } = await invokeFunction(
-        "roll-session",
-        { sessionId }
-      );
-
-      if (error) {
-        // A server-side lease conflict is authoritative. Network errors
-        // are not treated as a loss of ownership because the current
-        // lease remains valid for a while.
-        if (error.code === "roll_session_active") {
-          setActive(false);
-        }
-
-        return active;
+  try {
+    const { data, error } = await supabase.rpc(
+      "heartbeat_roll_session",
+      {
+        p_session_id: sessionId,
+        p_lease_seconds: LEASE_SECONDS
       }
+    );
 
-      if (data?.active === true) {
-        setActive(true);
-      } else {
-        setActive(false);
-      }
-
-      return active;
-    } catch (error) {
+    if (error) {
       console.error("Roll session heartbeat failed:", error);
-      return active;
-    } finally {
-      requestInFlight = false;
-    }
-  }
-
-  async function start() {
-    if (stopped) {
+      active = false;
+      emit();
       return false;
     }
 
-    await heartbeat();
+    const nextActive = Boolean(data?.active);
 
-    timer = window.setInterval(() => {
-      heartbeat();
-    }, HEARTBEAT_MS);
-
-    return active;
-  }
-
-  function stop() {
-    stopped = true;
-
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
+    if (nextActive !== active) {
+      active = nextActive;
+      emit();
+    } else {
+      active = nextActive;
     }
-  }
 
-  function isActive() {
+    return active;
+  } catch (error) {
+    console.error("Roll session heartbeat failed:", error);
+    active = false;
+    emit();
+    return false;
+  } finally {
+    inFlight = false;
+  }
+}
+
+export async function startRollSession() {
+  if (started) {
     return active;
   }
 
-  async function refreshNow() {
-    return heartbeat();
+  started = true;
+
+  const result = await heartbeat();
+
+  timer = window.setInterval(() => {
+    heartbeat();
+  }, HEARTBEAT_MS);
+
+  return result;
+}
+
+export async function refreshRollSession() {
+  return heartbeat();
+}
+
+export function stopRollSession() {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
   }
 
-  return {
-    sessionId,
-    start,
-    stop,
-    refreshNow,
-    isActive
-  };
+  started = false;
+  active = false;
+  emit();
 }
