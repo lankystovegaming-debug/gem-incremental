@@ -2271,138 +2271,306 @@ a.btn--icon[aria-current="page"] {
 
 /* =========================================================
    ULTRA-RARE CINEMATIC REVEAL — 1/100k+ only
+
+   Desktop: true viewport takeover, ~7.2s.
+   Mobile/coarse pointer: true viewport takeover, ~8.2s.
+   The result stays readable while the world around it is hidden.
    ========================================================= */
 
-.stage__display.is-ultra-rare {
+html.is-cinematic-active {
+  overflow: hidden;
+}
+
+.stage__display.is-ultra-rare.is-cinematic {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  z-index: 99999;
   isolation: isolate;
   overflow: hidden;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--tier) 16%, transparent), transparent 30%),
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 38%),
+    #05060b;
+  box-shadow: none;
+}
+
+.stage__display.is-ultra-rare.is-cinematic::before {
+  width: 75vmin;
+  height: 75vmin;
+  top: 50%;
+  opacity: 1;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--tier) 35%, transparent),
+    transparent 68%
+  );
+  animation: cinematicCorePulse var(--cinematic-duration) ease-out both;
+}
+
+.stage__display.is-ultra-rare.is-cinematic .gem-reveal {
+  position: relative;
+  z-index: 8;
+  width: min(720px, 92vw);
+  text-align: center;
+  animation: cinematicReveal var(--cinematic-duration) cubic-bezier(.16,1,.3,1) both;
+}
+
+.stage__display.is-ultra-rare.is-cinematic .gem-reveal__art {
+  width: min(260px, 48vw);
+  height: min(260px, 48vw);
+  filter:
+    drop-shadow(0 0 20px color-mix(in srgb, var(--tier) 80%, transparent))
+    drop-shadow(0 0 65px color-mix(in srgb, var(--tier) 55%, transparent))
+    drop-shadow(0 0 130px color-mix(in srgb, var(--tier) 28%, transparent));
+  animation: cinematicGem 7.2s cubic-bezier(.16,1,.3,1) both;
+}
+
+.stage__display.is-ultra-rare.is-cinematic .gem-reveal__name {
+  position: relative;
+  color: var(--tier, var(--accent));
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--tier, var(--accent)) 90%, transparent),
+    0 0 35px color-mix(in srgb, var(--tier, var(--accent)) 70%, transparent),
+    0 0 80px color-mix(in srgb, var(--tier, var(--accent)) 45%, transparent);
+  animation: cinematicName var(--cinematic-duration) cubic-bezier(.16,1,.3,1) both;
 }
 
 .ultra-cutscene {
   position: absolute;
-  inset: -20%;
-  z-index: 0;
+  inset: 0;
+  z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0;
-}
-
-.is-cinematic .ultra-cutscene {
   opacity: 1;
+  background:
+    radial-gradient(ellipse at center, transparent 0 18%, rgba(0,0,0,.2) 55%, rgba(0,0,0,.76) 100%);
 }
 
-.ultra-cutscene__veil,
-.ultra-cutscene__stars,
-.ultra-cutscene__burst,
-.ultra-cutscene__ring,
-.ultra-cutscene__beam {
+.ultra-cutscene span {
   position: absolute;
-  left: 50%;
-  top: 50%;
   display: block;
+  pointer-events: none;
 }
 
 .ultra-cutscene__veil {
-  width: 180%;
-  height: 180%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, color-mix(in srgb, var(--tier) 20%, transparent), transparent 42%), radial-gradient(circle, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%);
-  animation: ultraVeil 4.2s ease-out both;
+  inset: -25%;
+  background:
+    conic-gradient(from 0deg at 50% 50%,
+      transparent 0 8%,
+      color-mix(in srgb, var(--tier) 20%, transparent) 10%,
+      transparent 16% 25%,
+      color-mix(in srgb, var(--accent) 18%, transparent) 28%,
+      transparent 35% 50%,
+      color-mix(in srgb, var(--tier) 20%, transparent) 55%,
+      transparent 63% 100%);
+  filter: blur(10px);
+  animation: cinematicVeil var(--cinematic-duration) linear both;
 }
 
 .ultra-cutscene__stars {
-  width: 140%;
-  height: 140%;
-  transform: translate(-50%, -50%);
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 85%, transparent) 0 1px, transparent 1.5px), radial-gradient(circle, color-mix(in srgb, var(--tier) 75%, transparent) 0 1px, transparent 1.5px);
-  background-size: 67px 67px, 113px 113px;
-  animation: ultraStars 4.2s linear both;
+  inset: -15%;
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--text) 95%, transparent) 0 1px, transparent 1.7px),
+    radial-gradient(circle, color-mix(in srgb, var(--tier) 90%, transparent) 0 1.2px, transparent 2px),
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 75%, transparent) 0 1px, transparent 1.8px);
+  background-size: 59px 59px, 97px 97px, 151px 151px;
+  animation: cinematicStars var(--cinematic-duration) linear both;
 }
 
 .ultra-cutscene__ring {
-  width: 80px;
-  height: 80px;
-  border: 2px solid color-mix(in srgb, var(--tier) 78%, var(--text) 22%);
+  left: 50%;
+  top: 50%;
+  width: 18vmin;
+  height: 18vmin;
+  border: 2px solid color-mix(in srgb, var(--tier) 85%, var(--text) 15%);
   border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0.15);
-  box-shadow: 0 0 22px color-mix(in srgb, var(--tier) 60%, transparent), inset 0 0 22px color-mix(in srgb, var(--tier) 30%, transparent);
+  transform: translate(-50%, -50%) scale(.05);
+  box-shadow:
+    0 0 25px color-mix(in srgb, var(--tier) 70%, transparent),
+    inset 0 0 35px color-mix(in srgb, var(--tier) 35%, transparent);
   opacity: 0;
 }
-
-.ultra-cutscene__ring--one { animation: ultraRing 2.8s 0.12s cubic-bezier(.16,1,.3,1) both; }
-.ultra-cutscene__ring--two { animation: ultraRing 3.1s 0.32s cubic-bezier(.16,1,.3,1) both; }
-.ultra-cutscene__ring--three { animation: ultraRing 3.5s 0.52s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--one { animation: cinematicRing 4.8s .35s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--two { animation: cinematicRing 5.3s .7s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--three { animation: cinematicRing 5.9s 1.05s cubic-bezier(.16,1,.3,1) both; }
 
 .ultra-cutscene__beam {
-  width: 12px;
-  height: 150%;
-  transform: translate(-50%, -50%) rotate(25deg) scaleY(0);
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 180%;
+  transform: translate(-50%, -50%) rotate(24deg) scaleY(0);
   transform-origin: center;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--tier) 75%, var(--text) 25%), transparent);
-  filter: blur(2px);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--tier) 90%, var(--text) 10%),
+    color-mix(in srgb, var(--text) 90%, transparent),
+    transparent
+  );
+  filter: blur(3px);
   opacity: 0;
 }
-
-.ultra-cutscene__beam--one { animation: ultraBeam 1.7s 0.3s ease-out both; }
-.ultra-cutscene__beam--two { animation: ultraBeam 1.9s 0.55s ease-out both reverse; transform: translate(-50%, -50%) rotate(-25deg) scaleY(0); }
+.ultra-cutscene__beam--one { animation: cinematicBeam 2.2s .65s ease-out both; }
+.ultra-cutscene__beam--two {
+  transform: translate(-50%, -50%) rotate(-24deg) scaleY(0);
+  animation: cinematicBeam 2.4s 1.05s ease-out both reverse;
+}
 
 .ultra-cutscene__burst {
-  width: 20px;
-  height: 20px;
-  transform: translate(-50%, -50%) scale(0);
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--text);
-  box-shadow: 0 0 18px 8px color-mix(in srgb, var(--tier) 70%, transparent), 0 0 70px 22px color-mix(in srgb, var(--tier) 45%, transparent);
-  animation: ultraBurst 1.4s 0.42s cubic-bezier(.16,1,.3,1) both;
+  box-shadow:
+    0 0 20px 8px color-mix(in srgb, var(--tier) 80%, transparent),
+    0 0 90px 35px color-mix(in srgb, var(--tier) 50%, transparent),
+    0 0 180px 70px color-mix(in srgb, var(--accent) 25%, transparent);
+  transform: translate(-50%, -50%) scale(0);
+  animation: cinematicBurst 2s 1.35s cubic-bezier(.16,1,.3,1) both;
 }
 
-.is-ultra-rare .gem-reveal {
-  z-index: 2;
+.ultra-cutscene__flash {
+  inset: 0;
+  background: white;
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: cinematicFlash 7.2s ease-out both;
 }
 
-.is-ultra-rare .gem-reveal__name {
-  animation: ultraName 4.2s 0.15s cubic-bezier(.16,1,.3,1) both;
+.ultra-cutscene__vignette {
+  inset: 0;
+  box-shadow: inset 0 0 18vmin 5vmin rgba(0,0,0,.72);
+  animation: cinematicVignette 7.2s ease-out both;
 }
 
-.is-ultra-rare .gem-reveal__art {
-  filter: drop-shadow(0 0 20px color-mix(in srgb, var(--tier) 72%, transparent)) drop-shadow(0 0 55px color-mix(in srgb, var(--tier) 42%, transparent));
+.ultra-cutscene__shards {
+  inset: -10%;
+  background:
+    repeating-conic-gradient(
+      from 7deg at 50% 50%,
+      transparent 0 2deg,
+      color-mix(in srgb, var(--tier) 25%, transparent) 2.3deg 2.7deg,
+      transparent 3deg 11deg
+    );
+  filter: blur(1px);
+  animation: cinematicShards 6.8s cubic-bezier(.16,1,.3,1) both;
 }
 
-@keyframes ultraVeil {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
-  18% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: .72; transform: translate(-50%, -50%) scale(1.08); }
+.is-ultra-rare .gem-reveal__outcome,
+.is-ultra-rare .gem-reveal__facts,
+.is-ultra-rare .badge--tier,
+.is-ultra-rare .page-head__sub {
+  position: relative;
+  z-index: 9;
 }
 
-@keyframes ultraStars {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(.5) rotate(0deg); }
-  18% { opacity: .9; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(18deg); }
+@keyframes cinematicCorePulse {
+  0%, 100% { opacity: .15; transform: translate(-50%, -50%) scale(.45); }
+  22% { opacity: .85; transform: translate(-50%, -50%) scale(1); }
+  55% { opacity: .55; transform: translate(-50%, -50%) scale(1.25); }
 }
 
-@keyframes ultraRing {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(.15) rotate(0deg); }
-  16% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(7.5) rotate(160deg); }
+@keyframes cinematicVeil {
+  0% { opacity: 0; transform: rotate(0deg) scale(.65); }
+  12% { opacity: 1; }
+  100% { opacity: .45; transform: rotate(95deg) scale(1.35); }
 }
 
-@keyframes ultraBeam {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(0); }
-  35% { opacity: .75; transform: translate(-50%, -50%) rotate(25deg) scaleY(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(1.2); }
+@keyframes cinematicStars {
+  0% { opacity: 0; transform: scale(.55) rotate(0deg); }
+  16% { opacity: .9; }
+  65% { opacity: .75; }
+  100% { opacity: 0; transform: scale(1.65) rotate(22deg); }
 }
 
-@keyframes ultraBurst {
+@keyframes cinematicRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.05) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(8.5) rotate(220deg); }
+}
+
+@keyframes cinematicBeam {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(24deg) scaleY(0); }
+  22% { opacity: .9; transform: translate(-50%, -50%) rotate(24deg) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(24deg) scaleY(1.15); }
+}
+
+@keyframes cinematicBurst {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-  25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(9); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  45% { opacity: .75; transform: translate(-50%, -50%) scale(3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(13); }
 }
 
-@keyframes ultraName {
-  0% { opacity: 0; transform: translateY(18px) scale(.72); filter: blur(10px) brightness(2.5); }
-  35% { opacity: 1; transform: translateY(0) scale(1.08); filter: blur(0) brightness(1.5); }
-  55% { transform: translateY(0) scale(1); filter: brightness(1.15); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+@keyframes cinematicFlash {
+  0%, 16%, 100% { opacity: 0; }
+  18% { opacity: .92; }
+  21% { opacity: 0; }
+  48% { opacity: .22; }
+  50% { opacity: 0; }
+}
+
+@keyframes cinematicVignette {
+  0% { opacity: .2; }
+  20% { opacity: .75; }
+  100% { opacity: .95; }
+}
+
+@keyframes cinematicShards {
+  0% { opacity: 0; transform: scale(.65) rotate(0deg); }
+  18% { opacity: .75; }
+  100% { opacity: 0; transform: scale(1.4) rotate(-18deg); }
+}
+
+@keyframes cinematicGem {
+  0% { opacity: 0; transform: scale(.18) rotate(-8deg); filter: blur(14px) brightness(3); }
+  22% { opacity: 1; transform: scale(.72) rotate(0); filter: blur(0) brightness(2); }
+  42% { transform: scale(1.06); filter: blur(0) brightness(1.35); }
+  58% { transform: scale(.98); filter: blur(0) brightness(1.1); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
+}
+
+@keyframes cinematicReveal {
+  0% { opacity: 0; transform: translateY(40px) scale(.78); filter: blur(14px); }
+  32% { opacity: 1; transform: translateY(0) scale(1.02); filter: blur(0); }
+  55%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: none; }
+}
+
+@keyframes cinematicName {
+  0% { opacity: 0; transform: translateY(26px) scale(.65); filter: blur(12px) brightness(3); letter-spacing: .08em; }
+  35% { opacity: 1; transform: translateY(0) scale(1.12); filter: blur(0) brightness(1.7); letter-spacing: .02em; }
+  58%, 100% { opacity: 1; transform: translateY(0) scale(1); filter: none; letter-spacing: normal; }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .stage__display.is-ultra-rare.is-cinematic .gem-reveal {
+    width: 94vw;
+  }
+
+  .stage__display.is-ultra-rare.is-cinematic .gem-reveal__art {
+    width: min(230px, 54vw);
+    height: min(230px, 54vw);
+  }
+
+  .ultra-cutscene__ring {
+    width: 24vmin;
+    height: 24vmin;
+  }
+
+  .stage__display.is-ultra-rare.is-cinematic .gem-reveal__name {
+    font-size: clamp(1.9rem, 9vw, 3.5rem);
+  }
+
+  .stage__display.is-ultra-rare.is-cinematic {
+    min-height: 100dvh;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2420,6 +2588,16 @@ a.btn--icon[aria-current="page"] {
 
 /* =========================================================
    DISPLAY FONT  (Settings → Appearance)
+
+   Players can pin the display font instead of the per-gem
+   styling. Default ("gem") keeps each gem's own font (see
+   PER-GEM STYLING / gemStyle.js). "orbitron" forces the classic
+   geometric face; "plain" uses the body font. Both override
+   the inline per-gem style with !important, and reset gradient text
+   so names stay visible in a solid colour.
+   ========================================================= */
+
+  (Settings → Appearance)
 
    Players can pin the display font instead of the per-gem
    styling. Default ("gem") keeps each gem's own font (see
