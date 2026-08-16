@@ -2234,13 +2234,27 @@ a.btn--icon[aria-current="page"] {
    ========================================================= */
 
 .gem-styled {
-  display: inline;
+  --gem-readable: color-mix(in srgb, var(--gem-color, currentColor) 72%, var(--text) 28%);
+  display: inline-block;
   background-repeat: no-repeat;
-  transition: filter 0.15s ease;
+  color: var(--gem-readable);
+  text-shadow:
+    0 0 7px color-mix(in srgb, var(--gem-glow, transparent) 65%, transparent),
+    0 1px 1px color-mix(in srgb, var(--text) 35%, transparent);
+  transition: filter 0.2s ease, transform 0.2s ease;
 }
 
 .gem-styled--animated {
-  animation: gemShimmer 3.5s ease-in-out infinite;
+  animation: gemNamePulse 2.8s ease-in-out infinite;
+}
+
+.gem-styled--gradient {
+  background-size: 240% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gemShimmer 2.6s ease-in-out infinite, gemNamePulse 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gem-glow, transparent) 55%, transparent));
 }
 
 @keyframes gemShimmer {
@@ -2249,8 +2263,156 @@ a.btn--icon[aria-current="page"] {
   100% { background-position: 0% center; }
 }
 
+@keyframes gemNamePulse {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(0.98); }
+  50% { transform: translateY(-1px) scale(1.025); filter: brightness(1.16); }
+}
+
+
+/* =========================================================
+   ULTRA-RARE CINEMATIC REVEAL — 1/100k+ only
+   ========================================================= */
+
+.stage__display.is-ultra-rare {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.ultra-cutscene {
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.is-cinematic .ultra-cutscene {
+  opacity: 1;
+}
+
+.ultra-cutscene__veil,
+.ultra-cutscene__stars,
+.ultra-cutscene__burst,
+.ultra-cutscene__ring,
+.ultra-cutscene__beam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+}
+
+.ultra-cutscene__veil {
+  width: 180%;
+  height: 180%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--tier) 20%, transparent), transparent 42%), radial-gradient(circle, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%);
+  animation: ultraVeil 4.2s ease-out both;
+}
+
+.ultra-cutscene__stars {
+  width: 140%;
+  height: 140%;
+  transform: translate(-50%, -50%);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 85%, transparent) 0 1px, transparent 1.5px), radial-gradient(circle, color-mix(in srgb, var(--tier) 75%, transparent) 0 1px, transparent 1.5px);
+  background-size: 67px 67px, 113px 113px;
+  animation: ultraStars 4.2s linear both;
+}
+
+.ultra-cutscene__ring {
+  width: 80px;
+  height: 80px;
+  border: 2px solid color-mix(in srgb, var(--tier) 78%, var(--text) 22%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.15);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--tier) 60%, transparent), inset 0 0 22px color-mix(in srgb, var(--tier) 30%, transparent);
+  opacity: 0;
+}
+
+.ultra-cutscene__ring--one { animation: ultraRing 2.8s 0.12s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--two { animation: ultraRing 3.1s 0.32s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--three { animation: ultraRing 3.5s 0.52s cubic-bezier(.16,1,.3,1) both; }
+
+.ultra-cutscene__beam {
+  width: 12px;
+  height: 150%;
+  transform: translate(-50%, -50%) rotate(25deg) scaleY(0);
+  transform-origin: center;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--tier) 75%, var(--text) 25%), transparent);
+  filter: blur(2px);
+  opacity: 0;
+}
+
+.ultra-cutscene__beam--one { animation: ultraBeam 1.7s 0.3s ease-out both; }
+.ultra-cutscene__beam--two { animation: ultraBeam 1.9s 0.55s ease-out both reverse; transform: translate(-50%, -50%) rotate(-25deg) scaleY(0); }
+
+.ultra-cutscene__burst {
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 18px 8px color-mix(in srgb, var(--tier) 70%, transparent), 0 0 70px 22px color-mix(in srgb, var(--tier) 45%, transparent);
+  animation: ultraBurst 1.4s 0.42s cubic-bezier(.16,1,.3,1) both;
+}
+
+.is-ultra-rare .gem-reveal {
+  z-index: 2;
+}
+
+.is-ultra-rare .gem-reveal__name {
+  animation: ultraName 4.2s 0.15s cubic-bezier(.16,1,.3,1) both;
+}
+
+.is-ultra-rare .gem-reveal__art {
+  filter: drop-shadow(0 0 20px color-mix(in srgb, var(--tier) 72%, transparent)) drop-shadow(0 0 55px color-mix(in srgb, var(--tier) 42%, transparent));
+}
+
+@keyframes ultraVeil {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: .72; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes ultraStars {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.5) rotate(0deg); }
+  18% { opacity: .9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(18deg); }
+}
+
+@keyframes ultraRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.15) rotate(0deg); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(7.5) rotate(160deg); }
+}
+
+@keyframes ultraBeam {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(0); }
+  35% { opacity: .75; transform: translate(-50%, -50%) rotate(25deg) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(1.2); }
+}
+
+@keyframes ultraBurst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(9); }
+}
+
+@keyframes ultraName {
+  0% { opacity: 0; transform: translateY(18px) scale(.72); filter: blur(10px) brightness(2.5); }
+  35% { opacity: 1; transform: translateY(0) scale(1.08); filter: blur(0) brightness(1.5); }
+  55% { transform: translateY(0) scale(1); filter: brightness(1.15); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gem-styled--animated {
+  .gem-styled--animated,
+  .gem-styled--gradient {
     animation: none;
+  }
+
+  .ultra-cutscene *,
+  .is-ultra-rare .gem-reveal__name {
+    animation: none !important;
   }
 }

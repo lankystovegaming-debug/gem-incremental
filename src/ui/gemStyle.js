@@ -425,7 +425,8 @@ export function gemStyleAttr(name) {
     `font-weight:${s.weight}`,
     `font-style:${s.style ?? "normal"}`,
     `letter-spacing:${s.spacing ?? "0"}`,
-    `color:${s.color}`
+    `--gem-color:${s.color}`,
+    `--gem-glow:${s.glow ?? "transparent"}`
   ];
 
   if (s.gradient) {
@@ -458,7 +459,8 @@ export function gemNameHtml(name, escapeHtml, extraClass = "") {
 
   const className = [
     "gem-styled",
-    isGradient ? "gem-styled--animated" : "",
+    "gem-styled--animated",
+    isGradient ? "gem-styled--gradient" : "",
     extraClass
   ]
     .filter(Boolean)
