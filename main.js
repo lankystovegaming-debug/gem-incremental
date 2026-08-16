@@ -283,24 +283,77 @@ function stopCooldown() {
 // GEM REVEAL
 // =========================================================
 
+function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration) {
+  const existing = document.getElementById("ultra-cutscene-overlay");
+  existing?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "ultra-cutscene-overlay";
+  overlay.className = `ultra-cutscene-overlay ultra-scene-${visualVariant}`;
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.style.setProperty("--gem-hue", `${visualHue}`);
+  overlay.style.setProperty("--gem-speed", visualSpeed);
+  overlay.style.setProperty("--cinematic-duration", `${duration}ms`);
+
+  const sceneMarkup = [
+    // 0 — Eclipse
+    `<span class="scene__eclipse"></span><span class="scene__corona"></span><span class="scene__orbit scene__orbit-a"></span><span class="scene__orbit scene__orbit-b"></span><span class="scene__stars"></span><span class="scene__particles"></span>`,
+    // 1 — Celestial gate
+    `<span class="scene__gate scene__gate-a"></span><span class="scene__gate scene__gate-b"></span><span class="scene__gate scene__gate-c"></span><span class="scene__constellation"></span><span class="scene__comets"></span>`,
+    // 2 — Prism fracture
+    `<span class="scene__prism"></span><span class="scene__fracture scene__fracture-a"></span><span class="scene__fracture scene__fracture-b"></span><span class="scene__rainbow"></span><span class="scene__shards"></span>`,
+    // 3 — Void rift
+    `<span class="scene__rift"></span><span class="scene__rift-ring"></span><span class="scene__tentacles"></span><span class="scene__void-stars"></span><span class="scene__shockwaves"></span>`,
+    // 4 — Divine beam
+    `<span class="scene__sky"></span><span class="scene__beam scene__beam-a"></span><span class="scene__beam scene__beam-b"></span><span class="scene__beam scene__beam-c"></span><span class="scene__halo"></span><span class="scene__feathers"></span>`,
+    // 5 — Arcane spell
+    `<span class="scene__magic-circle scene__magic-circle-a"></span><span class="scene__magic-circle scene__magic-circle-b"></span><span class="scene__runes"></span><span class="scene__sigils"></span><span class="scene__arcane-sparks"></span>`,
+    // 6 — Supernova
+    `<span class="scene__supernova"></span><span class="scene__shockwave scene__shockwave-a"></span><span class="scene__shockwave scene__shockwave-b"></span><span class="scene__solar-flare"></span><span class="scene__debris"></span>`,
+    // 7 — Crystal cathedral
+    `<span class="scene__cathedral"></span><span class="scene__crystal-cracks"></span><span class="scene__crystal-rays"></span><span class="scene__floating-gems"></span><span class="scene__dust"></span>`,
+    // 8 — Galaxy spiral
+    `<span class="scene__galaxy"></span><span class="scene__galaxy-core"></span><span class="scene__galaxy-arms"></span><span class="scene__nebula"></span><span class="scene__stars"></span>`,
+    // 9 — Reality collapse
+    `<span class="scene__grid"></span><span class="scene__collapse"></span><span class="scene__glitch-rings"></span><span class="scene__energy-blades"></span><span class="scene__afterimage"></span>`
+  ][visualVariant];
+
+  overlay.innerHTML = `
+    <div class="scene__backdrop"></div>
+    <div class="scene__world">${sceneMarkup}</div>
+    <div class="scene__flash"></div>
+    <div class="scene__vignette"></div>
+    <div class="scene__scanlines"></div>
+    <div class="scene__reveal">
+      <div class="scene__gem">${icons.gem}</div>
+      <div class="scene__tier">${escapeHtml(tier.name)}</div>
+      <h2 class="scene__name">${gemNameHtml(gemName, escapeHtml)}</h2>
+      <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
+      <div class="scene__outcome">${outcome.icon}${escapeHtml(outcome.text)}</div>
+    </div>
+    <div class="scene__letterbox scene__letterbox-top"></div>
+    <div class="scene__letterbox scene__letterbox-bottom"></div>
+  `;
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add("is-playing"));
+  return overlay;
+}
+
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
-
   const rarity = Number(data.gem.rarity ?? 0);
   const isUltraRare = rarity >= 100000;
   const isEpicRollEffect = rarity >= 10000 && !isUltraRare;
 
-  // Every gem gets a deterministic visual identity. The same gem always
-  // produces the same palette/animation family, while different gems feel
-  // genuinely different without maintaining a giant per-gem stylesheet.
   const gemName = String(data.gem.name ?? "Gem");
   let gemHash = 0;
   for (let i = 0; i < gemName.length; i += 1) {
     gemHash = (gemHash * 31 + gemName.charCodeAt(i)) >>> 0;
   }
-  const visualVariant = gemHash % 8;
+  const visualVariant = gemHash % 10;
   const visualHue = gemHash % 360;
-  const visualSpeed = (0.82 + ((gemHash >>> 8) % 35) / 100).toFixed(2);
+  const visualSpeed = (0.78 + ((gemHash >>> 8) % 48) / 100).toFixed(2);
 
   gemStage.className = [
     "stage__display",
@@ -333,90 +386,37 @@ function renderRoll(data, outcome) {
         <span class="epic-roll-effect__flash"></span>
       </div>
     ` : ""}
-    ${isUltraRare ? `
-      <div class="ultra-cutscene" aria-hidden="true">
-        <span class="ultra-cutscene__veil"></span>
-        <span class="ultra-cutscene__stars"></span>
-        <span class="ultra-cutscene__stars ultra-cutscene__stars--2"></span>
-        <span class="ultra-cutscene__stars ultra-cutscene__stars--3"></span>
-        <span class="ultra-cutscene__shards"></span>
-        <span class="ultra-cutscene__ring ultra-cutscene__ring--one"></span>
-        <span class="ultra-cutscene__ring ultra-cutscene__ring--two"></span>
-        <span class="ultra-cutscene__ring ultra-cutscene__ring--three"></span>
-        <span class="ultra-cutscene__ring ultra-cutscene__ring--four"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--one"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--two"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--three"></span>
-        <span class="ultra-cutscene__beam ultra-cutscene__beam--four"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--one"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--two"></span>
-        <span class="ultra-cutscene__orbit ultra-cutscene__orbit--three"></span>
-        <span class="ultra-cutscene__runes"></span>
-        <span class="ultra-cutscene__energy"></span>
-        <span class="ultra-cutscene__core"></span>
-        <span class="ultra-cutscene__burst"></span>
-        <span class="ultra-cutscene__flash"></span>
-        <span class="ultra-cutscene__vignette"></span>
-      </div>
-    ` : ""}
     <div class="gem-reveal">
       <div class="gem-reveal__art">${icons.gem}</div>
-
       <span class="badge badge--tier">${tier.name}</span>
-
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
-
       <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
-
       <div class="gem-reveal__facts">
-        <div class="gem-fact">
-          <span class="gem-fact__label">Weight</span>
-          <span class="gem-fact__value">${formatWeight(data.finalWeight)}</span>
-        </div>
-
-        <div class="gem-fact">
-          <span class="gem-fact__label">Multiplier</span>
-          <span class="gem-fact__value">${formatMultiplier(
-            data.weightMultiplier
-          )}</span>
-        </div>
-
-        <div class="gem-fact">
-          <span class="gem-fact__label">Value</span>
-          <span class="gem-fact__value">${formatMoney(data.value)}</span>
-        </div>
+        <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
+        <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
+        <div class="gem-fact"><span class="gem-fact__label">Value</span><span class="gem-fact__value">${formatMoney(data.value)}</span></div>
       </div>
-
-      <p class="gem-reveal__outcome">${outcome.icon}${escapeHtml(
-        outcome.text
-      )}</p>
+      <p class="gem-reveal__outcome">${outcome.icon}${escapeHtml(outcome.text)}</p>
     </div>
   `;
 
-  if (!getSettings().rollAnimations) {
-    return Promise.resolve();
-  }
-
-  // Restart the reveal animation on every roll.
+  if (!getSettings().rollAnimations) return Promise.resolve();
   gemStage.classList.add("is-animating");
 
-  // 1/10k+ gets the upgraded roll effect; 1/100k+ replaces it with the
-  // full cinematic. Lower rarities keep the lighter legacy reveal.
-  if (isEpicRollEffect || isUltraRare) {
-    gemStage.classList.add("is-big");
-  }
+  if (isEpicRollEffect || isUltraRare) gemStage.classList.add("is-big");
 
   if (isUltraRare) {
     const duration = cinematicDuration();
-
     cinematicActive = true;
     document.documentElement.classList.add("is-cinematic-active");
     gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
     gemStage.classList.add("is-cinematic");
+    const overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
 
-    // The CSS owns the visuals; JS only owns the lock/timing.
     return new Promise((resolve) => {
       cinematicTimer = setTimeout(() => {
+        overlay?.classList.remove("is-playing");
+        setTimeout(() => overlay?.remove(), 250);
         gemStage.classList.remove("is-animating", "is-big", "is-cinematic", "is-ultra-rare");
         gemStage.style.removeProperty("--cinematic-duration");
         gemStage.style.removeProperty("--gem-hue");
@@ -432,10 +432,8 @@ function renderRoll(data, outcome) {
     gemStage.style.removeProperty("--gem-hue");
     gemStage.style.removeProperty("--gem-speed");
   }, isEpicRollEffect ? 3300 : 950);
-
   return Promise.resolve();
 }
-
 
 function addHistory(data, note) {
   const tier = rarityTier(data.gem.rarity);
