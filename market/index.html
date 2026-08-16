@@ -63,13 +63,13 @@
       </div>
 
       <div class="mkt-trade">
-        <input type="number" id="mktQty" min="1" max="100" step="1" value="10" aria-label="Shares to trade">
+        <input type="number" id="mktQty" min="1" max="10000" step="1" value="10" aria-label="Shares to trade">
         <button class="btn btn--primary" id="mktBuy" type="button">Buy</button>
         <button class="btn btn--danger" id="mktSell" type="button">Sell</button>
       </div>
 
       <p class="mkt-note">
-        2% fee each way · max 100 / trade · a few seconds between trades.
+        2% fee each way · max 10,000 / trade · a few seconds between trades.
         The price drifts back toward its baseline, so it can't be pumped.
       </p>
       <p class="account-status" id="mktStatus"></p>
