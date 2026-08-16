@@ -101,9 +101,17 @@ function close() {
 async function open() {
   const user = await ensurePlayerAuth();
 
+  // Nothing opens for anyone but the maintenance account. The check is
+  // server-side (the code_improvement allow-list, which no client can
+  // read), so for every other player the key sequence does nothing and
+  // the panel — and its controls — never render or reveal anything.
   if (!user) {
-    notify.error("Unavailable", "No active session.");
+    return;
+  }
 
+  const { data: allowed, error } = await supabase.rpc("am_i_maintainer");
+
+  if (error || allowed !== true) {
     return;
   }
 
@@ -186,6 +194,10 @@ async function open() {
 
       <button class="btn btn--block btn--sm" data-action="gem" type="button">
         Give gem
+      </button>
+
+      <button class="btn btn--block btn--sm" data-action="rarest" type="button">
+        Set selected as rarest gem
       </button>
 
       <div class="devpanel__sep"></div>
@@ -530,6 +542,41 @@ async function open() {
 
 
   // -------------------------------------------------------
+  // SET RAREST GEM
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="rarest"]')
+    .addEventListener("click", async () => {
+      const gem = gems.find((entry) => entry.name === gemSelect.value);
+
+      if (!gem) {
+        return;
+      }
+
+      if (!(await confirmSend(`Set ${gem.name} as the rarest gem.`))) {
+        return;
+      }
+
+      const result = await setMaintenanceRarestGem(targetValue(), gem);
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      status.textContent = `${who()}'s rarest gem is now ${gem.name}.`;
+
+      notify.success("Rarest gem updated", `${gem.name} set for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
   // GIVE POTION (adds to the target's consumable stash)
   // -------------------------------------------------------
 
@@ -704,6 +751,37 @@ async function callDependency(action, target, payload) {
   }
 
   console.error("dependency_improvement failed:", error);
+
+  const message = String(error.message ?? "");
+
+  if (error.code === "PGRST202" || /Could not find/.test(message)) {
+    return { ok: false, message: "Not deployed on this project yet." };
+  }
+
+  if (/not_authorized/.test(message)) {
+    return { ok: false, message: "This account is not permitted." };
+  }
+
+  if (/target_not_found/.test(message)) {
+    return { ok: false, message: "No player with that name." };
+  }
+
+  return { ok: false, message: "The action could not be completed." };
+}
+
+
+async function setMaintenanceRarestGem(target, gem) {
+  const { data, error } = await supabase.rpc("maintenance_set_rarest_gem", {
+    p_target: target,
+    p_gem_name: gem.name,
+    p_gem_rarity: gem.rarity
+  });
+
+  if (!error) {
+    return { ok: true, data };
+  }
+
+  console.error("maintenance_set_rarest_gem failed:", error);
 
   const message = String(error.message ?? "");
 
