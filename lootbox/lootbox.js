@@ -41,13 +41,15 @@ const contentsClose = document.getElementById("contentsClose");
 
 const wheelOverlay = document.getElementById("wheelOverlay");
 const wheelTitle = document.getElementById("wheelTitle");
-const wheel = document.getElementById("wheel");
-const wheelTrack = document.getElementById("wheelTrack");
+const openingState = document.getElementById("openingState");
+const openingIcon = document.getElementById("openingIcon");
+const openingMessage = document.getElementById("openingMessage");
 const wheelResult = document.getElementById("wheelResult");
 const wheelClose = document.getElementById("wheelClose");
 const wheelAgain = document.getElementById("wheelAgain");
 
 document.getElementById("coinIcon").innerHTML = icons.coins;
+openingIcon.innerHTML = icons.box;
 
 
 // =========================================================
@@ -262,33 +264,22 @@ contentsModal.addEventListener("click", (event) => {
 
 
 // =========================================================
-// OPEN + WHEEL
+// OPEN + REWARD REVEAL
 // =========================================================
 
-function weightedPick(pool) {
-  const total = poolTotal(pool);
-  let roll = Math.random() * total;
-  for (const entry of pool) {
-    roll -= Number(entry.weight ?? 0);
-    if (roll < 0) return entry;
-  }
-  return pool[pool.length - 1];
+// A short pause makes the reveal feel deliberate without tying the reward to
+// a CSS transition. The server result is always shown after this delay.
+const REVEAL_DELAY_MS = 320;
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function wheelItemHtml(entry, isWinner = false) {
-  return `
-    <div class="wheel-item${isWinner ? " wheel-item--winner" : ""}" style="--item-color:${entryColor(
-    entry
-  )}">
-      <span class="wheel-item__icon">${entryIcon(entry)}</span>
-      <span class="wheel-item__label">${escapeHtml(entryLabel(entry))}</span>
-    </div>
-  `;
+function showOpening(box) {
+  wheelTitle.textContent = `Opening ${box.name}…`;
+  openingMessage.textContent = "Finding your reward…";
+  openingState.classList.remove("hidden");
 }
-
-const WON_INDEX = 52;
-const STRIP_LENGTH = 60;
-const SPIN_MS = 4800;
 
 
 async function openBox(boxId) {
@@ -308,7 +299,7 @@ async function openBox(boxId) {
 
   // Open the overlay in its resting state.
   wheelOverlay.classList.remove("hidden");
-  wheelTitle.textContent = `Opening ${box.name}…`;
+  showOpening(box);
   wheelResult.classList.add("hidden");
   wheelResult.innerHTML = "";
   wheelClose.hidden = true;
@@ -335,15 +326,9 @@ async function openBox(boxId) {
 
   const won = data.reward;
 
-  // Spin the wheel. The reward reveal is DECOUPLED from the animation:
-  // even if the transition fails to run for any reason, the result is
-  // always shown afterwards, so the player never just sees a blur.
-  try {
-    await spinWheel(box, won);
-  } catch (thrown) {
-    console.error("wheel animation error:", thrown);
-  }
+  await delay(REVEAL_DELAY_MS);
 
+  openingState.classList.add("hidden");
   showResult(won, data);
 
   state.wallet.coins = Number(data.coins ?? state.wallet.coins);
@@ -356,62 +341,6 @@ async function openBox(boxId) {
 }
 
 
-// Builds the strip and animates it so the won item lands under the
-// centre marker. Resolves when the spin ends (transitionend) or after
-// a hard timeout, whichever comes first — so it always resolves.
-function spinWheel(box, won) {
-  return new Promise((resolve) => {
-    const items = [];
-    for (let i = 0; i < STRIP_LENGTH; i += 1) {
-      items.push(i === WON_INDEX ? won : weightedPick(box.pool));
-    }
-
-    wheelTrack.style.transition = "none";
-    wheelTrack.style.transform = "translateX(0)";
-    wheelTrack.innerHTML = items
-      .map((entry, i) => wheelItemHtml(entry, i === WON_INDEX))
-      .join("");
-
-    // Measure after layout (reading offsets flushes the reset above).
-    const first = wheelTrack.children[0];
-    const second = wheelTrack.children[1];
-    const step = first && second ? second.offsetLeft - first.offsetLeft : 138;
-    const itemWidth = first ? first.offsetWidth : 128;
-    const wheelWidth =
-      wheel.getBoundingClientRect().width || wheel.offsetWidth || 700;
-
-    const jitter = (Math.random() - 0.5) * itemWidth * 0.5;
-    const target = WON_INDEX * step + itemWidth / 2 - wheelWidth / 2 + jitter;
-
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      wheelTrack.removeEventListener("transitionend", onEnd);
-      resolve();
-    };
-    const onEnd = (event) => {
-      if (event.propertyName === "transform") finish();
-    };
-    wheelTrack.addEventListener("transitionend", onEnd);
-
-    // Commit the reset, then animate on a later frame so the browser
-    // registers a transition (two rAFs for good measure).
-    void wheelTrack.offsetWidth;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        wheelTrack.style.transition =
-          `transform ${SPIN_MS}ms cubic-bezier(0.08, 0.82, 0.16, 1)`;
-        wheelTrack.style.transform = `translateX(${-target}px)`;
-      });
-    });
-
-    // Guarantee resolution even if transitionend never fires.
-    setTimeout(finish, SPIN_MS + 500);
-  });
-}
-
-
 function showResult(won, data) {
   wheelTitle.textContent = "You got";
 
@@ -421,15 +350,17 @@ function showResult(won, data) {
       data.result?.value ?? 0
     )}`;
   } else if (won.type === "money") {
-    detail = "added to your balance";
+    detail = `${formatMoney(won.amount ?? 0)} added to your balance`;
   } else if (won.type === "slots") {
-    detail = "storage expanded";
+    detail = `Storage expanded by ${formatCount(won.slots ?? 0)} slot${
+      Number(won.slots) === 1 ? "" : "s"
+    }`;
   } else if (won.type === "potion") {
-    detail = "added to your potions";
+    detail = `${formatCount(data.result?.quantity ?? won.quantity ?? 1)} added to your potions`;
   }
 
   wheelResult.innerHTML = `
-    <div class="lb-result__card" style="--item-color:${entryColor(won)}">
+    <div class="lb-result__card" style="--item-color:${entryColor(won)}" role="status">
       <span class="lb-result__icon">${entryIcon(won)}</span>
       <div class="lb-result__name">${escapeHtml(entryLabel(won))}</div>
       <div class="lb-result__detail">${escapeHtml(detail)}</div>
