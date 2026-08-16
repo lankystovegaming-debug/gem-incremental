@@ -41,9 +41,10 @@ assert.equal(manuallyDepositRequirement(massState, mass, massInventory, 2), true
 assert.equal(ensureRecipeProgress(massState, mass)["mass-potion-2-weight"], 7600);
 assert.equal(isRequirementComplete(massState, mass, mass.requirements[2], 2, massInventory), true);
 
-// Consumable requirements are deposited into the recipe (the potion is
-// consumed on deposit), matching what the server enforces — owning the
-// potions is not enough on its own.
+// Consumable requirements are OWNERSHIP-based: owning enough of the
+// required potion satisfies it (the server consumes them at craft time).
+// They are never deposited — depositing would empty the bag and the
+// craft's ownership check would then fail (consumables_not_owned).
 const lucky = recipes.find((recipe) => recipe.id === "lucky-potion-2");
 const luckyState = createCraftingState();
 const luckyInventory = {
@@ -52,15 +53,13 @@ const luckyInventory = {
   gems: []
 };
 
-assert.equal(
-  isRequirementComplete(luckyState, lucky, lucky.requirements[0], 0, luckyInventory),
-  false
-);
-assert.equal(manuallyDepositRequirement(luckyState, lucky, luckyInventory, 0), true);
-assert.equal(luckyInventory.consumables[0].quantity, 0);
+// Owning 2 satisfies the "2x Lucky Potion I" requirement immediately.
 assert.equal(
   isRequirementComplete(luckyState, lucky, lucky.requirements[0], 0, luckyInventory),
   true
 );
+// Consumables are not depositable, and ownership is untouched.
+assert.equal(manuallyDepositRequirement(luckyState, lucky, luckyInventory, 0), false);
+assert.equal(luckyInventory.consumables[0].quantity, 2);
 
 console.log("Potion crafting tests passed.");

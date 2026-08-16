@@ -152,14 +152,16 @@ function describeRequirement(requirement, value) {
   switch (requirement.type) {
     case "consumable": {
       const item = getConsumableById(requirement.consumableId);
-      // Consumables are deposited into the recipe, so progress (the
-      // deposited count), not ownership, drives completeness.
-      const deposited = Number(value ?? 0);
+      // Ownership-based: show how many you own vs the amount needed.
+      const owned = state.consumables.find(
+        (entry) => entry.consumable_id === requirement.consumableId
+      );
+      const have = Number(owned?.quantity ?? 0);
 
       return {
         label: item?.name ?? requirement.consumableId,
-        text: `${formatCount(deposited)} / ${formatCount(requirement.amount)} deposited`,
-        fraction: ratio(deposited, requirement.amount)
+        text: `${formatCount(have)} / ${formatCount(requirement.amount)}`,
+        fraction: ratio(have, requirement.amount)
       };
     }
 
@@ -502,33 +504,24 @@ function recipeCard(recipe) {
       }
 
       if (requirement.type === "consumable") {
-        const consumableKey = requirementKey(requirement, index);
         const complete = isRequirementComplete(
           state.crafting, recipe, requirement, index, equipmentContext()
         );
-        const detail = describeRequirement(requirement, progress[consumableKey]);
+        const detail = describeRequirement(requirement);
 
+        // Consumables are owned (and consumed on craft), not deposited,
+        // so there is no Deposit button — just an owned/needed check.
         return `
           <div class="requirement${complete ? " requirement--done" : ""}">
             <span class="requirement__label">${escapeHtml(detail.label)}</span>
             <span class="requirement__right">
               <span class="requirement__value">${escapeHtml(detail.text)}</span>
-              ${
-                complete
-                  ? `<span class="requirement__check">${icons.check}</span>`
-                  : owned
-                  ? ""
-                  : `<button
-                       class="btn btn--sm"
-                       data-action="deposit"
-                       data-index="${index}"
-                       type="button"
-                       title="Deposit potions from your bag"
-                     >Deposit</button>`
-              }
+              <span class="requirement__check${
+                complete ? "" : " requirement__check--missing"
+              }">${complete ? icons.check : icons.x}</span>
             </span>
             <span class="requirement__bar"><span style="width:${
-              (complete ? 1 : detail.fraction) * 100
+              detail.fraction * 100
             }%"></span></span>
           </div>
         `;

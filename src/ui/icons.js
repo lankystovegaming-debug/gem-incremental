@@ -210,6 +210,11 @@ export const icons = {
     <path d="M7 10h.01M11 10h.01M15 10h.01M8.5 14h7" />
   `),
 
+  market: svg(`
+    <path d="M4 18V9M9 18V5M14 18v-6M19 18V8" />
+    <path d="M3 21h18" />
+  `),
+
   box: svg(`
     <path d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5Z" />
     <path d="M3 8.5 12 13l9-4.5" />

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Trade coin shares and buy gems in the Gem Incremental market.">
+
+  <title>Market · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./market.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+        document.documentElement.setAttribute("data-accent", accent || "indigo");
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Market</h1>
+        <p class="page-head__sub">Trade coin shares, or buy gems outright.</p>
+      </div>
+    </div>
+
+
+    <!-- ================= COIN SHARES ================= -->
+
+    <section class="card mkt-shares">
+      <div class="mkt-shares__head">
+        <div>
+          <h2>Coin Shares <span class="mkt-ticker">$COIN</span></h2>
+          <p class="page-head__sub" id="mktSub">Price moves as people buy and sell.</p>
+        </div>
+        <div class="mkt-price">
+          <span class="mkt-price__value" id="mktPrice">—</span>
+          <span class="mkt-price__delta" id="mktDelta"></span>
+        </div>
+      </div>
+
+      <svg class="mkt-chart" id="mktChart" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+      <div class="mkt-holdings">
+        <span>You own <strong id="mktShares">0</strong> shares</span>
+        <span id="mktValue"></span>
+      </div>
+
+      <div class="mkt-trade">
+        <input type="number" id="mktQty" min="1" max="100" step="1" value="10" aria-label="Shares to trade">
+        <button class="btn btn--primary" id="mktBuy" type="button">Buy</button>
+        <button class="btn btn--danger" id="mktSell" type="button">Sell</button>
+      </div>
+
+      <p class="mkt-note">
+        2% fee each way · max 100 / trade · a few seconds between trades.
+        The price drifts back toward its baseline, so it can't be pumped.
+      </p>
+      <p class="account-status" id="mktStatus"></p>
+    </section>
+
+
+    <!-- ================= GEM SHOP ================= -->
+
+    <div class="page-head" style="margin-top:var(--space-5)">
+      <div class="page-head__title">
+        <h2>Gem Shop</h2>
+        <p class="page-head__sub">Buy any gem outright, at a premium over its value.</p>
+      </div>
+    </div>
+
+    <section id="gemShop" class="grid grid--cards"></section>
+  </main>
+
+  <script type="module" src="./market.js"></script>
+</body>
+</html>
