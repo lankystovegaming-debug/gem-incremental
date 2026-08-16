@@ -164,6 +164,15 @@ async function open() {
         <button class="btn btn--sm" data-action="rolls" type="button">Add rolls</button>
       </div>
 
+      <label class="devpanel__field">
+        <span>Coins</span>
+        <input type="number" id="devCoins" value="10" step="5">
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="coins" type="button">
+        Give coins
+      </button>
+
       <div class="devpanel__sep"></div>
 
       <label class="devpanel__field">
@@ -273,6 +282,7 @@ async function open() {
   const moneyInput = panel.querySelector("#devMoney");
   const slotsInput = panel.querySelector("#devSlots");
   const rollsInput = panel.querySelector("#devRolls");
+  const coinsInput = panel.querySelector("#devCoins");
   const gemSelect = panel.querySelector("#devGem");
   const gemQtyInput = panel.querySelector("#devGemQty");
   const gemMultInput = panel.querySelector("#devGemMult");
@@ -450,6 +460,43 @@ async function open() {
       status.textContent = `${who()} now has ${formatCount(total)} rolls.`;
 
       notify.success("Sent", `+${formatCount(amount)} rolls for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE COINS (loot box currency)
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="coins"]')
+    .addEventListener("click", async () => {
+      const amount = Math.trunc(Number(coinsInput.value) || 0);
+
+      if (amount === 0) {
+        return;
+      }
+
+      if (!(await confirmSend(`Give ${formatCount(amount)} coins.`))) {
+        return;
+      }
+
+      const result = await callDependency("coins", targetValue(), { amount });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const total = result.data?.coins;
+
+      status.textContent = `${who()} now has ${formatCount(total)} coins.`;
+
+      notify.success("Sent", `+${formatCount(amount)} coins for ${who()}.`);
 
       refreshIfSelf(isSelf());
     });

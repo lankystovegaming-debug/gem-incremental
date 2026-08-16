@@ -332,8 +332,8 @@ async function openBox(boxId) {
   wheelTrack.style.transform = "translateX(0)";
   wheelTrack.innerHTML = items.map(wheelItemHtml).join("");
 
-  // Measure the true step (item width + gap) after layout.
-  await nextFrame();
+  // Measure the true step (item width + gap). Reading layout here also
+  // flushes the reset transform above.
   const first = wheelTrack.children[0];
   const second = wheelTrack.children[1];
   const step =
@@ -344,10 +344,16 @@ async function openBox(boxId) {
   const target =
     WON_INDEX * step + itemWidth / 2 - wheel.clientWidth / 2 + jitter;
 
-  await nextFrame();
-  wheelTrack.style.transition =
-    "transform 4.6s cubic-bezier(0.08, 0.82, 0.16, 1)";
-  wheelTrack.style.transform = `translateX(${-target}px)`;
+  // Force the browser to commit translateX(0) with no transition, then
+  // animate to the target on the next frame so the transition runs
+  // reliably (the two-step reset/animate pattern).
+  void wheelTrack.offsetWidth;
+
+  requestAnimationFrame(() => {
+    wheelTrack.style.transition =
+      "transform 4.6s cubic-bezier(0.08, 0.82, 0.16, 1)";
+    wheelTrack.style.transform = `translateX(${-target}px)`;
+  });
 
   const finish = () => {
     wheelTrack.removeEventListener("transitionend", finish);
