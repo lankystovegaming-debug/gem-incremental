@@ -51,8 +51,10 @@ function normalizeChatRow(row, profiles = {}) {
   };
 }
 
-function normalizeAnnouncement(row) {
+function normalizeAnnouncement(row, profiles = {}) {
   const rarity = Number(row?.rarity ?? 0);
+  const profile = profiles[row?.player_id] ?? {};
+  const rollerName = profile.username ?? "Someone";
 
   return {
     id: `rare-${row.id}`,
@@ -60,9 +62,11 @@ function normalizeAnnouncement(row) {
     sender_id: null,
     username: "[SYSTEM]",
     avatar_url: null,
+    roller_id: row.player_id,
+    roller_username: rollerName,
     gem_name: row.gem_name,
     rarity,
-    message: `Rare roll: ${row.gem_name} — 1 in ${rarity.toLocaleString("en-US")}!`,
+    message: `${rollerName} rolled a rare ${row.gem_name} — 1 in ${rarity.toLocaleString("en-US")}!`,
     created_at: row.created_at
   };
 }
@@ -111,8 +115,7 @@ export async function loadChatMessages(limit = 50) {
 
   const announcements = await enrich(
     announcementResult.data ?? [],
-    normalizeAnnouncement,
-    false
+    normalizeAnnouncement
   );
 
   return [...messages, ...announcements]
@@ -159,8 +162,7 @@ export function subscribeToChat(onMessage) {
         try {
           const [message] = await enrich(
             [payload.new],
-            normalizeAnnouncement,
-            false
+            normalizeAnnouncement
           );
           if (message) onMessage(message);
         } catch (error) {
