@@ -1,468 +1,2418 @@
-// =========================================================
-// GEM STYLE
-//
-// Every gem gets its own hand-picked font pairing and colour
-// (solid or gradient) so the name itself hints at what the
-// specimen looks like. Only generic/system font stacks are
-// used (plus the two fonts the game already self-hosts) so
-// nothing here adds a network font dependency.
-// =========================================================
+/* =========================================================
+   GEM INCREMENTAL — SHARED APPLICATION STYLES
 
-const FALLBACK_FONT = "'Segoe UI', system-ui, sans-serif";
+   Loaded by every page. Page specific rules live in the
+   stylesheet next to that page.
+   ========================================================= */
 
-const GEM_STYLES = {
-  "Quartz": {
-    color: "#e9edf3",
-    font: "Georgia, 'Times New Roman', serif",
-    weight: 500,
-    spacing: "0.01em",
-    glow: "rgba(233,237,243,0.45)"
-  },
-  "Calcite": {
-    color: "#f4efe2",
-    font: "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-    weight: 500,
-    spacing: "0.01em",
-    glow: "rgba(244,239,226,0.4)"
-  },
-  "Feldspar": {
-    color: "#d9c8c2",
-    font: "Cambria, Georgia, serif",
-    weight: 500,
-    spacing: "0.01em",
-    glow: "rgba(217,200,194,0.4)"
-  },
-  "Fluorite": {
-    color: "#8fe0c2",
-    gradient: "linear-gradient(90deg, #9b5de5, #4dd0a7)",
-    font: "'Trebuchet MS', sans-serif",
-    weight: 600,
-    style: "italic",
-    spacing: "0.01em",
-    glow: "rgba(155,93,229,0.4)"
-  },
-  "Hematite": {
-    color: "#a4776b",
-    font: "Rockwell, 'Courier New', monospace",
-    weight: 700,
-    spacing: "0.02em",
-    glow: "rgba(164,119,107,0.35)"
-  },
-  "Obsidian": {
-    color: "#2a2a2e",
-    font: "Didot, 'Bodoni MT', 'Times New Roman', serif",
-    weight: 700,
-    style: "italic",
-    spacing: "0.02em",
-    glow: "rgba(255,255,255,0.25)"
-  },
-  "Agate": {
-    color: "#c98bd6",
-    gradient: "linear-gradient(90deg, #e0b0ff, #7fd8be, #e0b0ff)",
-    font: "Verdana, Geneva, sans-serif",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(201,139,214,0.35)"
-  },
-  "Jasper": {
-    color: "#b5651d",
-    font: "Rockwell, Georgia, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(181,101,29,0.35)"
-  },
-  "Amethyst": {
-    color: "#a469c9",
-    font: "'Brush Script MT', 'Segoe Script', cursive",
-    weight: 500,
-    style: "italic",
-    spacing: "0.01em",
-    glow: "rgba(164,105,201,0.5)"
-  },
-  "Garnet": {
-    color: "#8b1a2b",
-    font: "Garamond, Baskerville, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(139,26,43,0.45)"
-  },
-  "Peridot": {
-    color: "#a3d94a",
-    font: "'Century Gothic', 'Trebuchet MS', sans-serif",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(163,217,74,0.4)"
-  },
-  "Topaz": {
-    color: "#ffb703",
-    gradient: "linear-gradient(90deg, #ffd166, #ff9f1c)",
-    font: "Futura, 'Century Gothic', 'Trebuchet MS', sans-serif",
-    weight: 700,
-    spacing: "0.02em",
-    glow: "rgba(255,183,3,0.45)"
-  },
-  "Aquamarine": {
-    color: "#7fdbda",
-    font: "Optima, 'Segoe UI', sans-serif",
-    weight: 500,
-    spacing: "0.02em",
-    glow: "rgba(127,219,218,0.45)"
-  },
-  "Tourmaline": {
-    color: "#ff8fd1",
-    gradient: "linear-gradient(90deg, #ff8fd1, #7fd8be, #8fb2ff)",
-    font: "Verdana, sans-serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(255,143,209,0.4)"
-  },
-  "Opal": {
-    color: "#e6d8ff",
-    gradient:
-      "linear-gradient(90deg, #ff9aa2, #ffd6a5, #caffbf, #9bf6ff, #bdb2ff)",
-    font: "'Segoe Print', 'Comic Sans MS', cursive",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(255,255,255,0.5)"
-  },
-  "Zircon": {
-    color: "#dbe7f5",
-    font: "Consolas, 'Lucida Console', monospace",
-    weight: 600,
-    spacing: "0.06em",
-    glow: "rgba(219,231,245,0.55)"
-  },
-  "Spinel": {
-    color: "#e0115f",
-    font: "Baskerville, Garamond, serif",
-    weight: 600,
-    style: "italic",
-    spacing: "0.01em",
-    glow: "rgba(224,17,95,0.4)"
-  },
-  "Sapphire": {
-    color: "#2e6fdb",
-    font: "'Times New Roman', Georgia, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(46,111,219,0.45)"
-  },
-  "Ruby": {
-    color: "#e0115f",
-    font: "Georgia, 'Times New Roman', serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(224,17,95,0.5)"
-  },
-  "Emerald": {
-    color: "#50c878",
-    font: "Garamond, Georgia, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(80,200,120,0.45)"
-  },
-  "Diamond": {
-    color: "#eaf6ff",
-    gradient: "linear-gradient(90deg, #ffffff, #bfe3ff, #ffffff)",
-    font: "'Segoe UI', 'Helvetica Neue', sans-serif",
-    weight: 700,
-    spacing: "0.05em",
-    glow: "rgba(191,227,255,0.7)"
-  },
-  "Tanzanite": {
-    color: "#5b2a86",
-    font: "Papyrus, fantasy",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(91,42,134,0.45)"
-  },
-  "Alexandrite": {
-    color: "#3aa66b",
-    gradient: "linear-gradient(90deg, #3aa66b, #b03a5b)",
-    font: "Copperplate, 'Copperplate Gothic Light', fantasy",
-    weight: 600,
-    spacing: "0.02em",
-    glow: "rgba(176,58,91,0.4)"
-  },
-  "Benitoite": {
-    color: "#1e90ff",
-    font: "Impact, Haettenschweiler, sans-serif",
-    weight: 400,
-    spacing: "0.01em",
-    glow: "rgba(30,144,255,0.5)"
-  },
-  "Red Beryl": {
-    color: "#a4133c",
-    font: "Rockwell, Georgia, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(164,19,60,0.4)"
-  },
-  "Black Opal": {
-    color: "#c9a8ff",
-    gradient:
-      "linear-gradient(90deg, #6a4c93, #1a1a2e, #6a9fb5, #1a1a2e)",
-    font: "'Segoe Print', 'Brush Script MT', cursive",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(106,76,147,0.5)"
-  },
-  "Grandidierite": {
-    color: "#2a9d8f",
-    font: "Optima, 'Trebuchet MS', sans-serif",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(42,157,143,0.45)"
-  },
-  "Taaffeite": {
-    color: "#b19cd9",
-    font: "'Lucida Handwriting', 'Segoe Script', cursive",
-    weight: 500,
-    style: "italic",
-    spacing: "0.01em",
-    glow: "rgba(177,156,217,0.5)"
-  },
-  "Musgravite": {
-    color: "#7a9482",
-    font: "Rockwell, Georgia, serif",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(122,148,130,0.35)"
-  },
-  "Painite": {
-    color: "#9a4b3c",
-    font: "Georgia, Cambria, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(154,75,60,0.4)"
-  },
-  "Dark Matter": {
-    color: "#c8a4ff",
-    gradient: "linear-gradient(90deg, #0a0014, #6a2fb5, #0a0014)",
-    font: "'Courier New', Consolas, monospace",
-    weight: 700,
-    style: "italic",
-    caps: true,
-    spacing: "0.08em",
-    glow: "rgba(138,63,220,0.75)"
-  },
-  "Citrine": {
-    color: "#e9c46a",
-    font: "Garamond, Georgia, serif",
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(233,196,106,0.45)"
-  },
-  "Moonstone": {
-    color: "#d6dff0",
-    font: "'Segoe UI Light', 'Segoe UI', sans-serif",
-    weight: 300,
-    spacing: "0.04em",
-    glow: "rgba(214,223,240,0.55)"
-  },
-  "Demantoid": {
-    color: "#2ecc71",
-    font: "'Century Gothic', 'Trebuchet MS', sans-serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(46,204,113,0.5)"
-  },
-  "Jeremejevite": {
-    color: "#a8dadc",
-    font: "Optima, 'Segoe UI', sans-serif",
-    weight: 500,
-    spacing: "0.02em",
-    glow: "rgba(168,218,220,0.5)"
-  },
-  "Poudretteite": {
-    color: "#d896ff",
-    font: "'Brush Script MT', 'Segoe Script', cursive",
-    weight: 500,
-    style: "italic",
-    spacing: "0.01em",
-    glow: "rgba(216,150,255,0.45)"
-  },
-  "Serendibite": {
-    color: "#22314f",
-    font: "Didot, 'Bodoni MT', serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(90,120,180,0.5)"
-  },
-  "Blue Garnet": {
-    color: "#3a7ca5",
-    gradient: "linear-gradient(90deg, #3a7ca5, #2a9d8f)",
-    font: "Garamond, Georgia, serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(58,124,165,0.45)"
-  },
-  "Kyawthuite": {
-    color: "#d9480f",
-    font: "Rockwell, 'Trebuchet MS', sans-serif",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(217,72,15,0.45)"
-  },
-  "Aether Quartz": {
-    color: "#c9fbff",
-    gradient: "linear-gradient(90deg, #c9fbff, #8fd9ff, #c9fbff)",
-    font: "'Orbitron', 'Segoe UI', sans-serif",
-    weight: 600,
-    spacing: "0.05em",
-    glow: "rgba(143,217,255,0.65)"
-  },
-  "Void Opal": {
-    color: "#caa4ff",
-    gradient: "linear-gradient(90deg, #10001a, #6a2fb5, #ff5fbf, #10001a)",
-    font: "'Orbitron', 'Segoe UI', sans-serif",
-    weight: 600,
-    caps: true,
-    spacing: "0.04em",
-    glow: "rgba(255,95,191,0.6)"
-  },
-  "Chronite": {
-    color: "#c9b37a",
-    gradient: "linear-gradient(90deg, #2ec4c6, #c9b37a)",
-    font: "'Exo 2', 'Segoe UI', sans-serif",
-    weight: 600,
-    style: "italic",
-    spacing: "0.03em",
-    glow: "rgba(46,196,198,0.55)"
-  },
-  "Neutron Crystal": {
-    color: "#dfe7fd",
-    font: "'Exo 2', 'Segoe UI', sans-serif",
-    weight: 800,
-    caps: true,
-    spacing: "0.08em",
-    glow: "rgba(223,231,253,0.7)"
-  },
-  "Antimatter Crystal": {
-    color: "#ff5b5b",
-    gradient: "linear-gradient(90deg, #ff5b5b, #10001a, #ff5b5b)",
-    font: "'Orbitron', 'Segoe UI', sans-serif",
-    weight: 700,
-    caps: true,
-    spacing: "0.05em",
-    glow: "rgba(255,91,91,0.7)"
-  },
-  "Singularity Shard": {
-    color: "#f4f4ff",
-    gradient: "linear-gradient(90deg, #000000, #6a2fb5, #f4f4ff, #6a2fb5, #000000)",
-    font: "'Orbitron', 'Segoe UI', sans-serif",
-    weight: 800,
-    caps: true,
-    spacing: "0.12em",
-    glow: "rgba(244,244,255,0.8)"
-  },
-  "Lanky Gem": {
-    color: "#ff6ec7",
-    font: "'Comic Sans MS', 'Comic Sans', cursive",
-    weight: 700,
-    spacing: "0.01em",
-    glow: "rgba(255,110,199,0.5)"
+
+/* =========================================================
+   0. TYPEFACE
+
+   A sci-fi pairing, self-hosted so nothing is fetched from a
+   third party and the game keeps working offline:
+     Exo 2      — the body face, a clean techno-sans that stays
+                  readable across the whole UI.
+     Orbitron   — the display face, a futuristic geometric used
+                  only for the wordmark, headings and the roll
+                  button, where its character reads as "cool"
+                  without hurting legibility.
+   Both are variable fonts, split into latin / latin-ext subsets
+   by unicode-range so latin-ext is only fetched when needed.
+   ========================================================= */
+
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/exo2-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/exo2-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("../assets/fonts/orbitron-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+/* =========================================================
+   1. DESIGN TOKENS
+
+   Dark is the base palette. Light is applied either by an
+   explicit data-theme="light" or by the system preference
+   when the player has not chosen a mode.
+   ========================================================= */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0b0e14;
+  --bg-glow: #151b2b;
+  --surface: #12172080;
+  --surface-solid: #121720;
+  --surface-raised: #171d29;
+  --surface-hover: #1c2331;
+  --surface-sunken: #0d1119;
+
+  --border: #242c3b;
+  --border-strong: #323c50;
+
+  --text: #e8ecf4;
+  --text-muted: #9aa5ba;
+  --text-faint: #6b7689;
+
+  --positive: #45c78a;
+  --negative: #ef6b6b;
+  --warning: #e5a94a;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 6px 20px -6px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
+
+  --overlay: rgb(4 6 10 / 0.72);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font: "Exo 2", "Segoe UI", -apple-system, BlinkMacSystemFont,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Futuristic display face for the wordmark, headings and the
+     roll button. */
+  --font-display: "Orbitron", "Exo 2", "Segoe UI", sans-serif;
+
+  --font-mono: "SF Mono", "Cascadia Mono", Consolas,
+    "Liberation Mono", ui-monospace, monospace;
+
+  --nav-height: 60px;
+
+  /* Rarity scale — tuned so the accent never collides with it. */
+  --rarity-common: #94a3b8;
+  --rarity-uncommon: #4ade80;
+  --rarity-rare: #60a5fa;
+  --rarity-epic: #c084fc;
+  --rarity-legendary: #fbbf24;
+  --rarity-mythic: #fb7185;
+  --rarity-exotic: #22d3ee;
+  --rarity-cosmic: #f472b6;
+
+  /* Accent — overridden per data-accent below. */
+  --accent: #7c8cf8;
+  --accent-strong: #6675f0;
+  --accent-soft: #7c8cf82e;
+  --accent-text: #0b0e14;
+  --accent-ring: #7c8cf866;
+}
+
+
+:root[data-accent="emerald"] {
+  --accent: #34d399;
+  --accent-strong: #10b981;
+  --accent-soft: #34d3992e;
+  --accent-text: #04120c;
+  --accent-ring: #34d39966;
+}
+
+:root[data-accent="amber"] {
+  --accent: #f5b23f;
+  --accent-strong: #e09b21;
+  --accent-soft: #f5b23f2e;
+  --accent-text: #1a1204;
+  --accent-ring: #f5b23f66;
+}
+
+:root[data-accent="rose"] {
+  --accent: #f472a0;
+  --accent-strong: #ec5f92;
+  --accent-soft: #f472a02e;
+  --accent-text: #1c0710;
+  --accent-ring: #f472a066;
+}
+
+:root[data-accent="cyan"] {
+  --accent: #38bdf8;
+  --accent-strong: #0ea5e9;
+  --accent-soft: #38bdf82e;
+  --accent-text: #04141c;
+  --accent-ring: #38bdf866;
+}
+
+
+/* ---------- Light palette ---------- */
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f4f6fb;
+  --bg-glow: #e6ebf7;
+  --surface: #ffffffcc;
+  --surface-solid: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f0f3fa;
+  --surface-sunken: #eaeef7;
+
+  --border: #dde3ee;
+  --border-strong: #c3cbdb;
+
+  --text: #131824;
+  --text-muted: #5a6478;
+  --text-faint: #8b95a8;
+
+  --positive: #12855b;
+  --negative: #cf3d3d;
+  --warning: #a9700c;
+
+  --shadow-sm: 0 1px 2px rgb(19 24 36 / 0.06);
+  --shadow-md: 0 6px 20px -8px rgb(19 24 36 / 0.18);
+  --shadow-lg: 0 24px 60px -22px rgb(19 24 36 / 0.28);
+
+  --overlay: rgb(23 28 40 / 0.4);
+
+  --rarity-common: #64748b;
+  --rarity-uncommon: #12925c;
+  --rarity-rare: #2563eb;
+  --rarity-epic: #8b3fd4;
+  --rarity-legendary: #b47209;
+  --rarity-mythic: #d4356b;
+  --rarity-exotic: #0891b2;
+  --rarity-cosmic: #be185d;
+}
+
+/* Only "System" leaves data-theme unset, so this must not
+   reach an explicitly chosen dark or neon theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+
+    --bg: #f4f6fb;
+    --bg-glow: #e6ebf7;
+    --surface: #ffffffcc;
+    --surface-solid: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-hover: #f0f3fa;
+    --surface-sunken: #eaeef7;
+
+    --border: #dde3ee;
+    --border-strong: #c3cbdb;
+
+    --text: #131824;
+    --text-muted: #5a6478;
+    --text-faint: #8b95a8;
+
+    --positive: #12855b;
+    --negative: #cf3d3d;
+    --warning: #a9700c;
+
+    --shadow-sm: 0 1px 2px rgb(19 24 36 / 0.06);
+    --shadow-md: 0 6px 20px -8px rgb(19 24 36 / 0.18);
+    --shadow-lg: 0 24px 60px -22px rgb(19 24 36 / 0.28);
+
+    --overlay: rgb(23 28 40 / 0.4);
+
+    --rarity-common: #64748b;
+    --rarity-uncommon: #12925c;
+    --rarity-rare: #2563eb;
+    --rarity-epic: #8b3fd4;
+    --rarity-legendary: #b47209;
+    --rarity-mythic: #d4356b;
+    --rarity-exotic: #0891b2;
+    --rarity-cosmic: #be185d;
   }
-};
-
-// Deterministic fallback for any gem name that isn't in the
-// curated table above (e.g. a future addition), so nothing
-// ever falls back to plain unstyled text.
-const FALLBACK_FONTS = [
-  "Georgia, serif",
-  "'Trebuchet MS', sans-serif",
-  "Consolas, monospace",
-  "'Century Gothic', sans-serif",
-  "Garamond, serif",
-  "Optima, sans-serif"
-];
-
-const FALLBACK_COLORS = [
-  "#8fd9ff",
-  "#ffb703",
-  "#a3d94a",
-  "#e0115f",
-  "#c9a8ff",
-  "#7fdbda"
-];
-
-function hashString(value) {
-  let hash = 0;
-
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
-
-  return hash;
 }
 
-function fallbackStyle(name) {
-  const hash = hashString(name);
 
-  return {
-    color: FALLBACK_COLORS[hash % FALLBACK_COLORS.length],
-    font: FALLBACK_FONTS[Math.floor(hash / 7) % FALLBACK_FONTS.length],
-    weight: 600,
-    spacing: "0.01em",
-    glow: "rgba(255,255,255,0.35)"
-  };
+/* ---------- Neon palette ----------
+
+   A darker, higher-contrast dark mode with a glow on the
+   things worth looking at: headings, rarities, values and the
+   roll button. Body copy stays flat so the page still reads.
+   -------------------------------------------------------- */
+
+:root[data-theme="neon"] {
+  color-scheme: dark;
+
+  --bg: #04060c;
+  --bg-glow: #0a1428;
+  --surface: #080d18cc;
+  --surface-solid: #080d18;
+  --surface-raised: #0d1526;
+  --surface-hover: #121c31;
+  --surface-sunken: #060a13;
+
+  --border: #16223c;
+  --border-strong: #26395f;
+
+  --text: #d9e4ff;
+  --text-muted: #7f90b8;
+  --text-faint: #56668c;
+
+  --positive: #2bf5a0;
+  --negative: #ff5f7e;
+  --warning: #ffc957;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.6);
+  --shadow-md: 0 6px 24px -6px rgb(0 0 0 / 0.8);
+  --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.9);
+
+  --overlay: rgb(2 4 8 / 0.8);
+
+  --rarity-common: #8ea2c8;
+  --rarity-uncommon: #2bf5a0;
+  --rarity-rare: #4dc4ff;
+  --rarity-epic: #c07bff;
+  --rarity-legendary: #ffc93c;
+  --rarity-mythic: #ff5f9e;
+  --rarity-exotic: #22e7ff;
+  --rarity-cosmic: #ff71ce;
+
+  --accent: #7d8dff;
+  --accent-strong: #6b7bff;
+  --accent-soft: #7d8dff26;
+  --accent-text: #04060c;
+  --accent-ring: #7d8dff80;
 }
 
-export function getGemStyle(name) {
-  const key = String(name ?? "");
-
-  return GEM_STYLES[key] ?? fallbackStyle(key);
+:root[data-theme="neon"][data-accent="emerald"] {
+  --accent: #2bf5a0;
+  --accent-strong: #16e08e;
+  --accent-soft: #2bf5a026;
+  --accent-ring: #2bf5a080;
 }
 
-// Builds a safe inline `style="..."` value for a gem name.
-// Values only ever come from the curated table above (or the
-// deterministic fallback), never from user input.
-export function gemStyleAttr(name) {
-  const s = getGemStyle(name);
+:root[data-theme="neon"][data-accent="amber"] {
+  --accent: #ffc93c;
+  --accent-strong: #f5b91f;
+  --accent-soft: #ffc93c26;
+  --accent-ring: #ffc93c80;
+}
 
-  const parts = [
-    `font-family:${s.font}`,
-    `font-weight:${s.weight}`,
-    `font-style:${s.style ?? "normal"}`,
-    `letter-spacing:${s.spacing ?? "0"}`,
-    `color:${s.color}`
-  ];
+:root[data-theme="neon"][data-accent="rose"] {
+  --accent: #ff5f9e;
+  --accent-strong: #f5478c;
+  --accent-soft: #ff5f9e26;
+  --accent-ring: #ff5f9e80;
+}
 
-  if (s.gradient) {
-    parts.push(
-      `background:${s.gradient}`,
-      "background-size:200% auto",
-      "-webkit-background-clip:text",
-      "background-clip:text",
-      "-webkit-text-fill-color:transparent"
+:root[data-theme="neon"][data-accent="cyan"] {
+  --accent: #35e0ff;
+  --accent-strong: #16cdf0;
+  --accent-soft: #35e0ff26;
+  --accent-ring: #35e0ff80;
+}
+
+
+/* Faint circuit grid, so the dark is not just empty. */
+:root[data-theme="neon"] body {
+  background-image:
+    radial-gradient(900px 520px at 50% -10%, var(--bg-glow), transparent 70%),
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: auto, 46px 46px, 46px 46px;
+  background-position: center top, center center, center center;
+}
+
+:root[data-theme="neon"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    transparent 40%,
+    var(--bg) 100%
+  );
+
+  pointer-events: none;
+}
+
+:root[data-theme="neon"] .app-main,
+:root[data-theme="neon"] .topbar,
+:root[data-theme="neon"] .tabbar {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ---- Glow, applied only where it carries meaning ---- */
+
+:root[data-theme="neon"] .brand,
+:root[data-theme="neon"] h1 {
+  text-shadow: 0 0 18px var(--accent-ring);
+}
+
+:root[data-theme="neon"] .brand__mark {
+  filter: drop-shadow(0 0 8px var(--accent-ring));
+}
+
+:root[data-theme="neon"] .nav__link[aria-current="page"],
+:root[data-theme="neon"] .tabbar__link[aria-current="page"] {
+  text-shadow: 0 0 14px var(--accent-ring);
+}
+
+:root[data-theme="neon"] .badge--tier {
+  color: var(--tier);
+  border: 1px solid color-mix(in srgb, var(--tier) 45%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--tier) 70%, transparent);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--tier) 22%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--tier) 10%, transparent);
+}
+
+:root[data-theme="neon"] .stat__value,
+:root[data-theme="neon"] .wallet {
+  text-shadow: 0 0 12px var(--accent-ring);
+}
+
+:root[data-theme="neon"] .roll-button {
+  box-shadow:
+    0 0 28px -4px var(--accent-ring),
+    0 0 60px -12px var(--accent-ring),
+    inset 0 -2px 0 rgb(0 0 0 / 0.25);
+}
+
+:root[data-theme="neon"] .gem-reveal__name {
+  color: var(--tier, var(--accent));
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--tier, var(--accent)) 65%, transparent),
+    0 0 34px color-mix(in srgb, var(--tier, var(--accent)) 35%, transparent);
+}
+
+:root[data-theme="neon"] .gem-reveal__art {
+  filter:
+    drop-shadow(0 0 14px color-mix(in srgb, var(--tier, var(--accent)) 70%, transparent))
+    drop-shadow(0 0 34px color-mix(in srgb, var(--tier, var(--accent)) 40%, transparent));
+}
+
+:root[data-theme="neon"] .gem-card::before,
+:root[data-theme="neon"] .index-card::before {
+  box-shadow: 0 0 12px 1px var(--tier, var(--accent));
+}
+
+:root[data-theme="neon"] .gem-card__val--money,
+:root[data-theme="neon"] .recipe-cost__value--ok,
+:root[data-theme="neon"] .stats-row__val--positive {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--positive) 55%, transparent);
+}
+
+/* The sunken surface is nearly black here, so the switch needs
+   its own contrast to stay visible when off. */
+:root[data-theme="neon"] .switch__track {
+  background: #16203a;
+  border-color: #33487a;
+}
+
+:root[data-theme="neon"] .switch input:checked + .switch__track {
+  box-shadow: 0 0 12px var(--accent-ring);
+}
+
+:root[data-theme="neon"] .meter__fill {
+  box-shadow: 0 0 10px var(--accent-ring);
+}
+
+:root[data-theme="neon"] .meter__fill--positive {
+  box-shadow: 0 0 10px color-mix(in srgb, var(--positive) 60%, transparent);
+}
+
+:root[data-theme="neon"] .recipe-card--ready {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--positive) 45%, transparent),
+    0 0 26px -8px color-mix(in srgb, var(--positive) 60%, transparent);
+}
+
+/* Numbers read as instrument readouts rather than prose, using
+   Exo 2's tabular figures with a slashed zero. */
+:root[data-theme="neon"] .stat__value,
+:root[data-theme="neon"] .capacity__count,
+:root[data-theme="neon"] .gem-fact__value,
+:root[data-theme="neon"] .bonus-row__val {
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: 0.01em;
+}
+
+
+/* =========================================================
+   2. BASE
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.003em;
+
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      900px 520px at 50% -10%,
+      var(--bg-glow),
+      transparent 70%
     );
-  }
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 
-  if (s.glow) {
-    parts.push(`text-shadow:0 0 10px ${s.glow}`);
-  }
-
-  if (s.caps) {
-    parts.push("text-transform:uppercase");
-  }
-
-  return parts.join(";");
+  -webkit-font-smoothing: antialiased;
 }
 
-// Convenience wrapper: returns a ready-to-insert <span> for a
-// gem name. `escapeHtml` is passed in so this module doesn't
-// need to import a page-specific copy of it.
-export function gemNameHtml(name, escapeHtml, extraClass = "") {
-  const safeName = escapeHtml(name);
-  const isGradient = Boolean(getGemStyle(name).gradient);
+/* Headings use the Orbitron display face. It is geometric and
+   runs wide, so sizes come down slightly and a little positive
+   tracking gives it room to breathe. */
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
 
-  const className = [
-    "gem-styled",
-    isGradient ? "gem-styled--animated" : "",
-    extraClass
-  ]
-    .filter(Boolean)
-    .join(" ");
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1rem; }
+h3 { font-size: 0.9rem; }
 
-  return `<span class="${className}" style="${gemStyleAttr(name)}">${safeName}</span>`;
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Figures that sit in a column, or tick upward, must not shift
+   width as their digits change. */
+.num,
+.stat__value,
+.gem-fact__value,
+.capacity__count,
+.roll-button__label,
+.gem-card__val,
+.index-card__val,
+.stats-row__val,
+.bonus-row__val,
+.history__value,
+.history__meta,
+.wallet {
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================================================
+   3. APP SHELL
+   ========================================================= */
+
+.app-main {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-7);
+}
+
+.app-main--narrow {
+  max-width: 760px;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.page-head__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page-head__sub {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   4. TOP NAVIGATION
+   ========================================================= */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+
+  height: var(--nav-height);
+  padding: 0 var(--space-4);
+
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.topbar__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+
+.brand__mark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: var(--space-2);
+}
+
+.nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 550;
+  white-space: nowrap;
+
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav__link:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+  text-decoration: none;
+}
+
+.nav__link[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.nav__link svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.topbar__spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+/* Between the mobile tab bar and a roomy desktop there is a
+   band where the wordmark plus five links plus the tools do not
+   fit. Drop the least useful pieces first rather than letting
+   the bar push the page sideways. */
+@media (max-width: 1080px) {
+  .brand span:not(.brand__mark) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav__link span {
+    display: none;
+  }
+
+  .nav__link {
+    padding: 7px 9px;
+  }
+}
+
+
+/* ---------- Wallet pill ---------- */
+
+.wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+
+  font-size: 0.9rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wallet svg {
+  width: 14px;
+  height: 14px;
+  color: var(--positive);
+}
+
+.wallet--loading {
+  color: var(--text-faint);
+}
+
+
+/* ---------- Mobile tab bar ---------- */
+
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 780px) {
+  .nav {
+    display: none;
+  }
+
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+
+    display: flex;
+    justify-content: space-around;
+
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .tabbar__link {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+
+    padding: 6px 2px;
+    border-radius: var(--radius-sm);
+
+    color: var(--text-faint);
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .tabbar__link:hover {
+    text-decoration: none;
+  }
+
+  .tabbar__link[aria-current="page"] {
+    color: var(--accent);
+  }
+
+  .tabbar__link svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-main {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+
+/* =========================================================
+   5. BUTTONS
+   ========================================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  padding: 9px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text);
+  background: var(--surface-raised);
+
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.08s ease,
+    opacity 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.btn--primary {
+  color: var(--accent-text);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.btn--danger {
+  color: var(--negative);
+  border-color: var(--border-strong);
+}
+
+.btn--danger:hover:not(:disabled) {
+  border-color: var(--negative);
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+}
+
+.btn--sm {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--icon {
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+}
+
+a.btn--icon[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.btn--icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* =========================================================
+   6. SURFACES
+   ========================================================= */
+
+.card {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.panel {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.grid--cards {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+
+/* ---------- Stat tiles ---------- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-3);
+}
+
+.stat {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+}
+
+.stat__label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.stat__value {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.25rem;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+
+/* =========================================================
+   7. METERS & PROGRESS
+   ========================================================= */
+
+.meter {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.35s ease;
+}
+
+.meter__fill--positive { background: var(--positive); }
+.meter__fill--warning  { background: var(--warning); }
+.meter__fill--negative { background: var(--negative); }
+
+
+/* =========================================================
+   8. BADGES & RARITY
+   ========================================================= */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  padding: 2px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.badge--accent {
+  color: var(--accent);
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
+.badge--positive {
+  color: var(--positive);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--positive) 16%, transparent);
+}
+
+.badge--muted {
+  color: var(--text-faint);
+}
+
+/* Rarity is expressed through --tier, set by the JS helper. */
+.tier-common     { --tier: var(--rarity-common); }
+.tier-uncommon   { --tier: var(--rarity-uncommon); }
+.tier-rare       { --tier: var(--rarity-rare); }
+.tier-epic       { --tier: var(--rarity-epic); }
+.tier-legendary  { --tier: var(--rarity-legendary); }
+.tier-mythic     { --tier: var(--rarity-mythic); }
+.tier-exotic     { --tier: var(--rarity-exotic); }
+.tier-cosmic     { --tier: var(--rarity-cosmic); }
+.tier-unknown    { --tier: var(--text-faint); }
+
+.badge--tier {
+  color: var(--tier, var(--text-muted));
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tier, var(--text-muted)) 16%, transparent);
+}
+
+
+/* =========================================================
+   9. SEGMENTED CONTROLS / TABS
+   ========================================================= */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.segmented__item {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.segmented__item:hover {
+  color: var(--text);
+}
+
+.segmented__item[aria-selected="true"] {
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* =========================================================
+   10. FORM CONTROLS
+   ========================================================= */
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.field svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-faint);
+  flex: none;
+}
+
+.field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.field input {
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: transparent;
+}
+
+.field input::placeholder {
+  color: var(--text-faint);
+}
+
+.select {
+  padding: 8px 30px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 550;
+  color: var(--text);
+  background-color: var(--surface-sunken);
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+
+  appearance: none;
+  cursor: pointer;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch__track {
+  /* Explicit block: the track is not always a flex item, and an
+     inline element would ignore its width and height. */
+  display: inline-block;
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  flex: none;
+}
+
+.switch__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.switch input:checked + .switch__track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch input:checked + .switch__track::after {
+  transform: translateX(16px);
+  background: var(--accent-text);
+}
+
+.switch input:focus-visible + .switch__track {
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+
+/* =========================================================
+   11. POPOVER MENUS
+   ========================================================= */
+
+.menu-anchor {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+
+  min-width: 230px;
+  padding: var(--space-2);
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+
+  animation: menu-in 0.14s ease-out;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+.menu__label {
+  padding: 6px 10px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 550;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.menu__item:hover {
+  background: var(--surface-hover);
+  text-decoration: none;
+}
+
+.menu__item[aria-checked="true"] {
+  color: var(--accent);
+}
+
+.menu__item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.menu__sep {
+  height: 1px;
+  margin: var(--space-2) 4px;
+  background: var(--border);
+}
+
+.menu__note {
+  padding: 4px 10px 8px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.swatches {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px 10px;
+}
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  background-clip: content-box;
+}
+
+.swatch[aria-checked="true"] {
+  border-color: var(--text);
+}
+
+
+/* ---------- Account avatar ---------- */
+
+.avatar {
+  display: grid;
+  place-items: center;
+
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  background: var(--accent);
+
+  overflow: hidden;
+  flex: none;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-btn:hover {
+  border-color: var(--accent);
+}
+
+.account-btn__name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .account-btn__name {
+    display: none;
+  }
+
+  .account-btn {
+    padding: 4px;
+  }
+}
+
+.menu__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 10px 12px;
+}
+
+.menu__identity-text {
+  min-width: 0;
+}
+
+.menu__identity-name {
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__identity-sub {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ---------- Google button ---------- */
+
+.btn--google {
+  background: #ffffff;
+  color: #1f1f1f;
+  border-color: #dadce0;
+}
+
+.btn--google:hover:not(:disabled) {
+  background: #f6f8fc;
+  border-color: #c6cbd2;
+}
+
+.btn--google svg {
+  width: 17px;
+  height: 17px;
+}
+
+
+/* =========================================================
+   12. TOASTS
+   ========================================================= */
+
+.toast-region {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 200;
+
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-2);
+
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+@media (max-width: 780px) {
+  .toast-region {
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    left: var(--space-4);
+    max-width: none;
+  }
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-md);
+
+  font-size: 0.88rem;
+  pointer-events: auto;
+
+  animation: toast-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.toast--leaving {
+  animation: toast-out 0.18s ease-in forwards;
+}
+
+.toast--success { border-left-color: var(--positive); }
+.toast--error   { border-left-color: var(--negative); }
+.toast--warning { border-left-color: var(--warning); }
+
+.toast svg {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  flex: none;
+}
+
+.toast--success svg { color: var(--positive); }
+.toast--error svg   { color: var(--negative); }
+.toast--warning svg { color: var(--warning); }
+.toast--info svg    { color: var(--accent); }
+
+.toast__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast__title {
+  font-weight: 650;
+}
+
+.toast__text {
+  color: var(--text-muted);
+  font-size: 0.83rem;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+
+
+/* =========================================================
+   13. DIALOGS
+   ========================================================= */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+
+  animation: fade-in 0.15s ease-out;
+}
+
+.dialog {
+  width: min(460px, 100%);
+  padding: var(--space-5);
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+
+  animation: dialog-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.dialog__title {
+  margin-bottom: var(--space-2);
+  font-size: 1.15rem;
+}
+
+.dialog__body {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* Compact key/value rows for summaries inside a dialog. */
+.stats-row-lite {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 4px 0;
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+}
+
+
+/* =========================================================
+   14. EMPTY & LOADING STATES
+   ========================================================= */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+
+  padding: var(--space-7) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty svg {
+  width: 30px;
+  height: 30px;
+  color: var(--text-faint);
+  margin-bottom: var(--space-1);
+}
+
+.empty__title {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.skeleton {
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 25%,
+    var(--surface-hover) 37%,
+    var(--surface-sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+.skeleton--card {
+  height: 168px;
+}
+
+.skeleton--line {
+  height: 12px;
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+
+/* =========================================================
+   15. MOTION PREFERENCES
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* =========================================================
+   MAINTENANCE PANEL
+   ========================================================= */
+
+.devpanel {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 250;
+
+  width: min(300px, calc(100vw - 32px));
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+
+  animation: menu-in 0.14s ease-out;
+}
+
+@media (max-width: 780px) {
+  .devpanel {
+    bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}
+
+.devpanel__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.devpanel__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.devpanel__close {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.devpanel__close:hover {
+  color: var(--text);
+}
+
+.devpanel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.devpanel__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.devpanel__field input {
+  width: 140px;
+  padding: 7px 10px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.devpanel__field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.devpanel__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.devpanel__row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.devpanel__row .devpanel__field {
+  flex: 1;
+  min-width: 0;
+}
+
+.devpanel__actions .btn {
+  flex: 1;
+}
+
+.devpanel__note {
+  min-height: 16px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.devpanel__sep {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--border);
+}
+
+.devpanel__progress {
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.devpanel__progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+
+/* =========================================================
+   ANNOUNCEMENTS
+   ========================================================= */
+
+.announce-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.announce {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  padding: 10px var(--space-4);
+
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.announce__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.announce__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.announce__body {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.announce__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+
+  width: 26px;
+  height: 26px;
+  padding: 0;
+
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+
+  color: var(--text-faint);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.announce__close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.announce--info    { border-left: 3px solid var(--accent); }
+.announce--info .announce__icon { color: var(--accent); }
+
+.announce--warning { border-left: 3px solid var(--warning); }
+.announce--warning .announce__icon { color: var(--warning); }
+
+.announce--positive { border-left: 3px solid var(--positive); }
+.announce--positive .announce__icon { color: var(--positive); }
+
+
+/* =========================================================
+   CONTRIBUTE / REPORT-BUG DOCK (bottom-left)
+   ========================================================= */
+
+.contribute-dock {
+  position: fixed;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 40;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contribute-dock__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 7px 12px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+  backdrop-filter: blur(6px);
+
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.contribute-dock__link:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.contribute-dock__link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The mobile tab bar sits at the very bottom, so lift the dock
+   above it on small screens and let it hug the edge. */
+@media (max-width: 720px) {
+  .contribute-dock {
+    left: var(--space-3);
+    bottom: calc(var(--space-3) + 68px);
+  }
+
+  .contribute-dock__link span {
+    display: none;
+  }
+
+  .contribute-dock__link {
+    padding: 9px;
+  }
+}
+
+
+/* =========================================================
+   EXTRA THEMES
+   ========================================================= */
+
+:root[data-theme="gradient"] {
+  color-scheme: dark;
+  --bg: #080713;
+  --bg-glow: #25104a;
+  --surface: #17122acc;
+  --surface-solid: #17122a;
+  --surface-raised: #21183a;
+  --surface-hover: #2b2047;
+  --surface-sunken: #100c1d;
+  --border: #39275a;
+  --border-strong: #513779;
+  --text: #f6f1ff;
+  --text-muted: #b9afd0;
+  --text-faint: #786c91;
+  --positive: #4ade80;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --overlay: rgb(5 3 12 / 0.82);
+  --accent: #a855f7;
+  --accent-strong: #9333ea;
+  --accent-soft: #a855f72e;
+  --accent-text: #fff;
+  --accent-ring: #a855f780;
+}
+
+:root[data-theme="gradient"] body {
+  background:
+    radial-gradient(900px 600px at 10% 10%, rgb(168 85 247 / .25), transparent 65%),
+    radial-gradient(900px 600px at 90% 20%, rgb(236 72 153 / .22), transparent 65%),
+    radial-gradient(900px 600px at 50% 100%, rgb(34 211 238 / .18), transparent 65%),
+    linear-gradient(135deg, #090514, #1b0d35, #30104e, #101e42, #061b2b);
+  background-size: auto, auto, auto, 400% 400%;
+  animation: gemGradientShift 18s ease infinite;
+}
+
+@keyframes gemGradientShift {
+  0%, 100% { background-position: center, center, center, 0% 50%; }
+  50% { background-position: center, center, center, 100% 50%; }
+}
+
+:root[data-theme="gradient"] .card,
+:root[data-theme="gradient"] .stage,
+:root[data-theme="gradient"] .stat {
+  background: rgb(18 13 35 / .68);
+  border-color: rgb(255 255 255 / .12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgb(0 0 0 / .22), inset 0 1px rgb(255 255 255 / .06);
+}
+
+:root[data-theme="gradient"] .btn--primary,
+:root[data-theme="gradient"] .roll-button {
+  background: linear-gradient(135deg, #8b5cf6, #d946ef, #ec4899, #22d3ee);
+  background-size: 250% 250%;
+  animation: gemButtonGradient 8s ease infinite;
+  border: none;
+  color: white;
+}
+
+@keyframes gemButtonGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+:root[data-theme="ocean"] {
+  color-scheme: dark;
+  --bg: #04121a;
+  --bg-glow: #07394a;
+  --surface: #0a202acc;
+  --surface-solid: #0a202c;
+  --surface-raised: #0e2c3d;
+  --surface-hover: #143b4f;
+  --surface-sunken: #06171f;
+  --border: #1a4659;
+  --border-strong: #27657c;
+  --text: #e9fbff;
+  --text-muted: #91c3d0;
+  --text-faint: #5d8c9b;
+  --positive: #34d399;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --accent: #22d3ee;
+  --accent-strong: #06b6d4;
+  --accent-soft: #22d3ee2e;
+  --accent-text: #021114;
+  --accent-ring: #22d3ee80;
+}
+
+:root[data-theme="ocean"] body {
+  background: radial-gradient(700px 500px at 15% 10%, rgb(34 211 238 / .18), transparent 70%), radial-gradient(800px 500px at 85% 85%, rgb(14 165 233 / .16), transparent 70%), linear-gradient(160deg, #031018, #05202b, #06384a, #041821);
+}
+
+:root[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #061109;
+  --bg-glow: #103a1d;
+  --surface: #0c1d12cc;
+  --surface-solid: #0c1d12;
+  --surface-raised: #12291a;
+  --surface-hover: #183921;
+  --surface-sunken: #07150b;
+  --border: #1e4b2a;
+  --border-strong: #2d693b;
+  --text: #effff2;
+  --text-muted: #9ac5a5;
+  --text-faint: #61846a;
+  --positive: #4ade80;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --accent: #4ade80;
+  --accent-strong: #22c55e;
+  --accent-soft: #4ade802e;
+  --accent-text: #031008;
+  --accent-ring: #4ade8080;
+}
+
+:root[data-theme="forest"] body {
+  background: radial-gradient(700px 500px at 15% 15%, rgb(34 197 94 / .15), transparent 70%), radial-gradient(700px 500px at 85% 85%, rgb(74 222 128 / .11), transparent 70%), linear-gradient(145deg, #030b06, #07180c, #0b2914, #06130a);
+}
+
+:root[data-theme="sunset"] {
+  color-scheme: dark;
+  --bg: #180810;
+  --bg-glow: #4b1026;
+  --surface: #29101ccc;
+  --surface-solid: #29101d;
+  --surface-raised: #381625;
+  --surface-hover: #481d30;
+  --surface-sunken: #1a0a12;
+  --border: #5e263d;
+  --border-strong: #7c3450;
+  --text: #fff5f7;
+  --text-muted: #d8a9b8;
+  --text-faint: #916475;
+  --positive: #4ade80;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --accent: #fb7185;
+  --accent-strong: #f43f5e;
+  --accent-soft: #fb71852e;
+  --accent-text: #21050c;
+  --accent-ring: #fb718580;
+}
+
+:root[data-theme="sunset"] body {
+  background: radial-gradient(700px 500px at 15% 10%, rgb(249 115 22 / .2), transparent 70%), radial-gradient(800px 500px at 85% 20%, rgb(236 72 153 / .2), transparent 70%), radial-gradient(900px 600px at 50% 100%, rgb(251 113 133 / .15), transparent 70%), linear-gradient(145deg, #16070c, #36101c, #551526, #1d0b1b);
+}
+
+:root[data-theme="sunset"] .btn--primary,
+:root[data-theme="sunset"] .roll-button {
+  background: linear-gradient(135deg, #f97316, #fb7185, #ec4899);
+  border: none;
+  color: white;
+}
+
+:root[data-theme="ice"] {
+  color-scheme: dark;
+  --bg: #06101a;
+  --bg-glow: #103a57;
+  --surface: #0a1a29cc;
+  --surface-solid: #0a1a29;
+  --surface-raised: #10273b;
+  --surface-hover: #15334c;
+  --surface-sunken: #07121d;
+  --border: #1d4865;
+  --border-strong: #2b6388;
+  --text: #effcff;
+  --text-muted: #9bc8db;
+  --text-faint: #60849a;
+  --positive: #34d399;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --accent: #67e8f9;
+  --accent-strong: #22d3ee;
+  --accent-soft: #67e8f92e;
+  --accent-text: #031114;
+  --accent-ring: #67e8f980;
+}
+
+:root[data-theme="ice"] body {
+  background: radial-gradient(700px 500px at 15% 10%, rgb(103 232 249 / .18), transparent 70%), radial-gradient(800px 500px at 85% 80%, rgb(96 165 250 / .18), transparent 70%), linear-gradient(145deg, #030b12, #071a2a, #0b2b43, #06121d);
+}
+
+:root[data-theme="ice"] .btn--primary,
+:root[data-theme="ice"] .roll-button {
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+  border: none;
+  color: #031018;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="gradient"] body,
+  :root[data-theme="gradient"] .btn--primary,
+  :root[data-theme="gradient"] .roll-button {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   PER-GEM STYLING
+   Each gem name gets its own font + colour, applied inline
+   via src/ui/gemStyle.js. This just adds the shared behaviour
+   (gradient text animation, smooth transitions) around it.
+   ========================================================= */
+
+.gem-styled {
+  --gem-readable: color-mix(in srgb, var(--gem-color, currentColor) 72%, var(--text) 28%);
+  display: inline-block;
+  background-repeat: no-repeat;
+  color: var(--gem-readable);
+  text-shadow:
+    0 0 7px color-mix(in srgb, var(--gem-glow, transparent) 65%, transparent),
+    0 1px 1px color-mix(in srgb, var(--text) 35%, transparent);
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.gem-styled--animated {
+  animation: gemNamePulse 2.8s ease-in-out infinite;
+}
+
+.gem-styled--gradient {
+  background-size: 240% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gemShimmer 2.6s ease-in-out infinite, gemNamePulse 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gem-glow, transparent) 55%, transparent));
+}
+
+@keyframes gemShimmer {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+@keyframes gemNamePulse {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(0.98); }
+  50% { transform: translateY(-1px) scale(1.025); filter: brightness(1.16); }
+}
+
+
+/* =========================================================
+   ULTRA-RARE CINEMATIC REVEAL — 1/100k+ only
+   ========================================================= */
+
+.stage__display.is-ultra-rare {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.ultra-cutscene {
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.is-cinematic .ultra-cutscene {
+  opacity: 1;
+}
+
+.ultra-cutscene__veil,
+.ultra-cutscene__stars,
+.ultra-cutscene__burst,
+.ultra-cutscene__ring,
+.ultra-cutscene__beam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+}
+
+.ultra-cutscene__veil {
+  width: 180%;
+  height: 180%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--tier) 20%, transparent), transparent 42%), radial-gradient(circle, color-mix(in srgb, var(--accent) 13%, transparent), transparent 70%);
+  animation: ultraVeil 4.2s ease-out both;
+}
+
+.ultra-cutscene__stars {
+  width: 140%;
+  height: 140%;
+  transform: translate(-50%, -50%);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 85%, transparent) 0 1px, transparent 1.5px), radial-gradient(circle, color-mix(in srgb, var(--tier) 75%, transparent) 0 1px, transparent 1.5px);
+  background-size: 67px 67px, 113px 113px;
+  animation: ultraStars 4.2s linear both;
+}
+
+.ultra-cutscene__ring {
+  width: 80px;
+  height: 80px;
+  border: 2px solid color-mix(in srgb, var(--tier) 78%, var(--text) 22%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.15);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--tier) 60%, transparent), inset 0 0 22px color-mix(in srgb, var(--tier) 30%, transparent);
+  opacity: 0;
+}
+
+.ultra-cutscene__ring--one { animation: ultraRing 2.8s 0.12s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--two { animation: ultraRing 3.1s 0.32s cubic-bezier(.16,1,.3,1) both; }
+.ultra-cutscene__ring--three { animation: ultraRing 3.5s 0.52s cubic-bezier(.16,1,.3,1) both; }
+
+.ultra-cutscene__beam {
+  width: 12px;
+  height: 150%;
+  transform: translate(-50%, -50%) rotate(25deg) scaleY(0);
+  transform-origin: center;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--tier) 75%, var(--text) 25%), transparent);
+  filter: blur(2px);
+  opacity: 0;
+}
+
+.ultra-cutscene__beam--one { animation: ultraBeam 1.7s 0.3s ease-out both; }
+.ultra-cutscene__beam--two { animation: ultraBeam 1.9s 0.55s ease-out both reverse; transform: translate(-50%, -50%) rotate(-25deg) scaleY(0); }
+
+.ultra-cutscene__burst {
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 18px 8px color-mix(in srgb, var(--tier) 70%, transparent), 0 0 70px 22px color-mix(in srgb, var(--tier) 45%, transparent);
+  animation: ultraBurst 1.4s 0.42s cubic-bezier(.16,1,.3,1) both;
+}
+
+.is-ultra-rare .gem-reveal {
+  z-index: 2;
+}
+
+.is-ultra-rare .gem-reveal__name {
+  animation: ultraName 4.2s 0.15s cubic-bezier(.16,1,.3,1) both;
+}
+
+.is-ultra-rare .gem-reveal__art {
+  filter: drop-shadow(0 0 20px color-mix(in srgb, var(--tier) 72%, transparent)) drop-shadow(0 0 55px color-mix(in srgb, var(--tier) 42%, transparent));
+}
+
+@keyframes ultraVeil {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: .72; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes ultraStars {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.5) rotate(0deg); }
+  18% { opacity: .9; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(18deg); }
+}
+
+@keyframes ultraRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.15) rotate(0deg); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(7.5) rotate(160deg); }
+}
+
+@keyframes ultraBeam {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(0); }
+  35% { opacity: .75; transform: translate(-50%, -50%) rotate(25deg) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(25deg) scaleY(1.2); }
+}
+
+@keyframes ultraBurst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(9); }
+}
+
+@keyframes ultraName {
+  0% { opacity: 0; transform: translateY(18px) scale(.72); filter: blur(10px) brightness(2.5); }
+  35% { opacity: 1; transform: translateY(0) scale(1.08); filter: blur(0) brightness(1.5); }
+  55% { transform: translateY(0) scale(1); filter: brightness(1.15); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem-styled--animated,
+  .gem-styled--gradient {
+    animation: none;
+  }
+
+  .ultra-cutscene *,
+  .is-ultra-rare .gem-reveal__name {
+    animation: none !important;
+  }
 }
