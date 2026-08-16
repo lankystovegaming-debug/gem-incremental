@@ -54,7 +54,12 @@ const MODE_ICONS = {
   system: icons.monitor,
   light: icons.sun,
   dark: icons.moon,
-  neon: icons.bolt
+  neon: icons.bolt,
+  gradient: icons.sparkle,
+  ocean: icons.droplet ?? icons.sparkle,
+  forest: icons.leaf ?? icons.sparkle,
+  sunset: icons.sunset ?? icons.sun,
+  ice: icons.snowflake ?? icons.sparkle
 };
 
 
@@ -588,6 +593,15 @@ function mountContributeDock(base) {
     >
       ${icons.bug}
       <span>Report a bug</span>
+    </a>
+
+    <a
+      class="contribute-dock__link"
+      href="${base}support/"
+      title="Support Gem Incremental"
+    >
+      ${icons.heart}
+      <span>Support the game</span>
     </a>
   `;
 

@@ -48,6 +48,10 @@ export const icons = {
     <circle cx="10" cy="17" r=".8" fill="currentColor" stroke="none" />
   `),
 
+  heart: svg(`
+    <path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.8l-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z" />
+  `),
+
   shield: svg(`
     <path d="M12 3 20 6v5c0 5.2-3.4 8.3-8 10-4.6-1.7-8-4.8-8-10V6Z" />
     <path d="m8.8 12 2.1 2.1 4.5-4.6" />

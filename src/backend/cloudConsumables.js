@@ -43,9 +43,13 @@ export async function buyCloudConsumable(consumableId) {
 // records a timed boost in player_boosts, returning the boost it
 // started (family, effectValue, expiresAt).
 export async function useCloudConsumable(consumableId) {
-  const { data, error } = await supabase.rpc("use_consumable", {
+  const oneRoll = ["legendary-potion", "mythic-potion"].includes(consumableId);
+  const { data, error } = await supabase.rpc(
+    oneRoll ? "activate_one_roll_potion" : "use_consumable",
+    {
     p_consumable_id: consumableId
-  });
+    }
+  );
 
   if (!error) {
     return { data, error: null };
@@ -65,6 +69,20 @@ export async function useCloudConsumable(consumableId) {
           : "The potion could not be used."
     }
   };
+}
+
+export async function loadPendingOneRollBoost() {
+  const { data, error } = await supabase
+    .from("player_one_roll_boosts")
+    .select("consumable_id, effect_value, activated_at")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load pending one-roll boost:", error);
+    return null;
+  }
+
+  return data ?? null;
 }
 
 

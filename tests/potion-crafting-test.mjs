@@ -8,7 +8,7 @@ import {
 } from "../src/logic/crafting.js";
 
 const potionRecipes = recipes.filter((recipe) => recipe.category === "potion");
-assert.equal(potionRecipes.length, 8);
+assert.equal(potionRecipes.length, 10);
 assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
@@ -48,7 +48,8 @@ const lucky = recipes.find((recipe) => recipe.id === "lucky-potion-2");
 const luckyState = createCraftingState();
 const luckyInventory = {
   equipment: [],
-  consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }]
+  consumables: [{ consumable_id: "lucky-potion-1", quantity: 2 }],
+  gems: []
 };
 
 assert.equal(

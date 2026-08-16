@@ -8,6 +8,14 @@ import {
 // =========================================================
 
 export async function loadCloudDebugState() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const user = authData?.user ?? null;
+
+  if (authError || !user) {
+    console.error("Failed to identify current player for debug state:", authError);
+    return null;
+  }
+
   // -------------------------------------------------------
   // PLAYER
   // -------------------------------------------------------
@@ -26,6 +34,7 @@ export async function loadCloudDebugState() {
         rarest_gem_name,
         rarest_gem_rarity
       `)
+      .eq("id", user.id)
       .maybeSingle();
 
 
@@ -161,6 +170,7 @@ export async function loadCloudDebugState() {
       .select(
         "active_auto_craft"
       )
+      .eq("player_id", user.id)
       .maybeSingle();
 
 

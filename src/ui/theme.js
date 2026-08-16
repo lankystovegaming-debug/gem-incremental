@@ -2,7 +2,7 @@
 // THEME
 //
 // Two independent choices:
-//   mode   — system | light | dark
+//   mode   — system | light | dark | neon | gradient | ocean | forest | sunset | ice
 //   accent — the highlight colour used across the UI
 //
 // Both live in localStorage and are applied to <html>. Each
@@ -19,7 +19,12 @@ export const MODES = [
   { id: "system", label: "System" },
   { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
-  { id: "neon", label: "Neon" }
+  { id: "neon", label: "Neon" },
+  { id: "gradient", label: "Gradient" },
+  { id: "ocean", label: "Ocean" },
+  { id: "forest", label: "Forest" },
+  { id: "sunset", label: "Sunset" },
+  { id: "ice", label: "Cyber Ice" }
 ];
 
 

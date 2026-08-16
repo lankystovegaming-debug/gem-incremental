@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,7 +168,7 @@
 
     <section class="card chat-card" aria-labelledby="chatHeading">
       <div class="chat-card__head">
-        <h2 class="chat-card__title" id="chatHeading">Global Chat</h2>
+        <h2 class="chat-card__title" id="chatHeading">Chat</h2>
         <span class="chat-card__status" id="chatStatus">Connecting…</span>
       </div>
 
@@ -176,7 +177,7 @@
         id="chatMessages"
         role="log"
         aria-live="polite"
-        aria-label="Global chat messages"
+        aria-label="Global and private chat messages"
       >
         <div class="chat-empty" id="chatEmpty">Loading chat…</div>
       </div>
@@ -188,7 +189,7 @@
           type="text"
           maxlength="500"
           autocomplete="off"
-          placeholder="Type a message…"
+          placeholder="Message globally, or use /msg username message…"
           aria-label="Chat message"
         >
         <button class="btn btn--primary chat-send" id="chatSend" type="submit">
@@ -197,9 +198,11 @@
       </form>
 
       <div class="chat-hint" id="chatHint" aria-live="polite">
-        You can send one message every 5 seconds.
+        Global chat is public. Use /msg username message for a private message.
       </div>
     </section>
+
+
 
   </main>
 

@@ -54,17 +54,16 @@ export function manuallyDepositCloudRequirement(recipeId, requirementIndex) {
 
 
 export async function craftCloudRecipe(recipeId) {
-  // Primary path: the server-side Edge Function.
+  // The primary path is the server-side Edge Function. On this backend
+  // it can fail with "player not found"; the atomic equipment craft is
+  // also exposed as a self-scoped RPC (scoped to auth.uid(), recipe read
+  // server-side from game_recipes), so fall back to it.
   const primary = await invokeFunction("craft-recipe", { recipeId });
 
   if (!primary.error) {
     return primary;
   }
 
-  // Fallback: on this backend the craft-recipe function can fail with
-  // "player not found". The atomic equipment craft is also exposed as
-  // a self-scoped RPC (scoped to auth.uid(), recipe read server-side
-  // from game_recipes), so use it when the function is unavailable.
   const fallback = await supabase.rpc("craft_equipment_recipe", {
     p_recipe_id: recipeId
   });

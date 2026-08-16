@@ -13,7 +13,8 @@ import {
 import {
   loadCloudConsumables,
   useCloudConsumable,
-  loadActiveBoosts
+  loadActiveBoosts,
+  loadPendingOneRollBoost
 } from "../src/backend/cloudConsumables.js";
 import { getConsumableById } from "../src/data/consumables.js";
 
@@ -107,6 +108,7 @@ const state = {
   equipment: [],
   consumables: [],
   boosts: [],
+  oneRollBoost: null,
   capacity: 15,
   money: 0,
   loading: true
@@ -830,7 +832,7 @@ function renderConsumables() {
     owned
       .map(({ row, def }) => {
         const stat = POTION_STATS[def.family] ?? def.family;
-        const active = activeBoost(def.family);
+        const active = def.oneRoll ? state.oneRollBoost : activeBoost(def.family);
 
         return `
         <article class="potion-owned tier-badge-${def.tier}">
@@ -850,10 +852,14 @@ function renderConsumables() {
 
           <p class="potion-owned__note">
             ${
-              active
+              def.oneRoll && active
+                ? `${escapeHtml(getConsumableById(active.consumable_id)?.name ?? "One-roll potion")} is waiting for your next successful roll.`
+                : active
                 ? `${escapeHtml(stat)} boost active — ${escapeHtml(
                     formatRemaining(active.expires_at)
                   )} left.`
+                : def.oneRoll
+                ? "Applies to your next successful roll and does not expire."
                 : def.tier < 3
                 ? `Craft with gems to reach ${escapeHtml(
                     `${def.name.split(" ").slice(0, -1).join(" ")} ${
@@ -868,9 +874,10 @@ function renderConsumables() {
             class="btn btn--primary btn--sm btn--block"
             type="button"
             data-use="${escapeHtml(def.id)}"
+            ${def.oneRoll && active ? "disabled" : ""}
           >
             ${icons.potion ?? icons.sparkle}
-            ${active ? "Extend boost" : "Use potion"}
+            ${def.oneRoll && active ? "One-roll boost pending" : active ? "Extend boost" : "Use potion"}
           </button>
         </article>
       `;
@@ -912,7 +919,15 @@ async function usePotion(button) {
 
   const boost = data?.boost;
 
-  if (boost) {
+  if (def.oneRoll && boost) {
+    state.oneRollBoost = {
+      consumable_id: def.id,
+      effect_value: boost.effectValue,
+      activated_at: boost.activatedAt
+    };
+  }
+
+  if (boost && !def.oneRoll) {
     const existing = state.boosts.find((entry) => entry.family === boost.family);
 
     if (existing) {
@@ -931,9 +946,11 @@ async function usePotion(button) {
 
   notify.success(
     "Potion used",
-    `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% ${
-      POTION_STATS[def.family] ?? def.family
-    } for 60 seconds.`
+    def.oneRoll
+      ? `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% Luck is ready for your next successful roll.`
+      : `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% ${
+          POTION_STATS[def.family] ?? def.family
+        } for 60 seconds.`
   );
 
   startBoostTicker();
@@ -984,12 +1001,13 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment, potions, boosts] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts, oneRollBoost] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
     loadCloudConsumables(),
-    loadActiveBoosts()
+    loadActiveBoosts(),
+    loadPendingOneRollBoost()
   ]);
 
   state.loading = false;
@@ -1018,6 +1036,8 @@ async function refresh() {
       startBoostTicker();
     }
   }
+
+  state.oneRollBoost = oneRollBoost;
 
   renderAll();
 }

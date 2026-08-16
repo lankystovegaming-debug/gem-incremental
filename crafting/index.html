@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +22,7 @@
         var mode = localStorage.getItem("gemIncremental.theme.mode");
         var accent = localStorage.getItem("gemIncremental.theme.accent");
 
-        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+        if (["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"].indexOf(mode) >= 0) {
           document.documentElement.setAttribute("data-theme", mode);
         }
 
@@ -44,7 +45,7 @@
         <p class="page-head__sub" id="craftingSubtitle">Loading recipes…</p>
       </div>
 
-      <div class="row">
+      <div class="row" id="hideOwnedRow">
         <label class="switch" title="Only show recipes you have not crafted yet">
           <input type="checkbox" id="hideOwned">
           <span class="switch__track"></span>

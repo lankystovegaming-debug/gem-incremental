@@ -17,13 +17,23 @@ function getRequirementKey(requirement, index) {
   // Consumable/potion requirements are deposited too, keyed by the
   // consumable id — this must match the server (craft_consumable_recipe
   // and manual-deposit), which stores progress under consumableId.
-  if (requirement.type === "consumable") {
-    return requirement.consumableId ?? `${requirement.type}-${index}`;
+  if (
+    requirement.type === "consumable" ||
+    requirement.type === "consumable-count" ||
+    requirement.type === "potion" ||
+    requirement.type === "potion-count"
+  ) {
+    return (
+      requirement.consumableId ??
+      requirement.consumable_id ??
+      requirement.potionId ??
+      requirement.potion_id ??
+      `${requirement.type}-${index}`
+    );
   }
 
   return `${requirement.type}-${index}`;
 }
-
 export function ensureRecipeProgress(
   craftingState,
   recipe
@@ -499,6 +509,30 @@ export function manuallyDepositRequirement(
 
   if (!requirement) {
     return false;
+  }
+
+  const progress = ensureRecipeProgress(craftingState, recipe);
+
+  if (requirement.type === "consumable") {
+    const key = getRequirementKey(requirement, requirementIndex);
+    const current = Number(progress[key] ?? 0);
+    const target = Number(requirement.amount ?? 0);
+    const owned = inventory.consumables?.find(
+      (item) => item.consumable_id === requirement.consumableId
+    );
+
+    if (!owned || current >= target || Number(owned.quantity ?? 0) <= 0) {
+      return false;
+    }
+
+    const move = Math.min(
+      Number(owned.quantity ?? 0),
+      target - current
+    );
+
+    progress[key] = current + move;
+    owned.quantity = Number(owned.quantity ?? 0) - move;
+    return move > 0;
   }
 
   if (
