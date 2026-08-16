@@ -2225,3 +2225,30 @@ a.btn--icon[aria-current="page"] {
     animation: none;
   }
 }
+
+
+/* =========================================================
+   DISPLAY FONT  (Settings → Appearance)
+
+   Lets players pin the display face used for the wordmark,
+   headings, roll button and gem names. "orbitron" is the game's
+   classic geometric face; "plain" reuses the body font. The gem
+   name is pinned explicitly with !important so the choice wins
+   even over a theme or custom rule that targets it directly.
+   ========================================================= */
+
+:root[data-font="orbitron"] {
+  --font-display: "Orbitron", "Exo 2", "Segoe UI", sans-serif;
+}
+
+:root[data-font="plain"] {
+  --font-display: var(--font);
+}
+
+:root[data-font="orbitron"] .gem-reveal__name {
+  font-family: "Orbitron", "Exo 2", "Segoe UI", sans-serif !important;
+}
+
+:root[data-font="plain"] .gem-reveal__name {
+  font-family: var(--font) !important;
+}

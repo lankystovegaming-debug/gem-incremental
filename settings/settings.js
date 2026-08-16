@@ -16,10 +16,13 @@ import { escapeHtml } from "../src/ui/format.js";
 import {
   MODES,
   ACCENTS,
+  FONTS,
   getMode,
   getAccent,
+  getFont,
   setMode,
   setAccent,
+  setFont,
   onThemeChange
 } from "../src/ui/theme.js";
 import {
@@ -45,11 +48,13 @@ document.getElementById("aboutIcon").innerHTML = icons.keyboard;
 
 const modePicker = document.getElementById("modePicker");
 const accentPicker = document.getElementById("accentPicker");
+const fontPicker = document.getElementById("fontPicker");
 
 
 function renderAppearance() {
   const mode = getMode();
   const accent = getAccent();
+  const font = getFont();
 
   modePicker.innerHTML = MODES.map(
     (entry) => `
@@ -78,6 +83,19 @@ function renderAppearance() {
       ></button>
     `
   ).join("");
+
+  fontPicker.innerHTML = FONTS.map(
+    (entry) => `
+      <button
+        class="segmented__item"
+        type="button"
+        role="radio"
+        aria-checked="${entry.id === font}"
+        aria-selected="${entry.id === font}"
+        data-font="${entry.id}"
+      >${entry.label}</button>
+    `
+  ).join("");
 }
 
 
@@ -95,6 +113,15 @@ accentPicker.addEventListener("click", (event) => {
 
   if (button) {
     setAccent(button.dataset.accent);
+  }
+});
+
+
+fontPicker.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-font]");
+
+  if (button) {
+    setFont(button.dataset.font);
   }
 });
 
