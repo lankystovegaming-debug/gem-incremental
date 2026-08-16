@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="See the latest features, improvements, and fixes added to Gem Incremental.">
+
+  <title>Update Log · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./updates.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+        document.documentElement.setAttribute("data-accent", accent || "indigo");
+      } catch (error) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main updates-page">
+    <div class="page-head updates-head">
+      <div class="page-head__title">
+        <p class="updates-head__eyebrow">What's new</p>
+        <h1>Update Log</h1>
+        <p class="page-head__sub">New features, improvements, balance changes, and bug fixes.</p>
+      </div>
+    </div>
+
+    <section class="updates-list" aria-label="Gem Incremental updates">
+      <article class="update-card update-card--latest">
+        <header class="update-card__header">
+          <div>
+            <div class="update-card__meta">
+              <span class="update-card__badge">Latest</span>
+              <time datetime="2026-08-16">16 August 2026</time>
+            </div>
+            <h2>Potions & progression improvements</h2>
+          </div>
+        </header>
+
+        <div class="update-section">
+          <h3>New</h3>
+          <ul>
+            <li>Added the one-roll Legendary Potion and Mythic Potion.</li>
+            <li>Legendary Potions require 500 lifetime rolls to use.</li>
+            <li>Mythic Potions require 2,500 lifetime rolls to use.</li>
+            <li>Potions can still be crafted and collected before reaching their use requirement.</li>
+          </ul>
+        </div>
+
+        <div class="update-section">
+          <h3>Improvements</h3>
+          <ul>
+            <li>Roll results now record the full effective Luck used, including potion and event boosts.</li>
+            <li>The Stats page now displays timed, one-roll, and Admin Event Luck correctly.</li>
+            <li>Luck no longer rolls gems whose rarity denominator is lower than the active Luck value.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="update-card">
+        <header class="update-card__header">
+          <div>
+            <div class="update-card__meta">
+              <time datetime="2026-08-16">16 August 2026</time>
+            </div>
+            <h2>Community & Admin tools</h2>
+          </div>
+        </header>
+
+        <div class="update-section">
+          <h3>New</h3>
+          <ul>
+            <li>Added redeemable codes that can award money and potions.</li>
+            <li>Added owner-controlled, limited-time Admin Events.</li>
+            <li>Admin Events now support both additive bonuses and multiplicative modifiers.</li>
+            <li>Added improved loot-box rewards, including potion rewards.</li>
+          </ul>
+        </div>
+
+        <div class="update-section">
+          <h3>Security & fixes</h3>
+          <ul>
+            <li>Added protection against gaining extra rolls by running the game in multiple tabs.</li>
+            <li>Improved server-side validation for rewards, potion use, and Admin actions.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="update-card">
+        <header class="update-card__header">
+          <div>
+            <div class="update-card__meta">
+              <span class="update-card__badge update-card__badge--version">v0.5.0</span>
+              <time datetime="2026-08-15">15 August 2026</time>
+            </div>
+            <h2>Expanded equipment progression</h2>
+          </div>
+        </header>
+
+        <div class="update-section">
+          <h3>New</h3>
+          <ul>
+            <li>Added Tier 6–8 Boots and Bags with new late-game crafting recipes.</li>
+            <li>Added Tier 9 and Tier 10 Pickaxes with lifetime-roll requirements.</li>
+            <li>Expanded the gem collection with new rare materials and hidden discoveries.</li>
+            <li>Added infinite storage upgrades with gradually increasing prices.</li>
+          </ul>
+        </div>
+
+        <div class="update-section">
+          <h3>Quality of life</h3>
+          <ul>
+            <li>The Bottomless Bag recipe now identifies which gems are still missing.</li>
+            <li>Inventory equipment can now be unequipped and re-equipped normally.</li>
+            <li>Stored gems show the roll number and Luck used when they were discovered.</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module" src="./updates.js"></script>
+</body>
+</html>

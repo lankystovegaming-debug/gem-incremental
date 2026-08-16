@@ -1,0 +1,125 @@
+.updates-page {
+  max-width: 920px;
+}
+
+.updates-head {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.updates-head__eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.updates-head h1 {
+  margin-top: 3px;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.updates-list {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.update-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+}
+
+.update-card--latest {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.update-card--latest::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+}
+
+.update-card__header {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.update-card__header h2 {
+  margin-top: 8px;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+
+.update-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.update-card__badge {
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.update-card__badge--version {
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 15%, transparent);
+}
+
+.update-section {
+  margin-top: var(--space-4);
+}
+
+.update-section h3 {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.update-section ul {
+  display: grid;
+  gap: 10px;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-section li {
+  position: relative;
+  padding-left: 22px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.update-section li::before {
+  content: "";
+  position: absolute;
+  top: 0.65em;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+@media (max-width: 600px) {
+  .update-card {
+    padding: var(--space-4);
+  }
+}

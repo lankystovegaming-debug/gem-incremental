@@ -595,6 +595,15 @@ function mountContributeDock(base) {
 
     <a
       class="contribute-dock__link"
+      href="${base}updates/"
+      title="View the update log"
+    >
+      ${icons.sparkle}
+      <span>Update log</span>
+    </a>
+
+    <a
+      class="contribute-dock__link"
       href="${base}support/"
       title="Support Gem Incremental"
     >
