@@ -321,7 +321,7 @@ async function start() {
   renderPrice();
   renderFeed();
 
-  // The quote decays more slowly as more players hold shares.
+  // The quote decays only when the market has no shareholders.
   setInterval(renderPrice, 5000);
 
   // Pick up other players' trades.

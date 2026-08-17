@@ -4,8 +4,7 @@ import { supabase } from "./supabase.js";
 // what a trade will actually use.
 const BASELINE = 10;
 const FLOOR = 1;
-const EMPTY_MARKET_HALF_LIFE_MS = 6 * 60 * 60 * 1000;
-const MAX_DECAY_HOLDERS = 7;
+const EMPTY_MARKET_HALF_LIFE_MS = 60 * 60 * 1000;
 
 
 export function revertedPrice(price, decayUpdatedAt, holderCount = 0) {
@@ -14,17 +13,13 @@ export function revertedPrice(price, decayUpdatedAt, holderCount = 0) {
 
   if (!Number.isFinite(updatedAt)) return storedPrice;
 
-  // More separate holders make the market more stable. A single holder still
-  // gets a slow leak, while seven or more holders hit the 48-hour cap.
-  const holders = Math.min(
-    MAX_DECAY_HOLDERS,
-    Math.max(0, Math.floor(Number(holderCount) || 0))
-  );
-  const halfLifeMs = EMPTY_MARKET_HALF_LIFE_MS * (1 + holders);
+  // A single share held by anyone freezes the quote. Only an empty market
+  // resets rapidly toward the $1 floor.
+  if (Number(holderCount) > 0) return storedPrice;
 
-  // Mirror the server's holder-weighted idle-decay rule between refreshes.
+  // Mirror the server's empty-market decay rule between refreshes.
   const elapsed = Math.max(0, Date.now() - updatedAt);
-  const decay = Math.pow(0.5, elapsed / halfLifeMs);
+  const decay = Math.pow(0.5, elapsed / EMPTY_MARKET_HALF_LIFE_MS);
   return FLOOR + (storedPrice - FLOOR) * decay;
 }
 
