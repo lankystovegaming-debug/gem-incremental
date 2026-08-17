@@ -56,7 +56,7 @@ const state = {
 
 function currentPrice() {
   return state.market
-    ? revertedPrice(state.market.price, state.market.updatedAt)
+    ? revertedPrice(state.market.price, state.market.decayUpdatedAt)
     : 0;
 }
 
@@ -317,7 +317,7 @@ async function start() {
   renderPrice();
   renderFeed();
 
-  // The price drifts toward baseline over time, so keep the display live.
+  // Keep the displayed idle-decay quote live between server refreshes.
   setInterval(renderPrice, 5000);
 
   // Pick up other players' trades.

@@ -4,19 +4,27 @@ import { supabase } from "./supabase.js";
 // what a trade will actually use.
 const BASELINE = 10;
 const FLOOR = 1;
+const IDLE_DECAY_HALF_LIFE_MS = 24 * 60 * 60 * 1000;
 
 
-export function revertedPrice(price) {
-  // The server's curve is the single source of truth. Do not drift the
-  // displayed quote over time: that would create an artificial arbitrage.
-  return Math.max(FLOOR, Number(price));
+export function revertedPrice(price, decayUpdatedAt) {
+  const storedPrice = Math.max(FLOOR, Number(price));
+  const updatedAt = new Date(decayUpdatedAt).getTime();
+
+  if (!Number.isFinite(updatedAt)) return storedPrice;
+
+  // Mirror the server's idle-decay rule between market refreshes. The quote
+  // eases toward the floor after the last buy/trade instead of going stale.
+  const elapsed = Math.max(0, Date.now() - updatedAt);
+  const decay = Math.pow(0.5, elapsed / IDLE_DECAY_HALF_LIFE_MS);
+  return FLOOR + (storedPrice - FLOOR) * decay;
 }
 
 
 export async function loadMarket() {
   const { data, error } = await supabase
     .from("market_state")
-    .select("price, updated_at")
+    .select("price, updated_at, decay_updated_at")
     .eq("id", "coin")
     .maybeSingle();
 
@@ -27,7 +35,8 @@ export async function loadMarket() {
 
   return {
     price: Number(data?.price ?? BASELINE),
-    updatedAt: data?.updated_at ?? new Date().toISOString()
+    updatedAt: data?.updated_at ?? new Date().toISOString(),
+    decayUpdatedAt: data?.decay_updated_at ?? data?.updated_at ?? new Date().toISOString()
   };
 }
 

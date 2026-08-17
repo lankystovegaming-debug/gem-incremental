@@ -4,7 +4,7 @@ import {
   loadWallet,
   openLootBox
 } from "../src/backend/cloudLootboxes.js";
-import { loadMarket } from "../src/backend/cloudMarket.js";
+import { loadMarket, revertedPrice } from "../src/backend/cloudMarket.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -364,7 +364,7 @@ async function refreshCoinValue() {
   const market = await loadMarket();
   if (!market) return;
 
-  state.coinValue = Number(market.price) * 10000;
+  state.coinValue = revertedPrice(market.price, market.decayUpdatedAt) * 10000;
   renderWallet();
 }
 
@@ -381,7 +381,7 @@ async function start() {
     state.boxes = boxes;
   }
   if (market) {
-    state.coinValue = Number(market.price) * 10000;
+    state.coinValue = revertedPrice(market.price, market.decayUpdatedAt) * 10000;
   }
 
   // The value is public market data, so keep it live even if the account
