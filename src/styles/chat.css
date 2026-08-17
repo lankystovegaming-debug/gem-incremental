@@ -413,3 +413,5 @@
   }
   .chat-dock .chat-card { height: 62vh; }
 }
+
+.chat-message__mutations{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.45rem}.chat-message__mutations .mutation-name-effect{font-size:.68rem;padding:2px 7px;border-radius:999px}
