@@ -9,7 +9,7 @@ import {
   findPlayerByUsername,
   loadUnreadPrivateMessageCount,
   loadRecentPrivateMessages,
-  markAllPrivateMessagesRead,
+  markAllPrivateMessagesRead, 
   sendPrivateMessage,
   subscribeToPrivateMessages,
   unsubscribeFromPrivateMessages
