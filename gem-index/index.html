@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,112 +6,28 @@
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0b0e14">
   <meta name="description" content="Every gem in the deposit, with your discovery records.">
-
   <title>Gem Index · Gem Incremental</title>
-
   <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
-  <link rel="preload" as="font" type="font/woff2"
-        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
   <link rel="stylesheet" href="../src/styles/app.css">
   <link rel="stylesheet" href="./index.css">
-
-  <script>
-    (function () {
-      try {
-        var mode = localStorage.getItem("gemIncremental.theme.mode");
-        var accent = localStorage.getItem("gemIncremental.theme.accent");
-
-        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
-          document.documentElement.setAttribute("data-theme", mode);
-        }
-
-        document.documentElement.setAttribute(
-          "data-accent",
-          accent || "indigo"
-        );
-      } catch (error) {
-        /* localStorage unavailable — defaults apply. */
-      }
-    })();
-  </script>
+  <script>(function(){try{var mode=localStorage.getItem("gemIncremental.theme.mode");var accent=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon"].indexOf(mode)>=0)document.documentElement.setAttribute("data-theme",mode);document.documentElement.setAttribute("data-accent",accent||"indigo");}catch(error){}})();</script>
 </head>
-
 <body>
-  <main class="app-main">
-    <nav class="subtabs" aria-label="Index sections">
-      <button class="subtabs__link" id="gemIndexTab" type="button" aria-current="page">Gems</button>
-      <button class="subtabs__link" id="mutationIndexTab" type="button">Mutations</button>
-    </nav>
-
-    <section id="gemIndexPanel">
-    <div class="page-head">
-      <div class="page-head__title">
-        <h1>Gem Index</h1>
-        <p class="page-head__sub" id="discoveryCount">Loading discoveries…</p>
-      </div>
-    </div>
-
-    <div class="card discovery">
-      <div class="discovery__bar">
-        <div class="meter">
-          <div class="meter__fill meter__fill--positive" id="discoveryMeter" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="discovery__tiers" id="tierBreakdown"></div>
-    </div>
-
+<main class="app-main">
+  <section>
+    <div class="page-head"><div class="page-head__title"><h1>Gem Index</h1><p class="page-head__sub" id="discoveryCount">Loading discoveries…</p></div></div>
+    <div class="card discovery"><div class="discovery__bar"><div class="meter"><div class="meter__fill meter__fill--positive" id="discoveryMeter" style="width:0%"></div></div></div><div class="discovery__tiers" id="tierBreakdown"></div></div>
     <div class="index-filters">
-      <label class="field index-search">
-        <span id="searchIcon"></span>
-        <input
-          type="search"
-          id="gemSearch"
-          placeholder="Search gems"
-          aria-label="Search the gem index"
-        >
-      </label>
-
-      <select class="select" id="gemFilter" aria-label="Filter gems">
-        <option value="all">All gems</option>
-        <option value="discovered">Discovered</option>
-        <option value="undiscovered">Not found yet</option>
-      </select>
-
-      <select class="select" id="gemSort" aria-label="Sort gems">
-        <option value="rarity">Common first</option>
-        <option value="rarity-desc">Rarest first</option>
-        <option value="name">Name</option>
-        <option value="found">Most found</option>
-      </select>
+      <label class="field index-search"><span id="searchIcon"></span><input type="search" id="gemSearch" placeholder="Search gems" aria-label="Search the gem index"></label>
+      <select class="select" id="gemFilter" aria-label="Filter gems"><option value="all">All gems</option><option value="discovered">Discovered</option><option value="undiscovered">Not found yet</option></select>
+      <select class="select" id="gemSort" aria-label="Sort gems"><option value="rarity">Common first</option><option value="rarity-desc">Rarest first</option><option value="name">Name</option><option value="found">Most found</option></select>
     </div>
-
+    <div class="mutation-filter-heading"><span>Mutation filter</span><small>Multiple mutations can be selected</small></div>
+    <nav class="mutation-tabs" id="mutationTabs" aria-label="Mutation filters"></nav>
     <div id="gemList" class="grid grid--cards"></div>
-    </section>
-
-    <section class="hidden" id="mutationIndexPanel">
-      <div class="page-head">
-        <div class="page-head__title">
-          <h1>Mutation Index</h1>
-          <p class="page-head__sub" id="mutationDiscoveryCount">Loading discoveries…</p>
-        </div>
-      </div>
-
-      <div class="card discovery">
-        <div class="discovery__bar">
-          <div class="meter">
-            <div class="meter__fill meter__fill--positive" id="mutationDiscoveryMeter" style="width:0%"></div>
-          </div>
-        </div>
-        <p class="mutation-index__hint">Mutations are permanently recorded here, even after their gems are sold or deposited.</p>
-      </div>
-
-      <nav class="mutation-tabs" id="mutationTabs" aria-label="Mutation filters"></nav>
-
-      <div id="mutationList" class="grid grid--cards"></div>
-    </section>
-  </main>
-
-  <script type="module" src="./index.js"></script>
+  </section>
+</main>
+<script type="module" src="./index.js"></script>
 </body>
 </html>
