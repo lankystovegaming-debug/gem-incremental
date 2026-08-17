@@ -38,6 +38,12 @@
 
 <body>
   <main class="app-main">
+    <nav class="subtabs" aria-label="Index sections">
+      <button class="subtabs__link" id="gemIndexTab" type="button" aria-current="page">Gems</button>
+      <button class="subtabs__link" id="mutationIndexTab" type="button">Mutations</button>
+    </nav>
+
+    <section id="gemIndexPanel">
     <div class="page-head">
       <div class="page-head__title">
         <h1>Gem Index</h1>
@@ -81,6 +87,27 @@
     </div>
 
     <div id="gemList" class="grid grid--cards"></div>
+    </section>
+
+    <section class="hidden" id="mutationIndexPanel">
+      <div class="page-head">
+        <div class="page-head__title">
+          <h1>Mutation Index</h1>
+          <p class="page-head__sub" id="mutationDiscoveryCount">Loading discoveries…</p>
+        </div>
+      </div>
+
+      <div class="card discovery">
+        <div class="discovery__bar">
+          <div class="meter">
+            <div class="meter__fill meter__fill--positive" id="mutationDiscoveryMeter" style="width:0%"></div>
+          </div>
+        </div>
+        <p class="mutation-index__hint">Mutations are permanently recorded here, even after their gems are sold or deposited.</p>
+      </div>
+
+      <div id="mutationList" class="grid grid--cards"></div>
+    </section>
   </main>
 
   <script type="module" src="./index.js"></script>

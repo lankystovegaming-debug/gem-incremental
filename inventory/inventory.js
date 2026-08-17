@@ -17,6 +17,7 @@ import {
   loadPendingOneRollBoost
 } from "../src/backend/cloudConsumables.js";
 import { getConsumableById } from "../src/data/consumables.js";
+import { getGemMutation } from "../src/data/mutations.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -326,10 +327,11 @@ function renderGems() {
 
 function gemCard(gem) {
   const tier = rarityTier(gem.rarity);
+  const mutation = getGemMutation(gem.mutation_id, gem.mutation_multiplier);
 
   return `
     <article
-      class="gem-card tier-${tier.id}${gem.locked ? " gem-card--locked" : ""}"
+      class="gem-card tier-${tier.id}${mutation ? ` mutation-${mutation.id}` : ""}${gem.locked ? " gem-card--locked" : ""}"
       data-id="${gem.id}"
     >
       <div class="gem-card__head">
@@ -338,7 +340,12 @@ function gemCard(gem) {
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
-        <span class="badge badge--tier">${tier.name}</span>
+        <div class="gem-card__badges">
+          <span class="badge badge--tier">${tier.name}</span>
+          ${mutation ? `<span class="mutation-badge mutation-badge--${mutation.id}">${escapeHtml(
+            mutation.name
+          )} · ${formatMultiplier(mutation.multiplier)}</span>` : ""}
+        </div>
       </div>
 
       <div class="gem-card__rows">

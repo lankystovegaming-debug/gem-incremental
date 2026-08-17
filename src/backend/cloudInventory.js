@@ -30,6 +30,8 @@ export async function loadCloudGems() {
       rolled_weight,
       final_weight,
       value,
+      mutation_id,
+      mutation_multiplier,
       roll_number,
       luck_at_roll,
       locked,
