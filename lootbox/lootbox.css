@@ -48,19 +48,34 @@
   font-size: 0.82rem;
 }
 
-.coin-bar__earn {
+.coin-bar__buy {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  color: var(--text-muted);
-  font-size: 0.86rem;
+}
+
+.coin-bar__buy input {
+  width: 92px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-bar__buy input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 @media (max-width: 640px) {
   .coin-bar { justify-content: center; text-align: center; }
-  .coin-bar__earn { justify-content: center; }
+  .coin-bar__buy { justify-content: center; }
 }
 
 
