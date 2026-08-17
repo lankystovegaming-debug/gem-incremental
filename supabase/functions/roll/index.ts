@@ -1493,6 +1493,40 @@ export default {
 
 
       // =====================================================
+      // LOAD PENDING ONE-ROLL BOOST (Legendary / Mythic potion)
+      //
+      // A one-roll potion adds a big luck bonus to exactly ONE roll,
+      // then is consumed (deleted) once the roll is committed below.
+      // =====================================================
+
+      const {
+        data:
+          oneRollBoost,
+        error:
+          oneRollBoostError
+      } =
+        await ctx.supabaseAdmin
+          .from(
+            "player_one_roll_boosts"
+          )
+          .select(
+            "effect_value"
+          )
+          .eq(
+            "player_id",
+            playerId
+          )
+          .maybeSingle();
+
+      if (oneRollBoostError) {
+        console.error(
+          "Failed to load one-roll boost:",
+          oneRollBoostError
+        );
+      }
+
+
+      // =====================================================
       // LOAD ACTIVE ADMIN EVENT
       // =====================================================
 
@@ -1651,6 +1685,26 @@ export default {
               effectValue;
             break;
         }
+      }
+
+
+      // A one-roll potion (Legendary / Mythic) adds its luck to this
+      // roll only. Consumed after the roll commits (below).
+      const oneRollLuck =
+        Number(
+          oneRollBoost
+            ?.effect_value ??
+          0
+        );
+
+      if (
+        Number.isFinite(
+          oneRollLuck
+        ) &&
+        oneRollLuck > 0
+      ) {
+        luck +=
+          oneRollLuck;
       }
 
 
@@ -2243,6 +2297,39 @@ export default {
 
         savedGem =
           insertedGem;
+      }
+
+
+      // =====================================================
+      // CONSUME ONE-ROLL BOOST
+      //
+      // The roll is committed, so spend the Legendary / Mythic potion.
+      // Done after the save so a failed roll never eats the potion.
+      // =====================================================
+
+      if (
+        oneRollLuck > 0
+      ) {
+        const {
+          error:
+            consumeError
+        } =
+          await ctx.supabaseAdmin
+            .from(
+              "player_one_roll_boosts"
+            )
+            .delete()
+            .eq(
+              "player_id",
+              playerId
+            );
+
+        if (consumeError) {
+          console.error(
+            "Failed to consume one-roll boost:",
+            consumeError
+          );
+        }
       }
 
 
