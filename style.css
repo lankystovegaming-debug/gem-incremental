@@ -1673,196 +1673,56 @@ html.is-cinematic-active body {
   }
 }
 
+
 /* =========================================================
-   MUTATION-SPECIFIC NAME FX + CINEMATIC SIGNATURES
+   MUTATION CUTSCENE FX / MULTI-MUTATION STACKING
    ========================================================= */
+.mutation-scene-layer{position:absolute;inset:0;z-index:13;overflow:hidden;pointer-events:none;mix-blend-mode:screen}
+.mutation-fx{position:absolute;display:block;opacity:0}
+.mutation-scene-layer--polished .mutation-fx--a{left:50%;top:50%;width:42vmin;height:42vmin;transform:translate(-50%,-50%);border:1px solid rgb(255 255 255/.7);border-radius:50%;box-shadow:0 0 35px rgb(255 255 255/.55),inset 0 0 25px rgb(255 255 255/.35);animation:mutationPolished 2.2s ease both}
+.mutation-scene-layer--polished .mutation-fx--b,.mutation-scene-layer--polished .mutation-fx--c,.mutation-scene-layer--polished .mutation-fx--d{width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 18px #fff;animation:mutationSpark 1.7s ease-in-out infinite}
+.mutation-scene-layer--polished .mutation-fx--b{left:18%;top:35%}.mutation-scene-layer--polished .mutation-fx--c{left:74%;top:42%;animation-delay:.5s}.mutation-scene-layer--polished .mutation-fx--d{left:60%;top:68%;animation-delay:1s}
+.mutation-scene-layer--gilded .mutation-fx--a{inset:18% 10%;border:2px solid #f6c453;border-radius:42% 58% 51% 49%;box-shadow:0 0 50px #f6c453,inset 0 0 28px #f6c453;animation:gildedCrown 2.4s ease both}
+.mutation-scene-layer--gilded .mutation-fx--b{left:50%;top:50%;width:55vmin;height:55vmin;transform:translate(-50%,-50%);border:1px dashed #ffe6a3;border-radius:50%;animation:goldRing 2.8s linear infinite}
+.mutation-scene-layer--gilded .mutation-fx--c,.mutation-scene-layer--gilded .mutation-fx--d{width:4px;height:30vh;background:linear-gradient(#fff7c7,#f6c453,transparent);box-shadow:0 0 16px #f6c453;animation:goldBeam 1.9s ease-in-out infinite}
+.mutation-scene-layer--gilded .mutation-fx--c{left:22%;top:20%}.mutation-scene-layer--gilded .mutation-fx--d{right:22%;bottom:20%;animation-delay:1s}
+.mutation-scene-layer--prismatic .mutation-fx--a{inset:-20%;background:conic-gradient(from 0deg,#ff4fa3,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff4fa3);filter:blur(28px);opacity:.0;animation:prismBloom 2.6s ease both}
+.mutation-scene-layer--prismatic .mutation-fx--b{left:50%;top:50%;width:65vmin;height:65vmin;transform:translate(-50%,-50%);border:3px solid transparent;border-image:linear-gradient(90deg,#ff4fa3,#60a5fa,#a78bfa,#5eead4) 1;animation:prismRing 2.1s ease both}
+.mutation-scene-layer--prismatic .mutation-fx--c,.mutation-scene-layer--prismatic .mutation-fx--d{inset:0;background:repeating-linear-gradient(125deg,transparent 0 8%,rgb(255 255 255/.18) 8.2% 8.5%,transparent 8.7% 17%);animation:prismSweep 2s ease both}.mutation-scene-layer--prismatic .mutation-fx--d{transform:rotate(180deg);animation-delay:.35s}
+.mutation-scene-layer--celestial .mutation-fx--a{left:50%;top:50%;width:32vmin;height:32vmin;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fff 0 3%,#7dd3fc 10%,transparent 65%);filter:blur(3px);animation:celestialStar 2.5s ease both}
+.mutation-scene-layer--celestial .mutation-fx--b{left:50%;top:-10%;width:2px;height:120%;background:linear-gradient(transparent,#fff,#7dd3fc,transparent);box-shadow:0 0 40px #7dd3fc;animation:celestialBeam 2.2s ease both}.mutation-scene-layer--celestial .mutation-fx--c{left:50%;top:50%;width:80vmin;height:80vmin;transform:translate(-50%,-50%);border:1px solid #7dd3fc;border-radius:50%;box-shadow:0 0 60px #7dd3fc;animation:celestialRing 3s ease both}.mutation-scene-layer--celestial .mutation-fx--d{inset:0;background:radial-gradient(circle at 50% 50%,transparent 0 25%,rgb(125 211 252/.12) 55%,transparent 75%);animation:celestialPulse 2.3s ease both}
+.mutation-scene-layer--corrupted .mutation-fx--a{inset:-10%;background:repeating-linear-gradient(105deg,transparent 0 4%,rgb(192 132 252/.16) 4.3% 4.8%,transparent 5.1% 9%);filter:contrast(1.4);animation:corruptGlitch 1.1s steps(5) infinite}.mutation-scene-layer--corrupted .mutation-fx--b{left:50%;top:50%;width:45vmin;height:45vmin;transform:translate(-50%,-50%);border:2px solid #c084fc;box-shadow:0 0 50px #c084fc,inset 0 0 35px #7f1d1d;animation:corruptRift 1.8s ease both}.mutation-scene-layer--corrupted .mutation-fx--c{inset:0;background:radial-gradient(circle at 50% 50%,transparent 0 20%,rgb(127 29 29/.2) 45%,transparent 70%);animation:corruptPulse 1.2s ease-in-out infinite}.mutation-scene-layer--corrupted .mutation-fx--d{left:0;right:0;top:50%;height:2px;background:#fff;box-shadow:0 0 25px #c084fc;animation:corruptSlash 1.4s ease both}
+@keyframes mutationPolished{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-90deg)}40%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4) rotate(180deg)}}
+@keyframes mutationSpark{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.5)}}
+@keyframes gildedCrown{0%{opacity:0;transform:scale(.45) rotate(-18deg)}45%{opacity:1}100%{opacity:0;transform:scale(1.15) rotate(20deg)}}
+@keyframes goldRing{0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.4)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) rotate(360deg) scale(1.3)}}
+@keyframes goldBeam{0%{opacity:0;transform:scaleY(.1)}35%{opacity:.9}100%{opacity:0;transform:scaleY(1.4)}}
+@keyframes prismBloom{0%{opacity:0;transform:rotate(-35deg) scale(.5)}35%{opacity:.42}100%{opacity:0;transform:rotate(50deg) scale(1.2)}}
+@keyframes prismRing{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-90deg)}40%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35) rotate(180deg)}}
+@keyframes prismSweep{0%{opacity:0;transform:translateX(-35%) rotate(0)}35%{opacity:.7}100%{opacity:0;transform:translateX(35%) rotate(2deg)}}
+@keyframes celestialStar{0%{opacity:0;transform:translate(-50%,-50%) scale(.05)}45%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(2)}}
+@keyframes celestialBeam{0%{opacity:0;transform:scaleX(.2)}40%{opacity:1}100%{opacity:0;transform:scaleX(5)}}
+@keyframes celestialRing{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}35%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(220deg)}}
+@keyframes celestialPulse{0%{opacity:0;transform:scale(.7)}45%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+@keyframes corruptGlitch{0%,100%{opacity:0;transform:translate(0)}20%{opacity:.8;transform:translate(2%,-1%)}40%{transform:translate(-3%,2%)}60%{opacity:.35;transform:translate(1%,1%)}}
+@keyframes corruptRift{0%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(25deg)}40%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.25) rotate(-35deg)}}
+@keyframes corruptPulse{0%,100%{opacity:.1;transform:scale(.8)}50%{opacity:.9;transform:scale(1.15)}}
+@keyframes corruptSlash{0%{opacity:0;transform:scaleX(0)}35%{opacity:1}100%{opacity:0;transform:scaleX(1.5)}}
+/* 1m+ makes each mutation materially different; multiple mutation layers stack. */
+.ultra-level-1m .mutation-scene-layer--corrupted .mutation-fx--b,.ultra-level-4m .mutation-scene-layer--corrupted .mutation-fx--b,.ultra-level-10m .mutation-scene-layer--corrupted .mutation-fx--b{width:80vmin;height:80vmin;border-width:4px}
+.ultra-level-1m .mutation-scene-layer--celestial .mutation-fx--b,.ultra-level-4m .mutation-scene-layer--celestial .mutation-fx--b,.ultra-level-10m .mutation-scene-layer--celestial .mutation-fx--b{width:8px;box-shadow:0 0 70px #7dd3fc}
+.ultra-level-1m .mutation-scene-layer--prismatic .mutation-fx--a,.ultra-level-4m .mutation-scene-layer--prismatic .mutation-fx--a,.ultra-level-10m .mutation-scene-layer--prismatic .mutation-fx--a{filter:blur(12px);animation-duration:4s}
+.ultra-level-1m .mutation-scene-layer--gilded .mutation-fx--a,.ultra-level-4m .mutation-scene-layer--gilded .mutation-fx--a,.ultra-level-10m .mutation-scene-layer--gilded .mutation-fx--a{border-width:4px;box-shadow:0 0 100px #f6c453,inset 0 0 60px #f6c453}
+.ultra-level-1m .mutation-scene-layer--polished .mutation-fx--a,.ultra-level-4m .mutation-scene-layer--polished .mutation-fx--a,.ultra-level-10m .mutation-scene-layer--polished .mutation-fx--a{width:70vmin;height:70vmin;border-width:2px}
 
-.gem-styled--mutation-polished {
-  animation: mutationNamePolished 1.8s ease-in-out infinite;
-}
-.gem-styled--mutation-gilded {
-  animation: mutationNameGilded 1.5s ease-in-out infinite;
-}
-.gem-styled--mutation-prismatic {
-  animation: mutationNamePrismatic 1.7s linear infinite;
-}
-.gem-styled--mutation-celestial {
-  animation: mutationNameCelestial 2.4s ease-in-out infinite;
-}
-.gem-styled--mutation-corrupted {
-  animation: mutationNameCorrupted 1.15s steps(2,end) infinite;
-}
-
-@keyframes mutationNamePolished {
-  0%,100% { filter:brightness(1); text-shadow:0 0 10px var(--gem-glow), 0 0 0 transparent; }
-  45% { filter:brightness(1.7); text-shadow:0 0 12px var(--gem-glow), 18px 0 16px rgb(255 255 255 / .35); }
-}
-@keyframes mutationNameGilded {
-  0%,100% { filter:brightness(1); background-position:0% 50%; }
-  50% { filter:brightness(1.65); background-position:100% 50%; }
-}
-@keyframes mutationNamePrismatic {
-  0% { filter:hue-rotate(0deg) brightness(1.05); }
-  50% { filter:hue-rotate(120deg) brightness(1.5) saturate(1.45); }
-  100% { filter:hue-rotate(360deg) brightness(1.05); }
-}
-@keyframes mutationNameCelestial {
-  0%,100% { transform:translateY(0); filter:brightness(1); }
-  50% { transform:translateY(-2px); filter:brightness(1.55); text-shadow:0 0 16px var(--gem-glow), 0 -8px 24px rgb(180 230 255 / .35); }
-}
-@keyframes mutationNameCorrupted {
-  0%,100% { transform:translateX(0); filter:none; }
-  18% { transform:translateX(-2px); filter:hue-rotate(35deg); }
-  20% { transform:translateX(3px); }
-  48% { transform:translateX(-1px); filter:saturate(1.8) contrast(1.25); }
-  51% { transform:translateX(2px); }
-}
-
-/* The mutation layer is intentionally different from the base scene:
-   each mutation gets its own geometry, motion and atmosphere. */
-.mutation-scene-layer {
-  position:absolute;
-  inset:0;
-  z-index:12;
-  pointer-events:none;
-  overflow:hidden;
-}
-.mutation-fx { position:absolute; display:block; }
-
-.mutation-scene-layer--polished .mutation-fx--a {
-  inset:-20% -30%;
-  background:linear-gradient(115deg, transparent 42%, rgb(255 255 255 / .72) 49%, transparent 56%);
-  transform:translateX(-65%) rotate(-7deg);
-  animation: polishedCutsceneSweep var(--cinematic-duration,9000ms) ease-in-out both;
-}
-.mutation-scene-layer--polished .mutation-fx--b,
-.mutation-scene-layer--polished .mutation-fx--c,
-.mutation-scene-layer--polished .mutation-fx--d {
-  width:18px;height:18px;border-radius:50%;
-  border:2px solid rgb(255 255 255 / .8);
-  box-shadow:0 0 20px rgb(255 255 255 / .8);
-  animation: polishedGlints var(--cinematic-duration,9000ms) ease-in-out infinite;
-}
-.mutation-scene-layer--polished .mutation-fx--b { left:18%;top:35%; }
-.mutation-scene-layer--polished .mutation-fx--c { left:74%;top:42%; animation-delay:.5s; }
-.mutation-scene-layer--polished .mutation-fx--d { left:60%;top:68%; animation-delay:1s; }
-
-.mutation-scene-layer--gilded .mutation-fx--a {
-  width:65vmin;height:65vmin;left:50%;top:50%;
-  border:5px solid rgb(255 210 75 / .8);
-  border-radius:50%;
-  box-shadow:0 0 40px rgb(255 190 40 / .5), inset 0 0 35px rgb(255 220 100 / .25);
-  transform:translate(-50%,-50%);
-  animation:gildedOrbit var(--cinematic-duration,9000ms) linear both;
-}
-.mutation-scene-layer--gilded .mutation-fx--b {
-  inset:8% 18%;
-  background:repeating-linear-gradient(125deg, transparent 0 28px, rgb(255 205 70 / .22) 29px 33px, transparent 34px 62px);
-  mix-blend-mode:screen;
-  animation:gildedVeins var(--cinematic-duration,9000ms) ease-in-out both;
-}
-.mutation-scene-layer--gilded .mutation-fx--c,
-.mutation-scene-layer--gilded .mutation-fx--d {
-  width:11px;height:11px;border-radius:50%;
-  background:rgb(255 220 100 / .95);
-  box-shadow:0 0 20px rgb(255 190 30 / .9);
-  animation:gildedCoins var(--cinematic-duration,9000ms) linear infinite;
-}
-.mutation-scene-layer--gilded .mutation-fx--c { left:22%;top:20%; }
-.mutation-scene-layer--gilded .mutation-fx--d { right:22%;bottom:20%;animation-delay:1s; }
-
-.mutation-scene-layer--prismatic .mutation-fx--a {
-  width:55vmin;height:55vmin;left:50%;top:50%;
-  transform:translate(-50%,-50%) rotate(45deg);
-  border:4px solid rgb(255 255 255 / .8);
-  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
-  box-shadow:0 0 50px rgb(130 220 255 / .65);
-  animation:prismaticCore var(--cinematic-duration,9000ms) ease-in-out both;
-}
-.mutation-scene-layer--prismatic .mutation-fx--b {
-  inset:-20%;
-  background:conic-gradient(from 0deg, transparent, rgb(255 80 180 / .3), rgb(80 220 255 / .32), rgb(180 100 255 / .3), transparent 50%, rgb(100 255 190 / .3), transparent);
-  mix-blend-mode:screen;
-  animation:prismaticRainbow var(--cinematic-duration,9000ms) linear infinite;
-}
-.mutation-scene-layer--prismatic .mutation-fx--c,
-.mutation-scene-layer--prismatic .mutation-fx--d {
-  width:20vmin;height:2px;
-  background:linear-gradient(90deg,transparent,rgb(255 255 255 / .9),transparent);
-  animation:prismaticShard var(--cinematic-duration,9000ms) ease-in-out infinite;
-}
-.mutation-scene-layer--prismatic .mutation-fx--c { top:25%;left:0;transform:rotate(28deg); }
-.mutation-scene-layer--prismatic .mutation-fx--d { bottom:28%;right:0;transform:rotate(-28deg);animation-delay:.7s; }
-
-.mutation-scene-layer--celestial .mutation-fx--a {
-  left:15%;right:15%;top:-25%;height:150%;
-  background:linear-gradient(100deg,transparent 20%,rgb(150 220 255 / .2) 38%,rgb(255 255 255 / .55) 50%,rgb(120 190 255 / .18) 62%,transparent 80%);
-  filter:blur(18px);
-  animation:celestialCurtain var(--cinematic-duration,9000ms) ease-in-out both;
-}
-.mutation-scene-layer--celestial .mutation-fx--b {
-  inset:0;
-  background-image:radial-gradient(circle,rgb(210 245 255 / .95) 0 1px,transparent 2px);
-  background-size:46px 46px;
-  animation:celestialStars var(--cinematic-duration,9000ms) linear infinite;
-}
-.mutation-scene-layer--celestial .mutation-fx--c {
-  width:70vmin;height:70vmin;left:50%;top:50%;
-  border:2px solid rgb(180 235 255 / .6);
-  border-radius:50%;
-  transform:translate(-50%,-50%);
-  box-shadow:0 0 50px rgb(150 220 255 / .35);
-  animation:celestialHalo var(--cinematic-duration,9000ms) ease-in-out both;
-}
-.mutation-scene-layer--celestial .mutation-fx--d {
-  width:100%;height:2px;top:50%;left:0;
-  background:linear-gradient(90deg,transparent,rgb(220 250 255 / .85),transparent);
-  animation:celestialBeam var(--cinematic-duration,9000ms) ease-in-out both;
-}
-
-.mutation-scene-layer--corrupted .mutation-fx--a {
-  inset:0;
-  background:repeating-linear-gradient(to bottom,transparent 0 10px,rgb(255 40 100 / .25) 11px 13px,transparent 14px 20px);
-  mix-blend-mode:screen;
-  animation:corruptedTear var(--cinematic-duration,9000ms) steps(10,end) both;
-}
-.mutation-scene-layer--corrupted .mutation-fx--b {
-  width:75vmin;height:75vmin;left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  border:3px dashed rgb(255 60 120 / .6);
-  border-radius:48% 52% 43% 57%;
-  box-shadow:0 0 45px rgb(255 0 100 / .35);
-  animation:corruptedRift var(--cinematic-duration,9000ms) steps(8,end) infinite;
-}
-.mutation-scene-layer--corrupted .mutation-fx--c {
-  inset:0;
-  background:linear-gradient(90deg,rgb(255 0 70 / .13),transparent 35% 65%,rgb(40 120 255 / .15));
-  animation:corruptedShift var(--cinematic-duration,9000ms) steps(7,end) infinite;
-}
-.mutation-scene-layer--corrupted .mutation-fx--d {
-  width:100%;height:14px;top:54%;left:-100%;
-  background:linear-gradient(90deg,transparent,rgb(255 255 255 / .55),transparent);
-  animation:corruptedScan var(--cinematic-duration,9000ms) steps(5,end) both;
-}
-
-@keyframes polishedCutsceneSweep { 0%,24%{transform:translateX(-80%) rotate(-7deg);opacity:0} 38%{opacity:1} 58%{transform:translateX(80%) rotate(-7deg);opacity:.5} 100%{transform:translateX(140%) rotate(-7deg);opacity:0} }
-@keyframes polishedGlints { 0%,100%{transform:scale(.4);opacity:.1} 50%{transform:scale(1.8);opacity:.9} }
-@keyframes gildedOrbit { 0%{transform:translate(-50%,-50%) rotate(0) scale(.2);opacity:0} 30%{opacity:1} 100%{transform:translate(-50%,-50%) rotate(720deg) scale(1.3);opacity:.1} }
-@keyframes gildedVeins { 0%,100%{opacity:0;transform:scale(.7)} 45%{opacity:1;transform:scale(1)} 75%{opacity:.45;transform:scale(1.12)} }
-@keyframes gildedCoins { 0%{transform:translateY(0) scale(.4);opacity:0} 25%{opacity:1} 100%{transform:translateY(45vh) scale(1.4);opacity:0} }
-@keyframes prismaticCore { 0%{transform:translate(-50%,-50%) rotate(45deg) scale(.15);opacity:0} 38%{opacity:1} 70%{transform:translate(-50%,-50%) rotate(405deg) scale(1.2)} 100%{transform:translate(-50%,-50%) rotate(765deg) scale(1.8);opacity:0} }
-@keyframes prismaticRainbow { 0%{transform:rotate(0) scale(.5);opacity:0} 30%{opacity:1} 100%{transform:rotate(360deg) scale(1.4);opacity:0} }
-@keyframes prismaticShard { 0%,100%{transform:translateX(-30vw) scaleX(.3);opacity:0} 50%{transform:translateX(55vw) scaleX(1);opacity:.9} }
-@keyframes celestialCurtain { 0%,20%{transform:translateY(-30%) scaleY(.3);opacity:0} 45%{opacity:1} 100%{transform:translateY(35%) scaleY(1.2);opacity:0} }
-@keyframes celestialStars { 0%{transform:translateY(-10vh);opacity:0} 25%{opacity:1} 100%{transform:translateY(18vh);opacity:.1} }
-@keyframes celestialHalo { 0%,100%{transform:translate(-50%,-50%) scale(.35);opacity:0} 45%{opacity:1} 75%{transform:translate(-50%,-50%) scale(1.25);opacity:.35} }
-@keyframes celestialBeam { 0%,30%{opacity:0;transform:scaleX(.1)} 48%{opacity:1;transform:scaleX(1)} 65%{opacity:.35;transform:scaleX(1.2)} 100%{opacity:0;transform:scaleX(1.6)} }
-@keyframes corruptedTear { 0%,18%{opacity:0;transform:translate(0)} 25%{opacity:1;transform:translate(-12px,2px)} 28%{transform:translate(14px,-3px)} 45%{transform:translate(-6px,0)} 70%{opacity:.5;transform:translate(10px,1px)} 100%{opacity:0;transform:translate(0)} }
-@keyframes corruptedRift { 0%{transform:translate(-50%,-50%) rotate(0) scale(.25);opacity:0} 30%{opacity:1} 100%{transform:translate(-50%,-50%) rotate(220deg) scale(1.5);opacity:0} }
-@keyframes corruptedShift { 0%,100%{transform:translateX(0);opacity:.2} 45%{transform:translateX(14px);opacity:.8} 52%{transform:translateX(-18px);opacity:.3} }
-@keyframes corruptedScan { 0%{left:-100%;opacity:0} 35%{opacity:1} 65%{left:100%;opacity:.5} 100%{left:140%;opacity:0} }
-
-/* 10k–99k reveals are intentionally punchy rather than long. */
-.stage__display.is-epic-roll {
-  --epic-duration: 2400ms;
-}
+/* Mutation-specific gem-name treatment. */
+.gem-styled--mutation-polished{animation:mutationNamePolished 1.5s ease-in-out infinite!important}
+.gem-styled--mutation-gilded{animation:mutationNameGilded 1.6s ease-in-out infinite!important}
+.gem-styled--mutation-prismatic{animation:mutationNamePrismatic 1.8s linear infinite!important;background:linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1)!important;background-size:300% auto!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}
+.gem-styled--mutation-celestial{animation:mutationNameCelestial 1.8s ease-in-out infinite!important}
+.gem-styled--mutation-corrupted{animation:mutationNameCorrupted .9s steps(2) infinite!important}
+@keyframes mutationNamePolished{0%,100%{filter:brightness(1);text-shadow:0 0 8px rgb(255 255 255/.3)}50%{filter:brightness(1.8);text-shadow:0 0 18px rgb(255 255 255/.8)}}
+@keyframes mutationNameGilded{0%,100%{filter:brightness(1)}50%{filter:brightness(1.6);text-shadow:0 0 16px rgb(246 196 83/.85)}}
+@keyframes mutationNamePrismatic{to{background-position:300% center}}
+@keyframes mutationNameCelestial{0%,100%{filter:brightness(1);text-shadow:0 0 10px rgb(125 211 252/.5)}50%{filter:brightness(1.8);text-shadow:0 0 25px rgb(125 211 252/1)}}
+@keyframes mutationNameCorrupted{0%,100%{transform:translateX(0);filter:none}25%{transform:translateX(-1px);filter:hue-rotate(18deg)}50%{transform:translateX(2px);filter:contrast(1.5)}75%{transform:translateX(-2px);filter:hue-rotate(-18deg)}}
