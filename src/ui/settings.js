@@ -27,7 +27,8 @@ const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
   autoSellTier: "common",
-  rollAnimations: true
+  rollAnimations: true,
+  cutsceneMinimumRarity: 100000
 };
 
 
@@ -62,7 +63,9 @@ function sanitise(value) {
       ? value.autoSellTier
       : DEFAULTS.autoSellTier,
 
-    rollAnimations: value.rollAnimations !== false
+    rollAnimations: value.rollAnimations !== false,
+
+    cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity))
   };
 }
 

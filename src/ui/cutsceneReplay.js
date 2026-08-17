@@ -2,7 +2,8 @@ import { icons } from "./icons.js";
 import { rarityTier, rarityLabel, escapeHtml } from "./format.js";
 import { gemNameHtml } from "./gemStyle.js";
 import { getGemMutation } from "../data/mutations.js";
-import { exactRollChanceLabel } from "../logic/chances.js";
+import { getSettings } from "./settings.js";
+import { chanceLabelForResult } from "../logic/chances.js";
 
 function hashString(value) {
   let hash = 0;
@@ -60,6 +61,7 @@ function mutationLayer(mutationId) {
 export async function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) {
   const rarity = Number(gem?.rarity ?? 0);
   const duration = durationForRarity(rarity);
+  if (rarity < getSettings().cutsceneMinimumRarity) return;
   if (!duration) return;
 
   document.getElementById("ultra-cutscene-overlay")?.remove();
@@ -68,7 +70,6 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
   const mutations = ids.map(id => getGemMutation(id)).filter(Boolean);
   const mutation = mutations[0] ?? null;
   const name = String(gem?.name ?? "Gem");
-  const chanceLabel = exactRollChanceLabel(name, ids);
   const primaryMutation = mutation?.id ?? "none";
   const hash = hashString(name);
   const variant = hash % 10;
@@ -86,7 +87,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       rarity >= 500000 ? "ultra-level-500k" :
       rarity >= 100000 ? "ultra-level-100k" :
       "ultra-level-10k",
-    ...(mutation ? [`mutation-scene-${mutation.id}`] : []),
+    ...mutations.map(m => `mutation-scene-${m.id}`),
     `mutation-primary-${primaryMutation}`,
     "replay-cutscene-overlay"
   ].filter(Boolean).join(" ");
@@ -99,7 +100,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
     <div class="scene__world">${sceneMarkup(variant)}</div>
-    ${mutation ? mutationLayer(mutation.id) : ""}
+    ${mutations.map(m => mutationLayer(m.id)).join("")}
     <div class="scene__mega-world" aria-hidden="true">
       <span class="mega__warp"></span>
       <span class="mega__ring mega__ring--a"></span>
@@ -120,11 +121,11 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       <h2 class="scene__name">${gemNameHtml(
         name,
         escapeHtml,
-        mutations.map(m => `gem-styled--mutation-${m.id}`).join(" ")
+        mutation ? `gem-styled--mutation-${mutation.id}` : ""
       )}</h2>
-      ${mutations.length ? `<div class="scene__mutation scene__mutation-list" aria-label="${mutations.length} mutations">${mutations.map(m => `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
-      <div class="scene__chance">${escapeHtml(chanceLabel)}</div>
+      ${mutations.length ? `<div class="scene__mutation">✦ ${mutations.map(m => `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(rarity)}</div>
+      <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForResult(name, ids))}</div>
       <div class="scene__outcome">Cinematic replay</div>
     </div>
     <div class="scene__letterbox scene__letterbox-top"></div>

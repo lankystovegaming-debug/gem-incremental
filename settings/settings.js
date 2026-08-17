@@ -140,6 +140,7 @@ const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
+const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 
 
 autoSellTier.innerHTML = SELL_TIERS.map(
@@ -152,6 +153,7 @@ function paintSettings(settings) {
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
   animationsToggle.checked = settings.rollAnimations;
+  cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
 
   autoSellTierRow.classList.toggle("setting--muted", !settings.autoSell);
 }
@@ -172,6 +174,12 @@ autoSellTier.addEventListener("change", () =>
 animationsToggle.addEventListener("change", () =>
   updateSettings({ rollAnimations: animationsToggle.checked })
 );
+
+cutsceneMinimumRarity.addEventListener("change", () => {
+  const value = Math.max(100000, Math.floor(Number(cutsceneMinimumRarity.value) || 100000));
+  updateSettings({ cutsceneMinimumRarity: value });
+  cutsceneMinimumRarity.value = value;
+});
 
 
 onSettingsChange(paintSettings);

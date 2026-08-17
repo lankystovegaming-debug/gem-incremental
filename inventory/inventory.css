@@ -373,3 +373,19 @@
 }
 
 .gem-mutation-line{display:flex;flex-wrap:wrap;gap:.38rem;align-items:center;margin-top:.18rem;margin-bottom:.25rem}.gem-mutation-line .mutation-name-effect{font-size:.68rem;padding:2px 7px;border-radius:999px}.gem-card__badges .mutation-name-effect{font-size:.62rem}
+
+.delete-rules { margin:12px 0 18px; padding:16px; }
+.delete-rules[hidden] { display:none; }
+.delete-rules__head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:14px; }
+.delete-rules__head h3 { margin:0 0 4px; }
+.delete-rules__head p { margin:0; color:var(--text-muted); font-size:.8rem; }
+.delete-rules__grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.delete-rules .field { display:grid; gap:6px; }
+.delete-rules .field > span { font-size:.74rem; color:var(--text-faint); font-weight:700; }
+.delete-rules__chance-input { display:flex; align-items:center; gap:7px; }
+.delete-rules__chance-input > span { color:var(--text-muted); white-space:nowrap; }
+.delete-rules__actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; }
+.delete-rules__preview { color:var(--text-muted); font-size:.8rem; }
+.gem-card__chance { margin-top:3px; color:var(--text-faint); font-size:.72rem; }
+.mutation-inline { font-size:.72rem; font-weight:800; }
+@media (max-width:760px) { .delete-rules__grid { grid-template-columns:1fr; } .delete-rules__actions { flex-direction:column; align-items:stretch; } }

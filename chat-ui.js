@@ -16,7 +16,7 @@ import {
 } from "./src/backend/privateMessages.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
 import { getGemMutation } from "./src/data/mutations.js";
-import { exactRollChanceLabel } from "./src/logic/chances.js";
+import { chanceLabelForResult } from "./src/logic/chances.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -379,12 +379,10 @@ if (messagesEl && formEl && inputEl) {
     `;
   }
 
-  // Mirrors roll/index.ts at base luck = 1.
-  // Player-specific luck and mutation-luck modifiers are intentionally ignored.
   function exactChatChanceLabel(message) {
-    return exactRollChanceLabel(
-      message?.gem_name,
-      Array.isArray(message?.mutation_ids) ? message.mutation_ids : []
+    return chanceLabelForResult(
+      message.gem_name,
+      Array.isArray(message.mutation_ids) ? message.mutation_ids : []
     );
   }
 
@@ -419,7 +417,7 @@ if (messagesEl && formEl && inputEl) {
     )}</strong> rolled a rare ${mutationPrefix}${gemNameHtml(
       message.gem_name,
       escapeHtml
-    )} <span class="chat-roll-chance">${escapeHtml(chance)}</span>!`;
+    )} ${escapeHtml(chance)}!`;
   }
 
   function renderMessage(message, shouldScroll = true) {
@@ -427,11 +425,25 @@ if (messagesEl && formEl && inputEl) {
 
     const messageId = String(message.id);
 
-    if (
-      messagesEl.querySelector(
-        `[data-message-id="${CSS.escape(messageId)}"]`
-      )
-    ) {
+    const existingItem = messagesEl.querySelector(
+      `[data-message-id="${CSS.escape(messageId)}"]`
+    );
+
+    if (existingItem) {
+      if (message.source === "system" || message.source === "announcement") {
+        const textEl = existingItem.querySelector(".chat-message__text");
+        if (textEl) {
+          textEl.innerHTML = systemMessageHtml(message);
+        }
+        existingItem.classList.toggle(
+          "chat-message--million",
+          Number(message.rarity ?? 0) >= 1000000
+        );
+        existingItem.classList.toggle(
+          "chat-message--hundredk",
+          Number(message.rarity ?? 0) >= 100000 && Number(message.rarity ?? 0) < 1000000
+        );
+      }
       return false;
     }
 

@@ -4,6 +4,7 @@ import {
   loadCloudPlayerState,
   toggleCloudGemLock,
   sellCloudGem,
+  deleteCloudGem,
   upgradeCloudInventory
 } from "../src/backend/cloudInventory.js";
 import {
@@ -18,6 +19,7 @@ import {
 } from "../src/backend/cloudConsumables.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { getGemMutation } from "../src/data/mutations.js";
+import { gemRollChance, formatChance } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -96,6 +98,18 @@ const gemFilter = document.getElementById("gemFilter");
 const gemRarity = document.getElementById("gemRarity");
 const gemSort = document.getElementById("gemSort");
 const sellAllButton = document.getElementById("sellAllButton");
+const deleteRulesButton = document.getElementById("deleteRulesButton");
+const deleteRulesPanel = document.getElementById("deleteRulesPanel");
+const deleteRulesClose = document.getElementById("deleteRulesClose");
+const deleteRuleMode = document.getElementById("deleteRuleMode");
+const deleteRarityField = document.getElementById("deleteRarityField");
+const deleteRarityOp = document.getElementById("deleteRarityOp");
+const deleteRarityValue = document.getElementById("deleteRarityValue");
+const deleteChanceField = document.getElementById("deleteChanceField");
+const deleteChanceOp = document.getElementById("deleteChanceOp");
+const deleteChanceDenominator = document.getElementById("deleteChanceDenominator");
+const deleteRulesPreview = document.getElementById("deleteRulesPreview");
+const deleteMatchingButton = document.getElementById("deleteMatchingButton");
 
 document.getElementById("refreshIcon").innerHTML = icons.refresh;
 document.getElementById("searchIcon").innerHTML = icons.search;
@@ -264,6 +278,38 @@ function visibleGems() {
 }
 
 
+function matchesDeleteRarity(gem) {
+  const threshold = Math.max(1, Number(deleteRarityValue.value) || 1);
+  return deleteRarityOp.value === "lte" ? Number(gem.rarity) <= threshold : Number(gem.rarity) >= threshold;
+}
+
+function matchesDeleteChance(gem) {
+  const threshold = 1 / Math.max(1, Number(deleteChanceDenominator.value) || 1);
+  const chance = gemRollChance(gem);
+  return deleteChanceOp.value === "lte" ? chance <= threshold : chance >= threshold;
+}
+
+function matchesDeleteRule(gem) {
+  if (gem.locked) return false;
+  const rarityMatch = matchesDeleteRarity(gem);
+  const chanceMatch = matchesDeleteChance(gem);
+  if (deleteRuleMode.value === "rarity") return rarityMatch;
+  if (deleteRuleMode.value === "chance") return chanceMatch;
+  if (deleteRuleMode.value === "or") return rarityMatch || chanceMatch;
+  return rarityMatch && chanceMatch;
+}
+
+function renderDeleteRules() {
+  if (!deleteRulesPanel) return;
+  const mode = deleteRuleMode.value;
+  deleteRarityField.hidden = mode === "chance";
+  deleteChanceField.hidden = mode === "rarity";
+  const matches = state.gems.filter(matchesDeleteRule);
+  deleteRulesPreview.textContent = `${formatCount(matches.length)} matching unlocked gem${matches.length === 1 ? "" : "s"}`;
+  deleteMatchingButton.disabled = matches.length === 0 || state.loading;
+  deleteRulesButton.disabled = state.loading || state.gems.length === 0;
+}
+
 function renderGems() {
   const gems = visibleGems();
 
@@ -342,7 +388,7 @@ function gemCard(gem) {
     >
       <div class="gem-card__head">
         <div>
-          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml)}</div>
+          <div class="gem-card__name">${mutations.length ? mutations.map(m => `<span class="mutation-inline mutation-inline--${escapeHtml(m.id)}">${escapeHtml(m.name)}</span>`).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</div>
           ${mutations.length ? `
             <div class="gem-mutation-line" aria-label="Mutations">
               ${mutations.map(m => `
@@ -354,6 +400,7 @@ function gemCard(gem) {
             </div>
           ` : ""}
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
+          <div class="gem-card__chance">Actual chance: ${escapeHtml(formatChance(gemRollChance(gem)))}</div>
         </div>
 
         <div class="gem-card__badges">
@@ -414,6 +461,8 @@ function gemCard(gem) {
           ${gem.locked ? "Unlock" : "Lock"}
         </button>
 
+        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
+
         <button
           class="btn btn--sm btn--danger"
           data-action="sell"
@@ -434,6 +483,7 @@ function wireGemCard(card) {
 
   const lockButton = card.querySelector('[data-action="lock"]');
   const sellButton = card.querySelector('[data-action="sell"]');
+  const deleteButton = card.querySelector('[data-action="delete"]');
 
   lockButton.addEventListener("click", async () => {
     lockButton.disabled = true;
@@ -455,6 +505,19 @@ function wireGemCard(card) {
     }
 
     renderGems();
+  });
+
+  deleteButton?.addEventListener("click", async () => {
+    const gem = state.gems.find((entry) => entry.id === id);
+    if (!gem || gem.locked) return;
+    const choice = await confirmDialog({ title: `Delete ${gem.gem_name}?`, body: `<p>This permanently deletes the gem. You will receive no money.</p>`, confirmLabel: "Delete permanently", tone: "danger" });
+    if (choice !== "confirm") return;
+    deleteButton.disabled = true; lockButton.disabled = true; sellButton.disabled = true;
+    const { error } = await deleteCloudGem(id);
+    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; sellButton.disabled = false; return; }
+    state.gems = state.gems.filter((entry) => entry.id !== id);
+    renderAll();
+    notify.success("Gem deleted", gem.gem_name);
   });
 
   sellButton.addEventListener("click", async () => {
@@ -572,6 +635,25 @@ sellAllButton.addEventListener("click", async () => {
   }
 });
 
+
+deleteRulesButton?.addEventListener("click", () => { deleteRulesPanel.hidden = false; renderDeleteRules(); });
+deleteRulesClose?.addEventListener("click", () => { deleteRulesPanel.hidden = true; });
+for (const control of [deleteRuleMode, deleteRarityOp, deleteRarityValue, deleteChanceOp, deleteChanceDenominator]) { control?.addEventListener("input", renderDeleteRules); control?.addEventListener("change", renderDeleteRules); }
+deleteMatchingButton?.addEventListener("click", async () => {
+  const matches = state.gems.filter(matchesDeleteRule);
+  if (!matches.length) return;
+  const choice = await confirmDialog({ title: `Delete ${formatCount(matches.length)} gems?`, body: `<p>All matching unlocked gems will be permanently deleted. You will receive no money.</p>`, confirmLabel: `Delete ${formatCount(matches.length)}`, tone: "danger" });
+  if (choice !== "confirm") return;
+  deleteMatchingButton.disabled = true;
+  let deleted = 0;
+  for (const gem of matches) {
+    const { error } = await deleteCloudGem(gem.id);
+    if (error) { notify.error("Bulk delete stopped", error.message); break; }
+    deleted += 1; state.gems = state.gems.filter((entry) => entry.id !== gem.id);
+  }
+  renderAll();
+  if (deleted) notify.success("Gems deleted", `${formatCount(deleted)} permanently deleted.`);
+});
 
 // =========================================================
 // EQUIPMENT LIST

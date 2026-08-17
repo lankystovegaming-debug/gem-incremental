@@ -13,7 +13,7 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { gemNameHtml } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
-import { exactRollChanceLabel } from "../src/logic/chances.js";
+import { chanceLabelForResult, rolledResultChance } from "../src/logic/chances.js";
 import {
   rarityTier,
   rarityLabel,
@@ -115,16 +115,13 @@ async function loadCombinations(playerId) {
   return result;
 }
 
-/*
- * Odds mirror roll/index.ts at base luck = 1.
- * The shared helper uses the complete server gem list, including hidden
- * Lanky Gem, so the displayed probability is the true server probability.
- */
+/* Base odds mirror roll/index.ts at luck = 1. Player/equipment/potion modifiers are intentionally ignored. */
+function exactEntryChance(entry) {
+  return rolledResultChance(entry.gem.name, entry.mutationIds);
+}
+
 function entryChanceLabel(entry) {
-  return exactRollChanceLabel(
-    entry.gem.name,
-    entry.mutationIds
-  );
+  return chanceLabelForResult(entry.gem.name, entry.mutationIds);
 }
 
 function comboKey(gemName, combinationKey) {

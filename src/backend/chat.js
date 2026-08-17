@@ -67,7 +67,7 @@ function normalizeAnnouncement(row, profiles = {}) {
     gem_name: row.gem_name,
     rarity,
     mutation_ids: Array.isArray(row?.mutation_ids) ? row.mutation_ids : [],
-    message: `${rollerName} rolled a rare ${row.gem_name}!`,
+    message: `${rollerName} rolled a rare ${row.gem_name} — 1 in ${rarity.toLocaleString("en-US")}!`,
     created_at: row.created_at
   };
 }
@@ -163,6 +163,18 @@ export function subscribeToChat(onMessage) {
           if (message) onMessage(message);
         } catch (error) {
           console.error("[CHAT] Failed to process rare announcement:", error);
+        }
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "global_chat_announcements" },
+      async (payload) => {
+        try {
+          const [message] = await enrich([payload.new], normalizeAnnouncement);
+          if (message) onMessage(message);
+        } catch (error) {
+          console.error("[CHAT] Failed to process rare announcement update:", error);
         }
       }
     )

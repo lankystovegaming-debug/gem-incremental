@@ -1,6 +1,6 @@
 import { icons } from "./icons.js";
 import { formatMoney, escapeHtml } from "./format.js";
-import { notify } from "./toast.js";
+import { notify, toast } from "./toast.js";
 import { confirmDialog } from "./dialog.js";
 import {
   MODES,
@@ -58,7 +58,12 @@ const MODE_ICONS = {
   system: icons.monitor,
   light: icons.sun,
   dark: icons.moon,
-  neon: icons.bolt
+  neon: icons.bolt,
+  gradient: icons.sparkle,
+  ocean: icons.cloud,
+  forest: icons.sparkle,
+  sunset: icons.sun,
+  ice: icons.sparkle
 };
 
 
@@ -375,7 +380,7 @@ export function mountShell({ page, base = "./" }) {
             aria-checked="${entry.id === mode}"
             data-mode="${entry.id}"
           >
-            ${MODE_ICONS[entry.id]}
+            ${MODE_ICONS[entry.id] ?? icons.palette}
             ${entry.label}
             ${entry.id === mode ? icons.check : ""}
           </button>
@@ -434,7 +439,7 @@ export function mountShell({ page, base = "./" }) {
     if (event === "SIGNED_IN" && user && !isGuest(user)) {
       const account = describeAccount(user, currentUsername);
 
-      notify.success("Signed in", `Welcome back, ${account.name}.`);
+      toast("Signed in", { text: `Welcome back, ${account.name}.`, type: "success", duration: 1800 });
     }
   });
 
@@ -799,6 +804,18 @@ function navLink(item, activePage, base, className, short = false) {
 }
 
 
+function positionMenu(anchor, button, menu) {
+  const rect = button.getBoundingClientRect();
+  const width = Math.max(230, menu.offsetWidth || 230);
+  const margin = 8;
+  const left = Math.min(Math.max(margin, rect.right - width), Math.max(margin, window.innerWidth - width - margin));
+  const top = Math.min(rect.bottom + margin, Math.max(margin, window.innerHeight - menu.offsetHeight - margin));
+  menu.style.position = "fixed";
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.right = "auto";
+}
+
 function createMenuController() {
   let openMenu = null;
   let openAnchor = null;
@@ -825,7 +842,8 @@ function createMenuController() {
     openAnchor = anchor;
     openButton = button;
 
-    anchor.appendChild(openMenu);
+    document.body.appendChild(openMenu);
+    positionMenu(anchor, button, openMenu);
 
     button.setAttribute("aria-expanded", "true");
   }
@@ -838,6 +856,10 @@ function createMenuController() {
     if (!openAnchor.contains(event.target)) {
       close();
     }
+  });
+
+  window.addEventListener("resize", () => {
+    if (openMenu && openButton && openAnchor) positionMenu(openAnchor, openButton, openMenu);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -873,7 +895,8 @@ function createMenuController() {
       openMenu.remove();
       openMenu = render();
 
-      anchor.appendChild(openMenu);
+      document.body.appendChild(openMenu);
+      positionMenu(anchor, button, openMenu);
 
       openAnchor = anchor;
       openButton = button;

@@ -162,6 +162,22 @@
         <button class="btn btn--danger" id="sellAllButton" type="button" disabled>
           Sell unlocked
         </button>
+        <button class="btn btn--danger" id="deleteRulesButton" type="button" disabled>
+          Delete by rules
+        </button>
+      </div>
+
+      <div class="delete-rules card" id="deleteRulesPanel" hidden>
+        <div class="delete-rules__head">
+          <div><h3>Delete gems by rules</h3><p>Locked gems are never deleted. Chance uses base roll odds at luck 1.</p></div>
+          <button class="btn btn--sm" id="deleteRulesClose" type="button">Close</button>
+        </div>
+        <div class="delete-rules__grid">
+          <label class="field"><span>Match</span><select class="select" id="deleteRuleMode"><option value="rarity">Rarity only</option><option value="chance">Chance only</option><option value="or">Rarity OR chance</option><option value="and">Rarity AND chance</option></select></label>
+          <label class="field" id="deleteRarityField"><span>Rarity</span><select class="select" id="deleteRarityOp"><option value="lte">At or below</option><option value="gte">At or above</option></select><input class="input" id="deleteRarityValue" type="number" min="1" step="1" value="100"></label>
+          <label class="field" id="deleteChanceField"><span>Chance</span><select class="select" id="deleteChanceOp"><option value="lte">Less than or equal to</option><option value="gte">Greater than or equal to</option></select><div class="delete-rules__chance-input"><span>1 in</span><input class="input" id="deleteChanceDenominator" type="number" min="1" step="1" value="1000"></div></label>
+        </div>
+        <div class="delete-rules__actions"><span id="deleteRulesPreview" class="delete-rules__preview">0 matching unlocked gems</span><button class="btn btn--danger" id="deleteMatchingButton" type="button" disabled>Delete matching</button></div>
       </div>
 
       <div id="inventoryList" class="grid grid--cards"></div>

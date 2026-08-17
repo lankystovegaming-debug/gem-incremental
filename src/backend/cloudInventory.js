@@ -108,6 +108,10 @@ export function sellCloudGem(specimenId) {
   return invokeFunction("sell-gem", { specimenId });
 }
 
+export function deleteCloudGem(specimenId) {
+  return invokeFunction("delete-gem", { specimenId });
+}
+
 
 export function upgradeCloudInventory() {
   return invokeFunction("upgrade-inventory", {});

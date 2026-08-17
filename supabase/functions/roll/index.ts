@@ -4,6 +4,28 @@ import {
 
 
 // =========================================================
+// CORS
+// =========================================================
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
+function jsonResponse(body: any, init: ResponseInit = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders,
+      ...(init.headers ?? {})
+    }
+  });
+}
+
+
+// =========================================================
 // GEM DATA
 // =========================================================
 
@@ -371,29 +393,43 @@ function rollGem(
 ) {
   const safeLuck =
     Math.max(
-      0,
+      1,
       luck
     );
 
-  const fallbackGem =
-    gems.find(
-      (gem) =>
-        gem.name ===
-        "Quartz"
-    )!;
+  const maximumRarity =
+    Math.max(
+      ...gems.map(
+        (gem) =>
+          gem.rarity
+      )
+    );
+
+  // Luck also acts as a rarity floor. At 4x Luck, gems with a listed
+  // rarity of 1 in 4 or more common are excluded from the pool.
+  const rarityFloor =
+    Math.min(
+      safeLuck,
+      maximumRarity
+    );
 
   const rollableGems =
     gems
       .filter(
         (gem) =>
-          gem.name !==
-          "Quartz"
+          gem.rarity >=
+          rarityFloor
       )
       .sort(
         (a, b) =>
           b.rarity -
           a.rarity
       );
+
+  const fallbackGem =
+    rollableGems[
+      rollableGems.length - 1
+    ];
 
 
   for (
@@ -418,6 +454,52 @@ function rollGem(
 
 
   return fallbackGem;
+}
+
+
+// =========================================================
+// MUTATION RNG
+// =========================================================
+
+const gemMutations = [
+  { id: "polished", name: "Polished", chance: 1 / 100, multiplier: 1.5 },
+  { id: "gilded", name: "Gilded", chance: 1 / 500, multiplier: 2.5 },
+  { id: "prismatic", name: "Prismatic", chance: 1 / 2500, multiplier: 5 },
+  { id: "celestial", name: "Celestial", chance: 1 / 10000, multiplier: 12 },
+  { id: "corrupted", name: "Corrupted", chance: 1 / 50000, multiplier: 30 }
+];
+
+// Restore the hardcoded mutation-luck player.
+const MUTATION_LUCK_PLAYER_ID =
+  "38d5e8ce-18af-46d3-aa9e-6e601e75dd78";
+
+function getMutationChanceMultiplier(playerId: string) {
+  return playerId === MUTATION_LUCK_PLAYER_ID ? 10 : 1;
+}
+
+// Every mutation is rolled independently. Multiple mutations can stack.
+function rollGemMutations(chanceMultiplier = 1) {
+  const safeMultiplier = Math.max(1, Number(chanceMultiplier) || 1);
+
+  return gemMutations.filter((mutation) => {
+    const chance = Math.min(mutation.chance * safeMultiplier, 1);
+    return random01() < chance;
+  });
+}
+
+
+function getMutationCombinationKey(mutationIds: string[]) {
+  const order = new Map(
+    gemMutations.map((mutation, index) => [mutation.id, index])
+  );
+
+  const sortedIds = Array.from(
+    new Set(mutationIds.map((id) => String(id)))
+  ).sort(
+    (a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999)
+  );
+
+  return sortedIds.length ? sortedIds.join("+") : "none";
 }
 
 
@@ -1106,9 +1188,16 @@ export default {
     },
 
     async (
-      _req,
+      req,
       ctx
     ) => {
+      if (req.method === "OPTIONS") {
+        return new Response("ok", {
+          status: 200,
+          headers: corsHeaders
+        });
+      }
+
       // =====================================================
       // IDENTIFY PLAYER
       // =====================================================
@@ -1118,7 +1207,7 @@ export default {
 
 
       if (!playerId) {
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Could not identify player."
@@ -1167,7 +1256,7 @@ export default {
         );
 
 
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Player record not found."
@@ -1206,7 +1295,7 @@ export default {
             now.getTime();
 
 
-          return Response.json(
+          return jsonResponse(
             {
               error:
                 "cooldown",
@@ -1248,6 +1337,10 @@ export default {
               head:
                 true
             }
+          )
+          .eq(
+            "player_id",
+            playerId
           );
 
 
@@ -1260,7 +1353,7 @@ export default {
         );
 
 
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Failed to check inventory."
@@ -1281,7 +1374,7 @@ export default {
         currentInventoryCount >=
         player.inventory_capacity
       ) {
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "inventory_full",
@@ -1320,6 +1413,10 @@ export default {
             weight_multiplier_bonus
           `)
           .eq(
+            "player_id",
+            playerId
+          )
+          .eq(
             "equipped",
             true
           );
@@ -1334,7 +1431,7 @@ export default {
         );
 
 
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Failed to load equipment stats."
@@ -1356,7 +1453,7 @@ export default {
         error:
           boostError
       } =
-        await ctx.supabaseAdmin
+        await ctx.supabase
           .from(
             "player_boosts"
           )
@@ -1382,7 +1479,7 @@ export default {
         );
 
 
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Failed to load active boosts."
@@ -1395,38 +1492,57 @@ export default {
 
 
       // =====================================================
-      // LOAD PENDING ONE-ROLL BOOST (Legendary / Mythic potion)
-      //
-      // A one-roll potion adds a big luck bonus to exactly ONE roll.
-      // It is consumed (deleted) below, once the roll is committed.
+      // LOAD ACTIVE ADMIN EVENT
       // =====================================================
 
       const {
         data:
-          oneRollBoost,
+          activeAdminEvent,
         error:
-          oneRollBoostError
+          adminEventError
       } =
         await ctx.supabaseAdmin
           .from(
-            "player_one_roll_boosts"
+            "admin_events"
           )
-          .select(
-            "effect_value"
-          )
+          .select(`
+            id,
+            name,
+            luck_bonus,
+            roll_speed_bonus,
+            weight_luck_bonus,
+            weight_multiplier_bonus,
+            luck_multiplier,
+            roll_speed_multiplier,
+            weight_luck_multiplier,
+            weight_multiplier_multiplier,
+            ends_at
+          `)
           .eq(
-            "player_id",
-            playerId
+            "active",
+            true
           )
+          .lte(
+            "starts_at",
+            now.toISOString()
+          )
+          .gt(
+            "ends_at",
+            now.toISOString()
+          )
+          .order(
+            "starts_at",
+            { ascending: false }
+          )
+          .limit(1)
           .maybeSingle();
 
 
-      if (
-        oneRollBoostError
-      ) {
+      if (adminEventError) {
+        // A temporary event-loading problem should not prevent normal rolls.
         console.error(
-          "Failed to load one-roll boost:",
-          oneRollBoostError
+          "Failed to load active admin event:",
+          adminEventError
         );
       }
 
@@ -1435,12 +1551,8 @@ export default {
       // CALCULATE PLAYER STATS
       // =====================================================
 
-      // Keep the luck recorded on a specimen independent from temporary
-      // boosts. A gifted potion can improve the odds of this roll, but the
-      // gem should still show the player's normal (equipment) luck level.
-      let baseLuck =
-        1;
-
+      // The saved specimen records the same effective Luck used by the RNG,
+      // including equipment, potions, and the active admin event.
       let luck =
         1;
 
@@ -1465,9 +1577,6 @@ export default {
               .luck_bonus ??
             0
           );
-
-        baseLuck +=
-          equipmentLuck;
 
         luck +=
           equipmentLuck;
@@ -1544,23 +1653,61 @@ export default {
       }
 
 
-      // A one-roll potion adds its luck to this roll only (not to
-      // baseLuck, which records the player's normal luck level).
-      const oneRollLuck =
-        Number(
-          oneRollBoost
-            ?.effect_value ??
-          0
-        );
+      if (activeAdminEvent) {
+        const applyEventModifier = (
+          currentValue: number,
+          rawBonus: unknown,
+          rawMultiplier: unknown
+        ) => {
+          const parsedBonus =
+            Number(rawBonus ?? 0);
 
-      if (
-        Number.isFinite(
-          oneRollLuck
-        ) &&
-        oneRollLuck > 0
-      ) {
-        luck +=
-          oneRollLuck;
+          const parsedMultiplier =
+            Number(rawMultiplier ?? 1);
+
+          const bonus =
+            Number.isFinite(parsedBonus)
+              ? parsedBonus
+              : 0;
+
+          const multiplier =
+            Number.isFinite(parsedMultiplier) &&
+            parsedMultiplier > 0
+              ? parsedMultiplier
+              : 1;
+
+          return (
+            currentValue + bonus
+          ) * multiplier;
+        };
+
+        luck =
+          applyEventModifier(
+            luck,
+            activeAdminEvent.luck_bonus,
+            activeAdminEvent.luck_multiplier
+          );
+
+        rollSpeed =
+          applyEventModifier(
+            rollSpeed,
+            activeAdminEvent.roll_speed_bonus,
+            activeAdminEvent.roll_speed_multiplier
+          );
+
+        weightLuck =
+          applyEventModifier(
+            weightLuck,
+            activeAdminEvent.weight_luck_bonus,
+            activeAdminEvent.weight_luck_multiplier
+          );
+
+        weightMultiplier =
+          applyEventModifier(
+            weightMultiplier,
+            activeAdminEvent.weight_multiplier_bonus,
+            activeAdminEvent.weight_multiplier_multiplier
+          );
       }
 
 
@@ -1615,7 +1762,7 @@ export default {
         );
 
 
-        return Response.json(
+        return jsonResponse(
           {
             error:
               "Failed to update cooldown."
@@ -1653,9 +1800,40 @@ export default {
         weightMultiplier;
 
 
+      // Mutation odds are independent, so one roll can have any
+      // combination of the five mutations (32 combinations).
+      const mutationChanceMultiplier =
+        getMutationChanceMultiplier(playerId);
+
+      const mutations =
+        rollGemMutations(mutationChanceMultiplier);
+
+      const mutationMultiplier =
+        mutations.reduce(
+          (total, mutation) =>
+            total * mutation.multiplier,
+          1
+        );
+
+      const primaryMutation =
+        mutations[0] ?? null;
+
+      const mutationIds =
+        mutations.map((mutation) => mutation.id);
+
+      const mutationMultipliers =
+        Object.fromEntries(
+          mutations.map((mutation) => [
+            mutation.id,
+            mutation.multiplier
+          ])
+        );
+
+
       const value =
         finalWeight *
-        gem.valuePerGram;
+        gem.valuePerGram *
+        mutationMultiplier;
 
 
       const specimen = {
@@ -1670,6 +1848,18 @@ export default {
 
         final_weight:
           finalWeight,
+
+        mutation_id:
+          primaryMutation?.id ?? null,
+
+        mutation_multiplier:
+          mutationMultiplier,
+
+        mutation_ids:
+          mutationIds,
+
+        mutation_multipliers:
+          mutationMultipliers,
 
         value
       };
@@ -1992,6 +2182,18 @@ export default {
               final_weight:
                 finalWeight,
 
+              mutation_id:
+                primaryMutation?.id ?? null,
+
+              mutation_multiplier:
+                mutationMultiplier,
+
+              mutation_ids:
+                mutationIds,
+
+              mutation_multipliers:
+                mutationMultipliers,
+
               value,
 
               locked:
@@ -2005,7 +2207,7 @@ export default {
                 1,
 
               luck_at_roll:
-                baseLuck
+                luck
             })
             .select()
             .single();
@@ -2021,7 +2223,7 @@ export default {
           );
 
 
-          return Response.json(
+          return jsonResponse(
             {
               error:
                 "Failed to save rolled gem."
@@ -2035,42 +2237,6 @@ export default {
 
         savedGem =
           insertedGem;
-      }
-
-
-      // =====================================================
-      // CONSUME ONE-ROLL BOOST
-      //
-      // The roll is now committed, so spend the one-roll potion.
-      // Done after the save so a failed roll never eats the potion.
-      // =====================================================
-
-      if (
-        oneRollLuck > 0
-      ) {
-        const {
-          error:
-            consumeError
-        } =
-          await ctx.supabaseAdmin
-            .from(
-              "player_one_roll_boosts"
-            )
-            .delete()
-            .eq(
-              "player_id",
-              playerId
-            );
-
-
-        if (
-          consumeError
-        ) {
-          console.error(
-            "Failed to consume one-roll boost:",
-            consumeError
-          );
-        }
       }
 
 
@@ -2122,6 +2288,66 @@ export default {
       }
 
 
+      // Record the COMPLETE mutation combination as one index entry.
+      // "none" is also a real combination, so every roll records exactly
+      // one combination: none, or any of the 31 non-empty subsets.
+      const combinationKey =
+        getMutationCombinationKey(mutationIds);
+
+      const {
+        data: mutationCombination,
+        error: mutationCombinationError
+      } = await ctx.supabaseAdmin.rpc(
+        "record_gem_mutation_combination",
+        {
+          p_player_id: playerId,
+          p_gem_name: gem.name,
+          p_combination_key: combinationKey,
+          p_mutation_ids: mutationIds,
+          p_mutation_multipliers: mutationMultipliers,
+          p_value: value
+        }
+      );
+
+      if (mutationCombinationError) {
+        console.error(
+          "Mutation combination index update failed:",
+          mutationCombinationError
+        );
+      }
+
+
+      // Attach the complete mutation list to the rare-roll chat
+      // announcement created by the server-side roll stats path.
+      // This is best-effort: chat failure must never invalidate a roll.
+      try {
+        const {
+          data: announcement
+        } = await ctx.supabaseAdmin
+          .from("global_chat_announcements")
+          .select("id")
+          .eq("player_id", playerId)
+          .eq("gem_name", gem.name)
+          .eq("rarity", gem.rarity)
+          .gte("created_at", now.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (announcement?.id) {
+          await ctx.supabaseAdmin
+            .from("global_chat_announcements")
+            .update({ mutation_ids: mutationIds })
+            .eq("id", announcement.id);
+        }
+      } catch (announcementError) {
+        console.error(
+          "Could not attach mutations to chat announcement:",
+          announcementError
+        );
+      }
+
+
       // =====================================================
       // FINAL INVENTORY COUNT
       // =====================================================
@@ -2137,7 +2363,7 @@ export default {
       // RETURN SUCCESSFUL ROLL
       // =====================================================
 
-      return Response.json({
+      return jsonResponse({
         playerId,
 
         specimenId:
@@ -2164,6 +2390,31 @@ export default {
         rolledWeight,
 
         finalWeight,
+
+        mutation:
+          primaryMutation
+            ? {
+                id: primaryMutation.id,
+                name: primaryMutation.name,
+                multiplier: primaryMutation.multiplier
+              }
+            : null,
+
+        mutations:
+          mutations.map((mutation) => ({
+            id: mutation.id,
+            name: mutation.name,
+            multiplier: mutation.multiplier
+          })),
+
+        mutationIds,
+
+        mutationMultiplier,
+
+        mutationCombination: {
+          key: combinationKey,
+          record: mutationCombination ?? null
+        },
 
         value,
 

@@ -6,9 +6,19 @@ import { withSupabase } from "npm:@supabase/server";
 // the source or the client bundle.
 async function isAdmin(ctx: any, id: string | undefined) {
   if (!id) return false;
-  const { data } = await ctx.supabaseAdmin
-    .from("admins").select("user_id").eq("user_id", id).maybeSingle();
-  return Boolean(data);
+
+  const { data, error } = await ctx.supabaseAdmin
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Admin lookup failed:", error);
+    return false;
+  }
+
+  return data?.user_id === id;
 }
 
 const GEM_CATALOG = [
@@ -46,7 +56,8 @@ const CONSUMABLE_IDS = new Set([
   "lucky-potion-1", "lucky-potion-2", "lucky-potion-3",
   "speed-potion-1", "speed-potion-2", "speed-potion-3",
   "fortune-potion-1", "fortune-potion-2", "fortune-potion-3",
-  "mass-potion-1", "mass-potion-2", "mass-potion-3"
+  "mass-potion-1", "mass-potion-2", "mass-potion-3",
+  "legendary-potion", "mythic-potion"
 ]);
 
 function response(data: unknown, status = 200) {
@@ -107,7 +118,16 @@ export default {
   fetch: withSupabase(
     { auth: "user" },
     async (req, ctx) => {
-      const adminId = ctx.userClaims?.id;
+      const adminId =
+        ctx.userClaims?.sub ??
+        ctx.userClaims?.id ??
+        ctx.jwtClaims?.sub;
+
+      console.log("ADMIN CONTEXT", {
+        userClaims: ctx.userClaims,
+        jwtClaims: ctx.jwtClaims,
+        hasSupabaseAdmin: Boolean(ctx.supabaseAdmin)
+      });
 
       let body: any;
       try {
@@ -118,6 +138,13 @@ export default {
 
       const action = body?.action;
       const targetId = body?.targetId;
+
+      console.log("ADMIN DEBUG", {
+        action,
+        adminId,
+        userClaims: ctx.userClaims,
+        jwtSub: ctx.jwtClaims?.sub
+      });
 
       // Any authenticated user may ask whether they are an admin, so
       // the client can gate its UI without knowing any admin id.
@@ -295,21 +322,48 @@ export default {
           return response({ error: "invalid_potion" }, 400);
         }
 
-        const { data: current } = await ctx.supabaseAdmin
+        const { data: current, error: currentError } = await ctx.supabaseAdmin
           .from("player_consumables").select("quantity")
           .eq("player_id", targetId).eq("consumable_id", consumableId).maybeSingle();
+        if (currentError) {
+          return response({ error: "potion_load_failed", message: currentError.message }, 500);
+        }
+
         const before = Number(current?.quantity ?? 0);
         const after = Math.max(0, before + amount);
 
-        const { error } = await ctx.supabaseAdmin
-          .from("player_consumables")
-          .upsert({
-            player_id: targetId,
-            consumable_id: consumableId,
-            quantity: after,
-            updated_at: new Date().toISOString()
-          }, { onConflict: "player_id,consumable_id" });
-        if (error) return response({ error: "potion_update_failed" }, 500);
+        let mutation;
+
+        if (after === 0) {
+          mutation = ctx.supabaseAdmin
+            .from("player_consumables")
+            .delete()
+            .eq("player_id", targetId)
+            .eq("consumable_id", consumableId);
+        } else if (current) {
+          mutation = ctx.supabaseAdmin
+            .from("player_consumables")
+            .update({
+              quantity: after,
+              updated_at: new Date().toISOString()
+            })
+            .eq("player_id", targetId)
+            .eq("consumable_id", consumableId);
+        } else {
+          mutation = ctx.supabaseAdmin
+            .from("player_consumables")
+            .insert({
+              player_id: targetId,
+              consumable_id: consumableId,
+              quantity: after,
+              updated_at: new Date().toISOString()
+            });
+        }
+
+        const { error } = await mutation;
+        if (error) {
+          return response({ error: "potion_update_failed", message: error.message }, 500);
+        }
 
         await audit(ctx, adminId, targetId, "potion_adjusted", {
           consumableId, amount, before, after
