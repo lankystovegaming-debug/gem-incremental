@@ -224,3 +224,73 @@
   --mutation-color: #c084fc;
   background: linear-gradient(135deg, rgba(127, 29, 29, 0.13), var(--surface-solid) 48%, rgba(88, 28, 135, 0.15));
 }
+
+/* Mutation filter tabs + cinematic replay controls */
+.mutation-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.55rem;
+  margin:1rem 0 1.1rem;
+  padding:.3rem;
+  border:1px solid var(--border, rgb(255 255 255 / .1));
+  border-radius:999px;
+  background:var(--surface, rgb(255 255 255 / .04));
+  overflow-x:auto;
+}
+.mutation-tab {
+  flex:0 0 auto;
+  border:0;
+  border-radius:999px;
+  padding:.55rem .85rem;
+  background:transparent;
+  color:var(--text-muted, #aab0c0);
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.mutation-tab:hover { transform:translateY(-1px); color:var(--text, #fff); }
+.mutation-tab.is-active {
+  background:var(--accent, #7c5cff);
+  color:#fff;
+  box-shadow:0 0 18px rgb(124 92 255 / .3);
+}
+.mutation-tab--polished.is-active { background:#cfd8e6; color:#17202b; }
+.mutation-tab--gilded.is-active { background:#d7a92b; color:#171108; }
+.mutation-tab--prismatic.is-active { background:linear-gradient(90deg,#ff62b0,#55d9ff,#b18cff); color:#fff; }
+.mutation-tab--celestial.is-active { background:#63bdf5; color:#07131f; }
+.mutation-tab--corrupted.is-active { background:#c63c69; color:#fff; }
+
+.gem-replay-button,
+.mutation-replay-button {
+  width:100%;
+  margin-top:.9rem;
+  justify-content:center;
+  min-height:2.45rem;
+}
+.mutation-replay-button {
+  border-color:rgb(255 255 255 / .16);
+}
+.mutation-index-card__name {
+  position:relative;
+}
+.mutation-index-card__name::after {
+  content:"";
+  display:inline-block;
+  width:.35rem;
+  height:.35rem;
+  margin-left:.45rem;
+  vertical-align:middle;
+  border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 10px currentColor;
+  animation:mutationTabDot 1.8s ease-in-out infinite;
+}
+@keyframes mutationTabDot {
+  0%,100%{transform:scale(.65);opacity:.45}
+  50%{transform:scale(1.25);opacity:1}
+}
+@media (max-width:600px) {
+  .mutation-tabs { border-radius:1rem; }
+  .mutation-tab { padding:.5rem .7rem; }
+}
