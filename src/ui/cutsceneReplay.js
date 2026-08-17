@@ -51,14 +51,16 @@ function mutationLayer(mutationId) {
   `;
 }
 
-export async function replayGemCutscene({ gem, mutationId = null }) {
+export async function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) {
   const rarity = Number(gem?.rarity ?? 0);
   const duration = durationForRarity(rarity);
   if (!duration) return;
 
   document.getElementById("ultra-cutscene-overlay")?.remove();
 
-  const mutation = mutationId ? getGemMutation(mutationId) : null;
+  const ids = Array.from(new Set([...(Array.isArray(mutationIds) ? mutationIds : []), ...(mutationId ? [mutationId] : [])])).filter(Boolean);
+  const mutations = ids.map(id => getGemMutation(id)).filter(Boolean);
+  const mutation = mutations[0] ?? null;
   const name = String(gem?.name ?? "Gem");
   const hash = hashString(name);
   const variant = hash % 10;
@@ -76,7 +78,7 @@ export async function replayGemCutscene({ gem, mutationId = null }) {
       rarity >= 500000 ? "ultra-level-500k" :
       rarity >= 100000 ? "ultra-level-100k" :
       "ultra-level-10k",
-    mutation ? `mutation-scene-${mutation.id}` : "",
+    ...mutations.map(m => `mutation-scene-${m.id}`),
     "replay-cutscene-overlay"
   ].filter(Boolean).join(" ");
 
@@ -87,7 +89,7 @@ export async function replayGemCutscene({ gem, mutationId = null }) {
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
     <div class="scene__world">${sceneMarkup(variant)}</div>
-    ${mutationLayer(mutation?.id)}
+    ${mutations.map(m => mutationLayer(m.id)).join("")}
     <div class="scene__mega-world" aria-hidden="true">
       <span class="mega__warp"></span>
       <span class="mega__ring mega__ring--a"></span>
@@ -110,7 +112,7 @@ export async function replayGemCutscene({ gem, mutationId = null }) {
         escapeHtml,
         mutation ? `gem-styled--mutation-${mutation.id}` : ""
       )}</h2>
-      ${mutation ? `<div class="scene__mutation">✦ ${escapeHtml(mutation.name)}</div>` : ""}
+      ${mutations.length ? `<div class="scene__mutation">✦ ${escapeHtml(mutations.map(m => m.name).join(" · "))}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(rarity)}</div>
       <div class="scene__outcome">Cinematic replay</div>
     </div>

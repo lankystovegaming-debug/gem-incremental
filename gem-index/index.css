@@ -225,72 +225,16 @@
   background: linear-gradient(135deg, rgba(127, 29, 29, 0.13), var(--surface-solid) 48%, rgba(88, 28, 135, 0.15));
 }
 
-/* Mutation filter tabs + cinematic replay controls */
-.mutation-tabs {
-  display:flex;
-  flex-wrap:wrap;
-  gap:.55rem;
-  margin:1rem 0 1.1rem;
-  padding:.3rem;
-  border:1px solid var(--border, rgb(255 255 255 / .1));
-  border-radius:999px;
-  background:var(--surface, rgb(255 255 255 / .04));
-  overflow-x:auto;
-}
-.mutation-tab {
-  flex:0 0 auto;
-  border:0;
-  border-radius:999px;
-  padding:.55rem .85rem;
-  background:transparent;
-  color:var(--text-muted, #aab0c0);
-  font:inherit;
-  font-weight:800;
-  cursor:pointer;
-  transition:transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
-}
-.mutation-tab:hover { transform:translateY(-1px); color:var(--text, #fff); }
-.mutation-tab.is-active {
-  background:var(--accent, #7c5cff);
-  color:#fff;
-  box-shadow:0 0 18px rgb(124 92 255 / .3);
-}
-.mutation-tab--polished.is-active { background:#cfd8e6; color:#17202b; }
-.mutation-tab--gilded.is-active { background:#d7a92b; color:#171108; }
-.mutation-tab--prismatic.is-active { background:linear-gradient(90deg,#ff62b0,#55d9ff,#b18cff); color:#fff; }
-.mutation-tab--celestial.is-active { background:#63bdf5; color:#07131f; }
-.mutation-tab--corrupted.is-active { background:#c63c69; color:#fff; }
 
-.gem-replay-button,
-.mutation-replay-button {
-  width:100%;
-  margin-top:.9rem;
-  justify-content:center;
-  min-height:2.45rem;
-}
-.mutation-replay-button {
-  border-color:rgb(255 255 255 / .16);
-}
-.mutation-index-card__name {
-  position:relative;
-}
-.mutation-index-card__name::after {
-  content:"";
-  display:inline-block;
-  width:.35rem;
-  height:.35rem;
-  margin-left:.45rem;
-  vertical-align:middle;
-  border-radius:50%;
-  background:currentColor;
-  box-shadow:0 0 10px currentColor;
-  animation:mutationTabDot 1.8s ease-in-out infinite;
-}
-@keyframes mutationTabDot {
-  0%,100%{transform:scale(.65);opacity:.45}
-  50%{transform:scale(1.25);opacity:1}
-}
-@media (max-width:600px) {
-  .mutation-tabs { border-radius:1rem; }
-  .mutation-tab { padding:.5rem .7rem; }
-}
+/* Mutation selector belongs to the Gem Index itself. */
+.mutation-filter-heading{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin:0 0 .55rem;color:var(--text);font-weight:800}
+.mutation-filter-heading small{color:var(--text-faint);font-size:.72rem;font-weight:600}
+.mutation-tabs{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.15rem;padding:.35rem;border:1px solid var(--border);border-radius:14px;background:var(--surface-solid);overflow-x:auto}
+.mutation-tab{appearance:none;border:1px solid transparent;border-radius:10px;padding:.55rem .8rem;background:transparent;color:var(--text-muted);font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;transition:transform .16s ease,background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}
+.mutation-tab:hover{transform:translateY(-1px);color:var(--text)}
+.mutation-tab.is-active{color:#fff;background:var(--accent);border-color:color-mix(in srgb,var(--accent) 65%,white);box-shadow:0 0 18px color-mix(in srgb,var(--accent) 30%,transparent)}
+.mutation-tab--none.is-active{background:var(--surface);color:var(--text);border-color:var(--text-faint)}
+.mutation-tab--polished.is-active{background:#8d98a8;color:#10151d}.mutation-tab--gilded.is-active{background:#c59b25;color:#161107}.mutation-tab--prismatic.is-active{background:linear-gradient(90deg,#ff63bd,#61dcff,#ad86ff)}.mutation-tab--celestial.is-active{background:#63bdf5;color:#07131f}.mutation-tab--corrupted.is-active{background:#b83b69;color:#fff}
+.index-card__badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px}.index-mutation-badge{padding:4px 7px;border:1px solid currentColor;border-radius:999px;font-size:.62rem;font-weight:850;white-space:nowrap;background:color-mix(in srgb,currentColor 10%,var(--surface-solid))}.mutation-badge--polished{color:#cbd5e1}.mutation-badge--gilded{color:#f6c453}.mutation-badge--prismatic{color:#e879f9}.mutation-badge--celestial{color:#7dd3fc}.mutation-badge--corrupted{color:#c084fc}
+.gem-replay-button{width:100%;margin-top:.8rem;justify-content:center;min-height:2.4rem}
+@media(max-width:600px){.mutation-filter-heading{align-items:flex-start;flex-direction:column;gap:.2rem}.mutation-tabs{border-radius:12px}.mutation-tab{padding:.5rem .65rem}}
