@@ -7,7 +7,9 @@ import {
 import { ensurePlayerAuth } from "./src/backend/auth.js";
 import {
   findPlayerByUsername,
+  loadUnreadPrivateMessageCount,
   loadRecentPrivateMessages,
+  markAllPrivateMessagesRead,
   sendPrivateMessage,
   subscribeToPrivateMessages,
   unsubscribeFromPrivateMessages
@@ -22,14 +24,300 @@ const inputEl = document.querySelector("#chatInput");
 const sendEl = document.querySelector("#chatSend");
 const statusEl = document.querySelector("#chatStatus");
 const hintEl = document.querySelector("#chatHint");
+const fabEl = document.querySelector("#chatFab");
+const badgeEl = document.querySelector("#chatFabBadge");
+const dockEl = document.querySelector("#chatDock");
+const closeDockEl = document.querySelector("#chatDockClose");
+const settingsToggleEl = document.querySelector("#chatDockSettings");
+const settingsPanelEl = document.querySelector("#chatDockSettingsPanel");
+const resetSizeEl = document.querySelector("#chatDockResetSize");
+const widthResizeEl = document.querySelector("#chatDockResizeWidth");
+const heightResizeEl = document.querySelector("#chatDockResizeHeight");
+const layoutOptionEls = document.querySelectorAll("[data-chat-layout]");
+
+const CHAT_LAYOUT_STORAGE_KEY = "gem.chat.layout.v1";
+const CHAT_UNREAD_STORAGE_KEY = "gem.chat.unread.v1";
+const DEFAULT_CHAT_LAYOUT = Object.freeze({
+  layout: "floating",
+  width: 360,
+  height: 560
+});
 
 if (messagesEl && formEl && inputEl) {
   let sending = false;
   let ready = false;
   let currentUserId = null;
+  let unreadGlobal = 0;
+  let unreadPrivate = 0;
+  let markingPrivateRead = false;
+  let layoutSettings = loadChatLayout();
+  const documentTitle = document.title.replace(/^\(\d+\)\s+/, "");
 
   inputEl.disabled = true;
   if (sendEl) sendEl.disabled = true;
+
+  function readStorage(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) ?? "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStorage(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // The game still works if browser storage is unavailable.
+    }
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, Number(value) || min));
+  }
+
+  function loadChatLayout() {
+    const saved = readStorage(CHAT_LAYOUT_STORAGE_KEY) ?? {};
+    const layout = ["floating", "side-right", "side-left"].includes(saved.layout)
+      ? saved.layout
+      : DEFAULT_CHAT_LAYOUT.layout;
+
+    return {
+      layout,
+      width: clamp(saved.width ?? DEFAULT_CHAT_LAYOUT.width, 300, 720),
+      height: clamp(saved.height ?? DEFAULT_CHAT_LAYOUT.height, 360, 760)
+    };
+  }
+
+  function saveChatLayout() {
+    writeStorage(CHAT_LAYOUT_STORAGE_KEY, layoutSettings);
+  }
+
+  function applyChatLayout() {
+    if (!dockEl) return;
+
+    const maxWidth = Math.max(300, Math.min(720, window.innerWidth - 24));
+    const maxHeight = Math.max(360, Math.min(760, window.innerHeight - 24));
+
+    layoutSettings.width = clamp(layoutSettings.width, 300, maxWidth);
+    layoutSettings.height = clamp(layoutSettings.height, 360, maxHeight);
+
+    dockEl.dataset.layout = layoutSettings.layout;
+    dockEl.style.setProperty("--chat-dock-width", `${layoutSettings.width}px`);
+    dockEl.style.setProperty("--chat-dock-height", `${layoutSettings.height}px`);
+
+    for (const option of layoutOptionEls) {
+      const selected = option.dataset.chatLayout === layoutSettings.layout;
+      option.classList.toggle("is-active", selected);
+      option.setAttribute("aria-pressed", selected ? "true" : "false");
+    }
+  }
+
+  function isChatOpen() {
+    return Boolean(dockEl && !dockEl.classList.contains("hidden"));
+  }
+
+  function isChatBeingRead() {
+    return isChatOpen() && !document.hidden;
+  }
+
+  function latestGlobalMessageAt(messages) {
+    return (messages ?? [])
+      .filter((message) => message.source === "global" && message.created_at)
+      .map((message) => new Date(message.created_at).getTime())
+      .filter(Number.isFinite)
+      .reduce((latest, value) => Math.max(latest, value), 0);
+  }
+
+  function renderedChatMessages() {
+    return [...messagesEl.querySelectorAll(".chat-message")].map((item) => ({
+      source: item.classList.contains("chat-message--private") ? "private" : "global",
+      created_at: item.querySelector("time")?.dateTime
+    }));
+  }
+
+  function globalSeenAt() {
+    const value = readStorage(CHAT_UNREAD_STORAGE_KEY)?.globalSeenAt;
+    const timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  function setGlobalSeenAt(value) {
+    const timestamp = new Date(value).getTime();
+    if (!Number.isFinite(timestamp)) return;
+
+    const previous = globalSeenAt();
+    if (timestamp <= previous) return;
+
+    writeStorage(CHAT_UNREAD_STORAGE_KEY, {
+      globalSeenAt: new Date(timestamp).toISOString()
+    });
+  }
+
+  function updateUnreadBadge() {
+    const count = Math.max(0, unreadGlobal) + Math.max(0, unreadPrivate);
+
+    if (badgeEl) {
+      badgeEl.textContent = count > 99 ? "99+" : String(count);
+      badgeEl.classList.toggle("hidden", count === 0);
+    }
+
+    if (fabEl) {
+      fabEl.setAttribute(
+        "aria-label",
+        count ? `Open chat — ${count} unread message${count === 1 ? "" : "s"}` : "Open chat"
+      );
+    }
+
+    document.title = count ? `(${count > 99 ? "99+" : count}) ${documentTitle}` : documentTitle;
+  }
+
+  async function markPrivateMessagesRead() {
+    if (markingPrivateRead || !currentUserId) return;
+
+    markingPrivateRead = true;
+
+    try {
+      await markAllPrivateMessagesRead();
+    } catch (error) {
+      console.error("[CHAT] Could not mark private messages read:", error);
+    } finally {
+      markingPrivateRead = false;
+    }
+  }
+
+  function clearUnreadMessages(messages = []) {
+    unreadGlobal = 0;
+    unreadPrivate = 0;
+
+    const latest = latestGlobalMessageAt(messages);
+    if (latest) setGlobalSeenAt(latest);
+
+    updateUnreadBadge();
+    markPrivateMessagesRead();
+  }
+
+  function countUnreadGlobalMessages(messages) {
+    const seenAt = globalSeenAt();
+    const latest = latestGlobalMessageAt(messages);
+
+    // A fresh install starts at the latest visible message rather than
+    // presenting old public chat history as a new notification.
+    if (!seenAt) {
+      if (latest) setGlobalSeenAt(latest);
+      return 0;
+    }
+
+    return (messages ?? []).filter((message) => {
+      const createdAt = new Date(message.created_at).getTime();
+      return (
+        message.source === "global" &&
+        message.sender_id !== currentUserId &&
+        Number.isFinite(createdAt) &&
+        createdAt > seenAt
+      );
+    }).length;
+  }
+
+  function receiveGlobalMessage(message) {
+    if (!message || message.source !== "global" || message.sender_id === currentUserId) {
+      return;
+    }
+
+    if (isChatBeingRead()) {
+      setGlobalSeenAt(message.created_at);
+      return;
+    }
+
+    unreadGlobal += 1;
+    updateUnreadBadge();
+  }
+
+  function receivePrivateMessage(message) {
+    if (!message || message.sender_id === currentUserId) return;
+
+    if (isChatBeingRead()) {
+      unreadPrivate = 0;
+      updateUnreadBadge();
+      markPrivateMessagesRead();
+      return;
+    }
+
+    unreadPrivate += 1;
+    updateUnreadBadge();
+  }
+
+  function setChatOpen(open) {
+    if (!dockEl || !fabEl) return;
+
+    dockEl.classList.toggle("hidden", !open);
+    dockEl.setAttribute("aria-hidden", open ? "false" : "true");
+    fabEl.setAttribute("aria-expanded", open ? "true" : "false");
+    fabEl.classList.toggle("is-open", open);
+
+    if (open) {
+      settingsPanelEl?.classList.add("hidden");
+      settingsToggleEl?.setAttribute("aria-expanded", "false");
+      clearUnreadMessages(renderedChatMessages());
+      setTimeout(() => inputEl.focus(), 50);
+    }
+  }
+
+  function toggleChatSettings() {
+    if (!settingsPanelEl || !settingsToggleEl) return;
+
+    const opening = settingsPanelEl.classList.contains("hidden");
+    settingsPanelEl.classList.toggle("hidden", !opening);
+    settingsToggleEl.setAttribute("aria-expanded", opening ? "true" : "false");
+  }
+
+  function resetChatSize() {
+    layoutSettings = {
+      ...layoutSettings,
+      width: DEFAULT_CHAT_LAYOUT.width,
+      height: DEFAULT_CHAT_LAYOUT.height
+    };
+    applyChatLayout();
+    saveChatLayout();
+  }
+
+  function beginResize(event, axis) {
+    if (!dockEl || window.matchMedia("(max-width: 720px)").matches) return;
+
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = layoutSettings.width;
+    const startHeight = layoutSettings.height;
+
+    const onMove = (moveEvent) => {
+      if (axis === "width") {
+        const growsRight = layoutSettings.layout === "side-left";
+        const delta = moveEvent.clientX - startX;
+        const max = Math.max(300, Math.min(720, window.innerWidth - 24));
+        layoutSettings.width = clamp(
+          startWidth + (growsRight ? delta : -delta),
+          300,
+          max
+        );
+      } else if (layoutSettings.layout === "floating") {
+        const max = Math.max(360, Math.min(760, window.innerHeight - 24));
+        layoutSettings.height = clamp(startHeight - (moveEvent.clientY - startY), 360, max);
+      }
+
+      applyChatLayout();
+    };
+
+    const onEnd = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      saveChatLayout();
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onEnd, { once: true });
+  }
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -127,7 +415,7 @@ if (messagesEl && formEl && inputEl) {
   }
 
   function renderMessage(message, shouldScroll = true) {
-    if (!message?.id) return;
+    if (!message?.id) return false;
 
     const messageId = String(message.id);
 
@@ -136,7 +424,7 @@ if (messagesEl && formEl && inputEl) {
         `[data-message-id="${CSS.escape(messageId)}"]`
       )
     ) {
-      return;
+      return false;
     }
 
     messagesEl.querySelector("#chatEmpty")?.remove();
@@ -213,6 +501,8 @@ if (messagesEl && formEl && inputEl) {
     if (shouldScroll) {
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
+
+    return true;
   }
 
   function setHint(text, type = "") {
@@ -297,10 +587,12 @@ if (messagesEl && formEl && inputEl) {
 
       currentUserId = user.id;
 
-      // Load public chat and only this user's private messages.
-      const [globalMessages, privateMessages] = await Promise.all([
+      // Load public chat and this user's private inbox before subscribing so
+      // the badge is accurate as soon as the page opens.
+      const [globalMessages, privateMessages, privateUnreadCount] = await Promise.all([
         loadChatMessages(),
-        loadRecentPrivateMessages(50)
+        loadRecentPrivateMessages(50),
+        loadUnreadPrivateMessageCount()
       ]);
 
       messagesEl.innerHTML = "";
@@ -327,16 +619,31 @@ if (messagesEl && formEl && inputEl) {
         messagesEl.scrollTop = messagesEl.scrollHeight;
       }
 
+      unreadGlobal = countUnreadGlobalMessages(globalMessages);
+      unreadPrivate = Number(privateUnreadCount) || 0;
+
+      if (isChatBeingRead()) {
+        clearUnreadMessages(merged);
+      } else {
+        updateUnreadBadge();
+      }
+
       subscribeToChat((message) => {
-        renderMessage(message);
+        if (renderMessage(message)) {
+          receiveGlobalMessage(message);
+        }
       });
 
       subscribeToPrivateMessages((message) => {
-        renderMessage({
+        const privateMessage = {
           ...message,
           id: `private-${message.id}`,
           source: "private"
-        });
+        };
+
+        if (renderMessage(privateMessage)) {
+          receivePrivateMessage(privateMessage);
+        }
       });
 
       ready = true;
@@ -357,6 +664,40 @@ if (messagesEl && formEl && inputEl) {
       );
     }
   }
+
+  applyChatLayout();
+
+  fabEl?.addEventListener("click", () => {
+    setChatOpen(!isChatOpen());
+  });
+
+  closeDockEl?.addEventListener("click", () => {
+    setChatOpen(false);
+  });
+
+  settingsToggleEl?.addEventListener("click", toggleChatSettings);
+
+  for (const option of layoutOptionEls) {
+    option.addEventListener("click", () => {
+      layoutSettings.layout = option.dataset.chatLayout ?? "floating";
+      applyChatLayout();
+      saveChatLayout();
+    });
+  }
+
+  resetSizeEl?.addEventListener("click", resetChatSize);
+  widthResizeEl?.addEventListener("pointerdown", (event) => beginResize(event, "width"));
+  heightResizeEl?.addEventListener("pointerdown", (event) => beginResize(event, "height"));
+
+  document.addEventListener("visibilitychange", () => {
+    if (isChatBeingRead()) {
+      clearUnreadMessages(renderedChatMessages());
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    applyChatLayout();
+  });
 
   formEl.addEventListener("submit", async (event) => {
     event.preventDefault();

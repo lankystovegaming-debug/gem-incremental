@@ -204,6 +204,40 @@ export async function markConversationRead(otherPlayerId) {
   }
 }
 
+
+export async function loadUnreadPrivateMessageCount() {
+  const userId = await getCurrentUserId();
+
+  const { count, error } = await supabase
+    .from("private_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
+    .is("read_at", null);
+
+  if (error) {
+    console.error("[DM] Failed to count unread messages:", error);
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+
+export async function markAllPrivateMessagesRead() {
+  const userId = await getCurrentUserId();
+
+  const { error } = await supabase
+    .from("private_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("recipient_id", userId)
+    .is("read_at", null);
+
+  if (error) {
+    console.error("[DM] Failed to mark messages read:", error);
+    throw error;
+  }
+}
+
 export function subscribeToPrivateMessages(onMessage) {
   if (typeof onMessage !== "function") {
     throw new TypeError("subscribeToPrivateMessages requires a callback.");
