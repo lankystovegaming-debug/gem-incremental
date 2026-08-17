@@ -156,7 +156,7 @@ const gems = [
     name: "Sapphire",
     rarity: 1100,
     baseWeight: 475,
-    valuePerGram: 2.05735,
+    valuePerGram: 1.7487475,
     description:
       "A gem variety of corundum most famously known for its blue colour. Corundum of nearly any colour except red can be called sapphire."
   },
@@ -165,7 +165,7 @@ const gems = [
     name: "Ruby",
     rarity: 1400,
     baseWeight: 500,
-    valuePerGram: 2.53,
+    valuePerGram: 2.1505,
     description:
       "The red gemstone variety of corundum. Its colour comes mainly from trace amounts of chromium."
   },
@@ -174,7 +174,7 @@ const gems = [
     name: "Emerald",
     rarity: 1800,
     baseWeight: 525,
-    valuePerGram: 3.06705,
+    valuePerGram: 2.6069925,
     description:
       "A green variety of beryl coloured by trace amounts of chromium or vanadium. Fine emeralds are prized for their vivid colour."
   },
@@ -183,7 +183,7 @@ const gems = [
     name: "Diamond",
     rarity: 2300,
     baseWeight: 550,
-    valuePerGram: 3.8686,
+    valuePerGram: 3.28831,
     description:
       "A crystal made almost entirely of carbon. Its tightly bonded structure makes it the hardest naturally occurring material."
   },
@@ -192,7 +192,7 @@ const gems = [
     name: "Tanzanite",
     rarity: 2900,
     baseWeight: 575,
-    valuePerGram: 4.09975,
+    valuePerGram: 3.4847875,
     description:
       "A blue-violet gemstone variety of zoisite found primarily in a small region of Tanzania. Its limited source makes it unusually rare."
   },
@@ -201,7 +201,7 @@ const gems = [
     name: "Alexandrite",
     rarity: 3600,
     baseWeight: 600,
-    valuePerGram: 5.07955,
+    valuePerGram: 4.3176175,
     description:
       "A rare variety of chrysoberyl famous for changing colour under different lighting. It can appear greenish in daylight and reddish under warmer light."
   },
@@ -210,7 +210,7 @@ const gems = [
     name: "Benitoite",
     rarity: 4400,
     baseWeight: 625,
-    valuePerGram: 5.52,
+    valuePerGram: 4.692,
     description:
       "A rare blue mineral first discovered in California. It is known for its bright colour and strong fluorescence under ultraviolet light."
   },
@@ -219,7 +219,7 @@ const gems = [
     name: "Red Beryl",
     rarity: 5300,
     baseWeight: 650,
-    valuePerGram: 6.3687,
+    valuePerGram: 5.413395,
     description:
       "An extremely rare red variety of beryl coloured by manganese. Gem-quality crystals are found in only a few locations."
   },
@@ -228,7 +228,7 @@ const gems = [
     name: "Black Opal",
     rarity: 6300,
     baseWeight: 675,
-    valuePerGram: 7.3255,
+    valuePerGram: 6.226675,
     description:
       "A highly valued type of opal with a dark body colour that can make its flashes of colour appear especially vivid."
   },
@@ -237,7 +237,7 @@ const gems = [
     name: "Grandidierite",
     rarity: 7400,
     baseWeight: 700,
-    valuePerGram: 7.88555,
+    valuePerGram: 6.7027175,
     description:
       "A rare blue-green mineral first discovered in Madagascar. Transparent gem-quality specimens are particularly uncommon."
   },
@@ -246,7 +246,7 @@ const gems = [
     name: "Taaffeite",
     rarity: 8500,
     baseWeight: 725,
-    valuePerGram: 8.7239,
+    valuePerGram: 7.415315,
     description:
       "An exceptionally rare gemstone first identified from a cut stone that had been mistaken for spinel. It remains far rarer than most familiar gems."
   },
@@ -255,7 +255,7 @@ const gems = [
     name: "Musgravite",
     rarity: 9300,
     baseWeight: 750,
-    valuePerGram: 9.2,
+    valuePerGram: 7.82,
     description:
       "A very rare member of the taaffeite mineral family. Gem-quality specimens are scarce and highly sought after by collectors."
   },
@@ -264,7 +264,7 @@ const gems = [
     name: "Painite",
     rarity: 10000,
     baseWeight: 800,
-    valuePerGram: 9.34375,
+    valuePerGram: 7.5,
     description:
       "An exceptionally rare borate mineral first identified in Myanmar. For many years, only a handful of specimens were known."
   },
@@ -273,7 +273,7 @@ const gems = [
     name: "Dark Matter",
     rarity: 1000000,
     baseWeight: 2500,
-    valuePerGram: 200,
+    valuePerGram: 160,
     description:
       "This should not be here. Whatever you rolled, it probably is not a mineral."
   },
@@ -300,7 +300,7 @@ const gems = [
     name: "Demantoid",
     rarity: 6800,
     baseWeight: 690,
-    valuePerGram: 7.6,
+    valuePerGram: 6.46,
     description:
       "A brilliant green variety of garnet prized for its vivid colour and intense sparkle. High-quality specimens can rival even diamond in their flashes of light."
   },
@@ -309,7 +309,7 @@ const gems = [
     name: "Jeremejevite",
     rarity: 14000,
     baseWeight: 850,
-    valuePerGram: 12,
+    valuePerGram: 9,
     description:
       "An exceptionally rare crystal usually found in delicate shades of blue or nearly colourless forms. Clear gem-quality specimens are particularly difficult to obtain."
   },
@@ -318,7 +318,7 @@ const gems = [
     name: "Poudretteite",
     rarity: 22000,
     baseWeight: 925,
-    valuePerGram: 16,
+    valuePerGram: 12,
     description:
       "A remarkably rare mineral with gentle pink and violet tones. Its subtle colour contrasts with the extraordinary scarcity of usable crystals."
   },
@@ -327,7 +327,7 @@ const gems = [
     name: "Serendibite",
     rarity: 35000,
     baseWeight: 1000,
-    valuePerGram: 22,
+    valuePerGram: 16.5,
     description:
       "A rare mineral ranging from deep blue-green to almost black. Transparent specimens are exceptionally scarce and highly sought after."
   },
@@ -336,7 +336,7 @@ const gems = [
     name: "Blue Garnet",
     rarity: 55000,
     baseWeight: 1100,
-    valuePerGram: 30,
+    valuePerGram: 22.5,
     description:
       "An extraordinary garnet variety capable of displaying rich blue-green tones under certain lighting. Its unusual colour makes it one of the rarest members of the garnet family."
   },
@@ -345,7 +345,7 @@ const gems = [
     name: "Kyawthuite",
     rarity: 85000,
     baseWeight: 1200,
-    valuePerGram: 42,
+    valuePerGram: 31.5,
     description:
       "An extremely rare reddish-orange mineral known from only a tiny number of specimens. Its scarcity has given it an almost legendary reputation among collectors."
   },
@@ -354,7 +354,7 @@ const gems = [
     name: "Aether Quartz",
     rarity: 140000,
     baseWeight: 1350,
-    valuePerGram: 54,
+    valuePerGram: 43.2,
     description:
       "Quartz transformed by prolonged exposure to concentrated aether. Pale energy drifts through its crystal structure like luminous mist trapped beneath glass."
   },
@@ -363,7 +363,7 @@ const gems = [
     name: "Void Opal",
     rarity: 250000,
     baseWeight: 1550,
-    valuePerGram: 76.5,
+    valuePerGram: 61.2,
     description:
       "An opal formed where ordinary light begins to fail. Its surface displays shifting colours surrounding patches of darkness that seem deeper than the stone itself."
   },
@@ -372,7 +372,7 @@ const gems = [
     name: "Chronite",
     rarity: 480000,
     baseWeight: 1800,
-    valuePerGram: 112.5,
+    valuePerGram: 90,
     description:
       "A crystal that resonates faintly out of sequence with the present. Light passing through it sometimes appears a fraction of a second before the crystal is moved."
   },
@@ -381,7 +381,7 @@ const gems = [
     name: "Neutron Crystal",
     rarity: 800000,
     baseWeight: 2200,
-    valuePerGram: 157.5,
+    valuePerGram: 126,
     description:
       "An impossibly dense crystalline structure created under crushing cosmic pressure. Despite its compact form, it carries the weight of something far larger."
   },
@@ -390,7 +390,7 @@ const gems = [
     name: "Antimatter Crystal",
     rarity: 1800000,
     baseWeight: 2900,
-    valuePerGram: 270,
+    valuePerGram: 216,
     description:
       "A volatile crystal held together by an unknown containment field. Its surface flickers as nearby matter narrowly avoids contact with the energy sealed inside."
   },
@@ -399,7 +399,7 @@ const gems = [
     name: "Singularity Shard",
     rarity: 4000000,
     baseWeight: 3600,
-    valuePerGram: 472.5,
+    valuePerGram: 378,
     description:
       "A fragment formed around the edge of a collapsed point in space. Light bends across its surface, and its true weight seems impossible to measure."
   },
