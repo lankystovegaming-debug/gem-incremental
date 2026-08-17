@@ -2,11 +2,13 @@
 --   - 1 coin now costs $10,000 (was $100,000)
 --   - Coin share market: a single tradeable "coin" asset priced
 --     in in-game money. Anti-pump: 2% spread each way, a 3s trade
---     cooldown, 100-share per-trade cap, 10k holding cap, and — most
---     importantly — MEAN REVERSION toward a $10 baseline plus a hard
---     $3–$30 band, so no crowd can pump it far or keep it pumped.
---   - Gem shop: buy any gem for 10x–20x its retail value by rarity
---     (Lanky Gem fixed at $125,000,000).
+--     cooldown, and — most importantly — MEAN REVERSION toward a $10
+--     baseline (15-min half-life) plus a $1 floor, so no crowd can
+--     pump it far or keep it pumped. Buy any amount (1 → unlimited);
+--     the per-trade price impact is capped so a huge order can't blow
+--     the price up in one go, and the mean reversion drags it back.
+--   - market_history logs who traded (username, action, qty) so the
+--     market page can show a live "recent trades" feed.
 -- =========================================================
 
 set local check_function_bodies = off;
@@ -57,6 +59,11 @@ create table if not exists public.market_history (
   id bigint generated always as identity primary key,
   asset text not null default 'coin', price numeric not null, at timestamptz not null default now()
 );
+-- Trade attribution for the "recent trades" feed.
+alter table public.market_history add column if not exists player_id uuid;
+alter table public.market_history add column if not exists username text;
+alter table public.market_history add column if not exists action text;
+alter table public.market_history add column if not exists qty integer;
 alter table public.market_history enable row level security;
 drop policy if exists "Public can read history" on public.market_history;
 create policy "Public can read history" on public.market_history for select to anon, authenticated using (true);
@@ -68,30 +75,34 @@ returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   v_uid uuid := auth.uid();
   v_price numeric; v_updated timestamptz; v_new_price numeric;
-  v_shares bigint; v_money double precision; v_last timestamptz;
+  v_shares bigint; v_money double precision; v_last timestamptz; v_username text;
   v_impact numeric; v_cost numeric := 0; v_proceeds numeric := 0;
   v_fee numeric := 0.02;
-  v_max_qty int := 10000; v_hold_cap bigint := 10000000;
+  v_hold_cap bigint := 1000000000000;   -- effectively unlimited
   v_cooldown interval := interval '3 seconds';
-  v_baseline numeric := 10; v_band_lo numeric := 3; v_band_hi numeric := 30;
-  v_impact_per numeric := 0.00005; v_revert numeric;
+  v_baseline numeric := 10; v_floor numeric := 1;   -- no upper cap
+  v_impact_per numeric := 0.00005; v_max_impact numeric := 2.0;  -- <= +200%/trade
+  v_revert numeric;
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
   if p_action not in ('buy','sell') then raise exception 'invalid_action'; end if;
-  if p_qty is null or p_qty < 1 or p_qty > v_max_qty then raise exception 'invalid_qty'; end if;
+  if p_qty is null or p_qty < 1 then raise exception 'invalid_qty'; end if;
 
   insert into public.player_shares(player_id, shares) values (v_uid, 0) on conflict (player_id) do nothing;
   select shares, last_trade_at into v_shares, v_last from public.player_shares where player_id = v_uid for update;
   if v_last is not null and now() - v_last < v_cooldown then raise exception 'too_fast'; end if;
 
+  select username into v_username from public.players where id = v_uid;
+
   select price, updated_at into v_price, v_updated from public.market_state where id = 'coin' for update;
 
-  -- Mean reversion toward baseline (half-life 15 min), clamped to the band.
+  -- Mean reversion toward baseline (half-life 15 min), floored at $1, no ceiling.
   v_revert := power(0.5, extract(epoch from (now() - v_updated)) / (15 * 60));
-  v_price := v_baseline + (v_price - v_baseline) * v_revert;
-  v_price := least(v_band_hi, greatest(v_band_lo, v_price));
+  v_price := greatest(v_floor, v_baseline + (v_price - v_baseline) * v_revert);
 
-  v_impact := p_qty * v_impact_per;
+  -- Per-trade impact grows with size but is capped, so a whale can't
+  -- blow the price up in one order (and mean reversion drags it back).
+  v_impact := least(p_qty * v_impact_per, v_max_impact);
 
   if p_action = 'buy' then
     v_cost := p_qty * v_price * (1 + v_fee);
@@ -109,81 +120,12 @@ begin
     v_new_price := v_price * (1 - v_impact);
   end if;
 
-  v_new_price := round(least(v_band_hi, greatest(v_band_lo, v_new_price)), 4);
+  v_new_price := round(greatest(v_floor, v_new_price), 4);
   update public.market_state set price = v_new_price, updated_at = now() where id = 'coin';
-  insert into public.market_history(asset, price) values ('coin', v_new_price);
+  insert into public.market_history(asset, price, player_id, username, action, qty)
+  values ('coin', v_new_price, v_uid, v_username, p_action, p_qty);
 
   return jsonb_build_object('price', v_new_price, 'shares', v_shares, 'money', v_money,
     'action', p_action, 'qty', p_qty, 'total', round(case when p_action='buy' then v_cost else v_proceeds end, 2));
 end; $$;
 grant execute on function public.trade_shares(text, integer) to authenticated;
-
-
--- ===== Gem shop =====
-create table if not exists public.game_gems (
-  name text primary key, rarity integer not null,
-  base_weight double precision not null, value_per_gram double precision not null,
-  shop_price numeric not null default 0, sort integer not null default 0
-);
-alter table public.game_gems enable row level security;
-drop policy if exists "Public can read gems" on public.game_gems;
-create policy "Public can read gems" on public.game_gems for select to anon, authenticated using (true);
-revoke insert, update, delete on public.game_gems from anon, authenticated;
-grant select on public.game_gems to anon, authenticated;
-
-insert into public.game_gems (name, rarity, base_weight, value_per_gram, sort) values
-('Quartz',2,100,0.0575,1),('Calcite',3,110,0.0736,2),('Feldspar',5,125,0.092,3),
-('Fluorite',8,140,0.115,4),('Hematite',12,160,0.13685,5),('Obsidian',18,180,0.15985,6),
-('Agate',25,200,0.184,7),('Jasper',35,225,0.2093,8),('Amethyst',50,250,0.253,9),
-('Garnet',70,275,0.3013,10),('Citrine',90,290,0.34,11),('Peridot',100,300,0.36455,12),
-('Topaz',150,325,0.47725,13),('Aquamarine',225,350,0.60835,14),('Tourmaline',325,375,0.76705,15),
-('Opal',475,400,1.035,16),('Zircon',650,425,1.2719,17),('Moonstone',750,440,1.43,18),
-('Spinel',850,450,1.59735,19),('Sapphire',1100,475,2.05735,20),('Ruby',1400,500,2.53,21),
-('Emerald',1800,525,3.06705,22),('Diamond',2300,550,3.8686,23),('Tanzanite',2900,575,4.09975,24),
-('Alexandrite',3600,600,5.07955,25),('Benitoite',4400,625,5.52,26),('Red Beryl',5300,650,6.3687,27),
-('Black Opal',6300,675,7.3255,28),('Demantoid',6800,690,7.6,29),('Grandidierite',7400,700,7.88555,30),
-('Taaffeite',8500,725,8.7239,31),('Musgravite',9300,750,9.2,32),('Painite',10000,800,9.34375,33),
-('Jeremejevite',14000,850,12,34),('Poudretteite',22000,925,16,35),('Serendibite',35000,1000,22,36),
-('Blue Garnet',55000,1100,30,37),('Kyawthuite',85000,1200,42,38),('Aether Quartz',140000,1350,54,39),
-('Void Opal',250000,1550,76.5,40),('Chronite',480000,1800,112.5,41),('Neutron Crystal',800000,2200,157.5,42),
-('Dark Matter',1000000,2500,200,43),('Antimatter Crystal',1800000,2900,270,44),
-('Singularity Shard',4000000,3600,472.5,45),('Lanky Gem',10000000,40500,111.1111,46)
-on conflict (name) do update set rarity=excluded.rarity, base_weight=excluded.base_weight,
-  value_per_gram=excluded.value_per_gram, sort=excluded.sort;
-
-update public.game_gems set shop_price = round(base_weight * value_per_gram * case
-    when rarity < 10 then 10 when rarity < 50 then 11 when rarity < 100 then 12
-    when rarity < 1000 then 14 when rarity < 10000 then 16 when rarity < 100000 then 18
-    when rarity < 1000000 then 19 else 20 end);
-update public.game_gems set shop_price = 125000000 where name = 'Lanky Gem';
-
-create or replace function public.buy_gem(p_gem_name text)
-returns jsonb language plpgsql security definer set search_path = '' as $$
-declare
-  v_uid uuid := auth.uid();
-  v_gem public.game_gems%rowtype;
-  v_money double precision;
-begin
-  if v_uid is null then raise exception 'not_authenticated'; end if;
-  select * into v_gem from public.game_gems where name = p_gem_name;
-  if not found then raise exception 'gem_not_found'; end if;
-  select money into v_money from public.players where id = v_uid for update;
-  if not found then raise exception 'player_not_found'; end if;
-  if v_money < v_gem.shop_price then raise exception 'not_enough_money'; end if;
-  update public.players set money = money - v_gem.shop_price where id = v_uid returning money into v_money;
-  insert into public.inventory_gems (
-    player_id, gem_name, rarity, base_weight, value_per_gram,
-    rolled_weight_multiplier, rolled_weight, final_weight, value, locked
-  ) values (
-    v_uid, v_gem.name, v_gem.rarity, v_gem.base_weight, v_gem.value_per_gram,
-    1, v_gem.base_weight, v_gem.base_weight, v_gem.base_weight * v_gem.value_per_gram, false
-  );
-  insert into public.gem_index (player_id, gem_name, total_rolled, heaviest_weight)
-  values (v_uid, v_gem.name, 1, v_gem.base_weight)
-  on conflict (player_id, gem_name) do update
-    set total_rolled = public.gem_index.total_rolled + 1,
-        heaviest_weight = greatest(public.gem_index.heaviest_weight, v_gem.base_weight),
-        updated_at = now();
-  return jsonb_build_object('gem', v_gem.name, 'price', v_gem.shop_price, 'money', v_money);
-end; $$;
-grant execute on function public.buy_gem(text) to authenticated;

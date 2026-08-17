@@ -2,17 +2,14 @@ import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadMarket,
   loadHoldings,
+  loadTrades,
   tradeShares,
-  loadGemShop,
-  buyGem,
   revertedPrice
 } from "../src/backend/cloudMarket.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { notify } from "../src/ui/toast.js";
 import {
-  rarityTier,
-  rarityLabel,
   formatMoney,
   formatCount,
   escapeHtml
@@ -30,10 +27,10 @@ const mktQty = document.getElementById("mktQty");
 const mktBuy = document.getElementById("mktBuy");
 const mktSell = document.getElementById("mktSell");
 const mktStatus = document.getElementById("mktStatus");
-const gemShop = document.getElementById("gemShop");
+const mktFeed = document.getElementById("mktFeed");
 
 
-const state = { market: null, shares: 0, money: 0, gems: [] };
+const state = { market: null, shares: 0, money: 0, trades: [] };
 
 
 function currentPrice() {
@@ -99,8 +96,47 @@ function renderChart() {
 }
 
 
+function timeAgo(iso) {
+  const secs = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return "just now";
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
+}
+
+
+function renderFeed() {
+  if (!state.trades.length) {
+    mktFeed.innerHTML = `<li class="mkt-feed__empty">No trades yet.</li>`;
+    return;
+  }
+
+  mktFeed.innerHTML = state.trades
+    .map((t) => {
+      const buy = t.action === "buy";
+      return `
+        <li class="mkt-feed__row">
+          <span class="mkt-feed__who">${escapeHtml(t.username)}</span>
+          <span class="mkt-feed__act ${buy ? "is-buy" : "is-sell"}">${buy ? "bought" : "sold"}</span>
+          <span class="mkt-feed__qty">${formatCount(t.qty)}</span>
+          <span class="mkt-feed__at">@ ${formatMoney(t.price)}</span>
+          <span class="mkt-feed__time">${timeAgo(t.at)}</span>
+        </li>
+      `;
+    })
+    .join("");
+}
+
+
+async function refreshFeed() {
+  const trades = await loadTrades();
+  state.trades = trades;
+  renderFeed();
+}
+
+
 async function trade(action) {
-  const qty = Math.max(1, Math.min(10000, Math.floor(Number(mktQty.value) || 0)));
+  const qty = Math.max(1, Math.floor(Number(mktQty.value) || 0));
 
   mktBuy.disabled = true;
   mktSell.disabled = true;
@@ -127,6 +163,7 @@ async function trade(action) {
   if (market) state.market = market;
 
   renderPrice();
+  refreshFeed();
 
   notify.success(
     action === "buy" ? "Shares bought" : "Shares sold",
@@ -137,55 +174,6 @@ async function trade(action) {
 
 mktBuy.addEventListener("click", () => trade("buy"));
 mktSell.addEventListener("click", () => trade("sell"));
-
-
-// =========================================================
-// GEM SHOP
-// =========================================================
-
-function renderGemShop() {
-  gemShop.innerHTML = state.gems
-    .map((gem) => {
-      const tier = rarityTier(gem.rarity);
-      return `
-        <article class="gemshop-card tier-${tier.id}">
-          <div class="gemshop-card__head">
-            <div class="gemshop-card__name">${escapeHtml(gem.name)}</div>
-            <span class="badge badge--tier">${tier.name}</span>
-          </div>
-          <div class="gemshop-card__rarity">${rarityLabel(gem.rarity)}</div>
-          <div class="gemshop-card__price">${formatMoney(gem.shop_price)}</div>
-          <button class="btn btn--sm btn--block" data-buy="${escapeHtml(gem.name)}" type="button">Buy</button>
-        </article>
-      `;
-    })
-    .join("");
-
-  for (const button of gemShop.querySelectorAll("[data-buy]")) {
-    button.addEventListener("click", () => buyOneGem(button.dataset.buy, button));
-  }
-}
-
-
-async function buyOneGem(name, button) {
-  button.disabled = true;
-  button.textContent = "Buying…";
-
-  const { data, error } = await buyGem(name);
-
-  button.disabled = false;
-  button.textContent = "Buy";
-
-  if (error) {
-    notify.error("Could not buy", error.message);
-    return;
-  }
-
-  state.money = Number(data.money);
-  shell.setWallet(state.money);
-
-  notify.success("Gem bought", `${name} for ${formatMoney(data.price)}`);
-}
 
 
 // =========================================================
@@ -200,10 +188,10 @@ async function start() {
     return;
   }
 
-  const [market, holdings, gems] = await Promise.all([
+  const [market, holdings, trades] = await Promise.all([
     loadMarket(),
     loadHoldings(),
-    loadGemShop()
+    loadTrades()
   ]);
 
   if (market) state.market = market;
@@ -211,10 +199,10 @@ async function start() {
     state.shares = holdings.shares;
     state.money = holdings.money;
   }
-  if (gems) state.gems = gems;
+  state.trades = trades;
 
   renderPrice();
-  renderGemShop();
+  renderFeed();
 
   // The price drifts toward baseline over time, so keep the display live.
   setInterval(renderPrice, 5000);
@@ -226,6 +214,7 @@ async function start() {
       state.market = fresh;
       renderPrice();
     }
+    refreshFeed();
   }, 20000);
 }
 

@@ -106,54 +106,64 @@
 }
 
 
-/* ---------- Gem shop ---------- */
+/* ---------- Recent trades ---------- */
 
-#gemShop {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
+.mkt-feed { margin-top: var(--space-5); }
 
-.gemshop-card {
+.mkt-feed h2 { margin-bottom: var(--space-3); }
+
+.mkt-feed__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-
-  padding: var(--space-4);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--tier, var(--border-strong));
-  border-radius: var(--radius);
-  background: var(--surface);
 }
 
-.gemshop-card__head {
+.mkt-feed__row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: var(--space-2);
-}
-
-.gemshop-card__name {
-  font-weight: 650;
-  font-size: 0.95rem;
-}
-
-.gemshop-card__rarity {
-  color: var(--text-faint);
-  font-size: 0.78rem;
-}
-
-.gemshop-card__price {
-  margin: 4px 0 8px;
-  font-weight: 700;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
   font-variant-numeric: tabular-nums;
-  color: var(--positive);
 }
 
-.gemshop-card .btn { margin-top: auto; }
+.mkt-feed__row:first-child { border-top: none; }
+
+.mkt-feed__who {
+  font-weight: 650;
+  color: var(--text);
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-feed__act { font-weight: 650; }
+.mkt-feed__act.is-buy { color: var(--positive); }
+.mkt-feed__act.is-sell { color: var(--negative); }
+
+.mkt-feed__qty { color: var(--text); }
+.mkt-feed__at { color: var(--text-muted); }
+
+.mkt-feed__time {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.mkt-feed__empty {
+  padding: var(--space-3) 0;
+  color: var(--text-faint);
+  font-size: 0.88rem;
+}
 
 
 @media (max-width: 560px) {
   .mkt-shares__head { flex-direction: column; }
   .mkt-price { text-align: left; }
+  .mkt-feed__at { display: none; }
 }
