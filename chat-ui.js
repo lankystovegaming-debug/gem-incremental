@@ -16,7 +16,10 @@ import {
 } from "./src/backend/privateMessages.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
 import { getGemMutation } from "./src/data/mutations.js";
-import { chanceLabelForResult } from "./src/logic/chances.js";
+import {
+  chanceLabelForResult,
+  meetsChatChanceThreshold
+} from "./src/logic/chances.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -379,10 +382,23 @@ if (messagesEl && formEl && inputEl) {
     `;
   }
 
+  function chatMutationIds(message) {
+    return Array.isArray(message.mutation_ids)
+      ? message.mutation_ids
+      : [];
+  }
+
+  function chatChanceIsRareEnough(message) {
+    return meetsChatChanceThreshold(
+      message.gem_name,
+      chatMutationIds(message)
+    );
+  }
+
   function exactChatChanceLabel(message) {
     return chanceLabelForResult(
       message.gem_name,
-      Array.isArray(message.mutation_ids) ? message.mutation_ids : []
+      chatMutationIds(message)
     );
   }
 
@@ -393,13 +409,14 @@ if (messagesEl && formEl && inputEl) {
 
     const rarity = Number(message.rarity ?? 0);
 
-    const mutationIds = Array.isArray(message.mutation_ids)
-      ? message.mutation_ids
-      : [];
+    const mutationIds = chatMutationIds(message);
+    const showFinalChance = chatChanceIsRareEnough(message);
 
-    const mutationNames = mutationIds
-      .map((id) => getGemMutation(id))
-      .filter(Boolean);
+    const mutationNames = showFinalChance
+      ? mutationIds
+          .map((id) => getGemMutation(id))
+          .filter(Boolean)
+      : [];
 
     const mutationPrefix = mutationNames.length
       ? `${mutationNames.map((mutation) => `
@@ -410,7 +427,12 @@ if (messagesEl && formEl && inputEl) {
         `).join(" ")} `
       : "";
 
-    const chance = exactChatChanceLabel(message);
+    // At/above 1 in 100,000, show the actual combined chance:
+    // gem chance × every mutation chance. Otherwise this announcement is
+    // not meant to be surfaced by the client.
+    const chance = showFinalChance
+      ? exactChatChanceLabel(message)
+      : `1 in ${Math.max(1, rarity).toLocaleString("en-US")}`;
 
     return `<strong>${escapeHtml(
       message.roller_username
@@ -452,6 +474,17 @@ if (messagesEl && formEl && inputEl) {
     const isPrivate = message.source === "private";
     const isSystem =
       message.source === "system" || message.source === "announcement";
+
+    // Do not surface rare-roll announcements whose final displayed chance
+    // is more common than 1 in 100,000.
+    if (
+      isSystem &&
+      message.gem_name &&
+      !chatChanceIsRareEnough(message)
+    ) {
+      return false;
+    }
+
     const mine = isPrivate && message.sender_id === currentUserId;
 
     const item = document.createElement("div");
