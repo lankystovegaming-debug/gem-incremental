@@ -14,23 +14,47 @@ export function revertedPrice(price) {
 
 
 export async function loadMarket() {
-  const [stateRes, histRes] = await Promise.all([
-    supabase.from("market_state").select("price, updated_at").eq("id", "coin").maybeSingle(),
-    supabase.from("market_history").select("price, at").order("at", { ascending: false }).limit(40)
-  ]);
+  const { data, error } = await supabase
+    .from("market_state")
+    .select("price, updated_at")
+    .eq("id", "coin")
+    .maybeSingle();
 
-  if (stateRes.error) {
-    console.error("Failed to load market:", stateRes.error);
+  if (error) {
+    console.error("Failed to load market:", error);
     return null;
   }
 
-  const history = (histRes.data ?? []).map((row) => Number(row.price)).reverse();
-
   return {
-    price: Number(stateRes.data?.price ?? BASELINE),
-    updatedAt: stateRes.data?.updated_at ?? new Date().toISOString(),
-    history
+    price: Number(data?.price ?? BASELINE),
+    updatedAt: data?.updated_at ?? new Date().toISOString()
   };
+}
+
+
+// Price points for the chart. `windowMs` limits to the recent window
+// (null = all history). Returned oldest-first so it plots left→right.
+export async function loadHistory(windowMs) {
+  let query = supabase
+    .from("market_history")
+    .select("price, at")
+    .order("at", { ascending: false })
+    .limit(1000);
+
+  if (windowMs) {
+    query = query.gte("at", new Date(Date.now() - windowMs).toISOString());
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Failed to load history:", error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) => ({ price: Number(row.price), at: row.at }))
+    .reverse();
 }
 
 

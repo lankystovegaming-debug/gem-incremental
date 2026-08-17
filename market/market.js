@@ -2,6 +2,7 @@ import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadMarket,
   loadHoldings,
+  loadHistory,
   loadTrades,
   tradeShares,
   revertedPrice
@@ -28,9 +29,25 @@ const mktBuy = document.getElementById("mktBuy");
 const mktSell = document.getElementById("mktSell");
 const mktStatus = document.getElementById("mktStatus");
 const mktFeed = document.getElementById("mktFeed");
+const mktRanges = document.getElementById("mktRanges");
 
 
-const state = { market: null, shares: 0, money: 0, trades: [] };
+// Chart ranges. Each selection fetches only the requested look-back window.
+const RANGES = [
+  { id: "1m", label: "1m", ms: 60 * 1000 },
+  { id: "5m", label: "5m", ms: 5 * 60 * 1000 },
+  { id: "1h", label: "1h", ms: 60 * 60 * 1000 },
+  { id: "24h", label: "24h", ms: 24 * 60 * 60 * 1000 }
+];
+
+const state = {
+  market: null,
+  shares: 0,
+  money: 0,
+  trades: [],
+  range: "1h",
+  series: [] // [{ price, at }] for the selected range
+};
 
 
 function currentPrice() {
@@ -40,14 +57,58 @@ function currentPrice() {
 }
 
 
+function currentRange() {
+  return RANGES.find((range) => range.id === state.range) ?? RANGES[2];
+}
+
+
+function renderRanges() {
+  mktRanges.innerHTML = RANGES.map(
+    (r) => `
+      <button
+        class="mkt-range${r.id === state.range ? " is-active" : ""}"
+        type="button"
+        role="tab"
+        aria-selected="${r.id === state.range}"
+        data-range="${r.id}"
+      >${r.label}</button>
+    `
+  ).join("");
+
+  for (const button of mktRanges.querySelectorAll("[data-range]")) {
+    button.addEventListener("click", () => selectRange(button.dataset.range));
+  }
+}
+
+
+async function selectRange(id) {
+  if (id === state.range) return;
+  state.range = id;
+  renderRanges();
+  await refreshSeries();
+}
+
+
+async function refreshSeries() {
+  const range = currentRange();
+  const rangeId = state.range;
+  const series = await loadHistory(range.ms);
+
+  // Ignore an older request that finishes after the player chose another range.
+  if (state.range !== rangeId) return;
+
+  state.series = series;
+  renderPrice();
+}
+
+
 function renderPrice() {
   const price = currentPrice();
   mktPrice.textContent = formatMoney(price);
 
-  const hist = state.market?.history ?? [];
-  if (hist.length > 0) {
-    const first = hist[0];
-    const pct = first ? ((price - first) / first) * 100 : 0;
+  const first = state.series[0]?.price;
+  if (first != null && first > 0) {
+    const pct = ((price - first) / first) * 100;
     mktDelta.textContent = `${price >= first ? "▲" : "▼"} ${Math.abs(pct).toFixed(1)}%`;
     mktDelta.className = "mkt-price__delta " + (price >= first ? "is-up" : "is-down");
   } else {
@@ -64,30 +125,41 @@ function renderPrice() {
 
 
 function renderChart() {
-  const hist = (state.market?.history ?? []).slice();
-  hist.push(currentPrice());
+  const now = Date.now();
+  const hist = [
+    ...state.series,
+    { price: currentPrice(), at: new Date(now).toISOString() }
+  ];
 
   if (hist.length < 2) {
-    mktChart.innerHTML = "";
+    mktChart.innerHTML =
+      `<text x="300" y="64" text-anchor="middle" fill="var(--text-faint)" ` +
+      `font-size="13">No trades in this range yet</text>`;
     return;
   }
 
-  const min = Math.min(...hist);
-  const max = Math.max(...hist);
-  const range = max - min || 1;
+  const prices = hist.map((point) => point.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const priceRange = max - min || 1;
   const W = 600;
   const H = 120;
   const pad = 8;
+  const range = currentRange();
+  const oldestPoint = Math.min(...hist.map((point) => new Date(point.at).getTime()));
+  const start = range.ms ? now - range.ms : oldestPoint;
+  const timeRange = Math.max(1, now - start);
 
   const points = hist
-    .map((value, i) => {
-      const x = (i / (hist.length - 1)) * W;
-      const y = H - pad - ((value - min) / range) * (H - 2 * pad);
+    .map((point) => {
+      const at = new Date(point.at).getTime();
+      const x = pad + Math.max(0, Math.min(1, (at - start) / timeRange)) * (W - 2 * pad);
+      const y = H - pad - ((point.price - min) / priceRange) * (H - 2 * pad);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
 
-  const up = hist[hist.length - 1] >= hist[0];
+  const up = hist[hist.length - 1].price >= hist[0].price;
   const color = up ? "var(--positive)" : "var(--negative)";
 
   mktChart.innerHTML =
@@ -162,8 +234,7 @@ async function trade(action) {
   const market = await loadMarket();
   if (market) state.market = market;
 
-  renderPrice();
-  refreshFeed();
+  await Promise.all([refreshSeries(), refreshFeed()]);
 
   notify.success(
     action === "buy" ? "Shares bought" : "Shares sold",
@@ -188,10 +259,11 @@ async function start() {
     return;
   }
 
-  const [market, holdings, trades] = await Promise.all([
+  const [market, holdings, trades, series] = await Promise.all([
     loadMarket(),
     loadHoldings(),
-    loadTrades()
+    loadTrades(),
+    loadHistory(currentRange().ms)
   ]);
 
   if (market) state.market = market;
@@ -200,7 +272,9 @@ async function start() {
     state.money = holdings.money;
   }
   state.trades = trades;
+  state.series = series;
 
+  renderRanges();
   renderPrice();
   renderFeed();
 
@@ -209,12 +283,17 @@ async function start() {
 
   // Pick up other players' trades.
   setInterval(async () => {
-    const fresh = await loadMarket();
+    const rangeId = state.range;
+    const [fresh, series] = await Promise.all([
+      loadMarket(),
+      loadHistory(currentRange().ms)
+    ]);
     if (fresh) {
       state.market = fresh;
-      renderPrice();
     }
-    refreshFeed();
+    if (state.range === rangeId) state.series = series;
+    renderPrice();
+    void refreshFeed();
   }, 20000);
 }
 

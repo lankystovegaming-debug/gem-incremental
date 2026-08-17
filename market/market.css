@@ -49,6 +49,42 @@
 .mkt-price__delta.is-up { color: var(--positive); }
 .mkt-price__delta.is-down { color: var(--negative); }
 
+.mkt-ranges {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: var(--space-4);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+
+.mkt-range {
+  min-width: 42px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: normal;
+  cursor: pointer;
+}
+
+.mkt-range:hover { color: var(--text); }
+
+.mkt-range.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mkt-range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .mkt-chart {
   width: 100%;
   height: 120px;
