@@ -379,3 +379,13 @@
 .index-card--locked[data-combination] {
   opacity: .82;
 }
+
+
+.selected-mutation-summary {
+  margin: -.55rem 0 1rem;
+  color: var(--text-faint);
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .025em;
+  min-height: 1.1em;
+}
