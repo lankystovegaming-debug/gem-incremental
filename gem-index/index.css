@@ -238,3 +238,144 @@
 .index-card__badges{display:flex;flex-direction:column;align-items:flex-end;gap:5px}.index-mutation-badge{padding:4px 7px;border:1px solid currentColor;border-radius:999px;font-size:.62rem;font-weight:850;white-space:nowrap;background:color-mix(in srgb,currentColor 10%,var(--surface-solid))}.mutation-badge--polished{color:#cbd5e1}.mutation-badge--gilded{color:#f6c453}.mutation-badge--prismatic{color:#e879f9}.mutation-badge--celestial{color:#7dd3fc}.mutation-badge--corrupted{color:#c084fc}
 .gem-replay-button{width:100%;margin-top:.8rem;justify-content:center;min-height:2.4rem}
 @media(max-width:600px){.mutation-filter-heading{align-items:flex-start;flex-direction:column;gap:.2rem}.mutation-tabs{border-radius:12px}.mutation-tab{padding:.5rem .65rem}}
+
+
+/* =========================================================
+   1,472-COMBINATION INDEX
+   ========================================================= */
+
+.index-card__title-block {
+  min-width: 0;
+}
+
+.index-card__mutations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .38rem;
+  margin-top: .18rem;
+  margin-bottom: .28rem;
+}
+
+.index-no-mutation {
+  display: inline-block;
+  color: var(--text-faint);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.mutation-name-effect {
+  --mutation-color: var(--text);
+  --mutation-glow: color-mix(in srgb, var(--mutation-color) 65%, transparent);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  isolation: isolate;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: .69rem;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: .035em;
+  white-space: nowrap;
+  color: var(--mutation-color);
+  text-shadow: 0 0 8px var(--mutation-glow);
+  overflow: visible;
+}
+
+.mutation-name-effect__text {
+  position: relative;
+  z-index: 3;
+}
+
+.mutation-name-effect__fx,
+.mutation-name-effect::before,
+.mutation-name-effect::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mutation-name-effect__fx {
+  inset: -4px -7px;
+  border: 1px solid currentColor;
+  border-radius: inherit;
+  opacity: .75;
+  filter: blur(.2px);
+  animation: mutation-word-ring 1.45s ease-in-out infinite;
+}
+
+.mutation-name-effect::before {
+  inset: -6px -10px;
+  border-radius: inherit;
+  background: radial-gradient(circle, currentColor 0 1px, transparent 2px) 0 50% / 14px 14px;
+  opacity: .55;
+  animation: mutation-word-particles 2.2s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.mutation-name-effect::after {
+  left: -8px;
+  right: -8px;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: .8;
+  animation: mutation-word-scan 1.15s ease-in-out infinite;
+}
+
+.mutation-name-effect--polished { --mutation-color:#e7edf5; }
+.mutation-name-effect--gilded { --mutation-color:#f6c453; }
+.mutation-name-effect--prismatic { --mutation-color:#f08bff; }
+.mutation-name-effect--celestial { --mutation-color:#7dd3fc; }
+.mutation-name-effect--corrupted { --mutation-color:#c084fc; }
+
+.mutation-name-effect--prismatic .mutation-name-effect__fx {
+  border-color: transparent;
+  border-image: linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1) 1;
+  animation: mutation-word-prismatic 1.6s linear infinite;
+}
+
+.mutation-name-effect--corrupted .mutation-name-effect__fx {
+  border-style: dashed;
+  animation: mutation-word-corrupt .65s steps(2) infinite;
+}
+
+@keyframes mutation-word-ring {
+  0%,100% { transform: scale(.96); opacity:.45; filter:brightness(.9); }
+  50% { transform: scale(1.06); opacity:1; filter:brightness(1.7); }
+}
+
+@keyframes mutation-word-particles {
+  from { transform: rotate(0deg); opacity:.35; }
+  50% { opacity:.8; }
+  to { transform: rotate(360deg); opacity:.35; }
+}
+
+@keyframes mutation-word-scan {
+  0%,100% { transform:scaleX(.35); opacity:0; }
+  50% { transform:scaleX(1); opacity:.95; }
+}
+
+@keyframes mutation-word-prismatic {
+  from { transform:rotate(0deg) scale(.95); filter:hue-rotate(0deg); }
+  to { transform:rotate(360deg) scale(1.05); filter:hue-rotate(360deg); }
+}
+
+@keyframes mutation-word-corrupt {
+  0%,100% { transform:translateX(0) skewX(0); opacity:.55; }
+  25% { transform:translateX(-2px) skewX(-4deg); opacity:1; }
+  50% { transform:translateX(2px) skewX(4deg); opacity:.7; }
+  75% { transform:translateX(-1px); opacity:1; }
+}
+
+.index-card--locked .index-card__rarity {
+  color: var(--text-faint);
+}
+
+.index-card--locked[data-combination] {
+  opacity: .82;
+}
