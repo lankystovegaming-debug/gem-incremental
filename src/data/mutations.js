@@ -16,3 +16,32 @@ export function getGemMutation(id, savedMultiplier = null) {
     multiplier: Number(savedMultiplier ?? mutation.multiplier)
   };
 }
+
+
+export function normalizeMutationIds(ids = []) {
+  return Array.from(
+    new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map((id) => String(id ?? "").trim().toLowerCase())
+        .filter((id) => Boolean(GEM_MUTATIONS[id]))
+    )
+  ).sort(
+    (a, b) =>
+      Object.keys(GEM_MUTATIONS).indexOf(a) -
+      Object.keys(GEM_MUTATIONS).indexOf(b)
+  );
+}
+
+export function mutationCombinationKey(ids = []) {
+  const normalized = normalizeMutationIds(ids);
+  return normalized.length ? normalized.join("+") : "none";
+}
+
+export function mutationCombinationLabel(ids = []) {
+  const normalized = normalizeMutationIds(ids);
+  if (!normalized.length) return "No Mutation";
+
+  return normalized
+    .map((id) => GEM_MUTATIONS[id]?.name ?? id)
+    .join(" + ");
+}

@@ -13,6 +13,7 @@ import {
   unsubscribeFromPrivateMessages
 } from "./src/backend/privateMessages.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
+import { getGemMutation } from "./src/data/mutations.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -96,12 +97,33 @@ if (messagesEl && formEl && inputEl) {
 
     const rarity = Number(message.rarity ?? 0);
 
+    const mutationIds = Array.isArray(message.mutation_ids)
+      ? message.mutation_ids
+      : [];
+
+    const mutationHtml = mutationIds.length
+      ? `
+        <div class="chat-message__mutations">
+          ${mutationIds.map((id) => {
+            const mutation = getGemMutation(id);
+            if (!mutation) return "";
+            return `
+              <span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}">
+                <span class="mutation-name-effect__fx" aria-hidden="true"></span>
+                <span class="mutation-name-effect__text">${escapeHtml(mutation.name)}</span>
+              </span>
+            `;
+          }).join("")}
+        </div>
+      `
+      : "";
+
     return `<strong>${escapeHtml(
       message.roller_username
     )}</strong> rolled a rare ${gemNameHtml(
       message.gem_name,
       escapeHtml
-    )} — 1 in ${escapeHtml(rarity.toLocaleString("en-US"))}!`;
+    )} — 1 in ${escapeHtml(rarity.toLocaleString("en-US"))}!${mutationHtml}`;
   }
 
   function renderMessage(message, shouldScroll = true) {

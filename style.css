@@ -1865,3 +1865,79 @@ html.is-cinematic-active body {
 }
 .gem-styled--mutation-celestial{color:#7dd3fc!important;text-shadow:0 0 16px rgb(125 211 252 / .9)!important}
 .gem-styled--mutation-corrupted{color:#d8b4fe!important;text-shadow:0 0 10px #c084fc,0 0 25px #f43f5e!important}
+
+
+/* =========================================================
+   MUTATION NAME EFFECTS
+   Applies to mutation labels across roll, inventory, index,
+   history and cinematic reveals.
+   ========================================================= */
+
+.mutation-name-effect {
+  --mutation-color: var(--text);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  isolation: isolate;
+  color: var(--mutation-color);
+  font-weight: 900;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--mutation-color) 70%, transparent);
+}
+
+.mutation-name-effect__text {
+  position: relative;
+  z-index: 3;
+}
+
+.mutation-name-effect__fx {
+  position: absolute;
+  inset: -3px -6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  pointer-events: none;
+  animation: mutationWordPulse 1.4s ease-in-out infinite;
+}
+
+.mutation-name-effect::before,
+.mutation-name-effect::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mutation-name-effect::before {
+  inset: -6px -9px;
+  border-radius: 999px;
+  background: radial-gradient(circle, currentColor 0 1px, transparent 2px) 0 50% / 13px 13px;
+  opacity: .55;
+  animation: mutationWordOrbit 2s linear infinite;
+}
+
+.mutation-name-effect::after {
+  left: -8px;
+  right: -8px;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  animation: mutationWordScan 1.1s ease-in-out infinite;
+}
+
+.mutation-name-effect--polished { --mutation-color:#e7edf5; }
+.mutation-name-effect--gilded { --mutation-color:#f6c453; }
+.mutation-name-effect--prismatic { --mutation-color:#f08bff; }
+.mutation-name-effect--celestial { --mutation-color:#7dd3fc; }
+.mutation-name-effect--corrupted { --mutation-color:#c084fc; }
+
+@keyframes mutationWordPulse {
+  0%,100% { transform:scale(.96); filter:brightness(.9); opacity:.55; }
+  50% { transform:scale(1.05); filter:brightness(1.65); opacity:1; }
+}
+@keyframes mutationWordOrbit {
+  from { transform:rotate(0deg); }
+  to { transform:rotate(360deg); }
+}
+@keyframes mutationWordScan {
+  0%,100% { transform:scaleX(.25); opacity:0; }
+  50% { transform:scaleX(1); opacity:.95; }
+}

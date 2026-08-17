@@ -343,12 +343,22 @@ function gemCard(gem) {
       <div class="gem-card__head">
         <div>
           <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml)}</div>
+          ${mutations.length ? `
+            <div class="gem-mutation-line" aria-label="Mutations">
+              ${mutations.map(m => `
+                <span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}">
+                  <span class="mutation-name-effect__fx" aria-hidden="true"></span>
+                  <span class="mutation-name-effect__text">${escapeHtml(m.name)}</span>
+                </span>
+              `).join("")}
+            </div>
+          ` : ""}
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
         <div class="gem-card__badges">
           <span class="badge badge--tier">${tier.name}</span>
-          ${mutations.map(m => `<span class="mutation-badge mutation-badge--${m.id}">${escapeHtml(m.name)} · ${formatMultiplier(m.multiplier)}</span>`).join("")}
+          ${mutations.map(m => `<span class="mutation-badge mutation-badge--${m.id}"><span class="mutation-name-effect mutation-name-effect--${m.id}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span> · ${formatMultiplier(m.multiplier)}</span>`).join("")}
         </div>
       </div>
 
