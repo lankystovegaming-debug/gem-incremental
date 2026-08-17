@@ -1941,3 +1941,106 @@ html.is-cinematic-active body {
   0%,100% { transform:scaleX(.25); opacity:0; }
   50% { transform:scaleX(1); opacity:.95; }
 }
+
+
+/* Exact base-game odds and compact multi-mutation presentation. */
+.gem-reveal__chance,
+.scene__chance {
+  font-size: .82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  color: var(--text-muted, #aeb7c7);
+}
+
+.gem-mutation-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: .38rem;
+  width: min(100%, 620px);
+  max-width: 92vw;
+  margin: .05rem auto;
+}
+
+.gem-mutation-line .mutation-name-effect {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: .72rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.gem-mutation-line--many {
+  gap: .3rem;
+  max-width: 680px;
+}
+
+.gem-mutation-line--five {
+  gap: .25rem;
+  max-width: 760px;
+}
+
+.gem-mutation-line--five .mutation-name-effect {
+  font-size: .62rem;
+  padding: 3px 7px;
+}
+
+.scene__mutation-list {
+  margin-top: 1.1vh !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: .45rem !important;
+  width: min(92vw, 760px);
+  max-width: 92vw;
+  font-size: initial !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+}
+
+.scene__mutation-list .mutation-name-effect {
+  padding: .28rem .72rem;
+  border-radius: 999px;
+  font-size: clamp(10px, 1vw, 15px);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.scene__mutation-list .mutation-name-effect__fx {
+  inset: -2px -4px;
+}
+
+.scene__chance {
+  margin-top: .7vh;
+  font-size: clamp(12px, 1.15vw, 17px);
+  color: #fff;
+  text-shadow: 0 0 14px var(--scene-c);
+}
+
+#ultra-cutscene-overlay .scene__mutation-list {
+  animation: mutationRevealCompact var(--cinematic-duration, 9000ms) cubic-bezier(.12,.8,.15,1) both !important;
+}
+
+@keyframes mutationRevealCompact {
+  0%,45% { opacity:0; transform:translateY(12px) scale(.85); filter:blur(7px); }
+  54% { opacity:1; transform:translateY(0) scale(1.04); filter:blur(0); }
+  64%,100% { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.history__mutations {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: .28rem;
+  min-width: 0;
+}
+
+.history__mutations .mutation-name-effect {
+  font-size: .66rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
