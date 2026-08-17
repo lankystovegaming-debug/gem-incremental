@@ -31,6 +31,7 @@ const tierBreakdown = document.getElementById("tierBreakdown");
 const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
 const gemSort = document.getElementById("gemSort");
+const selectedMutationSummary = document.getElementById("selectedMutationSummary");
 
 document.getElementById("searchIcon").innerHTML = icons.search;
 
@@ -70,27 +71,6 @@ const state = {
   selectedMutations: new Set(),
   loading: true
 };
-
-async function loadIndex() {
-  const { data, error } = await supabase
-    .from("gem_index")
-    .select("gem_name, total_rolled, heaviest_weight");
-
-  if (error) {
-    console.error("Failed to load the Gem Index:", error);
-    return null;
-  }
-
-  return Object.fromEntries(
-    (data ?? []).map((entry) => [
-      entry.gem_name,
-      {
-        totalRolled: Number(entry.total_rolled ?? 0),
-        heaviestWeight: Number(entry.heaviest_weight ?? 0)
-      }
-    ])
-  );
-}
 
 async function loadCombinations(playerId) {
   const { data, error } = await supabase
@@ -132,6 +112,98 @@ async function loadCombinations(playerId) {
   }
 
   return result;
+}
+
+/*
+ * Odds mirror roll/index.ts:
+ * - non-Quartz gems are checked from rarest -> most common
+ * - each check succeeds at min(luck / rarity, 1)
+ * - Quartz is the fallback after every other gem fails
+ *
+ * The Gem Index displays base odds (luck = 1), so the number is stable
+ * and represents the actual RNG probability of the base game roll.
+ */
+const BASE_ROLL_LUCK = 1;
+
+function gemRollChance(gem, luck = BASE_ROLL_LUCK) {
+  const safeLuck = Math.max(0, Number(luck) || 0);
+
+  if (gem.name === "Quartz") {
+    return indexableGems
+      .filter((candidate) => candidate.name !== "Quartz")
+      .sort((a, b) => b.rarity - a.rarity)
+      .reduce(
+        (probability, candidate) =>
+          probability * (1 - Math.min(safeLuck / candidate.rarity, 1)),
+        1
+      );
+  }
+
+  const rollable = indexableGems
+    .filter((candidate) => candidate.name !== "Quartz")
+    .sort((a, b) => b.rarity - a.rarity);
+
+  const position = rollable.findIndex(
+    (candidate) => candidate.name === gem.name
+  );
+
+  if (position < 0) return 0;
+
+  const ownChance = Math.min(safeLuck / gem.rarity, 1);
+
+  return (
+    rollable
+      .slice(0, position)
+      .reduce(
+        (probability, candidate) =>
+          probability * (1 - Math.min(safeLuck / candidate.rarity, 1)),
+        1
+      ) * ownChance
+  );
+}
+
+function mutationChance(id) {
+  const mutation = GEM_MUTATIONS[id];
+  if (!mutation) return 0;
+  return Math.min(1 / Number(mutation.chance), 1);
+}
+
+function exactMutationCombinationChance(ids) {
+  const selected = new Set(normalizeMutationIds(ids));
+
+  return mutationList.reduce((probability, mutation) => {
+    const chance = mutationChance(mutation.id);
+    return probability * (
+      selected.has(mutation.id)
+        ? chance
+        : (1 - chance)
+    );
+  }, 1);
+}
+
+function exactEntryChance(entry) {
+  return gemRollChance(entry.gem) *
+    exactMutationCombinationChance(entry.mutationIds);
+}
+
+function formatChance(probability) {
+  if (!Number.isFinite(probability) || probability <= 0) {
+    return "Impossible";
+  }
+
+  const denominator = 1 / probability;
+
+  if (denominator > 1e15) {
+    return `1 in ${denominator.toExponential(2).replace("e+", "e")}`;
+  }
+
+  const rounded = Math.max(1, Math.round(denominator));
+
+  return `1 in ${rounded.toLocaleString("en-US")}`;
+}
+
+function entryChanceLabel(entry) {
+  return formatChance(exactEntryChance(entry));
 }
 
 function comboKey(gemName, combinationKey) {
@@ -179,9 +251,12 @@ function selectedEntries() {
 }
 
 function renderSummary() {
-  // Summary totals are scoped to the exact mutation combination currently
-  // selected. Selecting two mutations means "A + B" only, not A+B+anything.
+  // With no filter: every one of the 32 exact combinations is counted.
+  // With mutations selected: only that EXACT combination is counted.
+  // Therefore a selected view is "found / base gems in that rarity", while
+  // the unfiltered view is "found / base gems × 32 combinations".
   const scopedEntries = selectedEntries();
+
   const discovered = scopedEntries.filter(
     (entry) => Boolean(state.combinations[entry.key])
   ).length;
@@ -189,8 +264,7 @@ function renderSummary() {
   const total = scopedEntries.length;
 
   discoveryCount.textContent =
-    `${formatCount(discovered)} of ${formatCount(total)} ` +
-    `gems discovered`;
+    `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
 
   discoveryMeter.style.width =
     `${total ? (discovered / total) * 100 : 0}%`;
@@ -217,11 +291,26 @@ function renderSummary() {
       (bucket) => `
         <div class="tier-stat">
           <span class="tier-stat__name">${escapeHtml(bucket.name)}</span>
-          <span class="tier-stat__value">${bucket.found} / ${bucket.total}</span>
+          <span class="tier-stat__value">
+            ${formatCount(bucket.found)} / ${formatCount(bucket.total)}
+          </span>
         </div>
       `
     )
     .join("");
+}
+
+function renderSelectedMutationSummary() {
+  const selected = [...state.selectedMutations];
+
+  if (!selected.length) {
+    return;
+  }
+
+  selectedMutationSummary.textContent =
+    selected.includes("none")
+      ? "Showing exact combination: No Mutation"
+      : `Showing exact combination: ${mutationCombinationLabel(selected)}`;
 }
 
 function entryMatchesMutationFilter(entry) {
@@ -297,7 +386,12 @@ function visibleEntries() {
     const comboDelta = compareMutationIds(a.mutationIds, b.mutationIds);
     if (comboDelta) return comboDelta;
 
-    return (sorters[gemSort.value] ?? sorters.rarity)(a, b);
+    const sortDelta =
+      (sorters[gemSort.value] ?? sorters.rarity)(a, b);
+
+    if (sortDelta) return sortDelta;
+
+    return a.combinationKey.localeCompare(b.combinationKey);
   });
 }
 
@@ -381,6 +475,11 @@ function gemCard(entry) {
         <p class="index-card__hidden">
           Roll this exact gem / mutation combination to reveal its entry.
         </p>
+
+        <div class="index-card__chance">
+          <span class="index-card__key">Actual chance</span>
+          <span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span>
+        </div>
       </article>
     `;
   }
@@ -426,6 +525,11 @@ function gemCard(entry) {
         <div class="index-card__row">
           <span class="index-card__key">Base value</span>
           <span class="index-card__val">${formatMoney(baseValue)}</span>
+        </div>
+
+        <div class="index-card__row">
+          <span class="index-card__key">Actual chance</span>
+          <span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span>
         </div>
 
         <div class="index-card__row">
@@ -499,6 +603,8 @@ mutationTabs.addEventListener("click", (event) => {
   }
 
   renderMutationTabs();
+  renderSelectedMutationSummary();
+  renderSummary();
   renderList();
 });
 
@@ -544,17 +650,12 @@ async function refresh() {
     return;
   }
 
-  const [index, combinations, playerState] = await Promise.all([
-    loadIndex(),
+  const [combinations, playerState] = await Promise.all([
     loadCombinations(user.id),
     loadCloudPlayerState()
   ]);
 
   state.loading = false;
-
-  if (index) {
-    state.index = index;
-  }
 
   if (combinations) {
     state.combinations = combinations;
@@ -571,6 +672,7 @@ async function refresh() {
 
   renderSummary();
   renderMutationTabs();
+  renderSelectedMutationSummary();
   renderList();
 }
 
@@ -580,4 +682,5 @@ window.addEventListener("pageshow", (event) => {
 
 renderList();
 renderMutationTabs();
+renderSelectedMutationSummary();
 refresh();
