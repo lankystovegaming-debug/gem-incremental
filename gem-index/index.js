@@ -9,6 +9,7 @@ import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
 import {
   rarityTier,
   rarityLabel,
@@ -35,6 +36,7 @@ const mutationIndexTab = document.getElementById("mutationIndexTab");
 const mutationList = document.getElementById("mutationList");
 const mutationDiscoveryCount = document.getElementById("mutationDiscoveryCount");
 const mutationDiscoveryMeter = document.getElementById("mutationDiscoveryMeter");
+const mutationTabs = document.getElementById("mutationTabs");
 const discoveryCount = document.getElementById("discoveryCount");
 const discoveryMeter = document.getElementById("discoveryMeter");
 const tierBreakdown = document.getElementById("tierBreakdown");
@@ -53,6 +55,7 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 const state = {
   index: {},
   mutationIndex: {},
+  mutationFilter: "all",
   loading: true
 };
 
@@ -212,6 +215,20 @@ function renderList() {
   gemList.innerHTML = list.map(gemCard).join("");
 }
 
+function renderMutationTabs() {
+  const mutations = Object.values(GEM_MUTATIONS);
+
+  mutationTabs.innerHTML = [
+    `<button class="mutation-tab ${state.mutationFilter === "all" ? "is-active" : ""}" type="button" data-mutation-filter="all">All</button>`,
+    ...mutations.map((mutation) => `
+      <button class="mutation-tab mutation-tab--${mutation.id} ${state.mutationFilter === mutation.id ? "is-active" : ""}"
+        type="button" data-mutation-filter="${mutation.id}">
+        ${escapeHtml(mutation.name)}
+      </button>
+    `)
+  ].join("");
+}
+
 function renderMutationIndex() {
   const mutations = Object.values(GEM_MUTATIONS);
   const discovered = mutations.filter((mutation) => state.mutationIndex[mutation.id]).length;
@@ -221,7 +238,11 @@ function renderMutationIndex() {
   )} mutations discovered`;
   mutationDiscoveryMeter.style.width = `${(discovered / mutations.length) * 100}%`;
 
-  mutationList.innerHTML = mutations.map((mutation) => {
+  const visibleMutations = state.mutationFilter === "all"
+    ? mutations
+    : mutations.filter((mutation) => mutation.id === state.mutationFilter);
+
+  mutationList.innerHTML = visibleMutations.map((mutation) => {
     const entry = state.mutationIndex[mutation.id];
 
     if (!entry) {
@@ -267,6 +288,10 @@ function renderMutationIndex() {
             <span class="index-card__val">${escapeHtml(formatRelativeTime(entry.firstDiscoveredAt))}</span>
           </div>
         </div>
+        <button class="button mutation-replay-button" type="button"
+          data-replay-mutation="${mutation.id}" data-replay-gem="${escapeHtml(entry.bestGemName ?? "")}">
+          ▶ Replay Cutscene
+        </button>
       </article>
     `;
   }).join("");
@@ -359,10 +384,59 @@ function gemCard(gem) {
           )}</span>
         </div>
       </div>
+
+      <button class="button gem-replay-button" type="button"
+        data-replay-gem="${escapeHtml(gem.name)}">
+        ▶ Replay Reveal
+      </button>
     </article>
   `;
 }
 
+
+mutationTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-mutation-filter]");
+  if (!button) return;
+
+  state.mutationFilter = button.dataset.mutationFilter ?? "all";
+  renderMutationTabs();
+  renderMutationIndex();
+});
+
+gemList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-replay-gem]");
+  if (!button) return;
+
+  const gem = gems.find((entry) => entry.name === button.dataset.replayGem);
+  if (!gem) return;
+
+  button.disabled = true;
+  try {
+    await replayGemCutscene({ gem });
+  } finally {
+    button.disabled = false;
+  }
+});
+
+mutationList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-replay-mutation]");
+  if (!button) return;
+
+  const mutationId = button.dataset.replayMutation;
+  const gem = gems.find((entry) => entry.name === button.dataset.replayGem);
+
+  if (!gem) {
+    notify.warning("Replay unavailable", "This mutation has no recorded specimen to replay yet.");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await replayGemCutscene({ gem, mutationId });
+  } finally {
+    button.disabled = false;
+  }
+});
 
 for (const control of [gemSearch, gemFilter, gemSort]) {
   control.addEventListener("input", renderList);
@@ -412,6 +486,7 @@ async function refresh() {
 
   renderSummary();
   renderList();
+  renderMutationTabs();
   renderMutationIndex();
 }
 
