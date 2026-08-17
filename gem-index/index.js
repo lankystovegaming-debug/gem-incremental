@@ -13,6 +13,7 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { gemNameHtml } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
+import { exactRollChanceLabel } from "../src/logic/chances.js";
 import {
   rarityTier,
   rarityLabel,
@@ -115,95 +116,15 @@ async function loadCombinations(playerId) {
 }
 
 /*
- * Odds mirror roll/index.ts:
- * - non-Quartz gems are checked from rarest -> most common
- * - each check succeeds at min(luck / rarity, 1)
- * - Quartz is the fallback after every other gem fails
- *
- * The Gem Index displays base odds (luck = 1), so the number is stable
- * and represents the actual RNG probability of the base game roll.
+ * Odds mirror roll/index.ts at base luck = 1.
+ * The shared helper uses the complete server gem list, including hidden
+ * Lanky Gem, so the displayed probability is the true server probability.
  */
-const BASE_ROLL_LUCK = 1;
-
-function gemRollChance(gem, luck = BASE_ROLL_LUCK) {
-  const safeLuck = Math.max(0, Number(luck) || 0);
-
-  if (gem.name === "Quartz") {
-    return indexableGems
-      .filter((candidate) => candidate.name !== "Quartz")
-      .sort((a, b) => b.rarity - a.rarity)
-      .reduce(
-        (probability, candidate) =>
-          probability * (1 - Math.min(safeLuck / candidate.rarity, 1)),
-        1
-      );
-  }
-
-  const rollable = indexableGems
-    .filter((candidate) => candidate.name !== "Quartz")
-    .sort((a, b) => b.rarity - a.rarity);
-
-  const position = rollable.findIndex(
-    (candidate) => candidate.name === gem.name
-  );
-
-  if (position < 0) return 0;
-
-  const ownChance = Math.min(safeLuck / gem.rarity, 1);
-
-  return (
-    rollable
-      .slice(0, position)
-      .reduce(
-        (probability, candidate) =>
-          probability * (1 - Math.min(safeLuck / candidate.rarity, 1)),
-        1
-      ) * ownChance
-  );
-}
-
-function mutationChance(id) {
-  const mutation = GEM_MUTATIONS[id];
-  if (!mutation) return 0;
-  return Math.min(1 / Number(mutation.chance), 1);
-}
-
-function exactMutationCombinationChance(ids) {
-  const selected = new Set(normalizeMutationIds(ids));
-
-  return mutationList.reduce((probability, mutation) => {
-    const chance = mutationChance(mutation.id);
-    return probability * (
-      selected.has(mutation.id)
-        ? chance
-        : (1 - chance)
-    );
-  }, 1);
-}
-
-function exactEntryChance(entry) {
-  return gemRollChance(entry.gem) *
-    exactMutationCombinationChance(entry.mutationIds);
-}
-
-function formatChance(probability) {
-  if (!Number.isFinite(probability) || probability <= 0) {
-    return "Impossible";
-  }
-
-  const denominator = 1 / probability;
-
-  if (denominator > 1e15) {
-    return `1 in ${denominator.toExponential(2).replace("e+", "e")}`;
-  }
-
-  const rounded = Math.max(1, Math.round(denominator));
-
-  return `1 in ${rounded.toLocaleString("en-US")}`;
-}
-
 function entryChanceLabel(entry) {
-  return formatChance(exactEntryChance(entry));
+  return exactRollChanceLabel(
+    entry.gem.name,
+    entry.mutationIds
+  );
 }
 
 function comboKey(gemName, combinationKey) {
