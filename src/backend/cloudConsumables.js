@@ -39,15 +39,14 @@ export async function buyCloudConsumable(consumableId) {
 }
 
 
-// Drinks one potion: the server decrements the quantity and
-// records a timed boost in player_boosts, returning the boost it
-// started (family, effectValue, expiresAt).
+// Drinks one potion. Legendary and Mythic potions create a pending boost for
+// exactly one successful roll; other potions create timed boosts.
 export async function useCloudConsumable(consumableId) {
   const oneRoll = ["legendary-potion", "mythic-potion"].includes(consumableId);
   const { data, error } = await supabase.rpc(
     oneRoll ? "activate_one_roll_potion" : "use_consumable",
     {
-    p_consumable_id: consumableId
+      p_consumable_id: consumableId
     }
   );
 
@@ -59,7 +58,7 @@ export async function useCloudConsumable(consumableId) {
   const code = rollRequirement
     ? "lifetime_rolls_required"
     : error.message?.match(
-      /(consumable_[a-z_]+|not_owned|none_owned)/
+      /(consumable_[a-z_]+|not_owned|none_owned|one_roll_boost_already_active)/
     )?.[1];
 
   return {
@@ -69,6 +68,8 @@ export async function useCloudConsumable(consumableId) {
       message:
         code === "lifetime_rolls_required"
           ? `You need ${Number(rollRequirement).toLocaleString()} lifetime rolls to use this potion.`
+          : code === "one_roll_boost_already_active"
+          ? "Use your pending Legendary or Mythic boost before drinking another."
           : code === "consumable_not_owned" || code === "none_owned"
           ? "You do not have that potion."
           : "The potion could not be used."
