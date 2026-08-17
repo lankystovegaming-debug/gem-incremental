@@ -371,3 +371,5 @@
   color: var(--text-muted);
   font-size: 0.78rem;
 }
+
+.gem-mutation-line{display:flex;flex-wrap:wrap;gap:.38rem;align-items:center;margin-top:.18rem;margin-bottom:.25rem}.gem-mutation-line .mutation-name-effect{font-size:.68rem;padding:2px 7px;border-radius:999px}.gem-card__badges .mutation-name-effect{font-size:.62rem}
