@@ -98,12 +98,26 @@ let rollInFlight = false;
 let cinematicActive = false;
 let cinematicTimer = null;
 
-function cinematicDuration() {
-  // Give phones a little more breathing room because the reveal is
-  // deliberately composed for a full-screen mobile presentation.
+function cinematicDuration(rarity = 100000) {
+  // Cinematics scale with rarity. Every 1/100k+ result gets a full
+  // fullscreen reveal, while 1/4m+ results become deliberately long,
+  // multi-beat "event" cinematics.
+  const rarityValue = Number(rarity ?? 100000);
+  let duration = 8200;
+
+  if (rarityValue >= 10000000) duration = 22000;
+  else if (rarityValue >= 4000000) duration = 18000;
+  else if (rarityValue >= 1800000) duration = 15000;
+  else if (rarityValue >= 800000) duration = 13500;
+  else if (rarityValue >= 480000) duration = 12000;
+  else if (rarityValue >= 250000) duration = 10500;
+  else if (rarityValue >= 100000) duration = 9000;
+
+  // Give phones a little more breathing room without making the
+  // ultra-rare experience materially shorter.
   return window.matchMedia("(max-width: 700px), (pointer: coarse)").matches
-    ? 8200
-    : 7200;
+    ? Math.round(duration * 1.08)
+    : duration;
 }
 
 function endCinematic() {
@@ -309,8 +323,33 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
 
   const overlay = document.createElement("div");
   overlay.id = "ultra-cutscene-overlay";
-  overlay.className = `ultra-cutscene-overlay ultra-scene-${visualVariant}`;
+
+  const rarityValue = Number(data?.gem?.rarity ?? 0);
+  const mutationId = String(
+    data?.mutation?.id ??
+    data?.mutationId ??
+    data?.gem?.mutation_id ??
+    data?.gem?.mutationId ??
+    data?.mutation_id ??
+    ""
+  ).toLowerCase();
+
+  const mutationClass = mutationId
+    ? ` mutation-scene-${mutationId.replace(/[^a-z0-9_-]/g, "")}`
+    : "";
+
+  const rarityClass =
+    rarityValue >= 10000000 ? " ultra-level-10m" :
+    rarityValue >= 4000000 ? " ultra-level-4m" :
+    rarityValue >= 1000000 ? " ultra-level-1m" :
+    rarityValue >= 500000 ? " ultra-level-500k" :
+    " ultra-level-100k";
+
+  overlay.className =
+    `ultra-cutscene-overlay ultra-scene-${visualVariant}${rarityClass}${mutationClass}`;
   overlay.setAttribute("aria-hidden", "true");
+  overlay.dataset.rarity = String(rarityValue);
+  if (mutationId) overlay.dataset.mutation = mutationId;
   overlay.style.setProperty("--gem-hue", `${visualHue}`);
   overlay.style.setProperty("--gem-speed", visualSpeed);
   overlay.style.setProperty("--cinematic-duration", `${duration}ms`);
@@ -341,6 +380,17 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
     <div class="scene__world">${sceneMarkup}</div>
+    <div class="scene__mega-world" aria-hidden="true">
+      <span class="mega__warp"></span>
+      <span class="mega__ring mega__ring--a"></span>
+      <span class="mega__ring mega__ring--b"></span>
+      <span class="mega__ring mega__ring--c"></span>
+      <span class="mega__meteor-field"></span>
+      <span class="mega__fracture"></span>
+      <span class="mega__shockwave"></span>
+      <span class="mega__singularity"></span>
+      <span class="mega__title">LIMIT BREAK</span>
+    </div>
     <div class="scene__flash"></div>
     <div class="scene__vignette"></div>
     <div class="scene__scanlines"></div>
@@ -348,6 +398,9 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
       <div class="scene__gem">${icons.gem}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
       <h2 class="scene__name">${gemNameHtml(gemName, escapeHtml)}</h2>
+      ${mutationId ? `<div class="scene__mutation">✦ ${escapeHtml(
+        data?.mutation?.name ?? mutationId.replace(/[-_]/g, " ")
+      )}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
       <div class="scene__outcome">${outcome.icon}${escapeHtml(outcome.text)}</div>
     </div>
@@ -426,7 +479,7 @@ function renderRoll(data, outcome) {
   if (isEpicRollEffect || isUltraRare) gemStage.classList.add("is-big");
 
   if (isUltraRare) {
-    const duration = cinematicDuration();
+    const duration = cinematicDuration(rarity);
     cinematicActive = true;
     document.documentElement.classList.add("is-cinematic-active");
     gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
