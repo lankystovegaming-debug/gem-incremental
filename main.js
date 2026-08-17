@@ -6,13 +6,6 @@ import {
 } from "./src/backend/auth.js";
 import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
 import { invokeFunction } from "./src/backend/invoke.js";
-import {
-  startRollSession,
-  refreshRollSession,
-  isRollSessionActive,
-  onRollSessionChange,
-  getRollSessionId
-} from "./src/backend/rollSession.js";
 import { supabase } from "./src/backend/supabase.js";
 import { runLegacyMigrationGate } from "./src/backend/legacyMigration.js";
 import {
@@ -138,7 +131,6 @@ function endCinematic() {
 }
 
 let consecutiveFailures = 0;
-let rollSessionActive = false;
 
 
 // =========================================================
@@ -215,18 +207,6 @@ function setButton({ mode, label, disabled }) {
 
 function showReady() {
   stopCooldown();
-
-  if (!rollSessionActive) {
-    view.ready = false;
-
-    setButton({
-      mode: "blocked",
-      label: "Connecting...",
-      disabled: true
-    });
-
-    return;
-  }
 
   if (view.inventoryCount >= view.capacity) {  
     view.ready = false;
@@ -567,33 +547,13 @@ async function performRoll() {
     return;
   }
 
-  // If the 20-second heartbeat temporarily failed or the page
-  // was backgrounded, try to reclaim/renew the lease immediately
-  // instead of silently doing nothing.
-  if (!rollSessionActive) {
-    const refreshed = await refreshRollSession();
-
-    if (!refreshed) {
-      notify.error(
-        "Roll unavailable",
-        "This tab does not own the roll session. Check that you aren't rolling in another tab."
-      );
-
-      return;
-    }
-
-    rollSessionActive = true;
-  }
-
   rollInFlight = true;
 
   stopCooldown();
 
   setButton({ mode: "rolling", label: "Rolling", disabled: true });
 
-  const { data, error } = await invokeFunction("roll", {
-    sessionId: getRollSessionId()
-  });
+  const { data, error } = await invokeFunction("roll");
 
   rollInFlight = false;
 
@@ -880,7 +840,6 @@ async function refreshEffects() {
 function maybeAutoRoll() {
   if (
     !getSettings().autoRoll ||
-    !rollSessionActive ||
     !view.ready ||
     rollInFlight ||
     cinematicActive
@@ -1062,41 +1021,11 @@ async function startGame() {
     return;
   }
 
-  // The player row now exists, so acquiring the roll lease can run while
-  // the local-only legacy-save check runs. This removes one serial network
-  // wait from normal startup.
-  const rollSessionPromise = startRollSession();
-
   try {
     await runLegacyMigrationGate();
   } catch (error) {
     console.error("Legacy migration gate failed:", error);
   }
-
-  // One active rolling tab per account. This uses a lightweight
-  // Supabase database RPC rather than an Edge Function heartbeat.
-  rollSessionActive = await rollSessionPromise;
-
-  onRollSessionChange((active) => {
-    rollSessionActive = active;
-
-    if (!active) {
-      if (!rollInFlight && !cinematicActive) {
-        setButton({
-          mode: "blocked",
-          label: "Another tab is rolling",
-          disabled: true
-        });
-      }
-
-      return;
-    }
-
-    if (!rollInFlight && !cinematicActive && !cooldownTimer) {
-      showReady();
-    }
-  });
-
 
   const playerState = await refreshPlayerState();
 

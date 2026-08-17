@@ -14,8 +14,6 @@ import { supabase } from "./supabase.js";
 
 const FRIENDLY_MESSAGES = {
   cooldown: "That roll is still on cooldown.",
-  roll_session_active: "This account is already rolling in another tab.",
-  roll_session_required: "This tab is not the active rolling tab.",
   inventory_full: "Your inventory is full. Sell or craft something first.",
   gem_locked: "That gem is locked. Unlock it before selling.",
   not_found: "That item no longer exists.",
