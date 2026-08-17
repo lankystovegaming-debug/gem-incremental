@@ -4,6 +4,7 @@ import {
   loadWallet,
   openLootBox
 } from "../src/backend/cloudLootboxes.js";
+import { loadMarket } from "../src/backend/cloudMarket.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -54,6 +55,7 @@ openingIcon.innerHTML = icons.box;
 const state = {
   boxes: [],
   wallet: { coins: 0, money: 0 },
+  coinValue: null,
   spinning: false
 };
 
@@ -101,7 +103,10 @@ function entryLabel(entry) {
 
 function renderWallet() {
   coinCount.textContent = formatCount(state.wallet.coins);
-  coinMoney.textContent = `1 coin = 10,000 shares · you have ${formatMoney(
+  const liveValue = Number.isFinite(state.coinValue)
+    ? formatMoney(state.coinValue)
+    : "—";
+  coinMoney.textContent = `Live value: ${liveValue} per coin · Cash: ${formatMoney(
     state.wallet.money,
     { compact: true }
   )}`;
@@ -355,16 +360,33 @@ async function refreshWallet() {
 }
 
 
+async function refreshCoinValue() {
+  const market = await loadMarket();
+  if (!market) return;
+
+  state.coinValue = Number(market.price) * 10000;
+  renderWallet();
+}
+
+
 async function start() {
   // Box definitions are public. Start loading them immediately so a temporary
   // account connection problem never makes the catalogue disappear.
   const boxesPromise = loadLootBoxes();
+  const marketPromise = loadMarket();
   const user = await ensurePlayerAuth();
-  const boxes = await boxesPromise;
+  const [boxes, market] = await Promise.all([boxesPromise, marketPromise]);
 
   if (boxes) {
     state.boxes = boxes;
   }
+  if (market) {
+    state.coinValue = Number(market.price) * 10000;
+  }
+
+  // The value is public market data, so keep it live even if the account
+  // connection is temporarily unavailable.
+  setInterval(refreshCoinValue, 20000);
 
   if (!user) {
     subtitle.textContent = "Could not sign you in. Refresh to try again.";
