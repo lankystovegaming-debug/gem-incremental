@@ -870,12 +870,17 @@ a:hover {
   gap: 6px;
 
   padding: 6px 16px;
+  border: 0;
   border-radius: var(--radius-pill);
+  background: transparent;
 
   color: var(--text-muted);
+  font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+  line-height: normal;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .subtabs__link:hover {

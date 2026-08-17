@@ -276,8 +276,12 @@ function setIndexView(view) {
   const showMutations = view === "mutations";
   gemIndexPanel.classList.toggle("hidden", showMutations);
   mutationIndexPanel.classList.toggle("hidden", !showMutations);
-  gemIndexTab.toggleAttribute("aria-current", !showMutations);
-  mutationIndexTab.toggleAttribute("aria-current", showMutations);
+
+  // Reuse the same selected-tab state as the Coin Shop selector.
+  const activeTab = showMutations ? mutationIndexTab : gemIndexTab;
+  const inactiveTab = showMutations ? gemIndexTab : mutationIndexTab;
+  activeTab.setAttribute("aria-current", "page");
+  inactiveTab.removeAttribute("aria-current");
 }
 
 gemIndexTab.addEventListener("click", () => setIndexView("gems"));
