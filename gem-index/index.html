@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +25,7 @@
       <select class="select" id="gemSort" aria-label="Sort gems"><option value="rarity">Common first</option><option value="rarity-desc">Rarest first</option><option value="name">Name</option><option value="found">Most found</option></select>
     </div>
     <div class="mutation-filter-heading"><span>Mutation filter</span><small>Multiple mutations can be selected</small></div>
+    <div id="selectedMutationSummary" class="selected-mutation-summary" aria-live="polite"></div>
     <nav class="mutation-tabs" id="mutationTabs" aria-label="Mutation filters"></nav>
     <div id="gemList" class="grid grid--cards"></div>
   </section>

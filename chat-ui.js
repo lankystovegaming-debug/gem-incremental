@@ -378,6 +378,89 @@ if (messagesEl && formEl && inputEl) {
     `;
   }
 
+  // Mirrors the roll/index.ts base gem-selection RNG at luck = 1.
+  function chatGemRollChance(rarity, gemName) {
+    const allRarities = [
+      ["Quartz", 2], ["Calcite", 3], ["Feldspar", 5], ["Fluorite", 8],
+      ["Hematite", 12], ["Obsidian", 18], ["Agate", 25], ["Jasper", 35],
+      ["Amethyst", 50], ["Garnet", 70], ["Citrine", 90], ["Peridot", 100],
+      ["Topaz", 150], ["Aquamarine", 225], ["Tourmaline", 325], ["Opal", 475],
+      ["Zircon", 650], ["Moonstone", 750], ["Spinel", 850], ["Sapphire", 1100],
+      ["Ruby", 1400], ["Emerald", 1800], ["Diamond", 2300], ["Tanzanite", 2900],
+      ["Alexandrite", 3600], ["Benitoite", 4400], ["Red Beryl", 5300],
+      ["Black Opal", 6300], ["Demantoid", 6800], ["Grandidierite", 7400],
+      ["Taaffeite", 8500], ["Musgravite", 9300], ["Painite", 10000],
+      ["Jeremejevite", 14000], ["Poudretteite", 22000], ["Serendibite", 35000],
+      ["Blue Garnet", 55000], ["Kyawthuite", 85000], ["Aether Quartz", 140000],
+      ["Void Opal", 250000], ["Chronite", 480000], ["Neutron Crystal", 800000],
+      ["Dark Matter", 1000000], ["Antimatter Crystal", 1800000],
+      ["Singularity Shard", 4000000]
+    ];
+
+    const rollable = allRarities
+      .filter(([name]) => name !== "Quartz")
+      .sort((a, b) => b[1] - a[1]);
+
+    if (gemName === "Quartz") {
+      return rollable.reduce(
+        (p, [, r]) => p * (1 - Math.min(1 / r, 1)),
+        1
+      );
+    }
+
+    const index = rollable.findIndex(([name]) => name === gemName);
+    if (index < 0) return Math.min(1 / Number(rarity), 1);
+
+    return (
+      rollable
+        .slice(0, index)
+        .reduce((p, [, r]) => p * (1 - Math.min(1 / r, 1)), 1) *
+      Math.min(1 / Number(rarity), 1)
+    );
+  }
+
+  function chatMutationChance(id) {
+    const chances = {
+      polished: 1 / 100,
+      gilded: 1 / 500,
+      prismatic: 1 / 2500,
+      celestial: 1 / 10000,
+      corrupted: 1 / 50000
+    };
+
+    return chances[id] ?? 0;
+  }
+
+  function formatChatChance(probability) {
+    if (!Number.isFinite(probability) || probability <= 0) {
+      return "Impossible";
+    }
+
+    const denominator = 1 / probability;
+
+    if (denominator > 1e15) {
+      return `1 in ${denominator.toExponential(2).replace("e+", "e")}`;
+    }
+
+    return `1 in ${Math.max(1, Math.round(denominator)).toLocaleString("en-US")}`;
+  }
+
+  function exactChatChance(message) {
+    const gemChance = chatGemRollChance(message.rarity, message.gem_name);
+    const ids = Array.isArray(message.mutation_ids)
+      ? new Set(message.mutation_ids.map((id) => String(id).toLowerCase()))
+      : new Set();
+
+    const mutationIds = ["polished", "gilded", "prismatic", "celestial", "corrupted"];
+
+    const mutationChance = mutationIds.reduce((p, id) => {
+      const chance = chatMutationChance(id);
+      return p * (ids.has(id) ? chance : (1 - chance));
+    }, 1);
+
+    return gemChance * mutationChance;
+  }
+
   function systemMessageHtml(message) {
     if (!message.roller_username || !message.gem_name) {
       return escapeHtml(message.message);
@@ -389,29 +472,27 @@ if (messagesEl && formEl && inputEl) {
       ? message.mutation_ids
       : [];
 
-    const mutationHtml = mutationIds.length
-      ? `
-        <div class="chat-message__mutations">
-          ${mutationIds.map((id) => {
-            const mutation = getGemMutation(id);
-            if (!mutation) return "";
-            return `
-              <span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}">
-                <span class="mutation-name-effect__fx" aria-hidden="true"></span>
-                <span class="mutation-name-effect__text">${escapeHtml(mutation.name)}</span>
-              </span>
-            `;
-          }).join("")}
-        </div>
-      `
+    const mutationNames = mutationIds
+      .map((id) => getGemMutation(id))
+      .filter(Boolean);
+
+    const mutationPrefix = mutationNames.length
+      ? `${mutationNames.map((mutation) => `
+          <span class="mutation-name-effect mutation-name-effect--${escapeHtml(mutation.id)}">
+            <span class="mutation-name-effect__fx" aria-hidden="true"></span>
+            <span class="mutation-name-effect__text">${escapeHtml(mutation.name)}</span>
+          </span>
+        `).join(" ")} `
       : "";
+
+    const chance = formatChatChance(exactChatChance(message));
 
     return `<strong>${escapeHtml(
       message.roller_username
-    )}</strong> rolled a rare ${gemNameHtml(
+    )}</strong> rolled a rare ${mutationPrefix}${gemNameHtml(
       message.gem_name,
       escapeHtml
-    )} — 1 in ${escapeHtml(rarity.toLocaleString("en-US"))}!${mutationHtml}`;
+    )} ${escapeHtml(chance)}!`;
   }
 
   function renderMessage(message, shouldScroll = true) {
