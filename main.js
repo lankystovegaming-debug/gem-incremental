@@ -876,12 +876,13 @@ function maybeAutoRoll() {
     return;
   }
 
-  // A short breath so the reveal is readable between rolls.
-  setTimeout(() => {
+  // Fire the next roll as soon as the server cooldown ends. The old 350ms
+  // artificial delay made auto-roll feel noticeably laggy.
+  queueMicrotask(() => {
     if (getSettings().autoRoll && view.ready && !rollInFlight) {
       performRoll();
     }
-  }, 350);
+  });
 }
 
 
