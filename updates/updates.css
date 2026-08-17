@@ -83,6 +83,12 @@
   margin-top: var(--space-4);
 }
 
+.update-section p {
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
 .update-section h3 {
   color: var(--text-muted);
   font-size: 0.78rem;
