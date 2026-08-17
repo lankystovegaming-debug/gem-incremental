@@ -4,7 +4,7 @@ import { supabase } from "./supabase.js";
 // what a trade will actually use.
 const BASELINE = 10;
 const FLOOR = 1;
-const IDLE_DECAY_HALF_LIFE_MS = 24 * 60 * 60 * 1000;
+const IDLE_DECAY_HALF_LIFE_MS = 6 * 60 * 60 * 1000;
 
 
 export function revertedPrice(price, decayUpdatedAt) {
