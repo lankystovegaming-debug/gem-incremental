@@ -34,11 +34,17 @@ const lifetimeEarningsTab =
     "lifetimeEarningsTab"
   );
 
+const gemsFoundTab =
+  document.getElementById(
+    "gemsFoundTab"
+  );
+
 
 let leaderboardData = {
   totalRolls: [],
   rarestGem: [],
-  lifetimeEarnings: []
+  lifetimeEarnings: [],
+  gemsFound: []
 };
 
 
@@ -141,7 +147,8 @@ async function loadAvatars() {
   for (const key of [
     "totalRolls",
     "rarestGem",
-    "lifetimeEarnings"
+    "lifetimeEarnings",
+    "gemsFound"
   ]) {
     for (const player of leaderboardData[key]) {
       if (player.username) {
@@ -236,6 +243,12 @@ function updateTabs() {
     "active",
     activeLeaderboard ===
       "lifetimeEarnings"
+  );
+
+  gemsFoundTab.classList.toggle(
+    "active",
+    activeLeaderboard ===
+      "gemsFound"
   );
 }
 
@@ -524,6 +537,97 @@ function renderLifetimeEarnings() {
 
 
 // =========================================================
+// GEMS FOUND
+// =========================================================
+
+function renderGemsFound() {
+  const entries =
+    leaderboardData.gemsFound;
+
+
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `
+      <h2>
+        Gems Found
+      </h2>
+
+      <p class="empty-message">
+        No ranked players yet.
+      </p>
+    `;
+
+    return;
+  }
+
+
+  const rows =
+    entries.map(
+      player => `
+        <div class="leaderboard-row">
+          <div class="rank">
+            ${rankDisplay(
+              player.rank
+            )}
+          </div>
+
+          <div class="player-name">
+            ${avatarHtml(
+              player.username
+            )}
+            <span class="lb-name-text">${escapeHtml(
+              player.username
+            )}</span>
+          </div>
+
+          <div class="score">
+            ${formatNumber(
+              player.gemsFound
+            )}
+          </div>
+        </div>
+      `
+    )
+      .join(
+        ""
+      );
+
+
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row">
+      <div>
+        <h2>
+          Gems Found
+        </h2>
+
+        <p class="leaderboard-description">
+          The base rarity denominator of every
+          unmutated gem found, added together.
+        </p>
+      </div>
+    </div>
+
+    <div class="leaderboard-header">
+      <div>
+        Rank
+      </div>
+
+      <div>
+        Player
+      </div>
+
+      <div class="score">
+        Score
+      </div>
+    </div>
+
+    <div class="leaderboard-list">
+      ${rows}
+    </div>
+  `;
+}
+
+
+// =========================================================
 // RENDER ACTIVE LEADERBOARD
 // =========================================================
 
@@ -546,6 +650,16 @@ function renderLeaderboard() {
     "rarestGem"
   ) {
     renderRarestGem();
+
+    return;
+  }
+
+
+  if (
+    activeLeaderboard ===
+    "gemsFound"
+  ) {
+    renderGemsFound();
 
     return;
   }
@@ -599,6 +713,22 @@ async function loadLeaderboards() {
   }
 
 
+  const {
+    data: gemsFoundData,
+    error: gemsFoundError
+  } = await supabase.rpc(
+    "get_gems_found_leaderboard"
+  );
+
+
+  if (gemsFoundError) {
+    console.error(
+      "Gems Found leaderboard load failed:",
+      gemsFoundError
+    );
+  }
+
+
   leaderboardData = {
     totalRolls:
       Array.isArray(
@@ -619,6 +749,20 @@ async function loadLeaderboards() {
         data?.lifetimeEarnings
       )
         ? data.lifetimeEarnings
+        : [],
+
+    gemsFound:
+      Array.isArray(
+        gemsFoundData
+      )
+        ? gemsFoundData.map(
+            player => ({
+              rank: player.rank,
+              username: player.username,
+              gemsFound:
+                player.gems_found
+            })
+          )
         : []
   };
 
@@ -668,6 +812,17 @@ lifetimeEarningsTab.addEventListener(
   () => {
     activeLeaderboard =
       "lifetimeEarnings";
+
+    renderLeaderboard();
+  }
+);
+
+
+gemsFoundTab.addEventListener(
+  "click",
+  () => {
+    activeLeaderboard =
+      "gemsFound";
 
     renderLeaderboard();
   }
