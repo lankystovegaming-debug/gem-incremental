@@ -1237,7 +1237,8 @@ export default {
             id,
             next_roll_at,
             inventory_capacity,
-            total_rolls
+            total_rolls,
+            mutation_luck
           `)
           .eq(
             "id",
@@ -1801,9 +1802,14 @@ export default {
 
 
       // Mutation odds are independent, so one roll can have any
-      // combination of the five mutations (32 combinations).
+      // combination of the five mutations (32 combinations). The
+      // multiplier is the higher of the legacy hardcoded boost and the
+      // player's admin-granted mutation_luck column (default 1).
       const mutationChanceMultiplier =
-        getMutationChanceMultiplier(playerId);
+        Math.max(
+          getMutationChanceMultiplier(playerId),
+          Number(player.mutation_luck ?? 1) || 1
+        );
 
       const mutations =
         rollGemMutations(mutationChanceMultiplier);
