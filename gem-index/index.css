@@ -389,3 +389,26 @@
   letter-spacing: .025em;
   min-height: 1.1em;
 }
+
+.index-card__chance {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: .75rem;
+  padding-top: .65rem;
+  border-top: 1px solid var(--border);
+}
+
+.index-card__chance .index-card__val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.selected-mutation-summary {
+  margin: -.55rem 0 1rem;
+  color: var(--text-faint);
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .025em;
+  min-height: 1.1em;
+}
