@@ -2,9 +2,9 @@ import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadLootBoxes,
   loadWallet,
-  openLootBox
+  openLootBox,
+  buyCoins
 } from "../src/backend/cloudLootboxes.js";
-import { loadMarket, revertedPrice } from "../src/backend/cloudMarket.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -28,6 +28,8 @@ const shell = mountShell({ page: "lootbox", base: "../" });
 const subtitle = document.getElementById("lootSubtitle");
 const coinCount = document.getElementById("coinCount");
 const coinMoney = document.getElementById("coinMoney");
+const coinBuyQty = document.getElementById("coinBuyQty");
+const coinBuyButton = document.getElementById("coinBuyButton");
 const boxList = document.getElementById("boxList");
 
 const contentsModal = document.getElementById("contentsModal");
@@ -55,7 +57,7 @@ openingIcon.innerHTML = icons.box;
 const state = {
   boxes: [],
   wallet: { coins: 0, money: 0 },
-  coinValue: null,
+  coinValue: 10000,
   spinning: false
 };
 
@@ -103,10 +105,7 @@ function entryLabel(entry) {
 
 function renderWallet() {
   coinCount.textContent = formatCount(state.wallet.coins);
-  const liveValue = Number.isFinite(state.coinValue)
-    ? formatMoney(state.coinValue)
-    : "—";
-  coinMoney.textContent = `Live value: ${liveValue} per coin · Cash: ${formatMoney(
+  coinMoney.textContent = `1 coin = ${formatMoney(state.coinValue)} · Cash: ${formatMoney(
     state.wallet.money,
     { compact: true }
   )}`;
@@ -360,16 +359,27 @@ async function refreshWallet() {
 }
 
 
-async function refreshCoinValue() {
-  const market = await loadMarket();
-  if (!market) return;
+async function buyCoinsWithMoney() {
+  const count = Math.max(1, Math.floor(Number(coinBuyQty.value) || 0));
 
-  state.coinValue = revertedPrice(
-    market.price,
-    market.decayUpdatedAt,
-    market.holderCount
-  ) * 10000;
-  renderWallet();
+  coinBuyButton.disabled = true;
+
+  const { error } = await buyCoins(count);
+
+  coinBuyButton.disabled = false;
+
+  if (error) {
+    notify.error("Could not buy coins", error.message);
+    return;
+  }
+
+  // The RPC spends money and grants coins; reload both from the server.
+  await refreshWallet();
+
+  notify.success(
+    "Coins bought",
+    `+${formatCount(count)} coin${count === 1 ? "" : "s"}`
+  );
 }
 
 
@@ -377,24 +387,14 @@ async function start() {
   // Box definitions are public. Start loading them immediately so a temporary
   // account connection problem never makes the catalogue disappear.
   const boxesPromise = loadLootBoxes();
-  const marketPromise = loadMarket();
   const user = await ensurePlayerAuth();
-  const [boxes, market] = await Promise.all([boxesPromise, marketPromise]);
+  const boxes = await boxesPromise;
 
   if (boxes) {
     state.boxes = boxes;
   }
-  if (market) {
-    state.coinValue = revertedPrice(
-      market.price,
-      market.decayUpdatedAt,
-      market.holderCount
-    ) * 10000;
-  }
 
-  // The value is public market data, so keep it live even if the account
-  // connection is temporarily unavailable.
-  setInterval(refreshCoinValue, 20000);
+  coinBuyButton.addEventListener("click", buyCoinsWithMoney);
 
   if (!user) {
     subtitle.textContent = "Could not sign you in. Refresh to try again.";

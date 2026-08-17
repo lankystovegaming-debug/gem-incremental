@@ -852,48 +852,6 @@ a:hover {
 }
 
 
-/* ---------- Section sub-tabs (Coin Shop: Boxes / Stocks) ---------- */
-
-.subtabs {
-  display: inline-flex;
-  gap: 2px;
-  margin-bottom: var(--space-4);
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-}
-
-.subtabs__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  padding: 6px 16px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: normal;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.subtabs__link:hover {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.subtabs__link[aria-current="page"] {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-
 /* =========================================================
    5. BUTTONS
    ========================================================= */

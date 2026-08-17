@@ -37,15 +37,14 @@ import { initDevPanel } from "./devpanel.js";
 
 // `short` is used on the mobile tab bar, where six full
 // labels would not fit across a 375px screen.
-// `short` is used on the mobile tab bar. `match` lets one entry stay
-// highlighted across sibling pages (the Coin Shop covers loot boxes and
-// the coin-share market, since both are spent in coins).
+// `short` is used on the mobile tab bar, where full labels would not
+// fit across a narrow screen.
 const PAGES = [
   { id: "roll", label: "Roll", short: "Roll", href: "", icon: icons.dice },
   { id: "inventory", label: "Inventory", short: "Items", href: "inventory/", icon: icons.bag },
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
   { id: "boosts", label: "Potion Shop", short: "Potions", href: "boosts/", icon: icons.potion },
-  { id: "coinshop", label: "Coin Shop", short: "Coins", href: "lootbox/", icon: icons.box, match: ["lootbox", "market"] },
+  { id: "lootbox", label: "Loot Boxes", short: "Boxes", href: "lootbox/", icon: icons.box },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
