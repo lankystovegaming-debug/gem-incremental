@@ -4,14 +4,14 @@ import { supabase } from "./supabase.js";
 // what a trade will actually use.
 const BASELINE = 10;
 const HALF_LIFE_MS = 15 * 60 * 1000;
-const BAND = [3, 30];
+const FLOOR = 1;
 
 
 export function revertedPrice(price, updatedAtIso) {
   const elapsed = Date.now() - new Date(updatedAtIso).getTime();
   const factor = Math.pow(0.5, Math.max(0, elapsed) / HALF_LIFE_MS);
   const p = BASELINE + (Number(price) - BASELINE) * factor;
-  return Math.min(BAND[1], Math.max(BAND[0], p));
+  return Math.max(FLOOR, p);
 }
 
 
@@ -33,6 +33,30 @@ export async function loadMarket() {
     updatedAt: stateRes.data?.updated_at ?? new Date().toISOString(),
     history
   };
+}
+
+
+export async function loadTrades() {
+  const { data, error } = await supabase
+    .from("market_history")
+    .select("price, at, username, action, qty")
+    .order("at", { ascending: false })
+    .limit(15);
+
+  if (error) {
+    console.error("Failed to load trades:", error);
+    return [];
+  }
+
+  return (data ?? [])
+    .filter((row) => row.action)
+    .map((row) => ({
+      price: Number(row.price),
+      at: row.at,
+      username: row.username || "Someone",
+      action: row.action,
+      qty: Number(row.qty ?? 0)
+    }));
 }
 
 
@@ -59,32 +83,10 @@ export async function tradeShares(action, qty) {
 }
 
 
-export async function loadGemShop() {
-  const { data, error } = await supabase
-    .from("game_gems")
-    .select("name, rarity, base_weight, value_per_gram, shop_price, sort")
-    .order("sort", { ascending: true });
-
-  if (error) {
-    console.error("Failed to load gem shop:", error);
-    return null;
-  }
-
-  return data ?? [];
-}
-
-
-export async function buyGem(name) {
-  const { data, error } = await supabase.rpc("buy_gem", { p_gem_name: name });
-  if (error) return { error: friendly(error) };
-  return { data };
-}
-
-
 function friendly(error) {
   const message = String(error?.message ?? "");
   const code = (message.match(
-    /(too_fast|not_enough_money|not_enough_shares|holding_cap|invalid_qty|not_authenticated|gem_not_found|player_not_found)/
+    /(too_fast|not_enough_money|not_enough_shares|holding_cap|invalid_qty|not_authenticated|player_not_found)/
   ) ?? [])[1];
 
   const map = {
@@ -92,9 +94,8 @@ function friendly(error) {
     not_enough_money: "You don't have enough money.",
     not_enough_shares: "You don't have that many shares.",
     holding_cap: "You've hit the maximum share holding.",
-    invalid_qty: "Enter between 1 and 100 shares.",
+    invalid_qty: "Enter at least 1 share.",
     not_authenticated: "Your session expired — refresh and try again.",
-    gem_not_found: "That gem isn't in the shop.",
     player_not_found: "Your save could not be found."
   };
 

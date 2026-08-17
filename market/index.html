@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0b0e14">
-  <meta name="description" content="Trade coin shares and buy gems in the Gem Incremental market.">
+  <meta name="description" content="Trade coin shares in the Gem Incremental market.">
 
   <title>Market · Gem Incremental</title>
 
@@ -36,7 +36,7 @@
     <div class="page-head">
       <div class="page-head__title">
         <h1>Market</h1>
-        <p class="page-head__sub">Trade coin shares, or buy gems outright.</p>
+        <p class="page-head__sub">Trade shares of the coin.</p>
       </div>
     </div>
 
@@ -63,29 +63,27 @@
       </div>
 
       <div class="mkt-trade">
-        <input type="number" id="mktQty" min="1" max="10000" step="1" value="10" aria-label="Shares to trade">
+        <input type="number" id="mktQty" min="1" step="1" value="10" aria-label="Shares to trade">
         <button class="btn btn--primary" id="mktBuy" type="button">Buy</button>
         <button class="btn btn--danger" id="mktSell" type="button">Sell</button>
       </div>
 
       <p class="mkt-note">
-        2% fee each way · max 10,000 / trade · a few seconds between trades.
+        2% fee each way · buy any amount · a few seconds between trades.
         The price drifts back toward its baseline, so it can't be pumped.
       </p>
       <p class="account-status" id="mktStatus"></p>
     </section>
 
 
-    <!-- ================= GEM SHOP ================= -->
+    <!-- ================= RECENT TRADES ================= -->
 
-    <div class="page-head" style="margin-top:var(--space-5)">
-      <div class="page-head__title">
-        <h2>Gem Shop</h2>
-        <p class="page-head__sub">Buy any gem outright, at a premium over its value.</p>
-      </div>
-    </div>
-
-    <section id="gemShop" class="grid grid--cards"></section>
+    <section class="card mkt-feed">
+      <h2>Recent trades</h2>
+      <ul class="mkt-feed__list" id="mktFeed">
+        <li class="mkt-feed__empty">No trades yet.</li>
+      </ul>
+    </section>
   </main>
 
   <script type="module" src="./market.js"></script>
