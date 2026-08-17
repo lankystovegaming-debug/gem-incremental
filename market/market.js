@@ -4,6 +4,7 @@ import {
   loadHoldings,
   loadHistory,
   loadTrades,
+  redeemSharesForCoin,
   tradeShares,
   revertedPrice
 } from "../src/backend/cloudMarket.js";
@@ -30,6 +31,8 @@ const mktSell = document.getElementById("mktSell");
 const mktStatus = document.getElementById("mktStatus");
 const mktFeed = document.getElementById("mktFeed");
 const mktRanges = document.getElementById("mktRanges");
+const mktCoinProgress = document.getElementById("mktCoinProgress");
+const mktRedeem = document.getElementById("mktRedeem");
 
 
 // Chart ranges. Each selection fetches only the requested look-back window.
@@ -46,7 +49,8 @@ const state = {
   money: 0,
   trades: [],
   range: "1h",
-  series: [] // [{ price, at }] for the selected range
+  series: [], // [{ price, at }] for the selected range
+  redeeming: false
 };
 
 
@@ -118,6 +122,12 @@ function renderPrice() {
   mktShares.textContent = formatCount(state.shares);
   mktValue.textContent =
     state.shares > 0 ? `worth ~${formatMoney(state.shares * price)}` : "";
+
+  const coinsReady = Math.floor(state.shares / 10000);
+  mktCoinProgress.textContent = `${formatCount(coinsReady)} coin${
+    coinsReady === 1 ? "" : "s"
+  } ready`;
+  mktRedeem.disabled = state.redeeming || coinsReady < 1;
 
   shell.setWallet(state.money);
   renderChart();
@@ -243,8 +253,37 @@ async function trade(action) {
 }
 
 
+async function redeemCoin() {
+  state.redeeming = true;
+  renderPrice();
+
+  const { data, error } = await redeemSharesForCoin();
+
+  state.redeeming = false;
+
+  if (error) {
+    mktStatus.classList.add("error");
+    mktStatus.textContent = error.message;
+    renderPrice();
+    notify.error("Could not redeem coin", error.message);
+    return;
+  }
+
+  mktStatus.classList.remove("error");
+  mktStatus.textContent = "";
+  state.shares = Number(data.shares);
+  renderPrice();
+
+  notify.success(
+    "Coin redeemed",
+    `10,000 shares converted into 1 coin · ${formatCount(data.coins)} total coins.`
+  );
+}
+
+
 mktBuy.addEventListener("click", () => trade("buy"));
 mktSell.addEventListener("click", () => trade("sell"));
+mktRedeem.addEventListener("click", redeemCoin);
 
 
 // =========================================================

@@ -2,7 +2,6 @@ import { ensurePlayerAuth } from "../src/backend/auth.js";
 import {
   loadLootBoxes,
   loadWallet,
-  buyCoins,
   openLootBox
 } from "../src/backend/cloudLootboxes.js";
 
@@ -28,9 +27,6 @@ const shell = mountShell({ page: "lootbox", base: "../" });
 const subtitle = document.getElementById("lootSubtitle");
 const coinCount = document.getElementById("coinCount");
 const coinMoney = document.getElementById("coinMoney");
-const coinBuyQty = document.getElementById("coinBuyQty");
-const coinBuyButton = document.getElementById("coinBuyButton");
-const coinStatus = document.getElementById("coinStatus");
 const boxList = document.getElementById("boxList");
 
 const contentsModal = document.getElementById("contentsModal");
@@ -105,7 +101,7 @@ function entryLabel(entry) {
 
 function renderWallet() {
   coinCount.textContent = formatCount(state.wallet.coins);
-  coinMoney.textContent = `1 coin = $100,000 · you have ${formatMoney(
+  coinMoney.textContent = `1 coin = 10,000 shares · you have ${formatMoney(
     state.wallet.money,
     { compact: true }
   )}`;
@@ -116,32 +112,6 @@ function renderWallet() {
     button.disabled = state.spinning || state.wallet.coins < cost;
   }
 }
-
-
-coinBuyButton.addEventListener("click", async () => {
-  const count = Math.max(1, Math.floor(Number(coinBuyQty.value) || 0));
-
-  coinBuyButton.disabled = true;
-  coinStatus.classList.remove("error");
-  coinStatus.textContent = "";
-
-  const { data, error } = await buyCoins(count);
-
-  coinBuyButton.disabled = false;
-
-  if (error) {
-    coinStatus.classList.add("error");
-    coinStatus.textContent = error.message;
-    notify.error("Could not buy coins", error.message);
-    return;
-  }
-
-  await refreshWallet();
-  notify.success(
-    "Coins added",
-    `Bought ${formatCount(count)} coin${count === 1 ? "" : "s"}.`
-  );
-});
 
 
 // =========================================================

@@ -109,6 +109,22 @@
 
 .mkt-holdings strong { color: var(--text); }
 
+.mkt-redeem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0 0;
+}
+
+.mkt-redeem > div {
+  display: grid;
+  gap: 2px;
+}
+
+.mkt-redeem strong { color: var(--accent); }
+.mkt-redeem span { color: var(--text-faint); font-size: 0.82rem; }
+
 .mkt-trade {
   display: flex;
   gap: var(--space-2);
@@ -221,5 +237,6 @@
 @media (max-width: 560px) {
   .mkt-shares__head { flex-direction: column; }
   .mkt-price { text-align: left; }
+  .mkt-redeem { align-items: stretch; flex-direction: column; }
   .mkt-feed__at { display: none; }
 }

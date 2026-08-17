@@ -42,19 +42,6 @@ export async function loadWallet() {
 }
 
 
-export async function buyCoins(count) {
-  const { data, error } = await supabase.rpc("buy_coins_with_money", {
-    p_count: count
-  });
-
-  if (error) {
-    return { error: friendly(error) };
-  }
-
-  return { data };
-}
-
-
 export async function openLootBox(boxId) {
   const { data, error } = await supabase.rpc("open_loot_box", {
     p_box_id: boxId
@@ -72,15 +59,13 @@ function friendly(error) {
   const message = String(error?.message ?? "");
 
   const code = (message.match(
-    /(not_enough_coins|not_enough_money|not_authenticated|box_not_found|invalid_count|player_not_found)/
+    /(not_enough_coins|not_authenticated|box_not_found|player_not_found)/
   ) ?? [])[1];
 
   const map = {
     not_enough_coins: "You don't have enough coins.",
-    not_enough_money: "You don't have enough money.",
     not_authenticated: "Your session expired — refresh and try again.",
     box_not_found: "That box no longer exists.",
-    invalid_count: "Enter a valid number of coins.",
     player_not_found: "Your save could not be found."
   };
 

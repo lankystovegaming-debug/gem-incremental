@@ -105,16 +105,24 @@ export async function tradeShares(action, qty) {
 }
 
 
+export async function redeemSharesForCoin() {
+  const { data, error } = await supabase.rpc("redeem_shares_for_coin");
+  if (error) return { error: friendly(error) };
+  return { data };
+}
+
+
 function friendly(error) {
   const message = String(error?.message ?? "");
   const code = (message.match(
-    /(too_fast|not_enough_money|not_enough_shares|holding_cap|invalid_qty|not_authenticated|player_not_found)/
+    /(too_fast|not_enough_money|not_enough_shares|not_enough_shares_for_coin|holding_cap|invalid_qty|not_authenticated|player_not_found)/
   ) ?? [])[1];
 
   const map = {
     too_fast: "Slow down — a few seconds between trades.",
     not_enough_money: "You don't have enough money.",
     not_enough_shares: "You don't have that many shares.",
+    not_enough_shares_for_coin: "You need 10,000 shares to redeem a coin.",
     holding_cap: "You've hit the maximum share holding.",
     invalid_qty: "Enter between 1 and 10,000 shares.",
     market_floor: "The market is at its floor. Try a smaller sale.",
