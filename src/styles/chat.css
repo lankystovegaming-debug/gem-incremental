@@ -594,3 +594,11 @@
 }
 
 .chat-message__mutations{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.45rem}.chat-message__mutations .mutation-name-effect{font-size:.68rem;padding:2px 7px;border-radius:999px}
+
+.chat-roll-chance {
+  display: inline-block;
+  margin-left: .28em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

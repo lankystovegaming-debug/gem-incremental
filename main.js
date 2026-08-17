@@ -19,6 +19,7 @@ import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
 import { getGemMutation } from "./src/data/mutations.js";
+import { exactRollChanceLabel } from "./src/logic/chances.js";
 import {
   getSettings,
   updateSettings,
@@ -314,7 +315,13 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
       .map(id => String(id).toLowerCase())
   ));
   const mutationId = mutationIds[0] ?? "";
-  const mutationClass = mutationIds.map(id => ` mutation-scene-${id.replace(/[^a-z0-9_-]/g, "")}`).join("");
+  const chanceLabel = data?.chance?.exactLabel ?? exactRollChanceLabel(
+    gemName,
+    mutationIds
+  );
+  const mutationClass = mutationId
+    ? ` mutation-scene-${mutationId.replace(/[^a-z0-9_-]/g, "")}`
+    : "";
 
   const rarityClass =
     rarityValue >= 10000000 ? " ultra-level-10m" :
@@ -358,7 +365,7 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
     <div class="scene__world">${sceneMarkup}</div>
-    ${mutationIds.map(id => `<div class="mutation-scene-layer mutation-scene-layer--${id}" aria-hidden="true"><span class="mutation-fx mutation-fx--a"></span><span class="mutation-fx mutation-fx--b"></span><span class="mutation-fx mutation-fx--c"></span><span class="mutation-fx mutation-fx--d"></span></div>`).join("")}
+    ${mutationIds.length ? `<div class="mutation-scene-layer mutation-scene-layer--${mutationIds[0]}" aria-hidden="true"><span class="mutation-fx mutation-fx--a"></span><span class="mutation-fx mutation-fx--b"></span><span class="mutation-fx mutation-fx--c"></span><span class="mutation-fx mutation-fx--d"></span></div>` : ""}
     <div class="scene__mega-world" aria-hidden="true">
       <span class="mega__warp"></span>
       <span class="mega__ring mega__ring--a"></span>
@@ -377,7 +384,8 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
       <div class="scene__gem">${icons.gem}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
       <h2 class="scene__name">${gemNameHtml(gemName, escapeHtml, mutationIds.map(id => `gem-styled--mutation-${id}`).join(" "))}</h2>
-      ${mutationIds.length ? `<div class="scene__mutation">✦ ${(data?.mutations ?? []).map(m => `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
+      ${mutationIds.length ? mutationNamesHtml(data?.mutations, { compact: true }).replace("gem-mutation-line", "scene__mutation scene__mutation-list") : ""}
+      <div class="scene__chance">${escapeHtml(chanceLabel)}</div>
       <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
       <div class="scene__outcome">${outcome.icon}${escapeHtml(outcome.text)}</div>
     </div>
@@ -390,15 +398,21 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
   return overlay;
 }
 
-function mutationNamesHtml(mutations = []) {
+function mutationNamesHtml(mutations = [], { compact = false } = {}) {
   const normalized = Array.isArray(mutations)
     ? mutations.filter((mutation) => mutation?.id)
     : [];
 
   if (!normalized.length) return "";
 
+  const countClass = normalized.length >= 5
+    ? " gem-mutation-line--five"
+    : normalized.length >= 3
+      ? " gem-mutation-line--many"
+      : "";
+
   return `
-    <div class="gem-mutation-line" aria-label="Mutations">
+    <div class="gem-mutation-line${countClass}${compact ? " gem-mutation-line--compact" : ""}" aria-label="${normalized.length} mutations">
       ${normalized.map((mutation) => `
         <span class="mutation-name-effect mutation-name-effect--${escapeHtml(mutation.id)}">
           <span class="mutation-name-effect__fx" aria-hidden="true"></span>
@@ -431,6 +445,10 @@ function renderRoll(data, outcome) {
       .filter(Boolean)
       .map(id => String(id).toLowerCase())
   ));
+  const actualChance = data?.chance?.exactLabel ?? exactRollChanceLabel(
+    data.gem.name,
+    mutationIds
+  );
 
   gemStage.className = [
     "stage__display",
@@ -468,6 +486,7 @@ function renderRoll(data, outcome) {
       <span class="badge badge--tier">${tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}
+      <p class="gem-reveal__chance">${escapeHtml(actualChance)}</p>
       <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
       <div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
@@ -522,6 +541,10 @@ function addHistory(data, note) {
     weight: data.finalWeight,
     value: data.value,
     mutationIds: Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : []),
+    chanceLabel: data?.chance?.exactLabel ?? exactRollChanceLabel(
+      data.gem.name,
+      Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : [])
+    ),
     note
   });
 
@@ -547,11 +570,11 @@ function renderHistory() {
         <div class="history__row tier-${entry.tier.id}">
           <span class="history__dot"></span>
 
+          ${entry.mutationIds?.length ? `<span class="history__mutations">${entry.mutationIds.map(id => { const m=getGemMutation(id); return m ? `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>` : ""; }).join(" ")}</span>` : ""}
           <span class="history__name">${gemNameHtml(entry.name, escapeHtml)}</span>
-          ${entry.mutationIds?.length ? `<span class="history__mutations">${entry.mutationIds.map(id => { const m=getGemMutation(id); return m ? `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>` : ""; }).join("")}</span>` : ""}
 
           <span class="history__meta">${escapeHtml(
-            entry.note || formatWeight(entry.weight)
+            entry.chanceLabel ? `${entry.chanceLabel} · ${entry.note || formatWeight(entry.weight)}` : (entry.note || formatWeight(entry.weight))
           )}</span>
 
           <span class="history__value">${formatMoney(entry.value)}</span>
