@@ -405,6 +405,141 @@ const gems = [
   },
 
   {
+    name: "Pezzottaite",
+    rarity: 12000,
+    baseWeight: 825,
+    valuePerGram: 8.5,
+    description:
+      "A raspberry-red crystal whose vivid colour makes it look almost too perfect to have formed naturally."
+  },
+
+  {
+    name: "Clinohumite",
+    rarity: 18000,
+    baseWeight: 875,
+    valuePerGram: 10,
+    description:
+      "A fiery orange mineral forged under immense pressure deep beneath the surface."
+  },
+
+  {
+    name: "Tsavorite",
+    rarity: 28000,
+    baseWeight: 960,
+    valuePerGram: 14,
+    description:
+      "A brilliant green garnet with a colour so intense that even emeralds struggle to compete."
+  },
+
+  {
+    name: "Paraíba Tourmaline",
+    rarity: 45000,
+    baseWeight: 1050,
+    valuePerGram: 19,
+    description:
+      "Copper illuminates this tourmaline from within, producing its unmistakable neon-blue glow."
+  },
+
+  {
+    name: "Red Diamond",
+    rarity: 70000,
+    baseWeight: 1150,
+    valuePerGram: 27,
+    description:
+      "An extraordinarily elusive diamond distorted by nature until its light burns crimson."
+  },
+
+  {
+    name: "Natural Moissanite",
+    rarity: 110000,
+    baseWeight: 1275,
+    valuePerGram: 36,
+    description:
+      "A naturally formed crystal of silicon carbide, far rarer than its laboratory-made counterparts."
+  },
+
+  {
+    name: "Black Diamond",
+    rarity: 190000,
+    baseWeight: 1450,
+    valuePerGram: 51,
+    description:
+      "Countless dark crystals compressed together into a stone whose mysterious origin remains debated."
+  },
+
+  {
+    name: "Tugtupite",
+    rarity: 350000,
+    baseWeight: 1650,
+    valuePerGram: 74,
+    description:
+      "A strange fluorescent mineral that can deepen in colour after exposure to ultraviolet light."
+  },
+
+  {
+    name: "Meteorite Peridot",
+    rarity: 620000,
+    baseWeight: 1950,
+    valuePerGram: 105,
+    description:
+      "A fragment of golden-green olivine carried to the surface inside an ancient meteorite."
+  },
+
+  {
+    name: "Ringwoodite",
+    rarity: 900000,
+    baseWeight: 2350,
+    valuePerGram: 145,
+    description:
+      "A high-pressure mineral from Earth's deep mantle, brought into reach against overwhelming odds."
+  },
+
+  {
+    name: "Pallasite Crystal",
+    rarity: 1300000,
+    baseWeight: 2700,
+    valuePerGram: 185,
+    description:
+      "A translucent olivine crystal suspended within the metallic remains of a shattered planetary body."
+  },
+
+  {
+    name: "Lunar Diamond",
+    rarity: 2500000,
+    baseWeight: 3100,
+    valuePerGram: 270,
+    description:
+      "A microscopic diamond created when a violent impact struck the surface of the Moon."
+  },
+
+  {
+    name: "Martian Opal",
+    rarity: 6000000,
+    baseWeight: 4000,
+    valuePerGram: 420,
+    description:
+      "Hydrated silica shaped beneath the red dust of Mars, preserving evidence of a wetter world."
+  },
+
+  {
+    name: "Ja-ore",
+    rarity: 6242026,
+    baseWeight: 90000,
+    valuePerGram: 20,
+    description:
+      "Here I come San Francisco (concept by @Neefgax)"
+  },
+
+  {
+    name: "Presolar Moissanite",
+    rarity: 8000000,
+    baseWeight: 4800,
+    valuePerGram: 560,
+    description:
+      "A grain of silicon carbide born around an ancient star before the Solar System even existed."
+  },
+
+  {
     name: "Lanky Gem",
     rarity: 10000000,
     baseWeight: 40500,
@@ -412,6 +547,16 @@ const gems = [
     hideRarityUntilDiscovered: true,
     description:
       "Named after the creator of Gem Incremental, the sheer weight of this \"gem\" represents his actual value in real life. also how did you even get this"
+  },
+
+  {
+    name: "Carmeltazite",
+    rarity: 50000000,
+    baseWeight: 6000,
+    valuePerGram: 1250,
+    hideRarityUntilDiscovered: true,
+    description:
+      "An exceedingly unusual mineral discovered inside corundum from the volcanic rocks of Mount Carmel. Something this scarce was never supposed to leave its microscopic prison."
   }
 ];
 

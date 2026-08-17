@@ -38,16 +38,13 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 
 const mutationList = Object.values(GEM_MUTATIONS);
 
-/*
- * The hidden Lanky Gem is intentionally not part of the public Gem Index.
- * That leaves 45 indexable base gems, so every exact mutation combination is
- * always "out of 45".
- */
-const indexableGems = gems.filter((gem) => !gem.hideRarityUntilDiscovered);
+// Secret gems are included in the internal catalog so a discovery can reveal
+// them, but they are completely absent from the rendered index beforehand.
+const catalogGems = gems;
 
 /*
- * Five independent mutations => 32 exact combinations per gem.
- * 45 indexable base gems => 1,440 possible index entries.
+ * Five independent mutations produce 32 exact combinations per visible gem.
+ * Secret gems join that total only after the player discovers them.
  */
 const MUTATION_COMBINATIONS = (() => {
   const ids = mutationList.map((m) => m.id);
@@ -63,8 +60,6 @@ const MUTATION_COMBINATIONS = (() => {
 
   return combinations;
 })();
-
-const TOTAL_ENTRIES = indexableGems.length * MUTATION_COMBINATIONS.length;
 
 const state = {
   index: {},
@@ -131,7 +126,7 @@ function comboKey(gemName, combinationKey) {
 function allEntries() {
   const entries = [];
 
-  for (const gem of indexableGems) {
+  for (const gem of catalogGems) {
     for (const combination of MUTATION_COMBINATIONS) {
       entries.push({
         gem,
@@ -145,6 +140,22 @@ function allEntries() {
 }
 
 const indexEntries = allEntries();
+
+function secretGemIsRevealed(gem) {
+  if (!gem.hideRarityUntilDiscovered) {
+    return true;
+  }
+
+  return Object.values(state.combinations).some(
+    (record) => record.gemName === gem.name
+  );
+}
+
+function currentlyIndexableEntries() {
+  return indexEntries.filter(
+    (entry) => secretGemIsRevealed(entry.gem)
+  );
+}
 
 function selectedCombination() {
   if (!state.selectedMutations.size) {
@@ -160,10 +171,11 @@ function selectedCombination() {
 
 function selectedEntries() {
   const key = selectedCombination();
+  const availableEntries = currentlyIndexableEntries();
 
   return key === null
-    ? indexEntries
-    : indexEntries.filter(
+    ? availableEntries
+    : availableEntries.filter(
         (entry) => entry.combinationKey === key
       );
 }
@@ -237,14 +249,14 @@ function entryMatchesMutationFilter(entry) {
   if (key === null) return true;
 
   // A selection represents one exact mutation combination.
-  // This keeps every mutation view at exactly 45 possible gems.
+  // This keeps every mutation view to one exact combination per visible gem.
   return entry.combinationKey === key;
 }
 
 function visibleEntries() {
   const query = gemSearch.value.trim().toLowerCase();
 
-  const filtered = indexEntries.filter((entry) => {
+  const filtered = currentlyIndexableEntries().filter((entry) => {
     const discovered = Boolean(state.combinations[entry.key]);
     const name = entry.gem.name.toLowerCase();
     const comboLabel = mutationCombinationLabel(entry.mutationIds).toLowerCase();

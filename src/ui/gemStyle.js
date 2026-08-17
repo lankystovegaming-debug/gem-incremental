@@ -356,12 +356,36 @@ const GEM_STYLES = {
     spacing: "0.12em",
     glow: "rgba(244,244,255,0.8)"
   },
+  "Pezzottaite": { color: "#ef6aa8", font: "Garamond, Georgia, serif", weight: 700, glow: "rgba(239,106,168,.55)" },
+  "Clinohumite": { color: "#ff8a3d", font: "Rockwell, Georgia, serif", weight: 700, glow: "rgba(255,138,61,.55)" },
+  "Tsavorite": { color: "#43d675", font: "Garamond, Georgia, serif", weight: 700, glow: "rgba(67,214,117,.55)" },
+  "Paraíba Tourmaline": { color: "#49f5e7", gradient: "linear-gradient(90deg,#21d4c2,#55c8ff,#21d4c2)", font: "Optima, sans-serif", weight: 700, glow: "rgba(73,245,231,.65)" },
+  "Red Diamond": { color: "#ff315f", gradient: "linear-gradient(90deg,#8b001c,#ff315f,#ffd4dd)", font: "Didot, Georgia, serif", weight: 800, glow: "rgba(255,49,95,.65)" },
+  "Natural Moissanite": { color: "#eafcff", gradient: "linear-gradient(90deg,#aef6ff,#fff,#d7c4ff)", font: "'Segoe UI', sans-serif", weight: 700, glow: "rgba(220,250,255,.7)" },
+  "Black Diamond": { color: "#bbb7c8", gradient: "linear-gradient(90deg,#17151d,#918aa3,#17151d)", font: "Didot, Georgia, serif", weight: 800, glow: "rgba(180,170,200,.45)" },
+  "Tugtupite": { color: "#ff5c98", gradient: "linear-gradient(90deg,#ff5c98,#ffb1cb,#ff5c98)", font: "Optima, sans-serif", weight: 700, glow: "rgba(255,92,152,.6)" },
+  "Meteorite Peridot": { color: "#b8e95a", gradient: "linear-gradient(90deg,#565c2c,#d9ff75,#89845b)", font: "Rockwell, serif", weight: 700, glow: "rgba(184,233,90,.6)" },
+  "Ringwoodite": { color: "#5a83e8", gradient: "linear-gradient(90deg,#263b88,#7c9cff,#263b88)", font: "'Exo 2', sans-serif", weight: 800, glow: "rgba(90,131,232,.65)" },
+  "Pallasite Crystal": { color: "#d3e87a", gradient: "linear-gradient(90deg,#7e7655,#dfff88,#b19563)", font: "'Exo 2', sans-serif", weight: 800, glow: "rgba(211,232,122,.65)" },
+  "Lunar Diamond": { color: "#f4f6ff", gradient: "linear-gradient(90deg,#a9b1ca,#fff,#d6dcf2)", font: "'Orbitron', sans-serif", weight: 800, glow: "rgba(244,246,255,.8)" },
+  "Martian Opal": { color: "#ff8067", gradient: "linear-gradient(90deg,#9f2d20,#ff8067,#e7c19c)", font: "'Orbitron', sans-serif", weight: 800, glow: "rgba(255,128,103,.7)" },
+  "Ja-ore": { color: "#ffcf45", gradient: "linear-gradient(90deg,#ff3b30,#ffcf45,#36c5f0)", font: "'Comic Sans MS', cursive", weight: 800, glow: "rgba(255,207,69,.7)" },
+  "Presolar Moissanite": { color: "#ffe9a8", gradient: "linear-gradient(90deg,#ff7b54,#ffe9a8,#8ed8ff)", font: "'Orbitron', sans-serif", weight: 800, glow: "rgba(255,233,168,.8)" },
   "Lanky Gem": {
     color: "#ff6ec7",
     font: "'Comic Sans MS', 'Comic Sans', cursive",
     weight: 700,
     spacing: "0.01em",
     glow: "rgba(255,110,199,0.5)"
+  },
+  "Carmeltazite": {
+    color: "#fff1fb",
+    gradient: "linear-gradient(90deg,#ffffff,#ff9de2,#9ee9ff,#d7adff,#ffffff)",
+    font: "'Orbitron', 'Exo 2', sans-serif",
+    weight: 900,
+    caps: true,
+    spacing: "0.1em",
+    glow: "rgba(255,210,249,.95)"
   }
 };
 

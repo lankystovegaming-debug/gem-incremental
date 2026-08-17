@@ -128,6 +128,7 @@
   --rarity-mythic: #fb7185;
   --rarity-exotic: #22d3ee;
   --rarity-cosmic: #f472b6;
+  --rarity-transcendent: #fff1fb;
 
   /* Accent — overridden per data-accent below. */
   --accent: #7c8cf8;
@@ -209,6 +210,7 @@
   --rarity-mythic: #d4356b;
   --rarity-exotic: #0891b2;
   --rarity-cosmic: #be185d;
+  --rarity-transcendent: #a855f7;
 }
 
 /* Only "System" leaves data-theme unset, so this must not
@@ -250,6 +252,7 @@
     --rarity-mythic: #d4356b;
     --rarity-exotic: #0891b2;
     --rarity-cosmic: #be185d;
+    --rarity-transcendent: #a855f7;
   }
 }
 
@@ -297,6 +300,7 @@
   --rarity-mythic: #ff5f9e;
   --rarity-exotic: #22e7ff;
   --rarity-cosmic: #ff71ce;
+  --rarity-transcendent: #fff1fb;
 
   --accent: #7d8dff;
   --accent-strong: #6b7bff;
@@ -1134,6 +1138,7 @@ a.btn--icon[aria-current="page"] {
 .tier-mythic     { --tier: var(--rarity-mythic); }
 .tier-exotic     { --tier: var(--rarity-exotic); }
 .tier-cosmic     { --tier: var(--rarity-cosmic); }
+.tier-transcendent { --tier: var(--rarity-transcendent); }
 .tier-unknown    { --tier: var(--text-faint); }
 
 .badge--tier {
@@ -2200,4 +2205,3 @@ a.btn--icon[aria-current="page"] {
 :root[data-theme="ice"] .brand {
   text-shadow: 0 0 14px var(--accent-ring);
 }
-
