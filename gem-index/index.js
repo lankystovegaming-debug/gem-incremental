@@ -1,4 +1,5 @@
 import gems from "../src/data/gems.js";
+import { GEM_MUTATIONS } from "../src/data/mutations.js";
 
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
@@ -14,6 +15,7 @@ import {
   formatMoney,
   formatWeight,
   formatCount,
+  formatRelativeTime,
   escapeHtml
 } from "../src/ui/format.js";
 
@@ -26,6 +28,13 @@ const shell = mountShell({ page: "gem-index", base: "../" });
 // =========================================================
 
 const gemList = document.getElementById("gemList");
+const gemIndexPanel = document.getElementById("gemIndexPanel");
+const mutationIndexPanel = document.getElementById("mutationIndexPanel");
+const gemIndexTab = document.getElementById("gemIndexTab");
+const mutationIndexTab = document.getElementById("mutationIndexTab");
+const mutationList = document.getElementById("mutationList");
+const mutationDiscoveryCount = document.getElementById("mutationDiscoveryCount");
+const mutationDiscoveryMeter = document.getElementById("mutationDiscoveryMeter");
 const discoveryCount = document.getElementById("discoveryCount");
 const discoveryMeter = document.getElementById("discoveryMeter");
 const tierBreakdown = document.getElementById("tierBreakdown");
@@ -43,6 +52,7 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 
 const state = {
   index: {},
+  mutationIndex: {},
   loading: true
 };
 
@@ -72,6 +82,27 @@ async function loadIndex() {
   }
 
   return byName;
+}
+
+async function loadMutationIndex() {
+  const { data, error } = await supabase
+    .from("player_mutation_index")
+    .select("mutation_id, total_found, highest_value, best_gem_name, first_discovered_at");
+
+  if (error) {
+    console.error("Failed to load the Mutation Index:", error);
+    return null;
+  }
+
+  return Object.fromEntries((data ?? []).map((entry) => [
+    entry.mutation_id,
+    {
+      totalFound: Number(entry.total_found ?? 0),
+      highestValue: Number(entry.highest_value ?? 0),
+      bestGemName: entry.best_gem_name,
+      firstDiscoveredAt: entry.first_discovered_at
+    }
+  ]));
 }
 
 
@@ -181,6 +212,77 @@ function renderList() {
   gemList.innerHTML = list.map(gemCard).join("");
 }
 
+function renderMutationIndex() {
+  const mutations = Object.values(GEM_MUTATIONS);
+  const discovered = mutations.filter((mutation) => state.mutationIndex[mutation.id]).length;
+
+  mutationDiscoveryCount.textContent = `${formatCount(discovered)} of ${formatCount(
+    mutations.length
+  )} mutations discovered`;
+  mutationDiscoveryMeter.style.width = `${(discovered / mutations.length) * 100}%`;
+
+  mutationList.innerHTML = mutations.map((mutation) => {
+    const entry = state.mutationIndex[mutation.id];
+
+    if (!entry) {
+      return `
+        <article class="index-card index-card--locked mutation-index-card">
+          <div class="index-card__head">
+            <div>
+              <div class="index-card__name">???</div>
+              <div class="index-card__rarity">Undiscovered mutation</div>
+            </div>
+            <span class="badge badge--tier">Unknown</span>
+          </div>
+          <p class="index-card__hidden">Roll this mutation once to reveal its entry.</p>
+        </article>
+      `;
+    }
+
+    return `
+      <article class="index-card mutation-index-card mutation-${mutation.id}">
+        <div class="index-card__head">
+          <div>
+            <div class="index-card__name mutation-index-card__name">${escapeHtml(mutation.name)}</div>
+            <div class="index-card__rarity">1 in ${formatCount(mutation.chance)}</div>
+          </div>
+          <span class="mutation-index-card__boost">${mutation.multiplier}× value</span>
+        </div>
+        <p class="index-card__desc">${escapeHtml(mutation.description)}</p>
+        <div class="index-card__rows">
+          <div class="index-card__row">
+            <span class="index-card__key">Times found</span>
+            <span class="index-card__val">${formatCount(entry.totalFound)}</span>
+          </div>
+          <div class="index-card__row">
+            <span class="index-card__key">Best specimen</span>
+            <span class="index-card__val">${escapeHtml(entry.bestGemName ?? "—")}</span>
+          </div>
+          <div class="index-card__row">
+            <span class="index-card__key">Highest value</span>
+            <span class="index-card__val mutation-index-card__value">${formatMoney(entry.highestValue)}</span>
+          </div>
+          <div class="index-card__row">
+            <span class="index-card__key">First discovered</span>
+            <span class="index-card__val">${escapeHtml(formatRelativeTime(entry.firstDiscoveredAt))}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function setIndexView(view) {
+  const showMutations = view === "mutations";
+  gemIndexPanel.classList.toggle("hidden", showMutations);
+  mutationIndexPanel.classList.toggle("hidden", !showMutations);
+  gemIndexTab.toggleAttribute("aria-current", !showMutations);
+  mutationIndexTab.toggleAttribute("aria-current", showMutations);
+}
+
+gemIndexTab.addEventListener("click", () => setIndexView("gems"));
+mutationIndexTab.addEventListener("click", () => setIndexView("mutations"));
+
 
 function gemCard(gem) {
   const tier = rarityTier(gem.rarity);
@@ -280,8 +382,9 @@ async function refresh() {
     return;
   }
 
-  const [index, playerState] = await Promise.all([
+  const [index, mutationIndex, playerState] = await Promise.all([
     loadIndex(),
+    loadMutationIndex(),
     loadCloudPlayerState()
   ]);
 
@@ -293,12 +396,19 @@ async function refresh() {
     notify.error("Could not load the index", "Try refreshing the page.");
   }
 
+  if (mutationIndex) {
+    state.mutationIndex = mutationIndex;
+  } else {
+    notify.error("Could not load mutations", "Try refreshing the page.");
+  }
+
   if (playerState) {
     shell.setWallet(playerState.money);
   }
 
   renderSummary();
   renderList();
+  renderMutationIndex();
 }
 
 
