@@ -660,6 +660,11 @@ async function performRoll() {
 
   addHistory(data, outcome.note);
 
+  // Let the chat UI render the same player-facing rare-roll announcement
+  // immediately, including mutation-only rare combinations. The server-side
+  // announcement remains authoritative for persisted/global messages.
+  window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
+
   if (data.cooldown?.nextRollAt) {
     startCooldown(
       new Date(data.cooldown.nextRollAt).getTime(),

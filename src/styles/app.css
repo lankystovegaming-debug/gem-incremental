@@ -2058,3 +2058,146 @@ a.btn--icon[aria-current="page"] {
 }
 
 .gem-reveal__chance,.scene__chance{margin:.45rem 0 0;color:var(--text-muted);font-size:.82rem;font-variant-numeric:tabular-nums}.scene__mutation{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.42rem;max-width:min(90vw,900px);margin:.7rem auto .2rem}.scene__mutation .mutation-name-effect{font-size:.72rem;padding:3px 8px;border-radius:999px;white-space:nowrap}.history__mutations{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;min-width:0}.history__mutations .mutation-name-effect{font-size:.6rem;padding:2px 6px;border-radius:999px}.history__meta{font-variant-numeric:tabular-nums}.setting-number{width:150px}.menu{max-height:min(80vh,520px);overflow:auto}
+
+
+/* =========================================================
+   ADDITIONAL THEME PALETTES
+   The theme picker exposes these modes, so each mode needs an
+   actual palette.  They intentionally override the shared
+   tokens instead of relying on undefined variables.
+   ========================================================= */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0e14;
+  --bg-glow: #151b2b;
+  --surface: #121720cc;
+  --surface-solid: #121720;
+  --surface-raised: #171d29;
+  --surface-hover: #1c2331;
+  --surface-sunken: #0d1119;
+  --border: #242c3b;
+  --border-strong: #323c50;
+  --text: #e8ecf4;
+  --text-muted: #9aa5ba;
+  --text-faint: #6b7689;
+}
+
+:root[data-theme="gradient"] {
+  color-scheme: dark;
+  --bg: #10091d;
+  --bg-glow: #42206e;
+  --surface: #1a1028e8;
+  --surface-solid: #1a1028;
+  --surface-raised: #24153a;
+  --surface-hover: #2e1b49;
+  --surface-sunken: #110a1c;
+  --border: #4c2d68;
+  --border-strong: #70458f;
+  --text: #f2e8ff;
+  --text-muted: #c3a9dc;
+  --text-faint: #8e70a8;
+  --accent: #c084fc;
+  --accent-strong: #a855f7;
+  --accent-soft: #c084fc2e;
+  --accent-ring: #c084fc66;
+  background-image: radial-gradient(900px 500px at 15% 0%, #7c3aed30, transparent 65%),
+    radial-gradient(800px 500px at 90% 10%, #ec489930, transparent 65%);
+}
+
+:root[data-theme="ocean"] {
+  color-scheme: dark;
+  --bg: #06121b;
+  --bg-glow: #0b3a50;
+  --surface: #0b1d29e8;
+  --surface-solid: #0b1d29;
+  --surface-raised: #102938;
+  --surface-hover: #143546;
+  --surface-sunken: #07151f;
+  --border: #1d4b60;
+  --border-strong: #28647d;
+  --text: #e0f7ff;
+  --text-muted: #8eb9c9;
+  --text-faint: #5e8799;
+  --accent: #38bdf8;
+  --accent-strong: #0ea5e9;
+  --accent-soft: #38bdf82e;
+  --accent-ring: #38bdf866;
+}
+
+:root[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #07130d;
+  --bg-glow: #123d24;
+  --surface: #0d2116e8;
+  --surface-solid: #0d2116;
+  --surface-raised: #12301e;
+  --surface-hover: #173b26;
+  --surface-sunken: #08170e;
+  --border: #245638;
+  --border-strong: #34744b;
+  --text: #e4ffed;
+  --text-muted: #98c4a6;
+  --text-faint: #648c70;
+  --accent: #34d399;
+  --accent-strong: #10b981;
+  --accent-soft: #34d3992e;
+  --accent-ring: #34d39966;
+}
+
+:root[data-theme="sunset"] {
+  color-scheme: dark;
+  --bg: #1b0b0b;
+  --bg-glow: #5b211b;
+  --surface: #291311e8;
+  --surface-solid: #291311;
+  --surface-raised: #381a16;
+  --surface-hover: #452019;
+  --surface-sunken: #1c0d0c;
+  --border: #66332b;
+  --border-strong: #8a4639;
+  --text: #fff0e8;
+  --text-muted: #d3a79a;
+  --text-faint: #9d7266;
+  --accent: #fb7185;
+  --accent-strong: #f43f5e;
+  --accent-soft: #fb71852e;
+  --accent-ring: #fb718566;
+}
+
+:root[data-theme="ice"] {
+  color-scheme: dark;
+  --bg: #07111d;
+  --bg-glow: #163d5a;
+  --surface: #0c1c2be8;
+  --surface-solid: #0c1c2b;
+  --surface-raised: #11283b;
+  --surface-hover: #17334a;
+  --surface-sunken: #081521;
+  --border: #27506b;
+  --border-strong: #397392;
+  --text: #e8f9ff;
+  --text-muted: #9cc6d7;
+  --text-faint: #6d96a9;
+  --accent: #67e8f9;
+  --accent-strong: #22d3ee;
+  --accent-soft: #67e8f92e;
+  --accent-ring: #67e8f966;
+}
+
+:root[data-theme="gradient"] body,
+:root[data-theme="ocean"] body,
+:root[data-theme="forest"] body,
+:root[data-theme="sunset"] body,
+:root[data-theme="ice"] body {
+  background-image: radial-gradient(900px 520px at 50% -10%, var(--bg-glow), transparent 70%);
+}
+
+:root[data-theme="gradient"] .brand,
+:root[data-theme="ocean"] .brand,
+:root[data-theme="forest"] .brand,
+:root[data-theme="sunset"] .brand,
+:root[data-theme="ice"] .brand {
+  text-shadow: 0 0 14px var(--accent-ring);
+}
+

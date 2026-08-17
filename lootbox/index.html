@@ -20,7 +20,7 @@
       try {
         var mode = localStorage.getItem("gemIncremental.theme.mode");
         var accent = localStorage.getItem("gemIncremental.theme.accent");
-        if (["light", "dark", "neon"].indexOf(mode) >= 0) {
+        if (["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"]) {
           document.documentElement.setAttribute("data-theme", mode);
         }
         document.documentElement.setAttribute("data-accent", accent || "indigo");

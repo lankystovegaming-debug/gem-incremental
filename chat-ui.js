@@ -442,6 +442,44 @@ if (messagesEl && formEl && inputEl) {
     )} ${escapeHtml(chance)}!`;
   }
 
+  function localRollAnnouncement(data) {
+    if (!data?.gem?.name) return null;
+
+    const mutationIds = Array.isArray(data.mutationIds)
+      ? data.mutationIds
+      : Array.isArray(data.mutations)
+        ? data.mutations.map((mutation) => mutation?.id).filter(Boolean)
+        : [];
+
+    if (!meetsChatChanceThreshold(data.gem.name, mutationIds)) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+
+    return {
+      id: `local-roll-${data.specimenId ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`,
+      source: "system",
+      sender_id: null,
+      username: "[SYSTEM]",
+      avatar_url: null,
+      roller_id: currentUserId,
+      roller_username: "You",
+      gem_name: data.gem.name,
+      rarity: Number(data.gem.rarity ?? 0),
+      mutation_ids: mutationIds,
+      created_at: now,
+      local_only: true
+    };
+  }
+
+  function receiveLocalRoll(data) {
+    const announcement = localRollAnnouncement(data);
+    if (!announcement) return;
+
+    renderMessage(announcement, true);
+  }
+
   function renderMessage(message, shouldScroll = true) {
     if (!message?.id) return false;
 
@@ -487,6 +525,34 @@ if (messagesEl && formEl && inputEl) {
 
     const mine = isPrivate && message.sender_id === currentUserId;
 
+    // A roll can arrive locally first (so mutation-only rare rolls appear
+    // immediately), followed by the persisted server announcement. Reuse the
+    // local entry instead of displaying the same roll twice.
+    if (isSystem && message.gem_name) {
+      const mutationKey = chatMutationIds(message).join("+");
+      const now = new Date(message.created_at).getTime();
+      const duplicate = [...messagesEl.querySelectorAll(".chat-message--system")]
+        .find((candidate) => {
+          if (candidate.dataset.gemName !== String(message.gem_name)) return false;
+          if (candidate.dataset.mutationKey !== mutationKey) return false;
+          const existingTime = new Date(
+            candidate.querySelector("time")?.dateTime ?? 0
+          ).getTime();
+          return Number.isFinite(now) && Number.isFinite(existingTime)
+            ? Math.abs(now - existingTime) <= 15_000
+            : false;
+        });
+
+      if (duplicate) {
+        duplicate.dataset.messageId = messageId;
+        duplicate.dataset.gemName = String(message.gem_name);
+        duplicate.dataset.mutationKey = mutationKey;
+        const textEl = duplicate.querySelector(".chat-message__text");
+        if (textEl) textEl.innerHTML = systemMessageHtml(message);
+        return false;
+      }
+    }
+
     const item = document.createElement("div");
 
     item.className = [
@@ -500,6 +566,10 @@ if (messagesEl && formEl && inputEl) {
       .join(" ");
 
     item.dataset.messageId = messageId;
+    if (isSystem && message.gem_name) {
+      item.dataset.gemName = String(message.gem_name);
+      item.dataset.mutationKey = chatMutationIds(message).join("+");
+    }
 
     let label;
 
@@ -719,6 +789,10 @@ if (messagesEl && formEl && inputEl) {
   }
 
   applyChatLayout();
+
+  window.addEventListener("gem:roll-complete", (event) => {
+    receiveLocalRoll(event.detail);
+  });
 
   fabEl?.addEventListener("click", () => {
     setChatOpen(!isChatOpen());

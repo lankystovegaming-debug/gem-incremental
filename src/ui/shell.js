@@ -853,7 +853,7 @@ function createMenuController() {
       return;
     }
 
-    if (!openAnchor.contains(event.target)) {
+    if (!openAnchor.contains(event.target) && !openMenu.contains(event.target)) {
       close();
     }
   });
