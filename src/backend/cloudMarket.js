@@ -4,19 +4,27 @@ import { supabase } from "./supabase.js";
 // what a trade will actually use.
 const BASELINE = 10;
 const FLOOR = 1;
-const IDLE_DECAY_HALF_LIFE_MS = 6 * 60 * 60 * 1000;
+const EMPTY_MARKET_HALF_LIFE_MS = 6 * 60 * 60 * 1000;
+const MAX_DECAY_HOLDERS = 7;
 
 
-export function revertedPrice(price, decayUpdatedAt) {
+export function revertedPrice(price, decayUpdatedAt, holderCount = 0) {
   const storedPrice = Math.max(FLOOR, Number(price));
   const updatedAt = new Date(decayUpdatedAt).getTime();
 
   if (!Number.isFinite(updatedAt)) return storedPrice;
 
-  // Mirror the server's idle-decay rule between market refreshes. The quote
-  // eases toward the floor after the last buy/trade instead of going stale.
+  // More separate holders make the market more stable. A single holder still
+  // gets a slow leak, while seven or more holders hit the 48-hour cap.
+  const holders = Math.min(
+    MAX_DECAY_HOLDERS,
+    Math.max(0, Math.floor(Number(holderCount) || 0))
+  );
+  const halfLifeMs = EMPTY_MARKET_HALF_LIFE_MS * (1 + holders);
+
+  // Mirror the server's holder-weighted idle-decay rule between refreshes.
   const elapsed = Math.max(0, Date.now() - updatedAt);
-  const decay = Math.pow(0.5, elapsed / IDLE_DECAY_HALF_LIFE_MS);
+  const decay = Math.pow(0.5, elapsed / halfLifeMs);
   return FLOOR + (storedPrice - FLOOR) * decay;
 }
 
@@ -24,7 +32,7 @@ export function revertedPrice(price, decayUpdatedAt) {
 export async function loadMarket() {
   const { data, error } = await supabase
     .from("market_state")
-    .select("price, updated_at, decay_updated_at")
+    .select("price, updated_at, decay_updated_at, holder_count")
     .eq("id", "coin")
     .maybeSingle();
 
@@ -36,7 +44,8 @@ export async function loadMarket() {
   return {
     price: Number(data?.price ?? BASELINE),
     updatedAt: data?.updated_at ?? new Date().toISOString(),
-    decayUpdatedAt: data?.decay_updated_at ?? data?.updated_at ?? new Date().toISOString()
+    decayUpdatedAt: data?.decay_updated_at ?? data?.updated_at ?? new Date().toISOString(),
+    holderCount: Math.max(0, Math.floor(Number(data?.holder_count) || 0))
   };
 }
 

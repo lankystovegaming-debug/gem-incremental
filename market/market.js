@@ -56,7 +56,11 @@ const state = {
 
 function currentPrice() {
   return state.market
-    ? revertedPrice(state.market.price, state.market.decayUpdatedAt)
+    ? revertedPrice(
+        state.market.price,
+        state.market.decayUpdatedAt,
+        state.market.holderCount
+      )
     : 0;
 }
 
@@ -317,7 +321,7 @@ async function start() {
   renderPrice();
   renderFeed();
 
-  // Keep the displayed idle-decay quote live between server refreshes.
+  // The quote decays more slowly as more players hold shares.
   setInterval(renderPrice, 5000);
 
   // Pick up other players' trades.

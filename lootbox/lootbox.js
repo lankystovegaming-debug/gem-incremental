@@ -364,7 +364,11 @@ async function refreshCoinValue() {
   const market = await loadMarket();
   if (!market) return;
 
-  state.coinValue = revertedPrice(market.price, market.decayUpdatedAt) * 10000;
+  state.coinValue = revertedPrice(
+    market.price,
+    market.decayUpdatedAt,
+    market.holderCount
+  ) * 10000;
   renderWallet();
 }
 
@@ -381,7 +385,11 @@ async function start() {
     state.boxes = boxes;
   }
   if (market) {
-    state.coinValue = revertedPrice(market.price, market.decayUpdatedAt) * 10000;
+    state.coinValue = revertedPrice(
+      market.price,
+      market.decayUpdatedAt,
+      market.holderCount
+    ) * 10000;
   }
 
   // The value is public market data, so keep it live even if the account
