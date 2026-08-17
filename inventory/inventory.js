@@ -327,24 +327,28 @@ function renderGems() {
 
 function gemCard(gem) {
   const tier = rarityTier(gem.rarity);
-  const mutation = getGemMutation(gem.mutation_id, gem.mutation_multiplier);
+  const mutationIds = Array.isArray(gem.mutation_ids) && gem.mutation_ids.length
+    ? gem.mutation_ids
+    : (gem.mutation_id ? [gem.mutation_id] : []);
+  const mutationMultipliers = gem.mutation_multipliers && typeof gem.mutation_multipliers === "object"
+    ? gem.mutation_multipliers
+    : {};
+  const mutations = mutationIds.map(id => getGemMutation(id, mutationMultipliers[id] ?? null)).filter(Boolean);
 
   return `
     <article
-      class="gem-card tier-${tier.id}${mutation ? ` mutation-${mutation.id}` : ""}${gem.locked ? " gem-card--locked" : ""}"
+      class="gem-card tier-${tier.id}${mutations.map(m => ` mutation-${m.id}`).join("")}${gem.locked ? " gem-card--locked" : ""}"
       data-id="${gem.id}"
     >
       <div class="gem-card__head">
         <div>
-          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml, mutation ? `gem-styled--mutation-${mutation.id}` : "")}</div>
+          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml)}</div>
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
         <div class="gem-card__badges">
           <span class="badge badge--tier">${tier.name}</span>
-          ${mutation ? `<span class="mutation-badge mutation-badge--${mutation.id}">${escapeHtml(
-            mutation.name
-          )} · ${formatMultiplier(mutation.multiplier)}</span>` : ""}
+          ${mutations.map(m => `<span class="mutation-badge mutation-badge--${m.id}">${escapeHtml(m.name)} · ${formatMultiplier(m.multiplier)}</span>`).join("")}
         </div>
       </div>
 
