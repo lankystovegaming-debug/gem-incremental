@@ -94,7 +94,7 @@ function friendly(error) {
     not_enough_money: "You don't have enough money.",
     not_enough_shares: "You don't have that many shares.",
     holding_cap: "You've hit the maximum share holding.",
-    invalid_qty: "Enter at least 1 share.",
+    invalid_qty: "Enter between 1 and 100,000 shares.",
     not_authenticated: "Your session expired — refresh and try again.",
     player_not_found: "Your save could not be found."
   };

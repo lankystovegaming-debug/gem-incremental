@@ -106,15 +106,35 @@
 }
 
 
-/* ---------- Recent trades ---------- */
+/* ---------- Recent trades (collapsible) ---------- */
 
 .mkt-feed { margin-top: var(--space-5); }
 
-.mkt-feed h2 { margin-bottom: var(--space-3); }
+.mkt-feed__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+
+  cursor: pointer;
+  list-style: none;
+  font-weight: 650;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.mkt-feed__summary::-webkit-details-marker { display: none; }
+
+.mkt-feed__chevron {
+  color: var(--text-faint);
+  transition: transform 0.15s ease;
+}
+
+.mkt-feed[open] .mkt-feed__chevron { transform: rotate(180deg); }
 
 .mkt-feed__list {
   list-style: none;
-  margin: 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;

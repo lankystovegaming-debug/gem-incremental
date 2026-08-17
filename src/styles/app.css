@@ -642,9 +642,9 @@ a:hover {
 .topbar__inner {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   width: 100%;
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -688,13 +688,13 @@ a:hover {
 .nav__link {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
 
-  padding: 7px 12px;
+  padding: 7px 10px;
   border-radius: var(--radius-sm);
 
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 550;
   white-space: nowrap;
 
@@ -730,17 +730,17 @@ a:hover {
   flex: none;
 }
 
-/* Between the mobile tab bar and a roomy desktop there is a
-   band where the wordmark plus five links plus the tools do not
-   fit. Drop the least useful pieces first rather than letting
-   the bar push the page sideways. */
-@media (max-width: 1080px) {
+/* Between the mobile tab bar and a roomy desktop there is a band
+   where the wordmark plus the links plus the tools do not fit. Drop
+   the least useful pieces first — the brand wordmark, then the nav
+   labels — rather than letting the bar push the page sideways. */
+@media (max-width: 1320px) {
   .brand span:not(.brand__mark) {
     display: none;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .nav__link span {
     display: none;
   }
@@ -798,13 +798,9 @@ a:hover {
     bottom: 0;
     z-index: 50;
 
-    /* Many tabs now, so scroll horizontally instead of squishing. */
+    /* Every tab shares the width evenly, so the bar never scrolls. */
     display: flex;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: none;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
+    justify-content: space-between;
 
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
 
@@ -814,23 +810,27 @@ a:hover {
     -webkit-backdrop-filter: blur(14px);
   }
 
-  .tabbar::-webkit-scrollbar { display: none; }
-
   .tabbar__link {
     display: flex;
-    flex: 0 0 auto;
-    min-width: 20vw;
+    flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     gap: 3px;
 
-    padding: 6px 2px;
+    padding: 6px 1px;
     border-radius: var(--radius-sm);
-    scroll-snap-align: center;
 
     color: var(--text-faint);
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 600;
+  }
+
+  .tabbar__link span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .tabbar__link:hover {
@@ -849,6 +849,43 @@ a:hover {
   .app-main {
     padding-bottom: calc(84px + env(safe-area-inset-bottom));
   }
+}
+
+
+/* ---------- Section sub-tabs (Coin Shop: Boxes / Stocks) ---------- */
+
+.subtabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: var(--space-4);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+
+.subtabs__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.subtabs__link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.subtabs__link[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 

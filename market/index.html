@@ -33,6 +33,11 @@
 
 <body>
   <main class="app-main">
+    <nav class="subtabs" aria-label="Coin shop sections">
+      <a class="subtabs__link" href="../lootbox/">Loot Boxes</a>
+      <a class="subtabs__link" href="../market/" aria-current="page">Stocks</a>
+    </nav>
+
     <div class="page-head">
       <div class="page-head__title">
         <h1>Market</h1>
@@ -63,14 +68,15 @@
       </div>
 
       <div class="mkt-trade">
-        <input type="number" id="mktQty" min="1" step="1" value="10" aria-label="Shares to trade">
+        <input type="number" id="mktQty" min="1" max="100000" step="1" value="10" aria-label="Shares to trade">
         <button class="btn btn--primary" id="mktBuy" type="button">Buy</button>
         <button class="btn btn--danger" id="mktSell" type="button">Sell</button>
       </div>
 
       <p class="mkt-note">
-        2% fee each way · buy any amount · a few seconds between trades.
-        The price drifts back toward its baseline, so it can't be pumped.
+        2% fee each way · up to 100,000 / order · a few seconds between trades.
+        Selling counts toward lifetime earnings. The price drifts back toward
+        its baseline, so it can't be pumped.
       </p>
       <p class="account-status" id="mktStatus"></p>
     </section>
@@ -78,12 +84,15 @@
 
     <!-- ================= RECENT TRADES ================= -->
 
-    <section class="card mkt-feed">
-      <h2>Recent trades</h2>
+    <details class="card mkt-feed">
+      <summary class="mkt-feed__summary">
+        <span>Recent trades</span>
+        <span class="mkt-feed__chevron" aria-hidden="true">▾</span>
+      </summary>
       <ul class="mkt-feed__list" id="mktFeed">
         <li class="mkt-feed__empty">No trades yet.</li>
       </ul>
-    </section>
+    </details>
   </main>
 
   <script type="module" src="./market.js"></script>
