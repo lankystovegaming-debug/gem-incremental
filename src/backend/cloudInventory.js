@@ -3,18 +3,21 @@ import { invokeFunction } from "./invoke.js";
 
 const DEFAULT_PLAYER_STATE = {
   inventory_capacity: 15,
-  money: 0
+  money: 0,
+  next_roll_at: null
 };
 
 
 export async function loadCloudGems() {
   const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser();
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession();
 
-  if (userError || !user) {
-    console.error("Failed to get current user:", userError);
+  const user = session?.user;
+
+  if (sessionError || !user) {
+    console.error("Failed to load current session:", sessionError);
     return null;
   }
 
@@ -52,12 +55,14 @@ export async function loadCloudGems() {
 // missing one is the starting state rather than a failure.
 export async function loadCloudPlayerState() {
   const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser();
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession();
 
-  if (userError || !user) {
-    console.error("Failed to get current user:", userError);
+  const user = session?.user;
+
+  if (sessionError || !user) {
+    console.error("Failed to load current session:", sessionError);
     return null;
   }
 
@@ -66,7 +71,8 @@ export async function loadCloudPlayerState() {
     .select(`
       inventory_capacity,
       money,
-      total_rolls
+      total_rolls,
+      next_roll_at
     `)
     .eq("id", user.id)
     .maybeSingle();
@@ -85,7 +91,8 @@ export async function loadCloudPlayerState() {
       data.inventory_capacity ?? DEFAULT_PLAYER_STATE.inventory_capacity
     ),
     money: Number(data.money ?? 0),
-    total_rolls: Number(data.total_rolls ?? 0)
+    total_rolls: Number(data.total_rolls ?? 0),
+    next_roll_at: data.next_roll_at ?? null
   };
 }
 

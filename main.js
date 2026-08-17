@@ -195,7 +195,7 @@ async function refreshPlayerState() {
 
   renderSummary();
 
-  return true;
+  return playerState;
 }
 
 
@@ -1059,9 +1059,20 @@ async function startGame() {
     return;
   }
 
+  // The player row now exists, so acquiring the roll lease can run while
+  // the local-only legacy-save check runs. This removes one serial network
+  // wait from normal startup.
+  const rollSessionPromise = startRollSession();
+
+  try {
+    await runLegacyMigrationGate();
+  } catch (error) {
+    console.error("Legacy migration gate failed:", error);
+  }
+
   // One active rolling tab per account. This uses a lightweight
   // Supabase database RPC rather than an Edge Function heartbeat.
-  rollSessionActive = await startRollSession();
+  rollSessionActive = await rollSessionPromise;
 
   onRollSessionChange((active) => {
     rollSessionActive = active;
@@ -1084,15 +1095,9 @@ async function startGame() {
   });
 
 
-  try {
-    await runLegacyMigrationGate();
-  } catch (error) {
-    console.error("Legacy migration gate failed:", error);
-  }
+  const playerState = await refreshPlayerState();
 
-  const loaded = await refreshPlayerState();
-
-  if (!loaded) {
+  if (!playerState) {
     showError("Could not load your save. Refresh to try again.");
 
     return;
@@ -1100,23 +1105,13 @@ async function startGame() {
 
   refreshEffects();
 
-  await restoreCooldown(user.id);
+  await restoreCooldown(playerState.next_roll_at);
 }
 
 
-async function restoreCooldown(userId) {
-  const { data, error } = await supabase
-    .from("players")
-    .select("next_roll_at")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Could not read roll cooldown:", error);
-  }
-
-  const nextRollAt = data?.next_roll_at
-    ? new Date(data.next_roll_at).getTime()
+async function restoreCooldown(nextRollAtValue) {
+  const nextRollAt = nextRollAtValue
+    ? new Date(nextRollAtValue).getTime()
     : 0;
 
   if (nextRollAt > Date.now()) {
@@ -1142,11 +1137,11 @@ window.addEventListener("pageshow", async (event) => {
     return;
   }
 
-  await refreshPlayerState();
+  const playerState = await refreshPlayerState();
 
   refreshEffects();
 
-  await restoreCooldown(user.id);
+  await restoreCooldown(playerState?.next_roll_at);
 });
 
 
@@ -1160,11 +1155,11 @@ window.addEventListener("gem:maintenance-refresh", async () => {
     return;
   }
 
-  await refreshPlayerState();
+  const playerState = await refreshPlayerState();
 
   refreshEffects();
 
-  await restoreCooldown(user.id);
+  await restoreCooldown(playerState?.next_roll_at);
 });
 
 

@@ -7,9 +7,11 @@ let privateChannel = null;
 
 async function getCurrentUser() {
   const {
-    data: { user },
+    data: { session },
     error
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
+
+  const user = session?.user;
 
   if (error) throw error;
   if (!user) throw new Error("You must be signed in to use private messaging.");

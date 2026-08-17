@@ -108,15 +108,10 @@ export async function loadChatMessages(limit = 50) {
     throw announcementResult.error;
   }
 
-  const messages = await enrich(
-    chatResult.data ?? [],
-    normalizeChatRow
-  );
-
-  const announcements = await enrich(
-    announcementResult.data ?? [],
-    normalizeAnnouncement
-  );
+  const [messages, announcements] = await Promise.all([
+    enrich(chatResult.data ?? [], normalizeChatRow),
+    enrich(announcementResult.data ?? [], normalizeAnnouncement)
+  ]);
 
   return [...messages, ...announcements]
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))

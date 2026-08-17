@@ -41,7 +41,7 @@ async function probeUrl(
       () => {
         controller.abort();
       },
-      8000
+      2500
     );
 
 
@@ -250,22 +250,6 @@ async function ensurePlayerAuthInternal() {
   );
 
 
-  console.log(
-    "[AUTH] Testing Supabase connectivity..."
-  );
-
-
-  const diagnostics =
-    await checkSupabaseConnectivity();
-
-
-  // IMPORTANT:
-  // We still attempt authentication even if a probe fails.
-  //
-  // The probes are diagnostic only and should never become
-  // another condition that prevents a player from signing in.
-
-
   // =======================================================
   // CREATE ANONYMOUS USER
   // =======================================================
@@ -284,6 +268,12 @@ async function ensurePlayerAuthInternal() {
 
 
   if (error) {
+    // Diagnostics are useful when sign-in fails, but running two
+    // network probes before every new session made normal startup wait
+    // for slow or blocked requests. Keep them off the happy path.
+    const diagnostics =
+      await checkSupabaseConnectivity();
+
     lastAuthError = {
       stage:
         "signInAnonymously",
@@ -323,6 +313,9 @@ async function ensurePlayerAuthInternal() {
   // =======================================================
 
   if (!data.user) {
+    const diagnostics =
+      await checkSupabaseConnectivity();
+
     lastAuthError = {
       stage:
         "signInAnonymously",
