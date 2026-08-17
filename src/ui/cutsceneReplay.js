@@ -13,6 +13,11 @@ function hashString(value) {
 
 function durationForRarity(rarity) {
   const r = Number(rarity ?? 0);
+
+  // 10k–99k cutscenes are intentionally short.
+  if (r >= 10000 && r < 100000) return 1800;
+
+  // Keep the larger rarity cinematics dramatic.
   if (r >= 10000000) return 22000;
   if (r >= 4000000) return 18000;
   if (r >= 1800000) return 15000;
@@ -20,7 +25,7 @@ function durationForRarity(rarity) {
   if (r >= 480000) return 12000;
   if (r >= 250000) return 10500;
   if (r >= 100000) return 9000;
-  if (r >= 10000) return 2400;
+
   return 0;
 }
 
@@ -62,6 +67,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
   const mutations = ids.map(id => getGemMutation(id)).filter(Boolean);
   const mutation = mutations[0] ?? null;
   const name = String(gem?.name ?? "Gem");
+  const primaryMutation = mutation?.id ?? "none";
   const hash = hashString(name);
   const variant = hash % 10;
   const hue = hash % 360;
@@ -79,12 +85,14 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       rarity >= 100000 ? "ultra-level-100k" :
       "ultra-level-10k",
     ...mutations.map(m => `mutation-scene-${m.id}`),
+    `mutation-primary-${primaryMutation}`,
     "replay-cutscene-overlay"
   ].filter(Boolean).join(" ");
 
   overlay.style.setProperty("--gem-hue", String(hue));
   overlay.style.setProperty("--gem-speed", "1");
   overlay.style.setProperty("--cinematic-duration", `${duration}ms`);
+  overlay.style.setProperty("--scene-animation-duration", `${duration}ms`);
 
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
