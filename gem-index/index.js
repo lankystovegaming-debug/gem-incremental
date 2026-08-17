@@ -59,9 +59,19 @@ function renderSummary() {
 
 function gemMatchesMutationFilter(gem) {
   if (!state.selectedMutations.size) return true;
+
   const records = state.mutationByGem[gem.name] ?? {};
-  for (const id of state.selectedMutations) if (records[id]) return true;
-  return false;
+  const hasAnyMutation = Object.keys(records).some(id => id !== "none");
+
+  // "No Mutation" is an exclusive filter. The click handler also clears
+  // every other selected tab when it is chosen.
+  if (state.selectedMutations.has("none")) {
+    return Boolean(state.index[gem.name]) && !hasAnyMutation;
+  }
+
+  // Mutation tabs are multi-select and use OR semantics:
+  // selecting Corrupted + Celestial shows gems discovered with either.
+  return [...state.selectedMutations].some(id => Boolean(records[id]));
 }
 
 function visibleGems() {
@@ -114,8 +124,10 @@ function gemCard(gem) {
   const replayMutationIds = selected.length ? selected.filter(id => (state.mutationByGem[gem.name] ?? {})[id]) : discoveredMutationIds(gem.name);
   const replayAttrs = replayMutationIds.length ? ` data-replay-mutations="${escapeHtml(replayMutationIds.join(","))}"` : "";
   const baseValue = gem.baseWeight * gem.valuePerGram;
+  const discoveredIds = discoveredMutationIds(gem.name);
+  const mutationNameClasses = discoveredIds.map(id => `gem-styled--mutation-${id}`).join(" ");
   return `<article class="index-card tier-${tier.id}">
-    <div class="index-card__head"><div><div class="index-card__name">${gemNameHtml(gem.name,escapeHtml)}</div><div class="index-card__rarity">${rarityLabel(gem.rarity)}</div></div><div class="index-card__badges"><span class="badge badge--tier">${tier.name}</span>${mutationBadges(gem.name)}</div></div>
+    <div class="index-card__head"><div><div class="index-card__name">${gemNameHtml(gem.name,escapeHtml,mutationNameClasses)}</div><div class="index-card__rarity">${rarityLabel(gem.rarity)}</div></div><div class="index-card__badges"><span class="badge badge--tier">${tier.name}</span>${mutationBadges(gem.name)}</div></div>
     <p class="index-card__desc">${escapeHtml(gem.description ?? "No description available.")}</p>
     <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Times found</span><span class="index-card__val">${formatCount(entry.totalRolled)}</span></div><div class="index-card__row"><span class="index-card__key">Heaviest</span><span class="index-card__val">${formatWeight(entry.heaviestWeight)}</span></div></div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
