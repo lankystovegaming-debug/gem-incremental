@@ -37,8 +37,15 @@ document.getElementById("searchIcon").innerHTML = icons.search;
 const mutationList = Object.values(GEM_MUTATIONS);
 
 /*
- * Five independent mutations => 32 combinations per gem.
- * 46 base gems => 1,472 possible index entries.
+ * The hidden Lanky Gem is intentionally not part of the public Gem Index.
+ * That leaves 45 indexable base gems, so every exact mutation combination is
+ * always "out of 45".
+ */
+const indexableGems = gems.filter((gem) => !gem.hideRarityUntilDiscovered);
+
+/*
+ * Five independent mutations => 32 exact combinations per gem.
+ * 45 indexable base gems => 1,440 possible index entries.
  */
 const MUTATION_COMBINATIONS = (() => {
   const ids = mutationList.map((m) => m.id);
@@ -55,7 +62,7 @@ const MUTATION_COMBINATIONS = (() => {
   return combinations;
 })();
 
-const TOTAL_ENTRIES = gems.length * MUTATION_COMBINATIONS.length;
+const TOTAL_ENTRIES = indexableGems.length * MUTATION_COMBINATIONS.length;
 
 const state = {
   index: {},
@@ -134,7 +141,7 @@ function comboKey(gemName, combinationKey) {
 function allEntries() {
   const entries = [];
 
-  for (const gem of gems) {
+  for (const gem of indexableGems) {
     for (const combination of MUTATION_COMBINATIONS) {
       entries.push({
         gem,
@@ -149,21 +156,48 @@ function allEntries() {
 
 const indexEntries = allEntries();
 
+function selectedCombination() {
+  if (!state.selectedMutations.size) {
+    return null;
+  }
+
+  if (state.selectedMutations.has("none")) {
+    return "none";
+  }
+
+  return mutationCombinationKey([...state.selectedMutations]);
+}
+
+function selectedEntries() {
+  const key = selectedCombination();
+
+  return key === null
+    ? indexEntries
+    : indexEntries.filter(
+        (entry) => entry.combinationKey === key
+      );
+}
+
 function renderSummary() {
-  const discovered = indexEntries.filter(
+  // Summary totals are scoped to the exact mutation combination currently
+  // selected. Selecting two mutations means "A + B" only, not A+B+anything.
+  const scopedEntries = selectedEntries();
+  const discovered = scopedEntries.filter(
     (entry) => Boolean(state.combinations[entry.key])
   ).length;
 
+  const total = scopedEntries.length;
+
   discoveryCount.textContent =
-    `${formatCount(discovered)} of ${formatCount(TOTAL_ENTRIES)} ` +
-    `gem / mutation combinations discovered`;
+    `${formatCount(discovered)} of ${formatCount(total)} ` +
+    `gems discovered`;
 
   discoveryMeter.style.width =
-    `${TOTAL_ENTRIES ? (discovered / TOTAL_ENTRIES) * 100 : 0}%`;
+    `${total ? (discovered / total) * 100 : 0}%`;
 
   const tiers = new Map();
 
-  for (const entry of indexEntries) {
+  for (const entry of scopedEntries) {
     const tier = rarityTier(entry.gem.rarity);
     const bucket =
       tiers.get(tier.id) ??
@@ -191,20 +225,13 @@ function renderSummary() {
 }
 
 function entryMatchesMutationFilter(entry) {
-  if (!state.selectedMutations.size) return true;
+  const key = selectedCombination();
 
-  if (state.selectedMutations.has("none")) {
-    return entry.mutationIds.length === 0;
-  }
+  if (key === null) return true;
 
-  /*
-   * Multiple selected mutations use AND semantics.
-   * Example: Polished + Gilded shows only combinations containing
-   * both mutations.
-   */
-  return [...state.selectedMutations].every((id) =>
-    entry.mutationIds.includes(id)
-  );
+  // A selection represents one exact mutation combination.
+  // This keeps every mutation view at exactly 45 possible gems.
+  return entry.combinationKey === key;
 }
 
 function visibleEntries() {
@@ -231,20 +258,47 @@ function visibleEntries() {
     return true;
   });
 
+  const mutationOrder = new Map(
+    mutationList.map((mutation, index) => [mutation.id, index])
+  );
+
+  const compareMutationIds = (a, b) => {
+    if (a.length !== b.length) {
+      return a.length - b.length;
+    }
+
+    for (let i = 0; i < a.length; i += 1) {
+      const delta =
+        (mutationOrder.get(a[i]) ?? 999) -
+        (mutationOrder.get(b[i]) ?? 999);
+
+      if (delta) return delta;
+    }
+
+    return 0;
+  };
+
   const sorters = {
     rarity: (a, b) => a.gem.rarity - b.gem.rarity,
     "rarity-desc": (a, b) => b.gem.rarity - a.gem.rarity,
-    name: (a, b) => {
-      const nameSort = a.gem.name.localeCompare(b.gem.name);
-      if (nameSort) return nameSort;
-      return a.combinationKey.localeCompare(b.combinationKey);
-    },
-    found: (a, b) =>
-      (state.combinations[b.key]?.totalFound ?? 0) -
-      (state.combinations[a.key]?.totalFound ?? 0)
+    name: (a, b) => a.gem.name.localeCompare(b.gem.name),
+    found: (a, b) => {
+      const foundDelta =
+        (state.combinations[b.key]?.totalFound ?? 0) -
+        (state.combinations[a.key]?.totalFound ?? 0);
+
+      if (foundDelta) return foundDelta;
+
+      return a.gem.rarity - b.gem.rarity;
+    }
   };
 
-  return [...filtered].sort(sorters[gemSort.value] ?? sorters.rarity);
+  return [...filtered].sort((a, b) => {
+    const comboDelta = compareMutationIds(a.mutationIds, b.mutationIds);
+    if (comboDelta) return comboDelta;
+
+    return (sorters[gemSort.value] ?? sorters.rarity)(a, b);
+  });
 }
 
 function renderMutationTabs() {
