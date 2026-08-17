@@ -336,7 +336,7 @@ function gemCard(gem) {
     >
       <div class="gem-card__head">
         <div>
-          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml)}</div>
+          <div class="gem-card__name">${gemNameHtml(gem.gem_name, escapeHtml, mutation ? `gem-styled--mutation-${mutation.id}` : "")}</div>
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
         </div>
 
