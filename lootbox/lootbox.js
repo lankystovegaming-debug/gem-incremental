@@ -356,20 +356,24 @@ async function refreshWallet() {
 
 
 async function start() {
+  // Box definitions are public. Start loading them immediately so a temporary
+  // account connection problem never makes the catalogue disappear.
+  const boxesPromise = loadLootBoxes();
   const user = await ensurePlayerAuth();
-
-  if (!user) {
-    subtitle.textContent = "Could not sign you in. Refresh to try again.";
-    notify.error("Sign-in failed", "The game could not reach your account.");
-    return;
-  }
-
-  const [boxes] = await Promise.all([loadLootBoxes(), refreshWallet()]);
+  const boxes = await boxesPromise;
 
   if (boxes) {
     state.boxes = boxes;
   }
 
+  if (!user) {
+    subtitle.textContent = "Could not sign you in. Refresh to try again.";
+    renderBoxes();
+    notify.error("Sign-in failed", "The game could not reach your account.");
+    return;
+  }
+
+  await refreshWallet();
   renderBoxes();
 }
 
