@@ -414,7 +414,7 @@ function gemCard(entry) {
     `;
   }
 
-  const replayable = entry.gem.rarity >= 10000;
+  const replayable = entry.gem.rarity >= 100000;
   const baseValue = entry.gem.baseWeight * entry.gem.valuePerGram;
 
   const replayAttrs = entry.mutationIds.length

@@ -268,109 +268,40 @@
 
 .mutation-name-effect {
   --mutation-color: var(--text);
-  --mutation-glow: color-mix(in srgb, var(--mutation-color) 65%, transparent);
   position: relative;
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   isolation: isolate;
-  padding: 2px 7px;
-  border-radius: 999px;
+  color: var(--mutation-color);
   font-size: .69rem;
   font-weight: 900;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: .035em;
   white-space: nowrap;
-  color: var(--mutation-color);
-  text-shadow: 0 0 8px var(--mutation-glow);
-  overflow: visible;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--mutation-color) 72%, transparent);
 }
-
-.mutation-name-effect__text {
-  position: relative;
-  z-index: 3;
-}
-
-.mutation-name-effect__fx,
-.mutation-name-effect::before,
-.mutation-name-effect::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.mutation-name-effect__fx {
-  inset: -4px -7px;
-  border: 1px solid currentColor;
-  border-radius: inherit;
-  opacity: .75;
-  filter: blur(.2px);
-  animation: mutation-word-ring 1.45s ease-in-out infinite;
-}
-
-.mutation-name-effect::before {
-  inset: -6px -10px;
-  border-radius: inherit;
-  background: radial-gradient(circle, currentColor 0 1px, transparent 2px) 0 50% / 14px 14px;
-  opacity: .55;
-  animation: mutation-word-particles 2.2s linear infinite;
-  mix-blend-mode: screen;
-}
-
-.mutation-name-effect::after {
-  left: -8px;
-  right: -8px;
-  top: 50%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, currentColor, transparent);
-  opacity: .8;
-  animation: mutation-word-scan 1.15s ease-in-out infinite;
-}
-
+.mutation-name-effect__text { position:relative; z-index:3; }
+.mutation-name-effect__fx { position:absolute; inset:-5px -7px; pointer-events:none; }
+.mutation-name-effect::before,.mutation-name-effect::after { content:""; position:absolute; pointer-events:none; z-index:1; }
 .mutation-name-effect--polished { --mutation-color:#e7edf5; }
 .mutation-name-effect--gilded { --mutation-color:#f6c453; }
 .mutation-name-effect--prismatic { --mutation-color:#f08bff; }
 .mutation-name-effect--celestial { --mutation-color:#7dd3fc; }
 .mutation-name-effect--corrupted { --mutation-color:#c084fc; }
-
-.mutation-name-effect--prismatic .mutation-name-effect__fx {
-  border-color: transparent;
-  border-image: linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1) 1;
-  animation: mutation-word-prismatic 1.6s linear infinite;
-}
-
-.mutation-name-effect--corrupted .mutation-name-effect__fx {
-  border-style: dashed;
-  animation: mutation-word-corrupt .65s steps(2) infinite;
-}
-
-@keyframes mutation-word-ring {
-  0%,100% { transform: scale(.96); opacity:.45; filter:brightness(.9); }
-  50% { transform: scale(1.06); opacity:1; filter:brightness(1.7); }
-}
-
-@keyframes mutation-word-particles {
-  from { transform: rotate(0deg); opacity:.35; }
-  50% { opacity:.8; }
-  to { transform: rotate(360deg); opacity:.35; }
-}
-
-@keyframes mutation-word-scan {
-  0%,100% { transform:scaleX(.35); opacity:0; }
-  50% { transform:scaleX(1); opacity:.95; }
-}
-
-@keyframes mutation-word-prismatic {
-  from { transform:rotate(0deg) scale(.95); filter:hue-rotate(0deg); }
-  to { transform:rotate(360deg) scale(1.05); filter:hue-rotate(360deg); }
-}
-
-@keyframes mutation-word-corrupt {
-  0%,100% { transform:translateX(0) skewX(0); opacity:.55; }
-  25% { transform:translateX(-2px) skewX(-4deg); opacity:1; }
-  50% { transform:translateX(2px) skewX(4deg); opacity:.7; }
-  75% { transform:translateX(-1px); opacity:1; }
-}
+.mutation-name-effect--polished::after { content:""; left:0; right:0; bottom:-4px; height:2px; background:linear-gradient(90deg,transparent,#fff,transparent); filter:blur(.5px); animation:idxPolish 1.8s ease-in-out infinite; }
+.mutation-name-effect--gilded::before { content:""; inset:-7px -8px; background:radial-gradient(circle at 8% 25%,#ffe9a6 0 1px,transparent 1.8px),radial-gradient(circle at 92% 70%,#f6c453 0 1px,transparent 1.8px),radial-gradient(circle at 52% 0%,#fff2b8 0 1px,transparent 1.6px); animation:idxGold 1.35s ease-in-out infinite; }
+.mutation-name-effect--gilded::after { content:""; left:12%; right:12%; bottom:-3px; height:1px; background:linear-gradient(90deg,transparent,#ffd76a,transparent); box-shadow:0 0 7px #f6c453; }
+.mutation-name-effect--prismatic .mutation-name-effect__text { background:linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1); background-size:300% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:idxPrism 2.4s linear infinite; }
+.mutation-name-effect--prismatic::before { content:""; inset:-6px -7px; background:radial-gradient(circle at 15% 50%,#ff5db1 0 1px,transparent 2px),radial-gradient(circle at 85% 35%,#60a5fa 0 1px,transparent 2px); animation:idxPrismSpark 1.5s ease-in-out infinite; }
+.mutation-name-effect--celestial::before { content:""; inset:-8px -8px; background:radial-gradient(circle at 5% 30%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 95% 65%,#7dd3fc 0 1px,transparent 1.8px),radial-gradient(circle at 52% 0%,#dff7ff 0 1px,transparent 1.8px); animation:idxStars 1.9s ease-in-out infinite; }
+.mutation-name-effect--celestial::after { content:""; left:10%; right:10%; top:50%; height:1px; background:linear-gradient(90deg,transparent,#7dd3fc,transparent); box-shadow:0 0 9px #7dd3fc; }
+.mutation-name-effect--corrupted::before { content:""; inset:-4px -7px; background:linear-gradient(90deg,transparent 0 20%,#f43f5e 20% 23%,transparent 23% 75%,#60a5fa 75% 78%,transparent 78%); opacity:.42; animation:idxCorrupt .7s steps(2,end) infinite; }
+.mutation-name-effect--corrupted::after { content:""; left:0; right:0; top:48%; height:1px; background:#c084fc; box-shadow:0 0 8px #c084fc; opacity:.6; }
+@keyframes idxPolish{0%,100%{transform:scaleX(.2);opacity:.15}50%{transform:scaleX(1);opacity:.9}}
+@keyframes idxGold{0%,100%{transform:translateY(2px);opacity:.25}50%{transform:translateY(-2px);opacity:1}}
+@keyframes idxPrism{to{background-position:300% 0}}
+@keyframes idxPrismSpark{0%,100%{opacity:.2;transform:translateX(-2px)}50%{opacity:.85;transform:translateX(2px)}}
+@keyframes idxStars{0%,100%{opacity:.25;transform:scale(.9)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes idxCorrupt{0%,100%{transform:translate(0,0);opacity:.25}50%{transform:translate(2px,-1px);opacity:.7}}
 
 .index-card--locked .index-card__rarity {
   color: var(--text-faint);

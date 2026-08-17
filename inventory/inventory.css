@@ -372,7 +372,7 @@
   font-size: 0.78rem;
 }
 
-.gem-mutation-line{display:flex;flex-wrap:wrap;gap:.38rem;align-items:center;margin-top:.18rem;margin-bottom:.25rem}.gem-mutation-line .mutation-name-effect{font-size:.68rem;padding:2px 7px;border-radius:999px}.gem-card__badges .mutation-name-effect{font-size:.62rem}
+.gem-mutation-line{display:flex;flex-wrap:wrap;gap:.38rem;align-items:center;margin-top:.18rem;margin-bottom:.25rem}.gem-mutation-line .mutation-name-effect{font-size:.68rem;padding:0;border-radius:0}.gem-card__badges .mutation-name-effect{font-size:.62rem;padding:0;border-radius:0}
 
 .delete-rules { margin:12px 0 18px; padding:16px; }
 .delete-rules[hidden] { display:none; }

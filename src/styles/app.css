@@ -2062,7 +2062,7 @@ a.btn--icon[aria-current="page"] {
   }
 }
 
-.gem-reveal__chance,.scene__chance{margin:.45rem 0 0;color:var(--text-muted);font-size:.82rem;font-variant-numeric:tabular-nums}.scene__mutation{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.42rem;max-width:min(90vw,900px);margin:.7rem auto .2rem}.scene__mutation .mutation-name-effect{font-size:.72rem;padding:3px 8px;border-radius:999px;white-space:nowrap}.history__mutations{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;min-width:0}.history__mutations .mutation-name-effect{font-size:.6rem;padding:2px 6px;border-radius:999px}.history__meta{font-variant-numeric:tabular-nums}.setting-number{width:150px}.menu{max-height:min(80vh,520px);overflow:auto}
+.gem-reveal__chance,.scene__chance{margin:.45rem 0 0;color:var(--text-muted);font-size:.82rem;font-variant-numeric:tabular-nums}.scene__mutation{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.42rem;max-width:min(90vw,900px);margin:.7rem auto .2rem}.scene__mutation .mutation-name-effect{font-size:.72rem;white-space:nowrap;padding:0;border-radius:0}.history__mutations{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;min-width:0}.history__mutations .mutation-name-effect{font-size:.6rem;padding:0;border-radius:0}.history__meta{font-variant-numeric:tabular-nums}.setting-number{width:150px}.menu{max-height:min(80vh,520px);overflow:auto}
 
 
 /* =========================================================

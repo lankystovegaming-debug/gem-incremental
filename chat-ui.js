@@ -529,21 +529,32 @@ if (messagesEl && formEl && inputEl) {
     // immediately), followed by the persisted server announcement. Reuse the
     // local entry instead of displaying the same roll twice.
     if (isSystem && message.gem_name) {
-      const mutationKey = chatMutationIds(message).join("+");
+      const mutationIds = chatMutationIds(message);
+      const mutationKey = mutationIds.join("+");
       const now = new Date(message.created_at).getTime();
       const duplicate = [...messagesEl.querySelectorAll(".chat-message--system")]
         .find((candidate) => {
           if (candidate.dataset.gemName !== String(message.gem_name)) return false;
-          if (candidate.dataset.mutationKey !== mutationKey) return false;
           const existingTime = new Date(
             candidate.querySelector("time")?.dateTime ?? 0
           ).getTime();
           return Number.isFinite(now) && Number.isFinite(existingTime)
-            ? Math.abs(now - existingTime) <= 15_000
+            ? Math.abs(now - existingTime) <= 10_000
             : false;
         });
 
       if (duplicate) {
+        const existingMutationKey = duplicate.dataset.mutationKey ?? "";
+        const existingHasMutation = Boolean(existingMutationKey);
+        const incomingHasMutation = Boolean(mutationKey);
+
+        // A server INSERT can arrive before its later UPDATE containing
+        // mutation_ids. If a local mutated announcement is already visible,
+        // never replace it with the temporary unmutated server version.
+        if (existingHasMutation && !incomingHasMutation) {
+          return false;
+        }
+
         duplicate.dataset.messageId = messageId;
         duplicate.dataset.gemName = String(message.gem_name);
         duplicate.dataset.mutationKey = mutationKey;
