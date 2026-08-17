@@ -37,13 +37,15 @@ import { initDevPanel } from "./devpanel.js";
 
 // `short` is used on the mobile tab bar, where six full
 // labels would not fit across a 375px screen.
+// `short` is used on the mobile tab bar. `match` lets one entry stay
+// highlighted across sibling pages (the Coin Shop covers loot boxes and
+// the coin-share market, since both are spent in coins).
 const PAGES = [
   { id: "roll", label: "Roll", short: "Roll", href: "", icon: icons.dice },
   { id: "inventory", label: "Inventory", short: "Items", href: "inventory/", icon: icons.bag },
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
-  { id: "boosts", label: "Potion Shop", short: "Shop", href: "boosts/", icon: icons.potion },
-  { id: "lootbox", label: "Loot Boxes", short: "Boxes", href: "lootbox/", icon: icons.box },
-  { id: "market", label: "Market", short: "Market", href: "market/", icon: icons.market },
+  { id: "boosts", label: "Potion Shop", short: "Potions", href: "boosts/", icon: icons.potion },
+  { id: "coinshop", label: "Coin Shop", short: "Coins", href: "lootbox/", icon: icons.box, match: ["lootbox", "market"] },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
@@ -767,7 +769,8 @@ function eventTime(milliseconds) {
 // =========================================================
 
 function navLink(item, activePage, base, className, short = false) {
-  const active = item.id === activePage;
+  const active =
+    item.id === activePage || (item.match?.includes(activePage) ?? false);
 
   const label = short ? item.short : item.label;
 

@@ -4,9 +4,11 @@
 --     in in-game money. Anti-pump: 2% spread each way, a 3s trade
 --     cooldown, and — most importantly — MEAN REVERSION toward a $10
 --     baseline (15-min half-life) plus a $1 floor, so no crowd can
---     pump it far or keep it pumped. Buy any amount (1 → unlimited);
+--     pump it far or keep it pumped. Up to 100,000 shares per order;
 --     the per-trade price impact is capped so a huge order can't blow
 --     the price up in one go, and the mean reversion drags it back.
+--   - Selling shares credits lifetime_earnings, so trading profits
+--     show up on the leaderboard (same as selling gems).
 --   - market_history logs who traded (username, action, qty) so the
 --     market page can show a live "recent trades" feed.
 -- =========================================================
@@ -78,7 +80,8 @@ declare
   v_shares bigint; v_money double precision; v_last timestamptz; v_username text;
   v_impact numeric; v_cost numeric := 0; v_proceeds numeric := 0;
   v_fee numeric := 0.02;
-  v_hold_cap bigint := 1000000000000;   -- effectively unlimited
+  v_max_qty int := 100000;              -- per-order cap
+  v_hold_cap bigint := 1000000000000;
   v_cooldown interval := interval '3 seconds';
   v_baseline numeric := 10; v_floor numeric := 1;   -- no upper cap
   v_impact_per numeric := 0.00005; v_max_impact numeric := 2.0;  -- <= +200%/trade
@@ -86,7 +89,7 @@ declare
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
   if p_action not in ('buy','sell') then raise exception 'invalid_action'; end if;
-  if p_qty is null or p_qty < 1 then raise exception 'invalid_qty'; end if;
+  if p_qty is null or p_qty < 1 or p_qty > v_max_qty then raise exception 'invalid_qty'; end if;
 
   insert into public.player_shares(player_id, shares) values (v_uid, 0) on conflict (player_id) do nothing;
   select shares, last_trade_at into v_shares, v_last from public.player_shares where player_id = v_uid for update;
@@ -115,7 +118,12 @@ begin
   else
     if v_shares < p_qty then raise exception 'not_enough_shares'; end if;
     v_proceeds := p_qty * v_price * (1 - v_fee);
-    update public.players set money = money + v_proceeds where id = v_uid returning money into v_money;
+    -- Money earned by selling counts toward the lifetime-earnings leaderboard,
+    -- exactly like selling gems does.
+    update public.players
+       set money = money + v_proceeds,
+           lifetime_earnings = greatest(0, lifetime_earnings + greatest(0, v_proceeds))
+     where id = v_uid returning money into v_money;
     update public.player_shares set shares = shares - p_qty, last_trade_at = now() where player_id = v_uid returning shares into v_shares;
     v_new_price := v_price * (1 - v_impact);
   end if;
