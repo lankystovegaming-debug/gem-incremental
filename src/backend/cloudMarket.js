@@ -3,15 +3,13 @@ import { supabase } from "./supabase.js";
 // Must mirror the server (trade_shares) so the shown price matches
 // what a trade will actually use.
 const BASELINE = 10;
-const HALF_LIFE_MS = 15 * 60 * 1000;
 const FLOOR = 1;
 
 
-export function revertedPrice(price, updatedAtIso) {
-  const elapsed = Date.now() - new Date(updatedAtIso).getTime();
-  const factor = Math.pow(0.5, Math.max(0, elapsed) / HALF_LIFE_MS);
-  const p = BASELINE + (Number(price) - BASELINE) * factor;
-  return Math.max(FLOOR, p);
+export function revertedPrice(price) {
+  // The server's curve is the single source of truth. Do not drift the
+  // displayed quote over time: that would create an artificial arbitrage.
+  return Math.max(FLOOR, Number(price));
 }
 
 
@@ -94,7 +92,9 @@ function friendly(error) {
     not_enough_money: "You don't have enough money.",
     not_enough_shares: "You don't have that many shares.",
     holding_cap: "You've hit the maximum share holding.",
-    invalid_qty: "Enter between 1 and 100,000 shares.",
+    invalid_qty: "Enter between 1 and 10,000 shares.",
+    market_floor: "The market is at its floor. Try a smaller sale.",
+    market_ceiling: "The market is at its ceiling. Try a smaller buy.",
     not_authenticated: "Your session expired — refresh and try again.",
     player_not_found: "Your save could not be found."
   };

@@ -136,7 +136,7 @@ async function refreshFeed() {
 
 
 async function trade(action) {
-  const qty = Math.max(1, Math.min(100000, Math.floor(Number(mktQty.value) || 0)));
+  const qty = Math.max(1, Math.min(10000, Math.floor(Number(mktQty.value) || 0)));
 
   mktBuy.disabled = true;
   mktSell.disabled = true;
