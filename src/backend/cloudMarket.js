@@ -124,7 +124,7 @@ function friendly(error) {
     not_enough_shares: "You don't have that many shares.",
     not_enough_shares_for_coin: "You need 10,000 shares to redeem a coin.",
     holding_cap: "You've hit the maximum share holding.",
-    invalid_qty: "Enter between 1 and 10,000 shares.",
+    invalid_qty: "Enter between 1 and 100,000 shares.",
     market_floor: "The market is at its floor. Try a smaller sale.",
     market_ceiling: "The market is at its ceiling. Try a smaller buy.",
     not_authenticated: "Your session expired — refresh and try again.",
