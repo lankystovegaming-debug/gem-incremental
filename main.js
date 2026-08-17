@@ -112,6 +112,7 @@ function cinematicDuration(rarity = 100000) {
   else if (rarityValue >= 480000) duration = 12000;
   else if (rarityValue >= 250000) duration = 10500;
   else if (rarityValue >= 100000) duration = 9000;
+  else if (rarityValue >= 10000) duration = 2400;
 
   // Give phones a little more breathing room without making the
   // ultra-rare experience materially shorter.
@@ -380,6 +381,14 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
   overlay.innerHTML = `
     <div class="scene__backdrop"></div>
     <div class="scene__world">${sceneMarkup}</div>
+    ${mutationId ? `
+      <div class="mutation-scene-layer mutation-scene-layer--${mutationId}" aria-hidden="true">
+        <span class="mutation-fx mutation-fx--a"></span>
+        <span class="mutation-fx mutation-fx--b"></span>
+        <span class="mutation-fx mutation-fx--c"></span>
+        <span class="mutation-fx mutation-fx--d"></span>
+      </div>
+    ` : ""}
     <div class="scene__mega-world" aria-hidden="true">
       <span class="mega__warp"></span>
       <span class="mega__ring mega__ring--a"></span>
@@ -397,7 +406,11 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
     <div class="scene__reveal">
       <div class="scene__gem">${icons.gem}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
-      <h2 class="scene__name">${gemNameHtml(gemName, escapeHtml)}</h2>
+      <h2 class="scene__name">${gemNameHtml(
+        gemName,
+        escapeHtml,
+        mutationId ? `gem-styled--mutation-${mutationId}` : ""
+      )}</h2>
       ${mutationId ? `<div class="scene__mutation">✦ ${escapeHtml(
         data?.mutation?.name ?? mutationId.replace(/[-_]/g, " ")
       )}</div>` : ""}
@@ -462,7 +475,11 @@ function renderRoll(data, outcome) {
     <div class="gem-reveal">
       <div class="gem-reveal__art">${icons.gem}</div>
       <span class="badge badge--tier">${tier.name}</span>
-      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
+      <h2 class="gem-reveal__name">${gemNameHtml(
+        data.gem.name,
+        escapeHtml,
+        data?.mutation?.id ? `gem-styled--mutation-${data.mutation.id}` : ""
+      )}</h2>
       <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
       <div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
@@ -504,7 +521,7 @@ function renderRoll(data, outcome) {
     gemStage.classList.remove("is-animating", "is-big", "is-epic-roll");
     gemStage.style.removeProperty("--gem-hue");
     gemStage.style.removeProperty("--gem-speed");
-  }, isEpicRollEffect ? 3300 : 950);
+  }, isEpicRollEffect ? 2400 : 950);
   return Promise.resolve();
 }
 
@@ -516,6 +533,7 @@ function addHistory(data, note) {
     tier,
     weight: data.finalWeight,
     value: data.value,
+    mutationId: data?.mutation?.id ?? null,
     note
   });
 
@@ -541,7 +559,11 @@ function renderHistory() {
         <div class="history__row tier-${entry.tier.id}">
           <span class="history__dot"></span>
 
-          <span class="history__name">${gemNameHtml(entry.name, escapeHtml)}</span>
+          <span class="history__name">${gemNameHtml(
+            entry.name,
+            escapeHtml,
+            entry.mutationId ? `gem-styled--mutation-${entry.mutationId}` : ""
+          )}</span>
 
           <span class="history__meta">${escapeHtml(
             entry.note || formatWeight(entry.weight)
