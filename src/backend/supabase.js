@@ -31,7 +31,16 @@ export const supabase =
           true,
 
         flowType:
-          "pkce"
+          "pkce",
+
+        // Multi-tab session protection removed. By default supabase-js
+        // guards every session/token read with a browser-wide
+        // navigator lock so multiple tabs don't refresh at once — but
+        // that serializes every authenticated call (each roll waits to
+        // acquire it), which made rolling slow with more than one tab
+        // open. This pass-through lock runs the operation immediately
+        // with no cross-tab coordination, so rolls fire without waiting.
+        lock: (_name, _acquireTimeout, fn) => fn()
       }
     }
   );
