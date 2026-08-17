@@ -1726,3 +1726,142 @@ html.is-cinematic-active body {
 @keyframes mutationNamePrismatic{to{background-position:300% center}}
 @keyframes mutationNameCelestial{0%,100%{filter:brightness(1);text-shadow:0 0 10px rgb(125 211 252/.5)}50%{filter:brightness(1.8);text-shadow:0 0 25px rgb(125 211 252/1)}}
 @keyframes mutationNameCorrupted{0%,100%{transform:translateX(0);filter:none}25%{transform:translateX(-1px);filter:hue-rotate(18deg)}50%{transform:translateX(2px);filter:contrast(1.5)}75%{transform:translateX(-2px);filter:hue-rotate(-18deg)}}
+
+
+/* =========================================================
+   GEM INDEX / REPLAY CUTSCENE FIXES
+   The Gem Index loads this stylesheet explicitly so replayed
+   cinematics use the same compositor as the Roll page.
+   ========================================================= */
+
+/* 10k–99k replay is intentionally compact. */
+#ultra-cutscene-overlay.ultra-level-10k .scene__backdrop,
+#ultra-cutscene-overlay.ultra-level-10k .scene__flash,
+#ultra-cutscene-overlay.ultra-level-10k .scene__vignette,
+#ultra-cutscene-overlay.ultra-level-10k .scene__reveal,
+#ultra-cutscene-overlay.ultra-level-10k .scene__letterbox {
+  animation-duration: var(--cinematic-duration, 1800ms);
+}
+
+/* Every 1m+ mutation gets a clearly different visual identity. */
+#ultra-cutscene-overlay.mutation-primary-polished {
+  --scene-c: #f5f7ff;
+  --scene-c2: #ffffff;
+  --scene-c3: #cbd5e1;
+}
+#ultra-cutscene-overlay.mutation-primary-gilded {
+  --scene-c: #f6c453;
+  --scene-c2: #fff1a8;
+  --scene-c3: #d89b1f;
+}
+#ultra-cutscene-overlay.mutation-primary-prismatic {
+  --scene-c: #ff5db1;
+  --scene-c2: #60a5fa;
+  --scene-c3: #5eead4;
+}
+#ultra-cutscene-overlay.mutation-primary-celestial {
+  --scene-c: #7dd3fc;
+  --scene-c2: #ffffff;
+  --scene-c3: #818cf8;
+}
+#ultra-cutscene-overlay.mutation-primary-corrupted {
+  --scene-c: #c084fc;
+  --scene-c2: #f43f5e;
+  --scene-c3: #312e81;
+}
+
+/* 1m+ primary mutation compositors: different geometry, not just a color. */
+#ultra-cutscene-overlay.ultra-level-1m.mutation-primary-polished::after,
+#ultra-cutscene-overlay.ultra-level-4m.mutation-primary-polished::after,
+#ultra-cutscene-overlay.ultra-level-10m.mutation-primary-polished::after {
+  content:"";
+  position:absolute; inset:-15%; z-index:16; pointer-events:none;
+  border:clamp(2px,.35vw,7px) solid rgb(255 255 255 / .65);
+  clip-path:polygon(50% 0,62% 28%,100% 50%,62% 72%,50% 100%,38% 72%,0 50%,38% 28%);
+  filter:drop-shadow(0 0 25px #fff) drop-shadow(0 0 80px #cbd5e1);
+  animation: replayPolishedMega var(--cinematic-duration,15000ms) cubic-bezier(.1,.9,.1,1) both;
+}
+#ultra-cutscene-overlay.ultra-level-1m.mutation-primary-gilded::after,
+#ultra-cutscene-overlay.ultra-level-4m.mutation-primary-gilded::after,
+#ultra-cutscene-overlay.ultra-level-10m.mutation-primary-gilded::after {
+  content:"";
+  position:absolute; inset:8%; z-index:16; pointer-events:none;
+  border:clamp(3px,.45vw,8px) solid #f6c453;
+  border-radius:50%;
+  box-shadow:0 0 35px #f6c453, inset 0 0 55px rgb(246 196 83 / .45), 0 0 130px rgb(255 241 168 / .35);
+  animation: replayGildedMega var(--cinematic-duration,18000ms) cubic-bezier(.08,.9,.08,1) both;
+}
+#ultra-cutscene-overlay.ultra-level-1m.mutation-primary-prismatic::after,
+#ultra-cutscene-overlay.ultra-level-4m.mutation-primary-prismatic::after,
+#ultra-cutscene-overlay.ultra-level-10m.mutation-primary-prismatic::after {
+  content:"";
+  position:absolute; inset:-25%; z-index:16; pointer-events:none;
+  background:conic-gradient(from 0deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1);
+  mask:radial-gradient(circle,transparent 0 22%,#000 23% 27%,transparent 28% 38%,#000 39% 43%,transparent 44%);
+  mix-blend-mode:screen;
+  animation: replayPrismaticMega var(--cinematic-duration,15000ms) linear both;
+}
+#ultra-cutscene-overlay.ultra-level-1m.mutation-primary-celestial::after,
+#ultra-cutscene-overlay.ultra-level-4m.mutation-primary-celestial::after,
+#ultra-cutscene-overlay.ultra-level-10m.mutation-primary-celestial::after {
+  content:"";
+  position:absolute; left:50%; top:50%; width:30vmin; height:30vmin; z-index:16; pointer-events:none;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,#fff 0 4%,#7dd3fc 12%,transparent 65%);
+  box-shadow:0 0 45px #7dd3fc,0 0 150px #818cf8;
+  animation: replayCelestialMega var(--cinematic-duration,15000ms) ease both;
+}
+#ultra-cutscene-overlay.ultra-level-1m.mutation-primary-corrupted::after,
+#ultra-cutscene-overlay.ultra-level-4m.mutation-primary-corrupted::after,
+#ultra-cutscene-overlay.ultra-level-10m.mutation-primary-corrupted::after {
+  content:"";
+  position:absolute; inset:-10%; z-index:16; pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 7%,rgb(192 132 252 / .32) 7.3% 7.7%,transparent 8% 14%);
+  mix-blend-mode:screen;
+  filter:contrast(1.8) saturate(1.5);
+  animation: replayCorruptedMega var(--cinematic-duration,15000ms) steps(9,end) both;
+}
+
+@keyframes replayPolishedMega {
+  0%{transform:scale(.1) rotate(0);opacity:0}
+  28%{opacity:1}
+  55%{transform:scale(1.1) rotate(180deg)}
+  100%{transform:scale(1.7) rotate(360deg);opacity:0}
+}
+@keyframes replayGildedMega {
+  0%{transform:translate(-50%,-50%) scale(.1) rotate(-90deg);opacity:0}
+  25%{opacity:1}
+  55%{transform:translate(-50%,-50%) scale(1.1) rotate(180deg)}
+  100%{transform:translate(-50%,-50%) scale(1.7) rotate(540deg);opacity:0}
+}
+@keyframes replayPrismaticMega {
+  0%{transform:rotate(0) scale(.2);opacity:0}
+  25%{opacity:.8}
+  100%{transform:rotate(1080deg) scale(1.5);opacity:0}
+}
+@keyframes replayCelestialMega {
+  0%{transform:translate(-50%,-50%) scale(.05);opacity:0}
+  30%{opacity:1}
+  60%{transform:translate(-50%,-50%) scale(2)}
+  100%{transform:translate(-50%,-50%) scale(5);opacity:0}
+}
+@keyframes replayCorruptedMega {
+  0%{opacity:0;transform:translateX(0) skewX(0)}
+  20%{opacity:.9}
+  35%{transform:translateX(-4vw) skewX(8deg)}
+  50%{transform:translateX(5vw) skewX(-10deg)}
+  70%{transform:translateX(-2vw) skewX(5deg)}
+  100%{opacity:0;transform:translateX(8vw) skewX(-12deg)}
+}
+
+/* Mutation names remain readable in both light and dark themes. */
+.gem-styled--mutation-polished{color:#e5e7eb!important;text-shadow:0 0 10px rgb(255 255 255 / .55)!important}
+.gem-styled--mutation-gilded{color:#f6c453!important;text-shadow:0 0 12px rgb(246 196 83 / .7)!important}
+.gem-styled--mutation-prismatic{
+  background:linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1)!important;
+  background-size:300% auto!important;-webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent!important;
+}
+.gem-styled--mutation-celestial{color:#7dd3fc!important;text-shadow:0 0 16px rgb(125 211 252 / .9)!important}
+.gem-styled--mutation-corrupted{color:#d8b4fe!important;text-shadow:0 0 10px #c084fc,0 0 25px #f43f5e!important}

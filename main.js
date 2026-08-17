@@ -392,8 +392,10 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
   const rarity = Number(data.gem.rarity ?? 0);
-  const isUltraRare = rarity >= 100000;
-  const isEpicRollEffect = rarity >= 10000 && !isUltraRare;
+  // Full-screen reveal starts at 10k. Anything below 10k has no
+  // cinematic/reveal at all.
+  const isUltraRare = rarity >= 10000;
+  const isEpicRollEffect = false;
 
   const gemName = String(data.gem.name ?? "Gem");
   let gemHash = 0;
