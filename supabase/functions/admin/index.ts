@@ -60,6 +60,19 @@ const CONSUMABLE_IDS = new Set([
   "legendary-potion", "mythic-potion"
 ]);
 
+// Mirrors src/data/mutations.js — the value multiplier per mutation.
+// Mutation order matters: the ids are stored sorted by this order and
+// the "primary" mutation is the first (rarest wins is by the same order
+// the game uses, i.e. definition order here).
+const MUTATION_CATALOG: Record<string, { name: string; multiplier: number }> = {
+  polished:  { name: "Polished",  multiplier: 1.5 },
+  gilded:    { name: "Gilded",    multiplier: 2.5 },
+  prismatic: { name: "Prismatic", multiplier: 5 },
+  celestial: { name: "Celestial", multiplier: 12 },
+  corrupted: { name: "Corrupted", multiplier: 30 }
+};
+const MUTATION_ORDER = Object.keys(MUTATION_CATALOG);
+
 function response(data: unknown, status = 200) {
   return Response.json(data, { status });
 }
@@ -216,7 +229,7 @@ export default {
       if (action === "inspect") {
         const { data: player, error } = await ctx.supabaseAdmin
           .from("players")
-          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity")
+          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck")
           .eq("id", targetId)
           .maybeSingle();
 
@@ -272,8 +285,22 @@ export default {
           return response({ error: "invalid_gem" }, 400);
         }
 
+        // Optional mutations, validated against the catalog and stored
+        // sorted by definition order, exactly like a rolled gem.
+        const requestedMutations = Array.isArray(body.mutationIds) ? body.mutationIds : [];
+        const mutationIds = MUTATION_ORDER.filter((id) =>
+          requestedMutations.map((m: unknown) => String(m)).includes(id)
+        );
+        const mutationMultiplier = mutationIds.reduce(
+          (total, id) => total * MUTATION_CATALOG[id].multiplier, 1
+        );
+        const mutationMultipliers = Object.fromEntries(
+          mutationIds.map((id) => [id, MUTATION_CATALOG[id].multiplier])
+        );
+        const primaryMutation = mutationIds[0] ?? null;
+
         const finalWeight = gem.baseWeight * multiplier;
-        const value = finalWeight * gem.valuePerGram;
+        const value = finalWeight * gem.valuePerGram * mutationMultiplier;
 
         // Stamp the gem with the target's current roll count and their
         // effective luck (base 1 + equipped luck + active luck boosts),
@@ -303,13 +330,17 @@ export default {
             value,
             locked: false,
             roll_number: rollNumber,
-            luck_at_roll: luckAtRoll
+            luck_at_roll: luckAtRoll,
+            mutation_id: primaryMutation,
+            mutation_multiplier: mutationMultiplier,
+            mutation_ids: mutationIds,
+            mutation_multipliers: mutationMultipliers
           })
           .select("id").single();
         if (error) return response({ error: "gem_grant_failed", message: error.message }, 500);
 
         await audit(ctx, adminId, targetId, "gem_granted", {
-          gemName: gem.name, weightMultiplier: multiplier, specimenId: data.id
+          gemName: gem.name, weightMultiplier: multiplier, mutationIds, specimenId: data.id
         });
         return response({ specimenId: data.id });
       }
@@ -369,6 +400,20 @@ export default {
           consumableId, amount, before, after
         });
         return response({ quantity: after });
+      }
+
+      if (action === "mutation_luck") {
+        const value = finiteNumber(body.mutationLuck);
+        if (value === null || value < 1 || value > 100000) {
+          return response({ error: "invalid_mutation_luck" }, 400);
+        }
+
+        const { error } = await ctx.supabaseAdmin
+          .from("players").update({ mutation_luck: value }).eq("id", targetId);
+        if (error) return response({ error: "mutation_luck_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "mutation_luck_set", { mutationLuck: value });
+        return response({ mutationLuck: value });
       }
 
       if (action === "reset_cooldown") {

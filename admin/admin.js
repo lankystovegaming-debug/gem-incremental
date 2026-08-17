@@ -1,4 +1,5 @@
 import gems from "../src/data/gems.js";
+import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { adminRequest } from "../src/backend/cloudAdmin.js";
@@ -117,6 +118,25 @@ function renderPlayer(data) {
           <input id="gemWeight" type="number" min="0.01" max="1000" step="0.01" value="1" aria-label="Weight multiplier">
           <button class="btn btn--primary" data-action="grant-gem" type="button">Grant gem</button>
         </div>
+        <div class="admin-mutations" style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px">
+          ${Object.values(GEM_MUTATIONS).map((m) => `
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:.85rem">
+              <input type="checkbox" class="gemMutation" value="${escapeHtml(m.id)}">
+              ${escapeHtml(m.name)} <span style="color:var(--text-faint)">×${m.multiplier}</span>
+            </label>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h3>Mutation Luck</h3>
+        <p style="margin:0 0 8px;color:var(--text-faint);font-size:.85rem">
+          Multiplies this player's chance of every mutation on each roll (1 = normal). Current: <strong>×${escapeHtml(String(player.mutation_luck ?? 1))}</strong>
+        </p>
+        <div class="admin-control">
+          <input id="mutationLuck" type="number" min="1" max="100000" step="1" value="${escapeHtml(String(player.mutation_luck ?? 1))}" aria-label="Mutation luck multiplier">
+          <button class="btn btn--primary" data-action="mutation-luck" type="button">Set mutation luck</button>
+        </div>
       </section>
 
       <section class="admin-section">
@@ -200,9 +220,16 @@ async function runPlayerAction(button) {
     const value = Math.abs(Number(document.getElementById("moneyAmount").value));
     request = ["money", { amount: action === "money-add" ? value : -value }];
   } else if (action === "grant-gem") {
+    const mutationIds = [...document.querySelectorAll(".gemMutation:checked")]
+      .map((box) => box.value);
     request = ["grant_gem", {
       gemName: document.getElementById("gemName").value,
-      weightMultiplier: Number(document.getElementById("gemWeight").value)
+      weightMultiplier: Number(document.getElementById("gemWeight").value),
+      mutationIds
+    }];
+  } else if (action === "mutation-luck") {
+    request = ["mutation_luck", {
+      mutationLuck: Number(document.getElementById("mutationLuck").value)
     }];
   } else if (action === "potion-add" || action === "potion-remove") {
     const value = Math.abs(Math.trunc(Number(document.getElementById("potionAmount").value)));
