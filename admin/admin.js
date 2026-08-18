@@ -160,7 +160,7 @@ function renderPlayer(data) {
         </div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section admin-section--advanced">
         <h3>Advanced Player Actions</h3>
         <div class="admin-advanced-grid">
           <label class="field"><span>Coins Δ</span><input id="coinsAmount" type="number" step="1" value="0"></label>

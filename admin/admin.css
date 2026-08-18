@@ -221,3 +221,45 @@
 }
 .analytics-error span { color:var(--text-muted); font-size:.84rem; }
 @media (max-width:700px) { .analytics-columns { grid-template-columns:1fr; } }
+
+/* Advanced actions need a wider card: the controls contain long action
+   labels and should never spill into the neighbouring panel. */
+.admin-section--advanced {
+  grid-column: span 2;
+}
+
+.admin-section--advanced .admin-advanced-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-section--advanced .admin-advanced-grid .field,
+.admin-section--advanced .admin-advanced-grid .btn,
+.admin-section--advanced .admin-advanced-row > * {
+  min-width: 0;
+}
+
+.admin-section--advanced .admin-advanced-grid .btn,
+.admin-section--advanced .admin-advanced-row .btn {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+
+.admin-section--advanced .admin-advanced-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .admin-section--advanced {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-section--advanced .admin-advanced-grid,
+  .admin-section--advanced .admin-advanced-row {
+    grid-template-columns: 1fr;
+  }
+}

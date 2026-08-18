@@ -717,8 +717,8 @@ function renderBestRoll() {
         </span>
       </div>
       <div class="score gem-score">
-        <strong>$${formatMoney(player.value)}</strong>
-        <span>1 in ${formatNumber(player.rarity)} · ${formatNumber(player.final_weight)}g</span>
+        <strong>1 in ${formatNumber(player.rarity)}</strong>
+        <span>${formatNumber(player.final_weight)}g · $${formatMoney(player.value)}</span>
         <span>${mutationNamesHtml(player)} · ${mutationChanceProductLabel(player)}</span>
         <span class="lb-best-roll-formula">${formatNumber(baseGemRarity(player))} × ${formatNumber(player.mutation_chance_product ?? 1)} = ${formatNumber(player.rarity)} effective rarity</span>
       </div>
@@ -730,9 +730,10 @@ function renderBestRoll() {
       <div>
         <h2>Best Roll</h2>
         <p class="leaderboard-description">
-          Rarest individual roll by effective rarity. Mutation rarity
-          multipliers are included, so a Polished 1 in 140,000 Aether Quartz
-          is ranked as 1 in 14,000,000.
+          Best rolls of all time across every player. Every successful roll is
+          eligible, even after the specimen leaves inventory. Ranking uses
+          effective rarity only: base gem denominator × every mutation
+          denominator. Price is ignored.
         </p>
       </div>
     </div>
@@ -740,7 +741,7 @@ function renderBestRoll() {
     <div class="leaderboard-header leaderboard-header--best-roll">
       <div>Rank</div>
       <div>Player / Gem</div>
-      <div class="score">Roll Value</div>
+      <div class="score">Effective Rarity</div>
     </div>
     <div class="leaderboard-list">${rows}</div>
   `;

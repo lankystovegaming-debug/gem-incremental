@@ -1254,6 +1254,7 @@ export default {
           )
           .select(`
             id,
+            username,
             next_roll_at,
             inventory_capacity,
             total_rolls,
@@ -2390,6 +2391,42 @@ export default {
 
         savedGem =
           insertedGem;
+      }
+
+
+      // =====================================================
+      // ALL-TIME BEST ROLL HISTORY
+      //
+      // This is separate from inventory on purpose. A Best Roll is a
+      // historical record of a successful roll, so selling, deleting, or
+      // auto-crafting the specimen must not erase it from the leaderboard.
+      // =====================================================
+
+      const {
+        error: bestRollHistoryError
+      } = await ctx.supabaseAdmin
+        .from("best_roll_history")
+        .insert({
+          player_id: playerId,
+          username: player.username ?? playerId,
+          gem_name: gem.name,
+          rarity: gem.rarity,
+          final_weight: finalWeight,
+          value,
+          mutation_id: primaryMutation?.id ?? null,
+          mutation_ids: mutationIds,
+          mutation_multiplier: mutationMultiplier,
+          roll_number: Number(player.total_rolls ?? 0) + 1
+        });
+
+      // The roll is already committed at this point. History is analytics,
+      // so a history write failure must never turn a successful roll into a
+      // retryable error.
+      if (bestRollHistoryError) {
+        console.error(
+          "Best Roll history update failed:",
+          bestRollHistoryError
+        );
       }
 
 
