@@ -90,23 +90,29 @@
           does not sell. You keep the highest bid when the timer ends.
         </p>
 
-        <label class="field-label" for="sellGemSelect">Gem</label>
+        <label class="field-label" for="sellGemSearch">Gem</label>
         <div class="sell-picker">
-          <input class="field" id="sellGemSearch" type="text" placeholder="Search your gems…" autocomplete="off">
-          <select class="field" id="sellGemSelect" size="6" aria-label="Choose a gem to list"></select>
+          <label class="field auction-search" for="sellGemSearch">
+            <span id="sellSearchIcon" aria-hidden="true"></span>
+            <input id="sellGemSearch" type="text" placeholder="Search your gems…" autocomplete="off">
+          </label>
+          <select class="select auction-listbox" id="sellGemSelect" size="6" aria-label="Choose a gem to list"></select>
         </div>
 
         <div id="sellPreview" class="sell-preview hidden"></div>
 
         <div class="sell-row">
           <div class="sell-field">
-            <label class="field-label" for="sellPrice">Starting price ($)</label>
-            <input class="field" id="sellPrice" type="number" min="1" step="1" value="100" inputmode="numeric">
+            <label class="field-label" for="sellPrice">Starting price</label>
+            <div class="auction-money-input">
+              <span class="auction-money-input__prefix">$</span>
+              <input id="sellPrice" type="number" min="1" step="1" value="100" inputmode="numeric">
+            </div>
           </div>
 
           <div class="sell-field">
             <label class="field-label" for="sellDuration">Duration</label>
-            <select class="field" id="sellDuration">
+            <select class="select auction-select" id="sellDuration">
               <option value="1">1 hour</option>
               <option value="6">6 hours</option>
               <option value="24" selected>24 hours</option>

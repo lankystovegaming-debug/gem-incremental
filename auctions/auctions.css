@@ -183,22 +183,119 @@
 .auction-bid {
   display: flex;
   gap: var(--space-2);
+  align-items: stretch;
 }
 
 .auction-bid__input {
   flex: 1;
   min-width: 0;
-  font-variant-numeric: tabular-nums;
 }
 
 .auction-bid__button {
   flex: none;
+  padding-inline: var(--space-4);
 }
 
 .auction-bid__hint {
   font-size: 0.76rem;
   color: var(--text-faint);
-  margin-top: -4px;
+  margin-top: -2px;
+}
+
+
+/* ---------------------------------------------------------
+   SHARED FORM CONTROLS
+
+   The app's .field is a wrapper around an <input>; these are
+   the standalone, full-height controls the auction house uses
+   so nothing looks cramped.
+   --------------------------------------------------------- */
+
+/* Money input: a "$" prefix box wrapping a borderless number field. */
+.auction-money-input {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auction-money-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.auction-money-input__prefix {
+  padding-left: 12px;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-money-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px 10px 6px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide the native number spinners — they crowd the field. */
+.auction-money-input input::-webkit-outer-spin-button,
+.auction-money-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.auction-money-input input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Full-height select to match the money input alongside it. */
+.auction-select {
+  width: 100%;
+  min-height: 42px;
+  padding-block: 10px;
+  font-size: 0.95rem;
+}
+
+/* Search field (uses the app .field wrapper) sized to match. */
+.auction-search {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.auction-search input {
+  font-size: 0.92rem;
+}
+
+/* The gem listbox: roomy rows, not a squashed multi-select. */
+.auction-listbox {
+  width: 100%;
+  height: auto;
+  padding: 6px;
+  background-image: none;
+  cursor: default;
+}
+
+.auction-listbox option {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 550;
+}
+
+.auction-listbox option:checked {
+  background: var(--accent) linear-gradient(0deg, var(--accent), var(--accent));
+  color: #fff;
 }
 
 
