@@ -36,7 +36,7 @@ export async function loadCloudEquipment() {
       .order(
         "tier",
         {
-          ascending: true
+          ascending: false
         }
       );
 

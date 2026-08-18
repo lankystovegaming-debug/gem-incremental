@@ -229,6 +229,12 @@
    EQUIPMENT CARDS
    --------------------------------------------------------- */
 
+.equipment-help {
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 .equipment-card {
   display: flex;
   flex-direction: column;

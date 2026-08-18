@@ -105,7 +105,15 @@ export default {
     const { data: equipment, error: equipmentError } = await ctx.supabase.from("player_equipment").select(`
             equipment_id,
             category,
-            tier
+            tier,
+            name,
+            luck_bonus,
+            roll_speed_bonus,
+            weight_luck_bonus,
+            weight_multiplier_bonus,
+            enchant_id,
+            enchant_grade,
+            enchant_state
           `);
     if (equipmentError) {
       return Response.json({
@@ -128,6 +136,9 @@ export default {
     // CHECK PREREQUISITE EQUIPMENT
     // =================================
     const equipmentRequirement = recipe.requirements.find((requirement)=>requirement.type === "equipment");
+    const requiredEquipment = equipmentRequirement
+      ? ownedEquipment.find((item)=>item.equipment_id === equipmentRequirement.equipmentId)
+      : null;
     if (equipmentRequirement) {
       const hasRequired = ownedEquipment.some((item)=>item.equipment_id === equipmentRequirement.equipmentId);
       if (!hasRequired) {
@@ -191,6 +202,42 @@ export default {
       }, {
         status: 500
       });
+    }
+
+    // Crafting equips the new reward. Store every other item in its category,
+    // including a lower tier the player may have selected before crafting.
+    const { error: storeOtherEquipmentError } = await ctx.supabaseAdmin
+      .from("player_equipment")
+      .update({ equipped: false })
+      .eq("player_id", playerId)
+      .eq("category", recipe.reward.category)
+      .neq("equipment_id", recipe.reward.id);
+
+    if (storeOtherEquipmentError) {
+      console.error("Could not store previous category equipment:", storeOtherEquipmentError);
+    }
+
+    // The database crafting RPC historically consumes the prerequisite
+    // equipment row. Restore it as stored equipment so players can switch
+    // back to any tier they have unlocked. The newly crafted reward remains
+    // equipped by the RPC.
+    if (requiredEquipment) {
+      const { error: restoreEquipmentError } = await ctx.supabaseAdmin
+        .from("player_equipment")
+        .upsert({
+          player_id: playerId,
+          ...requiredEquipment,
+          equipped: false
+        }, {
+          onConflict: "player_id,equipment_id",
+          ignoreDuplicates: true
+        });
+
+      // Crafting has already committed, so do not turn a restoration problem
+      // into a retry that could charge the player twice.
+      if (restoreEquipmentError) {
+        console.error("Could not retain prerequisite equipment:", restoreEquipmentError);
+      }
     }
     return Response.json({
       recipeId,
