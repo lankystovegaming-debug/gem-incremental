@@ -550,6 +550,16 @@ const gems = [
   },
 
   {
+    name: "Xy Gem",
+    rarity: 15000000,
+    baseWeight: 5500,
+    valuePerGram: 750,
+    hideRarityUntilDiscovered: true,
+    description:
+      "A gem named after one of Gem Incremental's contributors. At one in fifteen million it is rarer than the creator's own namesake — make of that what you will."
+  },
+
+  {
     name: "Carmeltazite",
     rarity: 50000000,
     baseWeight: 6000,
