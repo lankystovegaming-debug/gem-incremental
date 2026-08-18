@@ -486,7 +486,12 @@ function isRelic(gem: { name?: string }) {
   return gem.name === "Enchant Relic" || gem.name === "Ancient Relic";
 }
 
-function rollGemWithGeologist(luck: number, discovered: Set<string>) {
+function rollGemWithPickaxePassives(
+  luck: number,
+  discovered: Set<string>,
+  geologistMultiplier = 1,
+  extremeGemMultiplier = 1
+) {
   const safeLuck = Math.max(1, luck);
   const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
   const rarityFloor = Math.min(safeLuck, maximumRarity);
@@ -495,7 +500,9 @@ function rollGemWithGeologist(luck: number, discovered: Set<string>) {
     .sort((a, b) => b.rarity - a.rarity);
 
   for (const gem of rollable) {
-    const gemLuck = discovered.has(gem.name) ? safeLuck : safeLuck * 1.3;
+    let gemLuck = safeLuck;
+    if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
+    if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
   return rollable[rollable.length - 1];
@@ -1462,6 +1469,7 @@ export default {
           )
           .select(`
             id,
+            equipment_id,
             category,
             luck_bonus,
             roll_speed_bonus,
@@ -1501,9 +1509,17 @@ export default {
         );
       }
 
+      const equippedPickaxe = (equippedEquipment ?? []).find(
+        (item) => item.category === "pickaxe"
+      ) ?? null;
       const enchantedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe" && item.enchant_id
       ) ?? null;
+      const hasMutationResonance = equippedPickaxe?.equipment_id === "eclipse-pickaxe";
+      const hasEventHorizon = equippedPickaxe?.equipment_id === "singularity-pickaxe";
+      const hasEnchantConduit = equippedPickaxe?.equipment_id === "transcendent-pickaxe";
+      const strengthenEnchantMultiplier = (multiplier: number) =>
+        hasEnchantConduit ? 1 + (multiplier - 1) * 1.1 : multiplier;
 
       let enchantState: Record<string, number> =
         enchantedPickaxe?.enchant_state && typeof enchantedPickaxe.enchant_state === "object"
@@ -1867,7 +1883,7 @@ export default {
         const every = enchantGrade === "ancient" ? 8 : 10;
         const counter = Number(enchantState.rolls ?? 0) + 1;
         if (counter >= every) {
-          luck *= enchantGrade === "ancient" ? 1.5 : 1.35;
+          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
           enchantState.rolls = 0;
         } else enchantState.rolls = counter;
         enchantStateChanged = true;
@@ -1876,7 +1892,7 @@ export default {
       if (enchantId === "fortune_surge") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
-          luck *= enchantGrade === "ancient" ? 1.35 : 1.25;
+          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.35 : 1.25);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
         } else if (random01() < (enchantGrade === "ancient" ? 0.035 : 0.025)) {
@@ -1889,14 +1905,15 @@ export default {
       if (enchantId === "collectors_edge") {
         const catalogSize = gems.length;
         const completion = Math.min(1, discoveredGemNames.size / catalogSize);
-        luck *= 1 + completion * (enchantGrade === "ancient" ? 0.20 : 0.12);
+        const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.20 : 0.12);
+        luck *= strengthenEnchantMultiplier(baseMultiplier);
       }
 
       if (enchantId === "prospectors_instinct") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
           prospectorActiveThisRoll = true;
-          luck *= 1.25;
+          luck *= strengthenEnchantMultiplier(1.25);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
         }
@@ -1904,11 +1921,11 @@ export default {
 
       if (enchantId === "vein_hunter") {
         const misses = Math.min(30, Math.max(0, Number(enchantState.misses ?? 0)));
-        luck *= 1 + misses / 100;
+        luck *= strengthenEnchantMultiplier(1 + misses / 100);
       }
 
       if (enchantId === "jackpot_mining" && random01() < 0.01) {
-        luck *= 2.5;
+        luck *= strengthenEnchantMultiplier(2.5);
       }
 
 
@@ -2050,11 +2067,21 @@ export default {
       // GENERATE ROLL
       // =====================================================
 
-      let gem = rollRelic() ?? (
-        enchantId === "geologist"
-          ? rollGemWithGeologist(luck, discoveredGemNames)
-          : rollGem(luck)
-      );
+      const geologistMultiplier = enchantId === "geologist"
+        ? strengthenEnchantMultiplier(1.3)
+        : 1;
+      const extremeGemMultiplier = hasEventHorizon ? 1.1 : 1;
+      const rollEquipmentGem = () =>
+        geologistMultiplier !== 1 || extremeGemMultiplier !== 1
+          ? rollGemWithPickaxePassives(
+              luck,
+              discoveredGemNames,
+              geologistMultiplier,
+              extremeGemMultiplier
+            )
+          : rollGem(luck);
+
+      let gem = rollRelic() ?? rollEquipmentGem();
       const relicDrop = isRelic(gem);
 
       // Lucky Break keeps the rarer result.
@@ -2062,7 +2089,7 @@ export default {
         !relicDrop && enchantId === "lucky_break" &&
         random01() < (enchantGrade === "ancient" ? 0.05 : 0.03)
       ) {
-        const candidate = rollGem(luck);
+        const candidate = rollEquipmentGem();
         if (candidate.rarity > gem.rarity) gem = candidate;
       }
 
@@ -2102,11 +2129,13 @@ export default {
       // combination of the five mutations (32 combinations). The
       // multiplier is the higher of the legacy hardcoded boost and the
       // player's admin-granted mutation_luck column (default 1).
-      const mutationChanceMultiplier =
+      let mutationChanceMultiplier =
         Math.max(
           getMutationChanceMultiplier(playerId),
           Number(player.mutation_luck ?? 1) || 1
         );
+
+      if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
 
       const mutations = relicDrop
         ? []

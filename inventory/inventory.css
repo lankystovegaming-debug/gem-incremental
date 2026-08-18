@@ -291,6 +291,17 @@
   font-size: .82rem;
 }
 
+.equipment-passive {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--positive) 45%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--positive) 8%, var(--surface-solid));
+  font-size: .82rem;
+}
+
 .equipment-enchant--empty { color: var(--text-faint); border-color: var(--border); }
 .gem-card--relic { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 

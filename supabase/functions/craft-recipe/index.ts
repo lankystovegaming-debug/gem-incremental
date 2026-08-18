@@ -8,9 +8,12 @@ function getRequirementKey(requirement, index) {
   }
   return `${requirement.type}-${index}`;
 }
-function requirementComplete(progress, requirement, index) {
+function requirementComplete(progress, requirement, index, totalRolls = 0) {
   if (requirement.type === "equipment") {
     return true;
+  }
+  if (requirement.type === "lifetime-rolls") {
+    return Number(totalRolls) >= Number(requirement.rolls ?? 0);
   }
   const key = getRequirementKey(requirement, index);
   const value = progress[key];
@@ -84,7 +87,7 @@ export default {
     // =================================
     // LOAD PLAYER
     // =================================
-    const { data: player, error: playerError } = await ctx.supabase.from("players").select("money").single();
+    const { data: player, error: playerError } = await ctx.supabase.from("players").select("money, total_rolls").single();
     if (playerError || !player) {
       return Response.json({
         error: "Player not found."
@@ -165,7 +168,7 @@ export default {
       if (requirement.type === "equipment") {
         return true;
       }
-      return requirementComplete(progress, requirement, index);
+      return requirementComplete(progress, requirement, index, player.total_rolls);
     });
     if (!requirementsComplete) {
       return Response.json({
