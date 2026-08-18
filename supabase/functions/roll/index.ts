@@ -528,15 +528,21 @@ function rollWeightMultiplier(
       weightLuck
     );
 
-  const baseHighChance =
-    0.25;
-
+  // Weight Luck has diminishing returns:
+  // 1x = 25% high-region chance, approaching 85% at high values.
   const highChance =
-    Math.min(
-      baseHighChance *
-      safeWeightLuck,
-      1
-    );
+    0.25 +
+    0.6 *
+      (
+        1 -
+        Math.exp(
+          -0.35 *
+          Math.max(
+            0,
+            safeWeightLuck - 1
+          )
+        )
+      );
 
   const lowChance =
     1 - highChance;
@@ -609,9 +615,9 @@ function rollWeightMultiplier(
   let wholeMultiplier =
     2;
 
-
+  // Each additional whole multiplier is now a 1-in-3 roll.
   while (
-    random01() < 0.5
+    random01() < (1 / 3)
   ) {
     wholeMultiplier++;
   }
@@ -624,6 +630,7 @@ function rollWeightMultiplier(
 }
 
 
+// =========================================================
 // =========================================================
 // AUTO CRAFT HELPERS
 // =========================================================
@@ -1779,7 +1786,7 @@ export default {
 
 
       // =====================================================
-      // CALCULATE + SAVE COOLDOWN
+      // CALCULATE + CLAIM COOLDOWN
       // =====================================================
 
       const baseCooldownSeconds =
@@ -1801,7 +1808,11 @@ export default {
         );
 
 
+      // The conditional UPDATE is the multi-tab lock: only the request
+      // whose database row is still available can claim the cooldown.
       const {
+        data:
+          claimedCooldown,
         error:
           cooldownError
       } =
@@ -1817,7 +1828,14 @@ export default {
           .eq(
             "id",
             playerId
-          );
+          )
+          .or(
+            `next_roll_at.is.null,next_roll_at.lte.${now.toISOString()}`
+          )
+          .select(
+            "next_roll_at"
+          )
+          .maybeSingle();
 
 
       if (
@@ -1839,6 +1857,66 @@ export default {
           }
         );
       }
+
+
+      if (
+        !claimedCooldown?.next_roll_at
+      ) {
+        const {
+          data:
+            currentCooldown
+        } =
+          await ctx.supabaseAdmin
+            .from(
+              "players"
+            )
+            .select(
+              "next_roll_at"
+            )
+            .eq(
+              "id",
+              playerId
+            )
+            .maybeSingle();
+
+
+        const blockedUntil =
+          currentCooldown?.next_roll_at
+            ? new Date(
+                currentCooldown.next_roll_at
+              )
+            : new Date(
+                Date.now() +
+                cooldownMs
+              );
+
+
+        return jsonResponse(
+          {
+            error:
+              "cooldown",
+
+            remainingMs:
+              Math.max(
+                0,
+                blockedUntil.getTime() -
+                Date.now()
+              ),
+
+            nextRollAt:
+              blockedUntil.toISOString()
+          },
+          {
+            status: 429
+          }
+        );
+      }
+
+
+      const claimedNextRollAt =
+        new Date(
+          claimedCooldown.next_roll_at
+        );
 
 
       // =====================================================
@@ -2392,6 +2470,35 @@ export default {
         console.error(
           "Lifetime stats update failed:",
           lifetimeStatsError
+        );
+      }
+
+
+      // =====================================================
+      // GEMS FOUND SCORE
+      // =====================================================
+
+      // Gems Found is a lifetime count score based on the base rarity
+      // denominator of every gem found. Mutations do not alter this score.
+      const {
+        error: gemsFoundScoreError
+      } =
+        await ctx.supabaseAdmin.rpc(
+          "record_gems_found_score",
+          {
+            p_player_id: playerId,
+            p_rarity: gem.rarity
+          }
+        );
+
+      // The roll is already committed, so leaderboard analytics must never
+      // turn a successful roll into a duplicate retry.
+      if (
+        gemsFoundScoreError
+      ) {
+        console.error(
+          "Gems Found score update failed:",
+          gemsFoundScoreError
         );
       }
 

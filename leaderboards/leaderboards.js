@@ -259,6 +259,12 @@ function updateTabs() {
     activeLeaderboard ===
       "gemsFound"
   );
+
+  bestRollTab.classList.toggle(
+    "active",
+    activeLeaderboard ===
+      "bestRoll"
+  );
 }
 
 
@@ -369,7 +375,7 @@ function renderRarestGem() {
       </h2>
 
       <p class="empty-message">
-        No ranked players yet.
+        No inventory gems yet.
       </p>
     `;
 
@@ -391,23 +397,32 @@ function renderRarestGem() {
             ${avatarHtml(
               player.username
             )}
-            <span class="lb-name-text">${escapeHtml(
-              player.username
-            )}</span>
+            <span class="lb-name-block">
+              <span class="lb-name-text">${escapeHtml(
+                player.username
+              )}</span>
+              <span class="lb-best-gem">
+                ${player.gemName
+                  ? gemNameHtml(player.gemName, escapeHtml)
+                  : "Unknown"}
+              </span>
+            </span>
           </div>
 
           <div class="score gem-score">
             <strong>
-              ${player.gemName
-                ? gemNameHtml(player.gemName, escapeHtml)
-                : "Unknown"}
-            </strong>
-
-            <span>
               1 in
               ${formatNumber(
                 player.rarity
               )}
+            </strong>
+
+            <span>
+              ${mutationNamesHtml(player)}
+            </span>
+
+            <span>
+              ${mutationChanceProductLabel(player)}
             </span>
           </div>
         </div>
@@ -426,8 +441,9 @@ function renderRarestGem() {
         </h2>
 
         <p class="leaderboard-description">
-          Players ranked by the rarest
-          gem they have ever rolled.
+          The rarest gem currently in each player's inventory.
+          Ranking uses the same effective-chance formula as Best Roll:
+          base gem denominator × every mutation denominator. Price is ignored.
         </p>
       </div>
     </div>
@@ -438,11 +454,11 @@ function renderRarestGem() {
       </div>
 
       <div>
-        Player
+        Player / Gem
       </div>
 
       <div class="score">
-        Rarest Gem
+        Effective Chance
       </div>
     </div>
 
@@ -666,7 +682,12 @@ function mutationChanceProductLabel(player) {
 
   if (!factors.length) return "Mutation odds unavailable";
 
-  return factors.map(value => `1/${formatNumber(value)}`).join(" × ");
+  const product = factors.reduce(
+    (total, factor) => total * factor,
+    1
+  );
+
+  return `${factors.map(value => `1/${formatNumber(value)}`).join(" × ")} = 1/${formatNumber(product)}`;
 }
 
 function baseGemRarity(player) {
@@ -699,7 +720,7 @@ function renderBestRoll() {
         <strong>$${formatMoney(player.value)}</strong>
         <span>1 in ${formatNumber(player.rarity)} · ${formatNumber(player.final_weight)}g</span>
         <span>${mutationNamesHtml(player)} · ${mutationChanceProductLabel(player)}</span>
-        <span class="lb-best-roll-formula">${formatNumber(baseGemRarity(player))} × mutation odds = ${formatNumber(player.rarity)}</span>
+        <span class="lb-best-roll-formula">${formatNumber(baseGemRarity(player))} × ${formatNumber(player.mutation_chance_product ?? 1)} = ${formatNumber(player.rarity)} effective rarity</span>
       </div>
     </div>
   `).join("");
@@ -834,6 +855,18 @@ async function loadLeaderboards() {
     { p_limit: 25 }
   );
 
+  // Rarest Gem intentionally uses the exact same inventory-only effective
+  // rarity logic as Best Roll: base gem denominator multiplied by every
+  // mutation's denominator. This prevents the old base-rarity / sold-gem
+  // leaderboard from disagreeing with Best Roll.
+  const {
+    data: rarestGemData,
+    error: rarestGemError
+  } = await supabase.rpc(
+    "get_rarest_gem_leaderboard",
+    { p_limit: 25 }
+  );
+
 
   if (gemsFoundError) {
     console.error(
@@ -849,6 +882,13 @@ async function loadLeaderboards() {
     );
   }
 
+  if (rarestGemError) {
+    console.error(
+      "Rarest Gem leaderboard load failed:",
+      rarestGemError
+    );
+  }
+
 
   leaderboardData = {
     totalRolls:
@@ -860,9 +900,20 @@ async function loadLeaderboards() {
 
     rarestGem:
       Array.isArray(
-        data?.rarestGem
+        rarestGemData
       )
-        ? data.rarestGem
+        ? rarestGemData.map(player => ({
+            rank: player.rank,
+            username: player.username,
+            gemName: player.gem_name,
+            rarity: player.rarity,
+            value: player.value,
+            final_weight: player.final_weight,
+            mutation_ids: Array.isArray(player.mutation_ids)
+              ? player.mutation_ids
+              : [],
+            mutation_chance_product: player.mutation_chance_product
+          }))
         : [],
 
     lifetimeEarnings:
@@ -897,7 +948,9 @@ async function loadLeaderboards() {
             final_weight: player.final_weight,
             mutation_ids: Array.isArray(player.mutation_ids) ? player.mutation_ids : [],
             mutation_multiplier: player.mutation_multiplier,
-            mutation_chance_multiplier: player.mutation_chance_multiplier
+            mutation_chance_multiplier: player.mutation_chance_multiplier,
+            base_rarity: player.base_rarity,
+            mutation_chance_product: player.mutation_chance_product
           }))
         : []
   };

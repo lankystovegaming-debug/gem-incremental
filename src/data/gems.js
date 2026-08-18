@@ -552,7 +552,7 @@ const gems = [
   {
     name: "Xy Gem",
     rarity: 15000000,
-    baseWeight: 5500,
+    baseWeight: 55000,
     valuePerGram: 750,
     hideRarityUntilDiscovered: true,
     description:
