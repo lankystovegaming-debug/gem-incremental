@@ -124,6 +124,46 @@
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
+.update-card--enchants {
+  background:
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 32%),
+    var(--surface-solid);
+}
+
+.update-section strong {
+  color: var(--text);
+}
+
+.update-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-solid));
+}
+
+.update-code span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.update-code strong {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 600px) {
   .update-card {
     padding: var(--space-4);
