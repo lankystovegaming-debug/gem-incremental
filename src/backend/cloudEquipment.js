@@ -21,6 +21,9 @@ export async function loadCloudEquipment() {
         roll_speed_bonus,
         weight_luck_bonus,
         weight_multiplier_bonus,
+        enchant_id,
+        enchant_grade,
+        enchant_state,
         equipped,
         created_at
       `)
@@ -47,6 +50,19 @@ export async function loadCloudEquipment() {
   }
 
   return data;
+}
+
+export async function enchantCloudEquipment(equipmentRowId, relicGemId) {
+  const { data, error } = await invokeFunction("enchant-equipment", {
+    equipmentRowId,
+    relicGemId
+  });
+
+  if (error) {
+    return { success: false, message: error.message, data: null };
+  }
+
+  return { success: true, message: null, data };
 }
 
 

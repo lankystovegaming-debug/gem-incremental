@@ -468,6 +468,39 @@ function rollGem(
   return fallbackGem;
 }
 
+const relics = {
+  enchant: { name: "Enchant Relic", rarity: 250, baseWeight: 0, valuePerGram: 0 },
+  ancient: { name: "Ancient Relic", rarity: 1500, baseWeight: 0, valuePerGram: 0 }
+};
+
+// One draw gives both mutually-exclusive relics their exact marginal odds.
+// Neither player Luck nor any other modifier is involved.
+function rollRelic() {
+  const roll = random01();
+  if (roll < 1 / 1500) return relics.ancient;
+  if (roll < 1 / 1500 + 1 / 250) return relics.enchant;
+  return null;
+}
+
+function isRelic(gem: { name?: string }) {
+  return gem.name === "Enchant Relic" || gem.name === "Ancient Relic";
+}
+
+function rollGemWithGeologist(luck: number, discovered: Set<string>) {
+  const safeLuck = Math.max(1, luck);
+  const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
+  const rarityFloor = Math.min(safeLuck, maximumRarity);
+  const rollable = gems
+    .filter((gem) => gem.rarity >= rarityFloor)
+    .sort((a, b) => b.rarity - a.rarity);
+
+  for (const gem of rollable) {
+    const gemLuck = discovered.has(gem.name) ? safeLuck : safeLuck * 1.3;
+    if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
+  }
+  return rollable[rollable.length - 1];
+}
+
 
 // =========================================================
 // MUTATION RNG
@@ -1428,10 +1461,15 @@ export default {
             "player_equipment"
           )
           .select(`
+            id,
+            category,
             luck_bonus,
             roll_speed_bonus,
             weight_luck_bonus,
-            weight_multiplier_bonus
+            weight_multiplier_bonus,
+            enchant_id,
+            enchant_grade,
+            enchant_state
           `)
           .eq(
             "player_id",
@@ -1461,6 +1499,31 @@ export default {
             status: 500
           }
         );
+      }
+
+      const enchantedPickaxe = (equippedEquipment ?? []).find(
+        (item) => item.category === "pickaxe" && item.enchant_id
+      ) ?? null;
+
+      let enchantState: Record<string, number> =
+        enchantedPickaxe?.enchant_state && typeof enchantedPickaxe.enchant_state === "object"
+          ? { ...enchantedPickaxe.enchant_state }
+          : {};
+      let enchantStateChanged = false;
+      let prospectorActiveThisRoll = false;
+
+      // The base-gem names are enough for both Index-completion enchants.
+      let discoveredGemNames = new Set<string>();
+      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id)) {
+        const { data: discoveries, error: discoveryError } = await ctx.supabaseAdmin
+          .from("player_gem_mutation_combinations")
+          .select("gem_name")
+          .eq("player_id", playerId);
+        if (discoveryError) {
+          console.error("Failed to load enchant Index progress:", discoveryError);
+        } else {
+          discoveredGemNames = new Set((discoveries ?? []).map((row) => row.gem_name));
+        }
       }
 
 
@@ -1795,6 +1858,59 @@ export default {
           );
       }
 
+      // Enchants multiply the final effective Luck. Only the equipped
+      // pickaxe owns and advances its state.
+      const enchantId = enchantedPickaxe?.enchant_id ?? null;
+      const enchantGrade = enchantedPickaxe?.enchant_grade === "ancient" ? "ancient" : "normal";
+
+      if (enchantId === "deep_strike") {
+        const every = enchantGrade === "ancient" ? 8 : 10;
+        const counter = Number(enchantState.rolls ?? 0) + 1;
+        if (counter >= every) {
+          luck *= enchantGrade === "ancient" ? 1.5 : 1.35;
+          enchantState.rolls = 0;
+        } else enchantState.rolls = counter;
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "fortune_surge") {
+        const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
+        if (remaining > 0) {
+          luck *= enchantGrade === "ancient" ? 1.35 : 1.25;
+          enchantState.remaining = remaining - 1;
+          enchantStateChanged = true;
+        } else if (random01() < (enchantGrade === "ancient" ? 0.035 : 0.025)) {
+          // The proc affects the next rolls, not the trigger roll.
+          enchantState.remaining = enchantGrade === "ancient" ? 4 : 3;
+          enchantStateChanged = true;
+        }
+      }
+
+      if (enchantId === "collectors_edge") {
+        const catalogSize = gems.length;
+        const completion = Math.min(1, discoveredGemNames.size / catalogSize);
+        luck *= 1 + completion * (enchantGrade === "ancient" ? 0.20 : 0.12);
+      }
+
+      if (enchantId === "prospectors_instinct") {
+        const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
+        if (remaining > 0) {
+          prospectorActiveThisRoll = true;
+          luck *= 1.25;
+          enchantState.remaining = remaining - 1;
+          enchantStateChanged = true;
+        }
+      }
+
+      if (enchantId === "vein_hunter") {
+        const misses = Math.min(30, Math.max(0, Number(enchantState.misses ?? 0)));
+        luck *= 1 + misses / 100;
+      }
+
+      if (enchantId === "jackpot_mining" && random01() < 0.01) {
+        luck *= 2.5;
+      }
+
 
       // =====================================================
       // CALCULATE + CLAIM COOLDOWN
@@ -1934,10 +2050,36 @@ export default {
       // GENERATE ROLL
       // =====================================================
 
-      const gem =
-        rollGem(
-          luck
-        );
+      let gem = rollRelic() ?? (
+        enchantId === "geologist"
+          ? rollGemWithGeologist(luck, discoveredGemNames)
+          : rollGem(luck)
+      );
+      const relicDrop = isRelic(gem);
+
+      // Lucky Break keeps the rarer result.
+      if (
+        !relicDrop && enchantId === "lucky_break" &&
+        random01() < (enchantGrade === "ancient" ? 0.05 : 0.03)
+      ) {
+        const candidate = rollGem(luck);
+        if (candidate.rarity > gem.rarity) gem = candidate;
+      }
+
+      if (
+        !relicDrop && enchantId === "prospectors_instinct" &&
+        !prospectorActiveThisRoll && gem.rarity >= 5000
+      ) {
+        if (Number(enchantState.remaining ?? 0) <= 0) enchantState.remaining = 3;
+        enchantStateChanged = true;
+      }
+
+      if (!relicDrop && enchantId === "vein_hunter") {
+        enchantState.misses = gem.rarity >= 10000
+          ? 0
+          : Math.min(30, Number(enchantState.misses ?? 0) + 1);
+        enchantStateChanged = true;
+      }
 
 
       const rolledWeightMultiplier =
@@ -1966,8 +2108,9 @@ export default {
           Number(player.mutation_luck ?? 1) || 1
         );
 
-      const mutations =
-        rollGemMutations(mutationChanceMultiplier);
+      const mutations = relicDrop
+        ? []
+        : rollGemMutations(mutationChanceMultiplier);
 
       const mutationMultiplier =
         mutations.reduce(
@@ -2403,6 +2546,18 @@ export default {
           insertedGem;
       }
 
+      if (enchantedPickaxe && enchantStateChanged) {
+        const { error: enchantStateError } = await ctx.supabaseAdmin
+          .from("player_equipment")
+          .update({ enchant_state: enchantState })
+          .eq("id", enchantedPickaxe.id)
+          .eq("player_id", playerId);
+        if (enchantStateError) {
+          // The specimen is committed; state persistence must not invite a duplicate roll.
+          console.error("Failed to save enchant state:", enchantStateError);
+        }
+      }
+
 
       // =====================================================
       // ALL-TIME BEST ROLL HISTORY
@@ -2517,8 +2672,10 @@ export default {
               p_gem_name:
                 gem.name,
 
+              // A relic still counts as a roll, but must never register as
+              // the player's "rarest gem" — passing rarity 0 keeps it out.
               p_gem_rarity:
-                gem.rarity,
+                relicDrop ? 0 : gem.rarity,
 
               p_final_weight:
                 finalWeight
@@ -2550,55 +2707,61 @@ export default {
 
       // Gems Found is a lifetime count score based on the base rarity
       // denominator of every gem found. Mutations do not alter this score.
-      const {
-        error: gemsFoundScoreError
-      } =
-        await ctx.supabaseAdmin.rpc(
-          "record_gems_found_score",
-          {
-            p_player_id: playerId,
-            p_rarity: gem.rarity
-          }
-        );
+      // Relics are not gems, so they never count toward Gems Found.
+      if (!relicDrop) {
+        const {
+          error: gemsFoundScoreError
+        } =
+          await ctx.supabaseAdmin.rpc(
+            "record_gems_found_score",
+            {
+              p_player_id: playerId,
+              p_rarity: gem.rarity
+            }
+          );
 
-      // The roll is already committed, so leaderboard analytics must never
-      // turn a successful roll into a duplicate retry.
-      if (
-        gemsFoundScoreError
-      ) {
-        console.error(
-          "Gems Found score update failed:",
+        // The roll is already committed, so leaderboard analytics must never
+        // turn a successful roll into a duplicate retry.
+        if (
           gemsFoundScoreError
-        );
+        ) {
+          console.error(
+            "Gems Found score update failed:",
+            gemsFoundScoreError
+          );
+        }
       }
 
 
       // Record the COMPLETE mutation combination as one index entry.
       // "none" is also a real combination, so every roll records exactly
       // one combination: none, or any of the 31 non-empty subsets.
-      const combinationKey =
-        getMutationCombinationKey(mutationIds);
+      // Relics are not collectible gems, so they never enter the mutation
+      // combination index (the Gem Index / collection).
+      if (!relicDrop) {
+        const combinationKey =
+          getMutationCombinationKey(mutationIds);
 
-      const {
-        data: mutationCombination,
-        error: mutationCombinationError
-      } = await ctx.supabaseAdmin.rpc(
-        "record_gem_mutation_combination",
-        {
-          p_player_id: playerId,
-          p_gem_name: gem.name,
-          p_combination_key: combinationKey,
-          p_mutation_ids: mutationIds,
-          p_mutation_multipliers: mutationMultipliers,
-          p_value: value
-        }
-      );
-
-      if (mutationCombinationError) {
-        console.error(
-          "Mutation combination index update failed:",
-          mutationCombinationError
+        const {
+          error: mutationCombinationError
+        } = await ctx.supabaseAdmin.rpc(
+          "record_gem_mutation_combination",
+          {
+            p_player_id: playerId,
+            p_gem_name: gem.name,
+            p_combination_key: combinationKey,
+            p_mutation_ids: mutationIds,
+            p_mutation_multipliers: mutationMultipliers,
+            p_value: value
+          }
         );
+
+        if (mutationCombinationError) {
+          console.error(
+            "Mutation combination index update failed:",
+            mutationCombinationError
+          );
+        }
       }
 
 
@@ -2705,8 +2868,17 @@ export default {
             gem.baseWeight,
 
           valuePerGram:
-            gem.valuePerGram
+            gem.valuePerGram,
+
+          dropType:
+            relicDrop ? "relic" : "gem"
         },
+
+        enchant: enchantedPickaxe ? {
+          id: enchantId,
+          grade: enchantGrade,
+          state: enchantState
+        } : null,
 
         weightMultiplier:
           rolledWeightMultiplier,

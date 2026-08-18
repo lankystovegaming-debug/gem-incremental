@@ -81,6 +81,7 @@ export default {
     // =================================
     const { data: gem, error: gemError } = await ctx.supabase.from("inventory_gems").select(`
             id,
+            gem_name,
             value,
             locked
           `).eq("id", specimenId).single();
@@ -97,6 +98,9 @@ export default {
       }, {
         status: 409
       });
+    }
+    if (gem.gem_name === "Enchant Relic" || gem.gem_name === "Ancient Relic") {
+      return Response.json({ error: "relic_not_sellable" }, { status: 409 });
     }
     // =================================
     // SELL AT DATABASE LEVEL
