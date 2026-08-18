@@ -87,7 +87,11 @@ export default {
     // =================================
     // LOAD PLAYER
     // =================================
-    const { data: player, error: playerError } = await ctx.supabase.from("players").select("money, total_rolls").single();
+    const { data: player, error: playerError } = await ctx.supabase
+      .from("players")
+      .select("money, total_rolls")
+      .eq("id", playerId)
+      .single();
     if (playerError || !player) {
       return Response.json({
         error: "Player not found."
@@ -117,7 +121,8 @@ export default {
             enchant_id,
             enchant_grade,
             enchant_state
-          `);
+          `)
+      .eq("player_id", playerId);
     if (equipmentError) {
       return Response.json({
         error: "Could not load equipment."
@@ -155,7 +160,12 @@ export default {
     // =================================
     // LOAD CRAFTING PROGRESS
     // =================================
-    const { data: progressRow, error: progressError } = await ctx.supabase.from("crafting_progress").select("progress").eq("recipe_id", recipeId).maybeSingle();
+    const { data: progressRow, error: progressError } = await ctx.supabase
+      .from("crafting_progress")
+      .select("progress")
+      .eq("player_id", playerId)
+      .eq("recipe_id", recipeId)
+      .maybeSingle();
     if (progressError) {
       return Response.json({
         error: "Could not load crafting progress."
