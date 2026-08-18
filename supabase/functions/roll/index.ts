@@ -2261,6 +2261,9 @@ export default {
               mutation_multipliers:
                 mutationMultipliers,
 
+              mutation_chance_multiplier:
+                mutationChanceMultiplier,
+
               value,
 
               locked:

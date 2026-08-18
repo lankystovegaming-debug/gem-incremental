@@ -19,6 +19,10 @@ const auditButton = document.getElementById("auditButton");
 const results = document.getElementById("searchResults");
 const playerPanel = document.getElementById("playerPanel");
 const auditPanel = document.getElementById("auditPanel");
+const analyticsButton = document.getElementById("analyticsButton");
+const analyticsRefresh = document.getElementById("analyticsRefresh");
+const analyticsPanel = document.getElementById("analyticsPanel");
+const analyticsContent = document.getElementById("analyticsContent");
 
 let selectedPlayerId = null;
 
@@ -346,25 +350,37 @@ async function runPlayerAction(button) {
   await inspectPlayer(selectedPlayerId);
 }
 
+
+
+analyticsButton?.addEventListener("click", loadAnalytics);
+analyticsRefresh?.addEventListener("click", loadAnalytics);
+
 async function loadAnalytics() {
-  if (!analyticsPanel) return;
+  if (!analyticsPanel || !analyticsContent) return;
+
   analyticsButton.disabled = true;
   analyticsRefresh.disabled = true;
   analyticsContent.innerHTML = '<div class="skeleton" style="height:220px"></div>';
 
   const { data, error } = await adminRequest("analytics");
+
   analyticsButton.disabled = false;
   analyticsRefresh.disabled = false;
 
   if (error) {
-    analyticsContent.innerHTML = '<p class="page-head__sub">Analytics could not be loaded.</p>';
+    analyticsPanel.hidden = false;
+    analyticsContent.innerHTML = `
+      <div class="analytics-error">
+        <strong>Analytics could not be loaded.</strong>
+        <span>${escapeHtml(error.message ?? "Unknown error")}</span>
+      </div>`;
     notify.error("Analytics failed", error.message);
     return;
   }
 
   analyticsPanel.hidden = false;
   document.getElementById("analyticsGenerated").textContent =
-    `Generated ${new Date(data.generatedAt).toLocaleString()}`;
+    `Generated ${new Date(data.generatedAt ?? Date.now()).toLocaleString()}`;
 
   const cards = [
     ["Players", formatCount(data.players)],
@@ -378,10 +394,16 @@ async function loadAnalytics() {
     ["Pending one-roll boosts", formatCount(data.pendingOneRollBoosts ?? 0)]
   ];
 
+  const row = (label, value) =>
+    `<div class="admin-list-row"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
+
   analyticsContent.innerHTML = `
     <div class="analytics-cards">
-      ${cards.map(([label, value]) => `<div class="analytics-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}
+      ${cards.map(([label, value]) =>
+        `<div class="analytics-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+      ).join("")}
     </div>
+
     <div class="analytics-columns">
       <section class="admin-section">
         <h3>Most Rolled Gems</h3>
@@ -389,18 +411,21 @@ async function loadAnalytics() {
           ${(data.topGems ?? []).map(item => row(item.name, formatCount(item.count))).join("") || row("No data", "—")}
         </div>
       </section>
+
       <section class="admin-section">
         <h3>Mutation Distribution</h3>
         <div class="admin-list">
           ${(data.mutations ?? []).map(item => row(item.name, formatCount(item.count))).join("") || row("No mutations recorded", "—")}
         </div>
       </section>
+
       <section class="admin-section">
         <h3>Active Boosts</h3>
         <div class="admin-list">
           ${Object.entries(data.activeBoosts ?? {}).map(([family, count]) => row(family, formatCount(count))).join("") || row("No active boosts", "—")}
         </div>
       </section>
+
       <section class="admin-section">
         <h3>Announcement Mutation Health</h3>
         <div class="admin-list">
@@ -409,15 +434,8 @@ async function loadAnalytics() {
           ${row("Coverage", `${(Number(data.announcementMutationCoverage ?? 1) * 100).toFixed(2)}%`)}
         </div>
       </section>
-      <section class="admin-section">
-        <h3>Mutation Combinations</h3>
-        <div class="admin-list">
-          ${(data.mutationCombinations ?? []).map(item => row(item.key, formatCount(item.count))).join("") || row("No announcement combinations", "—")}
-        </div>
-      </section>
     </div>`;
 }
-
 async function loadAudit() {
   auditButton.disabled = true;
   const { data, error } = await adminRequest("audit");

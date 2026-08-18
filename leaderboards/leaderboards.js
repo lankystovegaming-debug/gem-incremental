@@ -7,6 +7,7 @@ import {
 } from "../src/backend/auth.js";
 
 import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { GEM_MUTATIONS } from "../src/data/mutations.js";
 
 
 const leaderboardStatus =
@@ -39,12 +40,18 @@ const gemsFoundTab =
     "gemsFoundTab"
   );
 
+const bestRollTab =
+  document.getElementById(
+    "bestRollTab"
+  );
+
 
 let leaderboardData = {
   totalRolls: [],
   rarestGem: [],
   lifetimeEarnings: [],
-  gemsFound: []
+  gemsFound: [],
+  bestRoll: []
 };
 
 
@@ -148,7 +155,8 @@ async function loadAvatars() {
     "totalRolls",
     "rarestGem",
     "lifetimeEarnings",
-    "gemsFound"
+    "gemsFound",
+    "bestRoll"
   ]) {
     for (const player of leaderboardData[key]) {
       if (player.username) {
@@ -627,6 +635,75 @@ function renderGemsFound() {
 }
 
 
+
+// =========================================================
+// BEST ROLL
+// =========================================================
+
+function formatMultiplier(value) {
+  const n = Number(value ?? 1);
+  if (!Number.isFinite(n)) return "1x";
+  return `${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}x`;
+}
+
+function mutationNamesHtml(player) {
+  const ids = Array.isArray(player.mutation_ids) ? player.mutation_ids : [];
+  if (!ids.length) return '<span class="lb-no-mutation">No mutation</span>';
+  return ids.map(id => {
+    const mutation = GEM_MUTATIONS?.find?.(item => item.id === id);
+    return escapeHtml(mutation?.name ?? String(id).replaceAll("-", " "));
+  }).join('<span class="lb-mutation-dot">·</span>');
+}
+
+function renderBestRoll() {
+  const entries = leaderboardData.bestRoll;
+
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `
+      <h2>Best Roll</h2>
+      <p class="empty-message">No saved rolls yet.</p>
+    `;
+    return;
+  }
+
+  const rows = entries.map(player => `
+    <div class="leaderboard-row leaderboard-row--best-roll">
+      <div class="rank">${rankDisplay(player.rank)}</div>
+      <div class="player-name">
+        ${avatarHtml(player.username)}
+        <span class="lb-name-block">
+          <span class="lb-name-text">${escapeHtml(player.username)}</span>
+          <span class="lb-best-gem">${player.gem_name ? gemNameHtml(player.gem_name, escapeHtml) : "Unknown"}</span>
+        </span>
+      </div>
+      <div class="score gem-score">
+        <strong>$${formatMoney(player.value)}</strong>
+        <span>1 in ${formatNumber(player.rarity)} · ${formatNumber(player.final_weight)}g</span>
+        <span>${mutationNamesHtml(player)} · ${formatMultiplier(player.mutation_chance_multiplier)} mutation chance</span>
+      </div>
+    </div>
+  `).join("");
+
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row">
+      <div>
+        <h2>Best Roll</h2>
+        <p class="leaderboard-description">
+          Highest-value individual roll. Mutation chance shows the exact
+          multiplier active when that specimen was rolled.
+        </p>
+      </div>
+    </div>
+
+    <div class="leaderboard-header leaderboard-header--best-roll">
+      <div>Rank</div>
+      <div>Player / Gem</div>
+      <div class="score">Roll Value</div>
+    </div>
+    <div class="leaderboard-list">${rows}</div>
+  `;
+}
+
 // =========================================================
 // RENDER ACTIVE LEADERBOARD
 // =========================================================
@@ -664,6 +741,14 @@ function renderLeaderboard() {
     return;
   }
 
+  if (
+    activeLeaderboard ===
+    "bestRoll"
+  ) {
+    renderBestRoll();
+
+    return;
+  }
 
   renderLifetimeEarnings();
 }
@@ -720,11 +805,26 @@ async function loadLeaderboards() {
     "get_gems_found_leaderboard"
   );
 
+  const {
+    data: bestRollData,
+    error: bestRollError
+  } = await supabase.rpc(
+    "get_best_roll_leaderboard",
+    { p_limit: 25 }
+  );
+
 
   if (gemsFoundError) {
     console.error(
       "Gems Found leaderboard load failed:",
       gemsFoundError
+    );
+  }
+
+  if (bestRollError) {
+    console.error(
+      "Best Roll leaderboard load failed:",
+      bestRollError
     );
   }
 
@@ -763,6 +863,21 @@ async function loadLeaderboards() {
                 player.gems_found
             })
           )
+        : [],
+
+    bestRoll:
+      Array.isArray(bestRollData)
+        ? bestRollData.map(player => ({
+            rank: player.rank,
+            username: player.username,
+            gem_name: player.gem_name,
+            rarity: player.rarity,
+            value: player.value,
+            final_weight: player.final_weight,
+            mutation_ids: Array.isArray(player.mutation_ids) ? player.mutation_ids : [],
+            mutation_multiplier: player.mutation_multiplier,
+            mutation_chance_multiplier: player.mutation_chance_multiplier
+          }))
         : []
   };
 
@@ -823,6 +938,16 @@ gemsFoundTab.addEventListener(
   () => {
     activeLeaderboard =
       "gemsFound";
+
+    renderLeaderboard();
+  }
+);
+
+bestRollTab.addEventListener(
+  "click",
+  () => {
+    activeLeaderboard =
+      "bestRoll";
 
     renderLeaderboard();
   }

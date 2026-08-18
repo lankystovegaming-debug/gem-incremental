@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../src/styles/app.css">
   <link rel="stylesheet" href="./admin.css">
   <script>
-    (function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon"].includes(m))document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",a||"indigo")}catch(e){}})();
+    (function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon","gradient","ocean","forest","sunset","ice"].includes(m))document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",a||"indigo")}catch(e){}})();
   </script>
 </head>
 <body>
@@ -106,6 +106,17 @@
       </div>
 
       <div class="admin-event-list" id="eventsList"></div>
+    </section>
+
+    <section class="card admin-analytics" id="analyticsPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Analytics</h2>
+          <p class="page-head__sub" id="analyticsGenerated">Not loaded yet</p>
+        </div>
+        <button class="btn" id="analyticsRefresh" type="button">Refresh</button>
+      </div>
+      <div id="analyticsContent" class="analytics-content"></div>
     </section>
 
     <section id="searchResults" class="admin-results"></section>

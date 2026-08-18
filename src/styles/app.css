@@ -2205,3 +2205,121 @@ a.btn--icon[aria-current="page"] {
 :root[data-theme="ice"] .brand {
   text-shadow: 0 0 14px var(--accent-ring);
 }
+
+/* =========================================================
+   REFINED GRADIENT SYSTEM
+   Subtle gradients everywhere: depth without the eye-searing
+   neon treatment of the old theme.
+   ========================================================= */
+
+body {
+  background:
+    radial-gradient(900px 520px at 8% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 68%),
+    radial-gradient(780px 460px at 94% 6%, color-mix(in srgb, var(--rarity-exotic) 7%, transparent), transparent 70%),
+    linear-gradient(145deg, var(--bg), color-mix(in srgb, var(--bg) 86%, var(--bg-glow)));
+  background-attachment: fixed;
+}
+
+.card,
+.panel,
+.modal,
+.dropdown,
+.popover,
+.admin-section,
+.admin-result {
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--surface-raised) 96%, var(--accent) 4%),
+      var(--surface-solid));
+  border-color: color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+}
+
+.btn {
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--surface-raised) 96%, var(--accent) 4%),
+      color-mix(in srgb, var(--surface-solid) 94%, var(--accent) 6%));
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border-color: transparent;
+}
+
+.btn--primary:hover {
+  filter: brightness(1.06) saturate(1.04);
+}
+
+input, select, textarea {
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--surface-sunken) 94%, var(--accent) 6%),
+      var(--surface-sunken));
+}
+
+.segmented,
+.tabs {
+  background: linear-gradient(135deg, var(--surface-sunken), color-mix(in srgb, var(--surface-solid) 92%, var(--accent) 8%));
+}
+
+.page-head__title h1,
+h1, h2 {
+  background: linear-gradient(100deg, var(--text) 10%, var(--accent) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand {
+  background: linear-gradient(100deg, var(--text), var(--accent), var(--rarity-exotic));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root[data-theme="gradient"] {
+  --bg: #0e1020;
+  --bg-glow: #26345f;
+  --surface: #15182ae8;
+  --surface-solid: #15182a;
+  --surface-raised: #1b2035;
+  --surface-hover: #242b46;
+  --surface-sunken: #0d1020;
+  --border: #303957;
+  --border-strong: #46547a;
+  --accent: #8b9cff;
+  --accent-strong: #6578ee;
+  --accent-soft: #8b9cff2e;
+  --accent-ring: #8b9cff55;
+}
+
+:root[data-theme="gradient"] body {
+  background:
+    radial-gradient(900px 520px at 10% 0%, #5969c01c, transparent 65%),
+    radial-gradient(800px 500px at 90% 8%, #7c5ac21a, transparent 68%),
+    linear-gradient(140deg, #0d1020 0%, #12182c 48%, #17162b 100%);
+}
+
+:root[data-theme="ocean"] body {
+  background:
+    radial-gradient(900px 520px at 12% 0%, #38bdf815, transparent 65%),
+    linear-gradient(145deg, var(--bg), #0b1a29);
+}
+
+:root[data-theme="forest"] body {
+  background:
+    radial-gradient(900px 520px at 12% 0%, #34d39914, transparent 65%),
+    linear-gradient(145deg, var(--bg), #0b1b13);
+}
+
+:root[data-theme="sunset"] body {
+  background:
+    radial-gradient(900px 520px at 12% 0%, #fb718514, transparent 65%),
+    linear-gradient(145deg, var(--bg), #24100f);
+}
+
+:root[data-theme="ice"] body {
+  background:
+    radial-gradient(900px 520px at 12% 0%, #67e8f914, transparent 65%),
+    linear-gradient(145deg, var(--bg), #0b1a2a);
+}

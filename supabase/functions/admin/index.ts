@@ -447,6 +447,25 @@ export default {
       // GLOBAL ADMIN ANALYTICS
       // =========================================================
       if (action === "analytics") {
+        // Prefer the aggregate SECURITY DEFINER RPC. This avoids RLS/row-limit
+        // surprises and makes the analytics panel work consistently.
+        const { data: aggregateAnalytics, error: aggregateAnalyticsError } =
+          await ctx.supabaseAdmin.rpc("get_admin_analytics");
+
+        if (!aggregateAnalyticsError && aggregateAnalytics) {
+          await audit(ctx, adminId, null, "analytics_viewed");
+          return response({
+            ...aggregateAnalytics,
+            topGems: [],
+            mutations: [],
+            mutationCombinations: [],
+            activeBoosts: {},
+            highestRollPlayers: []
+          });
+        }
+
+        console.warn("Aggregate analytics RPC unavailable; using detailed fallback:", aggregateAnalyticsError);
+
         const [
           playersResult,
           rollsResult,
@@ -479,13 +498,25 @@ export default {
             .select("player_id, consumable_id, effect_value, activated_at")
         ]);
 
-        if (playersResult.error || gemsResult.error || moneyResult.error) {
-          console.error("Admin analytics failed:", {
-            players: playersResult.error,
-            gems: gemsResult.error,
-            money: moneyResult.error
-          });
-          return response({ error: "analytics_load_failed" }, 500);
+        const analyticsErrors = {
+          players: playersResult.error,
+          rolls: rollsResult.error,
+          gems: gemsResult.error,
+          money: moneyResult.error,
+          activeBoosts: activeBoostsResult.error,
+          announcements: announcementsResult.error,
+          oneRollBoosts: oneRollBoostsResult.error
+        };
+
+        if (Object.values(analyticsErrors).some(Boolean)) {
+          console.error("Admin analytics detailed load failed:", analyticsErrors);
+          return response({
+            error: "analytics_load_failed",
+            message: Object.entries(analyticsErrors)
+              .filter(([, value]) => value)
+              .map(([key, value]) => `${key}: ${(value as any)?.message ?? "query failed"}`)
+              .join(" | ")
+          }, 500);
         }
 
         const players = playersResult.data ?? [];
