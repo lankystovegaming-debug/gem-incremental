@@ -94,6 +94,7 @@ function renderPlayer(data) {
         <h3>Player Overview</h3>
         <div class="admin-stats">
           ${stat("Money", formatMoney(player.money))}
+          ${stat("Coins", formatCount(player.coins))}
           ${stat("Total rolls", formatCount(player.total_rolls))}
           ${stat("Gems", formatCount(player.gemCount))}
           ${stat("Capacity", formatCount(player.inventory_capacity))}
@@ -156,6 +157,35 @@ function renderPlayer(data) {
       </section>
 
       <section class="admin-section">
+        <h3>Advanced Player Actions</h3>
+        <div class="admin-advanced-grid">
+          <label class="field"><span>Coins Δ</span><input id="coinsAmount" type="number" step="1" value="0"></label>
+          <button class="btn btn--primary" data-action="coins" type="button">Apply coins</button>
+          <label class="field"><span>Capacity Δ</span><input id="capacityAmount" type="number" step="1" value="10"></label>
+          <button class="btn btn--primary" data-action="capacity" type="button">Apply slots</button>
+          <label class="field"><span>Total rolls Δ</span><input id="rollsAmount" type="number" step="1" value="1"></label>
+          <button class="btn btn--primary" data-action="rolls" type="button">Apply rolls</button>
+        </div>
+        <div class="admin-advanced-row">
+          <select id="boostFamily">
+            <option value="luck">Luck</option>
+            <option value="rollSpeed">Roll Speed</option>
+            <option value="weightLuck">Weight Luck</option>
+            <option value="weightMultiplier">Weight Multiplier</option>
+          </select>
+          <input id="boostEffect" type="number" min="0.0001" step="0.01" value="1" placeholder="Effect">
+          <input id="boostSeconds" type="number" min="1" step="60" value="3600" placeholder="Seconds">
+          <button class="btn btn--primary" data-action="boost" type="button">Apply boost</button>
+        </div>
+        <div class="admin-advanced-row">
+          <input id="allPotionQuantity" type="number" min="1" step="1" value="10" placeholder="Quantity">
+          <button class="btn" data-action="grant-all-potions" type="button">Grant every potion</button>
+          <button class="btn" data-action="grant-all-gems" type="button">Grant every gem</button>
+          <button class="btn btn--danger" data-action="clear-inventory" type="button">Clear inventory</button>
+        </div>
+      </section>
+
+      <section class="admin-section">
         <h3>Account Controls</h3>
         <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
         <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
@@ -176,10 +206,15 @@ function renderPlayer(data) {
       <section class="admin-section admin-section--wide">
         <h3>Recent Gems</h3>
         <div class="admin-list">
-          ${(data.gems ?? []).map((gem) => row(
-            gem.gem_name,
-            `${formatWeight(gem.final_weight)} · ${formatMoney(gem.value)}${gem.locked ? " · Locked" : ""}`
-          )).join("") || row("Inventory", "Empty")}
+          ${(data.gems ?? []).map((gem) => `
+            <div class="admin-list-row admin-gem-row">
+              <span>
+                <strong>${escapeHtml(gem.gem_name)}</strong>
+                <small>${escapeHtml(formatWeight(gem.final_weight))} · ${escapeHtml(formatMoney(gem.value))}${gem.locked ? " · Locked" : ""}${Array.isArray(gem.mutation_ids) && gem.mutation_ids.length ? ` · ${escapeHtml(gem.mutation_ids.join(" · "))}` : ""}</small>
+              </span>
+              <button class="btn btn--danger btn--small" data-action="delete-gem" data-specimen="${escapeHtml(gem.id)}" type="button">Delete</button>
+            </div>
+          `).join("") || row("Inventory", "Empty")}
         </div>
       </section>
 
@@ -231,6 +266,40 @@ async function runPlayerAction(button) {
     request = ["mutation_luck", {
       mutationLuck: Number(document.getElementById("mutationLuck").value)
     }];
+  } else if (action === "coins") {
+    request = ["coins", {
+      amount: Number(document.getElementById("coinsAmount").value)
+    }];
+  } else if (action === "capacity") {
+    request = ["capacity", {
+      amount: Math.trunc(Number(document.getElementById("capacityAmount").value))
+    }];
+  } else if (action === "rolls") {
+    request = ["rolls", {
+      amount: Math.trunc(Number(document.getElementById("rollsAmount").value))
+    }];
+  } else if (action === "boost") {
+    request = ["boost", {
+      family: document.getElementById("boostFamily").value,
+      effect: Number(document.getElementById("boostEffect").value),
+      seconds: Math.trunc(Number(document.getElementById("boostSeconds").value))
+    }];
+  } else if (action === "grant-all-potions") {
+    request = ["grant_all_potions", {
+      quantity: Math.trunc(Number(document.getElementById("allPotionQuantity").value))
+    }];
+  } else if (action === "grant-all-gems") {
+    request = ["grant_all_gems", {
+      mutationIds: []
+    }];
+  } else if (action === "clear-inventory") {
+    if (!window.confirm("Delete every gem in this player's inventory? This cannot be undone.")) return;
+    request = ["clear_inventory", {}];
+  } else if (action === "delete-gem") {
+    if (!window.confirm("Delete this gem permanently?")) return;
+    request = ["delete_gem", {
+      specimenId: button.dataset.specimen
+    }];
   } else if (action === "potion-add" || action === "potion-remove") {
     const value = Math.abs(Math.trunc(Number(document.getElementById("potionAmount").value)));
     request = ["potion", {
@@ -260,6 +329,61 @@ async function runPlayerAction(button) {
 
   notify.success("Admin action complete", "The player record was updated.");
   await inspectPlayer(selectedPlayerId);
+}
+
+async function loadAnalytics() {
+  if (!analyticsPanel) return;
+  analyticsButton.disabled = true;
+  analyticsRefresh.disabled = true;
+  analyticsContent.innerHTML = '<div class="skeleton" style="height:220px"></div>';
+
+  const { data, error } = await adminRequest("analytics");
+  analyticsButton.disabled = false;
+  analyticsRefresh.disabled = false;
+
+  if (error) {
+    analyticsContent.innerHTML = '<p class="page-head__sub">Analytics could not be loaded.</p>';
+    notify.error("Analytics failed", error.message);
+    return;
+  }
+
+  analyticsPanel.hidden = false;
+  document.getElementById("analyticsGenerated").textContent =
+    `Generated ${new Date(data.generatedAt).toLocaleString()}`;
+
+  const cards = [
+    ["Players", formatCount(data.players)],
+    ["Total rolls", formatCount(data.totalRolls)],
+    ["Inventory gems", formatCount(data.totalInventoryGems)],
+    ["Mutated gems", `${formatCount(data.mutatedGems)} (${(Number(data.mutationRate || 0) * 100).toFixed(2)}%)`],
+    ["Money in economy", formatMoney(data.totalMoney)],
+    ["Inventory value", formatMoney(data.totalInventoryValue)]
+  ];
+
+  analyticsContent.innerHTML = `
+    <div class="analytics-cards">
+      ${cards.map(([label, value]) => `<div class="analytics-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}
+    </div>
+    <div class="analytics-columns">
+      <section class="admin-section">
+        <h3>Most Rolled Gems</h3>
+        <div class="admin-list">
+          ${(data.topGems ?? []).map(item => row(item.name, formatCount(item.count))).join("") || row("No data", "—")}
+        </div>
+      </section>
+      <section class="admin-section">
+        <h3>Mutation Distribution</h3>
+        <div class="admin-list">
+          ${(data.mutations ?? []).map(item => row(item.name, formatCount(item.count))).join("") || row("No mutations recorded", "—")}
+        </div>
+      </section>
+      <section class="admin-section">
+        <h3>Active Boosts</h3>
+        <div class="admin-list">
+          ${Object.entries(data.activeBoosts ?? {}).map(([family, count]) => row(family, formatCount(count))).join("") || row("No active boosts", "—")}
+        </div>
+      </section>
+    </div>`;
 }
 
 async function loadAudit() {
@@ -649,6 +773,7 @@ if (!user || !whoami?.isAdmin) {
   status.textContent = "Administrator access verified.";
   searchButton.disabled = false;
   auditButton.disabled = false;
+  analyticsButton.disabled = false;
   wireAnnouncements();
   wireCodes();
   tryWireAdminEvents();

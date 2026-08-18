@@ -441,6 +441,364 @@ export default {
         return response({ locked, bannedUntil: data.user?.banned_until ?? null });
       }
 
+
+
+      // =========================================================
+      // GLOBAL ADMIN ANALYTICS
+      // =========================================================
+      if (action === "analytics") {
+        const [
+          playersResult,
+          rollsResult,
+          gemsResult,
+          moneyResult,
+          activeBoostsResult
+        ] = await Promise.all([
+          ctx.supabaseAdmin.from("players")
+            .select("id, money, total_rolls, mutation_luck"),
+          ctx.supabaseAdmin.from("players")
+            .select("id, total_rolls, updated_at")
+            .order("total_rolls", { ascending: false })
+            .limit(100),
+          ctx.supabaseAdmin.from("inventory_gems")
+            .select("gem_name, rarity, value, mutation_ids, created_at")
+            .order("created_at", { ascending: false })
+            .limit(10000),
+          ctx.supabaseAdmin.from("players")
+            .select("money"),
+          ctx.supabaseAdmin.from("player_boosts")
+            .select("family, effect_value, expires_at")
+            .gt("expires_at", new Date().toISOString())
+        ]);
+
+        if (playersResult.error || gemsResult.error || moneyResult.error) {
+          console.error("Admin analytics failed:", {
+            players: playersResult.error,
+            gems: gemsResult.error,
+            money: moneyResult.error
+          });
+          return response({ error: "analytics_load_failed" }, 500);
+        }
+
+        const players = playersResult.data ?? [];
+        const gems = gemsResult.data ?? [];
+
+        const gemCounts = new Map<string, number>();
+        const mutationCounts = new Map<string, number>();
+        let totalValue = 0;
+        let mutatedGems = 0;
+
+        for (const gem of gems) {
+          gemCounts.set(
+            gem.gem_name,
+            (gemCounts.get(gem.gem_name) ?? 0) + 1
+          );
+          totalValue += Number(gem.value ?? 0);
+
+          let ids: string[] = [];
+          if (Array.isArray(gem.mutation_ids)) {
+            ids = gem.mutation_ids.map((id: unknown) => String(id));
+          } else if (typeof gem.mutation_ids === "string") {
+            try {
+              const parsed = JSON.parse(gem.mutation_ids);
+              ids = Array.isArray(parsed)
+                ? parsed.map((id: unknown) => String(id))
+                : [];
+            } catch {
+              ids = gem.mutation_ids
+                .split(",")
+                .map((id: string) => id.trim())
+                .filter(Boolean);
+            }
+          }
+
+          if (ids.length) mutatedGems += 1;
+          for (const id of ids) {
+            mutationCounts.set(id, (mutationCounts.get(id) ?? 0) + 1);
+          }
+        }
+
+        const topGems = [...gemCounts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+          .map(([name, count]) => ({ name, count }));
+
+        const mutations = [...mutationCounts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([id, count]) => ({
+            id,
+            name: MUTATION_CATALOG[id]?.name ?? id,
+            count
+          }));
+
+        const activeBoosts = (activeBoostsResult.data ?? []).reduce(
+          (map: Record<string, number>, boost: any) => {
+            map[boost.family] = (map[boost.family] ?? 0) + 1;
+            return map;
+          },
+          {}
+        );
+
+        const totalRolls = players.reduce(
+          (sum: number, player: any) => sum + Number(player.total_rolls ?? 0),
+          0
+        );
+        const totalMoney = players.reduce(
+          (sum: number, player: any) => sum + Number(player.money ?? 0),
+          0
+        );
+
+        await audit(ctx, adminId, null, "analytics_viewed");
+
+        return response({
+          generatedAt: new Date().toISOString(),
+          players: players.length,
+          totalRolls,
+          totalInventoryGems: gems.length,
+          mutatedGems,
+          mutationRate: gems.length ? mutatedGems / gems.length : 0,
+          totalMoney,
+          totalInventoryValue: totalValue,
+          topGems,
+          mutations,
+          activeBoosts,
+          highestRollPlayers: (rollsResult.data ?? []).slice(0, 10)
+        });
+      }
+
+      // =========================================================
+      // ADVANCED PLAYER ADMIN ACTIONS
+      // =========================================================
+      if (action === "coins") {
+        const amount = finiteNumber(body.amount);
+        if (amount === null || amount === 0 || Math.abs(amount) > 1e12) {
+          return response({ error: "invalid_amount" }, 400);
+        }
+
+        const { data: player } = await ctx.supabaseAdmin
+          .from("players")
+          .select("coins")
+          .eq("id", targetId)
+          .maybeSingle();
+
+        if (!player) return response({ error: "player_not_found" }, 404);
+
+        const before = Number(player.coins ?? 0);
+        const after = Math.max(0, before + Math.trunc(amount));
+
+        const { error } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ coins: after })
+          .eq("id", targetId);
+
+        if (error) return response({ error: "coins_update_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "coins_adjusted", { amount, before, after });
+        return response({ coins: after });
+      }
+
+      if (action === "capacity") {
+        const amount = finiteNumber(body.amount);
+        if (amount === null || !Number.isInteger(amount) || Math.abs(amount) > 1000000) {
+          return response({ error: "invalid_capacity_amount" }, 400);
+        }
+
+        const { data: player } = await ctx.supabaseAdmin
+          .from("players")
+          .select("inventory_capacity")
+          .eq("id", targetId)
+          .maybeSingle();
+
+        if (!player) return response({ error: "player_not_found" }, 404);
+
+        const before = Number(player.inventory_capacity ?? 1);
+        const after = Math.max(1, before + amount);
+
+        const { error } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ inventory_capacity: after })
+          .eq("id", targetId);
+
+        if (error) return response({ error: "capacity_update_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "capacity_adjusted", { amount, before, after });
+        return response({ inventoryCapacity: after });
+      }
+
+      if (action === "rolls") {
+        const amount = finiteNumber(body.amount);
+        if (amount === null || !Number.isInteger(amount) || Math.abs(amount) > 1000000000) {
+          return response({ error: "invalid_roll_amount" }, 400);
+        }
+
+        const { data: player } = await ctx.supabaseAdmin
+          .from("players")
+          .select("total_rolls")
+          .eq("id", targetId)
+          .maybeSingle();
+
+        if (!player) return response({ error: "player_not_found" }, 404);
+
+        const before = Number(player.total_rolls ?? 0);
+        const after = Math.max(0, before + amount);
+
+        const { error } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ total_rolls: after })
+          .eq("id", targetId);
+
+        if (error) return response({ error: "rolls_update_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "rolls_adjusted", { amount, before, after });
+        return response({ totalRolls: after });
+      }
+
+      if (action === "boost") {
+        const families = new Set(["luck", "rollSpeed", "weightLuck", "weightMultiplier"]);
+        const family = String(body.family ?? "");
+        const effect = finiteNumber(body.effect);
+        const seconds = Math.trunc(Number(body.seconds));
+
+        if (!families.has(family) || effect === null || effect <= 0 || effect > 100000 ||
+            !Number.isFinite(seconds) || seconds < 1 || seconds > 31536000) {
+          return response({ error: "invalid_boost" }, 400);
+        }
+
+        const expiresAt = new Date(Date.now() + seconds * 1000).toISOString();
+
+        const { error } = await ctx.supabaseAdmin
+          .from("player_boosts")
+          .upsert({
+            player_id: targetId,
+            family,
+            tier: 3,
+            effect_value: effect,
+            expires_at: expiresAt,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "player_id,family" });
+
+        if (error) return response({ error: "boost_update_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "boost_set", {
+          family, effect, seconds, expiresAt
+        });
+        return response({ family, effect, expiresAt });
+      }
+
+      if (action === "grant_all_potions") {
+        const quantity = Math.trunc(Number(body.quantity));
+        if (!Number.isFinite(quantity) || quantity < 1 || quantity > 100000) {
+          return response({ error: "invalid_quantity" }, 400);
+        }
+
+        const { data: existing, error: existingError } = await ctx.supabaseAdmin
+          .from("player_consumables")
+          .select("consumable_id, quantity")
+          .eq("player_id", targetId);
+
+        if (existingError) {
+          return response({ error: "grant_all_potions_load_failed", message: existingError.message }, 500);
+        }
+
+        const current = new Map(
+          (existing ?? []).map((row: any) => [
+            String(row.consumable_id),
+            Number(row.quantity ?? 0)
+          ])
+        );
+
+        const rows = [...CONSUMABLE_IDS].map((consumableId) => ({
+          player_id: targetId,
+          consumable_id: consumableId,
+          quantity: Number(current.get(consumableId) ?? 0) + quantity,
+          updated_at: new Date().toISOString()
+        }));
+
+        const { error } = await ctx.supabaseAdmin
+          .from("player_consumables")
+          .upsert(rows, { onConflict: "player_id,consumable_id" });
+
+        if (error) return response({ error: "grant_all_potions_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "all_potions_granted", { quantity });
+        return response({ quantity, count: rows.length });
+      }
+
+      if (action === "grant_all_gems") {
+        const mutationIds = Array.isArray(body.mutationIds)
+          ? MUTATION_ORDER.filter((id) =>
+              body.mutationIds.map((value: unknown) => String(value)).includes(id)
+            )
+          : [];
+
+        const mutationMultiplier = mutationIds.reduce(
+          (total, id) => total * MUTATION_CATALOG[id].multiplier,
+          1
+        );
+        const mutationMultipliers = Object.fromEntries(
+          mutationIds.map((id) => [id, MUTATION_CATALOG[id].multiplier])
+        );
+
+        const rows = GEM_CATALOG.map((gem) => ({
+          player_id: targetId,
+          gem_name: gem.name,
+          rarity: gem.rarity,
+          base_weight: gem.baseWeight,
+          value_per_gram: gem.valuePerGram,
+          rolled_weight_multiplier: 1,
+          rolled_weight: gem.baseWeight,
+          final_weight: gem.baseWeight,
+          value: gem.baseWeight * gem.valuePerGram * mutationMultiplier,
+          locked: false,
+          roll_number: 0,
+          luck_at_roll: 1,
+          mutation_id: mutationIds[0] ?? null,
+          mutation_multiplier: mutationMultiplier,
+          mutation_ids: mutationIds,
+          mutation_multipliers: mutationMultipliers
+        }));
+
+        const { error } = await ctx.supabaseAdmin
+          .from("inventory_gems")
+          .insert(rows);
+
+        if (error) return response({ error: "grant_all_gems_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "all_gems_granted", {
+          count: rows.length,
+          mutationIds
+        });
+        return response({ count: rows.length });
+      }
+
+      if (action === "clear_inventory") {
+        const { count, error } = await ctx.supabaseAdmin
+          .from("inventory_gems")
+          .delete({ count: "exact" })
+          .eq("player_id", targetId);
+
+        if (error) return response({ error: "inventory_clear_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "inventory_cleared", { count: count ?? 0 });
+        return response({ deleted: count ?? 0 });
+      }
+
+      if (action === "delete_gem") {
+        const specimenId = String(body.specimenId ?? "");
+        if (!specimenId) return response({ error: "invalid_specimen_id" }, 400);
+
+        const { error } = await ctx.supabaseAdmin
+          .from("inventory_gems")
+          .delete()
+          .eq("id", specimenId)
+          .eq("player_id", targetId);
+
+        if (error) return response({ error: "gem_delete_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, targetId, "gem_deleted", { specimenId });
+        return response({ success: true });
+      }
+
       return response({ error: "unknown_admin_action" }, 400);
     }
   )

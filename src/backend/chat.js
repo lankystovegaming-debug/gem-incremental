@@ -51,6 +51,24 @@ function normalizeChatRow(row, profiles = {}) {
   };
 }
 
+function parseMutationIds(raw) {
+  if (Array.isArray(raw)) {
+    return raw.map((id) => String(id)).filter(Boolean);
+  }
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((id) => String(id)).filter(Boolean);
+      }
+    } catch {
+      // Fall through to legacy comma-separated values.
+    }
+    return raw.split(",").map((id) => id.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function normalizeAnnouncement(row, profiles = {}) {
   const rarity = Number(row?.rarity ?? 0);
   const profile = profiles[row?.player_id] ?? {};
