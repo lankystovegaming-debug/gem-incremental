@@ -2417,71 +2417,42 @@ export default {
       }
 
 
-      // Attach the complete mutation list to the rare-roll chat
-      // announcement created by the server-side roll stats path.
-      // This is best-effort: chat failure must never invalidate a roll.
+      // Attach the COMPLETE mutation list to the announcement created by
+      // record_server_roll. This is done through a SECURITY DEFINER RPC so
+      // the lookup/update happens in one database statement instead of
+      // relying on an Edge-runtime timestamp window.
+      //
+      // The RPC intentionally only updates an announcement whose mutation
+      // array is still empty. This makes the operation idempotent and avoids
+      // overwriting a mutation list that has already been attached.
       try {
-        // record_server_roll can create the announcement using the DB clock,
-        // which may be a few milliseconds/seconds behind the Edge runtime
-        // clock. Never use `created_at >= now` here: that can miss the
-        // announcement entirely and leave mutation_ids as [].
-        const announcementSince = new Date(
-          now.getTime() - 30_000
-        ).toISOString();
-        const announcementUntil = new Date(
-          now.getTime() + 10_000
-        ).toISOString();
+        const { data: announcementId, error: announcementMutationError } =
+          await ctx.supabaseAdmin.rpc("attach_roll_announcement_mutations", {
+            p_player_id: playerId,
+            p_gem_name: gem.name,
+            p_gem_rarity: gem.rarity,
+            p_mutation_ids: mutationIds
+          });
 
-        let announcement: { id: string; mutation_ids: string[] | null } | null = null;
-
-        for (let attempt = 0; attempt < 4 && !announcement; attempt += 1) {
-          const { data, error } = await ctx.supabaseAdmin
-            .from("global_chat_announcements")
-            .select("id, mutation_ids")
-            .eq("player_id", playerId)
-            .eq("gem_name", gem.name)
-            .eq("rarity", gem.rarity)
-            .gte("created_at", announcementSince)
-            .lte("created_at", announcementUntil)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (error) {
-            throw error;
-          }
-
-          announcement = data ?? null;
-
-          if (!announcement && attempt < 3) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
+        if (announcementMutationError) {
+          throw announcementMutationError;
         }
 
-        if (announcement?.id) {
-          const { error: mutationUpdateError } = await ctx.supabaseAdmin
-            .from("global_chat_announcements")
-            .update({
-              mutation_ids: mutationIds
-            })
-            .eq("id", announcement.id);
-
-          if (mutationUpdateError) {
-            throw mutationUpdateError;
-          }
-        } else {
+        if (!announcementId) {
           console.warn(
-            "Roll announcement not found while attaching mutations:",
+            "No rare-roll announcement needed/found while attaching mutations:",
             { playerId, gem: gem.name, rarity: gem.rarity, mutationIds }
           );
         }
       } catch (announcementError) {
+        // Chat metadata is deliberately best-effort. The specimen is already
+        // committed, so an announcement failure must never turn a successful
+        // roll into a 500/retry.
         console.error(
           "Could not attach mutations to chat announcement:",
           announcementError
         );
       }
-
 
       // =====================================================
       // FINAL INVENTORY COUNT

@@ -183,6 +183,14 @@ function renderPlayer(data) {
           <button class="btn" data-action="grant-all-gems" type="button">Grant every gem</button>
           <button class="btn btn--danger" data-action="clear-inventory" type="button">Clear inventory</button>
         </div>
+        <div class="admin-advanced-row">
+          <select id="oneRollConsumable" aria-label="One-roll potion">
+            <option value="legendary-potion">Legendary potion · +1,000 luck</option>
+            <option value="mythic-potion">Mythic potion · +10,000 luck</option>
+          </select>
+          <input id="oneRollEffect" type="number" min="1" max="1000000" step="1" value="1000" aria-label="One-roll luck">
+          <button class="btn" data-action="one-roll-boost" type="button">Grant one-roll boost</button>
+        </div>
       </section>
 
       <section class="admin-section">
@@ -289,8 +297,15 @@ async function runPlayerAction(button) {
       quantity: Math.trunc(Number(document.getElementById("allPotionQuantity").value))
     }];
   } else if (action === "grant-all-gems") {
+    const mutationIds = [...document.querySelectorAll(".gemMutation:checked")]
+      .map((box) => box.value);
     request = ["grant_all_gems", {
-      mutationIds: []
+      mutationIds
+    }];
+  } else if (action === "one-roll-boost") {
+    request = ["one_roll_boost", {
+      consumableId: document.getElementById("oneRollConsumable").value,
+      effectValue: Number(document.getElementById("oneRollEffect").value)
     }];
   } else if (action === "clear-inventory") {
     if (!window.confirm("Delete every gem in this player's inventory? This cannot be undone.")) return;
@@ -357,7 +372,10 @@ async function loadAnalytics() {
     ["Inventory gems", formatCount(data.totalInventoryGems)],
     ["Mutated gems", `${formatCount(data.mutatedGems)} (${(Number(data.mutationRate || 0) * 100).toFixed(2)}%)`],
     ["Money in economy", formatMoney(data.totalMoney)],
-    ["Inventory value", formatMoney(data.totalInventoryValue)]
+    ["Inventory value", formatMoney(data.totalInventoryValue)],
+    ["Rare announcements", formatCount(data.rareAnnouncements ?? 0)],
+    ["Mutation coverage", `${(Number(data.announcementMutationCoverage ?? 1) * 100).toFixed(2)}%`],
+    ["Pending one-roll boosts", formatCount(data.pendingOneRollBoosts ?? 0)]
   ];
 
   analyticsContent.innerHTML = `
@@ -381,6 +399,20 @@ async function loadAnalytics() {
         <h3>Active Boosts</h3>
         <div class="admin-list">
           ${Object.entries(data.activeBoosts ?? {}).map(([family, count]) => row(family, formatCount(count))).join("") || row("No active boosts", "—")}
+        </div>
+      </section>
+      <section class="admin-section">
+        <h3>Announcement Mutation Health</h3>
+        <div class="admin-list">
+          ${row("Announcements with mutations", formatCount(data.announcementsWithMutations ?? 0))}
+          ${row("Announcements still empty", formatCount(data.emptyAnnouncementMutations ?? 0))}
+          ${row("Coverage", `${(Number(data.announcementMutationCoverage ?? 1) * 100).toFixed(2)}%`)}
+        </div>
+      </section>
+      <section class="admin-section">
+        <h3>Mutation Combinations</h3>
+        <div class="admin-list">
+          ${(data.mutationCombinations ?? []).map(item => row(item.key, formatCount(item.count))).join("") || row("No announcement combinations", "—")}
         </div>
       </section>
     </div>`;

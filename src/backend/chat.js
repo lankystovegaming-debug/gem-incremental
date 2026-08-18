@@ -84,7 +84,9 @@ function normalizeAnnouncement(row, profiles = {}) {
     roller_username: rollerName,
     gem_name: row.gem_name,
     rarity,
-    mutation_ids: Array.isArray(row?.mutation_ids) ? row.mutation_ids : [],
+    // Supabase normally returns a text[] as an array, but keep legacy/imported
+    // rows readable if the value arrives serialized as JSON or CSV.
+    mutation_ids: parseMutationIds(row?.mutation_ids),
     message: `${rollerName} rolled a rare ${row.gem_name} — 1 in ${rarity.toLocaleString("en-US")}!`,
     created_at: row.created_at
   };

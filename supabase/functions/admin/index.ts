@@ -452,7 +452,9 @@ export default {
           rollsResult,
           gemsResult,
           moneyResult,
-          activeBoostsResult
+          activeBoostsResult,
+          announcementsResult,
+          oneRollBoostsResult
         ] = await Promise.all([
           ctx.supabaseAdmin.from("players")
             .select("id, money, total_rolls, mutation_luck"),
@@ -468,7 +470,13 @@ export default {
             .select("money"),
           ctx.supabaseAdmin.from("player_boosts")
             .select("family, effect_value, expires_at")
-            .gt("expires_at", new Date().toISOString())
+            .gt("expires_at", new Date().toISOString()),
+          ctx.supabaseAdmin.from("global_chat_announcements")
+            .select("id, mutation_ids, created_at")
+            .order("created_at", { ascending: false })
+            .limit(10000),
+          ctx.supabaseAdmin.from("player_one_roll_boosts")
+            .select("player_id, consumable_id, effect_value, activated_at")
         ]);
 
         if (playersResult.error || gemsResult.error || moneyResult.error) {
@@ -548,6 +556,24 @@ export default {
           0
         );
 
+        const announcementRows = announcementsResult.data ?? [];
+        const announcementMutationIds = announcementRows
+          .map((row: any) => Array.isArray(row.mutation_ids) ? row.mutation_ids : [])
+          .map((ids: any[]) => ids.map((id) => String(id)).filter(Boolean));
+        const announcementsWithMutations = announcementMutationIds.filter((ids: string[]) => ids.length > 0).length;
+        const emptyAnnouncementMutations = Math.max(0, announcementRows.length - announcementsWithMutations);
+
+        const mutationCombinationCounts = new Map<string, number>();
+        for (const ids of announcementMutationIds) {
+          const key = ids.length ? ids.join("+") : "none";
+          mutationCombinationCounts.set(key, (mutationCombinationCounts.get(key) ?? 0) + 1);
+        }
+
+        const mutationCombinations = [...mutationCombinationCounts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 20)
+          .map(([key, count]) => ({ key, count }));
+
         await audit(ctx, adminId, null, "analytics_viewed");
 
         return response({
@@ -561,7 +587,15 @@ export default {
           totalInventoryValue: totalValue,
           topGems,
           mutations,
+          mutationCombinations,
           activeBoosts,
+          pendingOneRollBoosts: oneRollBoostsResult.data?.length ?? 0,
+          rareAnnouncements: announcementRows.length,
+          announcementsWithMutations,
+          emptyAnnouncementMutations,
+          announcementMutationCoverage: announcementRows.length
+            ? announcementsWithMutations / announcementRows.length
+            : 1,
           highestRollPlayers: (rollsResult.data ?? []).slice(0, 10)
         });
       }
@@ -683,6 +717,58 @@ export default {
           family, effect, seconds, expiresAt
         });
         return response({ family, effect, expiresAt });
+      }
+
+      if (action === "one_roll_boost") {
+        const consumableId = String(body.consumableId ?? "");
+        const effectValue = finiteNumber(body.effectValue);
+
+        if (
+          !new Set(["legendary-potion", "mythic-potion"]).has(consumableId) ||
+          effectValue === null ||
+          effectValue <= 0 ||
+          effectValue > 1000000
+        ) {
+          return response({ error: "invalid_one_roll_boost" }, 400);
+        }
+
+        const { data: existing } = await ctx.supabaseAdmin
+          .from("player_one_roll_boosts")
+          .select("consumable_id, effect_value, activated_at")
+          .eq("player_id", targetId)
+          .maybeSingle();
+
+        if (existing) {
+          return response({
+            error: "one_roll_boost_already_active",
+            message: "This player already has a pending one-roll boost."
+          }, 409);
+        }
+
+        const { error } = await ctx.supabaseAdmin
+          .from("player_one_roll_boosts")
+          .insert({
+            player_id: targetId,
+            consumable_id: consumableId,
+            effect_value: effectValue
+          });
+
+        if (error) {
+          return response({
+            error: "one_roll_boost_failed",
+            message: error.message
+          }, 500);
+        }
+
+        await audit(ctx, adminId, targetId, "one_roll_boost_granted", {
+          consumableId,
+          effectValue
+        });
+
+        return response({
+          consumableId,
+          effectValue
+        });
       }
 
       if (action === "grant_all_potions") {
