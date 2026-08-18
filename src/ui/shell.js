@@ -25,6 +25,8 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
+import { mountGlobalChat } from "./globalChat.js";
+import { startGlobalAutoRoll } from "./autoRoll.js";
 
 
 // =========================================================
@@ -68,6 +70,11 @@ const MODE_ICONS = {
 
 
 export function mountShell({ page, base = "./" }) {
+  // Shared chat + automation live at the shell level so navigation does not
+  // disable either feature on non-Roll pages.
+  mountGlobalChat();
+  startGlobalAutoRoll(page);
+
   const header = document.createElement("header");
 
   header.className = "topbar";

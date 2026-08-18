@@ -125,6 +125,13 @@ if (messagesEl && formEl && inputEl) {
     return isChatOpen() && !document.hidden;
   }
 
+  function scrollChatToBottom() {
+    if (!messagesEl) return;
+    requestAnimationFrame(() => {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  }
+
   function latestGlobalMessageAt(messages) {
     return (messages ?? [])
       .filter((message) => message.source === "global" && message.created_at)
@@ -512,6 +519,7 @@ if (messagesEl && formEl && inputEl) {
           "chat-message--hundredk",
           Number(message.rarity ?? 0) >= 100000 && Number(message.rarity ?? 0) < 1000000
         );
+        scrollChatToBottom();
       }
       return false;
     }
@@ -569,6 +577,7 @@ if (messagesEl && formEl && inputEl) {
         duplicate.dataset.mutationKey = mutationKey;
         const textEl = duplicate.querySelector(".chat-message__text");
         if (textEl) textEl.innerHTML = systemMessageHtml(message);
+        scrollChatToBottom();
         return false;
       }
     }
@@ -642,7 +651,7 @@ if (messagesEl && formEl && inputEl) {
     messagesEl.appendChild(item);
 
     if (shouldScroll) {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      scrollChatToBottom();
     }
 
     return true;
@@ -759,7 +768,7 @@ if (messagesEl && formEl && inputEl) {
           renderMessage(message, false);
         }
 
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        scrollChatToBottom();
       }
 
       unreadGlobal = countUnreadGlobalMessages(globalMessages);

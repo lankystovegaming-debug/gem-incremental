@@ -46,13 +46,19 @@ const bestRollTab =
     "bestRollTab"
   );
 
+const mostWeightTab =
+  document.getElementById(
+    "mostWeightTab"
+  );
+
 
 let leaderboardData = {
   totalRolls: [],
   rarestGem: [],
   lifetimeEarnings: [],
   gemsFound: [],
-  bestRoll: []
+  bestRoll: [],
+  mostWeight: []
 };
 
 
@@ -157,7 +163,8 @@ async function loadAvatars() {
     "rarestGem",
     "lifetimeEarnings",
     "gemsFound",
-    "bestRoll"
+    "bestRoll",
+    "mostWeight"
   ]) {
     for (const player of leaderboardData[key]) {
       if (player.username) {
@@ -264,6 +271,12 @@ function updateTabs() {
     "active",
     activeLeaderboard ===
       "bestRoll"
+  );
+
+  mostWeightTab.classList.toggle(
+    "active",
+    activeLeaderboard ===
+      "mostWeight"
   );
 }
 
@@ -747,6 +760,53 @@ function renderBestRoll() {
   `;
 }
 
+function renderMostWeight() {
+  const entries = leaderboardData.mostWeight;
+
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `
+      <h2>Most Weight</h2>
+      <p class="empty-message">No roll weight history yet.</p>
+    `;
+    return;
+  }
+
+  const rows = entries.map(player => `
+    <div class="leaderboard-row leaderboard-row--best-roll">
+      <div class="rank">${rankDisplay(player.rank)}</div>
+      <div class="player-name">
+        ${avatarHtml(player.username)}
+        <span class="lb-name-block">
+          <span class="lb-name-text">${escapeHtml(player.username)}</span>
+          <span class="lb-best-gem">${player.gem_name ? gemNameHtml(player.gem_name, escapeHtml) : "Unknown"}</span>
+        </span>
+      </div>
+      <div class="score gem-score">
+        <strong>${formatNumber(player.final_weight)}g</strong>
+        <span>Base rarity: 1 in ${formatNumber(player.base_rarity)}</span>
+        <span>${mutationNamesHtml(player)}</span>
+      </div>
+    </div>
+  `).join("");
+
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row">
+      <div>
+        <h2>Most Weight</h2>
+        <p class="leaderboard-description">
+          Heaviest successful rolls of all time. Multiple rolls from the same
+          player can appear. Loot-box rewards are not recorded here.
+        </p>
+      </div>
+    </div>
+    <div class="leaderboard-header leaderboard-header--best-roll">
+      <div>Rank</div><div>Player / Gem</div><div class="score">Weight</div>
+    </div>
+    <div class="leaderboard-list">${rows}</div>
+  `;
+}
+
+
 // =========================================================
 // RENDER ACTIVE LEADERBOARD
 // =========================================================
@@ -754,48 +814,29 @@ function renderBestRoll() {
 function renderLeaderboard() {
   updateTabs();
 
-
-  if (
-    activeLeaderboard ===
-    "totalRolls"
-  ) {
-    renderTotalRolls();
-
-    return;
+  switch (activeLeaderboard) {
+    case "totalRolls":
+      renderTotalRolls();
+      break;
+    case "rarestGem":
+      renderRarestGem();
+      break;
+    case "lifetimeEarnings":
+      renderLifetimeEarnings();
+      break;
+    case "gemsFound":
+      renderGemsFound();
+      break;
+    case "bestRoll":
+      renderBestRoll();
+      break;
+    case "mostWeight":
+      renderMostWeight();
+      break;
+    default:
+      renderTotalRolls();
   }
-
-
-  if (
-    activeLeaderboard ===
-    "rarestGem"
-  ) {
-    renderRarestGem();
-
-    return;
-  }
-
-
-  if (
-    activeLeaderboard ===
-    "gemsFound"
-  ) {
-    renderGemsFound();
-
-    return;
-  }
-
-  if (
-    activeLeaderboard ===
-    "bestRoll"
-  ) {
-    renderBestRoll();
-
-    return;
-  }
-
-  renderLifetimeEarnings();
 }
-
 
 // =========================================================
 // LOAD DATA
@@ -853,7 +894,15 @@ async function loadLeaderboards() {
     error: bestRollError
   } = await supabase.rpc(
     "get_best_roll_leaderboard",
-    { p_limit: 25 }
+    { p_limit: 100 }
+  );
+
+  const {
+    data: mostWeightData,
+    error: mostWeightError
+  } = await supabase.rpc(
+    "get_most_weight_leaderboard",
+    { p_limit: 100 }
   );
 
   // Rarest Gem intentionally uses the exact same inventory-only effective
@@ -865,7 +914,7 @@ async function loadLeaderboards() {
     error: rarestGemError
   } = await supabase.rpc(
     "get_rarest_gem_leaderboard",
-    { p_limit: 25 }
+    { p_limit: 100 }
   );
 
 
@@ -887,6 +936,13 @@ async function loadLeaderboards() {
     console.error(
       "Rarest Gem leaderboard load failed:",
       rarestGemError
+    );
+  }
+
+  if (mostWeightError) {
+    console.error(
+      "Most Weight leaderboard load failed:",
+      mostWeightError
     );
   }
 
@@ -952,6 +1008,18 @@ async function loadLeaderboards() {
             mutation_chance_multiplier: player.mutation_chance_multiplier,
             base_rarity: player.base_rarity,
             mutation_chance_product: player.mutation_chance_product
+          }))
+        : [],
+
+    mostWeight:
+      Array.isArray(mostWeightData)
+        ? mostWeightData.map(player => ({
+            rank: player.rank,
+            username: player.username,
+            gem_name: player.gem_name,
+            final_weight: player.final_weight,
+            base_rarity: player.base_rarity,
+            mutation_ids: Array.isArray(player.mutation_ids) ? player.mutation_ids : []
           }))
         : []
   };
@@ -1023,6 +1091,16 @@ bestRollTab.addEventListener(
   () => {
     activeLeaderboard =
       "bestRoll";
+
+    renderLeaderboard();
+  }
+);
+
+mostWeightTab.addEventListener(
+  "click",
+  () => {
+    activeLeaderboard =
+      "mostWeight";
 
     renderLeaderboard();
   }
