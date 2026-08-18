@@ -16,6 +16,7 @@ const FRIENDLY_MESSAGES = {
   cooldown: "That roll is still on cooldown.",
   inventory_full: "Your inventory is full. Sell or craft something first.",
   gem_locked: "That gem is locked. Unlock it before selling.",
+  relic_not_sellable: "Relics cannot be sold; use one to enchant a pickaxe.",
   not_found: "That item no longer exists.",
   not_enough_money: "You cannot afford that yet.",
   insufficient_funds: "You cannot afford that yet.",
@@ -25,6 +26,9 @@ const FRIENDLY_MESSAGES = {
   equipment_not_found: "That equipment no longer exists.",
   unequip_failed: "That equipment could not be unequipped.",
   equipment_update_failed: "That equipment could not be updated.",
+  invalid_equipment: "Only an equipped pickaxe can be enchanted.",
+  invalid_relic: "That unlocked relic is no longer available.",
+  enchant_failed: "The pickaxe could not be enchanted.",
   upgrade_failed: "The storage upgrade could not be completed."
 };
 

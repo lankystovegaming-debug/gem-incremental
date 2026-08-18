@@ -9,7 +9,8 @@ import {
 } from "../src/backend/cloudInventory.js";
 import {
   loadCloudEquipment,
-  setCloudEquipmentEquipped
+  setCloudEquipmentEquipped,
+  enchantCloudEquipment
 } from "../src/backend/cloudEquipment.js";
 import {
   loadCloudConsumables,
@@ -20,6 +21,7 @@ import {
 import { setShowcase, loadMyShowcase } from "../src/backend/cloudShowcase.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { getGemMutation } from "../src/data/mutations.js";
+import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
 import { gemRollChance, formatChance } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -317,7 +319,7 @@ function renderGems() {
 
   // Sell all operates on the current view, so the rarity / search /
   // lock filters double as a "sell only these" selector.
-  const sellable = gems.filter((gem) => !gem.locked);
+  const sellable = gems.filter((gem) => !gem.locked && !isRelic(gem));
 
   const filtered =
     gemSearch.value.trim() !== "" ||
@@ -374,6 +376,8 @@ function renderGems() {
 
 
 function gemCard(gem) {
+  if (isRelic(gem)) return relicCard(gem);
+
   const tier = rarityTier(gem.rarity);
   const mutationIds = Array.isArray(gem.mutation_ids) && gem.mutation_ids.length
     ? gem.mutation_ids
@@ -483,6 +487,25 @@ function gemCard(gem) {
   `;
 }
 
+function relicCard(gem) {
+  const chance = RELICS[gem.gem_name].chance;
+  return `
+    <article class="gem-card gem-card--relic${gem.locked ? " gem-card--locked" : ""}" data-id="${gem.id}">
+      <div class="gem-card__head"><div>
+        <div class="gem-card__name">${escapeHtml(gem.gem_name)}</div>
+        <div class="gem-card__rarity">RELIC</div>
+        <div class="gem-card__chance">Flat chance: ${escapeHtml(formatChance(chance))} · unaffected by Luck</div>
+      </div><span class="badge badge--accent">RELIC</span></div>
+      <p class="equipment-card__meta">Consumed when enchanting an equipped pickaxe.</p>
+      <div class="gem-card__actions">
+        <button class="btn btn--sm" data-action="lock" type="button">
+          ${gem.locked ? icons.unlock : icons.lock} ${gem.locked ? "Unlock" : "Lock"}
+        </button>
+        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
+      </div>
+    </article>`;
+}
+
 
 function wireGemCard(card) {
   const id = Number(card.dataset.id);
@@ -549,15 +572,15 @@ function wireGemCard(card) {
     if (!gem || gem.locked) return;
     const choice = await confirmDialog({ title: `Delete ${gem.gem_name}?`, body: `<p>This permanently deletes the gem. You will receive no money.</p>`, confirmLabel: "Delete permanently", tone: "danger" });
     if (choice !== "confirm") return;
-    deleteButton.disabled = true; lockButton.disabled = true; sellButton.disabled = true;
+    deleteButton.disabled = true; lockButton.disabled = true; if (sellButton) sellButton.disabled = true;
     const { error } = await deleteCloudGem(id);
-    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; sellButton.disabled = false; return; }
+    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; if (sellButton) sellButton.disabled = false; return; }
     state.gems = state.gems.filter((entry) => entry.id !== id);
     renderAll();
     notify.success("Gem deleted", gem.gem_name);
   });
 
-  sellButton.addEventListener("click", async () => {
+  sellButton?.addEventListener("click", async () => {
     const gem = state.gems.find((entry) => entry.id === id);
 
     if (!gem || gem.locked) {
@@ -603,7 +626,7 @@ function wireGemCard(card) {
 sellAllButton.addEventListener("click", async () => {
   // The visible (filtered) unlocked gems — so a rarity / search
   // filter narrows exactly what gets sold.
-  const unlocked = visibleGems().filter((gem) => !gem.locked);
+  const unlocked = visibleGems().filter((gem) => !gem.locked && !isRelic(gem));
 
   if (unlocked.length === 0) {
     return;
@@ -739,6 +762,9 @@ function renderEquipment() {
             Number(item[key]) * 100
           ).toFixed(0)}% ${label}</span>`
       );
+      const enchant = ENCHANTS[item.enchant_id];
+      const canEnchant = item.category === "pickaxe" && item.equipped &&
+        state.gems.some((gem) => isRelic(gem) && !gem.locked);
 
       return `
         <article class="equipment-card">
@@ -763,11 +789,19 @@ function renderEquipment() {
             ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
           </div>
 
-          <button class="btn ${item.equipped ? "btn--danger" : "btn--primary"} btn--block"
+          ${enchant ? `<div class="equipment-enchant">
+            <strong>${escapeHtml(enchant.name)}</strong>
+            <span>${escapeHtml(enchantDescription(item.enchant_id, item.enchant_grade))}</span>
+          </div>` : item.category === "pickaxe" ? '<div class="equipment-enchant equipment-enchant--empty">No enchant</div>' : ""}
+
+          <div class="equipment-card__actions">
+          <button class="btn ${item.equipped ? "btn--danger" : "btn--primary"}"
             type="button" data-equipment-id="${escapeHtml(item.id)}"
             data-equipment-equipped="${item.equipped}">
             ${item.equipped ? "Unequip" : "Equip"}
           </button>
+          ${canEnchant ? `<button class="btn btn--primary" type="button" data-enchant-equipment-id="${escapeHtml(item.id)}">Enchant</button>` : ""}
+          </div>
         </article>
       `;
     })
@@ -819,6 +853,45 @@ equipmentList.addEventListener("click", async (event) => {
     shouldEquip ? "Equipment equipped" : "Equipment unequipped",
     `${equipment.name} is now ${shouldEquip ? "equipped" : "stored"}.`
   );
+});
+
+equipmentList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-enchant-equipment-id]");
+  if (!button || button.disabled) return;
+
+  const equipment = state.equipment.find((item) => String(item.id) === button.dataset.enchantEquipmentId);
+  if (!equipment) return;
+  const normal = state.gems.find((gem) => gem.gem_name === "Enchant Relic" && !gem.locked);
+  const ancient = state.gems.find((gem) => gem.gem_name === "Ancient Relic" && !gem.locked);
+  if (!normal && !ancient) { renderEquipment(); return; }
+
+  const current = ENCHANTS[equipment.enchant_id]?.name ?? "None";
+  const both = Boolean(normal && ancient);
+  const choice = await confirmDialog({
+    title: `Enchant ${equipment.name}?`,
+    body: `<p>Current enchant: <strong>${escapeHtml(current)}</strong></p><p style="margin-top:8px">The relic is consumed. A reroll always replaces the current enchant with a different one.</p>`,
+    confirmLabel: ancient ? "Use Ancient Relic" : "Use Enchant Relic",
+    extraLabel: both ? "Use Enchant Relic" : null
+  });
+  if (choice === "cancel") return;
+  const relic = choice === "extra" ? normal : (ancient ?? normal);
+  if (!relic) return;
+
+  button.disabled = true;
+  button.textContent = "Enchanting…";
+  const result = await enchantCloudEquipment(equipment.id, relic.id);
+  if (!result.success) {
+    notify.error("Enchanting failed", result.message);
+    renderEquipment();
+    return;
+  }
+
+  equipment.enchant_id = result.data.enchantId;
+  equipment.enchant_grade = result.data.grade;
+  equipment.enchant_state = {};
+  state.gems = state.gems.filter((gem) => gem.id !== relic.id);
+  renderAll();
+  notify.success("Pickaxe enchanted", ENCHANTS[result.data.enchantId]?.name ?? "New enchant applied");
 });
 
 

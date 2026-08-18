@@ -434,10 +434,14 @@ function mutationNamesHtml(mutations = []) {
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
   const rarity = Number(data.gem.rarity ?? 0);
-  // Every roll gets the normal roll-effect. A full cutscene is reserved
-  // for gems strictly rarer than the player-selected 1-in-N threshold.
-  const isUltraRare = rarity > getSettings().cutsceneMinimumRarity;
-  const isEpicRollEffect = true;
+  const isRelic = data.gem.dropType === "relic";
+
+  // Every non-relic roll gets the normal roll-effect. A full cutscene is
+  // reserved for gems strictly rarer than the player-selected 1-in-N
+  // threshold. Relics never trigger either — their odds ignore Luck, so
+  // they get a plain reveal.
+  const isUltraRare = !isRelic && rarity > getSettings().cutsceneMinimumRarity;
+  const isEpicRollEffect = !isRelic;
 
   const gemName = String(data.gem.name ?? "Gem");
   let gemHash = 0;
@@ -487,16 +491,16 @@ function renderRoll(data, outcome) {
     ` : ""}
     <div class="gem-reveal">
       <div class="gem-reveal__art">${icons.gem}</div>
-      <span class="badge badge--tier">${tier.name}</span>
+      <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}
-      <p class="page-head__sub num">${rarityLabel(data.gem.rarity)}</p>
-      <p class="gem-reveal__chance num">Actual chance: ${escapeHtml(chanceLabelForResult(data.gem.name, mutationIds))}</p>
-      <div class="gem-reveal__facts">
+      <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
+      <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForResult(data.gem.name, mutationIds))}`}</p>
+      ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Value</span><span class="gem-fact__value">${formatMoney(data.value)}</span></div>
-      </div>
+      </div>`}
       <p class="gem-reveal__outcome">${outcome.icon}${escapeHtml(outcome.text)}</p>
     </div>
   `;

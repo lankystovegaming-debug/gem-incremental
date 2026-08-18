@@ -266,9 +266,27 @@
   gap: 6px;
 }
 
-.equipment-card > .btn {
+.equipment-card__actions {
+  display: flex;
+  gap: var(--space-2);
   margin-top: var(--space-3);
 }
+
+.equipment-card__actions .btn { flex: 1; }
+
+.equipment-enchant {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-solid));
+  font-size: .82rem;
+}
+
+.equipment-enchant--empty { color: var(--text-faint); border-color: var(--border); }
+.gem-card--relic { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
 
 /* ---------------------------------------------------------
