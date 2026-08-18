@@ -18,6 +18,7 @@ import { mountShell } from "./src/ui/shell.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
+import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { chanceLabelForResult } from "./src/logic/chances.js";
 import {
@@ -513,7 +514,19 @@ function renderRoll(data, outcome) {
     document.documentElement.classList.add("is-cinematic-active");
     gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
     gemStage.classList.add("is-cinematic");
-    const overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+    // Xy Gem gets its own bespoke cutscene; everything else uses the
+    // standard tiered one. Fall back if the custom scene ever throws.
+    let overlay;
+    if (gemName === "Xy Gem") {
+      try {
+        overlay = buildXyGemCutscene(data, outcome, duration);
+      } catch (error) {
+        console.error("Xy Gem cutscene failed, using standard:", error);
+        overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+      }
+    } else {
+      overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+    }
 
     return new Promise((resolve) => {
       cinematicTimer = setTimeout(() => {
