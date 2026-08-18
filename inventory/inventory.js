@@ -17,6 +17,7 @@ import {
   loadActiveBoosts,
   loadPendingOneRollBoost
 } from "../src/backend/cloudConsumables.js";
+import { setShowcase, loadMyShowcase } from "../src/backend/cloudShowcase.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { gemRollChance, formatChance } from "../src/logic/chances.js";
@@ -127,7 +128,8 @@ const state = {
   oneRollBoost: null,
   capacity: 15,
   money: 0,
-  loading: true
+  loading: true,
+  showcaseIds: []
 };
 
 
@@ -456,6 +458,10 @@ function gemCard(gem) {
       </div>
 
       <div class="gem-card__actions">
+        <button class="btn btn--sm${state.showcaseIds.includes(gem.id) ? " btn--primary" : ""}" data-action="showcase" type="button" title="Pin up to 3 gems to your profile &amp; leaderboard">
+          ${state.showcaseIds.includes(gem.id) ? "★ Pinned" : "☆ Pin"}
+        </button>
+
         <button class="btn btn--sm" data-action="lock" type="button">
           ${gem.locked ? icons.unlock : icons.lock}
           ${gem.locked ? "Unlock" : "Lock"}
@@ -484,6 +490,37 @@ function wireGemCard(card) {
   const lockButton = card.querySelector('[data-action="lock"]');
   const sellButton = card.querySelector('[data-action="sell"]');
   const deleteButton = card.querySelector('[data-action="delete"]');
+  const showcaseButton = card.querySelector('[data-action="showcase"]');
+
+  showcaseButton?.addEventListener("click", async () => {
+    const isPinned = state.showcaseIds.includes(id);
+
+    if (!isPinned && state.showcaseIds.length >= 3) {
+      notify.error("Showcase full", "You can pin only 3 gems — unpin one first.");
+      return;
+    }
+
+    const next = isPinned
+      ? state.showcaseIds.filter((entry) => entry !== id)
+      : [...state.showcaseIds, id];
+
+    showcaseButton.disabled = true;
+
+    const { error } = await setShowcase(next);
+
+    if (error) {
+      notify.error("Could not update showcase", error.message);
+      showcaseButton.disabled = false;
+      return;
+    }
+
+    state.showcaseIds = next;
+    notify.success(
+      isPinned ? "Unpinned" : "Pinned to showcase",
+      isPinned ? "Removed from your profile." : "It now shows next to your name."
+    );
+    renderGems();
+  });
 
   lockButton.addEventListener("click", async () => {
     lockButton.disabled = true;
@@ -1105,13 +1142,14 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment, potions, boosts, oneRollBoost] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts, oneRollBoost, showcase] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
     loadCloudConsumables(),
     loadActiveBoosts(),
-    loadPendingOneRollBoost()
+    loadPendingOneRollBoost(),
+    loadMyShowcase()
   ]);
 
   state.loading = false;
@@ -1119,6 +1157,10 @@ async function refresh() {
   if (gems) {
     state.gems = gems;
   }
+
+  state.showcaseIds = (Array.isArray(showcase) ? showcase : [])
+    .map((entry) => Number(entry?.id))
+    .filter((id) => Number.isFinite(id));
 
   if (playerState) {
     state.capacity = playerState.inventory_capacity;
