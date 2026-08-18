@@ -350,6 +350,13 @@ const gems = [
     rarity: 10000000,
     baseWeight: 40500,
     valuePerGram: 111.1111
+  },
+
+  {
+    name: "Xy Gem",
+    rarity: 15000000,
+    baseWeight: 5500,
+    valuePerGram: 750
   }
 ];
 
