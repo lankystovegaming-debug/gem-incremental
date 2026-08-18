@@ -175,6 +175,8 @@ async function refreshPlayerState() {
     supabase
       .from("inventory_gems")
       .select("id", { count: "exact", head: true })
+      .neq("gem_name", "Enchant Relic")
+      .neq("gem_name", "Ancient Relic")
   ]);
 
   if (!playerState) {
