@@ -1,0 +1,265 @@
+/* =========================================================
+   AUCTION HOUSE PAGE
+   ========================================================= */
+
+.tabs {
+  margin-bottom: var(--space-4);
+}
+
+/* auctions.js toggles .active rather than relying on aria alone. */
+.tab-button.active {
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
+.status {
+  min-height: 20px;
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.status:empty {
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   GRID OF AUCTIONS
+   --------------------------------------------------------- */
+
+.auction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+
+.auction-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  animation: auction-in 0.3s ease-out backwards;
+}
+
+@keyframes auction-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.auction-card--leading {
+  border-color: color-mix(in srgb, var(--positive) 55%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--positive) 35%, transparent);
+}
+
+.auction-card--mine {
+  border-style: dashed;
+}
+
+
+/* ---------------------------------------------------------
+   GEM SNAPSHOT
+   --------------------------------------------------------- */
+
+.auction-gem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.auction-gem__name {
+  font-size: 1.12rem;
+  line-height: 1.25;
+}
+
+.auction-gem__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.auction-gem__rarity {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-gem__stats {
+  display: flex;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ---------------------------------------------------------
+   LINES
+   --------------------------------------------------------- */
+
+.auction-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auction-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 0.88rem;
+}
+
+.auction-line__key {
+  color: var(--text-faint);
+}
+
+.auction-line__val {
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auction-line__val--money {
+  color: var(--positive);
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-timer--soon {
+  color: var(--warning, #e0a640);
+}
+
+.auction-timer--ended {
+  color: var(--text-faint);
+}
+
+.auction-card__note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+
+.auction-card__note--good {
+  color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+}
+
+.auction-status {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.auction-status--sold { color: var(--positive); }
+.auction-status--active { color: var(--accent); }
+.auction-status--cancelled,
+.auction-status--returned { color: var(--text-faint); }
+
+
+/* ---------------------------------------------------------
+   BID CONTROLS
+   --------------------------------------------------------- */
+
+.auction-bid {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.auction-bid__input {
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.auction-bid__button {
+  flex: none;
+}
+
+.auction-bid__hint {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  margin-top: -4px;
+}
+
+
+/* ---------------------------------------------------------
+   SELL PANEL
+   --------------------------------------------------------- */
+
+.sell-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 560px;
+}
+
+.sell-card__title {
+  margin: 0;
+}
+
+.sell-card__hint {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.sell-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sell-picker select {
+  width: 100%;
+}
+
+.sell-preview {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.sell-row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.sell-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .sell-row { flex-direction: column; }
+}
