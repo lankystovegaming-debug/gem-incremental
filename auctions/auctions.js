@@ -30,6 +30,7 @@ import {
 const shell = window.__shell;
 
 document.getElementById("refreshIcon").innerHTML = icons.refresh;
+document.getElementById("sellSearchIcon").innerHTML = icons.search;
 
 
 // =========================================================
@@ -256,8 +257,10 @@ function browseCard(auction) {
           ? '<div class="auction-card__note">This is your listing.</div>'
           : `
             <div class="auction-bid">
-              <input class="field auction-bid__input" type="number" inputmode="numeric"
-                     min="${min}" step="1" value="${min}" aria-label="Your bid">
+              <div class="auction-money-input auction-bid__input">
+                <span class="auction-money-input__prefix">$</span>
+                <input type="number" inputmode="numeric" min="${min}" step="1" value="${min}" aria-label="Your bid">
+              </div>
               <button class="btn btn--primary auction-bid__button" type="button">Bid</button>
             </div>
             <div class="auction-bid__hint">Minimum bid ${formatMoney(min)}</div>
@@ -269,7 +272,7 @@ function browseCard(auction) {
 
 function wireBrowseCard(card) {
   const id = Number(card.dataset.id);
-  const input = card.querySelector(".auction-bid__input");
+  const input = card.querySelector(".auction-bid__input input");
   const button = card.querySelector(".auction-bid__button");
 
   if (!button) return;
