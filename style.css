@@ -2107,3 +2107,207 @@ html.is-cinematic-active body {
 
 
 /* Mutation labels are words, not badges/pills. */
+
+
+/* =========================================================
+   XY GEM — 1 IN 15,000,000 SIGNATURE CUTSCENE
+   A unique reality-break sequence: no pill/oval UI, only
+   layered typography, shards, cross-energy and distortion.
+   ========================================================= */
+.ultra-xy-gem {
+  --xy-cyan: #6ff7ff;
+  --xy-blue: #4c7dff;
+  --xy-violet: #b56cff;
+  --xy-white: #f8fdff;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(89,140,255,.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, rgba(181,108,255,.13), transparent 48%);
+}
+
+.ultra-xy-gem .scene__backdrop {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(111,247,255,.18), transparent 18%),
+    radial-gradient(circle at 50% 50%, rgba(76,125,255,.16), transparent 42%),
+    linear-gradient(125deg, #02030b 0%, #08051a 42%, #02040d 100%);
+  animation: xyBackdrop 8s ease both;
+}
+
+.xy__cataclysm {
+  position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:12;
+  mix-blend-mode:screen;
+}
+.xy__void {
+  position:absolute; left:50%; top:50%; width:32vmin; height:32vmin;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle, #fff 0 1%, var(--xy-cyan) 3%, #536bff 12%, #8e4cff 28%, transparent 69%);
+  filter:blur(2px); opacity:0;
+  animation:xyVoid 3.2s cubic-bezier(.1,.8,.1,1) both;
+}
+.xy__halo {
+  position:absolute; left:50%; top:50%; width:72vmin; height:72vmin;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(111,247,255,.4);
+  box-shadow:0 0 70px rgba(76,125,255,.4), inset 0 0 80px rgba(181,108,255,.18);
+  clip-path:polygon(50% 0,54% 40%,100% 50%,54% 60%,50% 100%,46% 60%,0 50%,46% 40%);
+  animation:xyHalo 7s linear both;
+}
+.xy__cross {
+  position:absolute; left:50%; top:50%; width:120vmax; height:3px;
+  transform:translate(-50%,-50%) rotate(17deg) scaleX(0);
+  background:linear-gradient(90deg,transparent,#6ff7ff 30%,#fff 50%,#b56cff 70%,transparent);
+  box-shadow:0 0 25px #6ff7ff, 0 0 55px #806cff;
+  animation:xyCross 2.6s cubic-bezier(.1,.9,.1,1) .35s both;
+}
+.xy__cross--b { transform:translate(-50%,-50%) rotate(-17deg) scaleX(0); animation-delay:.55s; }
+.xy__slash {
+  position:absolute; left:50%; top:50%; width:150vmax; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
+  box-shadow:0 0 18px rgba(111,247,255,.8);
+  transform:translate(-50%,-50%) rotate(73deg) scaleX(0);
+  animation:xySlash 3.8s ease both;
+}
+.xy__slash--b { transform:translate(-50%,-50%) rotate(-73deg) scaleX(0); animation-delay:.7s; }
+.xy__shard {
+  position:absolute; width:1px; height:22vmin;
+  background:linear-gradient(transparent,#fff,#6ff7ff,transparent);
+  box-shadow:0 0 18px #6ff7ff;
+  transform-origin:50% 100%; opacity:0;
+}
+.xy__shard--a { left:18%; top:20%; transform:rotate(34deg); animation:xyShard 2.8s ease .2s infinite; }
+.xy__shard--b { right:18%; top:25%; transform:rotate(-41deg); animation:xyShard 3.1s ease .6s infinite; }
+.xy__shard--c { left:25%; bottom:16%; transform:rotate(-28deg); animation:xyShard 2.6s ease 1s infinite; }
+.xy__shard--d { right:25%; bottom:20%; transform:rotate(39deg); animation:xyShard 3.4s ease .4s infinite; }
+.xy__energy {
+  position:absolute; inset:-20%;
+  background:repeating-conic-gradient(from 12deg, transparent 0 4deg, rgba(111,247,255,.055) 4.5deg 5deg, transparent 5.5deg 13deg);
+  animation:xyEnergy 12s linear infinite;
+}
+.xy__glitch {
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg, transparent 0 9px, rgba(111,247,255,.035) 10px, transparent 11px);
+  mix-blend-mode:screen;
+  animation:xyGlitch 1.2s steps(7,end) infinite;
+}
+
+.ultra-xy-gem .scene__reveal {
+  z-index:30;
+}
+.ultra-xy-gem .scene__name--xy {
+  position:relative;
+  font-size:clamp(64px,11vw,150px);
+  letter-spacing:.16em;
+  font-weight:1000;
+  text-transform:uppercase;
+  color:#fff;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 14px #6ff7ff,
+    0 0 35px #4c7dff,
+    0 0 75px rgba(181,108,255,.95),
+    0 0 130px rgba(76,125,255,.65);
+  animation:xyName 5.8s cubic-bezier(.1,.8,.1,1) both, xyNamePulse 1.4s ease-in-out 1.8s infinite;
+}
+.ultra-xy-gem .scene__name--xy::before,
+.ultra-xy-gem .scene__name--xy::after {
+  content:"XY GEM";
+  position:absolute; inset:0; pointer-events:none;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(111,247,255,.75);
+  clip-path:inset(0 0 52% 0);
+  transform:translate(-8px, 2px);
+  filter:blur(.2px);
+  opacity:.7;
+  animation:xyTextShear .8s steps(2,end) infinite;
+}
+.ultra-xy-gem .scene__name--xy::after {
+  -webkit-text-stroke:1px rgba(181,108,255,.75);
+  clip-path:inset(52% 0 0 0);
+  transform:translate(9px,-2px);
+  animation-delay:.23s;
+}
+.ultra-xy-gem .scene__mutation {
+  position:relative; z-index:31;
+  margin-top:clamp(18px,2vw,32px);
+  padding:0 3vw;
+  display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+  gap:.2em .45em;
+  font-size:clamp(20px,3vw,40px);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  text-shadow:0 0 12px rgba(255,255,255,.7), 0 0 35px rgba(111,247,255,.35);
+  animation:xyMutationCurtain 3.8s ease both;
+}
+.ultra-xy-gem .scene__mutation .mutation-name-effect {
+  transform:skewX(-8deg);
+}
+.ultra-xy-gem .scene__rarity,
+.ultra-xy-gem .scene__chance {
+  position:relative; z-index:31;
+  text-shadow:0 0 12px rgba(111,247,255,.55), 0 0 30px rgba(181,108,255,.35);
+}
+
+.mutation-name-separator {
+  display:inline-block;
+  margin:0 .16em;
+  color:rgba(255,255,255,.9);
+  font-weight:900;
+  text-shadow:0 0 8px currentColor, 0 0 18px rgba(111,247,255,.7);
+  transform:translateY(-.05em);
+}
+
+@keyframes xyBackdrop {
+  0%{filter:brightness(.15) saturate(.5); transform:scale(1.15)}
+  38%{filter:brightness(1.25) saturate(1.8); transform:scale(1)}
+  100%{filter:brightness(.85) saturate(1.3)}
+}
+@keyframes xyVoid {
+  0%{opacity:0; transform:translate(-50%,-50%) scale(.05)}
+  35%{opacity:1; transform:translate(-50%,-50%) scale(1.8)}
+  65%{opacity:.9; transform:translate(-50%,-50%) scale(.72)}
+  100%{opacity:.55; transform:translate(-50%,-50%) scale(1.05)}
+}
+@keyframes xyHalo {
+  0%{opacity:0; transform:translate(-50%,-50%) scale(.1) rotate(0)}
+  35%{opacity:1}
+  100%{opacity:.22; transform:translate(-50%,-50%) scale(1.45) rotate(180deg)}
+}
+@keyframes xyCross {
+  0%{opacity:0; transform:translate(-50%,-50%) rotate(17deg) scaleX(0)}
+  30%{opacity:1; transform:translate(-50%,-50%) rotate(17deg) scaleX(1)}
+  100%{opacity:0; transform:translate(-50%,-50%) rotate(17deg) scaleX(1.15)}
+}
+@keyframes xySlash {
+  0%{opacity:0; transform:translate(-50%,-50%) rotate(73deg) scaleX(0)}
+  42%{opacity:.8; transform:translate(-50%,-50%) rotate(73deg) scaleX(1)}
+  100%{opacity:0; transform:translate(-50%,-50%) rotate(73deg) scaleX(1.1)}
+}
+@keyframes xyShard {
+  0%,100%{opacity:0; translate:0 20px; scale:.6}
+  45%{opacity:.9}
+  70%{opacity:.2; translate:20px -30px; scale:1.3}
+}
+@keyframes xyEnergy { to{transform:rotate(360deg)} }
+@keyframes xyGlitch { 0%,90%,100%{opacity:.2} 92%{opacity:.8; transform:translateX(-3px)} 94%{opacity:.1; transform:translateX(5px)} 96%{opacity:.65; transform:translateX(-1px)} }
+@keyframes xyName {
+  0%{opacity:0; filter:blur(25px); transform:scale(.35) skewX(20deg); letter-spacing:.5em}
+  32%{opacity:1; filter:blur(0); transform:scale(1.12) skewX(-5deg); letter-spacing:.1em}
+  58%{transform:scale(.96); letter-spacing:.19em}
+  100%{opacity:1; transform:scale(1); letter-spacing:.16em}
+}
+@keyframes xyNamePulse {
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.45)}
+}
+@keyframes xyTextShear {
+  0%,100%{opacity:.25; transform:translate(-5px,1px) skewX(-2deg)}
+  50%{opacity:.8; transform:translate(8px,-1px) skewX(4deg)}
+}
+@keyframes xyMutationCurtain {
+  0%{opacity:0; transform:translateY(30px); filter:blur(15px)}
+  45%{opacity:1; transform:translateY(0); filter:blur(0)}
+  100%{opacity:1}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ultra-xy-gem .xy__energy { animation:none; }
+}

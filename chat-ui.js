@@ -419,7 +419,8 @@ if (messagesEl && formEl && inputEl) {
       : [];
 
     const mutationPrefix = mutationNames.length
-      ? `${mutationNames.map((mutation) => `
+      ? `${mutationNames.map((mutation, index) => `
+          ${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}
           <span class="mutation-name-effect mutation-name-effect--${escapeHtml(mutation.id)}">
             <span class="mutation-name-effect__fx" aria-hidden="true"></span>
             <span class="mutation-name-effect__text">${escapeHtml(mutation.name)}</span>
