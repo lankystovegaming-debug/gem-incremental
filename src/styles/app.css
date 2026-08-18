@@ -628,7 +628,7 @@ a:hover {
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
 
   display: flex;
   align-items: center;
@@ -1328,7 +1328,7 @@ a.btn--icon[aria-current="page"] {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 60;
+  z-index: 120;
 
   min-width: 230px;
   padding: var(--space-2);

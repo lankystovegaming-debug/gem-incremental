@@ -22,13 +22,19 @@
         var mode = localStorage.getItem("gemIncremental.theme.mode");
         var accent = localStorage.getItem("gemIncremental.theme.accent");
 
-        if (["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"]) {
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"];
+
+        if (allowedModes.indexOf(mode) !== -1) {
           document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
         }
 
         document.documentElement.setAttribute(
           "data-accent",
-          accent || "indigo"
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1
+            ? accent
+            : "indigo"
         );
       } catch (error) {
         /* localStorage unavailable — defaults apply. */

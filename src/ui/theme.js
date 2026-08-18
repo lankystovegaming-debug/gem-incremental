@@ -109,8 +109,12 @@ export function applyTheme() {
 
 
 export function setMode(mode) {
+  const safeMode = MODES.some((entry) => entry.id === mode)
+    ? mode
+    : DEFAULT_MODE;
+
   try {
-    localStorage.setItem(MODE_KEY, mode);
+    localStorage.setItem(MODE_KEY, safeMode);
   } catch {
     // Non-persistent is still better than not applying it.
   }
@@ -122,8 +126,12 @@ export function setMode(mode) {
 
 
 export function setAccent(accent) {
+  const safeAccent = ACCENTS.some((entry) => entry.id === accent)
+    ? accent
+    : DEFAULT_ACCENT;
+
   try {
-    localStorage.setItem(ACCENT_KEY, accent);
+    localStorage.setItem(ACCENT_KEY, safeAccent);
   } catch {
     // Ignore — see setMode().
   }
@@ -135,8 +143,12 @@ export function setAccent(accent) {
 
 
 export function setFont(font) {
+  const safeFont = FONTS.some((entry) => entry.id === font)
+    ? font
+    : DEFAULT_FONT;
+
   try {
-    localStorage.setItem(FONT_KEY, font);
+    localStorage.setItem(FONT_KEY, safeFont);
   } catch {
     // Ignore — see setMode().
   }

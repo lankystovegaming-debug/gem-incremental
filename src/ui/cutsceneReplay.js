@@ -123,7 +123,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
         escapeHtml,
         mutation ? `gem-styled--mutation-${mutation.id}` : ""
       )}</h2>
-      ${mutations.length ? `<div class="scene__mutation">✦ ${mutations.map(m => `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
+      ${mutations.length ? `<div class="scene__mutation">${mutations.map(m => `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(rarity)}</div>
       <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForResult(name, ids))}</div>
       <div class="scene__outcome">Cinematic replay</div>

@@ -1855,36 +1855,31 @@ html.is-cinematic-active body {
   100%{opacity:0;transform:translateX(8vw) skewX(-12deg)}
 }
 
-/* Mutation names remain readable in both light and dark themes. */
-.gem-styled--mutation-polished{color:#e5e7eb!important;text-shadow:0 0 10px rgb(255 255 255 / .55)!important}
-.gem-styled--mutation-gilded{color:#f6c453!important;text-shadow:0 0 12px rgb(246 196 83 / .7)!important}
-.gem-styled--mutation-prismatic{
-  background:linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1)!important;
-  background-size:300% auto!important;-webkit-background-clip:text!important;background-clip:text!important;
-  -webkit-text-fill-color:transparent!important;
-}
-.gem-styled--mutation-celestial{color:#7dd3fc!important;text-shadow:0 0 16px rgb(125 211 252 / .9)!important}
-.gem-styled--mutation-corrupted{color:#d8b4fe!important;text-shadow:0 0 10px #c084fc,0 0 25px #f43f5e!important}
-
-
 /* =========================================================
-   MUTATION NAME EFFECTS
-   Word-only effects: no pill, no oval, no border. Effects stay
-   within roughly 10px of the text itself. Each mutation has its
-   own visual language.
+   MUTATION WORD EFFECTS
+
+   Mutation labels are text, never pills/badges. No border, oval,
+   background or enclosing ring is used. Decorative pixels/glows stay
+   within roughly 10px of the actual word.
    ========================================================= */
 
 .mutation-name-effect {
   --mutation-color: var(--text);
-  --mutation-glow: color-mix(in srgb, var(--mutation-color) 72%, transparent);
   position: relative;
   display: inline-block;
   isolation: isolate;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: var(--mutation-color);
   font-weight: 900;
   line-height: 1.2;
   white-space: nowrap;
-  text-shadow: 0 0 6px var(--mutation-glow), 0 0 14px color-mix(in srgb, var(--mutation-color) 38%, transparent);
+  text-shadow:
+    0 0 5px color-mix(in srgb, var(--mutation-color) 72%, transparent),
+    0 0 11px color-mix(in srgb, var(--mutation-color) 34%, transparent);
 }
 
 .mutation-name-effect__text {
@@ -1902,131 +1897,132 @@ html.is-cinematic-active body {
 }
 
 .mutation-name-effect__fx {
-  inset: -5px -7px;
+  inset: -8px -9px;
 }
 
-.mutation-name-effect--polished { --mutation-color:#e7edf5; }
-.mutation-name-effect--gilded { --mutation-color:#f6c453; }
-.mutation-name-effect--prismatic { --mutation-color:#f08bff; }
+.mutation-name-effect--polished { --mutation-color:#eaf1fb; }
+.mutation-name-effect--gilded { --mutation-color:#ffd45e; }
+.mutation-name-effect--prismatic { --mutation-color:#ff82d4; }
 .mutation-name-effect--celestial { --mutation-color:#7dd3fc; }
 .mutation-name-effect--corrupted { --mutation-color:#c084fc; }
 
-/* Polished: a restrained moving highlight under the letters. */
+/* Polished — a narrow reflective sweep under the word. */
 .mutation-name-effect--polished::after {
-  left: 0; right: 0; bottom: -4px; height: 2px;
+  left: 2%; right: 2%; bottom: -3px; height: 2px;
   background: linear-gradient(90deg, transparent, #fff, transparent);
-  filter: blur(.5px);
-  opacity: .8;
-  animation: mutationPolishedSweep 1.8s ease-in-out infinite;
+  filter: blur(.45px);
+  opacity: .75;
+  transform-origin: center;
+  animation: mutationPolishedSweep 1.7s ease-in-out infinite;
 }
 
-/* Gilded: small gold sparks, never an enclosing shape. */
+/* Gilded — tiny gold flecks at the edges of the letters. */
 .mutation-name-effect--gilded::before {
-  inset: -7px -8px;
+  inset: -8px -9px;
   background:
-    radial-gradient(circle at 8% 25%, #ffe9a6 0 1px, transparent 1.8px),
-    radial-gradient(circle at 92% 70%, #f6c453 0 1px, transparent 1.8px),
-    radial-gradient(circle at 52% 0%, #fff2b8 0 1px, transparent 1.6px);
-  animation: mutationGildedSparks 1.35s ease-in-out infinite;
+    radial-gradient(circle at 7% 28%, #fff1a8 0 1px, transparent 1.8px),
+    radial-gradient(circle at 94% 72%, #f6c453 0 1px, transparent 1.8px),
+    radial-gradient(circle at 53% 2%, #fff6c7 0 1px, transparent 1.7px);
+  animation: mutationGildedSparks 1.3s ease-in-out infinite;
 }
 
 .mutation-name-effect--gilded::after {
-  left: 12%; right: 12%; bottom: -3px; height: 1px;
+  left: 10%; right: 10%; bottom: -2px; height: 1px;
   background: linear-gradient(90deg, transparent, #ffd76a, transparent);
-  box-shadow: 0 0 7px #f6c453;
-  animation: mutationGildedLine 1.7s ease-in-out infinite;
+  box-shadow: 0 0 6px #f6c453;
+  animation: mutationGildedLine 1.6s ease-in-out infinite;
 }
 
-/* Prismatic: the letters themselves shift through a spectrum. */
+/* Prismatic — the word itself cycles through a spectrum + two edge sparks. */
 .mutation-name-effect--prismatic .mutation-name-effect__text {
   background: linear-gradient(90deg,#ff5db1,#ffd166,#5eead4,#60a5fa,#a78bfa,#ff5db1);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: mutationPrismaticText 2.4s linear infinite;
+  animation: mutationPrismaticText 2.2s linear infinite;
 }
 
 .mutation-name-effect--prismatic::before {
-  inset: -6px -7px;
-  background: radial-gradient(circle at 15% 50%, #ff5db1 0 1px, transparent 2px),
-              radial-gradient(circle at 85% 35%, #60a5fa 0 1px, transparent 2px);
-  filter: blur(.3px);
-  animation: mutationPrismaticSpark 1.5s ease-in-out infinite;
+  inset: -7px -8px;
+  background:
+    radial-gradient(circle at 9% 55%, #ff5db1 0 1px, transparent 2px),
+    radial-gradient(circle at 91% 36%, #60a5fa 0 1px, transparent 2px);
+  animation: mutationPrismaticSpark 1.35s ease-in-out infinite;
 }
 
-/* Celestial: star points pulse around the word. */
+/* Celestial — four star points blink independently around the word. */
 .mutation-name-effect--celestial::before {
-  inset: -8px -8px;
+  inset: -9px -9px;
   background:
     radial-gradient(circle at 5% 30%, #fff 0 1px, transparent 1.8px),
-    radial-gradient(circle at 95% 65%, #7dd3fc 0 1px, transparent 1.8px),
+    radial-gradient(circle at 95% 66%, #7dd3fc 0 1px, transparent 1.8px),
     radial-gradient(circle at 52% 0%, #dff7ff 0 1px, transparent 1.8px),
     radial-gradient(circle at 45% 100%, #7dd3fc 0 1px, transparent 1.8px);
-  animation: mutationCelestialStars 1.9s ease-in-out infinite;
+  animation: mutationCelestialStars 1.8s ease-in-out infinite;
 }
 
 .mutation-name-effect--celestial::after {
-  left: 10%; right: 10%; top: 50%; height: 1px;
+  left: 15%; right: 15%; top: 50%; height: 1px;
   background: linear-gradient(90deg, transparent, #7dd3fc, transparent);
-  box-shadow: 0 0 9px #7dd3fc;
-  animation: mutationCelestialBeam 2.1s ease-in-out infinite;
+  box-shadow: 0 0 8px #7dd3fc;
+  animation: mutationCelestialBeam 2s ease-in-out infinite;
 }
 
-/* Corrupted: tiny glitch echoes around the letters. */
+/* Corrupted — offset glitch fragments, never an enclosing shape. */
 .mutation-name-effect--corrupted::before {
-  inset: -4px -7px;
-  background: linear-gradient(90deg, transparent 0 20%, #f43f5e 20% 23%, transparent 23% 75%, #60a5fa 75% 78%, transparent 78%);
-  opacity: .42;
+  inset: -6px -8px;
+  background:
+    linear-gradient(90deg, transparent 0 22%, #f43f5e 22% 25%, transparent 25% 74%, #60a5fa 74% 77%, transparent 77%);
+  opacity: .4;
   mix-blend-mode: screen;
-  animation: mutationCorruptGlitch .7s steps(2,end) infinite;
+  animation: mutationCorruptGlitch .65s steps(2,end) infinite;
 }
 
 .mutation-name-effect--corrupted::after {
-  left: 0; right: 0; top: 48%; height: 1px;
+  left: 0; right: 0; top: 47%; height: 1px;
   background: #c084fc;
-  box-shadow: 0 0 8px #c084fc;
-  opacity: .6;
-  animation: mutationCorruptScan .9s steps(3,end) infinite;
+  box-shadow: 0 0 7px #c084fc;
+  opacity: .58;
+  animation: mutationCorruptScan .85s steps(3,end) infinite;
 }
 
 @keyframes mutationPolishedSweep {
-  0%,100% { transform: scaleX(.2); opacity: .15; }
+  0%,100% { transform: scaleX(.18); opacity: .12; }
   50% { transform: scaleX(1); opacity: .9; }
 }
 @keyframes mutationGildedSparks {
-  0%,100% { transform: translateY(2px); opacity:.25; }
+  0%,100% { transform: translateY(2px); opacity:.2; }
   50% { transform: translateY(-2px); opacity:1; }
 }
 @keyframes mutationGildedLine {
-  0%,100% { transform: scaleX(.25); opacity:.2; }
+  0%,100% { transform: scaleX(.2); opacity:.15; }
   50% { transform: scaleX(1); opacity:.9; }
 }
 @keyframes mutationPrismaticText {
   to { background-position: 300% 0; }
 }
 @keyframes mutationPrismaticSpark {
-  0%,100% { opacity:.2; transform: translateX(-2px); }
-  50% { opacity:.85; transform: translateX(2px); }
+  0%,100% { opacity:.15; transform: translateX(-2px); }
+  50% { opacity:.9; transform: translateX(2px); }
 }
 @keyframes mutationCelestialStars {
-  0%,100% { opacity:.25; transform: scale(.9); }
+  0%,100% { opacity:.2; transform: scale(.9); }
   50% { opacity:1; transform: scale(1.08); }
 }
 @keyframes mutationCelestialBeam {
-  0%,100% { transform: scaleX(.2); opacity:.15; }
+  0%,100% { transform: scaleX(.2); opacity:.12; }
   50% { transform: scaleX(1); opacity:.8; }
 }
 @keyframes mutationCorruptGlitch {
-  0%,100% { transform: translate(0,0); opacity:.25; }
+  0%,100% { transform: translate(0,0); opacity:.2; }
   35% { transform: translate(-2px,1px); opacity:.65; }
-  70% { transform: translate(2px,-1px); opacity:.45; }
+  70% { transform: translate(2px,-1px); opacity:.42; }
 }
 @keyframes mutationCorruptScan {
-  0%,100% { transform: translateX(-5px); opacity:.1; }
+  0%,100% { transform: translateX(-5px); opacity:.08; }
   50% { transform: translateX(5px); opacity:.8; }
 }
-
 
 /* Exact base-game odds and compact multi-mutation presentation. */
 .gem-reveal__chance,
@@ -2049,13 +2045,6 @@ html.is-cinematic-active body {
   margin: .05rem auto;
 }
 
-.gem-mutation-line .mutation-name-effect {
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: .72rem;
-  line-height: 1.1;
-  white-space: nowrap;
-}
 
 .gem-mutation-line--many {
   gap: .3rem;
@@ -2087,13 +2076,6 @@ html.is-cinematic-active body {
   text-shadow: none !important;
 }
 
-.scene__mutation-list .mutation-name-effect {
-  padding: .28rem .72rem;
-  border-radius: 999px;
-  font-size: clamp(10px, 1vw, 15px);
-  line-height: 1.1;
-  white-space: nowrap;
-}
 
 .scene__mutation-list .mutation-name-effect__fx {
   inset: -2px -4px;
@@ -2123,13 +2105,5 @@ html.is-cinematic-active body {
   min-width: 0;
 }
 
-.history__mutations .mutation-name-effect {
-  font-size: .66rem;
-  padding: 2px 6px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
 
 /* Mutation labels are words, not badges/pills. */
-.mutation-name-effect { padding: 0 !important; border-radius: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
-.scene__mutation .mutation-name-effect, .gem-mutation-line .mutation-name-effect, .history__mutations .mutation-name-effect { padding: 0 !important; border-radius: 0 !important; }

@@ -455,6 +455,14 @@ if (messagesEl && formEl && inputEl) {
       return null;
     }
 
+    // Base gems at/above 1 in 100,000 already have a persisted server
+    // announcement. Do not create a second local copy for those rolls.
+    // Local announcements are only for mutation combinations that become
+    // rare enough while the base gem itself is still below the threshold.
+    if (Number(data.gem.rarity ?? 0) >= 100_000) {
+      return null;
+    }
+
     const now = new Date().toISOString();
 
     return {

@@ -21,9 +21,12 @@
       try {
         var mode = localStorage.getItem("gemIncremental.theme.mode");
         var accent = localStorage.getItem("gemIncremental.theme.accent");
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"];
 
-        if (["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"].indexOf(mode) >= 0) {
+        if (allowedModes.indexOf(mode) !== -1) {
           document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
         }
 
         document.documentElement.setAttribute(
