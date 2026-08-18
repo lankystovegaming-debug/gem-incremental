@@ -175,11 +175,13 @@ for (const entry of TABS) {
 // =========================================================
 
 function renderCapacity() {
-  capacityUsed.textContent = formatCount(state.gems.length);
+  const usedSlots = state.gems.filter((gem) => !isRelic(gem)).length;
+
+  capacityUsed.textContent = formatCount(usedSlots);
   capacityTotal.textContent = formatCount(state.capacity);
 
   const filled = state.capacity
-    ? Math.min(100, (state.gems.length / state.capacity) * 100)
+    ? Math.min(100, (usedSlots / state.capacity) * 100)
     : 0;
 
   capacityMeter.style.width = `${filled}%`;
@@ -246,16 +248,40 @@ capacityUpgradeButton.addEventListener("click", async () => {
 function visibleGems() {
   const query = gemSearch.value.trim().toLowerCase();
 
-  let gems = state.gems.filter((gem) => {
+  const grouped = [];
+  const relicGroups = new Map();
+
+  for (const gem of state.gems) {
+    if (!isRelic(gem)) {
+      grouped.push(gem);
+      continue;
+    }
+
+    let group = relicGroups.get(gem.gem_name);
+    if (!group) {
+      group = { ...gem, relicRows: [] };
+      relicGroups.set(gem.gem_name, group);
+      grouped.push(group);
+    }
+    group.relicRows.push(gem);
+  }
+
+  for (const group of relicGroups.values()) {
+    group.relic_count = group.relicRows.length;
+    group.unlocked_count = group.relicRows.filter((gem) => !gem.locked).length;
+    group.locked = group.unlocked_count === 0;
+  }
+
+  let gems = grouped.filter((gem) => {
     if (query && !gem.gem_name.toLowerCase().includes(query)) {
       return false;
     }
 
-    if (gemFilter.value === "locked" && !gem.locked) {
+    if (gemFilter.value === "locked" && !(gem.relicRows?.some((row) => row.locked) ?? gem.locked)) {
       return false;
     }
 
-    if (gemFilter.value === "unlocked" && gem.locked) {
+    if (gemFilter.value === "unlocked" && !(gem.relicRows?.some((row) => !row.locked) ?? !gem.locked)) {
       return false;
     }
 
@@ -295,6 +321,7 @@ function matchesDeleteChance(gem) {
 }
 
 function matchesDeleteRule(gem) {
+  if (isRelic(gem)) return false;
   if (gem.locked) return false;
   const rarityMatch = matchesDeleteRarity(gem);
   const chanceMatch = matchesDeleteChance(gem);
@@ -490,25 +517,90 @@ function gemCard(gem) {
 
 function relicCard(gem) {
   const chance = RELICS[gem.gem_name].chance;
+  const count = Number(gem.relic_count ?? 1);
+  const unlockedCount = Number(gem.unlocked_count ?? (gem.locked ? 0 : 1));
   return `
-    <article class="gem-card gem-card--relic${gem.locked ? " gem-card--locked" : ""}" data-id="${gem.id}">
+    <article class="gem-card gem-card--relic${gem.locked ? " gem-card--locked" : ""}" data-relic-name="${escapeHtml(gem.gem_name)}">
       <div class="gem-card__head"><div>
         <div class="gem-card__name">${escapeHtml(gem.gem_name)}</div>
         <div class="gem-card__rarity">RELIC</div>
         <div class="gem-card__chance">Flat chance: ${escapeHtml(formatChance(chance))} · unaffected by Luck</div>
       </div><span class="badge badge--accent">RELIC</span></div>
+      <div class="gem-card__row">
+        <span class="gem-card__key">Owned</span>
+        <span class="gem-card__val">${formatCount(count)}</span>
+      </div>
+      <div class="gem-card__row">
+        <span class="gem-card__key">Available</span>
+        <span class="gem-card__val">${formatCount(unlockedCount)}</span>
+      </div>
       <p class="equipment-card__meta">Consumed when enchanting an equipped pickaxe.</p>
+      <p class="equipment-card__meta">Relics do not use inventory slots.</p>
       <div class="gem-card__actions">
         <button class="btn btn--sm" data-action="lock" type="button">
-          ${gem.locked ? icons.unlock : icons.lock} ${gem.locked ? "Unlock" : "Lock"}
+          ${gem.locked ? icons.unlock : icons.lock} ${gem.locked ? "Unlock all" : "Lock all"}
         </button>
-        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
+        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${unlockedCount === 0 ? "disabled" : ""}>Delete one</button>
       </div>
     </article>`;
 }
 
+async function wireRelicCard(card) {
+  const relicName = card.dataset.relicName;
+  const lockButton = card.querySelector('[data-action="lock"]');
+  const deleteButton = card.querySelector('[data-action="delete"]');
+
+  lockButton?.addEventListener("click", async () => {
+    const rows = state.gems.filter((gem) => gem.gem_name === relicName);
+    const lockAll = rows.some((gem) => !gem.locked);
+    const targets = rows.filter((gem) => gem.locked !== lockAll);
+    lockButton.disabled = true;
+    if (deleteButton) deleteButton.disabled = true;
+
+    for (const gem of targets) {
+      const { error } = await toggleCloudGemLock(gem.id);
+      if (error) {
+        notify.error("Could not change relic locks", error.message);
+        renderGems();
+        return;
+      }
+      gem.locked = lockAll;
+    }
+
+    renderGems();
+  });
+
+  deleteButton?.addEventListener("click", async () => {
+    const gem = state.gems.find((entry) => entry.gem_name === relicName && !entry.locked);
+    if (!gem) return;
+    const choice = await confirmDialog({
+      title: `Delete one ${relicName}?`,
+      body: "<p>This permanently deletes one unlocked relic. You will receive no money.</p>",
+      confirmLabel: "Delete one",
+      tone: "danger"
+    });
+    if (choice !== "confirm") return;
+    deleteButton.disabled = true;
+    if (lockButton) lockButton.disabled = true;
+    const { error } = await deleteCloudGem(gem.id);
+    if (error) {
+      notify.error("Could not delete that relic", error.message);
+      renderGems();
+      return;
+    }
+    state.gems = state.gems.filter((entry) => entry.id !== gem.id);
+    renderAll();
+    notify.success("Relic deleted", relicName);
+  });
+}
+
 
 function wireGemCard(card) {
+  if (card.dataset.relicName) {
+    wireRelicCard(card);
+    return;
+  }
+
   const id = Number(card.dataset.id);
 
   const lockButton = card.querySelector('[data-action="lock"]');
@@ -1189,7 +1281,7 @@ function renderAll() {
 
   subtitle.textContent = state.loading
     ? "Loading your collection…"
-    : `${formatCount(state.gems.length)} gems · ` +
+    : `${formatCount(state.gems.filter((gem) => !isRelic(gem)).length)} gems · ` +
       `${formatCount(state.equipment.length)} equipment · ` +
       `${formatCount(totalPotions())} potions`;
 

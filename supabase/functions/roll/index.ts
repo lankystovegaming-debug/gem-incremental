@@ -1402,6 +1402,14 @@ export default {
           .eq(
             "player_id",
             playerId
+          )
+          .neq(
+            "gem_name",
+            "Enchant Relic"
+          )
+          .neq(
+            "gem_name",
+            "Ancient Relic"
           );
 
 
@@ -2874,7 +2882,7 @@ export default {
       // =====================================================
 
       const finalInventoryCount =
-        autoDeposited
+        autoDeposited || relicDrop
           ? currentInventoryCount
           : currentInventoryCount +
             1;
