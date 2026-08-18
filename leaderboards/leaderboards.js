@@ -689,8 +689,9 @@ function renderBestRoll() {
       <div>
         <h2>Best Roll</h2>
         <p class="leaderboard-description">
-          Highest-value individual roll. Mutation chance shows the exact
-          multiplier active when that specimen was rolled.
+          Rarest individual roll by effective rarity. Mutation rarity
+          multipliers are included, so a Polished 1 in 140,000 Aether Quartz
+          is ranked as 1 in 14,000,000.
         </p>
       </div>
     </div>
