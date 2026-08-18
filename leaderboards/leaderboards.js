@@ -834,7 +834,7 @@ function renderRawRareRoll() {
 function renderBaseLuck() {
   const entries = leaderboardData.baseLuck;
   if (!entries.length) {
-    leaderboardCard.innerHTML = `<h2>Most Base Luck</h2><p class="empty-message">No roll history yet.</p>`;
+    leaderboardCard.innerHTML = `<h2>Most Base Luck</h2><p class="empty-message">No players yet.</p>`;
     return;
   }
   const rows = entries.map(player => `
@@ -849,7 +849,7 @@ function renderBaseLuck() {
     </div>`).join("");
   leaderboardCard.innerHTML = `
     <div class="leaderboard-title-row"><div><h2>Most Base Luck</h2>
-    <p class="leaderboard-description">Highest permanent/equipment Luck recorded on a real roll. Temporary boosts, one-roll potions, and admin events do not count.</p></div></div>
+    <p class="leaderboard-description">Highest current permanent/equipment Luck from the player and currently equipped equipment. Temporary boosts, one-roll potions, and admin events do not count.</p></div></div>
     <div class="leaderboard-header"><div>Rank</div><div>Player</div><div class="score">Base Luck</div></div>
     <div class="leaderboard-list">${rows}</div>`;
 }

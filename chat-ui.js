@@ -339,8 +339,16 @@ if (messagesEl && formEl && inputEl) {
   function setChatOpen(open) {
     if (!dockEl || !fabEl) return;
 
+    // Never hide a focused descendant from assistive technology.
+    // This also fixes the Chrome aria-hidden warning when the close button
+    // is focused as the dock is closed.
+    if (!open && dockEl.contains(document.activeElement)) {
+      document.activeElement?.blur?.();
+    }
+
     dockEl.classList.toggle("hidden", !open);
     dockEl.setAttribute("aria-hidden", open ? "false" : "true");
+    dockEl.inert = !open;
     fabEl.setAttribute("aria-expanded", open ? "true" : "false");
     fabEl.classList.toggle("is-open", open);
 
