@@ -1611,6 +1611,13 @@ export default {
       let luck =
         1;
 
+      // Base Luck is the player's permanent/equipment Luck only.
+      // It intentionally excludes active boosts, one-roll potions, and
+      // admin-event modifiers so the Base Luck leaderboard cannot be
+      // inflated by temporary effects.
+      let baseLuck =
+        1;
+
       let rollSpeed =
         1;
 
@@ -1658,6 +1665,9 @@ export default {
           );
       }
 
+
+      baseLuck =
+        luck;
 
       for (
         const boost
@@ -2416,6 +2426,8 @@ export default {
           mutation_id: primaryMutation?.id ?? null,
           mutation_ids: mutationIds,
           mutation_multiplier: mutationMultiplier,
+          raw_luck: luck,
+          base_luck: baseLuck,
           roll_number: Number(player.total_rolls ?? 0) + 1
         });
 
@@ -2426,6 +2438,27 @@ export default {
         console.error(
           "Best Roll history update failed:",
           bestRollHistoryError
+        );
+      }
+
+      // Keep a separate all-time weight history. This is deliberately
+      // written only by the real Roll function, so loot-box rewards never
+      // enter the Most Weight board.
+      const { error: weightHistoryError } = await ctx.supabaseAdmin
+        .from("roll_weight_history")
+        .insert({
+          player_id: playerId,
+          username: player.username ?? playerId,
+          gem_name: gem.name,
+          final_weight: finalWeight,
+          base_rarity: gem.rarity,
+          mutation_ids: mutationIds
+        });
+
+      if (weightHistoryError) {
+        console.error(
+          "Roll weight history update failed:",
+          weightHistoryError
         );
       }
 
@@ -2568,6 +2601,39 @@ export default {
         );
       }
 
+
+      // Mutation-only rare rolls need a persisted announcement too.
+      // The client used to manufacture these locally, which meant the chat
+      // could show a rare roll that never existed in global_chat_announcements.
+      // Base gems at/above 1 in 100,000 are already announced by
+      // record_server_roll, so only create the missing mutation-only case.
+      const effectiveChatRarity =
+        Math.max(
+          1,
+          Number(gem.rarity) * Number(mutationMultiplier || 1)
+        );
+
+      if (
+        Number(gem.rarity) < 100_000 &&
+        effectiveChatRarity >= 100_000
+      ) {
+        const { error: mutationOnlyAnnouncementError } =
+          await ctx.supabaseAdmin
+            .from("global_chat_announcements")
+            .insert({
+              player_id: playerId,
+              gem_name: gem.name,
+              rarity: gem.rarity,
+              mutation_ids: mutationIds
+            });
+
+        if (mutationOnlyAnnouncementError) {
+          console.error(
+            "Mutation-only rare announcement insert failed:",
+            mutationOnlyAnnouncementError
+          );
+        }
+      }
 
       // Attach the COMPLETE mutation list to the announcement created by
       // record_server_roll. This is done through a SECURITY DEFINER RPC so

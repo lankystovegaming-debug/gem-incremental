@@ -48,13 +48,31 @@ const bestRollTab =
     "bestRollTab"
   );
 
+const mostWeightTab =
+  document.getElementById(
+    "mostWeightTab"
+  );
+
+const rawRareRollTab =
+  document.getElementById(
+    "rawRareRollTab"
+  );
+
+const baseLuckTab =
+  document.getElementById(
+    "baseLuckTab"
+  );
+
 
 let leaderboardData = {
   totalRolls: [],
   rarestGem: [],
   lifetimeEarnings: [],
   gemsFound: [],
-  bestRoll: []
+  bestRoll: [],
+  mostWeight: [],
+  rawRareRoll: [],
+  baseLuck: []
 };
 
 
@@ -164,7 +182,10 @@ async function loadAvatars() {
     "rarestGem",
     "lifetimeEarnings",
     "gemsFound",
-    "bestRoll"
+    "bestRoll",
+    "mostWeight",
+    "rawRareRoll",
+    "baseLuck"
   ]) {
     for (const player of leaderboardData[key]) {
       if (player.username) {
@@ -270,6 +291,10 @@ function updateTabs() {
     activeLeaderboard ===
       "bestRoll"
   );
+
+  mostWeightTab.classList.toggle("active", activeLeaderboard === "mostWeight");
+  rawRareRollTab.classList.toggle("active", activeLeaderboard === "rawRareRoll");
+  baseLuckTab.classList.toggle("active", activeLeaderboard === "baseLuck");
 }
 
 
@@ -755,6 +780,80 @@ function renderBestRoll() {
   `;
 }
 
+
+// =========================================================
+// ADDITIONAL ALL-TIME BOARDS
+// =========================================================
+
+function renderMostWeight() {
+  const entries = leaderboardData.mostWeight;
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `<h2>Highest Weight</h2><p class="empty-message">No roll history yet.</p>`;
+    return;
+  }
+  const rows = entries.map(player => `
+    <div class="leaderboard-row">
+      <div class="rank">${rankDisplay(player.rank)}</div>
+      <div class="player-name">${avatarHtml(player.username)}
+        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
+      </div>
+      <div class="score"><strong>${formatNumber(player.final_weight)}g</strong>
+        <span>${mutationNamesHtml(player)}</span></div>
+    </div>`).join("");
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row"><div><h2>Highest Weight</h2>
+    <p class="leaderboard-description">Highest final specimen weight from real rolls, all time. Loot-box rewards are excluded.</p></div></div>
+    <div class="leaderboard-header"><div>Rank</div><div>Player / Gem</div><div class="score">Weight</div></div>
+    <div class="leaderboard-list">${rows}</div>`;
+}
+
+function renderRawRareRoll() {
+  const entries = leaderboardData.rawRareRoll;
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `<h2>Raw Rare Roll</h2><p class="empty-message">No roll history yet.</p>`;
+    return;
+  }
+  const rows = entries.map(player => `
+    <div class="leaderboard-row">
+      <div class="rank">${rankDisplay(player.rank)}</div>
+      <div class="player-name">${avatarHtml(player.username)}
+        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
+      </div>
+      <div class="score"><strong>1 in ${formatNumber(player.raw_rarity)}</strong>
+        <span>Raw Luck ${formatNumber(player.raw_luck)}×</span></div>
+    </div>`).join("");
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row"><div><h2>Raw Rare Roll</h2>
+    <p class="leaderboard-description">Rarest base-gem roll of all time, adjusted only by the Luck that was actually active on that roll. Mutations are ignored.</p></div></div>
+    <div class="leaderboard-header"><div>Rank</div><div>Player / Gem</div><div class="score">Raw Chance</div></div>
+    <div class="leaderboard-list">${rows}</div>`;
+}
+
+function renderBaseLuck() {
+  const entries = leaderboardData.baseLuck;
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `<h2>Most Base Luck</h2><p class="empty-message">No roll history yet.</p>`;
+    return;
+  }
+  const rows = entries.map(player => `
+    <div class="leaderboard-row">
+      <div class="rank">${rankDisplay(player.rank)}</div>
+      <div class="player-name">${avatarHtml(player.username)}
+        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-best-gem">Permanent / equipment Luck</span></span>
+      </div>
+      <div class="score"><strong>${formatNumber(player.base_luck)}×</strong>
+        <span>No temporary boosts or admin events</span></div>
+    </div>`).join("");
+  leaderboardCard.innerHTML = `
+    <div class="leaderboard-title-row"><div><h2>Most Base Luck</h2>
+    <p class="leaderboard-description">Highest permanent/equipment Luck recorded on a real roll. Temporary boosts, one-roll potions, and admin events do not count.</p></div></div>
+    <div class="leaderboard-header"><div>Rank</div><div>Player</div><div class="score">Base Luck</div></div>
+    <div class="leaderboard-list">${rows}</div>`;
+}
+
 // =========================================================
 // RENDER ACTIVE LEADERBOARD
 // =========================================================
@@ -798,6 +897,21 @@ function renderLeaderboard() {
   ) {
     renderBestRoll();
 
+    return;
+  }
+
+  if (activeLeaderboard === "mostWeight") {
+    renderMostWeight();
+    return;
+  }
+
+  if (activeLeaderboard === "rawRareRoll") {
+    renderRawRareRoll();
+    return;
+  }
+
+  if (activeLeaderboard === "baseLuck") {
+    renderBaseLuck();
     return;
   }
 
@@ -861,7 +975,22 @@ async function loadLeaderboards() {
     error: bestRollError
   } = await supabase.rpc(
     "get_best_roll_leaderboard",
-    { p_limit: 25 }
+    { p_limit: 100 }
+  );
+
+  const { data: mostWeightData, error: mostWeightError } = await supabase.rpc(
+    "get_most_weight_leaderboard",
+    { p_limit: 100 }
+  );
+
+  const { data: rawRareRollData, error: rawRareRollError } = await supabase.rpc(
+    "get_raw_rare_roll_leaderboard",
+    { p_limit: 100 }
+  );
+
+  const { data: baseLuckData, error: baseLuckError } = await supabase.rpc(
+    "get_base_luck_leaderboard",
+    { p_limit: 100 }
   );
 
   // Rarest Gem intentionally uses the exact same inventory-only effective
@@ -873,7 +1002,7 @@ async function loadLeaderboards() {
     error: rarestGemError
   } = await supabase.rpc(
     "get_rarest_gem_leaderboard",
-    { p_limit: 25 }
+    { p_limit: 100 }
   );
 
 
@@ -897,6 +1026,9 @@ async function loadLeaderboards() {
       rarestGemError
     );
   }
+  if (mostWeightError) console.error("Highest Weight leaderboard load failed:", mostWeightError);
+  if (rawRareRollError) console.error("Raw Rare Roll leaderboard load failed:", rawRareRollError);
+  if (baseLuckError) console.error("Base Luck leaderboard load failed:", baseLuckError);
 
 
   leaderboardData = {
@@ -961,6 +1093,21 @@ async function loadLeaderboards() {
             base_rarity: player.base_rarity,
             mutation_chance_product: player.mutation_chance_product
           }))
+        : [],
+
+    mostWeight:
+      Array.isArray(mostWeightData)
+        ? mostWeightData.map(player => ({ ...player }))
+        : [],
+
+    rawRareRoll:
+      Array.isArray(rawRareRollData)
+        ? rawRareRollData.map(player => ({ ...player }))
+        : [],
+
+    baseLuck:
+      Array.isArray(baseLuckData)
+        ? baseLuckData.map(player => ({ ...player }))
         : []
   };
 
@@ -1035,6 +1182,21 @@ bestRollTab.addEventListener(
     renderLeaderboard();
   }
 );
+
+mostWeightTab.addEventListener("click", () => {
+  activeLeaderboard = "mostWeight";
+  renderLeaderboard();
+});
+
+rawRareRollTab.addEventListener("click", () => {
+  activeLeaderboard = "rawRareRoll";
+  renderLeaderboard();
+});
+
+baseLuckTab.addEventListener("click", () => {
+  activeLeaderboard = "baseLuck";
+  renderLeaderboard();
+});
 
 
 // =========================================================

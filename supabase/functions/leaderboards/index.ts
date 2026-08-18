@@ -11,7 +11,7 @@ export default {
             total_rolls
           `).not("username", "is", null).gt("total_rolls", 0).order("total_rolls", {
       ascending: false
-    }).limit(50);
+    }).limit(100);
     if (totalRollsError) {
       console.error("Could not load Total Rolls leaderboard:", totalRollsError);
       return Response.json({
@@ -29,7 +29,7 @@ export default {
             rarest_gem_rarity
           `).not("username", "is", null).not("rarest_gem_rarity", "is", null).gt("rarest_gem_rarity", 0).order("rarest_gem_rarity", {
       ascending: false
-    }).limit(50);
+    }).limit(100);
     if (rarestGemError) {
       console.error("Could not load Rarest Gem leaderboard:", rarestGemError);
       return Response.json({
@@ -46,7 +46,7 @@ export default {
             lifetime_earnings
           `).not("username", "is", null).gt("lifetime_earnings", 0).order("lifetime_earnings", {
       ascending: false
-    }).limit(50);
+    }).limit(100);
     if (lifetimeEarningsError) {
       console.error("Could not load Lifetime Earnings leaderboard:", lifetimeEarningsError);
       return Response.json({
