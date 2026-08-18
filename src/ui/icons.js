@@ -192,6 +192,14 @@ export const icons = {
     <path d="M12 6.8V12l3.4 2" />
   `),
 
+  gavel: svg(`
+    <path d="M3 21h8" />
+    <path d="m13.5 8.5-6 6" />
+    <path d="M9.8 12.2 5 17a2.1 2.1 0 0 0 3 3l4.8-4.8" />
+    <rect x="12.2" y="4.3" width="7" height="4" rx="1" transform="rotate(45 15.7 6.3)" />
+    <path d="m16.5 9.5 3-3" />
+  `),
+
   trash: svg(`
     <path d="M4.5 7h15" />
     <path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7" />

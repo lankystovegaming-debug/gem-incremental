@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Buy and sell gems at the Gem Incremental auction house.">
+
+  <title>Auction House · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./auctions.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice"];
+
+        if (allowedModes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1
+            ? accent
+            : "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Auction House</h1>
+        <p class="page-head__sub">
+          List a gem for others to bid on, or win one for yourself.
+          The highest bid when the timer ends takes the gem.
+        </p>
+      </div>
+
+      <button class="btn btn--ghost btn--icon" id="refreshButton" title="Refresh" aria-label="Refresh">
+        <span id="refreshIcon"></span>
+      </button>
+    </div>
+
+    <div id="auctionStatus" class="status"></div>
+
+    <div class="segmented tabs" role="tablist" aria-label="Auction house">
+      <button id="browseTab" class="segmented__item tab-button active" role="tab" type="button" aria-selected="true">
+        Browse
+      </button>
+      <button id="sellTab" class="segmented__item tab-button" role="tab" type="button" aria-selected="false">
+        Sell a Gem
+      </button>
+      <button id="mineTab" class="segmented__item tab-button" role="tab" type="button" aria-selected="false">
+        My Listings
+      </button>
+    </div>
+
+    <!-- BROWSE -->
+    <section id="browseSection">
+      <div id="browseList" class="auction-grid">
+        <div class="skeleton skeleton--card"></div>
+        <div class="skeleton skeleton--card"></div>
+        <div class="skeleton skeleton--card"></div>
+      </div>
+    </section>
+
+    <!-- SELL -->
+    <section id="sellSection" class="hidden">
+      <div class="card sell-card">
+        <h2 class="sell-card__title">List a gem for auction</h2>
+        <p class="sell-card__hint">
+          The gem leaves your inventory while it is listed and returns if it
+          does not sell. You keep the highest bid when the timer ends.
+        </p>
+
+        <label class="field-label" for="sellGemSelect">Gem</label>
+        <div class="sell-picker">
+          <input class="field" id="sellGemSearch" type="text" placeholder="Search your gems…" autocomplete="off">
+          <select class="field" id="sellGemSelect" size="6" aria-label="Choose a gem to list"></select>
+        </div>
+
+        <div id="sellPreview" class="sell-preview hidden"></div>
+
+        <div class="sell-row">
+          <div class="sell-field">
+            <label class="field-label" for="sellPrice">Starting price ($)</label>
+            <input class="field" id="sellPrice" type="number" min="1" step="1" value="100" inputmode="numeric">
+          </div>
+
+          <div class="sell-field">
+            <label class="field-label" for="sellDuration">Duration</label>
+            <select class="field" id="sellDuration">
+              <option value="1">1 hour</option>
+              <option value="6">6 hours</option>
+              <option value="24" selected>24 hours</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--block" id="listButton" type="button" disabled>
+          List for auction
+        </button>
+      </div>
+    </section>
+
+    <!-- MY LISTINGS -->
+    <section id="mineSection" class="hidden">
+      <div id="mineList" class="auction-grid">
+        <div class="skeleton skeleton--card"></div>
+        <div class="skeleton skeleton--card"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    const shell = mountShell({ page: "auctions", base: "../" });
+    window.__shell = shell;
+  </script>
+
+  <script type="module" src="./auctions.js"></script>
+</body>
+</html>
