@@ -2672,8 +2672,10 @@ export default {
               p_gem_name:
                 gem.name,
 
+              // A relic still counts as a roll, but must never register as
+              // the player's "rarest gem" — passing rarity 0 keeps it out.
               p_gem_rarity:
-                gem.rarity,
+                relicDrop ? 0 : gem.rarity,
 
               p_final_weight:
                 finalWeight
@@ -2705,55 +2707,61 @@ export default {
 
       // Gems Found is a lifetime count score based on the base rarity
       // denominator of every gem found. Mutations do not alter this score.
-      const {
-        error: gemsFoundScoreError
-      } =
-        await ctx.supabaseAdmin.rpc(
-          "record_gems_found_score",
-          {
-            p_player_id: playerId,
-            p_rarity: gem.rarity
-          }
-        );
+      // Relics are not gems, so they never count toward Gems Found.
+      if (!relicDrop) {
+        const {
+          error: gemsFoundScoreError
+        } =
+          await ctx.supabaseAdmin.rpc(
+            "record_gems_found_score",
+            {
+              p_player_id: playerId,
+              p_rarity: gem.rarity
+            }
+          );
 
-      // The roll is already committed, so leaderboard analytics must never
-      // turn a successful roll into a duplicate retry.
-      if (
-        gemsFoundScoreError
-      ) {
-        console.error(
-          "Gems Found score update failed:",
+        // The roll is already committed, so leaderboard analytics must never
+        // turn a successful roll into a duplicate retry.
+        if (
           gemsFoundScoreError
-        );
+        ) {
+          console.error(
+            "Gems Found score update failed:",
+            gemsFoundScoreError
+          );
+        }
       }
 
 
       // Record the COMPLETE mutation combination as one index entry.
       // "none" is also a real combination, so every roll records exactly
       // one combination: none, or any of the 31 non-empty subsets.
-      const combinationKey =
-        getMutationCombinationKey(mutationIds);
+      // Relics are not collectible gems, so they never enter the mutation
+      // combination index (the Gem Index / collection).
+      if (!relicDrop) {
+        const combinationKey =
+          getMutationCombinationKey(mutationIds);
 
-      const {
-        data: mutationCombination,
-        error: mutationCombinationError
-      } = await ctx.supabaseAdmin.rpc(
-        "record_gem_mutation_combination",
-        {
-          p_player_id: playerId,
-          p_gem_name: gem.name,
-          p_combination_key: combinationKey,
-          p_mutation_ids: mutationIds,
-          p_mutation_multipliers: mutationMultipliers,
-          p_value: value
-        }
-      );
-
-      if (mutationCombinationError) {
-        console.error(
-          "Mutation combination index update failed:",
-          mutationCombinationError
+        const {
+          error: mutationCombinationError
+        } = await ctx.supabaseAdmin.rpc(
+          "record_gem_mutation_combination",
+          {
+            p_player_id: playerId,
+            p_gem_name: gem.name,
+            p_combination_key: combinationKey,
+            p_mutation_ids: mutationIds,
+            p_mutation_multipliers: mutationMultipliers,
+            p_value: value
+          }
         );
+
+        if (mutationCombinationError) {
+          console.error(
+            "Mutation combination index update failed:",
+            mutationCombinationError
+          );
+        }
       }
 
 
