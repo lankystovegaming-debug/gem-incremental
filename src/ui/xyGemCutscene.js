@@ -130,9 +130,9 @@ export function buildXyGemCutscene(data, outcome, duration) {
     <div class="xy-beats">
       <div class="xy-beat xy-kicker" data-b="kicker">Something has surfaced</div>
       <div class="xy-beat xy-title" data-b="title">${gemNameSafe(data)}</div>
-      <div class="xy-beat xy-sub" data-b="sub">${escapeHtml(rarityLabel(data?.gem?.rarity ?? 15000000))}</div>
+      <div class="xy-beat xy-sub" data-b="sub">${escapeHtml(rarityLabel(data?.gem?.rarity ?? 100000000))}</div>
       ${mutationNames.length ? `<div class="xy-beat xy-mut" data-b="mut">${mutationNames.map((n) => escapeHtml(n)).join(" · ")}</div>` : ""}
-      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForResult(String(data?.gem?.name ?? "Xy Gem"), mutationIds))}</div>
+      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForResult(String(data?.gem?.name ?? "Heart of Xy"), mutationIds))}</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -144,7 +144,7 @@ export function buildXyGemCutscene(data, outcome, duration) {
 }
 
 function gemNameSafe(data) {
-  return escapeHtml(String(data?.gem?.name ?? "Xy Gem"));
+  return escapeHtml(String(data?.gem?.name ?? "Heart of Xy"));
 }
 
 // ---------------------------------------------------------

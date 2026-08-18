@@ -497,7 +497,7 @@ function renderRoll(data, outcome) {
     // Xy Gem gets its own bespoke cutscene; everything else uses the
     // standard tiered one. Fall back if the custom scene ever throws.
     let overlay;
-    if (gemName === "Xy Gem") {
+    if (gemName === "Heart of Xy") {
       try {
         overlay = buildXyGemCutscene(data, outcome, duration);
       } catch (error) {
