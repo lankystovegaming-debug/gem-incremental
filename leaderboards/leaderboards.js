@@ -9,6 +9,8 @@ import {
 import { gemNameHtml } from "../src/ui/gemStyle.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import gems from "../src/data/gems.js";
+import { loadShowcasesFor } from "../src/backend/cloudShowcase.js";
+import { showcasePinsHtml } from "../src/ui/showcaseRender.js";
 
 
 const leaderboardStatus =
@@ -62,6 +64,11 @@ let activeLeaderboard =
 
 // username -> avatar URL, filled once the boards load.
 let avatarMap = {};
+let showcaseMap = {};
+
+function showcasePins(username) {
+  return showcasePinsHtml(showcaseMap[username]);
+}
 
 
 // =========================================================
@@ -168,25 +175,23 @@ async function loadAvatars() {
 
   if (names.size === 0) {
     avatarMap = {};
-
+    showcaseMap = {};
     return;
   }
 
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_leaderboard_avatars",
-      {
-        p_usernames: [...names]
-      }
-    );
+  const [avatarResult, showcases] = await Promise.all([
+    supabase.rpc("get_leaderboard_avatars", { p_usernames: [...names] }),
+    loadShowcasesFor([...names])
+  ]);
+
+  const { data, error } = avatarResult;
 
   avatarMap =
     !error && data && typeof data === "object"
       ? data
       : {};
+
+  showcaseMap = showcases && typeof showcases === "object" ? showcases : {};
 }
 
 
@@ -309,6 +314,7 @@ function renderTotalRolls() {
             <span class="lb-name-text">${escapeHtml(
               player.username
             )}</span>
+            ${showcasePins(player.username)}
           </div>
 
           <div class="score">
@@ -400,7 +406,7 @@ function renderRarestGem() {
             <span class="lb-name-block">
               <span class="lb-name-text">${escapeHtml(
                 player.username
-              )}</span>
+              )}${showcasePins(player.username)}</span>
               <span class="lb-best-gem">
                 ${player.gemName
                   ? gemNameHtml(player.gemName, escapeHtml)
@@ -511,6 +517,7 @@ function renderLifetimeEarnings() {
             <span class="lb-name-text">${escapeHtml(
               player.username
             )}</span>
+            ${showcasePins(player.username)}
           </div>
 
           <div class="score">
@@ -602,6 +609,7 @@ function renderGemsFound() {
             <span class="lb-name-text">${escapeHtml(
               player.username
             )}</span>
+            ${showcasePins(player.username)}
           </div>
 
           <div class="score">
@@ -712,7 +720,7 @@ function renderBestRoll() {
       <div class="player-name">
         ${avatarHtml(player.username)}
         <span class="lb-name-block">
-          <span class="lb-name-text">${escapeHtml(player.username)}</span>
+          <span class="lb-name-text">${escapeHtml(player.username)}${showcasePins(player.username)}</span>
           <span class="lb-best-gem">${player.gem_name ? gemNameHtml(player.gem_name, escapeHtml) : "Unknown"}</span>
         </span>
       </div>
