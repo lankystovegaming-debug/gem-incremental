@@ -22,6 +22,7 @@ import { setShowcase, loadMyShowcase } from "../src/backend/cloudShowcase.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
+import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import { gemRollChance, formatChance } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -763,6 +764,7 @@ function renderEquipment() {
           ).toFixed(0)}% ${label}</span>`
       );
       const enchant = ENCHANTS[item.enchant_id];
+      const passive = getEquipmentPassive(item.equipment_id);
       const canEnchant = item.category === "pickaxe" && item.equipped &&
         state.gems.some((gem) => isRelic(gem) && !gem.locked);
 
@@ -788,6 +790,11 @@ function renderEquipment() {
           <div class="bonus-list">
             ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
           </div>
+
+          ${passive ? `<div class="equipment-passive">
+            <strong>${escapeHtml(passive.name)}</strong>
+            <span>${escapeHtml(passive.description)}</span>
+          </div>` : ""}
 
           ${enchant ? `<div class="equipment-enchant">
             <strong>${escapeHtml(enchant.name)}</strong>

@@ -269,6 +269,69 @@ const recipes = [
     }
   },
 
+  {
+    id: "eclipse-pickaxe",
+    name: "Eclipse Pickaxe",
+    category: "pickaxe",
+    requirements: [
+      { type: "equipment", equipmentId: "ascendant-pickaxe" },
+      { type: "gem-count", gem: "Aether Quartz", amount: 2 },
+      { type: "gem-count", gem: "Black Diamond", amount: 1 },
+      { type: "gem-count", gem: "Void Opal", amount: 1 },
+      { type: "lifetime-rolls", rolls: 10000 }
+    ],
+    moneyCost: 500000,
+    reward: {
+      id: "eclipse-pickaxe",
+      name: "Eclipse Pickaxe",
+      category: "pickaxe",
+      tier: 11,
+      bonus: { luck: 16 }
+    }
+  },
+
+  {
+    id: "singularity-pickaxe",
+    name: "Singularity Pickaxe",
+    category: "pickaxe",
+    requirements: [
+      { type: "equipment", equipmentId: "eclipse-pickaxe" },
+      { type: "gem-count", gem: "Tugtupite", amount: 2 },
+      { type: "gem-count", gem: "Chronite", amount: 1 },
+      { type: "gem-count", gem: "Meteorite Peridot", amount: 1 },
+      { type: "lifetime-rolls", rolls: 20000 }
+    ],
+    moneyCost: 1100000,
+    reward: {
+      id: "singularity-pickaxe",
+      name: "Singularity Pickaxe",
+      category: "pickaxe",
+      tier: 12,
+      bonus: { luck: 18 }
+    }
+  },
+
+  {
+    id: "transcendent-pickaxe",
+    name: "Transcendent Pickaxe",
+    category: "pickaxe",
+    requirements: [
+      { type: "equipment", equipmentId: "singularity-pickaxe" },
+      { type: "gem-count", gem: "Ringwoodite", amount: 2 },
+      { type: "gem-count", gem: "Pallasite Crystal", amount: 1 },
+      { type: "gem-count", gem: "Antimatter Crystal", amount: 1 },
+      { type: "lifetime-rolls", rolls: 30000 }
+    ],
+    moneyCost: 2500000,
+    reward: {
+      id: "transcendent-pickaxe",
+      name: "Transcendent Pickaxe",
+      category: "pickaxe",
+      tier: 13,
+      bonus: { luck: 21 }
+    }
+  },
+
 
   // =========================================================
   // LANTERNS — ROLL SPEED
@@ -514,6 +577,50 @@ const recipes = [
       category: "lantern",
       tier: 8,
       bonus: { rollSpeed: 1.80 }
+    }
+  },
+
+  {
+    id: "event-horizon-lantern",
+    name: "Event Horizon Lantern",
+    category: "lantern",
+    requirements: [
+      { type: "equipment", equipmentId: "void-lantern" },
+      { type: "gem-count", gem: "Blue Garnet", amount: 5 },
+      { type: "gem-count", gem: "Kyawthuite", amount: 3 },
+      { type: "gem-count", gem: "Natural Moissanite", amount: 2 },
+      { type: "gem-count", gem: "Aether Quartz", amount: 1 },
+      { type: "lifetime-rolls", rolls: 10000 }
+    ],
+    moneyCost: 175000,
+    reward: {
+      id: "event-horizon-lantern",
+      name: "Event Horizon Lantern",
+      category: "lantern",
+      tier: 9,
+      bonus: { rollSpeed: 2.1 }
+    }
+  },
+
+  {
+    id: "singularity-lantern",
+    name: "Singularity Lantern",
+    category: "lantern",
+    requirements: [
+      { type: "equipment", equipmentId: "event-horizon-lantern" },
+      { type: "gem-count", gem: "Aether Quartz", amount: 4 },
+      { type: "gem-count", gem: "Black Diamond", amount: 2 },
+      { type: "gem-count", gem: "Void Opal", amount: 2 },
+      { type: "gem-count", gem: "Tugtupite", amount: 1 },
+      { type: "lifetime-rolls", rolls: 20000 }
+    ],
+    moneyCost: 400000,
+    reward: {
+      id: "singularity-lantern",
+      name: "Singularity Lantern",
+      category: "lantern",
+      tier: 10,
+      bonus: { rollSpeed: 2.4 }
     }
   },
 
@@ -784,6 +891,64 @@ const recipes = [
       category: "boots",
       tier: 8,
       bonus: { weightLuck: 4.00 }
+    }
+  },
+
+  {
+    id: "eventide-boots",
+    name: "Eventide Boots",
+    category: "boots",
+    requirements: [
+      { type: "equipment", equipmentId: "voidwalker-boots" },
+      {
+        id: "eventide-heavy-rare",
+        type: "specimen-condition",
+        label: "1/25,000+ rarity specimen ≥ 3.0×",
+        minimumRarity: 25000,
+        minimumWeightMultiplier: 3,
+        amount: 1
+      },
+      { type: "gem-count", gem: "Natural Moissanite", amount: 2 },
+      { type: "gem-count", gem: "Aether Quartz", amount: 1 },
+      { type: "gem-count", gem: "Void Opal", amount: 1 },
+      { type: "lifetime-rolls", rolls: 10000 }
+    ],
+    moneyCost: 250000,
+    reward: {
+      id: "eventide-boots",
+      name: "Eventide Boots",
+      category: "boots",
+      tier: 9,
+      bonus: { weightLuck: 4.75 }
+    }
+  },
+
+  {
+    id: "singularity-striders",
+    name: "Singularity Striders",
+    category: "boots",
+    requirements: [
+      { type: "equipment", equipmentId: "eventide-boots" },
+      {
+        id: "singularity-heavy-rare",
+        type: "specimen-condition",
+        label: "1/100,000+ rarity specimen ≥ 4.0×",
+        minimumRarity: 100000,
+        minimumWeightMultiplier: 4,
+        amount: 1
+      },
+      { type: "gem-count", gem: "Tugtupite", amount: 2 },
+      { type: "gem-count", gem: "Chronite", amount: 1 },
+      { type: "gem-count", gem: "Meteorite Peridot", amount: 1 },
+      { type: "lifetime-rolls", rolls: 20000 }
+    ],
+    moneyCost: 600000,
+    reward: {
+      id: "singularity-striders",
+      name: "Singularity Striders",
+      category: "boots",
+      tier: 10,
+      bonus: { weightLuck: 5.75 }
     }
   },
 
