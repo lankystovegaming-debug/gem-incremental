@@ -204,14 +204,16 @@
 }
 
 .gem-card__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
   margin-top: auto;
   padding-top: var(--space-1);
 }
 
 .gem-card__actions .btn {
-  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .gem-card--leaving {
