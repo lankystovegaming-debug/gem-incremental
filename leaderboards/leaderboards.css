@@ -190,3 +190,9 @@
   background-clip: text;
   color: transparent;
 }
+
+.lb-best-roll-formula {
+  color: var(--text-faint);
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}

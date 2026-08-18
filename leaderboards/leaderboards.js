@@ -8,6 +8,7 @@ import {
 
 import { gemNameHtml } from "../src/ui/gemStyle.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
+import gems from "../src/data/gems.js";
 
 
 const leaderboardStatus =
@@ -650,9 +651,27 @@ function mutationNamesHtml(player) {
   const ids = Array.isArray(player.mutation_ids) ? player.mutation_ids : [];
   if (!ids.length) return '<span class="lb-no-mutation">No mutation</span>';
   return ids.map(id => {
-    const mutation = GEM_MUTATIONS?.find?.(item => item.id === id);
+    const mutation = GEM_MUTATIONS?.[id];
     return escapeHtml(mutation?.name ?? String(id).replaceAll("-", " "));
   }).join('<span class="lb-mutation-dot">·</span>');
+}
+
+function mutationChanceProductLabel(player) {
+  const ids = Array.isArray(player.mutation_ids) ? player.mutation_ids : [];
+  if (!ids.length) return "No mutation multiplier";
+
+  const factors = ids
+    .map(id => Number(GEM_MUTATIONS?.[id]?.chance))
+    .filter(Number.isFinite);
+
+  if (!factors.length) return "Mutation odds unavailable";
+
+  return factors.map(value => `1/${formatNumber(value)}`).join(" × ");
+}
+
+function baseGemRarity(player) {
+  const gem = gems.find(entry => entry.name === player.gem_name);
+  return Number(gem?.rarity ?? player.rarity ?? 0);
 }
 
 function renderBestRoll() {
@@ -679,7 +698,8 @@ function renderBestRoll() {
       <div class="score gem-score">
         <strong>$${formatMoney(player.value)}</strong>
         <span>1 in ${formatNumber(player.rarity)} · ${formatNumber(player.final_weight)}g</span>
-        <span>${mutationNamesHtml(player)} · ${formatMultiplier(player.mutation_chance_multiplier)} mutation chance</span>
+        <span>${mutationNamesHtml(player)} · ${mutationChanceProductLabel(player)}</span>
+        <span class="lb-best-roll-formula">${formatNumber(baseGemRarity(player))} × mutation odds = ${formatNumber(player.rarity)}</span>
       </div>
     </div>
   `).join("");

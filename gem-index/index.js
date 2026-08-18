@@ -152,8 +152,16 @@ function secretGemIsRevealed(gem) {
 }
 
 function currentlyIndexableEntries() {
-  return indexEntries.filter(
-    (entry) => secretGemIsRevealed(entry.gem)
+  // Keep secret gems in the index as locked placeholders. Previously hidden
+  // gems were removed from the entry list entirely, which made the final
+  // catalog gem appear to be missing until it was discovered.
+  return indexEntries;
+}
+
+function isSecretUndiscovered(entry) {
+  return Boolean(
+    entry.gem.hideRarityUntilDiscovered &&
+    !secretGemIsRevealed(entry.gem)
   );
 }
 
@@ -383,11 +391,12 @@ function gemCard(entry) {
   const tier = rarityTier(entry.gem.rarity);
   const record = state.combinations[entry.key];
   const discovered = Boolean(record);
+  const secretLocked = isSecretUndiscovered(entry);
 
   if (!discovered) {
     return `
       <article
-        class="index-card index-card--locked tier-${tier.id}"
+        class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}"
         data-combination="${escapeHtml(entry.combinationKey)}"
       >
         <div class="index-card__head">
@@ -399,16 +408,18 @@ function gemCard(entry) {
                 : "No Mutation"}
             </div>
           </div>
-          <span class="badge badge--tier">${escapeHtml(tier.name)}</span>
+          <span class="badge badge--tier">${secretLocked ? "Undiscovered" : escapeHtml(tier.name)}</span>
         </div>
 
         <p class="index-card__hidden">
-          Roll this exact gem / mutation combination to reveal its entry.
+          ${secretLocked
+            ? "This secret gem is in the index, but its rarity is hidden until discovered."
+            : "Roll this exact gem / mutation combination to reveal its entry."}
         </p>
 
         <div class="index-card__chance">
           <span class="index-card__key">Actual chance</span>
-          <span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span>
+          <span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span>
         </div>
       </article>
     `;
