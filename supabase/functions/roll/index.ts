@@ -2736,13 +2736,16 @@ export default {
       // Record the COMPLETE mutation combination as one index entry.
       // "none" is also a real combination, so every roll records exactly
       // one combination: none, or any of the 31 non-empty subsets.
+      const combinationKey =
+        getMutationCombinationKey(mutationIds);
+
+      let mutationCombination = null;
+
       // Relics are not collectible gems, so they never enter the mutation
       // combination index (the Gem Index / collection).
       if (!relicDrop) {
-        const combinationKey =
-          getMutationCombinationKey(mutationIds);
-
         const {
+          data: combinationData,
           error: mutationCombinationError
         } = await ctx.supabaseAdmin.rpc(
           "record_gem_mutation_combination",
@@ -2755,6 +2758,8 @@ export default {
             p_value: value
           }
         );
+
+        mutationCombination = combinationData ?? null;
 
         if (mutationCombinationError) {
           console.error(
