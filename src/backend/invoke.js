@@ -33,11 +33,39 @@ const FRIENDLY_MESSAGES = {
 };
 
 
-export async function invokeFunction(name, body = {}) {
-  const { data, error } = await supabase.functions.invoke(name, { body });
+// supabase-js throws a FunctionsFetchError / FunctionsRelayError when the
+// request never reaches the function (network blip, cold edge, a firewall
+// dropping the connection). Those are transient, so retry them a couple of
+// times with a short backoff. A real HTTP response (cooldown, inventory
+// full, …) is a FunctionsHttpError and is NEVER retried — repeating it would
+// be wrong. Retrying a roll is safe: the server cooldown de-dupes, so a
+// retry of one that actually landed just gets a harmless cooldown reply.
+function isTransient(error) {
+  return (
+    error?.name === "FunctionsFetchError" ||
+    error?.name === "FunctionsRelayError" ||
+    /failed to (send|fetch)|network|load failed/i.test(error?.message ?? "")
+  );
+}
 
-  if (!error) {
-    return { data, error: null };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function invokeFunction(name, body = {}, { retries = 2 } = {}) {
+  let error = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const result = await supabase.functions.invoke(name, { body });
+    if (!result.error) {
+      return { data: result.data, error: null };
+    }
+
+    error = result.error;
+
+    if (!isTransient(error) || attempt === retries) {
+      break;
+    }
+    // 300ms, then 600ms.
+    await sleep(300 * (attempt + 1));
   }
 
   const details = await readErrorBody(error);
