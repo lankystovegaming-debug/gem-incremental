@@ -25,8 +25,18 @@ export function highWeightChance(
     );
 
   return (
-    safeWeightLuck /
-    (safeWeightLuck + 3)
+    0.25 +
+    0.6 *
+    (
+      1 -
+      Math.exp(
+        -0.35 *
+        Math.max(
+          0,
+          safeWeightLuck - 1
+        )
+      )
+    )
   );
 }
 
@@ -129,10 +139,10 @@ export function rollWeightMultiplier(
   let wholeMultiplier =
     2;
 
-  // Every additional +1x
-  // becomes twice as rare.
+// Each additional whole multiplier
+// is a 1-in-3 roll.
   while (
-    random01() < 0.5
+    random01() < (1 / 3)
   ) {
     wholeMultiplier++;
   }
