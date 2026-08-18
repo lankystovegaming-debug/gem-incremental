@@ -550,13 +550,13 @@ const gems = [
   },
 
   {
-    name: "Xy Gem",
-    rarity: 15000000,
-    baseWeight: 55000,
-    valuePerGram: 750,
+    name: "Heart of Xy",
+    rarity: 100000000,
+    baseWeight: 6500,
+    valuePerGram: 2000,
     hideRarityUntilDiscovered: true,
     description:
-      "A gem named after one of Gem Incremental's contributors. At one in fifteen million it is rarer than the creator's own namesake — make of that what you will."
+      "The one true heart of Xy. At one in a hundred million, pulling this says more about fate than luck — the rarest thing anyone has ever held."
   },
 
   {

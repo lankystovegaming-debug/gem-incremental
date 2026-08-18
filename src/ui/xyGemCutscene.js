@@ -15,6 +15,7 @@
 import { rarityLabel, escapeHtml } from "./format.js";
 import { chanceLabelForResult } from "../logic/chances.js";
 import { getSettings } from "./settings.js";
+import { icons } from "./icons.js";
 
 let stylesInjected = false;
 
@@ -31,17 +32,15 @@ function injectStyles() {
       transition:height .9s cubic-bezier(.7,0,.2,1);}
     .xy-bar.top{top:0;} .xy-bar.bottom{bottom:0;}
     .xy-cutscene.cine .xy-bar{height:9vh;}
-    .xy-gemwrap{position:absolute;left:50%;top:44%;z-index:2;width:min(42vh,60vw);
+    .xy-gemwrap{position:absolute;left:50%;top:44%;z-index:2;width:min(46vh,62vw);
       perspective:900px;transform:translate(-50%,-50%) scale(0);opacity:0;
       transition:opacity .5s ease, transform 1.15s cubic-bezier(.18,1.5,.32,1);
-      filter:drop-shadow(0 0 42px rgba(150,110,255,.8)) drop-shadow(0 0 100px rgba(120,80,255,.5));}
+      filter:drop-shadow(0 0 14px #b79bff) drop-shadow(0 0 46px #9a6bff) drop-shadow(0 0 120px #7a4fff);}
     .xy-gemwrap.reveal{opacity:1;transform:translate(-50%,-50%) scale(1);}
-    .xy-gem{width:100%;height:auto;display:block;transform-origin:50% 45%;}
-    .xy-gemwrap.reveal .xy-gem{animation:xyGemLife 6s ease-in-out infinite;}
+    .xy-gemwrap svg{width:100%;height:auto;display:block;transform-origin:50% 45%;color:#e7dcff;}
+    .xy-gemwrap.reveal svg{animation:xyGemLife 6s ease-in-out infinite;}
     @keyframes xyGemLife{0%{transform:translateY(-7px) rotateY(-15deg);}
       50%{transform:translateY(7px) rotateY(15deg);}100%{transform:translateY(-7px) rotateY(-15deg);}}
-    .xy-gleam{animation:xyGleam 3s ease-in-out infinite;}
-    @keyframes xyGleam{0%{transform:translateX(0)}55%,100%{transform:translateX(330px)}}
     .xy-beats{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;
       align-items:center;justify-content:flex-end;padding-bottom:15vh;text-align:center;
       pointer-events:none;}
@@ -62,51 +61,12 @@ function injectStyles() {
       font-family:var(--font-mono,monospace);font-size:clamp(.7rem,2vw,1rem);letter-spacing:.14em;
       text-transform:uppercase;color:#c6b0ff;}
     @media (prefers-reduced-motion:reduce){
-      .xy-gemwrap.reveal .xy-gem,.xy-gleam{animation:none;}
+      .xy-gemwrap.reveal svg{animation:none;}
     }
   `;
   document.head.appendChild(s);
 }
 
-function gemSvg() {
-  return `
-  <svg class="xy-gem" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <clipPath id="xyGemClip">
-        <polygon points="100,4 167.9,32.1 196,100 167.9,167.9 100,196 32.1,167.9 4,100 32.1,32.1"/>
-      </clipPath>
-      <radialGradient id="xyTableG" cx="38%" cy="32%" r="80%">
-        <stop offset="0" stop-color="#f1e8ff"/><stop offset="55%" stop-color="#c9b3ff"/>
-        <stop offset="100%" stop-color="#8f6fe6"/>
-      </radialGradient>
-      <radialGradient id="xySpec" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="#ffffff" stop-opacity=".85"/>
-        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <g stroke="#efe7ff" stroke-width="1" stroke-opacity=".28" stroke-linejoin="round">
-      <polygon points="100,58 129.7,70.3 167.9,32.1 100,4"     fill="hsl(273 74% 62%)"/>
-      <polygon points="129.7,70.3 142,100 196,100 167.9,32.1"  fill="hsl(270 62% 45%)"/>
-      <polygon points="142,100 129.7,129.7 167.9,167.9 196,100" fill="hsl(268 58% 35%)"/>
-      <polygon points="129.7,129.7 100,142 100,196 167.9,167.9" fill="hsl(267 55% 33%)"/>
-      <polygon points="100,142 70.3,129.7 32.1,167.9 100,196"  fill="hsl(270 62% 45%)"/>
-      <polygon points="70.3,129.7 58,100 4,100 32.1,167.9"     fill="hsl(273 74% 62%)"/>
-      <polygon points="58,100 70.3,70.3 32.1,32.1 4,100"       fill="hsl(275 80% 73%)"/>
-      <polygon points="70.3,70.3 100,58 100,4 32.1,32.1"       fill="hsl(276 82% 76%)"/>
-    </g>
-    <polygon points="100,58 129.7,70.3 142,100 129.7,129.7 100,142 70.3,129.7 58,100 70.3,70.3" fill="url(#xyTableG)"/>
-    <g fill="#ffffff" fill-opacity=".10" stroke="#efe7ff" stroke-width=".8" stroke-opacity=".3">
-      <polygon points="100,58 129.7,70.3 100,100"/><polygon points="129.7,70.3 142,100 100,100"/>
-      <polygon points="142,100 129.7,129.7 100,100"/><polygon points="129.7,129.7 100,142 100,100"/>
-      <polygon points="100,142 70.3,129.7 100,100"/><polygon points="70.3,129.7 58,100 100,100"/>
-      <polygon points="58,100 70.3,70.3 100,100"/><polygon points="70.3,70.3 100,58 100,100"/>
-    </g>
-    <g clip-path="url(#xyGemClip)"><circle cx="66" cy="60" r="46" fill="url(#xySpec)"/></g>
-    <polygon points="100,4 167.9,32.1 196,100 167.9,167.9 100,196 32.1,167.9 4,100 32.1,32.1"
-      fill="none" stroke="#f6f1ff" stroke-width="2.6" stroke-linejoin="round"/>
-    <g clip-path="url(#xyGemClip)"><rect class="xy-gleam" x="-70" y="-10" width="56" height="220" fill="#fff" opacity=".45"/></g>
-  </svg>`;
-}
 
 export function buildXyGemCutscene(data, outcome, duration) {
   injectStyles();
@@ -126,13 +86,13 @@ export function buildXyGemCutscene(data, outcome, duration) {
   overlay.innerHTML = `
     <canvas class="xy-canvas"></canvas>
     <div class="xy-bar top"></div><div class="xy-bar bottom"></div>
-    <div class="xy-gemwrap">${gemSvg()}</div>
+    <div class="xy-gemwrap">${icons.gem}</div>
     <div class="xy-beats">
       <div class="xy-beat xy-kicker" data-b="kicker">Something has surfaced</div>
       <div class="xy-beat xy-title" data-b="title">${gemNameSafe(data)}</div>
-      <div class="xy-beat xy-sub" data-b="sub">${escapeHtml(rarityLabel(data?.gem?.rarity ?? 15000000))}</div>
+      <div class="xy-beat xy-sub" data-b="sub">${escapeHtml(rarityLabel(data?.gem?.rarity ?? 100000000))}</div>
       ${mutationNames.length ? `<div class="xy-beat xy-mut" data-b="mut">${mutationNames.map((n) => escapeHtml(n)).join(" · ")}</div>` : ""}
-      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForResult(String(data?.gem?.name ?? "Xy Gem"), mutationIds))}</div>
+      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForResult(String(data?.gem?.name ?? "Heart of Xy"), mutationIds))}</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -144,7 +104,7 @@ export function buildXyGemCutscene(data, outcome, duration) {
 }
 
 function gemNameSafe(data) {
-  return escapeHtml(String(data?.gem?.name ?? "Xy Gem"));
+  return escapeHtml(String(data?.gem?.name ?? "Heart of Xy"));
 }
 
 // ---------------------------------------------------------
