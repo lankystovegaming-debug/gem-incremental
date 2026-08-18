@@ -57,7 +57,7 @@ openingIcon.innerHTML = icons.box;
 const state = {
   boxes: [],
   wallet: { coins: 0, money: 0 },
-  coinValue: 10000,
+  coinValue: 100000,
   spinning: false
 };
 

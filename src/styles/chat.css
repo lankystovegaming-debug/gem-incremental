@@ -2,6 +2,83 @@
    MERGED GLOBAL + PRIVATE CHAT
    ========================================================= */
 
+
+.chat-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px 12px 0;
+  background: var(--surface);
+}
+
+.chat-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border-radius: 10px 10px 0 0;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.chat-tab:hover { color: var(--text); background: var(--surface-hover); }
+.chat-tab.is-active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.chat-tab__badge {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: .68rem;
+}
+
+.chat-message--tab-hidden { display: none !important; }
+
+.chat-role-badge {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: .68rem;
+  font-weight: 950;
+  letter-spacing: .08em;
+  vertical-align: middle;
+}
+
+.chat-role-badge--dev {
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192,132,252,.9), 0 0 18px rgba(168,85,247,.7);
+  animation: chat-dev-pulse 1.45s ease-in-out infinite;
+}
+
+.chat-role-badge--owner {
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251,191,36,.75);
+  animation: chat-owner-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes chat-dev-pulse {
+  0%,100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-1px) scale(1.06); filter: brightness(1.35); }
+}
+
+@keyframes chat-owner-pulse {
+  0%,100% { text-shadow: 0 0 6px rgba(251,191,36,.55); }
+  50% { text-shadow: 0 0 12px rgba(251,191,36,.95), 0 0 22px rgba(245,158,11,.55); }
+}
+
 .chat-card {
   margin-top: var(--space-5);
   overflow: hidden;
@@ -601,4 +678,95 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+/* Shared page-independent auto-roll reveal. */
+.global-roll-effect {
+  position: fixed;
+  z-index: 1200;
+  left: 50%;
+  top: 76px;
+  transform: translate(-50%, -18px) scale(.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.global-roll-effect.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.global-roll-effect__card {
+  position: relative;
+  min-width: min(360px, calc(100vw - 28px));
+  padding: 16px 22px;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  box-shadow: 0 16px 50px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 30px color-mix(in srgb, var(--accent) 18%, transparent);
+  overflow: hidden;
+}
+
+.global-roll-effect__card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--accent) 20%, transparent), transparent 28%);
+  animation: global-roll-spin 2.2s linear infinite;
+}
+
+.global-roll-effect__card > * { position: relative; z-index: 1; }
+.global-roll-effect__eyebrow { color: var(--accent); font-size: .68rem; font-weight: 900; letter-spacing: .18em; }
+.global-roll-effect__gem { margin-top: 4px; font-family: var(--font-display); font-size: 1.35rem; font-weight: 900; }
+.global-roll-effect__rarity { margin-top: 2px; color: var(--text-muted); font-size: .8rem; }
+.global-roll-effect__mutations { margin-top: 6px; color: #c084fc; font-weight: 800; font-size: .8rem; }
+.global-roll-effect__outcome { margin-top: 7px; color: var(--text-faint); font-size: .75rem; }
+.global-roll-effect__spark { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 15px var(--accent); animation: global-roll-spark 1.1s ease-in-out infinite; }
+.global-roll-effect__spark--one { left: -12px; top: 22px; }
+.global-roll-effect__spark--two { right: -12px; bottom: 22px; animation-delay: .35s; }
+
+@keyframes global-roll-spin { to { transform: rotate(360deg); } }
+@keyframes global-roll-spark { 50% { transform: scale(1.9); opacity: .45; } }
+
+/* Every ordinary Roll gets a playful, lightweight effect. Cutscenes are a
+   separate tier and only activate above the player's configured threshold. */
+.stage__display.is-epic-roll::before,
+.stage__display.is-epic-roll::after {
+  content: "✦";
+  position: absolute;
+  z-index: 1;
+  color: var(--accent);
+  font-size: 1.2rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage__display.is-epic-roll::before {
+  left: 16%;
+  top: 20%;
+  animation: ordinary-roll-spark 1s ease-out both;
+}
+
+.stage__display.is-epic-roll::after {
+  right: 18%;
+  bottom: 24%;
+  animation: ordinary-roll-spark 1s .18s ease-out both;
+}
+
+.stage__display.is-animating .gem-reveal {
+  animation: ordinary-roll-pop .72s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes ordinary-roll-pop {
+  0% { opacity: 0; transform: translateY(10px) scale(.9); filter: blur(3px); }
+  55% { opacity: 1; transform: translateY(-2px) scale(1.035); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ordinary-roll-spark {
+  0% { opacity: 0; transform: scale(.2) rotate(-20deg); }
+  35% { opacity: 1; transform: scale(1.35) rotate(8deg); }
+  100% { opacity: 0; transform: translateY(-18px) scale(.7) rotate(28deg); }
 }

@@ -2429,29 +2429,6 @@ export default {
         );
       }
 
-      // Separate all-time weight history. This table is written only by the
-      // Roll edge function, so loot-box gem rewards can never enter Most
-      // Weight accidentally. Multiple rolls from the same player are allowed.
-      const {
-        error: weightHistoryError
-      } = await ctx.supabaseAdmin
-        .from("roll_weight_history")
-        .insert({
-          player_id: playerId,
-          username: player.username ?? playerId,
-          gem_name: gem.name,
-          final_weight: finalWeight,
-          base_rarity: gem.rarity,
-          mutation_ids: mutationIds
-        });
-
-      if (weightHistoryError) {
-        console.error(
-          "Most Weight history update failed:",
-          weightHistoryError
-        );
-      }
-
 
       // =====================================================
       // CONSUME ONE-ROLL BOOST

@@ -196,15 +196,3 @@
   font-size: .72rem;
   font-variant-numeric: tabular-nums;
 }
-
-/* Six boards fit comfortably on desktop and remain horizontally scrollable
-   on narrow screens instead of crushing the tab labels. */
-.tabs {
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.tabs .tab-button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}

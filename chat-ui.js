@@ -9,6 +9,7 @@ import {
   findPlayerByUsername,
   loadUnreadPrivateMessageCount,
   loadRecentPrivateMessages,
+  cleanupPrivateMessages,
   markAllPrivateMessagesRead, 
   sendPrivateMessage,
   subscribeToPrivateMessages,
@@ -38,6 +39,9 @@ const resetSizeEl = document.querySelector("#chatDockResetSize");
 const widthResizeEl = document.querySelector("#chatDockResizeWidth");
 const heightResizeEl = document.querySelector("#chatDockResizeHeight");
 const layoutOptionEls = document.querySelectorAll("[data-chat-layout]");
+const chatTabEls = document.querySelectorAll("[data-chat-tab]");
+const generalBadgeEl = document.querySelector("#chatGeneralBadge");
+const rareBadgeEl = document.querySelector("#chatRareBadge");
 
 const CHAT_LAYOUT_STORAGE_KEY = "gem.chat.layout.v1";
 const CHAT_UNREAD_STORAGE_KEY = "gem.chat.unread.v1";
@@ -53,6 +57,8 @@ if (messagesEl && formEl && inputEl) {
   let currentUserId = null;
   let unreadGlobal = 0;
   let unreadPrivate = 0;
+  let unreadRare = 0;
+  let activeTab = "general";
   let markingPrivateRead = false;
   let layoutSettings = loadChatLayout();
   const documentTitle = document.title.replace(/^\(\d+\)\s+/, "");
@@ -125,11 +131,72 @@ if (messagesEl && formEl && inputEl) {
     return isChatOpen() && !document.hidden;
   }
 
-  function scrollChatToBottom() {
+  function isRareMessage(message) {
+    return Boolean(
+      message &&
+      (message.source === "system" || message.source === "announcement") &&
+      message.gem_name &&
+      chatChanceIsRareEnough(message)
+    );
+  }
+
+  function isMessageVisibleInTab(message) {
+    if (activeTab === "rare") return isRareMessage(message);
+    return !isRareMessage(message);
+  }
+
+  function scrollChatToBottom(instant = false) {
     if (!messagesEl) return;
     requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      messagesEl.scrollTo({
+        top: messagesEl.scrollHeight,
+        behavior: instant ? "auto" : "smooth"
+      });
     });
+  }
+
+  function renderActiveTab() {
+    let visibleCount = 0;
+    for (const item of messagesEl.querySelectorAll(".chat-message")) {
+      const source = item.dataset.messageSource || "global";
+      const rare = item.dataset.rare === "true";
+      const visible = activeTab === "rare" ? rare : !rare;
+      item.classList.toggle("chat-message--tab-hidden", !visible);
+      if (visible) visibleCount += 1;
+    }
+
+    let empty = messagesEl.querySelector("#chatEmpty");
+    if (!visibleCount) {
+      if (!empty) {
+        empty = document.createElement("div");
+        empty.className = "chat-empty";
+        empty.id = "chatEmpty";
+        messagesEl.appendChild(empty);
+      }
+      empty.textContent = activeTab === "rare"
+        ? "No rare rolls yet. Chase something extraordinary!"
+        : "No general messages yet. Say hello!";
+    } else {
+      empty?.remove();
+    }
+    for (const tab of chatTabEls) {
+      const selected = tab.dataset.chatTab === activeTab;
+      tab.classList.toggle("is-active", selected);
+      tab.setAttribute("aria-selected", selected ? "true" : "false");
+    }
+    scrollChatToBottom(true);
+  }
+
+  function updateTabBadges() {
+    if (generalBadgeEl) {
+      const count = unreadGlobal + unreadPrivate;
+      generalBadgeEl.textContent = count > 99 ? "99+" : String(count);
+      generalBadgeEl.classList.toggle("hidden", count === 0);
+    }
+    if (rareBadgeEl) {
+      rareBadgeEl.textContent = unreadRare > 99 ? "99+" : String(unreadRare);
+      rareBadgeEl.classList.toggle("hidden", unreadRare === 0);
+    }
   }
 
   function latestGlobalMessageAt(messages) {
@@ -166,7 +233,7 @@ if (messagesEl && formEl && inputEl) {
   }
 
   function updateUnreadBadge() {
-    const count = Math.max(0, unreadGlobal) + Math.max(0, unreadPrivate);
+    const count = Math.max(0, unreadGlobal) + Math.max(0, unreadPrivate) + Math.max(0, unreadRare);
 
     if (badgeEl) {
       badgeEl.textContent = count > 99 ? "99+" : String(count);
@@ -181,6 +248,7 @@ if (messagesEl && formEl && inputEl) {
     }
 
     document.title = count ? `(${count > 99 ? "99+" : count}) ${documentTitle}` : documentTitle;
+    updateTabBadges();
   }
 
   async function markPrivateMessagesRead() {
@@ -231,11 +299,21 @@ if (messagesEl && formEl && inputEl) {
   }
 
   function receiveGlobalMessage(message) {
-    if (!message || message.source !== "global" || message.sender_id === currentUserId) {
+    if (!message) return;
+
+    if (isRareMessage(message)) {
+      if (isChatBeingRead() && activeTab === "rare") {
+        unreadRare = 0;
+      } else if (message.sender_id !== currentUserId) {
+        unreadRare += 1;
+      }
+      updateUnreadBadge();
       return;
     }
 
-    if (isChatBeingRead()) {
+    if (message.source !== "global" || message.sender_id === currentUserId) return;
+
+    if (isChatBeingRead() && activeTab === "general") {
       setGlobalSeenAt(message.created_at);
       return;
     }
@@ -270,6 +348,9 @@ if (messagesEl && formEl && inputEl) {
       settingsPanelEl?.classList.add("hidden");
       settingsToggleEl?.setAttribute("aria-expanded", "false");
       clearUnreadMessages(renderedChatMessages());
+      unreadRare = 0;
+      updateUnreadBadge();
+      renderActiveTab();
       setTimeout(() => inputEl.focus(), 50);
     }
   }
@@ -356,6 +437,22 @@ if (messagesEl && formEl && inputEl) {
     if (n >= 100_000) return "chat-message--hundredk";
 
     return "";
+  }
+
+  const CHAT_ROLES = Object.freeze({
+    "316c668e-1ab3-4e5f-bad0-8cd964a41440": "DEV",
+    "38d5e8ce-18af-46d3-aa9e-6e601e75dd78": "DEV",
+    "004d883f-edbc-4610-b5e3-9068a0de0ca2": "OWNER"
+  });
+
+  function roleBadgeHtml(userId) {
+    const role = CHAT_ROLES[String(userId ?? "").toLowerCase()];
+    if (!role) return "";
+    return `<span class="chat-role-badge chat-role-badge--${role.toLowerCase()}">[${role}]</span>`;
+  }
+
+  function displayNameHtml(userId, username) {
+    return `${roleBadgeHtml(userId)}<span>${escapeHtml(username ?? "Unknown")}</span>`;
   }
 
   function avatarHtml(message) {
@@ -519,7 +616,6 @@ if (messagesEl && formEl && inputEl) {
           "chat-message--hundredk",
           Number(message.rarity ?? 0) >= 100000 && Number(message.rarity ?? 0) < 1000000
         );
-        scrollChatToBottom();
       }
       return false;
     }
@@ -529,16 +625,11 @@ if (messagesEl && formEl && inputEl) {
     const isPrivate = message.source === "private";
     const isSystem =
       message.source === "system" || message.source === "announcement";
+    const rareMessage = isRareMessage(message);
 
-    // Do not surface rare-roll announcements whose final displayed chance
-    // is more common than 1 in 100,000.
-    if (
-      isSystem &&
-      message.gem_name &&
-      !chatChanceIsRareEnough(message)
-    ) {
-      return false;
-    }
+    // Rare rolls are stored and rendered only in the Rare Rolls tab. They
+    // never enter General chat.
+    if (isSystem && message.gem_name && !rareMessage) return false;
 
     const mine = isPrivate && message.sender_id === currentUserId;
 
@@ -577,7 +668,6 @@ if (messagesEl && formEl && inputEl) {
         duplicate.dataset.mutationKey = mutationKey;
         const textEl = duplicate.querySelector(".chat-message__text");
         if (textEl) textEl.innerHTML = systemMessageHtml(message);
-        scrollChatToBottom();
         return false;
       }
     }
@@ -589,12 +679,15 @@ if (messagesEl && formEl && inputEl) {
       isPrivate ? "chat-message--private" : "",
       mine ? "chat-message--mine" : "",
       isSystem ? "chat-message--system" : "",
-      rarityClass(message.rarity)
+      rarityClass(message.rarity),
+      (!((activeTab === "rare") === rareMessage)) ? "chat-message--tab-hidden" : ""
     ]
       .filter(Boolean)
       .join(" ");
 
     item.dataset.messageId = messageId;
+    item.dataset.messageSource = String(message.source ?? "global");
+    item.dataset.rare = rareMessage ? "true" : "false";
     if (isSystem && message.gem_name) {
       item.dataset.gemName = String(message.gem_name);
       item.dataset.mutationKey = chatMutationIds(message).join("+");
@@ -612,12 +705,12 @@ if (messagesEl && formEl && inputEl) {
           )}`;
     } else if (isSystem) {
       label = message.roller_username
-        ? `<span class="chat-system-tag">[SYSTEM]</span> · ${escapeHtml(
-            message.roller_username
+        ? `<span class="chat-system-tag">[SYSTEM]</span> · ${displayNameHtml(
+            message.roller_id, message.roller_username
           )}`
         : `<span class="chat-system-tag">[SYSTEM]</span>`;
     } else {
-      label = escapeHtml(message.username ?? "Unknown");
+      label = displayNameHtml(message.sender_id, message.username ?? "Unknown");
     }
 
     const effect =
@@ -650,7 +743,7 @@ if (messagesEl && formEl && inputEl) {
 
     messagesEl.appendChild(item);
 
-    if (shouldScroll) {
+    if (shouldScroll && isMessageVisibleInTab(message)) {
       scrollChatToBottom();
     }
 
@@ -741,6 +834,10 @@ if (messagesEl && formEl && inputEl) {
 
       // Load public chat and this user's private inbox before subscribing so
       // the badge is accurate as soon as the page opens.
+      await cleanupPrivateMessages(30).catch((error) => {
+        console.warn("[DM] Auto-clear skipped:", error);
+      });
+
       const [globalMessages, privateMessages, privateUnreadCount] = await Promise.all([
         loadChatMessages(),
         loadRecentPrivateMessages(50),
@@ -768,7 +865,8 @@ if (messagesEl && formEl && inputEl) {
           renderMessage(message, false);
         }
 
-        scrollChatToBottom();
+        renderActiveTab();
+        scrollChatToBottom(true);
       }
 
       unreadGlobal = countUnreadGlobalMessages(globalMessages);
@@ -838,6 +936,20 @@ if (messagesEl && formEl && inputEl) {
       layoutSettings.layout = option.dataset.chatLayout ?? "floating";
       applyChatLayout();
       saveChatLayout();
+    });
+  }
+
+  for (const tab of chatTabEls) {
+    tab.addEventListener("click", () => {
+      activeTab = tab.dataset.chatTab === "rare" ? "rare" : "general";
+      if (activeTab === "rare") {
+        unreadRare = 0;
+      } else {
+        unreadGlobal = 0;
+        unreadPrivate = 0;
+      }
+      updateUnreadBadge();
+      renderActiveTab();
     });
   }
 

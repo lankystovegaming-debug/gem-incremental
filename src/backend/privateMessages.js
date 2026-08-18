@@ -309,6 +309,21 @@ export async function findPlayerByUsername(username) {
   ) ?? null;
 }
 
+export async function cleanupPrivateMessages(maxAgeDays = 30) {
+  const days = Math.min(Math.max(Number(maxAgeDays) || 30, 1), 3650);
+
+  const { data, error } = await supabase.rpc("cleanup_private_messages", {
+    p_max_age_days: days
+  });
+
+  if (error) {
+    console.error("[DM] Failed to auto-clear old private messages:", error);
+    throw error;
+  }
+
+  return Number(data ?? 0);
+}
+
 export async function loadRecentPrivateMessages(limit = 50) {
   const userId = await getCurrentUserId();
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);

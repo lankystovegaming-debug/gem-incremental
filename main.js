@@ -434,10 +434,10 @@ function mutationNamesHtml(mutations = []) {
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
   const rarity = Number(data.gem.rarity ?? 0);
-  // Full-screen reveal starts at 10k. Anything below 10k has no
-  // cinematic/reveal at all.
-  const isUltraRare = rarity >= getSettings().cutsceneMinimumRarity;
-  const isEpicRollEffect = false;
+  // Every roll gets the normal roll-effect. A full cutscene is reserved
+  // for gems strictly rarer than the player-selected 1-in-N threshold.
+  const isUltraRare = rarity > getSettings().cutsceneMinimumRarity;
+  const isEpicRollEffect = true;
 
   const gemName = String(data.gem.name ?? "Gem");
   let gemHash = 0;
