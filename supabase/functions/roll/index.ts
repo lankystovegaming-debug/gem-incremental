@@ -153,98 +153,98 @@ const gems = [
     name: "Sapphire",
     rarity: 1100,
     baseWeight: 475,
-    valuePerGram: 2.05735
+    valuePerGram: 1.7487475
   },
 
   {
     name: "Ruby",
     rarity: 1400,
     baseWeight: 500,
-    valuePerGram: 2.53
+    valuePerGram: 2.1505
   },
 
   {
     name: "Emerald",
     rarity: 1800,
     baseWeight: 525,
-    valuePerGram: 3.06705
+    valuePerGram: 2.6069925
   },
 
   {
     name: "Diamond",
     rarity: 2300,
     baseWeight: 550,
-    valuePerGram: 3.8686
+    valuePerGram: 3.28831
   },
 
   {
     name: "Tanzanite",
     rarity: 2900,
     baseWeight: 575,
-    valuePerGram: 4.09975
+    valuePerGram: 3.4847875
   },
 
   {
     name: "Alexandrite",
     rarity: 3600,
     baseWeight: 600,
-    valuePerGram: 5.07955
+    valuePerGram: 4.3176175
   },
 
   {
     name: "Benitoite",
     rarity: 4400,
     baseWeight: 625,
-    valuePerGram: 5.52
+    valuePerGram: 4.692
   },
 
   {
     name: "Red Beryl",
     rarity: 5300,
     baseWeight: 650,
-    valuePerGram: 6.3687
+    valuePerGram: 5.413395
   },
 
   {
     name: "Black Opal",
     rarity: 6300,
     baseWeight: 675,
-    valuePerGram: 7.3255
+    valuePerGram: 6.226675
   },
 
   {
     name: "Grandidierite",
     rarity: 7400,
     baseWeight: 700,
-    valuePerGram: 7.88555
+    valuePerGram: 6.7027175
   },
 
   {
     name: "Taaffeite",
     rarity: 8500,
     baseWeight: 725,
-    valuePerGram: 8.7239
+    valuePerGram: 7.415315
   },
 
   {
     name: "Musgravite",
     rarity: 9300,
     baseWeight: 750,
-    valuePerGram: 9.2
+    valuePerGram: 7.82
   },
 
   {
     name: "Painite",
     rarity: 10000,
     baseWeight: 800,
-    valuePerGram: 9.34375
+    valuePerGram: 7.5
   },
 
   {
     name: "Dark Matter",
     rarity: 1000000,
     baseWeight: 2500,
-    valuePerGram: 200
+    valuePerGram: 160
   },
 
   {
@@ -265,99 +265,104 @@ const gems = [
     name: "Demantoid",
     rarity: 6800,
     baseWeight: 690,
-    valuePerGram: 7.6
+    valuePerGram: 6.46
   },
 
   {
     name: "Jeremejevite",
     rarity: 14000,
     baseWeight: 850,
-    valuePerGram: 12
+    valuePerGram: 9
   },
 
   {
     name: "Poudretteite",
     rarity: 22000,
     baseWeight: 925,
-    valuePerGram: 16
+    valuePerGram: 12
   },
 
   {
     name: "Serendibite",
     rarity: 35000,
     baseWeight: 1000,
-    valuePerGram: 22
+    valuePerGram: 16.5
   },
 
   {
     name: "Blue Garnet",
     rarity: 55000,
     baseWeight: 1100,
-    valuePerGram: 30
+    valuePerGram: 22.5
   },
 
   {
     name: "Kyawthuite",
     rarity: 85000,
     baseWeight: 1200,
-    valuePerGram: 42
+    valuePerGram: 31.5
   },
 
   {
     name: "Aether Quartz",
     rarity: 140000,
     baseWeight: 1350,
-    valuePerGram: 54
+    valuePerGram: 43.2
   },
 
   {
     name: "Void Opal",
     rarity: 250000,
     baseWeight: 1550,
-    valuePerGram: 76.5
+    valuePerGram: 61.2
   },
 
   {
     name: "Chronite",
     rarity: 480000,
     baseWeight: 1800,
-    valuePerGram: 112.5
+    valuePerGram: 90
   },
 
   {
     name: "Neutron Crystal",
     rarity: 800000,
     baseWeight: 2200,
-    valuePerGram: 157.5
+    valuePerGram: 126
   },
 
   {
     name: "Antimatter Crystal",
     rarity: 1800000,
     baseWeight: 2900,
-    valuePerGram: 270
+    valuePerGram: 216
   },
 
   {
     name: "Singularity Shard",
     rarity: 4000000,
     baseWeight: 3600,
-    valuePerGram: 472.5
+    valuePerGram: 378
   },
 
-  {
-    name: "Lanky Gem",
-    rarity: 10000000,
-    baseWeight: 40500,
-    valuePerGram: 111.1111
-  },
-
-  {
-    name: "Xy Gem",
-    rarity: 15000000,
-    baseWeight: 5500,
-    valuePerGram: 750
-  }
+  { name: "Pezzottaite", rarity: 12000, baseWeight: 825, valuePerGram: 8.5 },
+  { name: "Clinohumite", rarity: 18000, baseWeight: 875, valuePerGram: 10 },
+  { name: "Tsavorite", rarity: 28000, baseWeight: 960, valuePerGram: 14 },
+  { name: "Paraíba Tourmaline", rarity: 45000, baseWeight: 1050, valuePerGram: 19 },
+  { name: "Red Diamond", rarity: 70000, baseWeight: 1150, valuePerGram: 27 },
+  { name: "Natural Moissanite", rarity: 110000, baseWeight: 1275, valuePerGram: 36 },
+  { name: "Black Diamond", rarity: 190000, baseWeight: 1450, valuePerGram: 51 },
+  { name: "Tugtupite", rarity: 350000, baseWeight: 1650, valuePerGram: 74 },
+  { name: "Meteorite Peridot", rarity: 620000, baseWeight: 1950, valuePerGram: 105 },
+  { name: "Ringwoodite", rarity: 900000, baseWeight: 2350, valuePerGram: 145 },
+  { name: "Pallasite Crystal", rarity: 1300000, baseWeight: 2700, valuePerGram: 185 },
+  { name: "Lunar Diamond", rarity: 2500000, baseWeight: 3100, valuePerGram: 270 },
+  { name: "Martian Opal", rarity: 6000000, baseWeight: 4000, valuePerGram: 420 },
+  { name: "Ja-ore", rarity: 6242026, baseWeight: 90000, valuePerGram: 20 },
+  { name: "Presolar Moissanite", rarity: 8000000, baseWeight: 4800, valuePerGram: 560 },
+  { name: "Lanky Gem", rarity: 10000000, baseWeight: 40500, valuePerGram: 111.1111 },
+  { name: "Xy Gem", rarity: 15000000, baseWeight: 55000, valuePerGram: 750 },
+  { name: "Carmeltazite", rarity: 50000000, baseWeight: 6000, valuePerGram: 1250 }
 ];
 
 // =========================================================
