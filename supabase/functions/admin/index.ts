@@ -45,7 +45,7 @@ const GEM_CATALOG = [
   ["Chronite",480000,1800,112.5],["Neutron Crystal",800000,2200,157.5],
   ["Dark Matter",1000000,2500,200],["Antimatter Crystal",1800000,2900,270],
   ["Singularity Shard",4000000,3600,472.5],["Lanky Gem",10000000,40500,111.1111],
-  ["Xy Gem",15000000,5500,750]
+  ["Heart of Xy",100000000,6500,2000]
 ].map(([name, rarity, baseWeight, valuePerGram]) => ({
   name: String(name),
   rarity: Number(rarity),

@@ -361,7 +361,7 @@ const gems = [
   { name: "Ja-ore", rarity: 6242026, baseWeight: 90000, valuePerGram: 20 },
   { name: "Presolar Moissanite", rarity: 8000000, baseWeight: 4800, valuePerGram: 560 },
   { name: "Lanky Gem", rarity: 10000000, baseWeight: 40500, valuePerGram: 111.1111 },
-  { name: "Xy Gem", rarity: 15000000, baseWeight: 55000, valuePerGram: 750 },
+  { name: "Heart of Xy", rarity: 100000000, baseWeight: 6500, valuePerGram: 2000 },
   { name: "Carmeltazite", rarity: 50000000, baseWeight: 6000, valuePerGram: 1250 }
 ];
 
