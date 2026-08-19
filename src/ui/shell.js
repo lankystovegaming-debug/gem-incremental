@@ -43,7 +43,7 @@ const PAGES = [
   { id: "roll", label: "Roll", short: "Roll", href: "", icon: icons.dice },
   { id: "inventory", label: "Inventory", short: "Items", href: "inventory/", icon: icons.bag },
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
-  { id: "boosts", label: "Potion Shop", short: "Potions", href: "boosts/", icon: icons.potion },
+  { id: "boosts", label: "Shop", short: "Shop", href: "boosts/", icon: icons.potion },
   { id: "lootbox", label: "Loot Boxes", short: "Boxes", href: "lootbox/", icon: icons.box },
   { id: "auctions", label: "Auction House", short: "Auction", href: "auctions/", icon: icons.gavel },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
