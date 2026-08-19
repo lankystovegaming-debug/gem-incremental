@@ -16,11 +16,14 @@ import { supabase } from "./supabase.js";
 
 
 const CREATE_MESSAGES = {
-  not_authenticated: "You need to be signed in to list a gem.",
+  not_authenticated: "You need to be signed in to list items.",
   invalid_price: "Enter a starting price of at least $1.",
-  too_many_listings: "You can have at most 3 gems on auction at once — wait for some to close.",
-  gem_unavailable: "That gem is locked or no longer in your inventory.",
-  not_auctionable: "Relics cannot be auctioned."
+  too_many_listings: "You can have at most 3 listings on auction at once — wait for some to close.",
+  gem_unavailable: "One of those gems is locked or no longer in your inventory.",
+  potion_unavailable: "You do not have that many of one of those potions.",
+  empty_lot: "Add at least one item to the lot first.",
+  lot_too_large: "A lot can hold at most 25 different items.",
+  not_auctionable: "That item cannot be auctioned."
 };
 
 const BID_MESSAGES = {
@@ -118,6 +121,25 @@ export async function loadBidsFor(auctionId) {
 export async function createAuction(specimenId, startPrice, durationHours) {
   const { data, error } = await supabase.rpc("create_auction", {
     p_specimen_id: Number(specimenId),
+    p_start_price: Number(startPrice),
+    p_duration_hours: Number(durationHours)
+  });
+
+  if (error) return { error: friendly(error, CREATE_MESSAGES) };
+  return { data: { auctionId: data } };
+}
+
+// List a bundle: `items` is an array of
+//   { type: "gem", id }  or  { type: "potion", consumableId, quantity }
+export async function createAuctionLot(items, startPrice, durationHours) {
+  const payload = (Array.isArray(items) ? items : []).map((item) =>
+    item.type === "potion"
+      ? { type: "potion", consumable_id: item.consumableId, quantity: Number(item.quantity) }
+      : { type: "gem", id: Number(item.id) }
+  );
+
+  const { data, error } = await supabase.rpc("create_auction_lot", {
+    p_items: payload,
     p_start_price: Number(startPrice),
     p_duration_hours: Number(durationHours)
   });
