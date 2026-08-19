@@ -3241,6 +3241,25 @@ export default {
       }
 
 
+      // Guilds: every successful roll contributes guild points when the
+      // Guilds section is enabled. Failure is non-fatal to the roll.
+      try {
+        const { data: guildSection } = await ctx.supabaseAdmin
+          .from("game_section_settings")
+          .select("enabled")
+          .eq("id", "guilds")
+          .maybeSingle();
+        if (guildSection?.enabled) {
+          const { error: guildPointError } = await ctx.supabaseAdmin.rpc(
+            "record_guild_roll_points",
+            { p_player_id: playerId, p_points: 1 }
+          );
+          if (guildPointError) console.error("Guild roll point update failed:", guildPointError);
+        }
+      } catch (guildError) {
+        console.error("Guild roll point update crashed:", guildError);
+      }
+
       // Record the COMPLETE mutation combination as one index entry.
       // "none" is also a real combination, so every roll records exactly
       // one combination: none, or any of the 31 non-empty subsets.

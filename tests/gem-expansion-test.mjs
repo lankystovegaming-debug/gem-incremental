@@ -28,7 +28,7 @@ for (const [name, [rarity, tier]] of Object.entries(expected)) {
   assert.equal(rarityTier(gem.rarity).id, tier);
 }
 
-assert.equal(gems.length, 46);
+assert.equal(gems.length, 63);
 
 const lanky = gems.find((gem) => gem.name === "Lanky Gem");
 assert.equal(lanky.baseWeight, 40500);
@@ -46,7 +46,7 @@ const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
   "utf8"
 );
-const serverArraySource = rollSource.match(/const gems = (\[[\s\S]*?\n\]);/)?.[1];
+const serverArraySource = rollSource.match(/(?:const|let) gems = (\[[\s\S]*?\n\]);/)?.[1];
 assert.ok(serverArraySource, "server gem array can be read");
 const serverGems = Function(`"use strict"; return ${serverArraySource}`)();
 

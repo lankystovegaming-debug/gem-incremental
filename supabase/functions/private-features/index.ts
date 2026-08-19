@@ -727,9 +727,157 @@ export default {
             .select("*")
             .single();
           if (error) return json({ error: "section_toggle_failed", message: error.message }, 500);
+          if (id === "forge") {
+            const { error: forgeToggleError } = await ctx.supabaseAdmin
+              .from("forge_config")
+              .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
+            if (forgeToggleError) console.error("Forge config sync failed:", forgeToggleError.message);
+          }
+          await auditPrivateAction(ctx, userId, "site_section_toggled", { id, enabled });
           return json({ section: data });
         }
 
+
+
+        // ---------------------------------------------------------
+        // WORLD / FORGE / DUNGEON BUILDERS
+        // These are deliberately service-role only and remain disabled
+        // until the corresponding game_section_settings row is enabled.
+        // ---------------------------------------------------------
+        if (action === "world-list") {
+          const { data: islands, error } = await ctx.supabaseAdmin
+            .from("island_definitions").select("*").order("sort_order");
+          if (error) return json({ error:"world_list_failed", message:error.message },500);
+          const { data: dungeons, error: de } = await ctx.supabaseAdmin
+            .from("dungeon_definitions").select("*").order("sort_order");
+          if (de) return json({ error:"dungeon_list_failed", message:de.message },500);
+          const { data: sections, error: se } = await ctx.supabaseAdmin
+            .from("game_section_settings").select("*")
+            .in("id",["islands","forge","dungeons"]);
+          if (se) return json({ error:"world_sections_failed", message:se.message },500);
+          const { data: forge, error: fe } = await ctx.supabaseAdmin
+            .from("forge_config").select("*").eq("id",true).maybeSingle();
+          if (fe) return json({ error:"forge_config_failed", message:fe.message },500);
+          return json({ islands:islands??[], dungeons:dungeons??[], sections:sections??[], forge:forge??null });
+        }
+
+        if (action === "world-save") {
+          const w = body.island ?? {};
+          const row = {
+            island_number: Number(w.island_number ?? 1),
+            name: String(w.name ?? "Unnamed Island").slice(0,120),
+            description: String(w.description ?? "").slice(0,1000),
+            enabled: w.enabled === true,
+            permanent: w.permanent !== false,
+            starts_at: w.starts_at || null,
+            ends_at: w.ends_at || null,
+            unlock_requirements: (w.unlock_requirements && typeof w.unlock_requirements==="object") ? w.unlock_requirements : {},
+            boosts: (w.boosts && typeof w.boosts==="object") ? w.boosts : {},
+            sort_order: Number(w.sort_order ?? 0),
+            updated_at: new Date().toISOString()
+          };
+          const q = w.id
+            ? ctx.supabaseAdmin.from("island_definitions").update(row).eq("id",w.id).select("*").single()
+            : ctx.supabaseAdmin.from("island_definitions").insert(row).select("*").single();
+          const {data,error}=await q;
+          if(error) return json({error:"world_save_failed",message:error.message},500);
+          await auditPrivateAction(ctx,userId,"island_saved",{id:data?.id,name:row.name,enabled:row.enabled});
+          return json({island:data});
+        }
+
+        if (action === "world-toggle") {
+          const {data,error}=await ctx.supabaseAdmin.from("island_definitions")
+            .update({enabled:body.enabled===true,updated_at:new Date().toISOString()})
+            .eq("id",String(body.id)).select("*").single();
+          if(error) return json({error:"world_toggle_failed",message:error.message},500);
+          return json({island:data});
+        }
+
+        if (action === "world-delete") {
+          const {error}=await ctx.supabaseAdmin.from("island_definitions").delete().eq("id",String(body.id));
+          if(error) return json({error:"world_delete_failed",message:error.message},500);
+          await auditPrivateAction(ctx,userId,"island_deleted",{id:body.id});
+          return json({ok:true});
+        }
+
+        if (action === "dungeon-save") {
+          const d=body.dungeon??{};
+          const row={
+            name:String(d.name??"Untitled Dungeon").slice(0,120),
+            description:String(d.description??"").slice(0,1000),
+            enabled:d.enabled===true, permanent:d.permanent!==false,
+            starts_at:d.starts_at||null, ends_at:d.ends_at||null,
+            max_enemies:Math.max(1,Number(d.max_enemies??5)),
+            entry_requirements:(d.entry_requirements&&typeof d.entry_requirements==="object")?d.entry_requirements:{},
+            loot:Array.isArray(d.loot)?d.loot:[],
+            rewards:(d.rewards&&typeof d.rewards==="object")?d.rewards:{},
+            sort_order:Number(d.sort_order??0), updated_at:new Date().toISOString()
+          };
+          const q=d.id?ctx.supabaseAdmin.from("dungeon_definitions").update(row).eq("id",d.id).select("*").single():ctx.supabaseAdmin.from("dungeon_definitions").insert(row).select("*").single();
+          const {data,error}=await q;
+          if(error)return json({error:"dungeon_save_failed",message:error.message},500);
+          return json({dungeon:data});
+        }
+
+        if (action === "dungeon-delete") {
+          const {error}=await ctx.supabaseAdmin.from("dungeon_definitions").delete().eq("id",String(body.id));
+          if(error)return json({error:"dungeon_delete_failed",message:error.message},500);
+          return json({ok:true});
+        }
+
+        if (action === "dungeon-enemies") {
+          const {data,error}=await ctx.supabaseAdmin.from("dungeon_enemies").select("*")
+            .eq("dungeon_id",String(body.dungeonId)).order("sort_order");
+          if(error)return json({error:"enemy_list_failed",message:error.message},500);
+          return json({enemies:data??[]});
+        }
+
+        if (action === "enemy-save") {
+          const e=body.enemy??{};
+          const row={
+            dungeon_id:String(e.dungeon_id), name:String(e.name??"Enemy").slice(0,120),
+            max_health:Math.max(1,Number(e.max_health??100)), attack:Math.max(0,Number(e.attack??10)),
+            defense:Math.max(0,Number(e.defense??0)), speed:Math.max(0,Number(e.speed??1)),
+            crit_chance:Math.max(0,Math.min(1,Number(e.crit_chance??0))),
+            stats:(e.stats&&typeof e.stats==="object")?e.stats:{},
+            loot:Array.isArray(e.loot)?e.loot:[], sort_order:Number(e.sort_order??0),
+            enabled:e.enabled!==false, updated_at:new Date().toISOString()
+          };
+          const q=e.id?ctx.supabaseAdmin.from("dungeon_enemies").update(row).eq("id",e.id).select("*").single():ctx.supabaseAdmin.from("dungeon_enemies").insert(row).select("*").single();
+          const {data,error}=await q;
+          if(error)return json({error:"enemy_save_failed",message:error.message},500);
+          return json({enemy:data});
+        }
+
+        if (action === "enemy-delete") {
+          const {error}=await ctx.supabaseAdmin.from("dungeon_enemies").delete().eq("id",String(body.id));
+          if(error)return json({error:"enemy_delete_failed",message:error.message},500);
+          return json({ok:true});
+        }
+
+        if (action === "forge-config") {
+          if (body.save) {
+            const c=body.config??{};
+            const row={
+              enabled:c.enabled===true, beta_label:String(c.beta_label??"The Forge [BETA]").slice(0,80),
+              min_materials:Math.max(1,Number(c.min_materials??3)), max_materials:Math.max(1,Number(c.max_materials??50)),
+              stage_time_seconds:Math.max(2,Number(c.stage_time_seconds??8)),
+              quality_broken:Number(c.quality_broken??.65),quality_poor:Number(c.quality_poor??.8),
+              quality_average:Number(c.quality_average??1),quality_good:Number(c.quality_good??1.1),
+              quality_excellent:Number(c.quality_excellent??1.2),quality_masterwork:Number(c.quality_masterwork??1.3),
+              trait_threshold_minor:Number(c.trait_threshold_minor??.1),trait_threshold_full:Number(c.trait_threshold_full??.3),
+              ore_count_rules:Array.isArray(c.ore_count_rules)?c.ore_count_rules:[],
+              trait_rules:Array.isArray(c.trait_rules)?c.trait_rules:[],
+              updated_at:new Date().toISOString()
+            };
+            const {data,error}=await ctx.supabaseAdmin.from("forge_config").upsert({...row,id:true}).select("*").single();
+            if(error)return json({error:"forge_config_save_failed",message:error.message},500);
+            return json({forge:data});
+          }
+          const {data,error}=await ctx.supabaseAdmin.from("forge_config").select("*").eq("id",true).single();
+          if(error)return json({error:"forge_config_load_failed",message:error.message},500);
+          return json({forge:data});
+        }
 
         if (action === "toggle") {
           const id = String(body.id ?? "");

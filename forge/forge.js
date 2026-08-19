@@ -1,0 +1,25 @@
+import { mountShell } from "../src/ui/shell.js";
+import { supabase } from "../src/backend/supabase.js";
+mountShell({page:"forge",base:"../"});
+const $=id=>document.getElementById(id);
+let config=null,session=null,selected=[];
+let raf=0,startTime=0;
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+async function api(action,extra={}){const {data,error}=await supabase.functions.invoke("forge",{body:{action,...extra}});if(error||data?.error)throw new Error(data?.message||data?.error||error?.message);return data;}
+async function load(){
+ try{
+  const c=await api("config");config=c.config;
+  const {data,error}=await supabase.from("inventory_gems").select("id,gem_name,rarity,value").order("rarity",{ascending:false}).limit(100);if(error)throw error;
+  $("materials").innerHTML=(data||[]).map(g=>`<button type="button" class="material" data-gem="${g.id}"><b>${esc(g.gem_name)}</b><small>1 in ${Number(g.rarity).toLocaleString()} · $${Number(g.value||0).toFixed(2)}</small></button>`).join("")||"<p class='muted'>No gems available.</p>";
+  document.querySelectorAll(".material").forEach(b=>b.onclick=()=>{b.classList.toggle("selected");selected=b.classList.contains("selected")?[...selected,b.dataset.gem]:selected.filter(x=>x!==b.dataset.gem);});
+  const h=await api("history");$("history").innerHTML=(h.items||[]).map(x=>`<div class="result-stat"><b>${esc(x.rarity)} ${esc(x.item_name)}</b> · ${esc(x.item_type)} · ${esc(x.quality)}x · ${x.ore_count} gems</div>`).join("")||"<p class='muted'>No forged items yet.</p>";
+ }catch(e){$("setupStatus").textContent=e.message;}
+}
+function animate(){const t=(performance.now()-startTime)/1000;const w=Math.max(1,$(".timing-track").clientWidth-24);let x=(t*180)%w;if(Math.floor(t*180/w)%2)x=w-x;$("target").style.left=x+"px";raf=requestAnimationFrame(animate);}
+function stop(){cancelAnimationFrame(raf);raf=0;}
+function startStage(){startTime=performance.now();animate();$("stageLabel").textContent=`Stage ${session.stage} / 3`;}
+$("start").onclick=async()=>{try{if(selected.length<(config?.min_materials||3))throw new Error(`Select at least ${config.min_materials} gems.`);const d=await api("start",{itemType:$("itemType").value,materialIds:selected});session=d.session;$("setup").hidden=true;$("minigame").hidden=false;startStage();}catch(e){$("setupStatus").textContent=e.message;}};
+$("strike").onclick=async()=>{stop();const rect=$(".timing-track").getBoundingClientRect(),target=$("target").getBoundingClientRect();const center=rect.left+rect.width/2;const dist=Math.abs(target.left+target.width/2-center)/(rect.width/2);const score=Math.max(0,1-dist);$("stageStatus").textContent=`Timing score: ${(score*100).toFixed(0)}%`;try{const d=await api("stage",{sessionId:session.id,score});session=d.session;if(d.stage<=3)setTimeout(startStage,450);else{showResult(d.result);await load();}}catch(e){$("stageStatus").textContent=e.message;}};
+function showResult(r){$("minigame").hidden=true;$("result").hidden=false;$("resultBody").innerHTML=`<div class="result-stat"><b>${esc(r.quality)}</b> · ${esc(r.rarity)} · ${esc(r.itemClass)}</div><div class="result-stat">Multiplier: ${Number(r.multiplier).toFixed(3)}x · Ore count: ${r.oreCount}</div><div class="result-stat">Stats: ${esc(JSON.stringify(r.stats))}</div><div class="result-stat">Traits: ${esc(JSON.stringify(r.traits))}</div>`;}
+$("again").onclick=()=>location.reload();
+load();

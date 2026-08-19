@@ -54,7 +54,10 @@ const PAGES = [
   { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
   { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
-  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" }
+  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" },
+  { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.gem, sectionId: "islands" },
+  { id: "forge", label: "The Forge [BETA]", short: "Forge", href: "forge/", icon: icons.anvil, sectionId: "forge" },
+  { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" }
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);

@@ -86,7 +86,7 @@ function renderFeatures() {
   renderPrerequisites();
 }
 
-async function renderSectionControls(){try{const r=await call("section-list");const sections=r.sections||[];const labels={achievements:["🏆 Achievements","Achievement page + top bar"],quests:["⚔ Quests","Quest page + top bar"],guilds:["🛡 Guilds","Guild page + top bar"]};$("sectionControls").innerHTML=sections.filter(s=>labels[s.id]).map(s=>{const l=labels[s.id];return `<article class="feature-card ${s.enabled?"":"is-disabled"}"><div class="feature-card__top"><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(l[0])}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div><p>${esc(l[1])}</p><div class="card-actions"><button class="btn btn--primary" data-section-toggle="${esc(s.id)}" data-enabled="${s.enabled}">${s.enabled?"Disable":"Enable"}</button></div></article>`}).join("");document.querySelectorAll("[data-section-toggle]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await call("section-toggle",{id:b.dataset.sectionToggle,enabled:b.dataset.enabled!=="true"});await renderSectionControls();status("Site feature setting updated. Refresh other pages to update navigation.")}catch(e){status(e.message,true);b.disabled=false}})}catch(e){status(e.message,true)}}
+async function renderSectionControls(){try{const r=await call("section-list");const sections=r.sections||[];const labels={achievements:["🏆 Achievements","Achievement page + top bar"],quests:["⚔ Quests","Quest page + top bar"],guilds:["🛡 Guilds","Guild page + top bar"],islands:["🗺 Islands","Island travel + boosts + top bar"],forge:["⚒ The Forge [BETA]","Three-stage forging + top bar"],dungeons:["⚔ Dungeons","Combat dungeons + top bar"]};$("sectionControls").innerHTML=sections.filter(s=>labels[s.id]).map(s=>{const l=labels[s.id];return `<article class="feature-card ${s.enabled?"":"is-disabled"}"><div class="feature-card__top"><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(l[0])}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div><p>${esc(l[1])}</p><div class="card-actions"><button class="btn btn--primary" data-section-toggle="${esc(s.id)}" data-enabled="${s.enabled}">${s.enabled?"Disable":"Enable"}</button></div></article>`}).join("");document.querySelectorAll("[data-section-toggle]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await call("section-toggle",{id:b.dataset.sectionToggle,enabled:b.dataset.enabled!=="true"});await renderSectionControls();status("Site feature setting updated. Refresh other pages to update navigation.")}catch(e){status(e.message,true);b.disabled=false}})}catch(e){status(e.message,true)}}
 
 function empty(text) { return `<div class="empty-lab">${esc(text)}</div>`; }
 
@@ -320,7 +320,7 @@ async function deleteFeature(id){const d=definitions.find(x=>x.id===id);if(!d||!
 async function loadAll(){
   try{
     const [f,g]=await Promise.all([call("list"),call("gem-list")]);
-    definitions=f.definitions||[];gems=g.gems||[];renderFeatures();renderGems();await renderSectionControls();
+    definitions=f.definitions||[];gems=g.gems||[];renderFeatures();renderGems();await renderWorldLab();await renderSectionControls();
     status(`${definitions.length} features · ${gems.length} gems loaded.`);
   }catch(e){status(e.message,true);}
 }
@@ -340,5 +340,66 @@ $("addRequirement").onclick=()=>addRequirementRow();$("addReward").onclick=()=>r
 $("durationMode").onchange=()=>{const temp=$("durationMode").value==="temporary";$("startsAt").disabled=!temp;$("endsAt").disabled=!temp;};
 $("gemDuration").onchange=()=>{const temp=$("gemDuration").value==="temporary";$("gemStarts").disabled=!temp;$("gemEnds").disabled=!temp;};
 $("durationMode").dispatchEvent(new Event("change"));$("gemDuration").dispatchEvent(new Event("change"));
+
+
+let editingIsland=null, editingDungeon=null, forgeConfig=null, worldData=null;
+
+function worldDates(mode,start,end){return temporaryDates(mode,start,end);}
+function renderWorldLab(){
+  call("world-list").then(d=>{
+    worldData=d;
+    $("islandCount").textContent=(d.islands||[]).length;
+    $("forgeState").textContent=d.forge?.enabled?"ON":"OFF";
+    $("dungeonCount").textContent=(d.dungeons||[]).length;
+    $("islandCards").innerHTML=(d.islands||[]).map(i=>`<article class="feature-card ${i.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon">🗺</span><div class="feature-card__identity"><div class="feature-meta">Island ${i.island_number}</div><h3>${esc(i.name)}</h3></div><span class="state-pill ${i.enabled?"on":"off"}>${i.enabled?"ON":"OFF"}</span></div><p>${esc(i.description)}</p><div class="feature-stats"><span>🔓 ${esc(JSON.stringify(i.unlock_requirements||{}))}</span><span>✨ ${esc(JSON.stringify(i.boosts||{}))}</span></div><div class="card-actions"><button class="btn btn--sm" data-island-edit="${i.id}">Edit</button><button class="btn btn--sm" data-island-toggle="${i.id}" data-enabled="${i.enabled}">${i.enabled?"Disable":"Enable"}</button><button class="btn btn--sm btn--danger" data-island-delete="${i.id}">Delete</button></div></article>`).join("")||empty("No islands configured.");
+    $("dungeonCards").innerHTML=(d.dungeons||[]).map(x=>`<article class="feature-card ${x.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon">⚔</span><div class="feature-card__identity"><div class="feature-meta">${x.max_enemies} enemies max</div><h3>${esc(x.name)}</h3></div><span class="state-pill ${x.enabled?"on":"off"}">${x.enabled?"ON":"OFF"}</span></div><p>${esc(x.description)}</p><div class="card-actions"><button class="btn btn--sm" data-dungeon-edit="${x.id}">Edit</button><button class="btn btn--sm" data-dungeon-toggle="${x.id}" data-enabled="${x.enabled}">${x.enabled?"Disable":"Enable"}</button><button class="btn btn--sm btn--danger" data-dungeon-delete="${x.id}">Delete</button></div></article>`).join("")||empty("No dungeons configured.");
+    wireWorldCards();
+    renderForgeConfig(d.forge);
+  }).catch(e=>status(e.message,true));
+}
+function wireWorldCards(){
+  document.querySelectorAll("[data-island-edit]").forEach(b=>b.onclick=()=>openIsland((worldData.islands||[]).find(x=>x.id===b.dataset.islandEdit)));
+  document.querySelectorAll("[data-island-toggle]").forEach(b=>b.onclick=async()=>{try{await call("world-toggle",{id:b.dataset.islandToggle,enabled:b.dataset.enabled!=="true"});renderWorldLab()}catch(e){status(e.message,true)}});
+  document.querySelectorAll("[data-island-delete]").forEach(b=>b.onclick=async()=>{if(confirm("Delete this island?")){try{await call("world-delete",{id:b.dataset.islandDelete});renderWorldLab()}catch(e){status(e.message,true)}}});
+  document.querySelectorAll("[data-dungeon-edit]").forEach(b=>b.onclick=()=>openDungeon((worldData.dungeons||[]).find(x=>x.id===b.dataset.dungeonEdit)));
+  document.querySelectorAll("[data-dungeon-toggle]").forEach(b=>b.onclick=async()=>{try{await call("dungeon-save",{dungeon:{...(worldData.dungeons||[]).find(x=>x.id===b.dataset.dungeonToggle),enabled:b.dataset.enabled!=="true"}});renderWorldLab()}catch(e){status(e.message,true)}});
+  document.querySelectorAll("[data-dungeon-delete]").forEach(b=>b.onclick=async()=>{if(confirm("Delete this dungeon and its enemies?")){try{await call("dungeon-delete",{id:b.dataset.dungeonDelete});renderWorldLab()}catch(e){status(e.message,true)}}});
+}
+function openIsland(i){
+  editingIsland=i?.id||null;$("islandEditor").hidden=false;$("islandEditorTitle").textContent=i?"Edit Island":"New Island";
+  $("islandNumber").value=i?.island_number??1;$("islandName").value=i?.name||"";$("islandDescription").value=i?.description||"";$("islandSort").value=i?.sort_order??0;$("islandEnabled").checked=i?.enabled===true;
+  $("islandDuration").value=(i?.starts_at||i?.ends_at)?"temporary":"permanent";$("islandStarts").value=dateInput(i?.starts_at);$("islandEnds").value=dateInput(i?.ends_at);
+  const r=i?.unlock_requirements||{},b=i?.boosts||{};$("islandReqRolls").value=r.minRolls||0;$("islandReqMoney").value=r.minMoney||0;$("islandReqCoins").value=r.minCoins||0;$("islandReqEquip").value=r.minAllEquipmentTier||0;$("islandReqPick").value=r.minPickaxeTier||0;$("islandReqBag").value=r.minBagTier||0;
+  $("islandBoostMoney").value=b.money??1;$("islandBoostCoins").value=b.coins??1;$("islandBoostGems").value=b.gems??1;$("islandBoostXp").value=b.xp??1;
+  window.scrollTo({top:$("islandEditor").offsetTop-80,behavior:"smooth"});
+}
+$("islandSave").onclick=async()=>{try{const dates=worldDates($("islandDuration").value,$("islandStarts").value,$("islandEnds").value);const island={id:editingIsland||undefined,island_number:Number($("islandNumber").value),name:$("islandName").value.trim(),description:$("islandDescription").value.trim(),sort_order:Number($("islandSort").value)||0,enabled:$("islandEnabled").checked,...dates,unlock_requirements:{minRolls:Number($("islandReqRolls").value)||0,minMoney:Number($("islandReqMoney").value)||0,minCoins:Number($("islandReqCoins").value)||0,minAllEquipmentTier:Number($("islandReqEquip").value)||0,minPickaxeTier:Number($("islandReqPick").value)||0,minBagTier:Number($("islandReqBag").value)||0},boosts:{money:Number($("islandBoostMoney").value)||1,coins:Number($("islandBoostCoins").value)||1,gems:Number($("islandBoostGems").value)||1,xp:Number($("islandBoostXp").value)||1}};await call("world-save",{island});$("islandEditor").hidden=true;renderWorldLab()}catch(e){status(e.message,true)}};
+$("newIsland").onclick=()=>openIsland();$("islandCancel").onclick=()=>{$("islandEditor").hidden=true;editingIsland=null};
+
+function renderForgeConfig(c){
+  forgeConfig=c;
+  $("forgeConfigPanel").innerHTML=`<div class="form-grid">
+  <label class="toggle-field"><input id="forgeEnabled" type="checkbox" ${c?.enabled?"checked":""}><span>Forge enabled</span><small>Also enable the Forge section switch below.</small></label>
+  <label>Beta label<input id="forgeLabel" value="${esc(c?.beta_label||"The Forge [BETA]")}"></label>
+  <label>Minimum gems<input id="forgeMin" type="number" value="${c?.min_materials??3}"></label>
+  <label>Maximum gems<input id="forgeMax" type="number" value="${c?.max_materials??50}"></label>
+  <label>Seconds per stage<input id="forgeTime" type="number" step=".5" value="${c?.stage_time_seconds??8}"></label>
+  <label>Minor trait threshold<input id="forgeMinor" type="number" step=".01" value="${c?.trait_threshold_minor??.1}"></label>
+  <label>Full trait threshold<input id="forgeFull" type="number" step=".01" value="${c?.trait_threshold_full??.3}"></label>
+  </div><div class="editor-section"><h3>Quality multipliers</h3><div class="form-grid">
+  <label>Broken<input id="qBroken" type="number" step=".01" value="${c?.quality_broken??.65}"></label><label>Poor<input id="qPoor" type="number" step=".01" value="${c?.quality_poor??.8}"></label><label>Average<input id="qAverage" type="number" step=".01" value="${c?.quality_average??1}"></label><label>Good<input id="qGood" type="number" step=".01" value="${c?.quality_good??1.1}"></label><label>Excellent<input id="qExcellent" type="number" step=".01" value="${c?.quality_excellent??1.2}"></label><label>Masterwork<input id="qMasterwork" type="number" step=".01" value="${c?.quality_masterwork??1.3}"></label></div></div><button id="forgeSave" class="btn btn--primary">Save Forge Settings</button>`;
+  $("forgeSave").onclick=saveForge;
+}
+async function saveForge(){try{const c={...forgeConfig,enabled:$("forgeEnabled").checked,beta_label:$("forgeLabel").value,min_materials:Number($("forgeMin").value),max_materials:Number($("forgeMax").value),stage_time_seconds:Number($("forgeTime").value),trait_threshold_minor:Number($("forgeMinor").value),trait_threshold_full:Number($("forgeFull").value),quality_broken:Number($("qBroken").value),quality_poor:Number($("qPoor").value),quality_average:Number($("qAverage").value),quality_good:Number($("qGood").value),quality_excellent:Number($("qExcellent").value),quality_masterwork:Number($("qMasterwork").value)};await call("forge-config",{save:true,config:c});renderWorldLab();status("Forge settings saved.")}catch(e){status(e.message,true)}}
+
+function enemyRow(e={}){const id=e.id||`new-${Math.random().toString(36).slice(2)}`;const row=document.createElement("div");row.className="builder-row enemy-builder";row.dataset.id=id;row.dataset.saved=e.id||"";row.innerHTML=`<div class="builder-row-top"><input class="enemy-name" value="${esc(e.name||"Enemy")}"><input class="enemy-hp" type="number" value="${e.max_health??100}"><input class="enemy-atk" type="number" value="${e.attack??10}"><button class="icon-button enemy-remove">×</button></div><div class="condition-grid"><label>Defense<input class="enemy-defense" type="number" value="${e.defense??0}"></label><label>Speed<input class="enemy-speed" type="number" step=".1" value="${e.speed??1}"></label><label>Crit chance<input class="enemy-crit" type="number" step=".01" value="${e.crit_chance??0}"></label><label>Sort<input class="enemy-sort" type="number" value="${e.sort_order??0}"></label><label class="wide">Stats / loot note<input class="enemy-note" value="${esc(e.stats?.note||"")}"></label></div>`;row.querySelector(".enemy-remove").onclick=()=>row.remove();$("enemyRows").appendChild(row)}
+async function openDungeon(d){
+  editingDungeon=d?.id||null;$("dungeonEditor").hidden=false;$("dungeonEditorTitle").textContent=d?"Edit Dungeon":"New Dungeon";$("dungeonName").value=d?.name||"";$("dungeonDescription").value=d?.description||"";$("dungeonMaxEnemies").value=d?.max_enemies??5;$("dungeonSort").value=d?.sort_order??0;$("dungeonEnabled").checked=d?.enabled===true;
+  const r=d?.entry_requirements||{};$("dungeonReqRolls").value=r.minRolls||0;$("dungeonReqEquip").value=r.minAllEquipmentTier||0;$("dungeonReqIsland").value=r.minIslandNumber||1;$("dungeonRewardMoney").value=d?.rewards?.money??0;$("dungeonLoot").value=Array.isArray(d?.loot)?d.loot.join("\n"):"";$("enemyRows").innerHTML="";
+  if(d)try{const e=await call("dungeon-enemies",{dungeonId:d.id});(e.enemies||[]).forEach(enemyRow)}catch(e){status(e.message,true)}
+  window.scrollTo({top:$("dungeonEditor").offsetTop-80,behavior:"smooth"});
+}
+$("newDungeon").onclick=()=>openDungeon();$("addEnemy").onclick=()=>enemyRow();$("dungeonCancel").onclick=()=>{$("dungeonEditor").hidden=true;editingDungeon=null};
+$("dungeonSave").onclick=async()=>{try{const d={id:editingDungeon||undefined,name:$("dungeonName").value.trim(),description:$("dungeonDescription").value.trim(),max_enemies:Number($("dungeonMaxEnemies").value)||5,sort_order:Number($("dungeonSort").value)||0,enabled:$("dungeonEnabled").checked,entry_requirements:{minRolls:Number($("dungeonReqRolls").value)||0,minAllEquipmentTier:Number($("dungeonReqEquip").value)||0,minIslandNumber:Number($("dungeonReqIsland").value)||1},rewards:{money:Number($("dungeonRewardMoney").value)||0},loot:$("dungeonLoot").value.split("\n").map(x=>x.trim()).filter(Boolean)};const saved=await call("dungeon-save",{dungeon:d});for(const row of document.querySelectorAll(".enemy-builder")){const e={id:row.dataset.saved||undefined,dungeon_id:saved.dungeon.id,name:row.querySelector(".enemy-name").value,max_health:Number(row.querySelector(".enemy-hp").value),attack:Number(row.querySelector(".enemy-atk").value),defense:Number(row.querySelector(".enemy-defense").value),speed:Number(row.querySelector(".enemy-speed").value),crit_chance:Number(row.querySelector(".enemy-crit").value),sort_order:Number(row.querySelector(".enemy-sort").value),stats:{note:row.querySelector(".enemy-note").value},loot:row.querySelector(".enemy-loot").value.split("\n").map(x=>x.trim()).filter(Boolean),enabled:true};await call("enemy-save",{enemy:e})}$("dungeonEditor").hidden=true;renderWorldLab();status("Dungeon saved.")}catch(e){status(e.message,true)}};
 
 ensurePlayerAuth().catch(()=>{});
