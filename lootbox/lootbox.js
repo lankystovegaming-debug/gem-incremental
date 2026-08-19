@@ -18,7 +18,7 @@ import {
 } from "../src/ui/format.js";
 
 
-const shell = mountShell({ page: "lootbox", base: "../" });
+const shell = mountShell({ page: "boosts", base: "../" });
 
 
 // =========================================================
