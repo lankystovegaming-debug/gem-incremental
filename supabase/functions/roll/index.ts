@@ -169,6 +169,40 @@ export async function processProgressEvent(
   payload: Record<string, unknown>,
   rollNumber: number | null = null
 ) {
+  // Progress rows are initialized here as well as in the private-features
+  // workspace. This guarantees a real roll can create progression state even
+  // if the player has never opened Upcoming Features.
+  const { data: definitionsForProgress, error: progressDefinitionError } =
+    await supabaseAdmin
+      .from("private_feature_definitions")
+      .select("id")
+      .eq("enabled", true);
+
+  if (progressDefinitionError) throw progressDefinitionError;
+
+  if (definitionsForProgress?.length) {
+    const progressRows = definitionsForProgress.map((definition: any) => ({
+      player_id: playerId,
+      feature_id: definition.id,
+      current_value: 0,
+      completed: false,
+      reward_granted: false,
+      metadata: {
+        initializedBy: "roll-progression",
+        initializedAt: new Date().toISOString()
+      }
+    }));
+
+    const { error: progressUpsertError } = await supabaseAdmin
+      .from("private_feature_progress")
+      .upsert(progressRows, {
+        onConflict: "player_id,feature_id",
+        ignoreDuplicates: true
+      });
+
+    if (progressUpsertError) throw progressUpsertError;
+  }
+
   const { error: eventError } = await supabaseAdmin
     .from("private_feature_progress_events")
     .insert({

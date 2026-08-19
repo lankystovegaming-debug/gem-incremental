@@ -83,6 +83,58 @@ async function isAllowed(ctx: any, userId: string) {
   }
 }
 
+async function ensureProgressRows(ctx: any, playerId: string) {
+  if (!ctx?.supabaseAdmin) {
+    throw new Error("supabase_admin_client_missing");
+  }
+
+  // Prefer the RPC when it exists, but do not make the entire Upcoming
+  // workspace depend on a migration having created that RPC.
+  const { error: rpcError } = await ctx.supabaseAdmin.rpc(
+    "ensure_private_feature_progress",
+    { p_player_id: playerId }
+  );
+
+  if (!rpcError) return;
+
+  console.warn(
+    "ensure_private_feature_progress RPC unavailable; using direct upsert:",
+    rpcError.message
+  );
+
+  const { data: definitions, error: definitionError } =
+    await ctx.supabaseAdmin
+      .from("private_feature_definitions")
+      .select("id")
+      .eq("enabled", true);
+
+  if (definitionError) {
+    throw new Error(`feature_progress_definition_load_failed: ${definitionError.message}`);
+  }
+
+  if (!definitions?.length) return;
+
+  const rows = definitions.map((definition: any) => ({
+    player_id: playerId,
+    feature_id: definition.id,
+    current_value: 0,
+    completed: false,
+    reward_granted: false,
+    metadata: {
+      initializedBy: "private-features-direct-fallback",
+      initializedAt: new Date().toISOString()
+    }
+  }));
+
+  const { error: upsertError } = await ctx.supabaseAdmin
+    .from("private_feature_progress")
+    .upsert(rows, { onConflict: "player_id,feature_id", ignoreDuplicates: true });
+
+  if (upsertError) {
+    throw new Error(`feature_progress_upsert_failed: ${upsertError.message}`);
+  }
+}
+
 function normalizeDefinition(body: any) {
   return {
     feature_kind:
@@ -435,9 +487,7 @@ export default {
 
               const bootDefinitions = refreshed ?? [];
               if (bootDefinitions.length) {
-                const { error: initError } = await ctx.supabaseAdmin
-                  .rpc("ensure_private_feature_progress", { p_player_id: userId });
-                if (initError) throw new Error(`feature_progress_initialize_failed: ${initError.message}`);
+                await ensureProgressRows(ctx, userId);
               }
 
               return json({
@@ -460,18 +510,15 @@ export default {
           // Create an empty progress row for every active definition for this player.
           // This makes the progress table immediately useful even before the first roll.
           if ((data ?? []).length > 0) {
-            const { error: progressInitError } = await ctx.supabaseAdmin
-              .rpc("ensure_private_feature_progress", { p_player_id: userId });
-            if (progressInitError) {
-              console.error("Feature progress initialization failed:", progressInitError);
-              return json({
-                error: "feature_progress_initialize_failed",
-                message: progressInitError.message,
-                details: progressInitError.details ?? null,
-                hint: progressInitError.hint ?? null,
-                code: progressInitError.code ?? null
-              }, 500);
-            }
+            try {
+            await ensureProgressRows(ctx, userId);
+          } catch (progressInitError) {
+            console.error("Feature progress initialization failed:", progressInitError);
+            return json({
+              error: "feature_progress_initialize_failed",
+              message: progressInitError instanceof Error ? progressInitError.message : String(progressInitError)
+            }, 500);
+          }
           }
 
           return json({
