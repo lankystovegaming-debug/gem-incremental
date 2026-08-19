@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Gem Incremental player profile.">
+  <title>Player Profile · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./profile.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        var modes = [
+          "light",
+          "dark",
+          "neon",
+          "gradient",
+          "ocean",
+          "forest",
+          "sunset",
+          "ice"
+        ];
+
+        var accents = [
+          "indigo",
+          "emerald",
+          "amber",
+          "rose",
+          "cyan"
+        ];
+
+        if (modes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          accents.indexOf(accent) !== -1 ? accent : "indigo"
+        );
+      } catch (error) {
+        // The application defaults are fine if localStorage is unavailable.
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main profile-page">
+    <section class="profile-hero card" id="profileHero" aria-labelledby="profileName">
+      <div class="profile-loading">
+        <div class="profile-loading__avatar"></div>
+        <div>
+          <div class="skeleton-line skeleton-line--wide"></div>
+          <div class="skeleton-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-stats" id="profileStats" aria-label="Player statistics"></section>
+
+    <section class="card profile-showcase" aria-labelledby="showcaseHeading">
+      <div class="profile-section-head">
+        <div>
+          <div class="eyebrow">COLLECTION</div>
+          <h2 id="showcaseHeading">Gem Showcase</h2>
+          <p>Up to three gems selected by this player.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid" id="showcaseGrid">
+        <p class="profile-empty">Loading showcase…</p>
+      </div>
+    </section>
+
+    <section class="card profile-best-roll" id="bestRollSection" aria-labelledby="bestRollHeading" hidden>
+      <div class="profile-section-head">
+        <div>
+          <div class="eyebrow">HIGHLIGHT</div>
+          <h2 id="bestRollHeading">Current Rarest Gem</h2>
+        </div>
+      </div>
+      <div id="bestRollContent"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./profile.js"></script>
+</body>
+</html>

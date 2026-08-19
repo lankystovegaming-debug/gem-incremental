@@ -3,5 +3,15 @@
   "framework": null,
   "outputDirectory": ".",
   "trailingSlash": true,
-  "cleanUrls": false
+  "cleanUrls": false,
+  "rewrites": [
+    {
+      "source": "/user/:id",
+      "destination": "/user/index.html"
+    },
+    {
+      "source": "/user/:id/",
+      "destination": "/user/index.html"
+    }
+  ]
 }

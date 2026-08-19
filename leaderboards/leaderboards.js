@@ -89,6 +89,7 @@ let activeLeaderboard =
 // username -> avatar URL, filled once the boards load.
 let avatarMap = {};
 let showcaseMap = {};
+let profileIdMap = {};
 
 function showcasePins(username) {
   return showcasePinsHtml(showcaseMap[username]);
@@ -203,22 +204,46 @@ async function loadAvatars() {
   if (names.size === 0) {
     avatarMap = {};
     showcaseMap = {};
+    profileIdMap = {};
     return;
   }
 
-  const [avatarResult, showcases] = await Promise.all([
-    supabase.rpc("get_leaderboard_avatars", { p_usernames: [...names] }),
-    loadShowcasesFor([...names])
+  const [avatarResult, showcases, profileResult] = await Promise.all([
+    supabase.rpc("get_leaderboard_avatars", {
+      p_usernames: [...names]
+    }),
+
+    loadShowcasesFor([...names]),
+
+    supabase.rpc("get_profile_ids_for_usernames", {
+      p_usernames: [...names]
+    })
   ]);
 
-  const { data, error } = avatarResult;
+  const {
+    data: avatarData,
+    error: avatarError
+  } = avatarResult;
 
   avatarMap =
-    !error && data && typeof data === "object"
-      ? data
+    !avatarError &&
+    avatarData &&
+    typeof avatarData === "object"
+      ? avatarData
       : {};
 
-  showcaseMap = showcases && typeof showcases === "object" ? showcases : {};
+  showcaseMap =
+    showcases &&
+    typeof showcases === "object"
+      ? showcases
+      : {};
+
+  profileIdMap =
+    !profileResult.error &&
+    profileResult.data &&
+    typeof profileResult.data === "object"
+      ? profileResult.data
+      : {};
 }
 
 
@@ -338,7 +363,7 @@ function renderTotalRolls() {
             )}
           </div>
 
-          <div class="player-name">
+          <div class="player-name" data-profile-username="${escapeHtml(player.username)}">
             ${avatarHtml(
               player.username
             )}
@@ -430,7 +455,7 @@ function renderRarestGem() {
             )}
           </div>
 
-          <div class="player-name">
+          <div class="player-name" data-profile-username="${escapeHtml(player.username)}">
             ${avatarHtml(
               player.username
             )}
@@ -541,7 +566,7 @@ function renderLifetimeEarnings() {
             )}
           </div>
 
-          <div class="player-name">
+          <div class="player-name" data-profile-username="${escapeHtml(player.username)}">
             ${avatarHtml(
               player.username
             )}
@@ -633,7 +658,7 @@ function renderGemsFound() {
             )}
           </div>
 
-          <div class="player-name">
+          <div class="player-name" data-profile-username="${escapeHtml(player.username)}">
             ${avatarHtml(
               player.username
             )}
@@ -748,7 +773,7 @@ function renderBestRoll() {
   const rows = entries.map(player => `
     <div class="leaderboard-row leaderboard-row--best-roll">
       <div class="rank">${rankDisplay(player.rank)}</div>
-      <div class="player-name">
+      <div class="player-name" data-profile-username="${escapeHtml(player.username)}">
         ${avatarHtml(player.username)}
         <span class="lb-name-block">
           <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}${showcasePins(player.username)}</span>
@@ -800,7 +825,7 @@ function renderMostWeight() {
   const rows = entries.map(player => `
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
-      <div class="player-name">${avatarHtml(player.username)}
+      <div class="player-name" data-profile-username="${escapeHtml(player.username)}">${avatarHtml(player.username)}
         <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
       </div>
@@ -823,7 +848,7 @@ function renderRawRareRoll() {
   const rows = entries.map(player => `
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
-      <div class="player-name">${avatarHtml(player.username)}
+      <div class="player-name" data-profile-username="${escapeHtml(player.username)}">${avatarHtml(player.username)}
         <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
       </div>
@@ -846,7 +871,7 @@ function renderBaseLuck() {
   const rows = entries.map(player => `
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
-      <div class="player-name">${avatarHtml(player.username)}
+      <div class="player-name" data-profile-username="${escapeHtml(player.username)}">${avatarHtml(player.username)}
         <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">Permanent / equipment Luck</span></span>
       </div>
@@ -861,67 +886,68 @@ function renderBaseLuck() {
 }
 
 // =========================================================
+// PROFILE LINKS
+//
+// Leaderboard rows keep their existing markup so the boards remain
+// compact, then this pass turns each ranked player identity into a
+// real link. The destination is the canonical /user/<uuid>/ route.
+// =========================================================
+
+function wireProfileLinks() {
+  const identities = leaderboardCard.querySelectorAll(
+    "[data-profile-username]"
+  );
+
+  for (const identity of identities) {
+    if (identity.closest("a.leaderboard-profile-link")) {
+      continue;
+    }
+
+    const username = identity.dataset.profileUsername;
+    const userId = profileIdMap[username];
+
+    if (!userId) {
+      continue;
+    }
+
+    const link = document.createElement("a");
+
+    link.className = "leaderboard-profile-link";
+    link.href = `/user/${encodeURIComponent(userId)}/`;
+    link.title = `View ${username}'s profile`;
+
+    identity.parentNode.insertBefore(link, identity);
+    link.appendChild(identity);
+  }
+}
+
+
+// =========================================================
 // RENDER ACTIVE LEADERBOARD
 // =========================================================
 
 function renderLeaderboard() {
   updateTabs();
 
-
-  if (
-    activeLeaderboard ===
-    "totalRolls"
-  ) {
+  if (activeLeaderboard === "totalRolls") {
     renderTotalRolls();
-
-    return;
-  }
-
-
-  if (
-    activeLeaderboard ===
-    "rarestGem"
-  ) {
+  } else if (activeLeaderboard === "rarestGem") {
     renderRarestGem();
-
-    return;
-  }
-
-
-  if (
-    activeLeaderboard ===
-    "gemsFound"
-  ) {
+  } else if (activeLeaderboard === "gemsFound") {
     renderGemsFound();
-
-    return;
-  }
-
-  if (
-    activeLeaderboard ===
-    "bestRoll"
-  ) {
+  } else if (activeLeaderboard === "bestRoll") {
     renderBestRoll();
-
-    return;
-  }
-
-  if (activeLeaderboard === "mostWeight") {
+  } else if (activeLeaderboard === "mostWeight") {
     renderMostWeight();
-    return;
-  }
-
-  if (activeLeaderboard === "rawRareRoll") {
+  } else if (activeLeaderboard === "rawRareRoll") {
     renderRawRareRoll();
-    return;
-  }
-
-  if (activeLeaderboard === "baseLuck") {
+  } else if (activeLeaderboard === "baseLuck") {
     renderBaseLuck();
-    return;
+  } else {
+    renderLifetimeEarnings();
   }
 
-  renderLifetimeEarnings();
+  wireProfileLinks();
 }
 
 

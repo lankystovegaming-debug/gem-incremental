@@ -26,6 +26,7 @@ const analyticsContent = document.getElementById("analyticsContent");
 const featureLabButton = document.getElementById("featureLabButton");
 const featureLab = document.getElementById("adminFeatureLab");
 const featureLabBack = document.getElementById("featureLabBack");
+const adminPanelBack = document.getElementById("adminPanelBack");
 
 function setFeatureLab(open) {
   if (!featureLab) return;
@@ -39,7 +40,14 @@ function setFeatureLab(open) {
 }
 
 featureLabButton?.addEventListener("click", () => setFeatureLab(true));
-featureLabBack?.addEventListener("click", () => setFeatureLab(false));
+
+featureLabBack?.addEventListener("click", () => {
+  setFeatureLab(false);
+});
+
+adminPanelBack?.addEventListener("click", () => {
+  setFeatureLab(false);
+});
 
 let selectedPlayerId = null;
 
