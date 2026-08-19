@@ -1817,6 +1817,28 @@ a.btn--icon[aria-current="page"] {
 .howto__tip svg { width: 16px; height: 16px; flex: none; color: var(--accent); }
 
 
+/* ---------------------------------------------------------
+   ROLE TAGS ([DEV] / [OWNER] / [SWEAT])
+
+   Shown next to names in chat and on the leaderboard. Static
+   (no pulse) and set in the modern display face.
+   --------------------------------------------------------- */
+
+.role-badge {
+  display: inline-block;
+  margin-right: 6px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+.role-badge--dev { color: #c084fc; text-shadow: 0 0 7px rgba(192, 132, 252, 0.45); }
+.role-badge--owner { color: #fbbf24; text-shadow: 0 0 7px rgba(251, 191, 36, 0.4); }
+.role-badge--sweat { color: #38bdf8; text-shadow: 0 0 7px rgba(56, 189, 248, 0.45); }
+
+
 /* =========================================================
    14. EMPTY & LOADING STATES
    ========================================================= */
