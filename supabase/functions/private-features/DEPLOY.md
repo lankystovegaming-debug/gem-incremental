@@ -23,3 +23,7 @@ The owner ID and password are at the top of `index.ts`:
 The browser's Upcoming link uses `whoami` without the password. The server still enforces the owner/admin gate. The password is required for all mutation/list actions.
 
 Password: `lankygem`
+
+
+## Troubleshooting health check
+After deploying, call the function with `{ action: "health", password: "lankygem" }`. It reports table/RPC failures and records a `health_check` event so the event path can be verified. `list` intentionally does not initialize progress; this keeps the editor independent of progression storage.

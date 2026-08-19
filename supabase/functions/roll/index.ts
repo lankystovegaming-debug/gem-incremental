@@ -172,44 +172,21 @@ export async function processProgressEvent(
   // Progress rows are initialized here as well as in the private-features
   // workspace. This guarantees a real roll can create progression state even
   // if the player has never opened Upcoming Features.
-  const { data: definitionsForProgress, error: progressDefinitionError } =
-    await supabaseAdmin
-      .from("private_feature_definitions")
-      .select("id")
-      .eq("enabled", true);
+  // Initialize progress through a SECURITY DEFINER RPC. This avoids
+  // depending on direct sequence/table INSERT privileges of service_role.
+  const { error: progressInitError } = await supabaseAdmin.rpc(
+    "ensure_private_feature_progress",
+    { p_player_id: playerId }
+  );
 
-  if (progressDefinitionError) throw progressDefinitionError;
+  if (progressInitError) throw progressInitError;
 
-  if (definitionsForProgress?.length) {
-    const progressRows = definitionsForProgress.map((definition: any) => ({
-      player_id: playerId,
-      feature_id: definition.id,
-      current_value: 0,
-      completed: false,
-      reward_granted: false,
-      metadata: {
-        initializedBy: "roll-progression",
-        initializedAt: new Date().toISOString()
-      }
-    }));
-
-    const { error: progressUpsertError } = await supabaseAdmin
-      .from("private_feature_progress")
-      .upsert(progressRows, {
-        onConflict: "player_id,feature_id",
-        ignoreDuplicates: true
-      });
-
-    if (progressUpsertError) throw progressUpsertError;
-  }
-
-  const { error: eventError } = await supabaseAdmin
-    .from("private_feature_progress_events")
-    .insert({
-      player_id: playerId,
-      event_type: eventType,
-      roll_number: rollNumber,
-      payload
+  const { data: recordedEventId, error: eventError } = await supabaseAdmin
+    .rpc("record_private_feature_progress_event", {
+      p_player_id: playerId,
+      p_event_type: eventType,
+      p_roll_number: rollNumber,
+      p_payload: payload
     });
 
   if (eventError) throw eventError;

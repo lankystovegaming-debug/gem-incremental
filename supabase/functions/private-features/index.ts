@@ -486,10 +486,9 @@ export default {
               }
 
               const bootDefinitions = refreshed ?? [];
-              if (bootDefinitions.length) {
-                await ensureProgressRows(ctx, userId);
-              }
 
+              // IMPORTANT: listing definitions must never depend on player
+              // progress. Progress initialization has its own endpoint.
               return json({
                 definitions: bootDefinitions,
                 bootstrapped: true,
@@ -507,20 +506,8 @@ export default {
             }
           }
 
-          // Create an empty progress row for every active definition for this player.
-          // This makes the progress table immediately useful even before the first roll.
-          if ((data ?? []).length > 0) {
-            try {
-            await ensureProgressRows(ctx, userId);
-          } catch (progressInitError) {
-            console.error("Feature progress initialization failed:", progressInitError);
-            return json({
-              error: "feature_progress_initialize_failed",
-              message: progressInitError instanceof Error ? progressInitError.message : String(progressInitError)
-            }, 500);
-          }
-          }
-
+          // Listing definitions must never depend on progression storage.
+          // Progress is initialized only by the progress endpoint or a real roll.
           return json({
             definitions: data ?? [],
             bootstrapped: false
@@ -537,9 +524,15 @@ export default {
           if (definitionsError) return json({ error: "progress_definitions_failed", message: definitionsError.message }, 500);
 
           if ((definitions ?? []).length) {
-            const { error: initError } = await ctx.supabaseAdmin
-              .rpc("ensure_private_feature_progress", { p_player_id: userId });
-            if (initError) return json({ error: "progress_initialize_failed", message: initError.message, details: initError.details ?? null, hint: initError.hint ?? null, code: initError.code ?? null }, 500);
+            try {
+              await ensureProgressRows(ctx, userId);
+            } catch (initError) {
+              console.error("Progress initialization failed:", initError);
+              return json({
+                error: "progress_initialize_failed",
+                message: initError instanceof Error ? initError.message : String(initError)
+              }, 500);
+            }
           }
 
           const { data: progress, error: progressError } = await ctx.supabaseAdmin
@@ -550,6 +543,46 @@ export default {
           if (progressError) return json({ error: "progress_load_failed", message: progressError.message, details: progressError.details ?? null, hint: progressError.hint ?? null, code: progressError.code ?? null }, 500);
 
           return json({ definitions: definitions ?? [], progress: progress ?? [] });
+        }
+
+        if (action === "health") {
+          const checks: Record<string, any> = {};
+
+          const tableChecks = [
+            "private_feature_definitions",
+            "private_feature_progress",
+            "private_feature_progress_events"
+          ];
+
+          for (const table of tableChecks) {
+            const { error } = await ctx.supabaseAdmin
+              .from(table)
+              .select("id", { count: "exact", head: true });
+            checks[table] = error
+              ? { ok: false, message: error.message, code: error.code ?? null, details: error.details ?? null, hint: error.hint ?? null }
+              : { ok: true };
+          }
+
+          const { data: rpcData, error: rpcError } =
+            await ctx.supabaseAdmin.rpc("ensure_private_feature_progress", { p_player_id: userId });
+
+          checks.ensure_private_feature_progress = rpcError
+            ? { ok: false, message: rpcError.message, code: rpcError.code ?? null, details: rpcError.details ?? null, hint: rpcError.hint ?? null }
+            : { ok: true, count: rpcData };
+
+          const { data: eventRpcData, error: eventRpcError } =
+            await ctx.supabaseAdmin.rpc("record_private_feature_progress_event", {
+              p_player_id: userId,
+              p_event_type: "health_check",
+              p_roll_number: null,
+              p_payload: { source: "private-features-health" }
+            });
+
+          checks.record_private_feature_progress_event = eventRpcError
+            ? { ok: false, message: eventRpcError.message, code: eventRpcError.code ?? null, details: eventRpcError.details ?? null, hint: eventRpcError.hint ?? null }
+            : { ok: true, id: eventRpcData };
+
+          return json({ ok: Object.values(checks).every((check: any) => check?.ok), checks });
         }
 
         if (action === "seed") {
