@@ -9,7 +9,10 @@ assert.match(main, /buildJaOreCutscene/);
 assert.match(main, /gemName\.toLowerCase\(\) === "ja-ore"/);
 
 const cutscene = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.js"), "utf8");
-assert.match(cutscene, /retro pixel-cinema/);
+assert.match(cutscene, /pixel-cinema/);
+assert.match(cutscene, /With our powers combined/);
+assert.match(cutscene, /JA_ORE_DATA_URI/);
+assert.match(cutscene, /data:image\/png;base64/);
 assert.match(cutscene, /buildJaOreCutscene/);
 
 const migration = fs.readFileSync(

@@ -3,7 +3,7 @@
 All five new systems are seeded disabled. Enable them individually from **Upcoming Features → Site Features**.
 
 ## Ja-ore cinematic
-`src/ui/jaOreCutscene.js` is an original retro pixel-cinema animation inspired by the supplied references' broad visual language: sunset bands, chunky silhouettes, saturated purple/orange/cyan lighting, rhythmic staging, scanlines and an explosive reveal. It does not load or reproduce the supplied media.
+`src/ui/jaOreCutscene.js` is an original retro pixel-cinema animation inspired by the supplied references' broad visual language: sunset bands, chunky silhouettes, saturated purple/orange/cyan lighting, rhythmic staging, scanlines and an explosive reveal. It uses the supplied JA-ore artwork only as an embedded CSS data URI and does not ship a separate image asset or reproduce the supplied video.
 
 The roll renderer now triggers it specifically for `Ja-ore`. The existing Xy/Heart of Xy scene also accepts both names.
 

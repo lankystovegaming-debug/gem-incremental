@@ -2,7 +2,15 @@ import { withSupabase } from "npm:@supabase/server";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"Content-Type":"application/json",...cors}});
 function uid(ctx:any){return ctx?.userClaims?.id??ctx?.userClaims?.sub??ctx?.jwtClaims?.sub??null;}
-async function getConfig(ctx:any){const {data,error}=await ctx.supabaseAdmin.from("forge_config").select("*").eq("id",true).single();if(error)throw error;return data;}
+async function getConfig(ctx:any){
+ const {data,error}=await ctx.supabaseAdmin.from("forge_config").select("*").eq("id",true).maybeSingle();
+ if(error)throw error;
+ if(data)return data;
+ const fallback={id:true,enabled:false,beta_label:"Workbench [BETA]",display_name:"Workbench [BETA]",icon:"⚒",min_materials:3,max_materials:50,stage_time_seconds:8,quality_broken:.65,quality_poor:.8,quality_average:1,quality_good:1.1,quality_excellent:1.2,quality_masterwork:1.3,trait_threshold_minor:.1,trait_threshold_full:.3,ore_count_rules:{weapon:[{min:3,max:6,class:"Dagger"},{min:7,max:14,class:"Sword"},{min:15,max:29,class:"Great Sword"},{min:30,max:9999,class:"Colossal Sword"}],armor:[{min:3,max:9,class:"Light Helmet"},{min:10,max:19,class:"Medium Helmet"},{min:20,max:9999,class:"Heavy Helmet"}]},trait_rules:[]};
+ const {data:created,error:ce}=await ctx.supabaseAdmin.from("forge_config").upsert(fallback).select("*").single();
+ if(ce)throw ce;
+ return created;
+}
 function qualityFrom(scores:number[],c:any){const avg=scores.reduce((a,b)=>a+b,0)/Math.max(1,scores.length);if(avg<.2)return ["Broken",c.quality_broken];if(avg<.4)return ["Poor",c.quality_poor];if(avg<.6)return ["Average",c.quality_average];if(avg<.75)return ["Good",c.quality_good];if(avg<.9)return ["Excellent",c.quality_excellent];return ["Masterwork",c.quality_masterwork];}
 function classFor(type:string,count:number,c:any){
  const rules=(c.ore_count_rules?.[type]||[]);
@@ -22,6 +30,13 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{
   const c=await getConfig(ctx);if(!c.enabled)return json({error:"feature_disabled",message:"The Forge is currently disabled."},403);
   const b=await req.json().catch(()=>({}));const a=b.action||"config";
   if(a==="config")return json({config:c});
+  if(a==="materials"){
+   const {data:gems,error}=await ctx.supabaseAdmin.from("inventory_gems")
+    .select("id,gem_name,rarity,value,locked,final_weight,mutation_multiplier")
+    .eq("player_id",playerId).eq("locked",false).order("rarity",{ascending:true}).limit(200);
+   if(error)throw error;
+   return json({gems:gems??[]});
+  }
   if(a==="start"){
    const type=b.itemType==="armor"?"armor":"weapon";const ids=Array.isArray(b.materialIds)?b.materialIds.map(String):[];
    if(ids.length<c.min_materials||ids.length>c.max_materials)return json({error:"invalid_material_count",min:c.min_materials,max:c.max_materials},400);
