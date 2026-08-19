@@ -11,7 +11,10 @@ let editing=null;
 function status(message,error=false){$("status").textContent=message;$("status").classList.toggle("error",error)}
 async function call(action, extra={}){
   const {data,error}=await supabase.functions.invoke("private-features",{body:{action,password,...extra}});
-  if(error) throw new Error(error.message||"Private feature request failed");
+  if(error){
+    const detail=data?.message||data?.error||error.message||"Private feature request failed";
+    throw new Error(detail);
+  }
   if(data?.error) throw new Error(data.message||data.error);
   return data;
 }
@@ -29,7 +32,7 @@ function render(defs){
  $("cards").querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>removeFeature(b.dataset.delete));
 }
 function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-async function load(){try{const d=await call("list");render(d.definitions||[]);status(`${(d.definitions||[]).length} definitions loaded.`)}catch(e){status(`${e.message}. If this is the first deploy, apply the upcoming-features migration, then reload.`,true)}}
+async function load(){try{const d=await call("list");render(d.definitions||[]);status(`${(d.definitions||[]).length} definitions loaded${d.bootstrapped?" · examples bootstrapped":""}.`)}catch(e){status(`${e.message}. Check the private-features Edge Function logs if this persists.`,true)}}
 function openEditor(d=null){
  editing=d?.id||null;$("editor").hidden=false;$("editorTitle").textContent=d?"Edit feature":"New feature";
  $("kind").value=d?.feature_kind||"achievement";$("questType").value=d?.quest_type||"special";$("name").value=d?.name||"";

@@ -340,6 +340,55 @@ export default {
           );
         }
 
+        // ---------------------------------------------------------
+        // FEATURE SEEDING
+        //
+        // This is deliberately idempotent. The migration creates the
+        // tables, but it does not populate them. Older versions required
+        // the browser to insert every seed row and could leave the workspace
+        // empty if one row failed. We now insert only missing definitions.
+        // ---------------------------------------------------------
+        async function ensureSeedFeatures() {
+          const inserted: any[] = [];
+          const existing: any[] = [];
+
+          for (const feature of seedFeatures) {
+            const normalized = normalizeDefinition(feature);
+
+            const { data: found, error: findError } =
+              await ctx.supabaseAdmin
+                .from("private_feature_definitions")
+                .select("*")
+                .eq("feature_kind", normalized.feature_kind)
+                .eq("name", normalized.name)
+                .maybeSingle();
+
+            if (findError) {
+              throw new Error(`seed_lookup_failed: ${findError.message}`);
+            }
+
+            if (found) {
+              existing.push(found);
+              continue;
+            }
+
+            const { data: created, error: createError } =
+              await ctx.supabaseAdmin
+                .from("private_feature_definitions")
+                .insert(normalized)
+                .select("*")
+                .single();
+
+            if (createError) {
+              throw new Error(`seed_insert_failed: ${createError.message}`);
+            }
+
+            if (created) inserted.push(created);
+          }
+
+          return { inserted, existing };
+        }
+
         if (action === "list") {
           const { data, error } =
             await ctx.supabaseAdmin
@@ -361,38 +410,65 @@ export default {
             );
           }
 
-          return json({
-            definitions: data ?? []
-          });
-        }
+          // A brand-new installation has valid empty tables after the
+          // migration. Bootstrap the examples automatically so the user
+          // never gets stuck at "0 definitions loaded".
+          if ((data ?? []).length === 0) {
+            try {
+              const seeded = await ensureSeedFeatures();
+              const { data: refreshed, error: refreshError } =
+                await ctx.supabaseAdmin
+                  .from("private_feature_definitions")
+                  .select("*")
+                  .order("feature_kind")
+                  .order("quest_type")
+                  .order("sort_order");
 
-        if (action === "seed") {
-          const inserted: any[] = [];
+              if (refreshError) {
+                throw new Error(`feature_refresh_failed: ${refreshError.message}`);
+              }
 
-          for (const feature of seedFeatures) {
-            const { data, error } =
-              await ctx.supabaseAdmin
-                .from("private_feature_definitions")
-                .insert(normalizeDefinition(feature))
-                .select("*")
-                .single();
-
-            if (error) {
-              console.error("Feature seed failed:", error.message);
-
+              return json({
+                definitions: refreshed ?? [],
+                bootstrapped: true,
+                inserted: seeded.inserted.length
+              });
+            } catch (error) {
+              console.error("Automatic feature bootstrap failed:", error);
               return json(
                 {
-                  error: "seed_failed",
-                  message: error.message
+                  error: "feature_bootstrap_failed",
+                  message: error instanceof Error ? error.message : String(error)
                 },
                 500
               );
             }
-
-            inserted.push(data);
           }
 
-          return json({ inserted });
+          return json({
+            definitions: data ?? [],
+            bootstrapped: false
+          });
+        }
+
+        if (action === "seed") {
+          try {
+            const result = await ensureSeedFeatures();
+            return json({
+              inserted: result.inserted,
+              existing: result.existing,
+              total: result.inserted.length + result.existing.length
+            });
+          } catch (error) {
+            console.error("Feature seed failed:", error);
+            return json(
+              {
+                error: "seed_failed",
+                message: error instanceof Error ? error.message : String(error)
+              },
+              500
+            );
+          }
         }
 
         if (action === "save") {
