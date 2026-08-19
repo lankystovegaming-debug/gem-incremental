@@ -2153,68 +2153,6 @@ a.btn--icon[aria-current="page"] {
    CONTRIBUTE / REPORT-BUG DOCK (bottom-left)
    ========================================================= */
 
-.utility-menu {
-  position: fixed;
-  top: 74px;
-  right: var(--space-4);
-  z-index: 90;
-  display: grid;
-  width: min(290px, calc(100vw - 2 * var(--space-4)));
-  padding: 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-solid) 96%, transparent);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(14px);
-}
-
-.utility-menu.hidden { display: none; }
-
-.utility-menu__toggle {
-  border: 0;
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
-}
-
-.utility-menu__link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 11px 12px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-weight: 650;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.utility-menu__link:hover,
-.utility-menu__link:focus-visible {
-  color: var(--text);
-  background: var(--surface-hover);
-  outline: none;
-}
-
-.utility-menu__link svg { width: 19px; height: 19px; }
-
-@media (max-width: 720px) {
-  .utility-menu {
-    top: auto;
-    right: var(--space-3);
-    bottom: calc(var(--space-3) + 68px);
-    left: var(--space-3);
-    width: auto;
-    max-height: min(70vh, 430px);
-    overflow-y: auto;
-  }
-}
-
 .contribute-dock {
   position: fixed;
   left: var(--space-4);

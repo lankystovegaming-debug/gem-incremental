@@ -8,7 +8,7 @@ import { escapeHtml, rarityLabel } from "../src/ui/format.js";
 
 mountShell({
   page: "profile",
-  base: "../"
+  base: "/"
 });
 
 const profileHero = document.getElementById("profileHero");

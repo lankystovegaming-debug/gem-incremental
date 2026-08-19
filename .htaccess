@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Keep /user/<uuid>/ as the visible canonical URL while serving the profile shell.
+RewriteRule ^user/([0-9a-fA-F-]{36})/?$ /user/index.html [L]

@@ -3,14 +3,13 @@
   "framework": null,
   "outputDirectory": ".",
   "trailingSlash": true,
-  "cleanUrls": false,
   "rewrites": [
     {
-      "source": "/user/:id",
+      "source": "/user/:id/",
       "destination": "/user/index.html"
     },
     {
-      "source": "/user/:id/",
+      "source": "/user/:id",
       "destination": "/user/index.html"
     }
   ]

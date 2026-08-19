@@ -1,0 +1,2 @@
+/user/:id/    /user/index.html    200
+/user/:id     /user/index.html    200
