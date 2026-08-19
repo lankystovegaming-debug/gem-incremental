@@ -1826,17 +1826,16 @@ a.btn--icon[aria-current="page"] {
 
 .role-badge {
   display: inline-block;
-  margin-right: 6px;
-  font-family: var(--font-display);
+  margin-right: 5px;
   font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   vertical-align: middle;
 }
 
-.role-badge--dev { color: #c084fc; text-shadow: 0 0 7px rgba(192, 132, 252, 0.45); }
-.role-badge--owner { color: #fbbf24; text-shadow: 0 0 7px rgba(251, 191, 36, 0.4); }
-.role-badge--sweat { color: #38bdf8; text-shadow: 0 0 7px rgba(56, 189, 248, 0.45); }
+.role-badge--dev { color: #c084fc; text-shadow: 0 0 8px rgba(192, 132, 252, 0.55); }
+.role-badge--owner { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
+.role-badge--sweat { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.55); }
 
 
 /* =========================================================
