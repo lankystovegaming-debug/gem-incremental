@@ -16,7 +16,7 @@ import {
 } from "../src/ui/format.js";
 
 
-const shell = mountShell({ page: "stats", base: "../" });
+const shell = mountShell({ page: "leaderboards", base: "../" });
 
 
 const subtitle = document.getElementById("statsSubtitle");
