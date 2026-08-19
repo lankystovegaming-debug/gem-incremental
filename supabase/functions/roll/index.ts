@@ -1902,7 +1902,7 @@ export default {
             "player_boosts"
           )
           .select(
-            "family, effect_value"
+            "family, tier, effect_value"
           )
           .eq(
             "player_id",
@@ -3181,6 +3181,31 @@ export default {
           "Lifetime stats update failed:",
           lifetimeStatsError
         );
+      }
+
+      // Expedition progress is derived only from this committed real roll.
+      // It is best-effort: a progress-display failure must never make a
+      // successful roll retryable or duplicate the specimen.
+      const boostTiers = Object.fromEntries(
+        (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
+      );
+      const { error: expeditionProgressError } = await ctx.supabaseAdmin.rpc(
+        "record_expedition_roll",
+        {
+          p_player_id: playerId,
+          p_payload: {
+            gemName: relicDrop ? null : gem.name,
+            rarity: relicDrop ? 0 : gem.rarity,
+            weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
+            mutationIds: relicDrop ? [] : mutationIds,
+            boostFamilies: (activeBoosts ?? []).map((boost) => boost.family),
+            boostTiers,
+            relicName: relicDrop ? gem.name : null
+          }
+        }
+      );
+      if (expeditionProgressError) {
+        console.error("Expedition progress update failed:", expeditionProgressError);
       }
 
 

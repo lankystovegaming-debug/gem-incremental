@@ -96,6 +96,16 @@ export default {
       return json({ error: "enchant_failed" }, 500);
     }
 
+    const { error: expeditionError } = await ctx.supabaseAdmin.rpc(
+      "record_expedition_relic_spend",
+      {
+        p_player_id: playerId,
+        p_enchant: grade === "normal" ? 1 : 0,
+        p_ancient: grade === "ancient" ? 1 : 0
+      }
+    );
+    if (expeditionError) console.error("Expedition relic progress failed:", expeditionError);
+
     return json({ equipmentRowId: equipmentId, relicGemId: relicId, enchantId, grade });
   })
 };

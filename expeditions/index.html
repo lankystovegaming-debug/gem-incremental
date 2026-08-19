@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Take on personalized mining expeditions.">
+  <title>Expeditions · Gem Incremental</title>
+  <link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./expeditions.css">
+  <script>(function(){try{var m=localStorage.getItem("gemIncremental.theme.mode"),a=localStorage.getItem("gemIncremental.theme.accent");if(m)document.documentElement.dataset.theme=m;document.documentElement.dataset.accent=a||"indigo"}catch(e){}})()</script>
+</head>
+<body>
+  <main class="app-main expedition-page">
+    <div class="page-head"><div class="page-head__title"><p class="expedition-eyebrow">v0.9.0 Beta</p><h1>Mining Expeditions</h1><p class="page-head__sub">Choose a route, uncover personal objectives, and return before the mine shifts.</p></div><a class="btn" href="../">Back to Roll</a></div>
+    <section class="expedition-summary card"><div><span>Daily reset</span><strong id="dailyReset">—</strong><small id="dailyUses">0 / 2 entries used</small></div><div><span>Weekly reset</span><strong id="weeklyReset">—</strong><small id="weeklyUses">0 / 1 selection used</small></div></section>
+    <section id="activeArea"></section>
+    <section class="expedition-picker"><div class="expedition-section-head"><div><span class="badge badge--accent">Daily</span><h2>Short operations</h2></div><p>Two entries each day. Only one may be Void.</p></div><div id="dailyCards" class="expedition-grid"></div></section>
+    <section class="expedition-picker"><div class="expedition-section-head"><div><span class="badge badge--accent">Weekly</span><h2>Long operations</h2></div><p>Your first selection locks the week.</p></div><div id="weeklyCards" class="expedition-grid"></div></section>
+    <section class="card expedition-history"><h2>Recent operations</h2><div id="historyList"></div></section>
+  </main>
+  <script type="module" src="./expeditions.js"></script>
+</body></html>
