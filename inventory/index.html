@@ -121,6 +121,11 @@
         >
           Potions
         </button>
+
+        <button class="segmented__item" id="forgeTab" role="tab" type="button"
+          aria-selected="false" aria-controls="forgeSection">
+          Forge <span class="badge badge--accent">Beta</span>
+        </button>
       </div>
     </div>
 
@@ -203,6 +208,16 @@
 
     <section id="potionsSection" class="hidden" role="tabpanel" aria-labelledby="potionsTab">
       <div id="consumableList" class="grid grid--cards"></div>
+    </section>
+
+    <!-- ================= MASTERWORK FORGE ================= -->
+    <section id="forgeSection" class="hidden" role="tabpanel" aria-labelledby="forgeTab">
+      <div class="card forge-intro">
+        <div><p class="updates-head__eyebrow">v0.8.3 Beta</p><h2>Masterwork Forge</h2>
+          <p>Improve T10+ equipment with money and unlocked Relics. Every upgrade succeeds.</p></div>
+        <button class="btn" id="convertRelicsButton" type="button">Convert 12 Enchant Relics + $2M</button>
+      </div>
+      <div id="forgeList" class="grid grid--wide"></div>
     </section>
   </main>
 

@@ -30,6 +30,11 @@ const FRIENDLY_MESSAGES = {
   invalid_relic: "That unlocked relic is no longer available.",
   enchant_failed: "The pickaxe could not be enchanted.",
   upgrade_failed: "The storage upgrade could not be completed."
+  ,masterwork_failed: "The Forge could not complete that action."
+  ,masterwork_tier_locked: "Only Tier 10 or higher equipment can be Masterworked."
+  ,masterwork_maxed: "That equipment is already Perfected."
+  ,not_enough_enchant_relics: "You do not have enough unlocked Enchant Relics."
+  ,not_enough_ancient_relics: "You do not have enough unlocked Ancient Relics."
 };
 
 

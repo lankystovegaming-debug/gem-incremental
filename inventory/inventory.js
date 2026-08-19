@@ -10,7 +10,8 @@ import {
 import {
   loadCloudEquipment,
   setCloudEquipmentEquipped,
-  enchantCloudEquipment
+  enchantCloudEquipment,
+  masterworkCloudEquipment
 } from "../src/backend/cloudEquipment.js";
 import {
   loadCloudConsumables,
@@ -23,6 +24,7 @@ import { getConsumableById } from "../src/data/consumables.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
 import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
+import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, masterworkRerollCost, masterworkAttunementCost, masterworkPassive } from "../src/data/masterwork.js";
 import { gemRollChance, formatChance } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -89,13 +91,17 @@ const capacityUpgradeButton = document.getElementById("capacityUpgradeButton");
 const gemsTab = document.getElementById("gemsTab");
 const equipmentTab = document.getElementById("equipmentTab");
 const potionsTab = document.getElementById("potionsTab");
+const forgeTab = document.getElementById("forgeTab");
 const gemsSection = document.getElementById("gemsSection");
 const equipmentSection = document.getElementById("equipmentSection");
 const potionsSection = document.getElementById("potionsSection");
+const forgeSection = document.getElementById("forgeSection");
 
 const inventoryList = document.getElementById("inventoryList");
 const equipmentList = document.getElementById("equipmentList");
 const consumableList = document.getElementById("consumableList");
+const forgeList = document.getElementById("forgeList");
+const convertRelicsButton = document.getElementById("convertRelicsButton");
 
 const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
@@ -144,6 +150,7 @@ const TABS = [
   { id: "gems", tab: gemsTab, section: gemsSection },
   { id: "equipment", tab: equipmentTab, section: equipmentSection },
   { id: "potions", tab: potionsTab, section: potionsSection }
+  ,{ id: "forge", tab: forgeTab, section: forgeSection }
 ];
 
 function selectTab(active) {
@@ -819,6 +826,95 @@ const BONUS_LABELS = [
   ["weight_multiplier_bonus", "Weight multiplier"]
 ];
 
+function relicCount(name) {
+  return state.gems.filter((gem) => gem.gem_name === name && !gem.locked).length;
+}
+
+function forgeCostHtml(cost) {
+  return `${formatMoney(cost.money)} · ${formatCount(cost.enchant)} Enchant Relic${cost.enchant === 1 ? "" : "s"}` +
+    (cost.ancient ? ` · ${formatCount(cost.ancient)} Ancient Relic${cost.ancient === 1 ? "" : "s"}` : "");
+}
+
+function renderForge() {
+  if (!forgeList) return;
+  const eligible = state.equipment.filter((item) => Number(item.tier) >= 10);
+  const enchantRelics = relicCount("Enchant Relic");
+  const ancientRelics = relicCount("Ancient Relic");
+  convertRelicsButton.disabled = state.money < 2_000_000 || enchantRelics < 12;
+  convertRelicsButton.textContent = `Convert 12 Enchant Relics + $2M (${enchantRelics} available)`;
+
+  if (!eligible.length) {
+    forgeList.innerHTML = '<div class="empty" style="grid-column:1/-1"><p class="empty__title">T10 equipment required</p><p>Craft a Tier 10 or higher item to unlock Masterworking.</p></div>';
+    return;
+  }
+
+  forgeList.innerHTML = eligible.map((item) => {
+    const level = Number(item.masterwork_level ?? 0);
+    const nextCost = masterworkLevelCost(item.tier, level + 1);
+    const passive = masterworkPassive(item.category, item.masterwork_passive);
+    const attunement = MASTERWORK_ATTUNEMENTS[item.masterwork_attunement];
+    const pool = MASTERWORK_PASSIVES[item.category] ?? {};
+    const alternatives = Object.entries(pool).filter(([id]) => id !== item.masterwork_passive);
+    const rerollCost = masterworkRerollCost(item.tier, item.masterwork_rerolls, "reroll");
+    const insightCost = masterworkRerollCost(item.tier, item.masterwork_rerolls, "insight");
+    const imprintCost = masterworkRerollCost(item.tier, item.masterwork_rerolls, "imprint");
+    const attunementCost = masterworkAttunementCost(item.tier);
+    const choices = Array.isArray(item.masterwork_choices) ? item.masterwork_choices : [];
+    const canUpgrade = nextCost && state.money >= nextCost.money && enchantRelics >= nextCost.enchant && ancientRelics >= nextCost.ancient;
+
+    return `<article class="equipment-card forge-card${level === 5 ? " forge-card--perfected" : ""}" data-forge-card="${escapeHtml(item.id)}">
+      <div class="equipment-card__head"><div><div class="equipment-card__name">${escapeHtml(item.name)}</div>
+      <div class="equipment-card__meta">Tier ${item.tier} ${escapeHtml(item.category)} · Masterwork ${level}/5</div></div>
+      <span class="badge ${level === 5 ? "badge--accent" : "badge--muted"}">${level === 5 ? "Perfected" : "Beta"}</span></div>
+      <div class="meter"><div class="meter__fill" style="width:${level * 20}%"></div></div>
+      <p class="equipment-card__meta">Equipment bonuses: +${level}% relative Masterwork bonus.</p>
+      ${passive ? `<div class="equipment-passive"><strong>${escapeHtml(passive.name)} ${item.masterwork_passive_rank >= 2 ? "II" : "I"}</strong><span>${escapeHtml(passive.description)}${item.masterwork_passive_rank >= 2 ? " Rank II strengthens this effect." : ""}</span></div>` : ""}
+      ${attunement ? `<div class="equipment-enchant"><strong>${escapeHtml(attunement.name)} Attunement</strong><span>${escapeHtml(attunement.description)}</span></div>` : ""}
+      ${nextCost ? `<div class="forge-action"><div><strong>Masterwork Level ${level + 1}</strong><p>${forgeCostHtml(nextCost)}</p></div>
+        <button class="btn btn--primary" data-forge-action="upgrade" ${canUpgrade ? "" : "disabled"}>Upgrade</button></div>` : ""}
+      ${choices.length ? `<div class="forge-choice"><strong>Ancient Insight — choose one</strong><div class="forge-choice__buttons">${choices.map((id) => `<button class="btn btn--sm" data-forge-action="choose" data-forge-choice="${id}">${escapeHtml(pool[id]?.name ?? id)}</button>`).join("")}</div></div>` : ""}
+      ${level >= 3 && !choices.length ? `<div class="forge-action forge-action--stack"><strong>Reforge passive</strong><p>Current passive is always excluded. Costs rise with repeated rerolls.</p><div class="forge-choice__buttons">
+        <button class="btn btn--sm" data-forge-action="reroll" title="${forgeCostHtml(rerollCost)}">Random</button><button class="btn btn--sm" data-forge-action="insight" title="${forgeCostHtml(insightCost)}">Ancient Insight</button>
+        <select class="select" data-forge-passive-select>${alternatives.map(([id, def]) => `<option value="${id}">${escapeHtml(def.name)}</option>`).join("")}</select>
+        <button class="btn btn--sm" data-forge-action="imprint" title="${forgeCostHtml(imprintCost)}">Ancient Imprint</button></div><p>Random: ${forgeCostHtml(rerollCost)} · Insight adds 1 Ancient Relic · Imprint: ${forgeCostHtml(imprintCost)}</p></div>` : ""}
+      ${level >= 4 && item.category === "pickaxe" ? `<div class="forge-action forge-action--stack"><strong>Enchant attunement</strong><div class="forge-choice__buttons"><select class="select" data-forge-attunement-select>${Object.entries(MASTERWORK_ATTUNEMENTS).filter(([id]) => id !== item.masterwork_attunement).map(([id, def]) => `<option value="${id}">${escapeHtml(def.name)}</option>`).join("")}</select><button class="btn btn--sm" data-forge-action="attune">Attune</button></div><p>${forgeCostHtml(attunementCost)}</p></div>` : ""}
+    </article>`;
+  }).join("");
+}
+
+async function runForgeAction(item, action, choice = null) {
+  const result = await masterworkCloudEquipment(item?.id ?? null, action, choice);
+  if (result.error) {
+    notify.error("Forge failed", result.error.message);
+    renderForge();
+    return;
+  }
+  notify.success("Forge complete", action === "convert_relics" ? "Created one Ancient Relic." : `${item.name} was updated.`);
+  await refresh();
+  selectTab("forge");
+}
+
+forgeList?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-forge-action]");
+  if (!button || button.disabled) return;
+  const card = button.closest("[data-forge-card]");
+  const item = state.equipment.find((entry) => String(entry.id) === card?.dataset.forgeCard);
+  if (!item) return;
+  const action = button.dataset.forgeAction;
+  let choice = button.dataset.forgeChoice ?? null;
+  if (action === "imprint") choice = card.querySelector("[data-forge-passive-select]")?.value ?? null;
+  if (action === "attune") choice = card.querySelector("[data-forge-attunement-select]")?.value ?? null;
+  const confirmation = await confirmDialog({ title: `${action.replaceAll("_", " ")} ${item.name}?`, body: "<p>Money and unlocked Relics are consumed immediately. Forge upgrades never fail.</p>", confirmLabel: "Use the Forge" });
+  if (confirmation !== "confirm") return;
+  button.disabled = true;
+  await runForgeAction(item, action, choice);
+});
+
+convertRelicsButton?.addEventListener("click", async () => {
+  const confirmation = await confirmDialog({ title: "Convert Relics?", body: "<p>Consume 12 unlocked Enchant Relics and $2,000,000 to create one Ancient Relic.</p>", confirmLabel: "Convert" });
+  if (confirmation === "confirm") await runForgeAction(null, "convert_relics");
+});
+
 
 function renderEquipment() {
   if (state.loading) {
@@ -857,6 +953,7 @@ function renderEquipment() {
       );
       const enchant = ENCHANTS[item.enchant_id];
       const passive = getEquipmentPassive(item.equipment_id);
+      const forgePassive = masterworkPassive(item.category, item.masterwork_passive);
       const canEnchant = item.category === "pickaxe" && item.equipped &&
         state.gems.some((gem) => isRelic(gem) && !gem.locked);
 
@@ -886,6 +983,11 @@ function renderEquipment() {
           ${passive ? `<div class="equipment-passive">
             <strong>${escapeHtml(passive.name)}</strong>
             <span>${escapeHtml(passive.description)}</span>
+          </div>` : ""}
+
+          ${Number(item.masterwork_level ?? 0) > 0 ? `<div class="equipment-passive">
+            <strong>Masterwork ${item.masterwork_level}/5${item.masterwork_level === 5 ? " · Perfected" : ""}</strong>
+            <span>Equipment bonuses increased by ${item.masterwork_level}%${forgePassive ? ` · ${escapeHtml(forgePassive.name)} ${item.masterwork_passive_rank >= 2 ? "II" : "I"}` : ""}</span>
           </div>` : ""}
 
           ${enchant ? `<div class="equipment-enchant">
@@ -1288,6 +1390,7 @@ function renderAll() {
   renderCapacity();
   renderGems();
   renderEquipment();
+  renderForge();
   renderConsumables();
 }
 

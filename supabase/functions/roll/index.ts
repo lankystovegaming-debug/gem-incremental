@@ -1485,7 +1485,11 @@ export default {
             weight_multiplier_bonus,
             enchant_id,
             enchant_grade,
-            enchant_state
+            enchant_state,
+            masterwork_level,
+            masterwork_passive,
+            masterwork_passive_rank,
+            masterwork_attunement
           `)
           .eq(
             "player_id",
@@ -1526,8 +1530,22 @@ export default {
       const hasMutationResonance = equippedPickaxe?.equipment_id === "eclipse-pickaxe";
       const hasEventHorizon = equippedPickaxe?.equipment_id === "singularity-pickaxe";
       const hasEnchantConduit = equippedPickaxe?.equipment_id === "transcendent-pickaxe";
+      const masterworkPickaxe = equippedPickaxe?.masterwork_passive ?? null;
+      const masterworkPickaxeRank = Number(equippedPickaxe?.masterwork_passive_rank ?? 0);
+      const equippedLantern = (equippedEquipment ?? []).find((item) => item.category === "lantern") ?? null;
+      const equippedBoots = (equippedEquipment ?? []).find((item) => item.category === "boots") ?? null;
+      const masterworkLantern = equippedLantern?.masterwork_passive ?? null;
+      const masterworkLanternRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
+      const masterworkBoots = equippedBoots?.masterwork_passive ?? null;
+      const masterworkBootsRank = Number(equippedBoots?.masterwork_passive_rank ?? 0);
+      const currentEnchantId = enchantedPickaxe?.enchant_id ?? null;
+      const sharedEnchants = new Set(["deep_strike","lucky_break","fortune_surge","collectors_edge"]);
+      const attunement = equippedPickaxe?.masterwork_attunement ?? null;
+      const attunementFactor = attunement === "amplified" ? 1.03
+        : attunement === "resonant" && sharedEnchants.has(currentEnchantId) ? 1.05
+        : attunement === "specialized" && currentEnchantId && !sharedEnchants.has(currentEnchantId) ? 1.05 : 1;
       const strengthenEnchantMultiplier = (multiplier: number) =>
-        hasEnchantConduit ? 1 + (multiplier - 1) * 1.1 : multiplier;
+        1 + (multiplier - 1) * (hasEnchantConduit ? 1.1 : 1) * attunementFactor;
 
       let enchantState: Record<string, number> =
         enchantedPickaxe?.enchant_state && typeof enchantedPickaxe.enchant_state === "object"
@@ -1538,7 +1556,7 @@ export default {
 
       // The base-gem names are enough for both Index-completion enchants.
       let discoveredGemNames = new Set<string>();
-      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id)) {
+      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id) || masterworkBoots === "trailblazer") {
         const { data: discoveries, error: discoveryError } = await ctx.supabaseAdmin
           .from("player_gem_mutation_combinations")
           .select("gem_name")
@@ -1720,12 +1738,13 @@ export default {
         of equippedEquipment ??
         []
       ) {
+        const masterworkFactor = 1 + Math.min(5, Math.max(0, Number(equipment.masterwork_level ?? 0))) / 100;
         const equipmentLuck =
           Number(
             equipment
               .luck_bonus ??
             0
-          );
+          ) * masterworkFactor;
 
         luck +=
           equipmentLuck;
@@ -1735,22 +1754,24 @@ export default {
             equipment
               .roll_speed_bonus ??
             0
-          );
+          ) * masterworkFactor;
 
         weightLuck +=
           Number(
             equipment
               .weight_luck_bonus ??
             0
-          );
+          ) * masterworkFactor;
 
         weightMultiplier +=
           Number(
             equipment
               .weight_multiplier_bonus ??
             0
-          );
+          ) * masterworkFactor;
       }
+
+      if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
 
 
       baseLuck =
@@ -1761,11 +1782,15 @@ export default {
         of activeBoosts ??
         []
       ) {
-        const effectValue =
+        let effectValue =
           Number(
             boost.effect_value ??
             0
           );
+
+        if (boost.family === "rollSpeed" && masterworkLantern === "potion_afterglow") {
+          effectValue *= masterworkLanternRank >= 2 ? 1.15 : 1.10;
+        }
 
 
         if (
@@ -1803,6 +1828,10 @@ export default {
             break;
         }
       }
+
+      if (masterworkLantern === "overclocked_flame") rollSpeed *= masterworkLanternRank >= 2 ? 1.08 : 1.05;
+      if (masterworkLantern === "flashpoint" && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) rollSpeed *= masterworkLanternRank >= 2 ? 1.4 : 1.25;
+      if (masterworkBoots === "fortune_walker") weightLuck *= masterworkBootsRank >= 2 ? 1.08 : 1.05;
 
 
       // A one-roll potion (Legendary / Mythic) adds its luck to this
@@ -2078,7 +2107,8 @@ export default {
       const geologistMultiplier = enchantId === "geologist"
         ? strengthenEnchantMultiplier(1.3)
         : 1;
-      const extremeGemMultiplier = hasEventHorizon ? 1.1 : 1;
+      const extremeGemMultiplier = (hasEventHorizon ? 1.1 : 1) *
+        (masterworkPickaxe === "deep_survey" ? (masterworkPickaxeRank >= 2 ? 1.08 : 1.05) : 1);
       const rollEquipmentGem = () =>
         geologistMultiplier !== 1 || extremeGemMultiplier !== 1
           ? rollGemWithPickaxePassives(
@@ -2128,9 +2158,17 @@ export default {
         rolledWeightMultiplier;
 
 
+      let masterworkWeightFactor = 1;
+      if (masterworkPickaxe === "steady_hand") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.05 : 1.03;
+      if (masterworkBoots === "sure_footing") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.05 : 1.03;
+      if (gem.rarity >= 100000 && masterworkPickaxe === "careful_extraction") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.15 : 1.10;
+      if (gem.rarity >= 100000 && masterworkBoots === "heavy_step") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.12 : 1.08;
+      if (!discoveredGemNames.has(gem.name) && masterworkBoots === "trailblazer") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.25 : 1.15;
+
       const finalWeight =
         rolledWeight *
-        weightMultiplier;
+        weightMultiplier *
+        masterworkWeightFactor;
 
 
       // Mutation odds are independent, so one roll can have any
@@ -2144,6 +2182,7 @@ export default {
         );
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
+      if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
 
       const mutations = relicDrop
         ? []

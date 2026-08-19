@@ -120,7 +120,14 @@ export default {
             weight_multiplier_bonus,
             enchant_id,
             enchant_grade,
-            enchant_state
+            enchant_state,
+            masterwork_level,
+            masterwork_passive,
+            masterwork_passive_rank,
+            masterwork_attunement,
+            masterwork_rerolls,
+            masterwork_choices,
+            masterwork_perfected_at
           `)
       .eq("player_id", playerId);
     if (equipmentError) {
