@@ -84,23 +84,37 @@
     <!-- SELL -->
     <section id="sellSection" class="hidden">
       <div class="card sell-card">
-        <h2 class="sell-card__title">List a gem for auction</h2>
+        <h2 class="sell-card__title">List items for auction</h2>
         <p class="sell-card__hint">
-          The gem leaves your inventory while it is listed and returns if it
-          does not sell. You keep the highest bid when the timer ends. You can
-          have up to <strong>3 gems</strong> on auction at once.
+          Build a lot from your gems, relics and potions — sell one thing or
+          bundle many together. Everything in the lot leaves your inventory
+          while listed and returns if it does not sell. You can have up to
+          <strong>3 listings</strong> at once.
         </p>
 
-        <label class="field-label" for="sellGemSearch">Gem</label>
-        <div class="sell-picker">
-          <label class="field auction-search" for="sellGemSearch">
-            <span id="sellSearchIcon" aria-hidden="true"></span>
-            <input id="sellGemSearch" type="text" placeholder="Search your gems…" autocomplete="off">
-          </label>
-          <select class="select auction-listbox" id="sellGemSelect" size="6" aria-label="Choose a gem to list"></select>
+        <div class="sell-columns">
+          <div class="sell-column">
+            <label class="field-label" for="sellGemSearch">Gems &amp; relics</label>
+            <label class="field auction-search" for="sellGemSearch">
+              <span id="sellSearchIcon" aria-hidden="true"></span>
+              <input id="sellGemSearch" type="text" placeholder="Search…" autocomplete="off">
+            </label>
+            <div id="sellGemList" class="lot-picker" role="group" aria-label="Gems to add"></div>
+          </div>
+
+          <div class="sell-column">
+            <label class="field-label">Potions</label>
+            <div id="sellPotionList" class="lot-picker" role="group" aria-label="Potions to add"></div>
+          </div>
         </div>
 
-        <div id="sellPreview" class="sell-preview hidden"></div>
+        <div class="lot-summary">
+          <div class="lot-summary__head">
+            <strong>Your lot</strong>
+            <span id="lotCount" class="lot-summary__count">0 items</span>
+          </div>
+          <div id="lotSummaryList" class="lot-summary__list"></div>
+        </div>
 
         <div class="sell-row">
           <div class="sell-field">

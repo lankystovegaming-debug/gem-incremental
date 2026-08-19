@@ -1,16 +1,18 @@
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { loadCloudGems, loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+import { loadCloudConsumables } from "../src/backend/cloudConsumables.js";
 import {
   settleDueAuctions,
   loadActiveAuctions,
   loadMyAuctions,
   loadBidsFor,
-  createAuction,
+  createAuctionLot,
   placeBid,
   cancelAuction
 } from "../src/backend/cloudAuctions.js";
 import { isRelic } from "../src/data/enchants.js";
 import { getGemMutation } from "../src/data/mutations.js";
+import { getConsumableById } from "../src/data/consumables.js";
 
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
@@ -41,10 +43,12 @@ const state = {
   auctions: [],
   mine: [],
   gems: [],
+  consumables: [],
   money: 0,
   userId: null,
   loading: true,
-  selectedGemId: null,
+  // The lot being assembled on the Sell tab.
+  lot: { gems: new Set(), potions: new Map() },
   tab: "browse"
 };
 
@@ -55,8 +59,10 @@ const mineList = document.getElementById("mineList");
 const refreshButton = document.getElementById("refreshButton");
 
 const sellGemSearch = document.getElementById("sellGemSearch");
-const sellGemSelect = document.getElementById("sellGemSelect");
-const sellPreview = document.getElementById("sellPreview");
+const sellGemList = document.getElementById("sellGemList");
+const sellPotionList = document.getElementById("sellPotionList");
+const lotCount = document.getElementById("lotCount");
+const lotSummaryList = document.getElementById("lotSummaryList");
 const sellPrice = document.getElementById("sellPrice");
 const sellDuration = document.getElementById("sellDuration");
 const listButton = document.getElementById("listButton");
@@ -86,7 +92,7 @@ function selectTab(active) {
   }
 
   if (active === "sell") {
-    renderSellPicker();
+    renderSell();
   }
   if (active === "mine") {
     renderMine();
@@ -130,6 +136,58 @@ function gemVisual(gem) {
         <span>·</span>
         <span>base value ${formatMoney(gem.value)}</span>
       </div>
+    </div>
+  `;
+}
+
+function potionName(consumableId) {
+  return getConsumableById(consumableId)?.name ?? consumableId;
+}
+
+// Renders whatever a listing holds: a single gem (rich card), or a
+// bundle of gems/relics/potions (compact list). Falls back to the
+// legacy single-gem `gem` column for pre-lot auctions.
+function lotVisual(auction) {
+  const lot = Array.isArray(auction.lot) ? auction.lot : null;
+  if (!lot) return auction.gem ? gemVisual(auction.gem) : "";
+
+  const gemItems = lot.filter((item) => item.type !== "potion");
+  const potionItems = lot.filter((item) => item.type === "potion");
+
+  // A lone gem still gets the full gem treatment.
+  if (gemItems.length === 1 && potionItems.length === 0) {
+    return gemVisual(gemItems[0]);
+  }
+
+  const count = Number(auction.item_count ?? lot.length);
+
+  const gemRows = gemItems
+    .map((gem) => {
+      const tier = rarityTier(gem.rarity);
+      const muts = mutationsOf(gem);
+      return `<li class="lot-item tier-${tier.id}">
+        <span class="lot-item__name">${muts.length ? muts.map((m) => escapeHtml(m.name)).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</span>
+        <span class="lot-item__meta">${rarityLabel(gem.rarity)}</span>
+      </li>`;
+    })
+    .join("");
+
+  const potionRows = potionItems
+    .map(
+      (item) => `<li class="lot-item lot-item--potion">
+        <span class="lot-item__name">${icons.potion} ${escapeHtml(potionName(item.consumable_id))}</span>
+        <span class="lot-item__meta">×${formatCount(item.quantity)}</span>
+      </li>`
+    )
+    .join("");
+
+  return `
+    <div class="auction-lot">
+      <div class="auction-lot__head">
+        <span class="badge badge--accent">Bundle</span>
+        <span class="auction-lot__count">${formatCount(count)} item${count === 1 ? "" : "s"}</span>
+      </div>
+      <ul class="auction-lot__list">${gemRows}${potionRows}</ul>
     </div>
   `;
 }
@@ -226,7 +284,7 @@ function browseCard(auction) {
 
   return `
     <article class="card auction-card${leading ? " auction-card--leading" : ""}" data-id="${auction.id}" data-min="${min}">
-      ${gemVisual(auction.gem)}
+      ${lotVisual(auction)}
 
       <div class="auction-card__body">
         <div class="auction-line">
@@ -319,68 +377,154 @@ function wireBrowseCard(card) {
 
 
 // =========================================================
-// SELL
+// SELL — build a lot from gems, relics and potions
 // =========================================================
 
-function sellableGems() {
+function availableGems() {
   const query = sellGemSearch.value.trim().toLowerCase();
   return state.gems
-    .filter((gem) => !gem.locked && !isRelic(gem))
+    .filter((gem) => !gem.locked)
     .filter((gem) => !query || gem.gem_name.toLowerCase().includes(query))
-    .sort((a, b) => Number(b.value) - Number(a.value));
+    .sort((a, b) => Number(b.rarity) - Number(a.rarity));
 }
 
-function renderSellPicker() {
-  const gems = sellableGems();
+function ownedPotions() {
+  return state.consumables
+    .map((row) => ({ row, def: getConsumableById(row.consumable_id) }))
+    .filter((entry) => entry.def && Number(entry.row.quantity) > 0)
+    .sort((a, b) => a.def.family.localeCompare(b.def.family) || a.def.tier - b.def.tier);
+}
 
-  if (state.gems.filter((g) => !g.locked && !isRelic(g)).length === 0) {
-    sellGemSelect.innerHTML = `<option disabled>No unlocked gems to list</option>`;
-    sellPreview.classList.add("hidden");
-    listButton.disabled = true;
+function lotItemCount() {
+  let total = state.lot.gems.size;
+  for (const qty of state.lot.potions.values()) total += qty;
+  return total;
+}
+
+function renderSell() {
+  renderGemChecklist();
+  renderPotionChecklist();
+  renderLotSummary();
+}
+
+function renderGemChecklist() {
+  const gems = availableGems();
+  const unlockedTotal = state.gems.filter((g) => !g.locked).length;
+
+  if (unlockedTotal === 0) {
+    sellGemList.innerHTML = `<p class="lot-picker__empty">No unlocked gems. Unlock or roll some first.</p>`;
+    return;
+  }
+  if (gems.length === 0) {
+    sellGemList.innerHTML = `<p class="lot-picker__empty">Nothing matches your search.</p>`;
     return;
   }
 
-  sellGemSelect.innerHTML = gems
+  sellGemList.innerHTML = gems
     .map((gem) => {
-      const mutations = mutationsOf(gem);
-      const label = `${mutations.map((m) => m.name).join(" ")}${mutations.length ? " " : ""}${gem.gem_name} · ${rarityLabel(gem.rarity)} · ${formatMoney(gem.value)}`;
-      return `<option value="${gem.id}"${gem.id === state.selectedGemId ? " selected" : ""}>${escapeHtml(label)}</option>`;
+      const checked = state.lot.gems.has(gem.id);
+      const muts = mutationsOf(gem);
+      const meta = isRelic(gem) ? "Relic" : `${rarityLabel(gem.rarity)} · ${formatMoney(gem.value)}`;
+      return `
+        <label class="lot-option${checked ? " lot-option--on" : ""}">
+          <input type="checkbox" data-gem="${gem.id}" ${checked ? "checked" : ""}>
+          <span class="lot-option__body">
+            <span class="lot-option__name">${muts.length ? muts.map((m) => escapeHtml(m.name)).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</span>
+            <span class="lot-option__meta">${escapeHtml(meta)}</span>
+          </span>
+        </label>`;
+    })
+    .join("");
+}
+
+function renderPotionChecklist() {
+  const potions = ownedPotions();
+  if (potions.length === 0) {
+    sellPotionList.innerHTML = `<p class="lot-picker__empty">No potions to sell.</p>`;
+    return;
+  }
+  sellPotionList.innerHTML = potions
+    .map(({ row, def }) => {
+      const owned = Number(row.quantity);
+      const qty = state.lot.potions.get(def.id) ?? 0;
+      return `
+        <div class="lot-option lot-option--potion${qty ? " lot-option--on" : ""}">
+          <span class="lot-option__body">
+            <span class="lot-option__name">${icons.potion} ${escapeHtml(def.name)}</span>
+            <span class="lot-option__meta">You own ${formatCount(owned)}</span>
+          </span>
+          <input class="lot-qty" type="number" min="0" max="${owned}" step="1" value="${qty}" data-potion="${escapeHtml(def.id)}" aria-label="Quantity of ${escapeHtml(def.name)}">
+        </div>`;
+    })
+    .join("");
+}
+
+function renderLotSummary() {
+  const count = lotItemCount();
+  lotCount.textContent = `${formatCount(count)} item${count === 1 ? "" : "s"}`;
+
+  const gemChips = [...state.lot.gems]
+    .map((id) => {
+      const gem = state.gems.find((g) => g.id === id);
+      if (!gem) return "";
+      return `<span class="lot-chip">${gemNameHtml(gem.gem_name, escapeHtml)} <button type="button" data-remove-gem="${id}" aria-label="Remove">×</button></span>`;
     })
     .join("");
 
-  // Keep a valid selection.
-  if (!gems.some((g) => g.id === state.selectedGemId)) {
-    state.selectedGemId = gems.length ? gems[0].id : null;
-    if (state.selectedGemId != null) {
-      sellGemSelect.value = String(state.selectedGemId);
-    }
-  }
+  const potionChips = [...state.lot.potions]
+    .map(
+      ([cid, qty]) =>
+        `<span class="lot-chip">${escapeHtml(potionName(cid))} ×${formatCount(qty)} <button type="button" data-remove-potion="${escapeHtml(cid)}" aria-label="Remove">×</button></span>`
+    )
+    .join("");
 
-  renderSellPreview();
+  lotSummaryList.innerHTML =
+    count === 0
+      ? `<p class="lot-picker__empty">Pick gems or potions above to build your lot.</p>`
+      : gemChips + potionChips;
+
+  listButton.disabled = count === 0;
 }
 
-function renderSellPreview() {
-  const gem = state.gems.find((g) => g.id === state.selectedGemId);
-  if (!gem) {
-    sellPreview.classList.add("hidden");
-    listButton.disabled = true;
-    return;
+sellGemSearch.addEventListener("input", renderGemChecklist);
+
+sellGemList.addEventListener("change", (event) => {
+  const box = event.target.closest("[data-gem]");
+  if (!box) return;
+  const id = Number(box.dataset.gem);
+  if (box.checked) state.lot.gems.add(id);
+  else state.lot.gems.delete(id);
+  box.closest(".lot-option")?.classList.toggle("lot-option--on", box.checked);
+  renderLotSummary();
+});
+
+sellPotionList.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-potion]");
+  if (!input) return;
+  const cid = input.dataset.potion;
+  const max = Number(input.max);
+  const qty = Math.max(0, Math.min(max, Math.floor(Number(input.value) || 0)));
+  if (qty === 0) state.lot.potions.delete(cid);
+  else state.lot.potions.set(cid, qty);
+  input.closest(".lot-option")?.classList.toggle("lot-option--on", qty > 0);
+  renderLotSummary();
+});
+
+lotSummaryList.addEventListener("click", (event) => {
+  const removeGem = event.target.closest("[data-remove-gem]");
+  const removePotion = event.target.closest("[data-remove-potion]");
+  if (removeGem) {
+    state.lot.gems.delete(Number(removeGem.dataset.removeGem));
+    renderSell();
+  } else if (removePotion) {
+    state.lot.potions.delete(removePotion.dataset.removePotion);
+    renderSell();
   }
-
-  sellPreview.classList.remove("hidden");
-  sellPreview.innerHTML = gemVisual(gem);
-  listButton.disabled = false;
-}
-
-sellGemSearch.addEventListener("input", renderSellPicker);
-sellGemSelect.addEventListener("change", () => {
-  state.selectedGemId = Number(sellGemSelect.value);
-  renderSellPreview();
 });
 
 listButton.addEventListener("click", async () => {
-  const gem = state.gems.find((g) => g.id === state.selectedGemId);
-  if (!gem) return;
+  const count = lotItemCount();
+  if (count === 0) return;
 
   const price = Math.floor(Number(sellPrice.value));
   const hours = Number(sellDuration.value);
@@ -390,13 +534,24 @@ listButton.addEventListener("click", async () => {
     return;
   }
 
+  const items = [
+    ...[...state.lot.gems].map((id) => ({ type: "gem", id })),
+    ...[...state.lot.potions].map(([cid, qty]) => ({ type: "potion", consumableId: cid, quantity: qty }))
+  ];
+
+  const summary = [
+    ...[...state.lot.gems].map((id) => state.gems.find((g) => g.id === id)?.gem_name).filter(Boolean),
+    ...[...state.lot.potions].map(([cid, qty]) => `${qty}× ${potionName(cid)}`)
+  ];
+
   const choice = await confirmDialog({
-    title: `List ${gem.gem_name} for auction?`,
+    title: count === 1 ? "List this item for auction?" : `List a bundle of ${count} items?`,
     body: `
       <p>Starting price <strong>${escapeHtml(formatMoney(price))}</strong>,
       running for <strong>${hours} hour${hours === 1 ? "" : "s"}</strong>.</p>
-      <p style="margin-top:10px">The gem leaves your inventory while listed.
-      It returns if nobody bids.</p>
+      <p style="margin-top:10px"><strong>Lot:</strong> ${escapeHtml(summary.join(", "))}</p>
+      <p style="margin-top:10px">Everything in the lot leaves your inventory while
+      listed and returns if nobody bids.</p>
     `,
     confirmLabel: "List it"
   });
@@ -405,19 +560,20 @@ listButton.addEventListener("click", async () => {
 
   listButton.disabled = true;
 
-  const { error } = await createAuction(gem.id, price, hours);
+  const { error } = await createAuctionLot(items, price, hours);
 
   if (error) {
-    notify.error("Could not list gem", error.message);
+    notify.error("Could not list lot", error.message);
     listButton.disabled = false;
     return;
   }
 
-  // Drop it from the local inventory so it cannot be listed twice.
-  state.gems = state.gems.filter((g) => g.id !== gem.id);
-  state.selectedGemId = null;
+  state.lot = { gems: new Set(), potions: new Map() };
 
-  notify.success("Gem listed", `${gem.gem_name} is now up for auction.`);
+  notify.success(
+    "Listed",
+    count === 1 ? "Your item is up for auction." : `Your bundle of ${count} items is up for auction.`
+  );
 
   await refresh();
   selectTab("mine");
@@ -487,7 +643,7 @@ function mineCard(auction) {
 
   return `
     <article class="card auction-card auction-card--mine" data-id="${auction.id}">
-      ${gemVisual(auction.gem)}
+      ${lotVisual(auction)}
 
       <div class="auction-card__body">
         <div class="auction-line">
@@ -527,22 +683,40 @@ function mineCard(auction) {
 
 function renderActive() {
   if (state.tab === "browse") renderBrowse();
-  else if (state.tab === "sell") renderSellPicker();
+  else if (state.tab === "sell") renderSell();
   else if (state.tab === "mine") renderMine();
 }
 
+// Drop any lot selections that are no longer available (sold, listed,
+// locked, or potions we no longer have enough of) so the builder never
+// references stale items.
+function pruneLot() {
+  for (const id of [...state.lot.gems]) {
+    const gem = state.gems.find((g) => g.id === id);
+    if (!gem || gem.locked) state.lot.gems.delete(id);
+  }
+  for (const [cid, qty] of [...state.lot.potions]) {
+    const owned = Number(state.consumables.find((r) => r.consumable_id === cid)?.quantity ?? 0);
+    if (owned <= 0) state.lot.potions.delete(cid);
+    else if (qty > owned) state.lot.potions.set(cid, owned);
+  }
+}
+
 async function refresh() {
-  const [auctions, mine, gems, playerState] = await Promise.all([
+  const [auctions, mine, gems, playerState, consumables] = await Promise.all([
     loadActiveAuctions(),
     loadMyAuctions(),
     loadCloudGems(),
-    loadCloudPlayerState()
+    loadCloudPlayerState(),
+    loadCloudConsumables()
   ]);
 
   state.loading = false;
   state.auctions = auctions;
   state.mine = mine;
   state.gems = Array.isArray(gems) ? gems : [];
+  state.consumables = Array.isArray(consumables) ? consumables : [];
+  pruneLot();
 
   if (playerState) {
     state.money = Number(playerState.money);
