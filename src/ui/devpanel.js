@@ -176,6 +176,17 @@ async function open() {
       <div class="devpanel__sep"></div>
 
       <label class="devpanel__field">
+        <span>Mutation luck (×)</span>
+        <input type="number" id="devMutationLuck" value="1" min="1" max="100000" step="1">
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="mutationluck" type="button">
+        Set mutation luck
+      </button>
+
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
         <span>Gem</span>
         <select class="select" id="devGem">
           ${gems
@@ -283,6 +294,7 @@ async function open() {
   const slotsInput = panel.querySelector("#devSlots");
   const rollsInput = panel.querySelector("#devRolls");
   const coinsInput = panel.querySelector("#devCoins");
+  const mutationLuckInput = panel.querySelector("#devMutationLuck");
   const gemSelect = panel.querySelector("#devGem");
   const gemQtyInput = panel.querySelector("#devGemQty");
   const gemMultInput = panel.querySelector("#devGemMult");
@@ -497,6 +509,47 @@ async function open() {
       status.textContent = `${who()} now has ${formatCount(total)} coins.`;
 
       notify.success("Sent", `+${formatCount(amount)} coins for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // SET MUTATION LUCK
+  //
+  // Multiplies the target's chance of every mutation on each roll
+  // (1 = normal). This SETS the value rather than adding to it.
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="mutationluck"]')
+    .addEventListener("click", async () => {
+      const value = Math.max(
+        1,
+        Math.min(100000, Math.floor(Number(mutationLuckInput.value) || 1))
+      );
+
+      if (!(await confirmSend(`Set mutation luck to ×${value}.`))) {
+        return;
+      }
+
+      const result = await callDependency("mutation", targetValue(), {
+        mutation_luck: value
+      });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const applied = result.data?.mutation_luck ?? value;
+
+      status.textContent = `${who()}'s mutation luck is now ×${applied}.`;
+
+      notify.success("Mutation luck set", `×${applied} for ${who()}.`);
 
       refreshIfSelf(isSelf());
     });
