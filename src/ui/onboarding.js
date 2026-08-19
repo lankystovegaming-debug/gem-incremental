@@ -92,6 +92,12 @@ export function mountHowToPlay(base = "./") {
     dock.prepend(link);
   }
 
+  for (const trigger of document.querySelectorAll("[data-howto-trigger]")) {
+    if (trigger.dataset.howtoReady === "true") continue;
+    trigger.dataset.howtoReady = "true";
+    trigger.addEventListener("click", () => buildModal(base));
+  }
+
   // First visit: show it automatically.
   let seen = false;
   try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch { seen = false; }
