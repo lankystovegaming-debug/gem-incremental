@@ -48,36 +48,8 @@
 
 .chat-message--tab-hidden { display: none !important; }
 
-.chat-role-badge {
-  display: inline-block;
-  margin-right: 6px;
-  font-size: .68rem;
-  font-weight: 950;
-  letter-spacing: .08em;
-  vertical-align: middle;
-}
-
-.chat-role-badge--dev {
-  color: #c084fc;
-  text-shadow: 0 0 8px rgba(192,132,252,.9), 0 0 18px rgba(168,85,247,.7);
-  animation: chat-dev-pulse 1.45s ease-in-out infinite;
-}
-
-.chat-role-badge--owner {
-  color: #fbbf24;
-  text-shadow: 0 0 8px rgba(251,191,36,.75);
-  animation: chat-owner-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes chat-dev-pulse {
-  0%,100% { transform: translateY(0) scale(1); filter: brightness(1); }
-  50% { transform: translateY(-1px) scale(1.06); filter: brightness(1.35); }
-}
-
-@keyframes chat-owner-pulse {
-  0%,100% { text-shadow: 0 0 6px rgba(251,191,36,.55); }
-  50% { text-shadow: 0 0 12px rgba(251,191,36,.95), 0 0 22px rgba(245,158,11,.55); }
-}
+/* Role tags ([DEV]/[OWNER]/[SWEAT]) are styled by the shared
+   `.role-badge` rules in app.css. */
 
 .chat-card {
   margin-top: var(--space-5);

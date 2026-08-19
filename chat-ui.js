@@ -5,6 +5,7 @@ import {
   unsubscribeFromChat
 } from "./src/backend/chat.js";
 import { ensurePlayerAuth } from "./src/backend/auth.js";
+import { roleForId, roleBadgeHtml } from "./src/ui/roles.js";
 import {
   findPlayerByUsername,
   loadUnreadPrivateMessageCount,
@@ -447,20 +448,8 @@ if (messagesEl && formEl && inputEl) {
     return "";
   }
 
-  const CHAT_ROLES = Object.freeze({
-    "316c668e-1ab3-4e5f-bad0-8cd964a41440": "DEV",
-    "38d5e8ce-18af-46d3-aa9e-6e601e75dd78": "DEV",
-    "004d883f-edbc-4610-b5e3-9068a0de0ca2": "OWNER"
-  });
-
-  function roleBadgeHtml(userId) {
-    const role = CHAT_ROLES[String(userId ?? "").toLowerCase()];
-    if (!role) return "";
-    return `<span class="chat-role-badge chat-role-badge--${role.toLowerCase()}">[${role}]</span>`;
-  }
-
   function displayNameHtml(userId, username) {
-    return `${roleBadgeHtml(userId)}<span>${escapeHtml(username ?? "Unknown")}</span>`;
+    return `${roleBadgeHtml(roleForId(userId))}<span>${escapeHtml(username ?? "Unknown")}</span>`;
   }
 
   function avatarHtml(message) {

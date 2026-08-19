@@ -11,6 +11,12 @@ import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import gems from "../src/data/gems.js";
 import { loadShowcasesFor } from "../src/backend/cloudShowcase.js";
 import { showcasePinsHtml } from "../src/ui/showcaseRender.js";
+import { roleForUsername, roleBadgeHtml } from "../src/ui/roles.js";
+
+// Role tag ([DEV]/[OWNER]/[SWEAT]) shown before a ranked player's name.
+function roleTag(username) {
+  return roleBadgeHtml(roleForUsername(username));
+}
 
 
 const leaderboardStatus =
@@ -336,7 +342,7 @@ function renderTotalRolls() {
             ${avatarHtml(
               player.username
             )}
-            <span class="lb-name-text">${escapeHtml(
+            <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(
               player.username
             )}</span>
             ${showcasePins(player.username)}
@@ -429,7 +435,7 @@ function renderRarestGem() {
               player.username
             )}
             <span class="lb-name-block">
-              <span class="lb-name-text">${escapeHtml(
+              <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(
                 player.username
               )}${showcasePins(player.username)}</span>
               <span class="lb-best-gem">
@@ -539,7 +545,7 @@ function renderLifetimeEarnings() {
             ${avatarHtml(
               player.username
             )}
-            <span class="lb-name-text">${escapeHtml(
+            <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(
               player.username
             )}</span>
             ${showcasePins(player.username)}
@@ -631,7 +637,7 @@ function renderGemsFound() {
             ${avatarHtml(
               player.username
             )}
-            <span class="lb-name-text">${escapeHtml(
+            <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(
               player.username
             )}</span>
             ${showcasePins(player.username)}
@@ -745,7 +751,7 @@ function renderBestRoll() {
       <div class="player-name">
         ${avatarHtml(player.username)}
         <span class="lb-name-block">
-          <span class="lb-name-text">${escapeHtml(player.username)}${showcasePins(player.username)}</span>
+          <span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}${showcasePins(player.username)}</span>
           <span class="lb-best-gem">${player.gem_name ? gemNameHtml(player.gem_name, escapeHtml) : "Unknown"}</span>
         </span>
       </div>
@@ -795,7 +801,7 @@ function renderMostWeight() {
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
       <div class="player-name">${avatarHtml(player.username)}
-        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
       </div>
       <div class="score"><strong>${formatNumber(player.final_weight)}g</strong>
@@ -818,7 +824,7 @@ function renderRawRareRoll() {
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
       <div class="player-name">${avatarHtml(player.username)}
-        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">${gemNameHtml(player.gem_name, escapeHtml)}</span></span>
       </div>
       <div class="score"><strong>1 in ${formatNumber(player.raw_rarity)}</strong>
@@ -841,7 +847,7 @@ function renderBaseLuck() {
     <div class="leaderboard-row">
       <div class="rank">${rankDisplay(player.rank)}</div>
       <div class="player-name">${avatarHtml(player.username)}
-        <span class="lb-name-block"><span class="lb-name-text">${escapeHtml(player.username)}</span>
+        <span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span>
         <span class="lb-best-gem">Permanent / equipment Luck</span></span>
       </div>
       <div class="score"><strong>${formatNumber(player.base_luck)}×</strong>
