@@ -199,10 +199,16 @@ function renderPlayer(data) {
 
       <section class="admin-section">
         <h3>Account Controls</h3>
-        <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
-        <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
-          ${locked ? "Unlock account" : "Lock account"}
-        </button>
+        ${player.leaderboard_hidden ? '<p class="admin-note">Hidden from every leaderboard.</p>' : ""}
+        <div class="admin-button-row">
+          <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
+          <button class="btn ${player.leaderboard_hidden ? "btn--primary" : ""}" data-action="leaderboard-visibility" data-hidden="${player.leaderboard_hidden ? "true" : "false"}" type="button">
+            ${player.leaderboard_hidden ? "Show on leaderboard" : "Hide from leaderboard"}
+          </button>
+          <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
+            ${locked ? "Unlock account" : "Lock account"}
+          </button>
+        </div>
       </section>
 
       <section class="admin-section">
@@ -327,6 +333,9 @@ async function runPlayerAction(button) {
     }];
   } else if (action === "reset-cooldown") {
     request = ["reset_cooldown", {}];
+  } else if (action === "leaderboard-visibility") {
+    const currentlyHidden = button.dataset.hidden === "true";
+    request = ["leaderboard_visibility", { hidden: !currentlyHidden }];
   } else if (action === "account-lock") {
     const currentlyLocked = button.dataset.locked === "true";
     if (!currentlyLocked && !window.confirm("Lock this player account?")) return;

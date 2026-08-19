@@ -18,7 +18,7 @@ import { supabase } from "./supabase.js";
 const CREATE_MESSAGES = {
   not_authenticated: "You need to be signed in to list a gem.",
   invalid_price: "Enter a starting price of at least $1.",
-  too_many_listings: "You already have 10 active listings — wait for some to close.",
+  too_many_listings: "You can have at most 3 gems on auction at once — wait for some to close.",
   gem_unavailable: "That gem is locked or no longer in your inventory.",
   not_auctionable: "Relics cannot be auctioned."
 };

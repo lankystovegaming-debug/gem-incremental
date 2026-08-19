@@ -301,7 +301,7 @@ export default {
       if (action === "inspect") {
         const { data: player, error } = await ctx.supabaseAdmin
           .from("players")
-          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck")
+          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck, leaderboard_hidden")
           .eq("id", targetId)
           .maybeSingle();
 
@@ -494,6 +494,15 @@ export default {
         if (error) return response({ error: "cooldown_reset_failed" }, 500);
         await audit(ctx, adminId, targetId, "cooldown_reset");
         return response({ success: true });
+      }
+
+      if (action === "leaderboard_visibility") {
+        const hidden = body.hidden === true;
+        const { error } = await ctx.supabaseAdmin
+          .from("players").update({ leaderboard_hidden: hidden }).eq("id", targetId);
+        if (error) return response({ error: "leaderboard_visibility_failed", message: error.message }, 500);
+        await audit(ctx, adminId, targetId, hidden ? "leaderboard_hidden" : "leaderboard_shown");
+        return response({ hidden });
       }
 
       if (action === "account_lock") {

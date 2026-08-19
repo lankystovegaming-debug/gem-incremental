@@ -1708,6 +1708,97 @@ a.btn--icon[aria-current="page"] {
 }
 
 
+/* ---------------------------------------------------------
+   HOW TO PLAY (first-run guide)
+   --------------------------------------------------------- */
+
+.howto {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 2 * var(--space-4));
+  overflow-y: auto;
+}
+
+.howto__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.howto__spark {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.howto__spark svg { width: 22px; height: 22px; }
+
+.howto__lede {
+  margin: 0 0 var(--space-4);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.howto__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.howto__step {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.howto__step-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  color: var(--accent);
+}
+
+.howto__step-icon svg { width: 20px; height: 20px; }
+
+.howto__step-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.howto__step-text {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.howto__step-text kbd,
+.howto__tip kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface-sunken);
+  font-family: inherit;
+  font-size: 0.78em;
+}
+
+.howto__tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: var(--space-4) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.howto__tip svg { width: 16px; height: 16px; flex: none; color: var(--accent); }
+
+
 /* =========================================================
    14. EMPTY & LOADING STATES
    ========================================================= */
