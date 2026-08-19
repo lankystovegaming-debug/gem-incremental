@@ -142,9 +142,23 @@ begin
   if p_slot not between 1 and 6 then raise exception 'invalid_shop_slot'; end if;
   perform public.ensure_daily_shop_rotation(v_date);
   if p_slot>=4 and exists(select 1 from public.daily_shop_personal_rotations where player_id=v_uid and rotation_date=v_date) then
-    v_kind:='refresh'; select c,r.stock into v_offer,v_stock from public.daily_shop_personal_rotations r join public.daily_shop_catalog c on c.id=r.offer_id where r.player_id=v_uid and r.rotation_date=v_date and r.slot=p_slot;
+    v_kind:='refresh';
+    select c.* into v_offer
+    from public.daily_shop_personal_rotations r
+    join public.daily_shop_catalog c on c.id=r.offer_id
+    where r.player_id=v_uid and r.rotation_date=v_date and r.slot=p_slot;
+    select r.stock into v_stock
+    from public.daily_shop_personal_rotations r
+    where r.player_id=v_uid and r.rotation_date=v_date and r.slot=p_slot;
   else
-    v_kind:='global'; select c,r.stock into v_offer,v_stock from public.daily_shop_rotations r join public.daily_shop_catalog c on c.id=r.offer_id where r.rotation_date=v_date and r.slot=p_slot;
+    v_kind:='global';
+    select c.* into v_offer
+    from public.daily_shop_rotations r
+    join public.daily_shop_catalog c on c.id=r.offer_id
+    where r.rotation_date=v_date and r.slot=p_slot;
+    select r.stock into v_stock
+    from public.daily_shop_rotations r
+    where r.rotation_date=v_date and r.slot=p_slot;
   end if;
   insert into public.daily_shop_purchases(player_id,rotation_date,rotation_kind,slot,quantity) values(v_uid,v_date,v_kind,p_slot,0) on conflict do nothing;
   select quantity into v_bought from public.daily_shop_purchases where player_id=v_uid and rotation_date=v_date and rotation_kind=v_kind and slot=p_slot for update;
