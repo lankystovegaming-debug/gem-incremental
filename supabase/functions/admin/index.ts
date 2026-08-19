@@ -269,25 +269,31 @@ export default {
           .eq("active", true);
         if (stopError) return response({ error: "mutation_event_stop_failed", message: stopError.message }, 500);
 
+        const mutationEvent = {
+          name,
+          created_by: adminId,
+          active: true,
+          starts_at: now.toISOString(),
+          ends_at: ends.toISOString(),
+
+          // Neutral values for the normal global event modifiers.
+          luck_bonus: 0,
+          roll_speed_bonus: 0,
+          weight_luck_bonus: 0,
+          weight_multiplier_bonus: 0,
+          luck_multiplier: 1,
+          roll_speed_multiplier: 1,
+          weight_luck_multiplier: 1,
+          weight_multiplier_multiplier: 1,
+
+          // Mutation Surge values are kept separate from normal luck.
+          mutation_luck_bonus: mutationLuckBonus,
+          mutation_luck_multiplier: mutationLuckMultiplier
+        };
+
         const { data, error } = await ctx.supabaseAdmin
           .from("admin_events")
-          .insert({
-            name,
-            created_by: adminId,
-            active: true,
-            starts_at: now.toISOString(),
-            ends_at: ends.toISOString(),
-            luck_bonus: 0,
-            roll_speed_bonus: 0,
-            weight_luck_bonus: 0,
-            weight_multiplier_bonus: 0,
-            luck_multiplier: 1,
-            roll_speed_multiplier: 1,
-            weight_luck_multiplier: 1,
-            weight_multiplier_multiplier: 1,
-            mutation_luck_bonus: mutationLuckBonus,
-            mutation_luck_multiplier: mutationLuckMultiplier
-          })
+          .insert(mutationEvent)
           .select("*")
           .single();
 

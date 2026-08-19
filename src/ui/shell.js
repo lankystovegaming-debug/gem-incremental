@@ -49,7 +49,6 @@ const PAGES = [
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
-  { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
   { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
   { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" },
@@ -314,30 +313,9 @@ export function mountShell({ page, base = "./" }) {
         );
       });
 
-      // Upcoming Features is intentionally hidden from normal players.
-      // The private-features Edge Function is authoritative for access.
-      supabase.functions.invoke("private-features", {
-        body: { action: "whoami" }
-      }).then(({ data }) => {
-        // Upcoming Features is now embedded in Admin for authorized users.
-        // Keep the standalone route available, but do not duplicate it in the
-        // Admin top bar.
-        if (!data?.allowed || page === "admin") return;
-
-        const upcomingPage = PAGES.find((item) => item.id === "upcoming");
-        if (!upcomingPage) return;
-
-        header.querySelector(".nav")?.insertAdjacentHTML(
-          "beforeend",
-          navLink(upcomingPage, page, base, "nav__link")
-        );
-        tabbar.insertAdjacentHTML(
-          "beforeend",
-          navLink(upcomingPage, page, base, "tabbar__link", true)
-        );
-      }).catch(() => {
-        // Keep private navigation hidden for unauthorized accounts.
-      });
+      // Upcoming Features is intentionally not a separate navigation item.
+      // Authorized administrators open the Feature Lab directly from the
+      // Admin Panel, keeping the main navigation compact and consistent.
     }
 
     if (user) {

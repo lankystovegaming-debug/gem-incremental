@@ -22,7 +22,34 @@
         <h1>Admin Panel</h1>
         <p class="page-head__sub" id="adminStatus">Verifying administrator access…</p>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--primary" id="featureLabButton" type="button" disabled>✦ Feature Lab</button><button class="btn" id="analyticsButton" type="button" disabled>Analytics</button><button class="btn" id="auditButton" type="button" disabled>Audit log</button></div>
+      <div class="admin-header-actions">
+        <button
+          class="btn btn--primary"
+          id="featureLabButton"
+          type="button"
+          disabled
+        >
+          ✦ Feature Lab
+        </button>
+
+        <button
+          class="btn"
+          id="analyticsButton"
+          type="button"
+          disabled
+        >
+          Analytics
+        </button>
+
+        <button
+          class="btn"
+          id="auditButton"
+          type="button"
+          disabled
+        >
+          Audit log
+        </button>
+      </div>
     </div>
 
     <section class="card admin-search">
@@ -343,7 +370,24 @@
       </div>
     </section>
 
-    <section class="upcoming-card site-controls"><div class="panel-heading"><div><div class="eyebrow">SITE VISIBILITY</div><h2>Feature switches</h2><p>These switches control pages, top-bar buttons, and the public name/symbol. New unreleased systems start OFF.</p></div><button id="refreshSections" class="btn" type="button">Refresh</button></div><div id="sectionControls" class="feature-grid"></div></section>
+    <section class="upcoming-card site-controls">
+      <div class="panel-heading">
+        <div>
+          <div class="eyebrow">SITE VISIBILITY</div>
+          <h2>Feature switches</h2>
+          <p>
+            These switches control pages, top-bar buttons, and the public
+            name/symbol. New unreleased systems start OFF.
+          </p>
+        </div>
+
+        <button id="refreshSections" class="btn" type="button">
+          Refresh
+        </button>
+      </div>
+
+      <div id="sectionControls" class="feature-grid"></div>
+    </section>
 
     <section id="editor" class="upcoming-card editor" hidden>
       <div class="editor-head">

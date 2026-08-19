@@ -334,3 +334,27 @@
     flex-direction: column;
   }
 }
+
+
+/* ---------------------------------------------------------
+   ADMIN HEADER
+   --------------------------------------------------------- */
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .admin-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .admin-header-actions .btn {
+    flex: 1 1 140px;
+  }
+}
