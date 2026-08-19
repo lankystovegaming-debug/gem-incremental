@@ -731,10 +731,166 @@ export default {
             const { error: forgeToggleError } = await ctx.supabaseAdmin
               .from("forge_config")
               .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
-            if (forgeToggleError) console.error("Forge config sync failed:", forgeToggleError.message);
+            if (forgeToggleError) console.error("Workbench config sync failed:", forgeToggleError.message);
+          }
+          if (id === "daily-spin") {
+            const { error: spinToggleError } = await ctx.supabaseAdmin
+              .from("daily_spin_config")
+              .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
+            if (spinToggleError) console.error("Daily Spin config sync failed:", spinToggleError.message);
           }
           await auditPrivateAction(ctx, userId, "site_section_toggled", { id, enabled });
           return json({ section: data });
+        }
+
+        if (action === "section-save") {
+          const id = String(body.id ?? "");
+          const label = String(body.label ?? "Feature").trim().slice(0, 80) || "Feature";
+          const shortLabel = String(body.short_label ?? label).trim().slice(0, 24) || label;
+          const icon = String(body.icon ?? "◆").slice(0, 8) || "◆";
+          const { data, error } = await ctx.supabaseAdmin
+            .from("game_section_settings")
+            .update({
+              label,
+              short_label: shortLabel,
+              icon,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", id)
+            .select("*")
+            .single();
+          if (error) return json({ error: "section_save_failed", message: error.message }, 500);
+
+          if (id === "forge") {
+            const { error: forgeNameError } = await ctx.supabaseAdmin
+              .from("forge_config")
+              .upsert({
+                id: true,
+                display_name: label,
+                beta_label: label,
+                icon,
+                updated_at: new Date().toISOString()
+              });
+            if (forgeNameError) return json({ error: "workbench_name_sync_failed", message: forgeNameError.message }, 500);
+          }
+
+          await auditPrivateAction(ctx, userId, "site_section_customized", { id, label, short_label: shortLabel, icon });
+          return json({ section: data });
+        }
+
+        if (action === "daily-spin-config") {
+          if (body.save) {
+            const c = body.config ?? {};
+            const rewards = Array.isArray(c.rewards) ? c.rewards : [];
+            const normalizedRewards = rewards.map((r:any, index:number) => ({
+              id: String(r.id ?? `reward-${index + 1}`).slice(0, 80),
+              label: String(r.label ?? `Reward ${index + 1}`).slice(0, 120),
+              chance: Math.max(0, Number(r.chance ?? 0)),
+              reward: r.reward && typeof r.reward === "object" ? r.reward : { type: "custom", label: "Custom reward" }
+            }));
+            if (!normalizedRewards.some((r:any) => r.chance > 0)) {
+              return json({ error: "daily_spin_no_positive_chances", message: "At least one reward needs a chance above 0." }, 400);
+            }
+            const { data, error } = await ctx.supabaseAdmin
+              .from("daily_spin_config")
+              .upsert({
+                id: true,
+                enabled: c.enabled === true,
+                title: String(c.title ?? "Daily Spin").slice(0, 80),
+                subtitle: String(c.subtitle ?? "One free spin every day.").slice(0, 180),
+                icon: String(c.icon ?? "◉").slice(0, 8),
+                rewards: normalizedRewards,
+                updated_at: new Date().toISOString()
+              })
+              .select("*")
+              .single();
+            if (error) return json({ error: "daily_spin_save_failed", message: error.message }, 500);
+            await auditPrivateAction(ctx, userId, "daily_spin_config_saved", { enabled: data.enabled, rewardCount: normalizedRewards.length });
+            return json({ dailySpin: data });
+          }
+          const { data, error } = await ctx.supabaseAdmin.from("daily_spin_config").select("*").eq("id", true).single();
+          if (error) return json({ error: "daily_spin_load_failed", message: error.message }, 500);
+          return json({ dailySpin: data });
+        }
+
+        if (action === "rarity-list") {
+          const { data, error } = await ctx.supabaseAdmin.from("gem_rarity_definitions").select("*").order("sort_order").order("min_rarity");
+          if (error) return json({ error: "rarity_list_failed", message: error.message }, 500);
+          return json({ rarities: data ?? [] });
+        }
+
+        if (action === "rarity-save") {
+          const r = body.rarity ?? {};
+          const row = {
+            name: String(r.name ?? "New Rarity").trim().slice(0, 60),
+            min_rarity: Math.max(1, Number(r.min_rarity ?? 1)),
+            max_rarity: r.max_rarity == null || r.max_rarity === "" ? null : Math.max(1, Number(r.max_rarity)),
+            color: String(r.color ?? "#9aa4b2").slice(0, 20),
+            icon: String(r.icon ?? "◆").slice(0, 8),
+            sort_order: Number(r.sort_order ?? 0),
+            enabled: r.enabled !== false,
+            metadata: r.metadata && typeof r.metadata === "object" ? r.metadata : {},
+            updated_at: new Date().toISOString()
+          };
+          if (!row.name) return json({ error: "invalid_rarity_name" }, 400);
+          const q = r.id
+            ? ctx.supabaseAdmin.from("gem_rarity_definitions").update(row).eq("id", r.id).select("*").single()
+            : ctx.supabaseAdmin.from("gem_rarity_definitions").insert(row).select("*").single();
+          const { data, error } = await q;
+          if (error) return json({ error: "rarity_save_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, r.id ? "gem_rarity_updated" : "gem_rarity_created", { id: data.id, name: data.name });
+          return json({ rarity: data });
+        }
+
+        if (action === "rarity-delete") {
+          const { error } = await ctx.supabaseAdmin.from("gem_rarity_definitions").delete().eq("id", String(body.id));
+          if (error) return json({ error: "rarity_delete_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "gem_rarity_deleted", { id: body.id });
+          return json({ ok: true });
+        }
+
+        if (action === "pvp-list") {
+          const { data, error } = await ctx.supabaseAdmin.from("pvp_weapon_definitions").select("*").order("sort_order");
+          if (error) return json({ error: "pvp_weapon_list_failed", message: error.message }, 500);
+          return json({ weapons: data ?? [] });
+        }
+
+        if (action === "pvp-save") {
+          const w = body.weapon ?? {};
+          const attacks = Array.isArray(w.attacks) ? w.attacks : [];
+          if (attacks.length < 3) return json({ error: "pvp_weapon_requires_three_attacks", message: "Every PvP weapon must have at least 3 attacks." }, 400);
+          const normalizedAttacks = attacks.map((a:any, i:number) => ({
+            id: String(a.id ?? `attack-${i+1}`).slice(0, 60),
+            name: String(a.name ?? `Attack ${i+1}`).slice(0, 80),
+            damageMultiplier: Math.max(0, Number(a.damageMultiplier ?? 1)),
+            cooldown: Math.max(0, Number(a.cooldown ?? 0)),
+            description: String(a.description ?? "").slice(0, 240)
+          }));
+          const row = {
+            name: String(w.name ?? "PvP Weapon").slice(0, 100),
+            description: String(w.description ?? "").slice(0, 500),
+            enabled: w.enabled !== false,
+            rarity: String(w.rarity ?? "Common").slice(0, 40),
+            base_damage: Math.max(1, Number(w.base_damage ?? 10)),
+            attacks: normalizedAttacks,
+            metadata: w.metadata && typeof w.metadata === "object" ? w.metadata : {},
+            sort_order: Number(w.sort_order ?? 0),
+            updated_at: new Date().toISOString()
+          };
+          const q = w.id
+            ? ctx.supabaseAdmin.from("pvp_weapon_definitions").update(row).eq("id", w.id).select("*").single()
+            : ctx.supabaseAdmin.from("pvp_weapon_definitions").insert(row).select("*").single();
+          const { data, error } = await q;
+          if (error) return json({ error: "pvp_weapon_save_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "pvp_weapon_saved", { id: data.id, name: data.name, attackCount: normalizedAttacks.length });
+          return json({ weapon: data });
+        }
+
+        if (action === "pvp-delete") {
+          const { error } = await ctx.supabaseAdmin.from("pvp_weapon_definitions").delete().eq("id", String(body.id));
+          if (error) return json({ error: "pvp_weapon_delete_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "pvp_weapon_deleted", { id: body.id });
+          return json({ ok: true });
         }
 
 
@@ -859,7 +1015,9 @@ export default {
           if (body.save) {
             const c=body.config??{};
             const row={
-              enabled:c.enabled===true, beta_label:String(c.beta_label??"The Forge [BETA]").slice(0,80),
+              enabled:c.enabled===true, beta_label:String(c.beta_label??c.display_name??"Workbench [BETA]").slice(0,80),
+              display_name:String(c.display_name??c.beta_label??"Workbench [BETA]").slice(0,80),
+              icon:String(c.icon??"⚒").slice(0,8),
               min_materials:Math.max(1,Number(c.min_materials??3)), max_materials:Math.max(1,Number(c.max_materials??50)),
               stage_time_seconds:Math.max(2,Number(c.stage_time_seconds??8)),
               quality_broken:Number(c.quality_broken??.65),quality_poor:Number(c.quality_poor??.8),

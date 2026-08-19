@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PvP · Gem Incremental</title><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./pvp.css"></head>
+<body><main class="app-main pvp-page">
+<section class="pvp-hero"><div class="eyebrow">PLAYER VS PLAYER</div><h1>PvP Arena</h1><p>Challenge another player and fight turn-by-turn with weapons that each have at least three attacks.</p></section>
+<section id="setup" class="pvp-card"><div class="form-grid"><label>Opponent player ID<input id="opponent" placeholder="UUID"></label><label>Weapon<select id="weapon"></select></label></div><button id="start" class="btn btn--primary">Start Duel</button><p id="setupStatus" class="status"></p></section>
+<section id="battle" class="pvp-card" hidden><div class="battle-head"><div><span class="eyebrow">DUEL</span><h2 id="turnLabel">Your turn</h2></div><button id="refresh" class="btn">Refresh</button></div><div class="healths"><div><span>You</span><div class="bar"><i id="myHp"></i></div><b id="myHpText">100</b></div><div><span>Opponent</span><div class="bar"><i id="enemyHp"></i></div><b id="enemyHpText">100</b></div></div><div id="attacks" class="attack-grid"></div><div id="battleStatus" class="status"></div><div id="log" class="battle-log"></div></section>
+</main><script type="module" src="./pvp.js"></script></body></html>

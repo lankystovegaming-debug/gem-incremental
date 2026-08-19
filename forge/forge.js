@@ -9,7 +9,9 @@ async function api(action,extra={}){const {data,error}=await supabase.functions.
 async function load(){
  try{
   const c=await api("config");config=c.config;
-  const {data,error}=await supabase.from("inventory_gems").select("id,gem_name,rarity,value").order("rarity",{ascending:false}).limit(100);if(error)throw error;
+  document.title=`${config.display_name||config.beta_label||"Workbench [BETA]"} · Gem Incremental`;
+  const heroTitle=document.getElementById("workbenchTitle"); if(heroTitle) heroTitle.textContent=config.display_name||config.beta_label||"Workbench [BETA]";
+  const {data,error}=await supabase.from("inventory_gems").select("id,gem_name,rarity,value").order("rarity",{ascending:true}).limit(100);if(error)throw error;
   $("materials").innerHTML=(data||[]).map(g=>`<button type="button" class="material" data-gem="${g.id}"><b>${esc(g.gem_name)}</b><small>1 in ${Number(g.rarity).toLocaleString()} · $${Number(g.value||0).toFixed(2)}</small></button>`).join("")||"<p class='muted'>No gems available.</p>";
   document.querySelectorAll(".material").forEach(b=>b.onclick=()=>{b.classList.toggle("selected");selected=b.classList.contains("selected")?[...selected,b.dataset.gem]:selected.filter(x=>x!==b.dataset.gem);});
   const h=await api("history");$("history").innerHTML=(h.items||[]).map(x=>`<div class="result-stat"><b>${esc(x.rarity)} ${esc(x.item_name)}</b> · ${esc(x.item_type)} · ${esc(x.quality)}x · ${x.ore_count} gems</div>`).join("")||"<p class='muted'>No forged items yet.</p>";

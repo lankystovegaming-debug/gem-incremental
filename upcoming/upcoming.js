@@ -11,6 +11,11 @@ let editingGem = null;
 let definitions = [];
 let gems = [];
 let questFilter = "all";
+let rarities = [];
+let dailySpin = null;
+let pvpWeapons = [];
+let editingRarity = null;
+let editingPvpWeapon = null;
 
 const esc = (v) => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const dateText = (v) => v ? new Date(v).toLocaleString() : "Permanent";
@@ -86,8 +91,59 @@ function renderFeatures() {
   renderPrerequisites();
 }
 
-async function renderSectionControls(){try{const r=await call("section-list");const sections=r.sections||[];const labels={achievements:["🏆 Achievements","Achievement page + top bar"],quests:["⚔ Quests","Quest page + top bar"],guilds:["🛡 Guilds","Guild page + top bar"],islands:["🗺 Islands","Island travel + boosts + top bar"],forge:["⚒ The Forge [BETA]","Three-stage forging + top bar"],dungeons:["⚔ Dungeons","Combat dungeons + top bar"]};$("sectionControls").innerHTML=sections.filter(s=>labels[s.id]).map(s=>{const l=labels[s.id];return `<article class="feature-card ${s.enabled?"":"is-disabled"}"><div class="feature-card__top"><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(l[0])}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div><p>${esc(l[1])}</p><div class="card-actions"><button class="btn btn--primary" data-section-toggle="${esc(s.id)}" data-enabled="${s.enabled}">${s.enabled?"Disable":"Enable"}</button></div></article>`}).join("");document.querySelectorAll("[data-section-toggle]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await call("section-toggle",{id:b.dataset.sectionToggle,enabled:b.dataset.enabled!=="true"});await renderSectionControls();status("Site feature setting updated. Refresh other pages to update navigation.")}catch(e){status(e.message,true);b.disabled=false}})}catch(e){status(e.message,true)}}
-
+async function renderSectionControls(){
+  try{
+    const r=await call("section-list");
+    const sections=r.sections||[];
+    const fallbackLabels={
+      achievements:["🏆 Achievements","Achievement page + top bar"],
+      quests:["⚔ Quests","Quest page + top bar"],
+      guilds:["🛡 Guilds","Guild page + top bar"],
+      islands:["🗺 Islands","Island travel + boosts + top bar"],
+      forge:["⚒ Workbench [BETA]","Three-stage forging + top bar"],
+      dungeons:["⚔ Dungeons","Combat dungeons + top bar"],
+      "daily-spin":["◉ Daily Spin","Daily reward wheel + top bar"],
+      pvp:["⚔ PvP","Player-versus-player combat + top bar"]
+    };
+    $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
+      const fallback=fallbackLabels[s.id];
+      const label=s.label||fallback[0], icon=s.icon||fallback[0].slice(0,2);
+      return `<article class="feature-card ${s.enabled?"":"is-disabled"}">
+        <div class="feature-card__top"><span class="feature-icon">${esc(icon)}</span><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(label)}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div>
+        <p>${esc(s.description||fallback[1])}</p>
+        <div class="form-grid compact-section-editor">
+          <label>Name<input data-section-label="${esc(s.id)}" value="${esc(label)}"></label>
+          <label>Symbol<input maxlength="8" data-section-icon="${esc(s.id)}" value="${esc(icon)}"></label>
+          <label>Short label<input maxlength="24" data-section-short="${esc(s.id)}" value="${esc(s.short_label||label)}"></label>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn--sm" data-section-save="${esc(s.id)}">Save name</button>
+          <button class="btn btn--sm btn--primary" data-section-toggle="${esc(s.id)}" data-enabled="${s.enabled}">${s.enabled?"Disable":"Enable"}</button>
+        </div>
+      </article>`;
+    }).join("");
+    document.querySelectorAll("[data-section-toggle]").forEach(b=>b.onclick=async()=>{
+      b.disabled=true;
+      try{await call("section-toggle",{id:b.dataset.sectionToggle,enabled:b.dataset.enabled!=="true"});await renderSectionControls();status("Feature visibility updated. Refresh another page to update its navigation.");}
+      catch(e){status(e.message,true);b.disabled=false;}
+    });
+    document.querySelectorAll("[data-section-save]").forEach(b=>b.onclick=async()=>{
+      b.disabled=true;
+      const id=b.dataset.sectionSave;
+      try{
+        await call("section-save",{
+          id,
+          label:document.querySelector(`[data-section-label="${CSS.escape(id)}"]`).value.trim(),
+          icon:document.querySelector(`[data-section-icon="${CSS.escape(id)}"]`).value.trim(),
+          short_label:document.querySelector(`[data-section-short="${CSS.escape(id)}"]`).value.trim()
+        });
+        await renderSectionControls();
+        if(id==="forge") await renderWorldLab();
+        status(`${id==="forge"?"Workbench":"Site feature"} name and symbol saved.`);
+      }catch(e){status(e.message,true);b.disabled=false;}
+    });
+  }catch(e){status(e.message,true);}
+}
 function empty(text) { return `<div class="empty-lab">${esc(text)}</div>`; }
 
 function wireFeatureCards() {
@@ -97,9 +153,12 @@ function wireFeatureCards() {
 }
 
 function renderGems() {
+  gems.sort((a,b)=>Number(a.rarity)-Number(b.rarity)||String(a.name).localeCompare(String(b.name)));
   $("gemCount").textContent = gems.length;
-  $("gemCards").innerHTML = gems.map(g => `<article class="gem-admin-card ${g.enabled ? "" : "is-disabled"}">
-    <div class="gem-admin-head"><div><div class="feature-meta">1 in ${Number(g.rarity).toLocaleString()}</div><h3>${esc(g.name)}</h3></div><span class="state-pill ${g.enabled ? "on":"off"}">${g.enabled ? "ON":"OFF"}</span></div>
+  $("gemCards").innerHTML = gems.map(g => {
+    const tier = rarities.find(r => r.enabled && Number(g.rarity) >= Number(r.min_rarity) && (r.max_rarity == null || Number(g.rarity) <= Number(r.max_rarity)));
+    return `<article class="gem-admin-card ${g.enabled ? "" : "is-disabled"}">
+    <div class="gem-admin-head"><div><div class="feature-meta">${tier ? `${esc(tier.icon)} ${esc(tier.name)} · ` : ""}1 in ${Number(g.rarity).toLocaleString()}</div><h3>${esc(g.name)}</h3></div><span class="state-pill ${g.enabled ? "on":"off"}">${g.enabled ? "ON":"OFF"}</span></div>
     <div class="gem-stats"><span>Weight <b>${Number(g.base_weight).toLocaleString()}</b></span><span>Value/g <b>${Number(g.value_per_gram).toLocaleString()}</b></span></div>
     <div class="date-line">${dateText(g.starts_at)} → ${g.ends_at ? dateText(g.ends_at) : "No end"}</div>
     <div class="card-actions">
@@ -107,7 +166,8 @@ function renderGems() {
       <button class="btn btn--sm" data-gem-toggle="${esc(g.id)}" data-enabled="${g.enabled}">${g.enabled ? "Disable":"Enable"}</button>
       <button class="btn btn--sm btn--danger" data-gem-delete="${esc(g.id)}">Delete</button>
     </div>
-  </article>`).join("") || empty("No gems in the live catalogue.");
+  </article>`;
+  }).join("") || empty("No gems in the live catalogue.");
   document.querySelectorAll("[data-gem-edit]").forEach(b => b.onclick = () => openGemEditor(gems.find(g => g.id === b.dataset.gemEdit)));
   document.querySelectorAll("[data-gem-toggle]").forEach(b => b.onclick = async () => {
     b.disabled = true;
@@ -320,7 +380,11 @@ async function deleteFeature(id){const d=definitions.find(x=>x.id===id);if(!d||!
 async function loadAll(){
   try{
     const [f,g]=await Promise.all([call("list"),call("gem-list")]);
-    definitions=f.definitions||[];gems=g.gems||[];renderFeatures();renderGems();await renderWorldLab();await renderSectionControls();
+    definitions=f.definitions||[];gems=g.gems||[];
+    await Promise.all([renderRarities(),renderDailySpin(),renderPvpWeapons()]);
+    renderFeatures();renderGems();
+    await renderWorldLab();
+    await renderSectionControls();
     status(`${definitions.length} features · ${gems.length} gems loaded.`);
   }catch(e){status(e.message,true);}
 }
@@ -378,16 +442,18 @@ $("newIsland").onclick=()=>openIsland();$("islandCancel").onclick=()=>{$("island
 
 function renderForgeConfig(c){
   forgeConfig=c;
+  const workbenchName=c?.display_name||c?.beta_label||"Workbench [BETA]";
+  $("forgePanelTitle").textContent=workbenchName;
   $("forgeConfigPanel").innerHTML=`<div class="form-grid">
   <label class="toggle-field"><input id="forgeEnabled" type="checkbox" ${c?.enabled?"checked":""}><span>Forge enabled</span><small>Also enable the Forge section switch below.</small></label>
-  <label>Beta label<input id="forgeLabel" value="${esc(c?.beta_label||"The Forge [BETA]")}"></label>
+  <label>Beta label<input id="forgeLabel" value="${esc(c?.beta_label||"Workbench [BETA]")}"></label>
   <label>Minimum gems<input id="forgeMin" type="number" value="${c?.min_materials??3}"></label>
   <label>Maximum gems<input id="forgeMax" type="number" value="${c?.max_materials??50}"></label>
   <label>Seconds per stage<input id="forgeTime" type="number" step=".5" value="${c?.stage_time_seconds??8}"></label>
   <label>Minor trait threshold<input id="forgeMinor" type="number" step=".01" value="${c?.trait_threshold_minor??.1}"></label>
   <label>Full trait threshold<input id="forgeFull" type="number" step=".01" value="${c?.trait_threshold_full??.3}"></label>
   </div><div class="editor-section"><h3>Quality multipliers</h3><div class="form-grid">
-  <label>Broken<input id="qBroken" type="number" step=".01" value="${c?.quality_broken??.65}"></label><label>Poor<input id="qPoor" type="number" step=".01" value="${c?.quality_poor??.8}"></label><label>Average<input id="qAverage" type="number" step=".01" value="${c?.quality_average??1}"></label><label>Good<input id="qGood" type="number" step=".01" value="${c?.quality_good??1.1}"></label><label>Excellent<input id="qExcellent" type="number" step=".01" value="${c?.quality_excellent??1.2}"></label><label>Masterwork<input id="qMasterwork" type="number" step=".01" value="${c?.quality_masterwork??1.3}"></label></div></div><button id="forgeSave" class="btn btn--primary">Save Forge Settings</button>`;
+  <label>Broken<input id="qBroken" type="number" step=".01" value="${c?.quality_broken??.65}"></label><label>Poor<input id="qPoor" type="number" step=".01" value="${c?.quality_poor??.8}"></label><label>Average<input id="qAverage" type="number" step=".01" value="${c?.quality_average??1}"></label><label>Good<input id="qGood" type="number" step=".01" value="${c?.quality_good??1.1}"></label><label>Excellent<input id="qExcellent" type="number" step=".01" value="${c?.quality_excellent??1.2}"></label><label>Masterwork<input id="qMasterwork" type="number" step=".01" value="${c?.quality_masterwork??1.3}"></label></div></div><button id="forgeSave" class="btn btn--primary">Save Workbench Settings</button>`;
   $("forgeSave").onclick=saveForge;
 }
 async function saveForge(){try{const c={...forgeConfig,enabled:$("forgeEnabled").checked,beta_label:$("forgeLabel").value,min_materials:Number($("forgeMin").value),max_materials:Number($("forgeMax").value),stage_time_seconds:Number($("forgeTime").value),trait_threshold_minor:Number($("forgeMinor").value),trait_threshold_full:Number($("forgeFull").value),quality_broken:Number($("qBroken").value),quality_poor:Number($("qPoor").value),quality_average:Number($("qAverage").value),quality_good:Number($("qGood").value),quality_excellent:Number($("qExcellent").value),quality_masterwork:Number($("qMasterwork").value)};await call("forge-config",{save:true,config:c});renderWorldLab();status("Forge settings saved.")}catch(e){status(e.message,true)}}
@@ -400,6 +466,78 @@ async function openDungeon(d){
   window.scrollTo({top:$("dungeonEditor").offsetTop-80,behavior:"smooth"});
 }
 $("newDungeon").onclick=()=>openDungeon();$("addEnemy").onclick=()=>enemyRow();$("dungeonCancel").onclick=()=>{$("dungeonEditor").hidden=true;editingDungeon=null};
-$("dungeonSave").onclick=async()=>{try{const d={id:editingDungeon||undefined,name:$("dungeonName").value.trim(),description:$("dungeonDescription").value.trim(),max_enemies:Number($("dungeonMaxEnemies").value)||5,sort_order:Number($("dungeonSort").value)||0,enabled:$("dungeonEnabled").checked,entry_requirements:{minRolls:Number($("dungeonReqRolls").value)||0,minAllEquipmentTier:Number($("dungeonReqEquip").value)||0,minIslandNumber:Number($("dungeonReqIsland").value)||1},rewards:{money:Number($("dungeonRewardMoney").value)||0},loot:$("dungeonLoot").value.split("\n").map(x=>x.trim()).filter(Boolean)};const saved=await call("dungeon-save",{dungeon:d});for(const row of document.querySelectorAll(".enemy-builder")){const e={id:row.dataset.saved||undefined,dungeon_id:saved.dungeon.id,name:row.querySelector(".enemy-name").value,max_health:Number(row.querySelector(".enemy-hp").value),attack:Number(row.querySelector(".enemy-atk").value),defense:Number(row.querySelector(".enemy-defense").value),speed:Number(row.querySelector(".enemy-speed").value),crit_chance:Number(row.querySelector(".enemy-crit").value),sort_order:Number(row.querySelector(".enemy-sort").value),stats:{note:row.querySelector(".enemy-note").value},loot:row.querySelector(".enemy-loot").value.split("\n").map(x=>x.trim()).filter(Boolean),enabled:true};await call("enemy-save",{enemy:e})}$("dungeonEditor").hidden=true;renderWorldLab();status("Dungeon saved.")}catch(e){status(e.message,true)}};
+$("dungeonSave").onclick=async()=>{try{const d={id:editingDungeon||undefined,name:$("dungeonName").value.trim(),description:$("dungeonDescription").value.trim(),max_enemies:Number($("dungeonMaxEnemies").value)||5,sort_order:Number($("dungeonSort").value)||0,enabled:$("dungeonEnabled").checked,entry_requirements:{minRolls:Number($("dungeonReqRolls").value)||0,minAllEquipmentTier:Number($("dungeonReqEquip").value)||0,minIslandNumber:Number($("dungeonReqIsland").value)||1},rewards:{money:Number($("dungeonRewardMoney").value)||0},loot:$("dungeonLoot").value.split("\n").map(x=>x.trim()).filter(Boolean)};const saved=await call("dungeon-save",{dungeon:d});for(const row of document.querySelectorAll(".enemy-builder")){const e={id:row.dataset.saved||undefined,dungeon_id:saved.dungeon.id,name:row.querySelector(".enemy-name").value,max_health:Number(row.querySelector(".enemy-hp").value),attack:Number(row.querySelector(".enemy-atk").value),defense:Number(row.querySelector(".enemy-defense").value),speed:Number(row.querySelector(".enemy-speed").value),crit_chance:Number(row.querySelector(".enemy-crit").value),sort_order:Number(row.querySelector(".enemy-sort").value),stats:{note:row.querySelector(".enemy-note").value},loot:[],enabled:true};await call("enemy-save",{enemy:e})}$("dungeonEditor").hidden=true;renderWorldLab();status("Dungeon saved.")}catch(e){status(e.message,true)}};
 
+
+function renderDailySpin(){
+  return call("daily-spin-config").then(d=>{
+    dailySpin=d.dailySpin;
+    $("spinState").textContent=d.dailySpin?.enabled?"ON":"OFF";
+    const rewards=Array.isArray(d.dailySpin?.rewards)?d.dailySpin.rewards:[];
+    $("dailySpinPanel").innerHTML=`<div class="form-grid">
+      <label class="toggle-field"><input id="spinEnabled" type="checkbox" ${d.dailySpin?.enabled?"checked":""}><span>Daily Spin enabled</span><small>The page and top-bar link stay hidden while OFF.</small></label>
+      <label>Title<input id="spinTitle" value="${esc(d.dailySpin?.title||"Daily Spin")}"></label>
+      <label>Symbol<input id="spinIcon" maxlength="8" value="${esc(d.dailySpin?.icon||"◉")}"></label>
+      <label class="wide">Subtitle<input id="spinSubtitle" value="${esc(d.dailySpin?.subtitle||"One free spin every day.")}"></label>
+    </div>
+    <div class="editor-section"><div class="builder-head"><div><h3>Prize wheel</h3><p>Chance values are weights. The server selects the prize, then the client animates to that exact segment.</p></div><button id="addSpinReward" class="btn btn--sm">＋ Add reward</button></div><div id="spinRewardRows" class="builder-list"></div></div>
+    <button id="spinSave" class="btn btn--primary">Save Daily Spin</button>`;
+    rewards.forEach(spinRewardRow);
+    $("addSpinReward").onclick=()=>spinRewardRow({chance:1,reward:{type:"coins",amount:1},label:"New reward"});
+    $("spinSave").onclick=saveDailySpin;
+  }).catch(e=>status(e.message,true));
+}
+function spinRewardRow(existing={}){
+  const row=document.createElement("div");row.className="builder-row spin-reward-row";
+  row.innerHTML=`<div class="builder-row-top"><input class="spin-label" placeholder="Reward name" value="${esc(existing.label||"Reward")}"><input class="spin-chance" type="number" min="0" step=".01" value="${Number(existing.chance??1)}"><select class="spin-type"><option value="money">Money</option><option value="coins">Coins</option><option value="potion">Potion</option><option value="gem">Gem</option><option value="capacity">Inventory capacity</option><option value="boost">Temporary boost</option><option value="custom">Custom</option></select><button class="icon-button remove-spin">×</button></div><div class="condition-grid spin-extra"></div>`;
+  const type=row.querySelector(".spin-type"),extra=row.querySelector(".spin-extra");
+  const reward=existing.reward||{};
+  type.value=reward.type||"coins";
+  const redraw=()=>{
+    if(type.value==="potion") extra.innerHTML=`<label>Potion<select class="spin-potion">${potionOptions(reward.consumableId)}</select></label><label>Amount<input class="spin-amount" type="number" min="1" value="${Number(reward.amount||1)}"></label>`;
+    else if(type.value==="gem") extra.innerHTML=`<label>Gem<select class="spin-gem"><option value="">Select gem</option>${gems.map(g=>`<option value="${esc(g.name)}" ${reward.gemName===g.name?"selected":""}>${esc(g.name)}</option>`).join("")}</select></label>`;
+    else if(type.value==="boost") extra.innerHTML=`<label>Boost family<select class="spin-family"><option value="luck">Luck</option><option value="rollSpeed">Roll Speed</option><option value="weightLuck">Weight Luck</option><option value="weightMultiplier">Weight Multiplier</option></select></label><label>Effect<input class="spin-effect" type="number" step=".01" value="${Number(reward.effectValue||1)}"></label><label>Seconds<input class="spin-seconds" type="number" value="${Number(reward.seconds||300)}"></label>`;
+    else if(type.value==="custom") extra.innerHTML=`<label class="wide">Custom reward payload<textarea class="spin-custom" rows="2" placeholder='{"type":"custom","label":"..."}'>${esc(JSON.stringify(reward))}</textarea></label>`;
+    else extra.innerHTML=`<label>Amount<input class="spin-amount" type="number" step="any" value="${Number(reward.amount||1)}"></label>`;
+  };
+  type.onchange=redraw;row.querySelector(".remove-spin").onclick=()=>row.remove();$("spinRewardRows").appendChild(row);redraw();
+}
+function collectSpinRewards(){return [...document.querySelectorAll(".spin-reward-row")].map((row,i)=>{
+  const type=row.querySelector(".spin-type").value,label=row.querySelector(".spin-label").value.trim()||`Reward ${i+1}`,chance=Number(row.querySelector(".spin-chance").value)||0;
+  let reward={type};
+  if(type==="potion")reward={type,consumableId:row.querySelector(".spin-potion")?.value,amount:Number(row.querySelector(".spin-amount")?.value||1)};
+  else if(type==="gem")reward={type,gemName:row.querySelector(".spin-gem")?.value};
+  else if(type==="boost")reward={type,family:row.querySelector(".spin-family")?.value,effectValue:Number(row.querySelector(".spin-effect")?.value||1),seconds:Number(row.querySelector(".spin-seconds")?.value||300)};
+  else if(type==="custom"){try{reward=JSON.parse(row.querySelector(".spin-custom")?.value||"{}");}catch{reward={type:"custom",label:"Invalid custom payload"};}}
+  else reward={type,amount:Number(row.querySelector(".spin-amount")?.value||1)};
+  return {id:`reward-${i+1}-${Date.now()}`,label,chance,reward};
+});}
+async function saveDailySpin(){try{await call("daily-spin-config",{save:true,config:{enabled:$("spinEnabled").checked,title:$("spinTitle").value.trim(),subtitle:$("spinSubtitle").value.trim(),icon:$("spinIcon").value.trim(),rewards:collectSpinRewards()}});await renderDailySpin();status("Daily Spin settings saved.");}catch(e){status(e.message,true);}}
+
+function renderRarities(){
+  return call("rarity-list").then(d=>{
+    rarities=d.rarities||[];
+    $("rarityCards").innerHTML=rarities.map(r=>`<article class="feature-card ${r.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon" style="color:${esc(r.color)}">${esc(r.icon)}</span><div class="feature-card__identity"><div class="feature-meta">1 in ${Number(r.min_rarity).toLocaleString()}${r.max_rarity?` → 1 in ${Number(r.max_rarity).toLocaleString()}`:"+"}</div><h3>${esc(r.name)}</h3></div><span class="state-pill ${r.enabled?"on":"off"}">${r.enabled?"ON":"OFF"}</span></div><div class="card-actions"><button class="btn btn--sm" data-rarity-edit="${r.id}">Edit</button><button class="btn btn--sm btn--danger" data-rarity-delete="${r.id}">Delete</button></div></article>`).join("")||empty("No rarity tiers.");
+    document.querySelectorAll("[data-rarity-edit]").forEach(b=>b.onclick=()=>openRarity(rarities.find(r=>r.id===b.dataset.rarityEdit)));
+    document.querySelectorAll("[data-rarity-delete]").forEach(b=>b.onclick=async()=>{if(confirm("Delete this rarity tier?")){await call("rarity-delete",{id:b.dataset.rarityDelete});renderRarities();}});
+  }).catch(e=>status(e.message,true));
+}
+function openRarity(r=null){editingRarity=r?.id||null;$("rarityEditor").hidden=false;$("gemEditor").hidden=true;$("rarityEditorTitle").textContent=r?"Edit Gem Rarity":"New Gem Rarity";$("rarityName").value=r?.name||"";$("rarityMin").value=r?.min_rarity??1;$("rarityMax").value=r?.max_rarity??"";$("rarityIcon").value=r?.icon||"◆";$("rarityColor").value=r?.color||"#9aa4b2";$("raritySort").value=r?.sort_order??0;$("rarityEnabled").checked=r?.enabled!==false;window.scrollTo({top:$("rarityEditor").offsetTop-80,behavior:"smooth"});}
+async function saveRarity(){try{await call("rarity-save",{rarity:{id:editingRarity||undefined,name:$("rarityName").value.trim(),min_rarity:Number($("rarityMin").value),max_rarity:$("rarityMax").value===""?null:Number($("rarityMax").value),icon:$("rarityIcon").value.trim(),color:$("rarityColor").value,sort_order:Number($("raritySort").value)||0,enabled:$("rarityEnabled").checked}});$("rarityEditor").hidden=true;editingRarity=null;renderRarities();status("Rarity saved.");}catch(e){status(e.message,true);}}
+
+function renderPvpWeapons(){
+  return call("pvp-list").then(d=>{
+    pvpWeapons=d.weapons||[];$("pvpCount").textContent=pvpWeapons.length;
+    $("pvpWeaponCards").innerHTML=pvpWeapons.map(w=>`<article class="feature-card ${w.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon">⚔</span><div class="feature-card__identity"><div class="feature-meta">${esc(w.rarity)} · ${w.attacks.length} attacks</div><h3>${esc(w.name)}</h3></div><span class="state-pill ${w.enabled?"on":"off"}">${w.enabled?"ON":"OFF"}</span></div><p>${esc(w.description)}</p><div class="card-actions"><button class="btn btn--sm" data-pvp-edit="${w.id}">Edit</button><button class="btn btn--sm" data-pvp-delete="${w.id}">Delete</button></div></article>`).join("")||empty("No PvP weapons configured.");
+    document.querySelectorAll("[data-pvp-edit]").forEach(b=>b.onclick=()=>openPvpWeapon(pvpWeapons.find(w=>w.id===b.dataset.pvpEdit)));
+    document.querySelectorAll("[data-pvp-delete]").forEach(b=>b.onclick=async()=>{if(confirm("Delete this PvP weapon?")){await call("pvp-delete",{id:b.dataset.pvpDelete});renderPvpWeapons();}});
+  }).catch(e=>status(e.message,true));
+}
+function pvpAttackRow(a={}){const row=document.createElement("div");row.className="builder-row pvp-attack-row";row.innerHTML=`<div class="builder-row-top"><input class="pvp-attack-name" placeholder="Attack name" value="${esc(a.name||"New Attack")}"><input class="pvp-attack-mult" type="number" step=".05" value="${Number(a.damageMultiplier||1)}"><input class="pvp-attack-cooldown" type="number" step=".1" value="${Number(a.cooldown||1)}"><button class="icon-button remove-pvp-attack">×</button></div><input class="pvp-attack-desc" placeholder="Description" value="${esc(a.description||"")}">`;row.querySelector(".remove-pvp-attack").onclick=()=>row.remove();$("pvpAttackRows").appendChild(row);}
+function openPvpWeapon(w=null){editingPvpWeapon=w?.id||null;$("pvpWeaponEditor").hidden=false;$("pvpEditorTitle").textContent=w?"Edit PvP weapon":"New PvP weapon";$("pvpName").value=w?.name||"";$("pvpRarity").value=w?.rarity||"Common";$("pvpDamage").value=w?.base_damage??10;$("pvpDescription").value=w?.description||"";$("pvpEnabled").checked=w?.enabled!==false;$("pvpAttackRows").innerHTML="";(w?.attacks?.length?w.attacks:[{name:"Slash",damageMultiplier:1,cooldown:.5},{name:"Heavy",damageMultiplier:1.7,cooldown:2},{name:"Lunge",damageMultiplier:1.25,cooldown:1.2}]).forEach(pvpAttackRow);window.scrollTo({top:$("pvpWeaponEditor").offsetTop-80,behavior:"smooth"});}
+async function savePvpWeapon(){const rows=[...document.querySelectorAll(".pvp-attack-row")];if(rows.length<3){status("Every PvP weapon needs at least 3 attacks.",true);return;}try{const attacks=rows.map((row,i)=>({id:`attack-${i+1}`,name:row.querySelector(".pvp-attack-name").value.trim()||`Attack ${i+1}`,damageMultiplier:Number(row.querySelector(".pvp-attack-mult").value)||1,cooldown:Number(row.querySelector(".pvp-attack-cooldown").value)||0,description:row.querySelector(".pvp-attack-desc").value.trim()}));await call("pvp-save",{weapon:{id:editingPvpWeapon||undefined,name:$("pvpName").value.trim(),rarity:$("pvpRarity").value.trim(),base_damage:Number($("pvpDamage").value)||10,description:$("pvpDescription").value.trim(),enabled:$("pvpEnabled").checked,attacks}});$("pvpWeaponEditor").hidden=true;editingPvpWeapon=null;renderPvpWeapons();status("PvP weapon saved.");}
+catch(e){status(e.message,true);}}
+
+$("newRarity").onclick=()=>openRarity();$("rarityCancel").onclick=$("rarityCancelBottom").onclick=()=>{$("rarityEditor").hidden=true;editingRarity=null};$("raritySave").onclick=saveRarity;
+$("newPvpWeapon").onclick=()=>openPvpWeapon();$("addPvpAttack").onclick=()=>pvpAttackRow();$("pvpCancel").onclick=()=>{$("pvpWeaponEditor").hidden=true;editingPvpWeapon=null};$("pvpSave").onclick=savePvpWeapon;
 ensurePlayerAuth().catch(()=>{});

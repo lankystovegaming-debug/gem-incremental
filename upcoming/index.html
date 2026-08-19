@@ -58,8 +58,10 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
       <button class="lab-tab" data-tab="quests" type="button">⚔ Quests <span id="questCount">0</span></button>
       <button class="lab-tab" data-tab="gems" type="button">💎 Gems <span id="gemCount">0</span></button>
       <button class="lab-tab" data-tab="worlds" type="button">🗺 Islands <span id="islandCount">0</span></button>
-      <button class="lab-tab" data-tab="forge" type="button">⚒ Forge <span id="forgeState">OFF</span></button>
+      <button class="lab-tab" data-tab="forge" type="button">⚒ Workbench <span id="forgeState">OFF</span></button>
       <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
+      <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
+      <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button>
     </div>
 
     <section class="tab-panel is-active" data-panel="achievements">
@@ -113,7 +115,7 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
     </section>
 
     <section class="tab-panel" data-panel="forge">
-      <div class="panel-heading"><div><h2>The Forge [BETA]</h2><p>Configure the three-stage precision minigame, ore-count classes, quality multipliers and trait thresholds.</p></div></div>
+      <div class="panel-heading"><div><h2 id="forgePanelTitle">Workbench [BETA]</h2><p>Configure the three-stage precision minigame, ore-count classes, quality multipliers and trait thresholds.</p></div></div>
       <div id="forgeConfigPanel" class="upcoming-card"></div>
     </section>
 
@@ -141,12 +143,35 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
       </section>
     </section>
 
+    <section class="tab-panel" data-panel="daily-spin">
+      <div class="panel-heading"><div><h2>Daily Spin</h2><p>Configure the actual prize wheel, chances and any supported reward type. Keep it OFF while testing.</p></div></div>
+      <div id="dailySpinPanel" class="upcoming-card"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="pvp">
+      <div class="panel-heading"><div><h2>PvP</h2><p>Build weapons with at least three distinct attacks. PvP stays disabled until you enable the site switch.</p></div><button id="newPvpWeapon" class="btn btn--primary">＋ New weapon</button></div>
+      <div id="pvpWeaponCards" class="feature-grid"></div>
+      <section id="pvpWeaponEditor" class="upcoming-card editor" hidden>
+        <h3 id="pvpEditorTitle">New PvP weapon</h3>
+        <div class="form-grid">
+          <label>Name<input id="pvpName"></label><label>Rarity<input id="pvpRarity" value="Common"></label><label>Base damage<input id="pvpDamage" type="number" value="10"></label><label class="toggle-field"><input id="pvpEnabled" type="checkbox" checked><span>Enabled</span></label>
+          <label class="wide">Description<textarea id="pvpDescription"></textarea></label>
+        </div>
+        <div class="editor-section"><div class="builder-head"><div><h3>Attacks</h3><p>Every PvP weapon must have at least 3 attacks.</p></div><button id="addPvpAttack" class="btn btn--sm">＋ Add attack</button></div><div id="pvpAttackRows" class="builder-list"></div></div>
+        <div class="editor-actions"><button id="pvpCancel" class="btn">Cancel</button><button id="pvpSave" class="btn btn--primary">Save weapon</button></div>
+      </section>
+    </section>
+
     <section class="tab-panel" data-panel="gems">
       <div class="panel-heading"><div><h2>Gem Catalogue</h2><p>This is the live roll catalogue. Disable, schedule or permanently delete gems.</p></div></div>
       <div id="gemCards" class="gem-grid"></div>
+      <div class="editor-section rarity-section">
+        <div class="builder-head"><div><h3>Gem rarity tiers</h3><p>Add your own rarity names, ranges, symbols and colors. The roll system still uses the numeric 1-in-N rarity; these tiers are presentation/configuration layers.</p></div><button id="newRarity" class="btn btn--sm btn--primary" type="button">＋ New rarity</button></div>
+        <div id="rarityCards" class="feature-grid"></div>
+      </div>
     </section>
 
-    <section class="upcoming-card site-controls"><div class="panel-heading"><div><div class="eyebrow">SITE VISIBILITY</div><h2>Feature switches</h2><p>These switches control whether the feature pages and their top-bar buttons are visible. All three start OFF.</p></div><button id="refreshSections" class="btn" type="button">Refresh</button></div><div id="sectionControls" class="feature-grid"></div></section>
+    <section class="upcoming-card site-controls"><div class="panel-heading"><div><div class="eyebrow">SITE VISIBILITY</div><h2>Feature switches</h2><p>These switches control pages, top-bar buttons, and the public name/symbol. New unreleased systems start OFF.</p></div><button id="refreshSections" class="btn" type="button">Refresh</button></div><div id="sectionControls" class="feature-grid"></div></section>
 
     <section id="editor" class="upcoming-card editor" hidden>
       <div class="editor-head">
@@ -196,6 +221,13 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
       <div class="editor-actions"><button id="cancelBottom" class="btn" type="button">Cancel</button><button id="save" class="btn btn--primary" type="button">Save feature</button></div>
     </section>
 
+    <section id="rarityEditor" class="upcoming-card editor" hidden>
+      <div class="editor-head"><div><div class="eyebrow">RARITY BUILDER</div><h2 id="rarityEditorTitle">New Gem Rarity</h2></div><button id="rarityCancel" class="icon-button" type="button">×</button></div>
+      <div class="form-grid">
+        <label>Name<input id="rarityName"></label><label>Minimum 1 in<input id="rarityMin" type="number" min="1" value="1"></label><label>Maximum 1 in<input id="rarityMax" type="number" min="1"></label><label>Symbol<input id="rarityIcon" maxlength="8" value="◆"></label><label>Color<input id="rarityColor" type="color" value="#9aa4b2"></label><label>Sort order<input id="raritySort" type="number" value="0"></label><label class="toggle-field"><input id="rarityEnabled" type="checkbox" checked><span>Enabled</span></label>
+      </div>
+      <div class="editor-actions"><button id="rarityCancelBottom" class="btn">Cancel</button><button id="raritySave" class="btn btn--primary">Save rarity</button></div>
+    </section>
     <section id="gemEditor" class="upcoming-card editor" hidden>
       <div class="editor-head"><div><div class="eyebrow">GEM BUILDER</div><h2 id="gemEditorTitle">New Gem</h2></div><button id="gemCancel" class="icon-button" type="button">×</button></div>
       <div class="form-grid">

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Spin · Gem Incremental</title>
+<link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./daily-spin.css">
+</head>
+<body>
+<main class="app-main daily-spin-page">
+  <section class="spin-hero">
+    <div class="eyebrow">DAILY REWARD</div>
+    <h1 id="title">Daily Spin</h1>
+    <p id="subtitle">One free spin every day.</p>
+  </section>
+  <section class="spin-card">
+    <div class="wheel-wrap">
+      <div class="wheel-pointer">▼</div>
+      <div id="wheel" class="wheel"><div class="wheel-center">SPIN</div></div>
+    </div>
+    <div id="prizes" class="prize-list"></div>
+    <button id="spinButton" class="btn btn--primary spin-button">Spin for today's reward</button>
+    <p id="status" class="status" aria-live="polite"></p>
+  </section>
+  <section id="result" class="result-card" hidden>
+    <div class="eyebrow">TODAY'S PRIZE</div>
+    <h2 id="resultLabel">—</h2>
+    <p id="resultDetails">—</p>
+  </section>
+</main>
+<script type="module" src="./daily-spin.js"></script>
+</body>
+</html>

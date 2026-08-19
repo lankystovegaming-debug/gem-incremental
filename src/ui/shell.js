@@ -54,8 +54,10 @@ const PAGES = [
   { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
   { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" },
   { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.gem, sectionId: "islands" },
-  { id: "forge", label: "The Forge [BETA]", short: "Forge", href: "forge/", icon: icons.anvil, sectionId: "forge" },
-  { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" }
+  { id: "forge", label: "Workbench [BETA]", short: "Workbench", href: "forge/", icon: icons.anvil, sectionId: "forge" },
+  { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" },
+  { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.sparkle, sectionId: "daily-spin" },
+  { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" }
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);
@@ -63,8 +65,11 @@ const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly
 async function loadEnabledSections() {
   try {
     const { data } = await supabase.functions.invoke("features", { body: { action: "sections" } });
-    return new Set((data?.sections ?? []).filter(s => s.enabled).map(s => s.id));
-  } catch { return new Set(); }
+    const sections = data?.sections ?? [];
+    return new Map(sections.map((section) => [section.id, section]));
+  } catch {
+    return new Map();
+  }
 }
 
 
@@ -161,19 +166,32 @@ export function mountShell({ page, base = "./" }) {
 
   // Site feature switches are controlled from Upcoming. Feature pages and
   // their top-bar links remain hidden until an authorized user enables them.
-  loadEnabledSections().then((enabledSections) => {
+  loadEnabledSections().then((sectionMap) => {
     const add = (item) => {
-      if (!enabledSections.has(item.sectionId)) return;
+      const section = sectionMap.get(item.sectionId);
+      if (!section?.enabled) return;
+      const configured = {
+        ...item,
+        label: section.label || item.label,
+        short: section.short_label || section.label || item.short,
+        icon: section.icon
+          ? `<span class="nav__custom-icon" aria-hidden="true">${escapeHtml(section.icon)}</span>`
+          : item.icon
+      };
       if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
-      header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(item, page, base, "nav__link"));
-      const link = header.querySelector(".nav__link:last-child"); if (link) link.dataset.sectionLink = item.id;
-      tabbar.insertAdjacentHTML("beforeend", navLink(item, page, base, "tabbar__link", true));
-      const tab = tabbar.querySelector(".tabbar__link:last-child"); if (tab) tab.dataset.sectionLink = item.id;
+      header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(configured, page, base, "nav__link"));
+      const link = header.querySelector(".nav__link:last-child");
+      if (link) link.dataset.sectionLink = item.id;
+      tabbar.insertAdjacentHTML("beforeend", navLink(configured, page, base, "tabbar__link", true));
+      const tab = tabbar.querySelector(".tabbar__link:last-child");
+      if (tab) tab.dataset.sectionLink = item.id;
     };
     PAGES.filter(x => x.sectionId).forEach(add);
     const mainSections = {"roll-stage":"section-roll-stage","summary":"section-summary","automation":"section-automation","session-history":"section-session-history"};
     for (const [settingId, elementId] of Object.entries(mainSections)) {
-      if (!enabledSections.has(settingId)) document.getElementById(elementId)?.setAttribute("hidden", "");
+      if (sectionMap.has(settingId) && sectionMap.get(settingId)?.enabled === false) {
+        document.getElementById(elementId)?.setAttribute("hidden", "");
+      }
     }
   });
 
@@ -935,6 +953,8 @@ function navLink(item, activePage, base, className, short = false) {
     item.id === activePage || (item.match?.includes(activePage) ?? false);
 
   const label = short ? item.short : item.label;
+  const safeLabel = escapeHtml(label);
+  const safeAria = escapeHtml(item.label);
 
   // The label is hidden on narrow screens, so the link carries
   // its own accessible name.
@@ -942,12 +962,12 @@ function navLink(item, activePage, base, className, short = false) {
     <a
       class="${className}"
       href="${base}${item.href}"
-      aria-label="${item.label}"
-      title="${item.label}"
+      aria-label="${safeAria}"
+      title="${safeAria}"
       ${active ? 'aria-current="page"' : ""}
     >
       ${item.icon}
-      <span>${label}</span>
+      <span>${safeLabel}</span>
     </a>
   `;
 }
