@@ -130,6 +130,8 @@
     var(--surface-solid);
 }
 
+.update-card--expeditions{background:radial-gradient(circle at 85% 0,rgba(91,70,160,.2),transparent 34%),var(--surface);border-color:color-mix(in srgb,var(--accent) 52%,var(--border))}.update-card--expeditions h2{letter-spacing:.03em}.update-card--expeditions .update-section:first-of-type{position:relative}.update-card--expeditions .update-section:first-of-type::after{content:"";position:absolute;right:1rem;bottom:0;width:90px;height:1px;background:linear-gradient(90deg,transparent,var(--accent))}
+
 .update-section strong {
   color: var(--text);
 }
