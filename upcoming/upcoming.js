@@ -86,6 +86,8 @@ function renderFeatures() {
   renderPrerequisites();
 }
 
+async function renderSectionControls(){try{const r=await call("section-list");const sections=r.sections||[];const labels={achievements:["🏆 Achievements","Achievement page + top bar"],quests:["⚔ Quests","Quest page + top bar"],guilds:["🛡 Guilds","Guild page + top bar"]};$("sectionControls").innerHTML=sections.filter(s=>labels[s.id]).map(s=>{const l=labels[s.id];return `<article class="feature-card ${s.enabled?"":"is-disabled"}"><div class="feature-card__top"><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(l[0])}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div><p>${esc(l[1])}</p><div class="card-actions"><button class="btn btn--primary" data-section-toggle="${esc(s.id)}" data-enabled="${s.enabled}">${s.enabled?"Disable":"Enable"}</button></div></article>`}).join("");document.querySelectorAll("[data-section-toggle]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await call("section-toggle",{id:b.dataset.sectionToggle,enabled:b.dataset.enabled!=="true"});await renderSectionControls();status("Site feature setting updated. Refresh other pages to update navigation.")}catch(e){status(e.message,true);b.disabled=false}})}catch(e){status(e.message,true)}}
+
 function empty(text) { return `<div class="empty-lab">${esc(text)}</div>`; }
 
 function wireFeatureCards() {
@@ -318,7 +320,7 @@ async function deleteFeature(id){const d=definitions.find(x=>x.id===id);if(!d||!
 async function loadAll(){
   try{
     const [f,g]=await Promise.all([call("list"),call("gem-list")]);
-    definitions=f.definitions||[];gems=g.gems||[];renderFeatures();renderGems();
+    definitions=f.definitions||[];gems=g.gems||[];renderFeatures();renderGems();await renderSectionControls();
     status(`${definitions.length} features · ${gems.length} gems loaded.`);
   }catch(e){status(e.message,true);}
 }
@@ -329,7 +331,7 @@ document.querySelectorAll(".lab-tab").forEach(tab=>tab.onclick=()=>{
 });
 document.querySelectorAll("[data-quest-filter]").forEach(b=>b.onclick=()=>{questFilter=b.dataset.questFilter;document.querySelectorAll("[data-quest-filter]").forEach(x=>x.classList.toggle("is-active",x===b));renderFeatures();});
 $("unlock").onclick=async()=>{password=$("password").value.trim();try{await call("list");$("gate").hidden=true;$("workspace").hidden=false;await loadAll();}catch(e){status(e.message,true);}};
-$("refresh").onclick=loadAll;$("seed").onclick=async()=>{try{await call("seed");await loadAll();}catch(e){status(e.message,true);}};
+$("refresh").onclick=loadAll;$("refreshSections").onclick=renderSectionControls;$("seed").onclick=async()=>{try{await call("seed");await loadAll();}catch(e){status(e.message,true);}};
 $("newFeature").onclick=()=>openEditor();$("newGem").onclick=()=>openGemEditor();
 $("cancel").onclick=$("cancelBottom").onclick=()=>{$("editor").hidden=true;editing=null};
 $("gemCancel").onclick=$("gemCancelBottom").onclick=()=>{$("gemEditor").hidden=true;editingGem=null};

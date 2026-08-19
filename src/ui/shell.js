@@ -50,10 +50,20 @@ const PAGES = [
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
-  { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true }
+  { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true },
+  { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
+  { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
+  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" }
 ];
 
-const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly);
+const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);
+
+async function loadEnabledSections() {
+  try {
+    const { data } = await supabase.functions.invoke("features", { body: { action: "sections" } });
+    return new Set((data?.sections ?? []).filter(s => s.enabled).map(s => s.id));
+  } catch { return new Set(); }
+}
 
 
 const MODE_ICONS = {
@@ -146,6 +156,24 @@ export function mountShell({ page, base = "./" }) {
   ).join("");
 
   document.body.appendChild(tabbar);
+
+  // Site feature switches are controlled from Upcoming. Feature pages and
+  // their top-bar links remain hidden until an authorized user enables them.
+  loadEnabledSections().then((enabledSections) => {
+    const add = (item) => {
+      if (!enabledSections.has(item.sectionId)) return;
+      if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
+      header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(item, page, base, "nav__link"));
+      const link = header.querySelector(".nav__link:last-child"); if (link) link.dataset.sectionLink = item.id;
+      tabbar.insertAdjacentHTML("beforeend", navLink(item, page, base, "tabbar__link", true));
+      const tab = tabbar.querySelector(".tabbar__link:last-child"); if (tab) tab.dataset.sectionLink = item.id;
+    };
+    PAGES.filter(x => x.sectionId).forEach(add);
+    const mainSections = {"roll-stage":"section-roll-stage","summary":"section-summary","automation":"section-automation","session-history":"section-session-history"};
+    for (const [settingId, elementId] of Object.entries(mainSections)) {
+      if (!enabledSections.has(settingId)) document.getElementById(elementId)?.setAttribute("hidden", "");
+    }
+  });
 
 
   // Shared chat lives in the application shell so it is present on every

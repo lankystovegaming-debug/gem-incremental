@@ -3324,6 +3324,24 @@ export default {
       }
 
       // =====================================================
+      // GUILD ROLL POINTS
+      // Every successful roll awards the member's guild one point.
+      // This is best-effort and never invalidates a successful roll.
+      // =====================================================
+
+      let guildPoints = null;
+      try {
+        const { data: guildResult, error: guildError } = await ctx.supabaseAdmin.rpc(
+          "record_guild_roll_points",
+          { p_player_id: playerId, p_points: 1 }
+        );
+        if (guildError) console.error("Guild roll points update failed:", guildError);
+        else guildPoints = guildResult ?? null;
+      } catch (guildError) {
+        console.error("Guild roll points update crashed:", guildError);
+      }
+
+      // =====================================================
       // FINAL INVENTORY COUNT
       // =====================================================
 
@@ -3416,6 +3434,10 @@ export default {
         lifetimeStats:
           lifetimeStats ??
           null,
+
+        guild: {
+          rollPoints: guildPoints
+        },
 
         inventory: {
           count:
