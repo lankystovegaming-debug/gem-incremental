@@ -83,6 +83,18 @@ async function isAllowed(ctx: any, userId: string) {
   }
 }
 
+
+async function auditPrivateAction(ctx: any, adminId: string, action: string, details: Record<string, unknown> = {}) {
+  try {
+    const { error } = await ctx.supabaseAdmin
+      .from("admin_audit_log")
+      .insert({ admin_id: adminId, target_player_id: null, action, details });
+    if (error) console.error("Private feature audit write failed:", error.message);
+  } catch (error) {
+    console.error("Private feature audit write crashed:", error);
+  }
+}
+
 async function ensureProgressRows(ctx: any, playerId: string) {
   if (!ctx?.supabaseAdmin) {
     throw new Error("supabase_admin_client_missing");
@@ -133,6 +145,21 @@ async function ensureProgressRows(ctx: any, playerId: string) {
   if (upsertError) {
     throw new Error(`feature_progress_upsert_failed: ${upsertError.message}`);
   }
+}
+
+
+function normalizeGem(body: any) {
+  return {
+    name: String(body.name ?? "Untitled Gem").trim().slice(0, 120),
+    rarity: Number(body.rarity ?? 1),
+    base_weight: Number(body.base_weight ?? 1),
+    value_per_gram: Number(body.value_per_gram ?? 0),
+    sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
+    enabled: body.enabled !== false,
+    starts_at: body.starts_at || null,
+    ends_at: body.ends_at || null,
+    metadata: body.metadata && typeof body.metadata === "object" ? body.metadata : {}
+  };
 }
 
 function normalizeDefinition(body: any) {
@@ -605,6 +632,119 @@ export default {
           }
         }
 
+
+        if (action === "gem-list") {
+          const { data, error } = await ctx.supabaseAdmin
+            .from("private_feature_gems")
+            .select("*")
+            .order("sort_order")
+            .order("rarity");
+          if (error) return json({
+            error: "gem_list_failed",
+            message: error.message,
+            details: error.details ?? null,
+            hint: error.hint ?? null,
+            code: error.code ?? null
+          }, 500);
+          return json({ gems: data ?? [] });
+        }
+
+        if (action === "gem-save") {
+          const normalized = normalizeGem(body.gem ?? {});
+          if (!normalized.name || !Number.isFinite(normalized.rarity) || normalized.rarity <= 0 ||
+              !Number.isFinite(normalized.base_weight) || normalized.base_weight <= 0 ||
+              !Number.isFinite(normalized.value_per_gram) || normalized.value_per_gram < 0) {
+            return json({ error: "invalid_gem", message: "Name, rarity, base weight and value per gram must be valid." }, 400);
+          }
+
+          let result;
+          if (body.gem?.id) {
+            result = await ctx.supabaseAdmin
+              .from("private_feature_gems")
+              .update(normalized)
+              .eq("id", body.gem.id)
+              .select("*")
+              .single();
+          } else {
+            result = await ctx.supabaseAdmin
+              .from("private_feature_gems")
+              .insert(normalized)
+              .select("*")
+              .single();
+          }
+
+          if (result.error) return json({
+            error: "gem_save_failed",
+            message: result.error.message,
+            details: result.error.details ?? null,
+            code: result.error.code ?? null
+          }, 500);
+          await auditPrivateAction(ctx, userId, body.gem?.id ? "private_gem_updated" : "private_gem_created", { name: normalized.name, enabled: normalized.enabled });
+          return json({ gem: result.data });
+        }
+
+        if (action === "gem-toggle") {
+          const id = String(body.id ?? "");
+          const enabled = body.enabled === true;
+          const { data, error } = await ctx.supabaseAdmin
+            .from("private_feature_gems")
+            .update({ enabled, updated_at: new Date().toISOString() })
+            .eq("id", id)
+            .select("*")
+            .single();
+          if (error) return json({ error: "gem_toggle_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "private_gem_toggled", { id, enabled });
+          return json({ gem: data });
+        }
+
+        if (action === "gem-delete") {
+          const id = String(body.id ?? "");
+          const { error } = await ctx.supabaseAdmin
+            .from("private_feature_gems")
+            .delete()
+            .eq("id", id);
+          if (error) return json({ error: "gem_delete_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "private_gem_deleted", { id });
+          return json({ ok: true });
+        }
+
+        if (action === "section-list") {
+          const { data, error } = await ctx.supabaseAdmin
+            .from("game_section_settings")
+            .select("*")
+            .order("sort_order");
+          if (error) return json({ error: "section_list_failed", message: error.message }, 500);
+          return json({ sections: data ?? [] });
+        }
+
+        if (action === "section-toggle") {
+          const id = String(body.id ?? "");
+          const enabled = body.enabled === true;
+          const { data, error } = await ctx.supabaseAdmin
+            .from("game_section_settings")
+            .update({ enabled, updated_at: new Date().toISOString() })
+            .eq("id", id)
+            .select("*")
+            .single();
+          if (error) return json({ error: "section_toggle_failed", message: error.message }, 500);
+          return json({ section: data });
+        }
+
+
+        if (action === "toggle") {
+          const id = String(body.id ?? "");
+          const enabled = body.enabled === true;
+          const { data, error } = await ctx.supabaseAdmin
+            .from("private_feature_definitions")
+            .update({ enabled, updated_at: new Date().toISOString() })
+            .eq("id", id)
+            .select("*")
+            .single();
+          if (error) return json({ error: "feature_toggle_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "private_feature_toggled", { id, enabled });
+          return json({ definition: data });
+        }
+
         if (action === "save") {
           const normalized =
             normalizeDefinition(body.definition ?? {});
@@ -628,6 +768,7 @@ export default {
               );
             }
 
+            await auditPrivateAction(ctx, userId, "private_feature_updated", { id: body.definition.id, name: normalized.name, enabled: normalized.enabled });
             return json({ definition: data });
           }
 
@@ -648,6 +789,7 @@ export default {
             );
           }
 
+          await auditPrivateAction(ctx, userId, "private_feature_created", { name: normalized.name, kind: normalized.feature_kind, enabled: normalized.enabled });
           return json({ definition: data });
         }
 
@@ -668,6 +810,7 @@ export default {
             );
           }
 
+          await auditPrivateAction(ctx, userId, "private_feature_deleted", { id: body.id });
           return json({ ok: true });
         }
 

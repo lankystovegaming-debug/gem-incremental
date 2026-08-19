@@ -2346,3 +2346,36 @@ h1, h2 {
     radial-gradient(900px 520px at 12% 0%, #67e8f914, transparent 65%),
     linear-gradient(145deg, var(--bg), #0b1a2a);
 }
+
+/* =========================================================
+   Compact desktop shell: keep every authorized link, including
+   Admin + Upcoming, inside the viewport instead of pushing the
+   header wider than the screen.
+   ========================================================= */
+@media (min-width: 781px) and (max-width: 1500px) {
+  .topbar__inner { gap: 6px; max-width: 100%; padding-inline: 10px; }
+  .nav { flex: 1 1 auto; min-width: 0; overflow: hidden; gap: 1px; }
+  .nav__link { padding: 6px 7px; gap: 4px; font-size: .78rem; }
+  .nav__link span { overflow: hidden; text-overflow: ellipsis; }
+  .topbar__tools { gap: 4px; }
+  .wallet { padding-inline: 8px; font-size: .78rem; }
+  .account-btn__name { max-width: 82px; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (min-width: 781px) and (max-width: 1180px) {
+  .brand span:not(.brand__mark) { display: none; }
+  .nav__link { width: 34px; justify-content: center; padding-inline: 4px; }
+  .nav__link span { display: none; }
+  .wallet span { display: none; }
+  .account-btn__name { display: none; }
+}
+
+@media (min-width: 1181px) and (max-width: 1350px) {
+  .nav__link span { display:none; }
+  .nav__link { width:34px; justify-content:center; padding-inline:4px; }
+  .brand span:not(.brand__mark) { display:none; }
+  .wallet span { display:none; }
+}
+@media (min-width: 781px) and (max-width: 1180px) {
+  .nav { overflow-x:auto; scrollbar-width:none; }
+  .nav::-webkit-scrollbar { display:none; }
+}

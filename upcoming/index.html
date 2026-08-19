@@ -18,42 +18,130 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
 </head>
 <body>
 <main class="app-main upcoming-page">
-  <div class="page-head">
-    <div class="page-head__title">
+  <header class="upcoming-hero">
+    <div class="hero-orbit">✦</div>
+    <div>
+      <div class="eyebrow">PRIVATE FEATURE LAB</div>
       <h1>Upcoming Features</h1>
-      <p class="page-head__sub">Private design workspace for achievements, progression, event quests and fully custom quests.</p>
+      <p>Build achievements, quests and the live gem catalogue without touching JSON.</p>
     </div>
-  </div>
-  <section id="gate" class="upcoming-card">
-    <div class="upcoming-hero"><span>✦</span><h2>Private Feature Lab</h2><p>This area is restricted to authorized admin/owner accounts and protected by the feature-lab password.</p></div>
-    <label>Password<input id="password" type="password" autocomplete="off" placeholder="Enter feature-lab password"></label>
-    <button id="unlock" class="btn btn--primary" type="button">Unlock workspace</button>
+  </header>
+
+  <section id="gate" class="upcoming-card gate-card">
+    <div class="gate-icon">🔐</div>
+    <h2>Restricted workspace</h2>
+    <p>Only authorized admin/owner accounts with the feature-lab password can enter.</p>
+    <div class="gate-row">
+      <input id="password" type="password" autocomplete="off" placeholder="Feature-lab password">
+      <button id="unlock" class="btn btn--primary" type="button">Unlock</button>
+    </div>
     <p id="status" class="status"></p>
   </section>
+
   <section id="workspace" hidden>
-    <div class="upcoming-toolbar">
-      <div><h2>Feature definitions</h2><p>Everything is data-driven so you can customize requirements, rewards, prerequisites, dates and unlocks without rebuilding the UI.</p></div>
-      <div class="upcoming-actions"><button id="seed" class="btn">Seed examples</button><button id="newFeature" class="btn btn--primary">New feature</button></div>
-    </div>
-    <div id="cards" class="feature-grid"></div>
-    <section class="editor upcoming-card" id="editor" hidden>
-      <h2 id="editorTitle">New feature</h2>
-      <div class="editor-grid">
-        <label>Kind<select id="kind"><option value="achievement">Achievement</option><option value="quest">Quest</option></select></label>
-        <label>Quest type<select id="questType"><option value="main">Main</option><option value="event">Event</option><option value="special">Special</option></select></label>
-        <label>Name<input id="name"></label>
-        <label>Icon<input id="icon" value="✦"></label>
-        <label class="wide">Description<textarea id="description"></textarea></label>
-        <label>Sort order<input id="sortOrder" type="number" value="0"></label>
-        <label>Starts at<input id="startsAt" type="datetime-local"></label>
-        <label>Ends at<input id="endsAt" type="datetime-local"></label>
-        <label class="wide">Requirements JSON<textarea id="requirements">{ "type": "rolls", "amount": 1 }</textarea></label>
-        <label class="wide">Rewards JSON<textarea id="rewards">[]</textarea></label>
-        <label class="wide">Prerequisites JSON<textarea id="prerequisites">[]</textarea></label>
-        <label class="wide">Unlocks JSON<textarea id="unlocks">[]</textarea></label>
-        <label class="wide">Metadata JSON<textarea id="metadata">{}</textarea></label>
+    <div class="workspace-toolbar">
+      <div>
+        <div class="eyebrow">CONTROL CENTER</div>
+        <h2>Feature catalogue</h2>
+        <p>Enable, disable, schedule, duplicate and delete live content.</p>
       </div>
-      <div class="upcoming-actions"><button id="cancel" class="btn">Cancel</button><button id="save" class="btn btn--primary">Save feature</button></div>
+      <div class="toolbar-actions">
+        <button id="refresh" class="btn" type="button">Refresh</button>
+        <button id="seed" class="btn" type="button">Restore examples</button>
+        <button id="newFeature" class="btn btn--primary" type="button">＋ New</button>
+        <button id="newGem" class="btn btn--primary" type="button">💎 New Gem</button>
+      </div>
+    </div>
+
+    <div class="lab-tabs" role="tablist">
+      <button class="lab-tab is-active" data-tab="achievements" type="button">🏆 Achievements <span id="achievementCount">0</span></button>
+      <button class="lab-tab" data-tab="quests" type="button">⚔ Quests <span id="questCount">0</span></button>
+      <button class="lab-tab" data-tab="gems" type="button">💎 Gems <span id="gemCount">0</span></button>
+    </div>
+
+    <section class="tab-panel is-active" data-panel="achievements">
+      <div class="panel-heading"><div><h2>Achievements</h2><p>Permanent or temporary milestones. Multiple rewards and virtually any roll condition are supported.</p></div></div>
+      <div id="achievementCards" class="feature-grid"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="quests">
+      <div class="panel-heading"><div><h2>Quests</h2><p>Main progression, limited-time events and fully customizable special quests.</p></div></div>
+      <div class="quest-filters">
+        <button class="filter is-active" data-quest-filter="all" type="button">All</button>
+        <button class="filter" data-quest-filter="main" type="button">Main</button>
+        <button class="filter" data-quest-filter="event" type="button">Event</button>
+        <button class="filter" data-quest-filter="special" type="button">Special</button>
+      </div>
+      <div id="questCards" class="feature-grid"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="gems">
+      <div class="panel-heading"><div><h2>Gem Catalogue</h2><p>This is the live roll catalogue. Disable, schedule or permanently delete gems.</p></div></div>
+      <div id="gemCards" class="gem-grid"></div>
+    </section>
+
+    <section id="editor" class="upcoming-card editor" hidden>
+      <div class="editor-head">
+        <div><div class="eyebrow">BUILDER</div><h2 id="editorTitle">New feature</h2></div>
+        <button id="cancel" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+
+      <div class="editor-section">
+        <h3>Basics</h3>
+        <div class="form-grid">
+          <label>Kind<select id="kind"><option value="achievement">Achievement</option><option value="quest">Quest</option></select></label>
+          <label>Quest type<select id="questType"><option value="main">Main</option><option value="event">Event</option><option value="special">Special</option></select></label>
+          <label>Name<input id="name" maxlength="120" placeholder="Astral Ascension 5"></label>
+          <label>Icon<input id="icon" maxlength="8" value="✦"></label>
+          <label class="wide">Description<textarea id="description" rows="3" placeholder="What does the player need to do?"></textarea></label>
+          <label>Sort order<input id="sortOrder" type="number" value="0"></label>
+          <label>Availability
+            <select id="durationMode"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select>
+          </label>
+          <label>Starts at<input id="startsAt" type="datetime-local"></label>
+          <label>Ends at<input id="endsAt" type="datetime-local"></label>
+          <label class="toggle-field"><input id="enabled" type="checkbox" checked><span>Enabled</span><small>Show and process this feature</small></label>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <div class="builder-head"><div><h3>Requirements</h3><p>Build nested AND / OR logic with dropdowns and condition fields.</p></div><button id="addRequirement" class="btn btn--sm" type="button">＋ Add condition</button></div>
+        <div class="group-row">
+          <label>Top-level logic<select id="requirementLogic"><option value="all">ALL — every condition</option><option value="any">ANY — at least one</option><option value="single">SINGLE — one condition</option></select></label>
+        </div>
+        <div id="requirementRows" class="builder-list"></div>
+      </div>
+
+      <div class="editor-section">
+        <div class="builder-head"><div><h3>Rewards</h3><p>Give multiple rewards in one completion: money, coins, potions, gems, capacity or unlocks.</p></div><button id="addReward" class="btn btn--sm" type="button">＋ Add reward</button></div>
+        <div id="rewardRows" class="builder-list"></div>
+      </div>
+
+      <div class="editor-section">
+        <h3>Prerequisites & unlocks</h3>
+        <div class="form-grid">
+          <label class="wide">Prerequisite features<select id="prerequisites" multiple size="5"></select><small>Ctrl/Cmd-click multiple features.</small></label>
+          <label class="wide">Unlock IDs<input id="unlocks" placeholder="pickaxe_t14, bag_t11, special_shop"></label>
+        </div>
+      </div>
+
+      <div class="editor-actions"><button id="cancelBottom" class="btn" type="button">Cancel</button><button id="save" class="btn btn--primary" type="button">Save feature</button></div>
+    </section>
+
+    <section id="gemEditor" class="upcoming-card editor" hidden>
+      <div class="editor-head"><div><div class="eyebrow">GEM BUILDER</div><h2 id="gemEditorTitle">New Gem</h2></div><button id="gemCancel" class="icon-button" type="button">×</button></div>
+      <div class="form-grid">
+        <label>Name<input id="gemName" maxlength="120" placeholder="Celestial Ruby"></label>
+        <label>Rarity / 1 in<input id="gemRarity" type="number" min="0.000001" step="any" value="100"></label>
+        <label>Base weight<input id="gemWeight" type="number" min="0.000001" step="any" value="100"></label>
+        <label>Value / gram<input id="gemValue" type="number" min="0" step="any" value="1"></label>
+        <label>Sort order<input id="gemSort" type="number" value="0"></label>
+        <label>Availability<select id="gemDuration"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+        <label>Starts at<input id="gemStarts" type="datetime-local"></label>
+        <label>Ends at<input id="gemEnds" type="datetime-local"></label>
+        <label class="toggle-field"><input id="gemEnabled" type="checkbox" checked><span>Enabled</span><small>Disabled gems cannot roll.</small></label>
+      </div>
+      <div class="editor-actions"><button id="gemCancelBottom" class="btn" type="button">Cancel</button><button id="gemSave" class="btn btn--primary" type="button">Save Gem</button></div>
     </section>
   </section>
 </main>

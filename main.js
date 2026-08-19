@@ -67,6 +67,28 @@ const autoSellTierRow = document.getElementById("autoSellTierRow");
 const historyList = document.getElementById("historyList");
 const clearHistory = document.getElementById("clearHistory");
 
+async function applyMainSectionSettings() {
+  try {
+    const { data, error } = await supabase
+      .from("game_section_settings")
+      .select("id, enabled")
+      .order("sort_order");
+    if (error) {
+      console.warn("[SECTIONS] Could not load section settings:", error.message);
+      return;
+    }
+
+    for (const section of data ?? []) {
+      const element = document.getElementById(`section-${section.id}`);
+      if (element) element.hidden = section.enabled === false;
+    }
+  } catch (error) {
+    console.warn("[SECTIONS] Section settings unavailable:", error);
+  }
+}
+
+applyMainSectionSettings();
+
 document.getElementById("stageIdleMark").innerHTML = icons.gem;
 
 

@@ -108,6 +108,29 @@
       <div class="admin-event-list" id="eventsList"></div>
     </section>
 
+
+    <section class="card admin-section-controls" id="sectionControlsPanel" hidden>
+      <div class="admin-section-head">
+        <div><h2>Main Page Sections</h2><p class="page-head__sub">Turn individual home-page sections on or off without redeploying.</p></div>
+        <button class="btn" id="sectionControlsRefresh" type="button">Refresh</button>
+      </div>
+      <div id="sectionControlsList" class="section-control-list"></div>
+    </section>
+
+    <section class="card admin-mutation-events" id="mutationEventsPanel" hidden>
+      <div class="admin-section-head">
+        <div><h2>Mutation Luck Events</h2><p class="page-head__sub">Launch temporary global mutation-luck surges, including very high multipliers.</p></div>
+      </div>
+      <div class="admin-event-form">
+        <label class="field"><span>Event name</span><input id="mutationEventName" maxlength="80" value="Mutation Surge"></label>
+        <label class="field"><span>Duration (minutes)</span><input id="mutationEventDuration" type="number" min="1" max="10080" value="60"></label>
+        <label class="field"><span>Mutation luck bonus (× additive)</span><input id="mutationEventBonus" type="number" min="0" step="0.01" value="0"></label>
+        <label class="field"><span>Mutation luck multiplier (×)</span><input id="mutationEventMultiplier" type="number" min="0.01" max="1000000" step="0.01" value="2"></label>
+        <button class="btn btn--primary" id="mutationEventStart" type="button">Start Mutation Surge</button>
+      </div>
+      <div id="mutationEventsList" class="admin-event-list"></div>
+    </section>
+
     <section class="card admin-analytics" id="analyticsPanel" hidden>
       <div class="admin-section-head">
         <div>

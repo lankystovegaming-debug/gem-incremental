@@ -347,7 +347,7 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
 // GEM DATA
 // =========================================================
 
-const gems = [
+let gems = [
   {
     name: "Quartz",
     rarity: 2,
@@ -1994,6 +1994,8 @@ export default {
             roll_speed_multiplier,
             weight_luck_multiplier,
             weight_multiplier_multiplier,
+            mutation_luck_bonus,
+            mutation_luck_multiplier,
             ends_at
           `)
           .eq(
@@ -2418,6 +2420,49 @@ export default {
         );
 
 
+
+      // =====================================================
+      // LOAD ADMIN-MANAGED GEM CATALOG
+      //
+      // The database catalog is the authoritative editable catalog.
+      // If the migration has not been installed yet, retain the bundled
+      // catalog so ordinary rolling continues to work during deployment.
+      // =====================================================
+      try {
+        const { data: configuredGems, error: configuredGemError } =
+          await ctx.supabaseAdmin
+            .from("private_feature_gems")
+            .select("name, rarity, base_weight, value_per_gram")
+            .eq("enabled", true)
+            .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
+            .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
+            .order("sort_order")
+            .order("rarity", { ascending: false });
+
+        if (!configuredGemError && configuredGems) {
+          // An installed-but-empty catalog means the admin deliberately
+          // removed/disabled every gem. Do not silently resurrect deleted
+          // gems from the bundled source.
+          if (configuredGems.length === 0) {
+            return jsonResponse(
+              { error: "no_gems_available", message: "No enabled gems are currently available." },
+              { status: 503 }
+            );
+          }
+
+          gems = configuredGems.map((entry: any) => ({
+            name: String(entry.name),
+            rarity: Number(entry.rarity),
+            baseWeight: Number(entry.base_weight),
+            valuePerGram: Number(entry.value_per_gram)
+          }));
+        } else if (configuredGemError && configuredGemError.code !== "42P01") {
+          console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
+        }
+      } catch (catalogError) {
+        console.error("Configured gem catalog unavailable; using bundled catalog:", catalogError);
+      }
+
       // =====================================================
       // GENERATE ROLL
       // =====================================================
@@ -2501,6 +2546,17 @@ export default {
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
+
+      // Global admin mutation-luck events apply after personal mutation luck
+      // and all permanent equipment passives.
+      if (activeAdminEvent) {
+        const mutationBonus = Number(activeAdminEvent.mutation_luck_bonus ?? 0);
+        const mutationEventMultiplier = Number(activeAdminEvent.mutation_luck_multiplier ?? 1);
+        if (Number.isFinite(mutationBonus)) mutationChanceMultiplier += Math.max(0, mutationBonus);
+        if (Number.isFinite(mutationEventMultiplier) && mutationEventMultiplier > 0) {
+          mutationChanceMultiplier *= mutationEventMultiplier;
+        }
+      }
 
       const mutations = relicDrop
         ? []
