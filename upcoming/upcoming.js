@@ -1,6 +1,7 @@
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { initExpansionLab } from "./expansionLab.js";
 
 mountShell({ page:"upcoming", base:"../" });
 
@@ -108,7 +109,14 @@ async function renderSectionControls(){
       "relic-vault":["◈ Relic Vault","Passive relics, sockets, sets and salvage."],
       seasons:["✦ Seasons","Season XP, tiers, challenges and modifiers."],
       bounties:["⚑ Bounty Board","Custom contracts with targets, requirements and rewards."],
-      "treasure-expeditions":["◇ Treasure Expeditions","Branching expeditions with risk and weighted outcomes."]
+      "treasure-expeditions":["◇ Treasure Expeditions","Branching expeditions with risk and weighted outcomes."],
+      "artifact-archives":["◈ Artifact Archives","Collect, socket, upgrade and salvage customizable artifacts."],
+      "gem-fusion":["✧ Gem Fusion Lab","Combine gems with recipes, catalysts and weighted outcomes."],
+      "enchanting-lab":["✦ Enchanting Lab","Create custom equipment enchantments from gem costs and effects."],
+      "collection-hall":["▦ Collection Hall","Long-term collection sets, milestones and permanent bonuses."],
+      "mining-events":["⛏ Mining Events","Timed mining phenomena with phases, boosts and custom loot."],
+      "merchant-caravan":["◇ Merchant Caravan","Rotating merchants, stock, prices and currencies."],
+      "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."]
     };
     $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
       const fallback=fallbackLabels[s.id];
@@ -390,6 +398,7 @@ async function loadAll(){
     renderFeatures();renderGems();
     await renderWorldLab();
     await renderSectionControls();
+    initExpansionLab({call,status,initialGems:gems});
     status(`${definitions.length} features · ${gems.length} gems loaded.`);
   }catch(e){status(e.message,true);}
 }

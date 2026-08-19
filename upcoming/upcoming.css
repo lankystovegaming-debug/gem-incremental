@@ -27,3 +27,11 @@ input,select,textarea{border:1px solid var(--border);background:var(--input-bg,v
 @media(max-width:500px){.builder-row-top{grid-template-columns:1fr 1fr}.builder-row-top .remove-rule,.builder-row-top .remove-reward{grid-column:2}.condition-grid{grid-template-columns:1fr}.upcoming-card{padding:17px}.hero-orbit{width:50px;height:50px}}
 
 .compact-section-editor{margin:14px 0}.compact-section-editor label{min-width:0}.spin-reward-row .builder-row-top,.pvp-attack-row .builder-row-top{grid-template-columns:2fr 1fr 1.2fr auto}.pvp-attack-desc{width:100%;margin-top:8px}.rarity-section{margin-top:24px}.nav__custom-icon{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em}.lab-tabs{overflow-x:auto;scrollbar-width:thin}.lab-tab{white-space:nowrap}
+
+/* Expansion Lab */
+.expansion-row-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:9px}
+.expansion-preset-note{border:1px solid var(--border);border-radius:14px;padding:12px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 8%,transparent),color-mix(in srgb,var(--positive) 6%,transparent));color:var(--muted)}
+#expansionFields .builder-head{margin-top:16px}
+#expansionFields textarea{min-height:56px;resize:vertical}
+@media(max-width:800px){.expansion-row-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.expansion-row-grid{grid-template-columns:1fr}}

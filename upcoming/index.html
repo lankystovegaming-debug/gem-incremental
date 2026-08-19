@@ -61,7 +61,8 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
       <button class="lab-tab" data-tab="forge" type="button">⚒ Workbench <span id="forgeState">OFF</span></button>
       <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
       <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
-      <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button>
+      <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button> 
+      <button class="lab-tab" data-tab="expansion" type="button">✦ More Systems <span id="expansionCount">7</span></button>
     </div>
 
     <section class="tab-panel is-active" data-panel="achievements">
@@ -159,6 +160,37 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
         </div>
         <div class="editor-section"><div class="builder-head"><div><h3>Attacks</h3><p>Every PvP weapon must have at least 3 attacks.</p></div><button id="addPvpAttack" class="btn btn--sm">＋ Add attack</button></div><div id="pvpAttackRows" class="builder-list"></div></div>
         <div class="editor-actions"><button id="pvpCancel" class="btn">Cancel</button><button id="pvpSave" class="btn btn--primary">Save weapon</button></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="expansion">
+      <div class="panel-heading">
+        <div><h2>More unreleased systems</h2><p>Seven substantial non-PvP systems. Every definition starts OFF, has a dedicated page, and is controlled here without raw JSON.</p></div>
+        <div class="toolbar-actions"><button id="expansionRefresh" class="btn">Refresh</button><button id="expansionNew" class="btn btn--primary">＋ New system</button></div>
+      </div>
+      <div id="expansionCards" class="feature-grid"></div>
+      <section id="expansionEditor" class="upcoming-card editor" hidden>
+        <div class="editor-head"><div><div class="eyebrow">EXPANSION BUILDER</div><h2 id="expansionEditorTitle">New system</h2></div><button id="expansionCancel" class="icon-button" type="button">×</button></div>
+        <div class="form-grid">
+          <label>System<select id="expansionType">
+            <option value="artifact-archives">Artifact Archives</option>
+            <option value="gem-fusion">Gem Fusion Lab</option>
+            <option value="enchanting-lab">Enchanting Lab</option>
+            <option value="collection-hall">Collection Hall</option>
+            <option value="mining-events">Mining Events</option>
+            <option value="merchant-caravan">Merchant Caravan</option>
+            <option value="research-tree">Research Tree</option>
+          </select></label>
+          <label>Name<input id="expansionName" maxlength="120"></label>
+          <label class="wide">Description<textarea id="expansionDescription" rows="3"></textarea></label>
+          <label>Sort order<input id="expansionSort" type="number" value="10"></label>
+          <label>Availability<select id="expansionPermanent"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+          <label>Starts at<input id="expansionStarts" type="datetime-local"></label>
+          <label>Ends at<input id="expansionEnds" type="datetime-local"></label>
+          <label class="toggle-field"><input id="expansionEnabled" type="checkbox"><span>Enabled</span><small>Keep OFF until ready.</small></label>
+        </div>
+        <div class="editor-section"><div class="builder-head"><div><h3>Structured configuration</h3><p>Choose fields below; the builder stores the configuration for the matching system. No JSON editing is required.</p></div><div class="toolbar-actions"><select id="expansionPresetSelect" aria-label="Preset library"></select><button id="expansionPreset" class="btn btn--sm">Load preset</button></div></div><div id="expansionFields" class="builder-list"></div></div>
+        <div class="editor-actions"><button id="expansionCancelBottom" class="btn">Cancel</button><button id="expansionSave" class="btn btn--primary">Save system</button></div>
       </section>
     </section>
 

@@ -1037,6 +1037,82 @@ export default {
           return json({forge:data});
         }
 
+
+        // ---------------------------------------------------------
+        // ADDITIONAL EXPANSION FEATURE LAB
+        // Structured builders manage these records; raw JSON is never
+        // required by the Upcoming Features UI.
+        // ---------------------------------------------------------
+        if (action === "expansion-list") {
+          const { data, error } = await ctx.supabaseAdmin
+            .from("expansion_feature_definitions")
+            .select("*")
+            .order("feature_type")
+            .order("sort_order")
+            .order("name");
+          if (error) return json({ error: "expansion_list_failed", message: error.message }, 500);
+          return json({ definitions: data ?? [] });
+        }
+
+        if (action === "expansion-save") {
+          const d = body.definition ?? {};
+          const featureType = String(d.feature_type ?? "").trim();
+          const allowedTypes = [
+            "artifact-archives","gem-fusion","enchanting-lab","collection-hall",
+            "mining-events","merchant-caravan","research-tree"
+          ];
+          if (!allowedTypes.includes(featureType)) {
+            return json({ error: "invalid_expansion_type" }, 400);
+          }
+          const row = {
+            feature_type: featureType,
+            name: String(d.name ?? "Untitled System").trim().slice(0, 120),
+            description: String(d.description ?? "").slice(0, 1000),
+            enabled: d.enabled === true,
+            permanent: d.permanent !== false,
+            starts_at: d.starts_at || null,
+            ends_at: d.ends_at || null,
+            sort_order: Number(d.sort_order ?? 0),
+            config: d.config && typeof d.config === "object" ? d.config : {},
+            metadata: d.metadata && typeof d.metadata === "object" ? d.metadata : {},
+            updated_at: new Date().toISOString()
+          };
+          if (!row.name) return json({ error: "expansion_name_required" }, 400);
+
+          const q = d.id
+            ? ctx.supabaseAdmin.from("expansion_feature_definitions").update(row).eq("id", d.id).select("*").single()
+            : ctx.supabaseAdmin.from("expansion_feature_definitions").insert(row).select("*").single();
+          const { data, error } = await q;
+          if (error) return json({ error: "expansion_save_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, d.id ? "expansion_feature_updated" : "expansion_feature_created", {
+            id: data.id, feature_type: featureType, name: row.name, enabled: row.enabled
+          });
+          return json({ definition: data });
+        }
+
+        if (action === "expansion-toggle") {
+          const enabled = body.enabled === true;
+          const { data, error } = await ctx.supabaseAdmin
+            .from("expansion_feature_definitions")
+            .update({ enabled, updated_at: new Date().toISOString() })
+            .eq("id", String(body.id))
+            .select("*")
+            .single();
+          if (error) return json({ error: "expansion_toggle_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "expansion_feature_toggled", { id: body.id, enabled });
+          return json({ definition: data });
+        }
+
+        if (action === "expansion-delete") {
+          const { error } = await ctx.supabaseAdmin
+            .from("expansion_feature_definitions")
+            .delete()
+            .eq("id", String(body.id));
+          if (error) return json({ error: "expansion_delete_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "expansion_feature_deleted", { id: body.id });
+          return json({ ok: true });
+        }
+
         if (action === "toggle") {
           const id = String(body.id ?? "");
           const enabled = body.enabled === true;

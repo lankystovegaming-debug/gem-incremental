@@ -62,7 +62,14 @@ const PAGES = [
   { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.gem, sectionId: "relic-vault" },
   { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.trophy, sectionId: "seasons" },
   { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.gavel, sectionId: "bounties" },
-  { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.sparkle, sectionId: "treasure-expeditions" }
+  { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.sparkle, sectionId: "treasure-expeditions" },
+  { id: "artifact-archives", label: "Artifact Archives", short: "Artifacts", href: "artifact-archives/", icon: icons.gem, sectionId: "artifact-archives" },
+  { id: "gem-fusion", label: "Gem Fusion Lab", short: "Fusion", href: "gem-fusion/", icon: icons.sparkle, sectionId: "gem-fusion" },
+  { id: "enchanting-lab", label: "Enchanting Lab", short: "Enchant", href: "enchanting-lab/", icon: icons.sparkle, sectionId: "enchanting-lab" },
+  { id: "collection-hall", label: "Collection Hall", short: "Collections", href: "collection-hall/", icon: icons.book, sectionId: "collection-hall" },
+  { id: "mining-events", label: "Mining Events", short: "Events", href: "mining-events/", icon: icons.pickaxe || icons.anvil, sectionId: "mining-events" },
+  { id: "merchant-caravan", label: "Merchant Caravan", short: "Caravan", href: "merchant-caravan/", icon: icons.gavel, sectionId: "merchant-caravan" },
+  { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.sparkle, sectionId: "research-tree" }
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);

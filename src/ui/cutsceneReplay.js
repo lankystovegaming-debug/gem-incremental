@@ -4,6 +4,7 @@ import { gemNameHtml } from "./gemStyle.js";
 import { getGemMutation } from "../data/mutations.js";
 import { getSettings } from "./settings.js";
 import { chanceLabelForResult } from "../logic/chances.js";
+import { buildJaOreCutscene } from "./jaOreCutscene.js";
 
 function hashString(value) {
   let hash = 0;
@@ -21,6 +22,7 @@ function durationForRarity(rarity) {
 
   // Keep the larger rarity cinematics dramatic.
   if (r >= 10000000) return 22000;
+  if (r >= 6000000 && r < 7000000) return 15000;
   if (r >= 4000000) return 18000;
   if (r >= 1800000) return 15000;
   if (r >= 800000) return 13500;
@@ -65,8 +67,23 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
   if (!duration) return;
 
   document.getElementById("ultra-cutscene-overlay")?.remove();
+  document.getElementById("ja-ore-cutscene")?.remove();
 
   const ids = Array.from(new Set([...(Array.isArray(mutationIds) ? mutationIds : []), ...(mutationId ? [mutationId] : [])])).filter(Boolean);
+  const replayName = String(gem?.name ?? "Gem").trim().toLowerCase();
+
+  // JA-ore replay now uses the same bespoke retro pixel-cinema scene as a
+  // fresh roll, rather than falling back to the generic rarity replay.
+  if (replayName === "ja-ore") {
+    const replayData = {
+      gem: { ...gem, name: "Ja-ore", rarity },
+      mutations: ids.map(id => getGemMutation(id)).filter(Boolean).map(m => ({
+        id: m.id, name: m.name, multiplier: m.multiplier
+      })),
+      mutation: ids[0] ? { id: ids[0] } : null
+    };
+    return buildJaOreCutscene(replayData, { icon: "◈", text: "Cinematic replay" }, Math.max(15000, duration));
+  }
   const mutations = ids.map(id => getGemMutation(id)).filter(Boolean);
   const mutation = mutations[0] ?? null;
   const name = String(gem?.name ?? "Gem");
