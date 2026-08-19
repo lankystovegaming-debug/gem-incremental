@@ -57,7 +57,12 @@ const PAGES = [
   { id: "forge", label: "Workbench [BETA]", short: "Workbench", href: "forge/", icon: icons.anvil, sectionId: "forge" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" },
   { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.sparkle, sectionId: "daily-spin" },
-  { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" }
+  { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" },
+  { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.bolt || icons.sparkle, sectionId: "world-bosses" },
+  { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.gem, sectionId: "relic-vault" },
+  { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.trophy, sectionId: "seasons" },
+  { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.gavel, sectionId: "bounties" },
+  { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.sparkle, sectionId: "treasure-expeditions" }
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);

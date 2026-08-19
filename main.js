@@ -20,6 +20,7 @@ import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml } from "./src/ui/gemStyle.js";
 import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
+import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { chanceLabelForResult } from "./src/logic/chances.js";
 import {
@@ -558,7 +559,9 @@ function renderRoll(data, outcome) {
   if (isUltraRare) {
     const duration = gemName.toLowerCase() === "xy gem"
       ? 30000
-      : cinematicDuration(rarity);
+      : gemName.toLowerCase() === "ja-ore"
+        ? 15000
+        : cinematicDuration(rarity);
     cinematicActive = true;
     document.documentElement.classList.add("is-cinematic-active");
     gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
@@ -566,11 +569,18 @@ function renderRoll(data, outcome) {
     // Xy Gem gets its own bespoke cutscene; everything else uses the
     // standard tiered one. Fall back if the custom scene ever throws.
     let overlay;
-    if (gemName === "Heart of Xy") {
+    if (gemName.toLowerCase() === "heart of xy" || gemName.toLowerCase() === "xy gem") {
       try {
         overlay = buildXyGemCutscene(data, outcome, duration);
       } catch (error) {
         console.error("Xy Gem cutscene failed, using standard:", error);
+        overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+      }
+    } else if (gemName.toLowerCase() === "ja-ore") {
+      try {
+        overlay = buildJaOreCutscene(data, outcome, duration);
+      } catch (error) {
+        console.error("Ja-ore cutscene failed, using standard:", error);
         overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
       }
     } else {

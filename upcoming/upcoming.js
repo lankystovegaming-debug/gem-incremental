@@ -103,7 +103,12 @@ async function renderSectionControls(){
       forge:["⚒ Workbench [BETA]","Three-stage forging + top bar"],
       dungeons:["⚔ Dungeons","Combat dungeons + top bar"],
       "daily-spin":["◉ Daily Spin","Daily reward wheel + top bar"],
-      pvp:["⚔ PvP","Player-versus-player combat + top bar"]
+      pvp:["⚔ PvP","Player-versus-player combat + top bar"],
+      "world-bosses":["☄ World Bosses","Phased bosses, contribution races and custom loot."],
+      "relic-vault":["◈ Relic Vault","Passive relics, sockets, sets and salvage."],
+      seasons:["✦ Seasons","Season XP, tiers, challenges and modifiers."],
+      bounties:["⚑ Bounty Board","Custom contracts with targets, requirements and rewards."],
+      "treasure-expeditions":["◇ Treasure Expeditions","Branching expeditions with risk and weighted outcomes."]
     };
     $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
       const fallback=fallbackLabels[s.id];
