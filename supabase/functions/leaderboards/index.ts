@@ -9,7 +9,7 @@ export default {
     const { data: totalRollsData, error: totalRollsError } = await ctx.supabaseAdmin.from("players").select(`
             username,
             total_rolls
-          `).not("username", "is", null).gt("total_rolls", 0).order("total_rolls", {
+          `).not("username", "is", null).eq("leaderboard_hidden", false).gt("total_rolls", 0).order("total_rolls", {
       ascending: false
     }).limit(100);
     if (totalRollsError) {
@@ -27,7 +27,7 @@ export default {
             username,
             rarest_gem_name,
             rarest_gem_rarity
-          `).not("username", "is", null).not("rarest_gem_rarity", "is", null).gt("rarest_gem_rarity", 0).order("rarest_gem_rarity", {
+          `).not("username", "is", null).eq("leaderboard_hidden", false).not("rarest_gem_rarity", "is", null).gt("rarest_gem_rarity", 0).order("rarest_gem_rarity", {
       ascending: false
     }).limit(100);
     if (rarestGemError) {
@@ -44,7 +44,7 @@ export default {
     const { data: lifetimeEarningsData, error: lifetimeEarningsError } = await ctx.supabaseAdmin.from("players").select(`
             username,
             lifetime_earnings
-          `).not("username", "is", null).gt("lifetime_earnings", 0).order("lifetime_earnings", {
+          `).not("username", "is", null).eq("leaderboard_hidden", false).gt("lifetime_earnings", 0).order("lifetime_earnings", {
       ascending: false
     }).limit(100);
     if (lifetimeEarningsError) {

@@ -25,6 +25,7 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
+import { mountHowToPlay } from "./onboarding.js";
 
 
 // =========================================================
@@ -197,6 +198,9 @@ export function mountShell({ page, base = "./" }) {
 
   // Bottom-left dock: contribute on GitHub / report a bug.
   mountContributeDock(base);
+
+  // First-run "How to play" guide (shows once; reopenable from the dock).
+  mountHowToPlay(base);
 
 
   const walletPill = header.querySelector("#shellWallet");
