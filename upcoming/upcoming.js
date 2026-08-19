@@ -120,7 +120,8 @@ async function renderSectionControls(){
       "collection-hall":["▦ Collection Hall","Long-term collection sets, milestones and permanent bonuses."],
       "mining-events":["⛏ Mining Events","Timed mining phenomena with phases, boosts and custom loot."],
       "merchant-caravan":["◇ Merchant Caravan","Rotating merchants, stock, prices and currencies."],
-      "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."]
+      "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."],
+      "utility-menu":["••• More menu","Moves utility links into the main navigation"]
     };
     $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
       const fallback=fallbackLabels[s.id];
