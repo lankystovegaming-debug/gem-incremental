@@ -49,10 +49,11 @@ const PAGES = [
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "stats", label: "Stats", short: "Stats", href: "debug/", icon: icons.chart },
-  { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true }
+  { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
+  { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true }
 ];
 
-const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly);
+const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly);
 
 
 const MODE_ICONS = {
@@ -248,6 +249,28 @@ export function mountShell({ page, base = "./" }) {
           "beforeend",
           navLink(adminPage, page, base, "tabbar__link", true)
         );
+      });
+
+      // Upcoming Features is intentionally hidden from normal players.
+      // The private-features Edge Function is authoritative for access.
+      supabase.functions.invoke("private-features", {
+        body: { action: "whoami" }
+      }).then(({ data }) => {
+        if (!data?.allowed) return;
+
+        const upcomingPage = PAGES.find((item) => item.id === "upcoming");
+        if (!upcomingPage) return;
+
+        header.querySelector(".nav")?.insertAdjacentHTML(
+          "beforeend",
+          navLink(upcomingPage, page, base, "nav__link")
+        );
+        tabbar.insertAdjacentHTML(
+          "beforeend",
+          navLink(upcomingPage, page, base, "tabbar__link", true)
+        );
+      }).catch(() => {
+        // Keep private navigation hidden for unauthorized accounts.
       });
     }
 

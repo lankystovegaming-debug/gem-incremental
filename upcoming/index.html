@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Upcoming Features · Gem Incremental</title>
+<link rel="icon" href="../src/assets/favicon.ico">
+<link rel="stylesheet" href="../src/styles/app.css">
+<link rel="stylesheet" href="./upcoming.css">
+<script>
+(function(){try{
+const m=localStorage.getItem("gemIncremental.theme.mode"),a=localStorage.getItem("gemIncremental.theme.accent");
+const modes=["light","dark","neon","gradient","ocean","forest","sunset","ice"];
+if(modes.includes(m))document.documentElement.setAttribute("data-theme",m);
+if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentElement.setAttribute("data-accent",a);
+}catch(e){}})();
+</script>
+</head>
+<body>
+<main class="app-main upcoming-page">
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1>Upcoming Features</h1>
+      <p class="page-head__sub">Private design workspace for achievements, progression, event quests and fully custom quests.</p>
+    </div>
+  </div>
+  <section id="gate" class="upcoming-card">
+    <div class="upcoming-hero"><span>✦</span><h2>Private Feature Lab</h2><p>This area is restricted to authorized admin/owner accounts and protected by the feature-lab password.</p></div>
+    <label>Password<input id="password" type="password" autocomplete="off" placeholder="Enter feature-lab password"></label>
+    <button id="unlock" class="btn btn--primary" type="button">Unlock workspace</button>
+    <p id="status" class="status"></p>
+  </section>
+  <section id="workspace" hidden>
+    <div class="upcoming-toolbar">
+      <div><h2>Feature definitions</h2><p>Everything is data-driven so you can customize requirements, rewards, prerequisites, dates and unlocks without rebuilding the UI.</p></div>
+      <div class="upcoming-actions"><button id="seed" class="btn">Seed examples</button><button id="newFeature" class="btn btn--primary">New feature</button></div>
+    </div>
+    <div id="cards" class="feature-grid"></div>
+    <section class="editor upcoming-card" id="editor" hidden>
+      <h2 id="editorTitle">New feature</h2>
+      <div class="editor-grid">
+        <label>Kind<select id="kind"><option value="achievement">Achievement</option><option value="quest">Quest</option></select></label>
+        <label>Quest type<select id="questType"><option value="main">Main</option><option value="event">Event</option><option value="special">Special</option></select></label>
+        <label>Name<input id="name"></label>
+        <label>Icon<input id="icon" value="✦"></label>
+        <label class="wide">Description<textarea id="description"></textarea></label>
+        <label>Sort order<input id="sortOrder" type="number" value="0"></label>
+        <label>Starts at<input id="startsAt" type="datetime-local"></label>
+        <label>Ends at<input id="endsAt" type="datetime-local"></label>
+        <label class="wide">Requirements JSON<textarea id="requirements">{ "type": "rolls", "amount": 1 }</textarea></label>
+        <label class="wide">Rewards JSON<textarea id="rewards">[]</textarea></label>
+        <label class="wide">Prerequisites JSON<textarea id="prerequisites">[]</textarea></label>
+        <label class="wide">Unlocks JSON<textarea id="unlocks">[]</textarea></label>
+        <label class="wide">Metadata JSON<textarea id="metadata">{}</textarea></label>
+      </div>
+      <div class="upcoming-actions"><button id="cancel" class="btn">Cancel</button><button id="save" class="btn btn--primary">Save feature</button></div>
+    </section>
+  </section>
+</main>
+<script type="module" src="./upcoming.js"></script>
+</body>
+</html>
