@@ -205,6 +205,13 @@ export function mountShell({ page, base = "./" }) {
         document.getElementById(elementId)?.setAttribute("hidden", "");
       }
     }
+
+    if (sectionMap.get("utility-menu")?.enabled) {
+      mountUtilityMenu(base, header, tabbar);
+    } else {
+      mountContributeDock(base);
+    }
+    mountHowToPlay(base);
   });
 
 
@@ -225,13 +232,6 @@ export function mountShell({ page, base = "./" }) {
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
   renderActiveAdminEvent(header);
-
-
-  // Bottom-left dock: contribute on GitHub / report a bug.
-  mountContributeDock(base);
-
-  // First-run "How to play" guide (shows once; reopenable from the dock).
-  mountHowToPlay(base);
 
 
   const walletPill = header.querySelector("#shellWallet");
@@ -724,6 +724,53 @@ function mountContributeDock(base) {
   `;
 
   document.body.appendChild(dock);
+}
+
+function mountUtilityMenu(base, header, tabbar) {
+  if (document.getElementById("shellUtilityMenu")) return;
+
+  const button = (className) => `<button class="${className} utility-menu__toggle" type="button" aria-label="More" title="More" aria-expanded="false">${icons.more || icons.sparkle}<span>More</span></button>`;
+  header.querySelector(".nav")?.insertAdjacentHTML("beforeend", button("nav__link"));
+  tabbar.insertAdjacentHTML("beforeend", button("tabbar__link"));
+
+  const menu = document.createElement("nav");
+  menu.id = "shellUtilityMenu";
+  menu.className = "utility-menu hidden";
+  menu.setAttribute("aria-label", "More links");
+  menu.innerHTML = `
+    <button class="utility-menu__link" type="button" data-howto-trigger>${icons.book}<span>How to play</span></button>
+    <a class="utility-menu__link" href="${CONTRIBUTE_URL}" target="_blank" rel="noopener noreferrer">${icons.github}<span>Contribute</span></a>
+    <a class="utility-menu__link" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
+    <a class="utility-menu__link" href="${base}codes/">${icons.sparkle}<span>Codes</span></a>
+    <a class="utility-menu__link" href="${base}updates/">${icons.sparkle}<span>Update log</span></a>
+    <a class="utility-menu__link" href="${base}support/">${icons.heart}<span>Support the game</span></a>
+  `;
+  document.body.appendChild(menu);
+
+  const toggles = [...document.querySelectorAll(".utility-menu__toggle")];
+  const close = () => {
+    menu.classList.add("hidden");
+    toggles.forEach((item) => item.setAttribute("aria-expanded", "false"));
+  };
+  const toggle = (event) => {
+    event.stopPropagation();
+    const opening = menu.classList.contains("hidden");
+    close();
+    if (opening) {
+      menu.classList.remove("hidden");
+      toggles.forEach((item) => item.setAttribute("aria-expanded", "true"));
+      menu.querySelector("a,button")?.focus();
+    }
+  };
+  toggles.forEach((item) => item.addEventListener("click", toggle));
+  menu.addEventListener("click", (event) => {
+    if (event.target.closest("a")) close();
+    event.stopPropagation();
+  });
+  document.addEventListener("click", close);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
 }
 
 
