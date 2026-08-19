@@ -28,8 +28,11 @@ import {
   updateSettings,
   onSettingsChange,
   shouldAutoSell,
+  autoKeepMatch,
   SELL_TIERS
 } from "./src/ui/settings.js";
+import { loadFeatureFlags } from "./src/ui/featureFlags.js";
+import { recordSessionRoll,getSessionInsights,clearSessionInsights } from "./src/ui/sessionInsights.js";
 import {
   rarityTier,
   rarityLabel,
@@ -65,10 +68,13 @@ const autoRollToggle = document.getElementById("autoRollToggle");
 const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
+const autoKeepControls=document.getElementById("autoKeepControls"),autoKeepToggle=document.getElementById("autoKeepToggle"),autoKeepRarity=document.getElementById("autoKeepRarity"),autoKeepMutation=document.getElementById("autoKeepMutation"),autoKeepValue=document.getElementById("autoKeepValue"),autoKeepWeight=document.getElementById("autoKeepWeight");
 
 const historyList = document.getElementById("historyList");
 const clearHistory = document.getElementById("clearHistory");
 const expeditionPreview = document.getElementById("expeditionPreview");
+const sessionInsights=document.getElementById("sessionInsights"),sessionInsightStats=document.getElementById("sessionInsightStats"),sessionHighlights=document.getElementById("sessionHighlights"),sessionBreakdown=document.getElementById("sessionBreakdown"),sessionNotable=document.getElementById("sessionNotable");
+let autoKeepFeature=false,sessionInsightsFeature=false;
 
 async function applyMainSectionSettings() {
   try {
@@ -91,6 +97,7 @@ async function applyMainSectionSettings() {
 }
 
 applyMainSectionSettings();
+const featureFlagsReady=loadFeatureFlags().then(flags=>{autoKeepFeature=flags.get("auto-keep")===true;sessionInsightsFeature=flags.get("session-insights")===true;autoKeepControls.hidden=!autoKeepFeature;sessionInsights.hidden=!sessionInsightsFeature;renderSessionInsights();});
 
 document.getElementById("stageIdleMark").innerHTML = icons.gem;
 
@@ -668,6 +675,17 @@ function renderHistory() {
     .join("");
 }
 
+function sessionHighlight(label,item,formatter){if(!item)return"";return `<div><span>${label}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(formatter(item))}</small></div>`;}
+function renderSessionInsights(){
+  if(!sessionInsightsFeature)return;
+  const state=getSessionInsights(),elapsed=Math.max(0,Date.now()-new Date(state.startedAt).getTime()),hours=Math.floor(elapsed/3600000),minutes=Math.floor(elapsed%3600000/60000);
+  sessionInsightStats.innerHTML=[["Duration",`${hours}h ${minutes}m`],["Rolls",formatCount(state.rolls)],["Kept",formatCount(state.kept)],["Auto kept",formatCount(state.autoKept)],["Auto sold",formatCount(state.autoSold)],["Auto-sell income",formatMoney(state.autoSoldValue)],["Relics",formatCount(state.relics)],["Auto crafted",formatCount(state.autoCrafted)]].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  sessionHighlights.innerHTML=sessionHighlight("Rarest effective",state.bestEffective,item=>`1/${Math.round(item.effectiveRarity).toLocaleString()}`)+sessionHighlight("Rarest base",state.bestBase,item=>`1/${Math.round(item.baseRarity).toLocaleString()}`)+sessionHighlight("Heaviest",state.heaviest,item=>formatWeight(item.weight))+sessionHighlight("Most valuable",state.mostValuable,item=>formatMoney(item.value));
+  sessionBreakdown.innerHTML=Object.entries(state.rarities).sort((a,b)=>b[1]-a[1]).map(([tier,count])=>`<span class="badge">${escapeHtml(tier)} · ${formatCount(count)}</span>`).join("")||"<small>No rolls yet.</small>";
+  sessionNotable.innerHTML=state.notable.slice(0,6).map(item=>`<div><strong>${escapeHtml(item.name)}</strong><span>1/${Math.round(item.effectiveRarity).toLocaleString()} · ${escapeHtml(item.decision.replaceAll("-"," "))}</span></div>`).join("")||"<small>Mutation and 1/100,000+ rolls will appear here.</small>";
+}
+window.addEventListener("session-insights:change",renderSessionInsights);
+
 
 // =========================================================
 // ROLLING
@@ -679,6 +697,8 @@ async function performRoll() {
   }
 
   rollInFlight = true;
+
+  await featureFlagsReady;
 
   stopCooldown();
 
@@ -756,6 +776,8 @@ async function performRoll() {
 
   const outcome = await resolveOutcome(data);
 
+  recordSessionRoll(data,outcome);
+
   renderSummary();
 
   const cinematicPromise = renderRoll(data, outcome);
@@ -798,11 +820,13 @@ async function resolveOutcome(data) {
     return {
       icon: icons.anvil,
       text: `Deposited into ${recipe?.name ?? "your Auto Craft target"}`,
-      note: "deposited"
+      note: "deposited",type:"auto-crafted",tier:rarityTier(data.gem.rarity).id,reason:"Auto Craft target"
     };
   }
 
   const tier = rarityTier(data.gem.rarity);
+  const protection=autoKeepFeature?autoKeepMatch(data):data?.gem?.dropType==="relic"?{keep:true,reason:"Relics are always protected"}:{keep:false,reason:""};
+  if(protection.keep){return{icon:icons.bag,text:`Auto kept — ${protection.reason}`,note:"auto kept",type:"auto-kept",tier:tier.id,reason:protection.reason};}
 
   if (shouldAutoSell(tier.id) && data.specimenId != null) {
     const { data: sale, error } = await sellCloudGem(data.specimenId);
@@ -815,7 +839,7 @@ async function resolveOutcome(data) {
       return {
         icon: icons.coins,
         text: `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`,
-        note: "auto sold"
+        note: "auto sold",type:"auto-sold",tier:tier.id,soldValue:Number(sale.soldValue??data.value),reason:`Auto Sell: ${tier.name}`
       };
     }
 
@@ -829,7 +853,7 @@ async function resolveOutcome(data) {
     text: `Stored — ${formatCount(data.inventory?.count ?? 0)} of ${formatCount(
       data.inventory?.capacity ?? view.capacity
     )} slots used`,
-    note: ""
+    note: "",type:"kept",tier:tier.id,reason:"Stored"
   };
 }
 
@@ -1022,6 +1046,11 @@ function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
+  autoKeepToggle.checked=settings.autoKeep;
+  autoKeepRarity.value=settings.autoKeepEffectiveRarity;
+  autoKeepMutation.value=settings.autoKeepMutation;
+  autoKeepValue.value=settings.autoKeepMinValue;
+  autoKeepWeight.value=settings.autoKeepMinWeight;
 
   autoSellTierRow.classList.toggle(
     "automation__row--muted",
@@ -1050,6 +1079,11 @@ autoSellTier.addEventListener("change", () => {
   updateSettings({ autoSellTier: autoSellTier.value });
 });
 
+autoKeepToggle.addEventListener("change",()=>updateSettings({autoKeep:autoKeepToggle.checked}));
+for(const [element,key] of [[autoKeepRarity,"autoKeepEffectiveRarity"],[autoKeepMutation,"autoKeepMutation"],[autoKeepValue,"autoKeepMinValue"],[autoKeepWeight,"autoKeepMinWeight"]]){
+  element.addEventListener("change",()=>updateSettings({[key]:element.value}));
+}
+
 
 onSettingsChange((settings) => {
   paintSettings(settings);
@@ -1072,6 +1106,8 @@ rollButton.addEventListener("click", () => performRoll());
 
 clearHistory.addEventListener("click", () => {
   history.length = 0;
+
+  clearSessionInsights();
 
   renderHistory();
 });

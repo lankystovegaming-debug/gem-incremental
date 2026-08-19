@@ -121,7 +121,9 @@ async function renderSectionControls(){
       "mining-events":["⛏ Mining Events","Timed mining phenomena with phases, boosts and custom loot."],
       "merchant-caravan":["◇ Merchant Caravan","Rotating merchants, stock, prices and currencies."],
       "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."],
-      "utility-menu":["••• More menu","Moves utility links into the main navigation"]
+      "utility-menu":["••• More menu","Moves utility links into the main navigation"],
+      "session-insights":["▤ Session Insights","Detailed statistics and highlights for the current session"],
+      "auto-keep":["◆ Auto Keep","Protects exceptional rolls before Auto Sell"]
     };
     $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
       const fallback=fallbackLabels[s.id];

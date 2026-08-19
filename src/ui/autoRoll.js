@@ -4,10 +4,13 @@ import {
   getSettings,
   updateSettings,
   onSettingsChange,
-  shouldAutoSell
+  shouldAutoSell,
+  autoKeepMatch
 } from "./settings.js";
 import { rarityTier } from "./format.js";
 import { notify } from "./toast.js";
+import { featureEnabled } from "./featureFlags.js";
+import { recordSessionRoll } from "./sessionInsights.js";
 
 // The Roll page has its richer renderer/cinematic loop in main.js. Every
 // other page uses this lightweight background controller so Auto Roll keeps
@@ -21,6 +24,8 @@ export function startGlobalAutoRoll(page) {
   let inFlight = false;
   let timer = null;
   let unsubscribe = null;
+  let autoKeepFeature=false;
+  const autoKeepReady=featureEnabled("auto-keep").then(enabled=>{autoKeepFeature=enabled;});
 
   const clearTimer = () => {
     if (timer) {
@@ -55,6 +60,7 @@ export function startGlobalAutoRoll(page) {
     inFlight = true;
 
     try {
+      await autoKeepReady;
       const { data, error } = await invokeFunction("roll");
 
       if (error) {
@@ -76,16 +82,21 @@ export function startGlobalAutoRoll(page) {
 
       // Auto Craft is resolved server-side before a specimen is returned to
       // the client. Only a specimen that remains in inventory can be sold.
+      const tier=rarityTier(data.gem?.rarity),protection=autoKeepFeature?autoKeepMatch(data):data?.gem?.dropType==="relic"?{keep:true,reason:"Relics are always protected"}:{keep:false,reason:""};
+      let outcome=data.autoCraft?.deposited?{type:"auto-crafted",tier:tier.id,reason:"Auto Craft target"}:protection.keep?{type:"auto-kept",tier:tier.id,reason:protection.reason}:{type:"kept",tier:tier.id,reason:"Stored"};
       if (
         !data.autoCraft?.deposited &&
+        !protection.keep &&
         shouldAutoSell(rarityTier(data.gem?.rarity).id) &&
         data.specimenId != null
       ) {
-        const { error: sellError } = await sellCloudGem(data.specimenId);
+        const { data:sale,error: sellError } = await sellCloudGem(data.specimenId);
         if (sellError) {
           console.error("[AUTO ROLL] Background auto-sell failed:", sellError);
-        }
+        }else outcome={type:"auto-sold",tier:tier.id,reason:`Auto Sell: ${tier.name}`,soldValue:Number(sale?.soldValue??data.value)};
       }
+
+      recordSessionRoll(data,outcome);
 
       // Let chat and any page-local UI react to the same successful roll.
       window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
