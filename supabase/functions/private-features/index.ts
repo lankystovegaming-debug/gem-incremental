@@ -1,6 +1,9 @@
 import { withSupabase } from "npm:@supabase/server";
 // Owner user IDs that can access the hidden Upcoming Features workspace.
-export const PRIVATE_FEATURE_OWNER_USER_IDS: string[] = [];
+export const PRIVATE_FEATURE_OWNER_USER_IDS: string[] = [
+  // Current owner account — keeps the private workspace accessible even if the admins table has not been seeded yet.
+  "38d5e8ce-18af-46d3-aa9e-6e601e75dd78"
+];
 
 // Extra admin user IDs for the hidden Upcoming Features workspace.
 export const PRIVATE_FEATURE_ADMIN_USER_IDS: string[] = [];
@@ -12,9 +15,34 @@ function json(data: unknown, status = 200) { return Response.json(data, { status
 function samePassword(value: unknown) { return typeof value === "string" && value === PRIVATE_FEATURE_PASSWORD; }
 
 async function isAllowed(ctx: any, userId: string) {
-  if (PRIVATE_FEATURE_OWNER_USER_IDS.includes(userId) || PRIVATE_FEATURE_ADMIN_USER_IDS.includes(userId)) return true;
-  const { data } = await ctx.supabaseAdmin.from("admins").select("user_id").eq("user_id", userId).maybeSingle();
-  return data?.user_id === userId;
+  // Explicit owner/admin IDs are checked first so this feature cannot disappear
+  // just because the optional admins table has not been seeded yet.
+  if (PRIVATE_FEATURE_OWNER_USER_IDS.includes(userId) || PRIVATE_FEATURE_ADMIN_USER_IDS.includes(userId)) {
+    return true;
+  }
+
+  try {
+    if (!ctx?.supabaseAdmin) {
+      console.error("Private features: supabaseAdmin is unavailable");
+      return false;
+    }
+
+    const { data, error } = await ctx.supabaseAdmin
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Private features admin lookup failed:", error);
+      return false;
+    }
+
+    return data?.user_id === userId;
+  } catch (error) {
+    console.error("Private features admin lookup crashed:", error);
+    return false;
+  }
 }
 
 function normalizeDefinition(body: any) {
@@ -52,7 +80,16 @@ const seedFeatures = [
 
 export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
   const userId = ctx.userClaims?.sub ?? ctx.userClaims?.id ?? ctx.jwtClaims?.sub;
-  if (!userId || !(await isAllowed(ctx, userId))) return json({ error: "private_feature_forbidden" }, 403);
+
+  console.log("PRIVATE_FEATURES AUTH", {
+    userId,
+    userClaims: ctx.userClaims,
+    jwtClaims: ctx.jwtClaims,
+    hasSupabaseAdmin: Boolean(ctx.supabaseAdmin)
+  });
+
+  if (!userId) return json({ error: "private_feature_unauthenticated" }, 401);
+  if (!(await isAllowed(ctx, userId))) return json({ error: "private_feature_forbidden" }, 403);
 
   let body: any = {};
   try { body = await req.json(); } catch { }

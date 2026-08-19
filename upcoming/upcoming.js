@@ -29,7 +29,7 @@ function render(defs){
  $("cards").querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>removeFeature(b.dataset.delete));
 }
 function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-async function load(){try{const d=await call("list");render(d.definitions||[]);status(`${(d.definitions||[]).length} definitions loaded.`)}catch(e){status(e.message,true)}}
+async function load(){try{const d=await call("list");render(d.definitions||[]);status(`${(d.definitions||[]).length} definitions loaded.`)}catch(e){status(`${e.message}. If this is the first deploy, apply the upcoming-features migration, then reload.`,true)}}
 function openEditor(d=null){
  editing=d?.id||null;$("editor").hidden=false;$("editorTitle").textContent=d?"Edit feature":"New feature";
  $("kind").value=d?.feature_kind||"achievement";$("questType").value=d?.quest_type||"special";$("name").value=d?.name||"";
