@@ -24,6 +24,13 @@ export async function loadCloudEquipment() {
         enchant_id,
         enchant_grade,
         enchant_state,
+        masterwork_level,
+        masterwork_passive,
+        masterwork_passive_rank,
+        masterwork_attunement,
+        masterwork_rerolls,
+        masterwork_choices,
+        masterwork_perfected_at,
         equipped,
         created_at
       `)
@@ -50,6 +57,10 @@ export async function loadCloudEquipment() {
   }
 
   return data;
+}
+
+export async function masterworkCloudEquipment(equipmentRowId, action, choice = null) {
+  return invokeFunction("masterwork-equipment", { equipmentRowId, action, choice });
 }
 
 export async function enchantCloudEquipment(equipmentRowId, relicGemId) {
