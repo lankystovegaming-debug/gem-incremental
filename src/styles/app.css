@@ -1217,6 +1217,24 @@ a.btn--icon[aria-current="page"] {
   box-shadow: var(--shadow-sm);
 }
 
+.section-switcher {
+  width: fit-content;
+  margin-bottom: var(--space-5);
+}
+
+.section-switcher .segmented__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.section-switcher .segmented__item.active {
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
 
 /* =========================================================
    10. FORM CONTROLS
