@@ -9,7 +9,8 @@ const MESSAGES = {
   reroll_limit_reached: "You have no quest rerolls remaining.",
   quest_not_rerollable: "That quest cannot be rerolled.",
   no_alternative_quest: "There is no fair alternative for that quest.",
-  expedition_not_active: "That expedition is no longer active."
+  expedition_not_active: "That expedition is no longer active.",
+  invalid_reward_choice: "Choose one of the available guaranteed reward packages."
 };
 
 function normalise(error) {
@@ -19,12 +20,12 @@ function normalise(error) {
 }
 
 export async function loadExpeditionDashboard() {
-  const { data, error } = await supabase.rpc("get_expedition_dashboard");
+  const { data, error } = await supabase.rpc("get_expedition_dashboard_v2");
   return { data, error: normalise(error) };
 }
 
-export async function enterExpedition(cadence, difficulty) {
-  const { data, error } = await supabase.rpc("enter_expedition", { p_cadence: cadence, p_difficulty: difficulty });
+export async function enterExpedition(cadence, difficulty, rewardChoice) {
+  const { data, error } = await supabase.rpc("enter_expedition_v2", { p_cadence: cadence, p_difficulty: difficulty, p_reward_choice: rewardChoice });
   return { data, error: normalise(error) };
 }
 
