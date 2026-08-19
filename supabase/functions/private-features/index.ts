@@ -390,24 +390,29 @@ export default {
         }
 
         if (action === "list") {
-          const { data, error } =
-            await ctx.supabaseAdmin
-              .from("private_feature_definitions")
-              .select("*")
-              .order("feature_kind")
-              .order("quest_type")
-              .order("sort_order");
+          if (!ctx?.supabaseAdmin) {
+            return json({
+              error: "feature_server_client_missing",
+              message: "The private-features Edge Function does not have a service-role Supabase client. Redeploy the function from the supplied ZIP."
+            }, 500);
+          }
+
+          let { data, error } = await ctx.supabaseAdmin
+            .from("private_feature_definitions")
+            .select("*")
+            .order("feature_kind")
+            .order("quest_type")
+            .order("sort_order");
 
           if (error) {
-            console.error("Feature list failed:", error.message);
-
-            return json(
-              {
-                error: "feature_list_failed",
-                message: error.message
-              },
-              500
-            );
+            console.error("Feature list failed:", error);
+            return json({
+              error: "feature_list_failed",
+              message: error.message,
+              details: error.details ?? null,
+              hint: error.hint ?? null,
+              code: error.code ?? null
+            }, 500);
           }
 
           // A brand-new installation has valid empty tables after the
@@ -428,8 +433,15 @@ export default {
                 throw new Error(`feature_refresh_failed: ${refreshError.message}`);
               }
 
+              const bootDefinitions = refreshed ?? [];
+              if (bootDefinitions.length) {
+                const { error: initError } = await ctx.supabaseAdmin
+                  .rpc("ensure_private_feature_progress", { p_player_id: userId });
+                if (initError) throw new Error(`feature_progress_initialize_failed: ${initError.message}`);
+              }
+
               return json({
-                definitions: refreshed ?? [],
+                definitions: bootDefinitions,
                 bootstrapped: true,
                 inserted: seeded.inserted.length
               });
@@ -445,10 +457,52 @@ export default {
             }
           }
 
+          // Create an empty progress row for every active definition for this player.
+          // This makes the progress table immediately useful even before the first roll.
+          if ((data ?? []).length > 0) {
+            const { error: progressInitError } = await ctx.supabaseAdmin
+              .rpc("ensure_private_feature_progress", { p_player_id: userId });
+            if (progressInitError) {
+              console.error("Feature progress initialization failed:", progressInitError);
+              return json({
+                error: "feature_progress_initialize_failed",
+                message: progressInitError.message,
+                details: progressInitError.details ?? null,
+                hint: progressInitError.hint ?? null,
+                code: progressInitError.code ?? null
+              }, 500);
+            }
+          }
+
           return json({
             definitions: data ?? [],
             bootstrapped: false
           });
+        }
+
+        if (action === "progress") {
+          const { data: definitions, error: definitionsError } = await ctx.supabaseAdmin
+            .from("private_feature_definitions")
+            .select("*")
+            .order("feature_kind")
+            .order("quest_type")
+            .order("sort_order");
+          if (definitionsError) return json({ error: "progress_definitions_failed", message: definitionsError.message }, 500);
+
+          if ((definitions ?? []).length) {
+            const { error: initError } = await ctx.supabaseAdmin
+              .rpc("ensure_private_feature_progress", { p_player_id: userId });
+            if (initError) return json({ error: "progress_initialize_failed", message: initError.message, details: initError.details ?? null, hint: initError.hint ?? null, code: initError.code ?? null }, 500);
+          }
+
+          const { data: progress, error: progressError } = await ctx.supabaseAdmin
+            .from("private_feature_progress")
+            .select("*")
+            .eq("player_id", userId)
+            .order("updated_at", { ascending: false });
+          if (progressError) return json({ error: "progress_load_failed", message: progressError.message, details: progressError.details ?? null, hint: progressError.hint ?? null, code: progressError.code ?? null }, 500);
+
+          return json({ definitions: definitions ?? [], progress: progress ?? [] });
         }
 
         if (action === "seed") {
@@ -535,29 +589,6 @@ export default {
           }
 
           return json({ ok: true });
-        }
-
-        if (action === "progress") {
-          const { data, error } =
-            await ctx.supabaseAdmin
-              .from("private_feature_progress")
-              .select("*")
-              .order("updated_at", { ascending: false })
-              .limit(5000);
-
-          if (error) {
-            return json(
-              {
-                error: "progress_load_failed",
-                message: error.message
-              },
-              500
-            );
-          }
-
-          return json({
-            progress: data ?? []
-          });
         }
 
         return json(

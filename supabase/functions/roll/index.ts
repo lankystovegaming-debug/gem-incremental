@@ -1942,7 +1942,7 @@ export default {
             "player_one_roll_boosts"
           )
           .select(
-            "effect_value"
+            "effect_value, consumable_id"
           )
           .eq(
             "player_id",
