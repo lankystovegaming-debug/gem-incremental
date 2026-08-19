@@ -4,6 +4,324 @@ import {
 
 
 // =========================================================
+// PROGRESSION / ACHIEVEMENT ENGINE (INLINE FOR SUPABASE DASHBOARD DEPLOY)
+// =========================================================
+const MAX_PROGRESS_EVENTS = 5000;
+
+// Mutation denominators used by the roll system and progression requirements.
+export const MUTATION_DENOMINATORS: Record<string, number> = {
+  polished: 100,
+  gilded: 500,
+  prismatic: 2500,
+  celestial: 10000,
+  corrupted: 50000
+};
+
+function arr(value: unknown): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function num(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getPath(source: any, path: string): any {
+  return String(path).split(".").reduce((value, key) => value?.[key], source);
+}
+
+function compare(value: any, operator: string, target: any): boolean {
+  switch (operator) {
+    case "eq": return value === target;
+    case "neq": return value !== target;
+    case "gt": return num(value) > num(target);
+    case "gte": return num(value) >= num(target);
+    case "lt": return num(value) < num(target);
+    case "lte": return num(value) <= num(target);
+    case "in": return arr(target).map(String).includes(String(value));
+    case "contains": return arr(value).map(String).includes(String(target));
+    default: return false;
+  }
+}
+
+function eventMatches(event: any, condition: any): boolean {
+  if (!condition || typeof condition !== "object") return false;
+
+  if (condition.all) return arr(condition.all).every((item) => eventMatches(event, item));
+  if (condition.any) return arr(condition.any).some((item) => eventMatches(event, item));
+  if (condition.not) return !eventMatches(event, condition.not);
+
+  const payload = event?.payload ?? {};
+
+  if (condition.eventType && event.event_type !== condition.eventType) return false;
+  if (condition.gemName && payload.gemName !== condition.gemName) return false;
+  if (condition.gemNames && !arr(condition.gemNames).includes(payload.gemName)) return false;
+  if (condition.gemRarityGte != null && num(payload.gemRarity) < num(condition.gemRarityGte)) return false;
+  if (condition.gemRarityLte != null && num(payload.gemRarity) > num(condition.gemRarityLte)) return false;
+  if (condition.valueGte != null && num(payload.value) < num(condition.valueGte)) return false;
+  if (condition.weightGte != null && num(payload.finalWeight) < num(condition.weightGte)) return false;
+  if (condition.mutationCountGte != null && arr(payload.mutationIds).length < num(condition.mutationCountGte)) return false;
+  if (condition.mutationCountEq != null && arr(payload.mutationIds).length !== num(condition.mutationCountEq)) return false;
+  if (condition.hasMutation && !arr(payload.mutationIds).includes(condition.hasMutation)) return false;
+  if (condition.hasAllMutations && !arr(condition.hasAllMutations).every((id) => arr(payload.mutationIds).includes(id))) return false;
+  if (condition.hasAnyMutation && !arr(condition.hasAnyMutation).some((id) => arr(payload.mutationIds).includes(id))) return false;
+  if (condition.mutationChanceMultiplierGte != null && num(payload.mutationChanceMultiplier) < num(condition.mutationChanceMultiplierGte)) return false;
+  if (condition.noLegendaryOrMythicPotion && (payload.usedLegendaryPotion || payload.usedMythicPotion)) return false;
+  if (condition.noPotionUsed && payload.usedAnyPotion) return false;
+  if (condition.rollNumberGte != null && num(event.roll_number) < num(condition.rollNumberGte)) return false;
+
+  if (condition.where && typeof condition.where === "object") {
+    for (const [path, rule] of Object.entries(condition.where as Record<string, any>)) {
+      const value = getPath(payload, path);
+      if (rule && typeof rule === "object" && "operator" in rule) {
+        if (!compare(value, String((rule as any).operator), (rule as any).value)) return false;
+      } else if (value !== rule) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function countMatching(events: any[], condition: any): number {
+  return events.reduce((total, event) => total + (eventMatches(event, condition) ? 1 : 0), 0);
+}
+
+function maxWindow(events: any[], windowRolls: number | null): any[] {
+  if (!windowRolls) return events;
+  const newestRoll = num(events[0]?.roll_number, Number.MAX_SAFE_INTEGER);
+  const minimumRoll = newestRoll - Math.max(0, num(windowRolls)) + 1;
+  return events.filter((event) => num(event.roll_number) >= minimumRoll);
+}
+
+function consecutive(events: any[], condition: any): number {
+  let count = 0;
+  for (const event of events) {
+    if (!eventMatches(event, condition)) break;
+    count += 1;
+  }
+  return count;
+}
+
+function evaluateNode(events: any[], requirement: any): { complete: boolean; value: number } {
+  if (!requirement || typeof requirement !== "object") return { complete: false, value: 0 };
+
+  if (requirement.all) {
+    const results = arr(requirement.all).map((item) => evaluateNode(events, item));
+    return { complete: results.every((r) => r.complete), value: results.reduce((sum, r) => sum + r.value, 0) };
+  }
+
+  if (requirement.any) {
+    const results = arr(requirement.any).map((item) => evaluateNode(events, item));
+    return { complete: results.some((r) => r.complete), value: Math.max(0, ...results.map((r) => r.value)) };
+  }
+
+  if (requirement.not) {
+    const result = evaluateNode(events, requirement.not);
+    return { complete: !result.complete, value: result.complete ? 0 : 1 };
+  }
+
+  if (requirement.type === "count") {
+    const window = maxWindow(events, requirement.windowRolls ?? null);
+    const value = countMatching(window, requirement.match ?? {});
+    const target = Math.max(1, num(requirement.amount, 1));
+    return { complete: value >= target, value: Math.min(value, target) };
+  }
+
+  if (requirement.type === "consecutive") {
+    const value = consecutive(events, requirement.match ?? {});
+    const target = Math.max(1, num(requirement.amount, 1));
+    return { complete: value >= target, value: Math.min(value, target) };
+  }
+
+  if (requirement.type === "sequence") {
+    const sequence = arr(requirement.events);
+    let position = 0;
+    for (const event of [...events].reverse()) {
+      if (eventMatches(event, sequence[position])) position += 1;
+      if (position >= sequence.length) return { complete: true, value: sequence.length };
+    }
+    return { complete: false, value: position };
+  }
+
+  if (requirement.type === "rolls") {
+    const target = Math.max(1, num(requirement.amount, 1));
+    const value = events.length;
+    return { complete: value >= target, value: Math.min(value, target) };
+  }
+
+  if (requirement.type === "single") {
+    const match = requirement.match ?? {};
+    const found = events.some((event) => eventMatches(event, match));
+    return { complete: found, value: found ? 1 : 0 };
+  }
+
+  // Direct event predicate shorthand: useful for tiny custom requirements.
+  const found = events.some((event) => eventMatches(event, requirement));
+  return { complete: found, value: found ? 1 : 0 };
+}
+
+export async function processProgressEvent(
+  supabaseAdmin: any,
+  playerId: string,
+  eventType: string,
+  payload: Record<string, unknown>,
+  rollNumber: number | null = null
+) {
+  // Progress rows are initialized here as well as in the private-features
+  // workspace. This guarantees a real roll can create progression state even
+  // if the player has never opened Upcoming Features.
+  // Initialize progress through a SECURITY DEFINER RPC. This avoids
+  // depending on direct sequence/table INSERT privileges of service_role.
+  const { error: progressInitError } = await supabaseAdmin.rpc(
+    "ensure_private_feature_progress",
+    { p_player_id: playerId }
+  );
+
+  if (progressInitError) throw progressInitError;
+
+  const { data: recordedEventId, error: eventError } = await supabaseAdmin
+    .rpc("record_private_feature_progress_event", {
+      p_player_id: playerId,
+      p_event_type: eventType,
+      p_roll_number: rollNumber,
+      p_payload: payload
+    });
+
+  if (eventError) throw eventError;
+
+  const { data: definitions, error: definitionError } = await supabaseAdmin
+    .from("private_feature_definitions")
+    .select("*")
+    .eq("enabled", true)
+    .order("sort_order", { ascending: true })
+    .limit(250);
+
+  if (definitionError) throw definitionError;
+  if (!definitions?.length) return { completed: [] };
+
+  const { data: events, error: eventLoadError } = await supabaseAdmin
+    .from("private_feature_progress_events")
+    .select("id, event_type, roll_number, payload, created_at")
+    .eq("player_id", playerId)
+    .order("id", { ascending: false })
+    .limit(MAX_PROGRESS_EVENTS);
+
+  if (eventLoadError) throw eventLoadError;
+
+  const { data: existingProgress } = await supabaseAdmin
+    .from("private_feature_progress")
+    .select("*")
+    .eq("player_id", playerId);
+
+  const progressMap = new Map((existingProgress ?? []).map((row: any) => [String(row.feature_id), row]));
+  const completedIds = new Set((existingProgress ?? []).filter((row: any) => row.completed).map((row: any) => String(row.feature_id)));
+  const completed: any[] = [];
+
+  for (const definition of definitions) {
+    const now = Date.now();
+    const starts = definition.starts_at ? new Date(definition.starts_at).getTime() : null;
+    const ends = definition.ends_at ? new Date(definition.ends_at).getTime() : null;
+    if ((starts && now < starts) || (ends && now >= ends)) continue;
+
+    const prerequisites = arr(definition.prerequisites).map(String);
+    if (!prerequisites.every((id) => completedIds.has(id))) continue;
+
+    const current = progressMap.get(String(definition.id));
+    if (current?.completed) continue;
+
+    const result = evaluateNode(events ?? [], definition.requirements);
+    const update = {
+      player_id: playerId,
+      feature_id: definition.id,
+      current_value: result.value,
+      completed: result.complete,
+      completed_at: result.complete ? (current?.completed_at ?? new Date().toISOString()) : null,
+      updated_at: new Date().toISOString(),
+      metadata: { lastEventType: eventType, lastRollNumber: rollNumber }
+    };
+
+    const { data: saved, error: saveError } = await supabaseAdmin
+      .from("private_feature_progress")
+      .upsert(update, { onConflict: "player_id,feature_id" })
+      .select("*")
+      .single();
+
+    if (saveError) throw saveError;
+
+    if (result.complete) {
+      completedIds.add(String(definition.id));
+      if (!saved.reward_granted) {
+        await grantRewards(supabaseAdmin, playerId, definition.rewards ?? []);
+        await supabaseAdmin
+          .from("private_feature_progress")
+          .update({ reward_granted: true, reward_granted_at: new Date().toISOString() })
+          .eq("player_id", playerId)
+          .eq("feature_id", definition.id);
+      }
+      completed.push({ id: definition.id, name: definition.name, rewards: definition.rewards ?? [] });
+    }
+  }
+
+  return { completed };
+}
+
+async function grantRewards(supabaseAdmin: any, playerId: string, rewards: any[]) {
+  for (const reward of arr(rewards)) {
+    const amount = num(reward.amount, 0);
+    if (reward.type === "money" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: amount, p_coins: 0, p_capacity: 0 });
+      continue;
+    }
+    if (reward.type === "coins" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: 0, p_coins: Math.trunc(amount), p_capacity: 0 });
+      continue;
+    }
+    if (reward.type === "capacity" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: 0, p_coins: 0, p_capacity: Math.trunc(amount) });
+      continue;
+    }
+    if (reward.type === "potion" && reward.consumableId && amount > 0) {
+      const { data: existingPotion } = await supabaseAdmin
+        .from("player_consumables")
+        .select("quantity")
+        .eq("player_id", playerId)
+        .eq("consumable_id", String(reward.consumableId))
+        .maybeSingle();
+      await supabaseAdmin.from("player_consumables").upsert({
+        player_id: playerId,
+        consumable_id: String(reward.consumableId),
+        quantity: num(existingPotion?.quantity) + amount,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "player_id,consumable_id" });
+      continue;
+    }
+    if (reward.type === "gem" && reward.gemName) {
+      await supabaseAdmin.from("inventory_gems").insert({
+        player_id: playerId,
+        gem_name: String(reward.gemName),
+        rarity: num(reward.rarity),
+        base_weight: num(reward.baseWeight),
+        value_per_gram: num(reward.valuePerGram),
+        rolled_weight_multiplier: num(reward.weightMultiplier, 1),
+        rolled_weight: num(reward.baseWeight) * num(reward.weightMultiplier, 1),
+        final_weight: num(reward.baseWeight) * num(reward.weightMultiplier, 1),
+        mutation_id: arr(reward.mutationIds)[0] ?? null,
+        mutation_ids: arr(reward.mutationIds),
+        mutation_multiplier: num(reward.mutationMultiplier, 1),
+        mutation_multipliers: reward.mutationMultipliers ?? {},
+        mutation_chance_multiplier: 1,
+        value: num(reward.value, 0),
+        locked: false,
+        luck_at_roll: 1
+      });
+    }
+  }
+}
+
+
+// =========================================================
 // CORS
 // =========================================================
 
@@ -29,7 +347,7 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
 // GEM DATA
 // =========================================================
 
-const gems = [
+let gems = [
   {
     name: "Quartz",
     rarity: 2,
@@ -1635,7 +1953,7 @@ export default {
             "player_one_roll_boosts"
           )
           .select(
-            "effect_value"
+            "effect_value, consumable_id"
           )
           .eq(
             "player_id",
@@ -1676,6 +1994,8 @@ export default {
             roll_speed_multiplier,
             weight_luck_multiplier,
             weight_multiplier_multiplier,
+            mutation_luck_bonus,
+            mutation_luck_multiplier,
             ends_at
           `)
           .eq(
@@ -2100,6 +2420,49 @@ export default {
         );
 
 
+
+      // =====================================================
+      // LOAD ADMIN-MANAGED GEM CATALOG
+      //
+      // The database catalog is the authoritative editable catalog.
+      // If the migration has not been installed yet, retain the bundled
+      // catalog so ordinary rolling continues to work during deployment.
+      // =====================================================
+      try {
+        const { data: configuredGems, error: configuredGemError } =
+          await ctx.supabaseAdmin
+            .from("private_feature_gems")
+            .select("name, rarity, base_weight, value_per_gram")
+            .eq("enabled", true)
+            .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
+            .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
+            .order("sort_order")
+            .order("rarity", { ascending: false });
+
+        if (!configuredGemError && configuredGems) {
+          // An installed-but-empty catalog means the admin deliberately
+          // removed/disabled every gem. Do not silently resurrect deleted
+          // gems from the bundled source.
+          if (configuredGems.length === 0) {
+            return jsonResponse(
+              { error: "no_gems_available", message: "No enabled gems are currently available." },
+              { status: 503 }
+            );
+          }
+
+          gems = configuredGems.map((entry: any) => ({
+            name: String(entry.name),
+            rarity: Number(entry.rarity),
+            baseWeight: Number(entry.base_weight),
+            valuePerGram: Number(entry.value_per_gram)
+          }));
+        } else if (configuredGemError && configuredGemError.code !== "42P01") {
+          console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
+        }
+      } catch (catalogError) {
+        console.error("Configured gem catalog unavailable; using bundled catalog:", catalogError);
+      }
+
       // =====================================================
       // GENERATE ROLL
       // =====================================================
@@ -2183,6 +2546,17 @@ export default {
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
+
+      // Global admin mutation-luck events apply after personal mutation luck
+      // and all permanent equipment passives.
+      if (activeAdminEvent) {
+        const mutationBonus = Number(activeAdminEvent.mutation_luck_bonus ?? 0);
+        const mutationEventMultiplier = Number(activeAdminEvent.mutation_luck_multiplier ?? 1);
+        if (Number.isFinite(mutationBonus)) mutationChanceMultiplier += Math.max(0, mutationBonus);
+        if (Number.isFinite(mutationEventMultiplier) && mutationEventMultiplier > 0) {
+          mutationChanceMultiplier *= mutationEventMultiplier;
+        }
+      }
 
       const mutations = relicDrop
         ? []
@@ -2695,6 +3069,39 @@ export default {
 
 
       // =====================================================
+      // PRIVATE FEATURE PROGRESSION EVENT
+      //
+      // Best-effort only: achievements/quests must never make a
+      // successful roll fail or cause a duplicate reroll.
+      // =====================================================
+      try {
+        const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
+        await processProgressEvent(
+          ctx.supabaseAdmin,
+          playerId,
+          "roll",
+          {
+            gemName: gem.name,
+            gemRarity: gem.rarity,
+            finalWeight,
+            value,
+            mutationIds,
+            mutationMultiplier,
+            mutationChanceMultiplier,
+            rawLuck: luck,
+            baseLuck,
+            usedOneRollPotion: Boolean(oneRollLuck > 0),
+            usedLegendaryPotion: usedOneRollConsumable === "legendary-potion",
+            usedMythicPotion: usedOneRollConsumable === "mythic-potion",
+            usedAnyPotion: Boolean(oneRollLuck > 0)
+          },
+          Number(player.total_rolls ?? 0) + 1
+        );
+      } catch (progressError) {
+        console.error("Private feature progression update failed:", progressError);
+      }
+
+      // =====================================================
       // CONSUME ONE-ROLL BOOST
       //
       // The roll is committed, so spend the Legendary / Mythic potion.
@@ -2942,6 +3349,24 @@ export default {
       }
 
       // =====================================================
+      // GUILD ROLL POINTS
+      // Every successful roll awards the member's guild one point.
+      // This is best-effort and never invalidates a successful roll.
+      // =====================================================
+
+      let guildPoints = null;
+      try {
+        const { data: guildResult, error: guildError } = await ctx.supabaseAdmin.rpc(
+          "record_guild_roll_points",
+          { p_player_id: playerId, p_points: 1 }
+        );
+        if (guildError) console.error("Guild roll points update failed:", guildError);
+        else guildPoints = guildResult ?? null;
+      } catch (guildError) {
+        console.error("Guild roll points update crashed:", guildError);
+      }
+
+      // =====================================================
       // FINAL INVENTORY COUNT
       // =====================================================
 
@@ -3034,6 +3459,10 @@ export default {
         lifetimeStats:
           lifetimeStats ??
           null,
+
+        guild: {
+          rollPoints: guildPoints
+        },
 
         inventory: {
           count:

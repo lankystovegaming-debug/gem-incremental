@@ -199,10 +199,16 @@ function renderPlayer(data) {
 
       <section class="admin-section">
         <h3>Account Controls</h3>
-        <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
-        <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
-          ${locked ? "Unlock account" : "Lock account"}
-        </button>
+        ${player.leaderboard_hidden ? '<p class="admin-note">Hidden from every leaderboard.</p>' : ""}
+        <div class="admin-button-row">
+          <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
+          <button class="btn ${player.leaderboard_hidden ? "btn--primary" : ""}" data-action="leaderboard-visibility" data-hidden="${player.leaderboard_hidden ? "true" : "false"}" type="button">
+            ${player.leaderboard_hidden ? "Show on leaderboard" : "Hide from leaderboard"}
+          </button>
+          <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
+            ${locked ? "Unlock account" : "Lock account"}
+          </button>
+        </div>
       </section>
 
       <section class="admin-section">
@@ -327,6 +333,9 @@ async function runPlayerAction(button) {
     }];
   } else if (action === "reset-cooldown") {
     request = ["reset_cooldown", {}];
+  } else if (action === "leaderboard-visibility") {
+    const currentlyHidden = button.dataset.hidden === "true";
+    request = ["leaderboard_visibility", { hidden: !currentlyHidden }];
   } else if (action === "account-lock") {
     const currentlyLocked = button.dataset.locked === "true";
     if (!currentlyLocked && !window.confirm("Lock this player account?")) return;
@@ -725,6 +734,76 @@ async function loadCodes() {
   }
 }
 
+
+// =========================================================
+// MAIN PAGE SECTION CONTROLS
+// =========================================================
+
+async function loadSectionControls() {
+  const panel = document.getElementById("sectionControlsPanel");
+  const list = document.getElementById("sectionControlsList");
+  if (!panel || !list) return;
+  panel.hidden = false;
+  const { data, error } = await adminRequest("section_settings");
+  if (error) {
+    list.innerHTML = `<p class="page-head__sub">${escapeHtml(error.message)}</p>`;
+    return;
+  }
+  list.innerHTML = (data.sections ?? []).map(section => `
+    <div class="section-control-row">
+      <div><strong>${escapeHtml(section.label)}</strong><span>${escapeHtml(section.description || "")}</span></div>
+      <button class="btn ${section.enabled ? "btn--primary" : ""}" data-section-id="${escapeHtml(section.id)}" data-section-enabled="${section.enabled}">
+        ${section.enabled ? "Enabled" : "Disabled"}
+      </button>
+    </div>
+  `).join("") || `<p class="page-head__sub">No configurable sections.</p>`;
+
+  for (const button of list.querySelectorAll("[data-section-id]")) {
+    button.onclick = async () => {
+      button.disabled = true;
+      const enabled = button.dataset.sectionEnabled !== "true";
+      const { error: toggleError } = await adminRequest("section_toggle", { id: button.dataset.sectionId, enabled });
+      if (toggleError) {
+        notify.error("Could not change section", toggleError.message);
+        button.disabled = false;
+      } else {
+        await loadSectionControls();
+        notify.success(enabled ? "Section enabled" : "Section disabled", "The main page will update on its next load.");
+      }
+    };
+  }
+}
+
+async function startMutationLuckEvent() {
+  const button = document.getElementById("mutationEventStart");
+  const event = {
+    name: document.getElementById("mutationEventName").value.trim(),
+    durationMinutes: Math.trunc(Number(document.getElementById("mutationEventDuration").value)),
+    mutationLuckBonus: Math.max(0, Number(document.getElementById("mutationEventBonus").value) || 0),
+    mutationLuckMultiplier: Math.max(0.01, Number(document.getElementById("mutationEventMultiplier").value) || 1)
+  };
+  if (event.name.length < 3 || !Number.isFinite(event.durationMinutes) || event.durationMinutes < 1 || event.durationMinutes > 10080) {
+    notify.error("Invalid mutation event", "Use a name and a duration between 1 minute and 7 days.");
+    return;
+  }
+  button.disabled = true;
+  const { error } = await adminRequest("start_mutation_event", event);
+  button.disabled = false;
+  if (error) {
+    notify.error("Could not start mutation event", error.message);
+    return;
+  }
+  notify.success("Mutation Surge started", `${event.mutationLuckMultiplier}× mutation luck for ${event.durationMinutes} minutes.`);
+  document.getElementById("mutationEventsPanel").hidden = false;
+}
+
+async function wireMutationEvents() {
+  const panel = document.getElementById("mutationEventsPanel");
+  if (!panel) return;
+  panel.hidden = false;
+  document.getElementById("mutationEventStart").addEventListener("click", startMutationLuckEvent);
+}
+
 // =========================================================
 // ANNOUNCEMENTS (admin only)
 // =========================================================
@@ -827,5 +906,7 @@ if (!user || !whoami?.isAdmin) {
   wireAnnouncements();
   wireCodes();
   tryWireAdminEvents();
+  await loadSectionControls();
+  await wireMutationEvents();
   searchInput.focus();
 }

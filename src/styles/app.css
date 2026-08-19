@@ -1726,6 +1726,97 @@ a.btn--icon[aria-current="page"] {
 }
 
 
+/* ---------------------------------------------------------
+   HOW TO PLAY (first-run guide)
+   --------------------------------------------------------- */
+
+.howto {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 2 * var(--space-4));
+  overflow-y: auto;
+}
+
+.howto__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.howto__spark {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.howto__spark svg { width: 22px; height: 22px; }
+
+.howto__lede {
+  margin: 0 0 var(--space-4);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.howto__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.howto__step {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.howto__step-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  color: var(--accent);
+}
+
+.howto__step-icon svg { width: 20px; height: 20px; }
+
+.howto__step-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.howto__step-text {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.howto__step-text kbd,
+.howto__tip kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface-sunken);
+  font-family: inherit;
+  font-size: 0.78em;
+}
+
+.howto__tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: var(--space-4) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.howto__tip svg { width: 16px; height: 16px; flex: none; color: var(--accent); }
+
+
 /* =========================================================
    14. EMPTY & LOADING STATES
    ========================================================= */
@@ -2363,4 +2454,37 @@ h1, h2 {
   background:
     radial-gradient(900px 520px at 12% 0%, #67e8f914, transparent 65%),
     linear-gradient(145deg, var(--bg), #0b1a2a);
+}
+
+/* =========================================================
+   Compact desktop shell: keep every authorized link, including
+   Admin + Upcoming, inside the viewport instead of pushing the
+   header wider than the screen.
+   ========================================================= */
+@media (min-width: 781px) and (max-width: 1500px) {
+  .topbar__inner { gap: 6px; max-width: 100%; padding-inline: 10px; }
+  .nav { flex: 1 1 auto; min-width: 0; overflow: hidden; gap: 1px; }
+  .nav__link { padding: 6px 7px; gap: 4px; font-size: .78rem; }
+  .nav__link span { overflow: hidden; text-overflow: ellipsis; }
+  .topbar__tools { gap: 4px; }
+  .wallet { padding-inline: 8px; font-size: .78rem; }
+  .account-btn__name { max-width: 82px; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (min-width: 781px) and (max-width: 1180px) {
+  .brand span:not(.brand__mark) { display: none; }
+  .nav__link { width: 34px; justify-content: center; padding-inline: 4px; }
+  .nav__link span { display: none; }
+  .wallet span { display: none; }
+  .account-btn__name { display: none; }
+}
+
+@media (min-width: 1181px) and (max-width: 1350px) {
+  .nav__link span { display:none; }
+  .nav__link { width:34px; justify-content:center; padding-inline:4px; }
+  .brand span:not(.brand__mark) { display:none; }
+  .wallet span { display:none; }
+}
+@media (min-width: 781px) and (max-width: 1180px) {
+  .nav { overflow-x:auto; scrollbar-width:none; }
+  .nav::-webkit-scrollbar { display:none; }
 }

@@ -94,6 +94,16 @@
   background: color-mix(in srgb, var(--negative) 16%, transparent);
 }
 
+.admin-button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-note {
+  margin: 0 0 var(--space-3);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
 .admin-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow: auto; }
 .admin-list-row { display: flex; justify-content: space-between; gap: var(--space-3); padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-sunken); font-size: .82rem; }
 .admin-list-row span:last-child { color: var(--text-muted); text-align: right; }
@@ -263,3 +273,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.section-control-list{display:grid;gap:8px}
+.section-control-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 15px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(120deg,color-mix(in srgb,var(--panel) 94%,var(--accent) 6%),var(--panel))}
+.section-control-row strong{display:block}.section-control-row span{display:block;color:var(--muted);font-size:.8rem;margin-top:3px}
+.admin-mutation-events .admin-event-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:700px){.admin-mutation-events .admin-event-form{grid-template-columns:1fr}.section-control-row{align-items:flex-start;flex-direction:column}}

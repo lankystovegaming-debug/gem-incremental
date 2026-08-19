@@ -25,6 +25,7 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
+import { mountHowToPlay } from "./onboarding.js";
 
 
 // =========================================================
@@ -47,10 +48,21 @@ const PAGES = [
   { id: "auctions", label: "Auction House", short: "Auction", href: "auctions/", icon: icons.gavel },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
-  { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true }
+  { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
+  { id: "upcoming", label: "Upcoming", short: "Upcoming", href: "upcoming/", icon: icons.sparkle, privateOnly: true },
+  { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
+  { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
+  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" }
 ];
 
-const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly);
+const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);
+
+async function loadEnabledSections() {
+  try {
+    const { data } = await supabase.functions.invoke("features", { body: { action: "sections" } });
+    return new Set((data?.sections ?? []).filter(s => s.enabled).map(s => s.id));
+  } catch { return new Set(); }
+}
 
 
 const MODE_ICONS = {
@@ -144,6 +156,24 @@ export function mountShell({ page, base = "./" }) {
 
   document.body.appendChild(tabbar);
 
+  // Site feature switches are controlled from Upcoming. Feature pages and
+  // their top-bar links remain hidden until an authorized user enables them.
+  loadEnabledSections().then((enabledSections) => {
+    const add = (item) => {
+      if (!enabledSections.has(item.sectionId)) return;
+      if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
+      header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(item, page, base, "nav__link"));
+      const link = header.querySelector(".nav__link:last-child"); if (link) link.dataset.sectionLink = item.id;
+      tabbar.insertAdjacentHTML("beforeend", navLink(item, page, base, "tabbar__link", true));
+      const tab = tabbar.querySelector(".tabbar__link:last-child"); if (tab) tab.dataset.sectionLink = item.id;
+    };
+    PAGES.filter(x => x.sectionId).forEach(add);
+    const mainSections = {"roll-stage":"section-roll-stage","summary":"section-summary","automation":"section-automation","session-history":"section-session-history"};
+    for (const [settingId, elementId] of Object.entries(mainSections)) {
+      if (!enabledSections.has(settingId)) document.getElementById(elementId)?.setAttribute("hidden", "");
+    }
+  });
+
 
   // Shared chat lives in the application shell so it is present on every
   // game page, not just the Roll page.
@@ -166,6 +196,9 @@ export function mountShell({ page, base = "./" }) {
 
   // Bottom-left dock: contribute on GitHub / report a bug.
   mountContributeDock(base);
+
+  // First-run "How to play" guide (shows once; reopenable from the dock).
+  mountHowToPlay(base);
 
 
   const walletPill = header.querySelector("#shellWallet");
@@ -246,6 +279,28 @@ export function mountShell({ page, base = "./" }) {
           "beforeend",
           navLink(adminPage, page, base, "tabbar__link", true)
         );
+      });
+
+      // Upcoming Features is intentionally hidden from normal players.
+      // The private-features Edge Function is authoritative for access.
+      supabase.functions.invoke("private-features", {
+        body: { action: "whoami" }
+      }).then(({ data }) => {
+        if (!data?.allowed) return;
+
+        const upcomingPage = PAGES.find((item) => item.id === "upcoming");
+        if (!upcomingPage) return;
+
+        header.querySelector(".nav")?.insertAdjacentHTML(
+          "beforeend",
+          navLink(upcomingPage, page, base, "nav__link")
+        );
+        tabbar.insertAdjacentHTML(
+          "beforeend",
+          navLink(upcomingPage, page, base, "tabbar__link", true)
+        );
+      }).catch(() => {
+        // Keep private navigation hidden for unauthorized accounts.
       });
     }
 

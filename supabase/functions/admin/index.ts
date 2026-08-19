@@ -223,6 +223,77 @@ export default {
         return response({ entries: data ?? [] });
       }
 
+
+      if (action === "section_settings") {
+        const { data, error } = await ctx.supabaseAdmin
+          .from("game_section_settings")
+          .select("*")
+          .order("sort_order");
+        if (error) return response({ error: "section_settings_load_failed", message: error.message }, 500);
+        return response({ sections: data ?? [] });
+      }
+
+      if (action === "section_toggle") {
+        const id = String(body.id ?? "");
+        const enabled = body.enabled === true;
+        const { data, error } = await ctx.supabaseAdmin
+          .from("game_section_settings")
+          .update({ enabled, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("*")
+          .single();
+        if (error) return response({ error: "section_toggle_failed", message: error.message }, 500);
+        await audit(ctx, adminId, null, "main_section_toggled", { id, enabled });
+        return response({ section: data });
+      }
+
+      if (action === "start_mutation_event") {
+        const name = String(body.name ?? "Mutation Surge").trim().slice(0, 80);
+        const durationMinutes = Math.trunc(Number(body.durationMinutes));
+        const mutationLuckBonus = Math.max(0, Number(body.mutationLuckBonus) || 0);
+        const mutationLuckMultiplier = Math.max(0.01, Number(body.mutationLuckMultiplier) || 1);
+        if (name.length < 3 || !Number.isFinite(durationMinutes) || durationMinutes < 1 || durationMinutes > 10080) {
+          return response({ error: "invalid_mutation_event" }, 400);
+        }
+
+        const now = new Date();
+        const ends = new Date(now.getTime() + durationMinutes * 60000);
+
+        const { error: stopError } = await ctx.supabaseAdmin
+          .from("admin_events")
+          .update({ active: false })
+          .eq("active", true);
+        if (stopError) return response({ error: "mutation_event_stop_failed", message: stopError.message }, 500);
+
+        const { data, error } = await ctx.supabaseAdmin
+          .from("admin_events")
+          .insert({
+            name,
+            active: true,
+            starts_at: now.toISOString(),
+            ends_at: ends.toISOString(),
+            luck_bonus: 0,
+            roll_speed_bonus: 0,
+            weight_luck_bonus: 0,
+            weight_multiplier_bonus: 0,
+            luck_multiplier: 1,
+            roll_speed_multiplier: 1,
+            weight_luck_multiplier: 1,
+            weight_multiplier_multiplier: 1,
+            mutation_luck_bonus: mutationLuckBonus,
+            mutation_luck_multiplier: mutationLuckMultiplier
+          })
+          .select("*")
+          .single();
+
+        if (error) return response({ error: "mutation_event_start_failed", message: error.message }, 500);
+
+        await audit(ctx, adminId, null, "mutation_luck_event_started", {
+          name, durationMinutes, mutationLuckBonus, mutationLuckMultiplier
+        });
+        return response({ event: data });
+      }
+
       if (!validUuid(targetId)) {
         return response({ error: "invalid_player_id" }, 400);
       }
@@ -230,7 +301,7 @@ export default {
       if (action === "inspect") {
         const { data: player, error } = await ctx.supabaseAdmin
           .from("players")
-          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck")
+          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck, leaderboard_hidden")
           .eq("id", targetId)
           .maybeSingle();
 
@@ -423,6 +494,15 @@ export default {
         if (error) return response({ error: "cooldown_reset_failed" }, 500);
         await audit(ctx, adminId, targetId, "cooldown_reset");
         return response({ success: true });
+      }
+
+      if (action === "leaderboard_visibility") {
+        const hidden = body.hidden === true;
+        const { error } = await ctx.supabaseAdmin
+          .from("players").update({ leaderboard_hidden: hidden }).eq("id", targetId);
+        if (error) return response({ error: "leaderboard_visibility_failed", message: error.message }, 500);
+        await audit(ctx, adminId, targetId, hidden ? "leaderboard_hidden" : "leaderboard_shown");
+        return response({ hidden });
       }
 
       if (action === "account_lock") {
