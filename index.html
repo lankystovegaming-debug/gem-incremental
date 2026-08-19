@@ -151,6 +151,17 @@
 
         <select class="select" id="autoSellTier"></select>
       </div>
+
+      <div id="autoKeepControls" class="auto-keep" hidden>
+        <label class="automation__row switch"><input type="checkbox" id="autoKeepToggle"><span class="switch__track"></span><span class="automation__text"><span class="automation__title">Auto Keep</span><span class="automation__sub">Protect exceptional results before Auto Sell checks their base tier.</span></span></label>
+        <div class="auto-keep__grid">
+          <label>Effective rarity<input class="field" id="autoKeepRarity" type="number" min="0" step="1000"></label>
+          <label>Minimum mutation<select class="select" id="autoKeepMutation"><option value="none">Disabled</option><option value="polished">Polished+</option><option value="gilded">Gilded+</option><option value="prismatic">Prismatic+</option><option value="celestial">Celestial+</option><option value="corrupted">Corrupted</option></select></label>
+          <label>Minimum value<input class="field" id="autoKeepValue" type="number" min="0" step="1000"></label>
+          <label>Minimum weight (g)<input class="field" id="autoKeepWeight" type="number" min="0" step="100"></label>
+        </div>
+        <p class="automation__sub">Set a numeric rule to 0 to disable it. Relics are always protected.</p>
+      </div>
     </section>
 
 
@@ -163,6 +174,8 @@
           Clear
         </button>
       </div>
+
+      <div id="sessionInsights" class="session-insights" hidden><div id="sessionInsightStats" class="session-insights__stats"></div><div id="sessionHighlights" class="session-insights__highlights"></div><div class="session-insights__details"><div><h3>Finds by rarity</h3><div id="sessionBreakdown" class="session-insights__breakdown"></div></div><div><h3>Recent notable rolls</h3><div id="sessionNotable" class="session-insights__notable"></div></div></div></div>
 
       <div id="historyList" class="history"></div>
     </section>
