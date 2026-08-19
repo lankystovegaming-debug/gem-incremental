@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0b0e14">
-  <meta name="description" content="Buy Tier 1 potions to boost your gem rolls.">
+  <meta name="description" content="Shop permanent potion stock and limited daily offers.">
 
-  <title>Potion Shop · Gem Incremental</title>
+  <title>Shop · Gem Incremental</title>
 
   <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
   <link rel="preload" as="font" type="font/woff2"
@@ -42,8 +42,8 @@
   <main class="app-main">
     <div class="page-head">
       <div class="page-head__title">
-        <h1>Potion Shop</h1>
-        <p class="page-head__sub" id="shopSubtitle">Loading potions…</p>
+        <h1>Shop</h1>
+        <p class="page-head__sub" id="shopSubtitle">Loading offers…</p>
       </div>
 
       <button class="btn" id="refreshButton" type="button">
@@ -52,6 +52,28 @@
       </button>
     </div>
 
+    <section class="daily-shop-head card">
+      <div>
+        <span class="badge badge--accent">Daily Stock</span>
+        <h2>Today's rotation</h2>
+        <p>Six limited offers. Personal stock resets globally at 00:00 UTC.</p>
+      </div>
+      <div class="daily-shop-head__actions">
+        <strong id="dailyCountdown">Resets in —</strong>
+        <button class="btn" id="viewChancesButton" type="button">View chances</button>
+        <button class="btn btn--primary" id="refreshDailyButton" type="button">Refresh slots 4–6 · $2M</button>
+      </div>
+    </section>
+
+    <section class="shop-chances card" id="shopChances" hidden>
+      <div class="shop-chances__head"><h3>Daily Shop chances</h3><button class="btn btn--sm" id="closeChancesButton" type="button">Close</button></div>
+      <p>Slots 1–3 guarantee two different Tier II potions and one Tier III potion. Slot 4 is a bundle; Slot 5 is a specialist offer; Slot 6 is a rare offer.</p>
+      <div class="shop-chances__grid"><div><strong>Specialist highlights</strong><p>Enchant Relic 18 weight · Legendary Potion 12 · Ancient Relic 5 · Mythic Potion 1</p></div><div><strong>Rare slot</strong><p>Legendary 35% · Enchant bundle 25% · Tier III Collection 18% · Ancient 15% combined · Mythic 6% combined · Perfect Forge Cache 1%</p></div></div>
+    </section>
+
+    <div id="dailyShopList" class="potion-grid daily-shop-grid" aria-live="polite"></div>
+
+    <h2 class="shop-section-title">Standard Stock</h2>
     <section class="shop-note">
       <span id="shopNoteIcon"></span>
       <div>

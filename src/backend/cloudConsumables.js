@@ -38,6 +38,32 @@ export async function buyCloudConsumable(consumableId) {
   };
 }
 
+export async function loadDailyShop() {
+  const { data, error } = await supabase.rpc("get_daily_shop");
+  return { data: data ?? [], error };
+}
+
+export async function buyDailyShopOffer(slot) {
+  const { data, error } = await supabase.rpc("buy_daily_shop_offer", { p_slot: slot });
+  return { data, error: normaliseShopError(error) };
+}
+
+export async function refreshDailyShop() {
+  const { data, error } = await supabase.rpc("refresh_daily_shop");
+  return { data, error: normaliseShopError(error) };
+}
+
+function normaliseShopError(error) {
+  if (!error) return null;
+  const code = error.message?.match(/(insufficient_funds|daily_shop_sold_out|daily_shop_already_refreshed|invalid_shop_slot)/)?.[1] ?? error.code;
+  const messages = {
+    insufficient_funds: "You cannot afford that offer.",
+    daily_shop_sold_out: "You have already purchased all available stock.",
+    daily_shop_already_refreshed: "You have already refreshed today's Shop."
+  };
+  return { code, message: messages[code] ?? "The Shop could not complete that request." };
+}
+
 
 // Drinks one potion. Legendary and Mythic potions create a pending boost for
 // exactly one successful roll; other potions create timed boosts.

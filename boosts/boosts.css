@@ -123,11 +123,26 @@
   font-weight: 700;
 }
 
+.daily-shop-head { display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); margin-bottom:var(--space-4); }
+.daily-shop-head h2 { margin:8px 0 3px; }
+.daily-shop-head p,.shop-chances p { color:var(--text-muted); }
+.daily-shop-head__actions { display:flex; align-items:flex-end; flex-direction:column; gap:8px; }
+.daily-shop-head__actions strong { color:var(--accent); font-variant-numeric:tabular-nums; }
+.shop-chances { margin-bottom:var(--space-4); }
+.shop-chances__head { display:flex; align-items:center; justify-content:space-between; }
+.shop-chances__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-4); margin-top:var(--space-3); }
+.shop-section-title { margin:var(--space-6) 0 var(--space-3); }
+.daily-shop-grid { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+.daily-offer { min-height:260px; }
+.daily-offer--slot-6 { border-color:var(--accent); box-shadow:0 0 24px color-mix(in srgb,var(--accent) 12%,transparent); }
+
 @keyframes card-in {
   from { opacity: 0; transform: translateY(8px); }
 }
 
 @media (max-width: 520px) {
+  .daily-shop-head,.daily-shop-head__actions { align-items:stretch; flex-direction:column; }
+  .shop-chances__grid { grid-template-columns:1fr; }
   .potion-card { min-height: 260px; }
   .potion-card__purchase { align-items: stretch; flex-direction: column; }
   .potion-card__purchase .btn { width: 100%; }
