@@ -319,7 +319,10 @@ export function mountShell({ page, base = "./" }) {
       supabase.functions.invoke("private-features", {
         body: { action: "whoami" }
       }).then(({ data }) => {
-        if (!data?.allowed) return;
+        // Upcoming Features is now embedded in Admin for authorized users.
+        // Keep the standalone route available, but do not duplicate it in the
+        // Admin top bar.
+        if (!data?.allowed || page === "admin") return;
 
         const upcomingPage = PAGES.find((item) => item.id === "upcoming");
         if (!upcomingPage) return;

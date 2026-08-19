@@ -3,7 +3,11 @@ import { mountShell } from "../src/ui/shell.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { initExpansionLab } from "./expansionLab.js";
 
-mountShell({ page:"upcoming", base:"../" });
+// This module can run standalone at /upcoming/ or inside the combined Admin
+// Feature Lab. The latter already owns the application shell.
+if (!document.body.dataset.adminUpcoming) {
+  mountShell({ page:"upcoming", base:"../" });
+}
 
 const $ = (id) => document.getElementById(id);
 let password = "";

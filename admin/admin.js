@@ -23,6 +23,23 @@ const analyticsButton = document.getElementById("analyticsButton");
 const analyticsRefresh = document.getElementById("analyticsRefresh");
 const analyticsPanel = document.getElementById("analyticsPanel");
 const analyticsContent = document.getElementById("analyticsContent");
+const featureLabButton = document.getElementById("featureLabButton");
+const featureLab = document.getElementById("adminFeatureLab");
+const featureLabBack = document.getElementById("featureLabBack");
+
+function setFeatureLab(open) {
+  if (!featureLab) return;
+  featureLab.hidden = !open;
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+    if (el) el.hidden = open;
+  });
+  featureLabButton?.classList.toggle("is-active", open);
+  featureLabButton?.setAttribute("aria-pressed", String(open));
+  if (open) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+featureLabButton?.addEventListener("click", () => setFeatureLab(true));
+featureLabBack?.addEventListener("click", () => setFeatureLab(false));
 
 let selectedPlayerId = null;
 
@@ -903,6 +920,7 @@ if (!user || !whoami?.isAdmin) {
   searchButton.disabled = false;
   auditButton.disabled = false;
   analyticsButton.disabled = false;
+  if (featureLabButton) featureLabButton.disabled = false;
   wireAnnouncements();
   wireCodes();
   tryWireAdminEvents();

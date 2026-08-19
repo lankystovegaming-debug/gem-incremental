@@ -256,6 +256,10 @@ export default {
           return response({ error: "invalid_mutation_event" }, 400);
         }
 
+        if (!validUuid(adminId)) {
+          return response({ error: "admin_identity_invalid" }, 401);
+        }
+
         const now = new Date();
         const ends = new Date(now.getTime() + durationMinutes * 60000);
 
@@ -269,6 +273,7 @@ export default {
           .from("admin_events")
           .insert({
             name,
+            created_by: adminId,
             active: true,
             starts_at: now.toISOString(),
             ends_at: ends.toISOString(),

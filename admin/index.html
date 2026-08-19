@@ -10,18 +10,19 @@
   <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
   <link rel="stylesheet" href="../src/styles/app.css">
   <link rel="stylesheet" href="./admin.css">
+  <link rel="stylesheet" href="../upcoming/upcoming.css">
   <script>
     (function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon","gradient","ocean","forest","sunset","ice"].includes(m))document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",a||"indigo")}catch(e){}})();
   </script>
 </head>
-<body>
+<body data-admin-upcoming="true">
   <main class="app-main">
     <div class="page-head">
       <div class="page-head__title">
         <h1>Admin Panel</h1>
         <p class="page-head__sub" id="adminStatus">Verifying administrator access…</p>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="analyticsButton" type="button" disabled>Analytics</button><button class="btn" id="auditButton" type="button" disabled>Audit log</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn--primary" id="featureLabButton" type="button" disabled>✦ Feature Lab</button><button class="btn" id="analyticsButton" type="button" disabled>Analytics</button><button class="btn" id="auditButton" type="button" disabled>Audit log</button></div>
     </div>
 
     <section class="card admin-search">
@@ -145,7 +146,282 @@
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>
+
+
+    <section class="admin-feature-lab-shell" id="adminFeatureLab" hidden>
+      <div class="feature-lab-intro">
+        <div>
+          <div class="eyebrow">PRIVATE FEATURE LAB</div>
+          <h2>Upcoming Features</h2>
+          <p>Achievements, quests, gems, islands, Workbench, dungeons, Daily Spin, PvP and the expandable feature systems — all managed from the Admin Panel.</p>
+        </div>
+        <button class="btn" id="featureLabBack" type="button">← Administration</button>
+      </div>
+      <div class="upcoming-embedded">
+  <header class="upcoming-hero">
+    <div class="hero-orbit">✦</div>
+    <div>
+      <div class="eyebrow">PRIVATE FEATURE LAB</div>
+      <h1>Upcoming Features</h1>
+      <p>Build achievements, quests and the live gem catalogue without touching JSON.</p>
+    </div>
+  </header>
+
+  <section id="gate" class="upcoming-card gate-card">
+    <div class="gate-icon">🔐</div>
+    <h2>Restricted workspace</h2>
+    <p>Only authorized admin/owner accounts with the feature-lab password can enter.</p>
+    <div class="gate-row">
+      <input id="password" type="password" autocomplete="off" placeholder="Feature-lab password">
+      <button id="unlock" class="btn btn--primary" type="button">Unlock</button>
+    </div>
+    <p id="status" class="status"></p>
+  </section>
+
+  <section id="workspace" hidden>
+    <div class="workspace-toolbar">
+      <div>
+        <div class="eyebrow">CONTROL CENTER</div>
+        <h2>Feature catalogue</h2>
+        <p>Enable, disable, schedule, duplicate and delete live content.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button id="refresh" class="btn" type="button">Refresh</button>
+        <button id="seed" class="btn" type="button">Restore examples</button>
+        <button id="newFeature" class="btn btn--primary" type="button">＋ New</button>
+        <button id="newGem" class="btn btn--primary" type="button">💎 New Gem</button>
+      </div>
+    </div>
+
+    <div class="lab-tabs" role="tablist">
+      <button class="lab-tab is-active" data-tab="achievements" type="button">🏆 Achievements <span id="achievementCount">0</span></button>
+      <button class="lab-tab" data-tab="quests" type="button">⚔ Quests <span id="questCount">0</span></button>
+      <button class="lab-tab" data-tab="gems" type="button">💎 Gems <span id="gemCount">0</span></button>
+      <button class="lab-tab" data-tab="worlds" type="button">🗺 Islands <span id="islandCount">0</span></button>
+      <button class="lab-tab" data-tab="forge" type="button">⚒ Workbench <span id="forgeState">OFF</span></button>
+      <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
+      <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
+      <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button> 
+      <button class="lab-tab" data-tab="expansion" type="button">✦ More Systems <span id="expansionCount">7</span></button>
+    </div>
+
+    <section class="tab-panel is-active" data-panel="achievements">
+      <div class="panel-heading"><div><h2>Achievements</h2><p>Permanent or temporary milestones. Multiple rewards and virtually any roll condition are supported.</p></div></div>
+      <div id="achievementCards" class="feature-grid"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="quests">
+      <div class="panel-heading"><div><h2>Quests</h2><p>Main progression, limited-time events and fully customizable special quests.</p></div></div>
+      <div class="quest-filters">
+        <button class="filter is-active" data-quest-filter="all" type="button">All</button>
+        <button class="filter" data-quest-filter="main" type="button">Main</button>
+        <button class="filter" data-quest-filter="event" type="button">Event</button>
+        <button class="filter" data-quest-filter="special" type="button">Special</button>
+      </div>
+      <div id="questCards" class="feature-grid"></div>
+    </section>
+
+
+    <section class="tab-panel" data-panel="worlds">
+      <div class="panel-heading"><div><h2>Islands</h2><p>Create any number of permanent or timed islands with custom unlock requirements and boosts for money, coins, gems or other currencies.</p></div><button id="newIsland" class="btn btn--primary" type="button">＋ New Island</button></div>
+      <div id="islandCards" class="feature-grid"></div>
+      <section id="islandEditor" class="upcoming-card editor" hidden>
+        <h3 id="islandEditorTitle">New Island</h3>
+        <div class="form-grid">
+          <label>Island number<input id="islandNumber" type="number" min="1" value="1"></label>
+          <label>Name<input id="islandName" value="Home Island"></label>
+          <label class="wide">Description<textarea id="islandDescription"></textarea></label>
+          <label>Sort order<input id="islandSort" type="number" value="0"></label>
+          <label>Availability<select id="islandDuration"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+          <label>Starts at<input id="islandStarts" type="datetime-local"></label>
+          <label>Ends at<input id="islandEnds" type="datetime-local"></label>
+          <label class="toggle-field"><input id="islandEnabled" type="checkbox"><span>Enabled</span><small>Keep OFF until the island is ready.</small></label>
+        </div>
+        <div class="editor-section"><h3>Unlock requirements</h3><div class="form-grid">
+          <label>Minimum rolls<input id="islandReqRolls" type="number" value="0"></label>
+          <label>Minimum money<input id="islandReqMoney" type="number" value="0"></label>
+          <label>Minimum coins<input id="islandReqCoins" type="number" value="0"></label>
+          <label>Minimum all-equipment tier<input id="islandReqEquip" type="number" value="0"></label>
+          <label>Minimum pickaxe tier<input id="islandReqPick" type="number" value="0"></label>
+          <label>Minimum bag tier<input id="islandReqBag" type="number" value="0"></label>
+        </div></div>
+        <div class="editor-section"><h3>Currency boosts</h3><p class="mini-note">Enter multipliers. Add new keys such as essence, tokens or reputation without changing the UI code.</p><div class="form-grid">
+          <label>Money ×<input id="islandBoostMoney" type="number" step=".01" value="1"></label>
+          <label>Coins ×<input id="islandBoostCoins" type="number" step=".01" value="1"></label>
+          <label>Gems ×<input id="islandBoostGems" type="number" step=".01" value="1"></label>
+          <label>XP ×<input id="islandBoostXp" type="number" step=".01" value="1"></label>
+        </div></div>
+        <div class="editor-actions"><button id="islandCancel" class="btn">Cancel</button><button id="islandSave" class="btn btn--primary">Save Island</button></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="forge">
+      <div class="panel-heading"><div><h2 id="forgePanelTitle">Workbench [BETA]</h2><p>Configure the three-stage precision minigame, ore-count classes, quality multipliers and trait thresholds.</p></div></div>
+      <div id="forgeConfigPanel" class="upcoming-card"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="dungeons">
+      <div class="panel-heading"><div><h2>Dungeons</h2><p>Build combat encounters with custom health, attack, defense, speed, crits, stats and loot. Keep them disabled while testing.</p></div><button id="newDungeon" class="btn btn--primary">＋ New Dungeon</button></div>
+      <div id="dungeonCards" class="feature-grid"></div>
+      <section id="dungeonEditor" class="upcoming-card editor" hidden>
+        <h3 id="dungeonEditorTitle">New Dungeon</h3>
+        <div class="form-grid">
+          <label>Name<input id="dungeonName"></label>
+          <label>Max enemies<input id="dungeonMaxEnemies" type="number" value="5"></label>
+          <label class="wide">Description<textarea id="dungeonDescription"></textarea></label>
+          <label>Sort order<input id="dungeonSort" type="number" value="0"></label>
+          <label class="toggle-field"><input id="dungeonEnabled" type="checkbox"><span>Enabled</span><small>OFF by default.</small></label>
+        </div>
+        <div class="editor-section"><h3>Entry requirements</h3><div class="form-grid">
+          <label>Minimum rolls<input id="dungeonReqRolls" type="number" value="0"></label>
+          <label>Minimum equipment tier<input id="dungeonReqEquip" type="number" value="0"></label>
+          <label>Minimum island number<input id="dungeonReqIsland" type="number" value="1"></label>
+          <label>Money reward<input id="dungeonRewardMoney" type="number" value="0"></label>
+          <label class="wide">Dungeon loot (one item per line)<textarea id="dungeonLoot" rows="3" placeholder="Potion:legendary&#10;Gem:Xy Gem"></textarea></label>
+        </div></div>
+        <div class="editor-section"><h3>Enemies</h3><div id="enemyRows" class="builder-list"></div><button id="addEnemy" class="btn btn--sm">＋ Add enemy</button></div>
+        <div class="editor-actions"><button id="dungeonCancel" class="btn">Cancel</button><button id="dungeonSave" class="btn btn--primary">Save Dungeon</button></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="daily-spin">
+      <div class="panel-heading"><div><h2>Daily Spin</h2><p>Configure the actual prize wheel, chances and any supported reward type. Keep it OFF while testing.</p></div></div>
+      <div id="dailySpinPanel" class="upcoming-card"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="pvp">
+      <div class="panel-heading"><div><h2>PvP</h2><p>Build weapons with at least three distinct attacks. PvP stays disabled until you enable the site switch.</p></div><button id="newPvpWeapon" class="btn btn--primary">＋ New weapon</button></div>
+      <div id="pvpWeaponCards" class="feature-grid"></div>
+      <section id="pvpWeaponEditor" class="upcoming-card editor" hidden>
+        <h3 id="pvpEditorTitle">New PvP weapon</h3>
+        <div class="form-grid">
+          <label>Name<input id="pvpName"></label><label>Rarity<input id="pvpRarity" value="Common"></label><label>Base damage<input id="pvpDamage" type="number" value="10"></label><label class="toggle-field"><input id="pvpEnabled" type="checkbox" checked><span>Enabled</span></label>
+          <label class="wide">Description<textarea id="pvpDescription"></textarea></label>
+        </div>
+        <div class="editor-section"><div class="builder-head"><div><h3>Attacks</h3><p>Every PvP weapon must have at least 3 attacks.</p></div><button id="addPvpAttack" class="btn btn--sm">＋ Add attack</button></div><div id="pvpAttackRows" class="builder-list"></div></div>
+        <div class="editor-actions"><button id="pvpCancel" class="btn">Cancel</button><button id="pvpSave" class="btn btn--primary">Save weapon</button></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="expansion">
+      <div class="panel-heading">
+        <div><h2>More unreleased systems</h2><p>Seven substantial non-PvP systems. Every definition starts OFF, has a dedicated page, and is controlled here without raw JSON.</p></div>
+        <div class="toolbar-actions"><button id="expansionRefresh" class="btn">Refresh</button><button id="expansionNew" class="btn btn--primary">＋ New system</button></div>
+      </div>
+      <div id="expansionCards" class="feature-grid"></div>
+      <section id="expansionEditor" class="upcoming-card editor" hidden>
+        <div class="editor-head"><div><div class="eyebrow">EXPANSION BUILDER</div><h2 id="expansionEditorTitle">New system</h2></div><button id="expansionCancel" class="icon-button" type="button">×</button></div>
+        <div class="form-grid">
+          <label>System<select id="expansionType">
+            <option value="artifact-archives">Artifact Archives</option>
+            <option value="gem-fusion">Gem Fusion Lab</option>
+            <option value="enchanting-lab">Enchanting Lab</option>
+            <option value="collection-hall">Collection Hall</option>
+            <option value="mining-events">Mining Events</option>
+            <option value="merchant-caravan">Merchant Caravan</option>
+            <option value="research-tree">Research Tree</option>
+          </select></label>
+          <label>Name<input id="expansionName" maxlength="120"></label>
+          <label class="wide">Description<textarea id="expansionDescription" rows="3"></textarea></label>
+          <label>Sort order<input id="expansionSort" type="number" value="10"></label>
+          <label>Availability<select id="expansionPermanent"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+          <label>Starts at<input id="expansionStarts" type="datetime-local"></label>
+          <label>Ends at<input id="expansionEnds" type="datetime-local"></label>
+          <label class="toggle-field"><input id="expansionEnabled" type="checkbox"><span>Enabled</span><small>Keep OFF until ready.</small></label>
+        </div>
+        <div class="editor-section"><div class="builder-head"><div><h3>Structured configuration</h3><p>Choose fields below; the builder stores the configuration for the matching system. No JSON editing is required.</p></div><div class="toolbar-actions"><select id="expansionPresetSelect" aria-label="Preset library"></select><button id="expansionPreset" class="btn btn--sm">Load preset</button></div></div><div id="expansionFields" class="builder-list"></div></div>
+        <div class="editor-actions"><button id="expansionCancelBottom" class="btn">Cancel</button><button id="expansionSave" class="btn btn--primary">Save system</button></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="gems">
+      <div class="panel-heading"><div><h2>Gem Catalogue</h2><p>This is the live roll catalogue. Disable, schedule or permanently delete gems.</p></div></div>
+      <div id="gemCards" class="gem-grid"></div>
+      <div class="editor-section rarity-section">
+        <div class="builder-head"><div><h3>Gem rarity tiers</h3><p>Add your own rarity names, ranges, symbols and colors. The roll system still uses the numeric 1-in-N rarity; these tiers are presentation/configuration layers.</p></div><button id="newRarity" class="btn btn--sm btn--primary" type="button">＋ New rarity</button></div>
+        <div id="rarityCards" class="feature-grid"></div>
+      </div>
+    </section>
+
+    <section class="upcoming-card site-controls"><div class="panel-heading"><div><div class="eyebrow">SITE VISIBILITY</div><h2>Feature switches</h2><p>These switches control pages, top-bar buttons, and the public name/symbol. New unreleased systems start OFF.</p></div><button id="refreshSections" class="btn" type="button">Refresh</button></div><div id="sectionControls" class="feature-grid"></div></section>
+
+    <section id="editor" class="upcoming-card editor" hidden>
+      <div class="editor-head">
+        <div><div class="eyebrow">BUILDER</div><h2 id="editorTitle">New feature</h2></div>
+        <button id="cancel" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+
+      <div class="editor-section">
+        <h3>Basics</h3>
+        <div class="form-grid">
+          <label>Kind<select id="kind"><option value="achievement">Achievement</option><option value="quest">Quest</option></select></label>
+          <label>Quest type<select id="questType"><option value="main">Main</option><option value="event">Event</option><option value="special">Special</option></select></label>
+          <label>Name<input id="name" maxlength="120" placeholder="Astral Ascension 5"></label>
+          <label>Icon<input id="icon" maxlength="8" value="✦"></label>
+          <label class="wide">Description<textarea id="description" rows="3" placeholder="What does the player need to do?"></textarea></label>
+          <label>Sort order<input id="sortOrder" type="number" value="0"></label>
+          <label>Availability
+            <select id="durationMode"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select>
+          </label>
+          <label>Starts at<input id="startsAt" type="datetime-local"></label>
+          <label>Ends at<input id="endsAt" type="datetime-local"></label>
+          <label class="toggle-field"><input id="enabled" type="checkbox" checked><span>Enabled</span><small>Show and process this feature</small></label>
+        </div>
+      </div>
+
+      <div class="editor-section">
+        <div class="builder-head"><div><h3>Requirements</h3><p>Build nested AND / OR logic with dropdowns and condition fields.</p></div><button id="addRequirement" class="btn btn--sm" type="button">＋ Add condition</button></div>
+        <div class="group-row">
+          <label>Top-level logic<select id="requirementLogic"><option value="all">ALL — every condition</option><option value="any">ANY — at least one</option><option value="single">SINGLE — one condition</option></select></label>
+        </div>
+        <div id="requirementRows" class="builder-list"></div>
+      </div>
+
+      <div class="editor-section">
+        <div class="builder-head"><div><h3>Rewards</h3><p>Give multiple rewards in one completion: money, coins, potions, gems, capacity or unlocks.</p></div><button id="addReward" class="btn btn--sm" type="button">＋ Add reward</button></div>
+        <div id="rewardRows" class="builder-list"></div>
+      </div>
+
+      <div class="editor-section">
+        <h3>Prerequisites & unlocks</h3>
+        <div class="form-grid">
+          <label class="wide">Prerequisite features<select id="prerequisites" multiple size="5"></select><small>Ctrl/Cmd-click multiple features.</small></label>
+          <label class="wide">Unlock IDs<input id="unlocks" placeholder="pickaxe_t14, bag_t11, special_shop"></label>
+        </div>
+      </div>
+
+      <div class="editor-actions"><button id="cancelBottom" class="btn" type="button">Cancel</button><button id="save" class="btn btn--primary" type="button">Save feature</button></div>
+    </section>
+
+    <section id="rarityEditor" class="upcoming-card editor" hidden>
+      <div class="editor-head"><div><div class="eyebrow">RARITY BUILDER</div><h2 id="rarityEditorTitle">New Gem Rarity</h2></div><button id="rarityCancel" class="icon-button" type="button">×</button></div>
+      <div class="form-grid">
+        <label>Name<input id="rarityName"></label><label>Minimum 1 in<input id="rarityMin" type="number" min="1" value="1"></label><label>Maximum 1 in<input id="rarityMax" type="number" min="1"></label><label>Symbol<input id="rarityIcon" maxlength="8" value="◆"></label><label>Color<input id="rarityColor" type="color" value="#9aa4b2"></label><label>Sort order<input id="raritySort" type="number" value="0"></label><label class="toggle-field"><input id="rarityEnabled" type="checkbox" checked><span>Enabled</span></label>
+      </div>
+      <div class="editor-actions"><button id="rarityCancelBottom" class="btn">Cancel</button><button id="raritySave" class="btn btn--primary">Save rarity</button></div>
+    </section>
+    <section id="gemEditor" class="upcoming-card editor" hidden>
+      <div class="editor-head"><div><div class="eyebrow">GEM BUILDER</div><h2 id="gemEditorTitle">New Gem</h2></div><button id="gemCancel" class="icon-button" type="button">×</button></div>
+      <div class="form-grid">
+        <label>Name<input id="gemName" maxlength="120" placeholder="Celestial Ruby"></label>
+        <label>Rarity / 1 in<input id="gemRarity" type="number" min="0.000001" step="any" value="100"></label>
+        <label>Base weight<input id="gemWeight" type="number" min="0.000001" step="any" value="100"></label>
+        <label>Value / gram<input id="gemValue" type="number" min="0" step="any" value="1"></label>
+        <label>Sort order<input id="gemSort" type="number" value="0"></label>
+        <label>Availability<select id="gemDuration"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+        <label>Starts at<input id="gemStarts" type="datetime-local"></label>
+        <label>Ends at<input id="gemEnds" type="datetime-local"></label>
+        <label class="toggle-field"><input id="gemEnabled" type="checkbox" checked><span>Enabled</span><small>Disabled gems cannot roll.</small></label>
+      </div>
+      <div class="editor-actions"><button id="gemCancelBottom" class="btn" type="button">Cancel</button><button id="gemSave" class="btn btn--primary" type="button">Save Gem</button></div>
+    </section>
+  </section>
+
+      </div>
+    </section>
+
   </main>
   <script type="module" src="./admin.js"></script>
+  <script type="module" src="../upcoming/upcoming.js"></script>
 </body>
 </html>

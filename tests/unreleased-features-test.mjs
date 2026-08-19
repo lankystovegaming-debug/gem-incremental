@@ -9,11 +9,12 @@ assert.match(main, /buildJaOreCutscene/);
 assert.match(main, /gemName\.toLowerCase\(\) === "ja-ore"/);
 
 const cutscene = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.js"), "utf8");
+const cutsceneCss = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.css"), "utf8");
 assert.match(cutscene, /pixel-cinema/);
 assert.match(cutscene, /With our powers combined/);
 assert.match(cutscene, /JA_ORE_DATA_URI/);
-assert.match(cutscene, /data:image\/png;base64/);
 assert.match(cutscene, /buildJaOreCutscene/);
+assert.match(cutsceneCss, /data:image\/png;base64/);
 
 const migration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260819000010_unreleased_expansion_features.sql"),
