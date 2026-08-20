@@ -31,13 +31,13 @@ const LEVEL_COSTS = [
   { money: 2_500_000, enchant: 4, ancient: 0 },
   { money: 6_000_000, enchant: 6, ancient: 1 },
   { money: 15_000_000, enchant: 8, ancient: 1 },
-  { money: 40_000_000, enchant: 10, ancient: 3 }
+  { money: 25_000_000, enchant: 10, ancient: 3 }
 ];
 
 export function masterworkTierMultipliers(tier) {
-  if (tier >= 13) return { money: 2, enchant: 1.5, ancient: 1.4 };
-  if (tier === 12) return { money: 1.6, enchant: 1.3, ancient: 1.2 };
-  if (tier === 11) return { money: 1.25, enchant: 1.15, ancient: 1 };
+  if (tier >= 13) return { money: 1.65, enchant: 1.5, ancient: 1.4 };
+  if (tier === 12) return { money: 1.4, enchant: 1.3, ancient: 1.2 };
+  if (tier === 11) return { money: 1.2, enchant: 1.15, ancient: 1 };
   return { money: 1, enchant: 1, ancient: 1 };
 }
 
