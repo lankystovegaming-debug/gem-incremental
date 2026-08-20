@@ -214,6 +214,18 @@ function remainingText(endsAt) {
 }
 
 let ticker = null;
+let settlementRefreshInFlight = false;
+
+async function settleAndRefresh() {
+  if (settlementRefreshInFlight) return;
+  settlementRefreshInFlight = true;
+  try {
+    await settleDueAuctions();
+    await refresh();
+  } finally {
+    settlementRefreshInFlight = false;
+  }
+}
 
 function startTicker() {
   if (ticker) return;
@@ -232,8 +244,8 @@ function startTicker() {
     }
     // A visible auction just crossed its deadline — settle + reload so
     // the winner and payout land without a manual refresh.
-    if (anyEnded && state.tab === "browse") {
-      refresh();
+    if (anyEnded) {
+      settleAndRefresh();
     }
   }, 1000);
 }
@@ -731,13 +743,12 @@ async function refresh() {
 
 refreshButton.addEventListener("click", async () => {
   refreshButton.disabled = true;
-  await settleDueAuctions();
-  await refresh();
+  await settleAndRefresh();
   refreshButton.disabled = false;
 });
 
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted) refresh();
+  if (event.persisted) settleAndRefresh();
 });
 
 async function boot() {
