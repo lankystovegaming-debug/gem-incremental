@@ -177,6 +177,7 @@ function normalizeDefinition(body: any) {
     name: String(body.name ?? "Untitled Feature").slice(0, 120),
     description: String(body.description ?? "").slice(0, 1000),
     icon: String(body.icon ?? "◆").slice(0, 8),
+    admin_only: body.admin_only === true,
 
     sort_order:
       Number.isFinite(Number(body.sort_order))
@@ -720,14 +721,15 @@ export default {
         if (action === "section-toggle") {
           const id = String(body.id ?? "");
           const enabled = body.enabled === true;
+          const update = { enabled, updated_at: new Date().toISOString() };
           const { data, error } = await ctx.supabaseAdmin
             .from("game_section_settings")
-            .update({ enabled, updated_at: new Date().toISOString() })
+            .update(update)
             .eq("id", id)
             .select("*")
             .single();
           if (error) return json({ error: "section_toggle_failed", message: error.message }, 500);
-          if (id === "forge") {
+          if (id === "workbench") {
             const { error: forgeToggleError } = await ctx.supabaseAdmin
               .from("forge_config")
               .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
@@ -743,17 +745,33 @@ export default {
           return json({ section: data });
         }
 
+        if (action === "section-access-toggle") {
+          const id = String(body.id ?? "");
+          const adminOnly = body.adminOnly === true;
+          const { data, error } = await ctx.supabaseAdmin
+            .from("game_section_settings")
+            .update({ admin_only: adminOnly, updated_at: new Date().toISOString() })
+            .eq("id", id)
+            .select("*")
+            .single();
+          if (error) return json({ error: "section_access_toggle_failed", message: error.message }, 500);
+          await auditPrivateAction(ctx, userId, "site_section_access_toggled", { id, adminOnly });
+          return json({ section: data });
+        }
+
         if (action === "section-save") {
           const id = String(body.id ?? "");
           const label = String(body.label ?? "Feature").trim().slice(0, 80) || "Feature";
           const shortLabel = String(body.short_label ?? label).trim().slice(0, 24) || label;
           const icon = String(body.icon ?? "◆").slice(0, 8) || "◆";
+          const adminOnly = body.admin_only === true;
           const { data, error } = await ctx.supabaseAdmin
             .from("game_section_settings")
             .update({
               label,
               short_label: shortLabel,
               icon,
+              admin_only: adminOnly,
               updated_at: new Date().toISOString()
             })
             .eq("id", id)
@@ -761,7 +779,7 @@ export default {
             .single();
           if (error) return json({ error: "section_save_failed", message: error.message }, 500);
 
-          if (id === "forge") {
+          if (id === "workbench") {
             const { error: forgeNameError } = await ctx.supabaseAdmin
               .from("forge_config")
               .upsert({
@@ -909,12 +927,12 @@ export default {
           if (de) return json({ error:"dungeon_list_failed", message:de.message },500);
           const { data: sections, error: se } = await ctx.supabaseAdmin
             .from("game_section_settings").select("*")
-            .in("id",["islands","forge","dungeons"]);
+            .in("id",["islands","workbench","dungeons"]);
           if (se) return json({ error:"world_sections_failed", message:se.message },500);
           const { data: forge, error: fe } = await ctx.supabaseAdmin
             .from("forge_config").select("*").eq("id",true).maybeSingle();
           if (fe) return json({ error:"forge_config_failed", message:fe.message },500);
-          return json({ islands:islands??[], dungeons:dungeons??[], sections:sections??[], forge:forge??null });
+          return json({ islands:islands??[], dungeons:dungeons??[], sections:sections??[], workbench:forge??null });
         }
 
         if (action === "world-save") {
@@ -1011,7 +1029,7 @@ export default {
           return json({ok:true});
         }
 
-        if (action === "forge-config") {
+        if (action === "workbench-config") {
           if (body.save) {
             const c=body.config??{};
             const row={
@@ -1030,11 +1048,11 @@ export default {
             };
             const {data,error}=await ctx.supabaseAdmin.from("forge_config").upsert({...row,id:true}).select("*").single();
             if(error)return json({error:"forge_config_save_failed",message:error.message},500);
-            return json({forge:data});
+            return json({workbench:data});
           }
           const {data,error}=await ctx.supabaseAdmin.from("forge_config").select("*").eq("id",true).single();
           if(error)return json({error:"forge_config_load_failed",message:error.message},500);
-          return json({forge:data});
+          return json({workbench:data});
         }
 
 

@@ -59,7 +59,7 @@ function featureCard(d) {
     <div class="card-glow"></div>
     <div class="feature-card__top">
       <span class="feature-icon">${esc(d.icon || "◆")}</span>
-      <div class="feature-card__identity"><div class="feature-meta">${esc(d.quest_type || "achievement")} · ${temporary ? "Temporary" : "Permanent"}</div><h3>${esc(d.name)}</h3></div>
+      <div class="feature-card__identity"><div class="feature-meta">${esc(d.quest_type || "achievement")} · ${temporary ? "Temporary" : "Permanent"} · ${d.admin_only ? "Admin only" : "Public"}</div><h3>${esc(d.name)}</h3></div>
       <span class="state-pill ${active ? "on" : "off"}">${active ? "ON" : "OFF"}</span>
     </div>
     <p>${esc(d.description || "No description.")}</p>
@@ -120,21 +120,19 @@ async function renderSectionControls(){
       "collection-hall":["▦ Collection Hall","Long-term collection sets, milestones and permanent bonuses."],
       "mining-events":["⛏ Mining Events","Timed mining phenomena with phases, boosts and custom loot."],
       "merchant-caravan":["◇ Merchant Caravan","Rotating merchants, stock, prices and currencies."],
-      "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."],
-      "utility-menu":["••• More menu","Moves utility links into the main navigation"],
-      "session-insights":["▤ Session Insights","Detailed statistics and highlights for the current session"],
-      "auto-keep":["◆ Auto Keep","Protects exceptional rolls before Auto Sell"]
+      "research-tree":["⌬ Research Tree","Branching permanent research with prerequisites and effects."]
     };
     $("sectionControls").innerHTML=sections.filter(s=>fallbackLabels[s.id]).map(s=>{
       const fallback=fallbackLabels[s.id];
       const label=s.label||fallback[0], icon=s.icon||fallback[0].slice(0,2);
       return `<article class="feature-card ${s.enabled?"":"is-disabled"}">
-        <div class="feature-card__top"><span class="feature-icon">${esc(icon)}</span><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE</div><h3>${esc(label)}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div>
+        <div class="feature-card__top"><span class="feature-icon">${esc(icon)}</span><div class="feature-card__identity"><div class="feature-meta">SITE FEATURE · ${s.admin_only ? "ADMIN ONLY" : "PUBLIC"}</div><h3>${esc(label)}</h3></div><span class="state-pill ${s.enabled?"on":"off"}">${s.enabled?"ON":"OFF"}</span></div>
         <p>${esc(s.description||fallback[1])}</p>
         <div class="form-grid compact-section-editor">
           <label>Name<input data-section-label="${esc(s.id)}" value="${esc(label)}"></label>
           <label>Symbol<input maxlength="8" data-section-icon="${esc(s.id)}" value="${esc(icon)}"></label>
           <label>Short label<input maxlength="24" data-section-short="${esc(s.id)}" value="${esc(s.short_label||label)}"></label>
+          <label class="toggle-field"><input type="checkbox" data-section-admin-only="${esc(s.id)}" ${s.admin_only ? "checked" : ""}><span>Admins only</span><small>Hide this feature from normal users and require administrator access.</small></label>
         </div>
         <div class="card-actions">
           <button class="btn btn--sm" data-section-save="${esc(s.id)}">Save name</button>
@@ -155,11 +153,12 @@ async function renderSectionControls(){
           id,
           label:document.querySelector(`[data-section-label="${CSS.escape(id)}"]`).value.trim(),
           icon:document.querySelector(`[data-section-icon="${CSS.escape(id)}"]`).value.trim(),
-          short_label:document.querySelector(`[data-section-short="${CSS.escape(id)}"]`).value.trim()
+          short_label:document.querySelector(`[data-section-short="${CSS.escape(id)}"]`).value.trim(),
+          admin_only:document.querySelector(`[data-section-admin-only="${CSS.escape(id)}"]`)?.checked === true
         });
         await renderSectionControls();
-        if(id==="forge") await renderWorldLab();
-        status(`${id==="forge"?"Workbench":"Site feature"} name and symbol saved.`);
+        if(id==="workbench") await renderWorldLab();
+        status(`${id==="workbench"?"Workbench":"Site feature"} name and symbol saved.`);
       }catch(e){status(e.message,true);b.disabled=false;}
     });
   }catch(e){status(e.message,true);}
@@ -364,7 +363,7 @@ function openEditor(d=null){
   $("editorTitle").textContent=d?"Edit feature":"New feature";
   $("kind").value=d?.feature_kind||"achievement";$("questType").value=d?.quest_type||"main";
   $("name").value=d?.name||"";$("icon").value=d?.icon||"✦";$("description").value=d?.description||"";
-  $("sortOrder").value=d?.sort_order??0;$("enabled").checked=d?.enabled!==false;
+  $("sortOrder").value=d?.sort_order??0;$("enabled").checked=d?.enabled!==false;$("adminOnly").checked=d?.admin_only===true;
   const temp=Boolean(d?.starts_at||d?.ends_at);$("durationMode").value=temp?"temporary":"permanent";
   $("startsAt").value=dateInput(d?.starts_at);$("endsAt").value=dateInput(d?.ends_at);
   $("requirementRows").innerHTML=""; let req=d?.requirements||{type:"rolls",amount:1};
@@ -386,7 +385,7 @@ function temporaryDates(mode,start,end){return mode==="temporary"?{starts_at:sta
 async function saveFeature(){
   const mode=$("durationMode").value; const dates=temporaryDates(mode,$("startsAt").value,$("endsAt").value);
   const prereqs=[...$("prerequisites").selectedOptions].map(o=>o.value);
-  const definition={id:editing||undefined,feature_kind:$("kind").value,quest_type:$("kind").value==="quest"?$("questType").value:null,name:$("name").value.trim(),icon:$("icon").value||"✦",description:$("description").value.trim(),sort_order:Number($("sortOrder").value)||0,enabled:$("enabled").checked,...dates,requirements:collectRequirements(),rewards:collectRewards().filter(r=>r.type!=="money"||Number(r.amount)>0),prerequisites:prereqs,unlocks:$("unlocks").value.split(",").map(x=>x.trim()).filter(Boolean),metadata:{}};
+  const definition={id:editing||undefined,feature_kind:$("kind").value,quest_type:$("kind").value==="quest"?$("questType").value:null,name:$("name").value.trim(),icon:$("icon").value||"✦",description:$("description").value.trim(),sort_order:Number($("sortOrder").value)||0,enabled:$("enabled").checked,admin_only:$("adminOnly").checked,...dates,requirements:collectRequirements(),rewards:collectRewards().filter(r=>r.type!=="money"||Number(r.amount)>0),prerequisites:prereqs,unlocks:$("unlocks").value.split(",").map(x=>x.trim()).filter(Boolean),metadata:{}};
   if(!definition.name){status("Give the feature a name.",true);return;}
   try{await call("save",{definition});$("editor").hidden=true;editing=null;await loadAll();status("Feature saved.");}catch(e){status(e.message,true);}
 }
@@ -427,19 +426,19 @@ $("gemDuration").onchange=()=>{const temp=$("gemDuration").value==="temporary";$
 $("durationMode").dispatchEvent(new Event("change"));$("gemDuration").dispatchEvent(new Event("change"));
 
 
-let editingIsland=null, editingDungeon=null, forgeConfig=null, worldData=null;
+let editingIsland=null, editingDungeon=null, workbenchConfig=null, worldData=null;
 
 function worldDates(mode,start,end){return temporaryDates(mode,start,end);}
 function renderWorldLab(){
   call("world-list").then(d=>{
     worldData=d;
     $("islandCount").textContent=(d.islands||[]).length;
-    $("forgeState").textContent=d.forge?.enabled?"ON":"OFF";
+    $("workbenchState").textContent=d.workbench?.enabled?"ON":"OFF";
     $("dungeonCount").textContent=(d.dungeons||[]).length;
     $("islandCards").innerHTML=(d.islands||[]).map(i=>`<article class="feature-card ${i.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon">🗺</span><div class="feature-card__identity"><div class="feature-meta">Island ${i.island_number}</div><h3>${esc(i.name)}</h3></div><span class="state-pill ${i.enabled?"on":"off"}>${i.enabled?"ON":"OFF"}</span></div><p>${esc(i.description)}</p><div class="feature-stats"><span>🔓 ${esc(JSON.stringify(i.unlock_requirements||{}))}</span><span>✨ ${esc(JSON.stringify(i.boosts||{}))}</span></div><div class="card-actions"><button class="btn btn--sm" data-island-edit="${i.id}">Edit</button><button class="btn btn--sm" data-island-toggle="${i.id}" data-enabled="${i.enabled}">${i.enabled?"Disable":"Enable"}</button><button class="btn btn--sm btn--danger" data-island-delete="${i.id}">Delete</button></div></article>`).join("")||empty("No islands configured.");
     $("dungeonCards").innerHTML=(d.dungeons||[]).map(x=>`<article class="feature-card ${x.enabled?"":"is-disabled"}"><div class="feature-card__top"><span class="feature-icon">⚔</span><div class="feature-card__identity"><div class="feature-meta">${x.max_enemies} enemies max</div><h3>${esc(x.name)}</h3></div><span class="state-pill ${x.enabled?"on":"off"}">${x.enabled?"ON":"OFF"}</span></div><p>${esc(x.description)}</p><div class="card-actions"><button class="btn btn--sm" data-dungeon-edit="${x.id}">Edit</button><button class="btn btn--sm" data-dungeon-toggle="${x.id}" data-enabled="${x.enabled}">${x.enabled?"Disable":"Enable"}</button><button class="btn btn--sm btn--danger" data-dungeon-delete="${x.id}">Delete</button></div></article>`).join("")||empty("No dungeons configured.");
     wireWorldCards();
-    renderForgeConfig(d.forge);
+    renderWorkbenchConfig(d.workbench);
   }).catch(e=>status(e.message,true));
 }
 function wireWorldCards(){
@@ -461,23 +460,23 @@ function openIsland(i){
 $("islandSave").onclick=async()=>{try{const dates=worldDates($("islandDuration").value,$("islandStarts").value,$("islandEnds").value);const island={id:editingIsland||undefined,island_number:Number($("islandNumber").value),name:$("islandName").value.trim(),description:$("islandDescription").value.trim(),sort_order:Number($("islandSort").value)||0,enabled:$("islandEnabled").checked,...dates,unlock_requirements:{minRolls:Number($("islandReqRolls").value)||0,minMoney:Number($("islandReqMoney").value)||0,minCoins:Number($("islandReqCoins").value)||0,minAllEquipmentTier:Number($("islandReqEquip").value)||0,minPickaxeTier:Number($("islandReqPick").value)||0,minBagTier:Number($("islandReqBag").value)||0},boosts:{money:Number($("islandBoostMoney").value)||1,coins:Number($("islandBoostCoins").value)||1,gems:Number($("islandBoostGems").value)||1,xp:Number($("islandBoostXp").value)||1}};await call("world-save",{island});$("islandEditor").hidden=true;renderWorldLab()}catch(e){status(e.message,true)}};
 $("newIsland").onclick=()=>openIsland();$("islandCancel").onclick=()=>{$("islandEditor").hidden=true;editingIsland=null};
 
-function renderForgeConfig(c){
-  forgeConfig=c;
+function renderWorkbenchConfig(c){
+  workbenchConfig=c;
   const workbenchName=c?.display_name||c?.beta_label||"Workbench [BETA]";
-  $("forgePanelTitle").textContent=workbenchName;
-  $("forgeConfigPanel").innerHTML=`<div class="form-grid">
-  <label class="toggle-field"><input id="forgeEnabled" type="checkbox" ${c?.enabled?"checked":""}><span>Forge enabled</span><small>Also enable the Forge section switch below.</small></label>
-  <label>Beta label<input id="forgeLabel" value="${esc(c?.beta_label||"Workbench [BETA]")}"></label>
-  <label>Minimum gems<input id="forgeMin" type="number" value="${c?.min_materials??3}"></label>
-  <label>Maximum gems<input id="forgeMax" type="number" value="${c?.max_materials??50}"></label>
-  <label>Seconds per stage<input id="forgeTime" type="number" step=".5" value="${c?.stage_time_seconds??8}"></label>
-  <label>Minor trait threshold<input id="forgeMinor" type="number" step=".01" value="${c?.trait_threshold_minor??.1}"></label>
-  <label>Full trait threshold<input id="forgeFull" type="number" step=".01" value="${c?.trait_threshold_full??.3}"></label>
+  $("workbenchPanelTitle").textContent=workbenchName;
+  $("workbenchConfigPanel").innerHTML=`<div class="form-grid">
+  <label class="toggle-field"><input id="workbenchEnabled" type="checkbox" ${c?.enabled?"checked":""}><span>Workbench enabled</span><small>Also enable the Workbench section switch below.</small></label>
+  <label>Beta label<input id="workbenchLabel" value="${esc(c?.beta_label||"Workbench [BETA]")}"></label>
+  <label>Minimum gems<input id="workbenchMin" type="number" value="${c?.min_materials??3}"></label>
+  <label>Maximum gems<input id="workbenchMax" type="number" value="${c?.max_materials??50}"></label>
+  <label>Seconds per stage<input id="workbenchTime" type="number" step=".5" value="${c?.stage_time_seconds??8}"></label>
+  <label>Minor trait threshold<input id="workbenchMinor" type="number" step=".01" value="${c?.trait_threshold_minor??.1}"></label>
+  <label>Full trait threshold<input id="workbenchFull" type="number" step=".01" value="${c?.trait_threshold_full??.3}"></label>
   </div><div class="editor-section"><h3>Quality multipliers</h3><div class="form-grid">
-  <label>Broken<input id="qBroken" type="number" step=".01" value="${c?.quality_broken??.65}"></label><label>Poor<input id="qPoor" type="number" step=".01" value="${c?.quality_poor??.8}"></label><label>Average<input id="qAverage" type="number" step=".01" value="${c?.quality_average??1}"></label><label>Good<input id="qGood" type="number" step=".01" value="${c?.quality_good??1.1}"></label><label>Excellent<input id="qExcellent" type="number" step=".01" value="${c?.quality_excellent??1.2}"></label><label>Masterwork<input id="qMasterwork" type="number" step=".01" value="${c?.quality_masterwork??1.3}"></label></div></div><button id="forgeSave" class="btn btn--primary">Save Workbench Settings</button>`;
-  $("forgeSave").onclick=saveForge;
+  <label>Broken<input id="qBroken" type="number" step=".01" value="${c?.quality_broken??.65}"></label><label>Poor<input id="qPoor" type="number" step=".01" value="${c?.quality_poor??.8}"></label><label>Average<input id="qAverage" type="number" step=".01" value="${c?.quality_average??1}"></label><label>Good<input id="qGood" type="number" step=".01" value="${c?.quality_good??1.1}"></label><label>Excellent<input id="qExcellent" type="number" step=".01" value="${c?.quality_excellent??1.2}"></label><label>Masterwork<input id="qMasterwork" type="number" step=".01" value="${c?.quality_masterwork??1.3}"></label></div></div><button id="workbenchSave" class="btn btn--primary">Save Workbench Settings</button>`;
+  $("workbenchSave").onclick=saveWorkbench;
 }
-async function saveForge(){try{const c={...forgeConfig,enabled:$("forgeEnabled").checked,beta_label:$("forgeLabel").value,min_materials:Number($("forgeMin").value),max_materials:Number($("forgeMax").value),stage_time_seconds:Number($("forgeTime").value),trait_threshold_minor:Number($("forgeMinor").value),trait_threshold_full:Number($("forgeFull").value),quality_broken:Number($("qBroken").value),quality_poor:Number($("qPoor").value),quality_average:Number($("qAverage").value),quality_good:Number($("qGood").value),quality_excellent:Number($("qExcellent").value),quality_masterwork:Number($("qMasterwork").value)};await call("forge-config",{save:true,config:c});renderWorldLab();status("Forge settings saved.")}catch(e){status(e.message,true)}}
+async function saveWorkbench(){try{const c={...workbenchConfig,enabled:$("workbenchEnabled").checked,beta_label:$("workbenchLabel").value,min_materials:Number($("workbenchMin").value),max_materials:Number($("workbenchMax").value),stage_time_seconds:Number($("workbenchTime").value),trait_threshold_minor:Number($("workbenchMinor").value),trait_threshold_full:Number($("workbenchFull").value),quality_broken:Number($("qBroken").value),quality_poor:Number($("qPoor").value),quality_average:Number($("qAverage").value),quality_good:Number($("qGood").value),quality_excellent:Number($("qExcellent").value),quality_masterwork:Number($("qMasterwork").value)};await call("workbench-config",{save:true,config:c});renderWorldLab();status("Workbench settings saved.")}catch(e){status(e.message,true)}}
 
 function enemyRow(e={}){const id=e.id||`new-${Math.random().toString(36).slice(2)}`;const row=document.createElement("div");row.className="builder-row enemy-builder";row.dataset.id=id;row.dataset.saved=e.id||"";row.innerHTML=`<div class="builder-row-top"><input class="enemy-name" value="${esc(e.name||"Enemy")}"><input class="enemy-hp" type="number" value="${e.max_health??100}"><input class="enemy-atk" type="number" value="${e.attack??10}"><button class="icon-button enemy-remove">×</button></div><div class="condition-grid"><label>Defense<input class="enemy-defense" type="number" value="${e.defense??0}"></label><label>Speed<input class="enemy-speed" type="number" step=".1" value="${e.speed??1}"></label><label>Crit chance<input class="enemy-crit" type="number" step=".01" value="${e.crit_chance??0}"></label><label>Sort<input class="enemy-sort" type="number" value="${e.sort_order??0}"></label><label class="wide">Stats / loot note<input class="enemy-note" value="${esc(e.stats?.note||"")}"></label></div>`;row.querySelector(".enemy-remove").onclick=()=>row.remove();$("enemyRows").appendChild(row)}
 async function openDungeon(d){

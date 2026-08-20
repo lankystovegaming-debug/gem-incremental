@@ -777,11 +777,31 @@ async function loadSectionControls() {
   list.innerHTML = (data.sections ?? []).map(section => `
     <div class="section-control-row">
       <div><strong>${escapeHtml(section.label)}</strong><span>${escapeHtml(section.description || "")}</span></div>
-      <button class="btn ${section.enabled ? "btn--primary" : ""}" data-section-id="${escapeHtml(section.id)}" data-section-enabled="${section.enabled}">
-        ${section.enabled ? "Enabled" : "Disabled"}
-      </button>
+      <div class="section-control-actions">
+        <button class="btn ${section.enabled ? "btn--primary" : ""}" data-section-id="${escapeHtml(section.id)}" data-section-enabled="${section.enabled}">
+          ${section.enabled ? "Enabled" : "Disabled"}
+        </button>
+        <button class="btn ${section.admin_only ? "btn--primary" : ""}" data-section-admin-id="${escapeHtml(section.id)}" data-section-admin-only="${section.admin_only}">
+          ${section.admin_only ? "Admins only" : "Public"}
+        </button>
+      </div>
     </div>
   `).join("") || `<p class="page-head__sub">No configurable sections.</p>`;
+
+  for (const button of list.querySelectorAll("[data-section-admin-id]")) {
+    button.onclick = async () => {
+      button.disabled = true;
+      const adminOnly = button.dataset.sectionAdminOnly !== "true";
+      const { error: toggleError } = await adminRequest("section_access_toggle", { id: button.dataset.sectionAdminId, adminOnly });
+      if (toggleError) {
+        notify.error("Could not change feature access", toggleError.message);
+        button.disabled = false;
+      } else {
+        await loadSectionControls();
+        notify.success(adminOnly ? "Feature restricted" : "Feature made public", adminOnly ? "Only administrators will see this section." : "The section is public again.");
+      }
+    };
+  }
 
   for (const button of list.querySelectorAll("[data-section-id]")) {
     button.onclick = async () => {
