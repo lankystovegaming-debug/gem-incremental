@@ -1646,6 +1646,44 @@ export default {
         );
       }
 
+      // =====================================================
+      // LOAD LIVE MUTATION CATALOG
+      // =====================================================
+      // Admin-created mutations live in game_mutations. Keep the historical
+      // fallback above for old deployments, but prefer the live catalog so
+      // newly-created mutations actually participate in rolls.
+      try {
+        const { data: liveMutations, error: liveMutationError } =
+          await ctx.supabaseAdmin
+            .from("game_mutations")
+            .select("id,name,chance,multiplier")
+            .eq("enabled", true)
+            .order("sort_order", { ascending: true });
+
+        if (!liveMutationError && Array.isArray(liveMutations) && liveMutations.length) {
+          gemMutations = liveMutations
+            .map((mutation: any) => ({
+              id: String(mutation.id),
+              name: String(mutation.name),
+              // game_mutations stores mutation odds as a denominator
+              // (100 = 1 in 100), while the RNG expects a probability.
+              chance: 1 / Number(mutation.chance),
+              multiplier: Number(mutation.multiplier)
+            }))
+            .filter((mutation: any) =>
+              mutation.id &&
+              Number.isFinite(mutation.chance) &&
+              mutation.chance > 0 &&
+              Number.isFinite(mutation.multiplier) &&
+              mutation.multiplier > 0
+            );
+        } else if (liveMutationError) {
+          console.warn("[ROLL] Live mutation catalog unavailable; using bundled mutations:", liveMutationError.message);
+        }
+      } catch (mutationCatalogError) {
+        console.warn("[ROLL] Live mutation catalog lookup failed; using bundled mutations:", mutationCatalogError);
+      }
+
 
       // =====================================================
       // CHECK COOLDOWN

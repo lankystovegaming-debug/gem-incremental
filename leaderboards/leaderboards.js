@@ -13,6 +13,10 @@ import { loadShowcasesFor } from "../src/backend/cloudShowcase.js";
 import { showcasePinsHtml } from "../src/ui/showcaseRender.js";
 import { roleForUsername, roleBadgeHtml } from "../src/ui/roles.js";
 
+let liveMutationCatalog = Object.fromEntries(
+  Object.values(GEM_MUTATIONS).map((mutation) => [mutation.id, mutation])
+);
+
 // Role tag ([DEV]/[OWNER]/[SWEAT]) shown before a ranked player's name.
 function roleTag(username) {
   return roleBadgeHtml(roleForUsername(username));
@@ -731,7 +735,7 @@ function mutationNamesHtml(player) {
   const ids = Array.isArray(player.mutation_ids) ? player.mutation_ids : [];
   if (!ids.length) return '<span class="lb-no-mutation">No mutation</span>';
   return ids.map(id => {
-    const mutation = GEM_MUTATIONS?.[id];
+    const mutation = liveMutationCatalog?.[id] ?? GEM_MUTATIONS?.[id];
     return escapeHtml(mutation?.name ?? String(id).replaceAll("-", " "));
   }).join('<span class="lb-mutation-dot">·</span>');
 }
@@ -969,6 +973,29 @@ async function loadLeaderboards() {
       .invoke(
         "leaderboards"
       );
+
+  const { data: liveMutations, error: liveMutationError } = await supabase
+    .from("game_mutations")
+    .select("id,name,chance,multiplier,description,icon,color")
+    .eq("enabled", true)
+    .order("sort_order", { ascending: true });
+
+  if (!liveMutationError && Array.isArray(liveMutations)) {
+    liveMutationCatalog = Object.fromEntries(
+      liveMutations.map((mutation) => [
+        String(mutation.id),
+        {
+          id: String(mutation.id),
+          name: String(mutation.name),
+          chance: Number(mutation.chance),
+          multiplier: Number(mutation.multiplier),
+          description: String(mutation.description ?? ""),
+          icon: String(mutation.icon ?? "✦"),
+          color: String(mutation.color ?? "#9fdcff")
+        }
+      ])
+    );
+  }
 
 
   if (error) {

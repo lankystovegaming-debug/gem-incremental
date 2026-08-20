@@ -45,7 +45,8 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     // yet, so the fallback below keeps guild creation usable while the
     // migration is being rolled out.
     const rpc = await ctx.supabaseAdmin.rpc("create_guild_for_player", {
-      p_name: name
+      p_name: name,
+      p_player_id: userId
     });
 
     if (!rpc.error) {

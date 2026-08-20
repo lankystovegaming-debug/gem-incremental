@@ -57,15 +57,20 @@ let catalogGems = [...gems];
 let indexEntries = [];
 
 /*
- * Five independent mutations produce 32 exact combinations per visible gem.
- * Secret gems join that total only after the player discovers them.
+ * Build exact mutation combinations from the LIVE mutation catalog.
+ * Admin-created mutations are stored in game_mutations, so this must not be
+ * frozen at module load time.
  */
-const MUTATION_COMBINATIONS = (() => {
+function buildMutationCombinations() {
   const ids = mutationList.map((m) => m.id);
   const combinations = [];
 
-  for (let mask = 0; mask < (1 << ids.length); mask += 1) {
-    const selected = ids.filter((_, index) => Boolean(mask & (1 << index)));
+  // The game normally has only a handful of mutations. Generate the full
+  // exact-combination set so every admin mutation behaves like a built-in.
+  const activeIds = ids;
+
+  for (let mask = 0; mask < (1 << activeIds.length); mask += 1) {
+    const selected = activeIds.filter((_, index) => Boolean(mask & (1 << index)));
     combinations.push({
       mutationIds: normalizeMutationIds(selected),
       combinationKey: mutationCombinationKey(selected)
@@ -73,7 +78,9 @@ const MUTATION_COMBINATIONS = (() => {
   }
 
   return combinations;
-})();
+}
+
+let mutationCombinations = buildMutationCombinations();
 
 const state = {
   index: {},
@@ -149,7 +156,7 @@ function allEntries() {
   const entries = [];
 
   for (const gem of catalogGems) {
-    for (const combination of MUTATION_COMBINATIONS) {
+    for (const combination of mutationCombinations) {
       entries.push({
         gem,
         ...combination,
@@ -626,12 +633,13 @@ async function refresh() {
     loadCloudPlayerState(),
     supabase
       .from("private_feature_gems")
-      .select("id,name,rarity,base_weight,value_per_gram,description,hide_rarity_until_discovered")
+      .select("*")
       .eq("enabled", true)
+      .order("sort_order", { ascending: true })
       .order("rarity", { ascending: true }),
     supabase
       .from("game_mutations")
-      .select("id,name,chance,multiplier,description,icon,color")
+      .select("id,name,chance,multiplier,description,icon,color,sort_order")
       .eq("enabled", true)
       .order("sort_order", { ascending: true })
   ]);
@@ -644,8 +652,10 @@ async function refresh() {
       multiplier: Number(mutation.multiplier),
       description: String(mutation.description ?? ""),
       icon: String(mutation.icon ?? "✦"),
-      color: String(mutation.color ?? "#9fdcff")
+      color: String(mutation.color ?? "#9fdcff"),
+      sortOrder: Number(mutation.sort_order ?? 0)
     }));
+    mutationCombinations = buildMutationCombinations();
   }
 
   // Admin-created enabled gems are part of the live catalogue. They are
@@ -660,12 +670,14 @@ async function refresh() {
         rarity: Number(gem.rarity),
         baseWeight: Number(gem.base_weight),
         valuePerGram: Number(gem.value_per_gram),
-        description: String(gem.description ?? "Admin-created gem."),
-        hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true
+        description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
+        hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
       }));
     catalogGems = [...gems, ...custom];
-    indexEntries = allEntries();
   }
+
+  // Rebuild after the live gem + mutation catalogs are loaded.
+  indexEntries = allEntries();
 
   state.loading = false;
 
@@ -701,6 +713,11 @@ const gemCatalogChannel = supabase
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "private_feature_gems" },
+    () => refresh()
+  )
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "game_mutations" },
     () => refresh()
   )
   .subscribe();
