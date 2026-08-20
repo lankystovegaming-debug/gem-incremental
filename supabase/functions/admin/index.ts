@@ -247,6 +247,20 @@ export default {
         return response({ section: data });
       }
 
+      if (action === "section_access_toggle") {
+        const id = String(body.id ?? "");
+        const adminOnly = body.adminOnly === true;
+        const { data, error } = await ctx.supabaseAdmin
+          .from("game_section_settings")
+          .update({ admin_only: adminOnly, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("*")
+          .single();
+        if (error) return response({ error: "section_access_toggle_failed", message: error.message }, 500);
+        await audit(ctx, adminId, null, "main_section_access_toggled", { id, adminOnly });
+        return response({ section: data });
+      }
+
       if (action === "start_mutation_event") {
         const name = String(body.name ?? "Mutation Surge").trim().slice(0, 80);
         const durationMinutes = Math.trunc(Number(body.durationMinutes));

@@ -27,11 +27,6 @@ const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
   autoSellTier: "common",
-  autoKeep: false,
-  autoKeepEffectiveRarity: 1000000,
-  autoKeepMutation: "celestial",
-  autoKeepMinValue: 0,
-  autoKeepMinWeight: 0,
   rollAnimations: true,
   cutsceneMinimumRarity: 100000
 };
@@ -63,11 +58,6 @@ function sanitise(value) {
   return {
     autoRoll: Boolean(value.autoRoll),
     autoSell: Boolean(value.autoSell),
-    autoKeep: Boolean(value.autoKeep),
-    autoKeepEffectiveRarity: Math.max(0,Math.floor(Number(value.autoKeepEffectiveRarity)||0)),
-    autoKeepMutation: ["none","polished","gilded","prismatic","celestial","corrupted"].includes(value.autoKeepMutation)?value.autoKeepMutation:"celestial",
-    autoKeepMinValue: Math.max(0,Number(value.autoKeepMinValue)||0),
-    autoKeepMinWeight: Math.max(0,Number(value.autoKeepMinWeight)||0),
 
     autoSellTier: allowedTiers.includes(value.autoSellTier)
       ? value.autoSellTier
@@ -123,19 +113,6 @@ export function shouldAutoSell(gemTierId) {
   }
 
   return tierRank(gemTierId) <= tierRank(state.autoSellTier);
-}
-
-const MUTATION_RANK={polished:1,gilded:2,prismatic:3,celestial:4,corrupted:5};
-export function autoKeepMatch(data){
-  if(data?.gem?.dropType==="relic")return{keep:true,reason:"Relics are always protected"};
-  if(!state.autoKeep)return{keep:false,reason:""};
-  const effective=Number(data?.gem?.rarity||0)*Math.max(1,Number(data?.mutationMultiplier||1));
-  if(state.autoKeepEffectiveRarity>0&&effective>=state.autoKeepEffectiveRarity)return{keep:true,reason:`Effective rarity reached 1/${Math.round(state.autoKeepEffectiveRarity).toLocaleString()}`};
-  const ids=(Array.isArray(data?.mutations)?data.mutations:[]).map(item=>item.id),required=MUTATION_RANK[state.autoKeepMutation]||0;
-  if(required&&ids.some(id=>(MUTATION_RANK[id]||0)>=required))return{keep:true,reason:`Matched ${state.autoKeepMutation} mutation protection`};
-  if(state.autoKeepMinValue>0&&Number(data?.value||0)>=state.autoKeepMinValue)return{keep:true,reason:`Value reached ${state.autoKeepMinValue.toLocaleString()}`};
-  if(state.autoKeepMinWeight>0&&Number(data?.finalWeight||0)>=state.autoKeepMinWeight)return{keep:true,reason:`Weight reached ${state.autoKeepMinWeight.toLocaleString()}g`};
-  return{keep:false,reason:""};
 }
 
 

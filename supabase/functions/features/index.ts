@@ -2,10 +2,31 @@ import { withSupabase } from "npm:@supabase/server";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"Content-Type":"application/json",...cors}});
 function uid(ctx:any){return ctx?.userClaims?.id??ctx?.userClaims?.sub??ctx?.jwtClaims?.sub??null;}
+const OWNER_USER_IDS=["38d5e8ce-18af-46d3-aa9e-6e601e75dd78"];
+async function isAdmin(ctx:any,userId:string){
+  if(OWNER_USER_IDS.includes(userId)) return true;
+  const {data,error}=await ctx.supabaseAdmin.from("admins").select("user_id").eq("user_id",userId).maybeSingle();
+  if(error){console.error("FEATURES_ADMIN_LOOKUP",error.message);return false;}
+  return data?.user_id===userId;
+}
 export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:cors}); const userId=uid(ctx); if(!userId)return json({error:"unauthenticated"},401); let b:any={};try{b=await req.json()}catch{} const a=b.action;
  try{
-  if(a==="sections"){const {data,error}=await ctx.supabaseAdmin.from("game_section_settings").select("*").order("sort_order");if(error)throw error;return json({sections:data??[]});}
-  if(a==="list"){const {data:definitions,error}=await ctx.supabaseAdmin.from("private_feature_definitions").select("*").eq("enabled",true).order("feature_kind").order("quest_type").order("sort_order");if(error)throw error;const {data:progress,error:pe}=await ctx.supabaseAdmin.from("private_feature_progress").select("*").eq("player_id",userId);if(pe)throw pe;return json({definitions:definitions??[],progress:progress??[]});}
+  if(a==="sections"){
+    const {data,error}=await ctx.supabaseAdmin.from("game_section_settings").select("*").order("sort_order");
+    if(error)throw error;
+    const admin=await isAdmin(ctx,userId);
+    const visible=(data??[]).filter((section:any)=>section.admin_only!==true || admin);
+    return json({sections:visible,isAdmin:admin});
+  }
+  if(a==="list"){
+    const {data:definitions,error}=await ctx.supabaseAdmin.from("private_feature_definitions").select("*").eq("enabled",true).order("feature_kind").order("quest_type").order("sort_order");
+    if(error)throw error;
+    const admin=await isAdmin(ctx,userId);
+    const visible=(definitions??[]).filter((definition:any)=>definition.admin_only!==true || admin);
+    const {data:progress,error:pe}=await ctx.supabaseAdmin.from("private_feature_progress").select("*").eq("player_id",userId);
+    if(pe)throw pe;
+    return json({definitions:visible,progress:progress??[],isAdmin:admin});
+  }
   if(a==="guild"){
    const {data:member}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role").eq("player_id",userId).maybeSingle();
    let guild:any=null, members:any[]=[], invites:any[]=[], quests:any[]=[];

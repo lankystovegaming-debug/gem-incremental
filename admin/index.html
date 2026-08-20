@@ -226,7 +226,7 @@
       <button class="lab-tab" data-tab="quests" type="button">⚔ Quests <span id="questCount">0</span></button>
       <button class="lab-tab" data-tab="gems" type="button">💎 Gems <span id="gemCount">0</span></button>
       <button class="lab-tab" data-tab="worlds" type="button">🗺 Islands <span id="islandCount">0</span></button>
-      <button class="lab-tab" data-tab="forge" type="button">⚒ Workbench <span id="forgeState">OFF</span></button>
+      <button class="lab-tab" data-tab="workbench" type="button">⚒ Workbench <span id="workbenchState">OFF</span></button>
       <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
       <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
       <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button> 
@@ -283,9 +283,9 @@
       </section>
     </section>
 
-    <section class="tab-panel" data-panel="forge">
-      <div class="panel-heading"><div><h2 id="forgePanelTitle">Workbench [BETA]</h2><p>Configure the three-stage precision minigame, ore-count classes, quality multipliers and trait thresholds.</p></div></div>
-      <div id="forgeConfigPanel" class="upcoming-card"></div>
+    <section class="tab-panel" data-panel="workbench">
+      <div class="panel-heading"><div><h2 id="workbenchPanelTitle">Workbench [BETA]</h2><p>Configure the three-stage precision minigame, ore-count classes, quality multipliers and trait thresholds.</p></div></div>
+      <div id="workbenchConfigPanel" class="upcoming-card"></div>
     </section>
 
     <section class="tab-panel" data-panel="dungeons">
@@ -411,6 +411,7 @@
           <label>Starts at<input id="startsAt" type="datetime-local"></label>
           <label>Ends at<input id="endsAt" type="datetime-local"></label>
           <label class="toggle-field"><input id="enabled" type="checkbox" checked><span>Enabled</span><small>Show and process this feature</small></label>
+          <label class="toggle-field"><input id="adminOnly" type="checkbox"><span>Admins only</span><small>Only administrators can see or progress this feature.</small></label>
         </div>
       </div>
 
