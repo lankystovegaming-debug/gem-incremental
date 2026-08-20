@@ -40,7 +40,8 @@ const mutationList = Object.values(GEM_MUTATIONS);
 
 // Secret gems are included in the internal catalog so a discovery can reveal
 // them, but they are completely absent from the rendered index beforehand.
-const catalogGems = gems;
+let catalogGems = [...gems];
+let indexEntries = [];
 
 /*
  * Five independent mutations produce 32 exact combinations per visible gem.
@@ -64,7 +65,7 @@ const MUTATION_COMBINATIONS = (() => {
 const state = {
   index: {},
   combinations: {},
-  selectedMutations: new Set(),
+  selectedMutations: new Set(["none"]),
   loading: true
 };
 
@@ -112,11 +113,11 @@ async function loadCombinations(playerId) {
 
 /* Base odds mirror roll/index.ts at luck = 1. Player/equipment/potion modifiers are intentionally ignored. */
 function exactEntryChance(entry) {
-  return rolledResultChance(entry.gem.name, entry.mutationIds);
+  return rolledResultChance(entry.gem, entry.mutationIds);
 }
 
 function entryChanceLabel(entry) {
-  return chanceLabelForResult(entry.gem.name, entry.mutationIds);
+  return chanceLabelForResult(entry.gem, entry.mutationIds);
 }
 
 function comboKey(gemName, combinationKey) {
@@ -139,7 +140,7 @@ function allEntries() {
   return entries;
 }
 
-const indexEntries = allEntries();
+indexEntries = allEntries();
 
 function secretGemIsRevealed(gem) {
   if (!gem.hideRarityUntilDiscovered) {
@@ -335,6 +336,7 @@ function visibleEntries() {
 
 function renderMutationTabs() {
   const tabs = [
+    { id: "all", name: "All", special: true },
     { id: "none", name: "No Mutation", special: true },
     ...mutationList.map((mutation) => ({
       id: mutation.id,
@@ -345,7 +347,9 @@ function renderMutationTabs() {
 
   mutationTabs.innerHTML = tabs
     .map((tab) => {
-      const active = state.selectedMutations.has(tab.id);
+      const active = tab.id === "all"
+        ? state.selectedMutations.size === 0
+        : state.selectedMutations.has(tab.id);
 
       return `
         <button
@@ -534,12 +538,13 @@ mutationTabs.addEventListener("click", (event) => {
 
   const id = button.dataset.mutationFilter;
 
-  if (id === "none") {
+  if (id === "all") {
+    state.selectedMutations.clear();
+  } else if (id === "none") {
     state.selectedMutations.clear();
     state.selectedMutations.add("none");
   } else {
     state.selectedMutations.delete("none");
-
     if (state.selectedMutations.has(id)) {
       state.selectedMutations.delete(id);
     } else {
@@ -557,7 +562,7 @@ gemList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-replay-gem]");
   if (!button) return;
 
-  const gem = gems.find(
+  const gem = catalogGems.find(
     (entry) => entry.name === button.dataset.replayGem
   );
 
@@ -595,10 +600,34 @@ async function refresh() {
     return;
   }
 
-  const [combinations, playerState] = await Promise.all([
+  const [combinations, playerState, privateGemsResult] = await Promise.all([
     loadCombinations(user.id),
-    loadCloudPlayerState()
+    loadCloudPlayerState(),
+    supabase
+      .from("private_feature_gems")
+      .select("id,name,rarity,base_weight,value_per_gram,description,hide_rarity_until_discovered")
+      .eq("enabled", true)
+      .order("rarity", { ascending: true })
   ]);
+
+  // Admin-created enabled gems are part of the live catalogue. They are
+  // read through the restricted public-read policy added by the migration,
+  // so disabled/unreleased admin gems remain hidden from normal players.
+  if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
+    const builtInNames = new Set(gems.map((gem) => gem.name));
+    const custom = privateGemsResult.data
+      .filter((gem) => !builtInNames.has(gem.name))
+      .map((gem) => ({
+        name: String(gem.name),
+        rarity: Number(gem.rarity),
+        baseWeight: Number(gem.base_weight),
+        valuePerGram: Number(gem.value_per_gram),
+        description: String(gem.description ?? "Admin-created gem."),
+        hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true
+      }));
+    catalogGems = [...gems, ...custom];
+    indexEntries = allEntries();
+  }
 
   state.loading = false;
 

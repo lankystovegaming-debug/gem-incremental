@@ -8,6 +8,8 @@ export const CHAT_CHANCE_THRESHOLD = 100_000;
 // Player/equipment/potion modifiers are ignored here.
 // If mutations exist, their individual chances are multiplied by the gem chance.
 export function gemRollChance(gemOrName, luck = BASE_ROLL_LUCK) {
+  // Accept both bundled gem names and full gem objects. The latter is
+  // important for admin-created catalogue gems that are not in gems.js.
   const gem =
     typeof gemOrName === "string"
       ? gems.find((entry) => entry.name === gemOrName)

@@ -174,16 +174,43 @@ function buildCharacter(THREE, shared, { username, color, showcase }) {
   // Up to 3 orbiting showcase gems, colored from the game's own gem palette.
   const gemMeshes = (Array.isArray(showcase) ? showcase.slice(0, 3) : []).map((gem, i) => {
     const style = getGemStyle(gem?.gem_name);
+    const mutationIds = Array.isArray(gem?.mutation_ids) ? gem.mutation_ids : [];
+    const shapeIndex = (String(gem?.gem_name ?? "").split("").reduce((n,ch)=>n+ch.charCodeAt(0),0) + mutationIds.length) % 3;
+    const geometry = shapeIndex === 0
+      ? shared.gemGeo
+      : shapeIndex === 1
+        ? shared.gemCrystalGeo
+        : shared.gemShardGeo;
     const mat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(style.color),
       emissive: new THREE.Color(style.color),
-      emissiveIntensity: 0.35,
-      roughness: 0.25,
-      metalness: 0.2
+      emissiveIntensity: 0.45 + Math.min(0.5, mutationIds.length * 0.1),
+      roughness: 0.22,
+      metalness: 0.28
     });
-    const mesh = new THREE.Mesh(shared.gemGeo, mat);
+    const mesh = new THREE.Mesh(geometry, mat);
     mesh.userData.orbitOffset = (i / 3) * Math.PI * 2;
+    mesh.userData.orbitRadius = 0.86 + i * 0.12;
+    mesh.userData.mutationCount = mutationIds.length;
     group.add(mesh);
+
+    // Mutated showcase gems receive a second orbiting CSS-free torus accent
+    // so the 3D sandbox still communicates mutation state without images.
+    if (mutationIds.length) {
+      const ring = new THREE.Mesh(
+        shared.gemRingGeo,
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color(style.color),
+          transparent: true,
+          opacity: 0.72
+        })
+      );
+      ring.userData.orbitOffset = mesh.userData.orbitOffset + Math.PI / 3;
+      ring.userData.orbitRadius = mesh.userData.orbitRadius + 0.08;
+      ring.userData.isGemRing = true;
+      mesh.userData.mutationRing = ring;
+      group.add(ring);
+    }
     return mesh;
   });
 
@@ -198,6 +225,9 @@ function makeSharedAssets(THREE) {
     legGeo: new THREE.BoxGeometry(0.3, 0.9, 0.4),
     armGeo: new THREE.BoxGeometry(0.28, 0.95, 0.3),
     gemGeo: new THREE.IcosahedronGeometry(0.16, 0),
+    gemCrystalGeo: new THREE.OctahedronGeometry(0.18, 0),
+    gemShardGeo: new THREE.TetrahedronGeometry(0.2, 0),
+    gemRingGeo: new THREE.TorusGeometry(0.24, 0.018, 6, 20),
     pickHandleGeo: new THREE.CylinderGeometry(0.03, 0.03, 0.6, 6),
     pickHeadGeo: new THREE.BoxGeometry(0.35, 0.09, 0.09),
     skinMat: new THREE.MeshStandardMaterial({ color: 0xd8a878, roughness: 0.8 }),
@@ -334,7 +364,10 @@ async function enterSandbox(user) {
   });
 
   const showcaseSnapshot = (Array.isArray(showcase) ? showcase.slice(0, 3) : [])
-    .map((gem) => ({ gem_name: gem?.gem_name }));
+    .map((gem) => ({
+      gem_name: gem?.gem_name,
+      mutation_ids: Array.isArray(gem?.mutation_ids) ? gem.mutation_ids.slice(0, 5) : []
+    }));
 
   function upsertRemote(id, entry) {
     if (id === user.id) return;
@@ -444,8 +477,22 @@ async function enterSandbox(user) {
     local.group.rotation.y = local.yaw;
 
     local.gemMeshes.forEach((mesh) => {
-      const angle = t * 1.1 + mesh.userData.orbitOffset;
-      mesh.position.set(Math.cos(angle) * 0.9, 2.05 + Math.sin(t * 2 + mesh.userData.orbitOffset) * 0.08, Math.sin(angle) * 0.9);
+      const angle = t * 1.15 + mesh.userData.orbitOffset;
+      const radius = mesh.userData.orbitRadius ?? 0.9;
+      mesh.position.set(
+        Math.cos(angle) * radius,
+        2.05 + Math.sin(t * 2.1 + mesh.userData.orbitOffset) * 0.1,
+        Math.sin(angle) * radius
+      );
+      mesh.rotation.x = t * 0.8 + mesh.userData.orbitOffset;
+      mesh.rotation.y = t * 1.15;
+      const ring = mesh.userData.mutationRing;
+      if (ring) {
+        const ringAngle = t * 1.65 + (mesh.userData.orbitOffset ?? 0);
+        ring.position.set(Math.cos(ringAngle) * (radius + 0.06), 2.05 + Math.sin(t * 2.4) * 0.08, Math.sin(ringAngle) * (radius + 0.06));
+        ring.rotation.x = t * 1.7;
+        ring.rotation.z = t * 1.2;
+      }
     });
 
     for (const player of remote.values()) {

@@ -542,7 +542,19 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const colours = gradientColours(style);
   const shape = iconShapeForName(safeName);
 
-  const normalizedMutations = Array.from(new Set(Array.isArray(mutationIds) ? mutationIds.map(String).map((id) => id.trim().toLowerCase()).filter(Boolean) : []));
+  // Mutation ids are part of the icon identity. Keep their order stable so
+  // the same specimen renders identically on rolls, profiles, leaderboards,
+  // showcases, the Gem Index, and Sandbox.
+  const normalizedMutations = Array.from(
+    new Set(
+      Array.isArray(mutationIds)
+        ? mutationIds
+            .map(String)
+            .map((id) => id.trim().toLowerCase())
+            .filter(Boolean)
+        : []
+    )
+  );
   const className = [
     "gem-icon",
     `gem-icon--${shape}`,
@@ -563,6 +575,8 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
         --gem-glow:${style.glow ?? "transparent"};
       "
       data-gem-icon="${escapeAttribute(safeName)}"
+      data-mutation-count="${normalizedMutations.length}"
+      data-mutations="${escapeAttribute(normalizedMutations.join(","))}"
       aria-hidden="true"
     >
       <span class="gem-icon__facet gem-icon__facet--a"></span>

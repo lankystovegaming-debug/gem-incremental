@@ -396,19 +396,33 @@ async function loadAnalytics() {
   analyticsRefresh.disabled = true;
   analyticsContent.innerHTML = '<div class="skeleton" style="height:220px"></div>';
 
-  const { data, error } = await adminRequest("analytics");
+  // Analytics is a global admin view, not a player action. Prefer the
+  // dedicated SECURITY DEFINER RPC so a stale targetPlayerId can never make
+  // the analytics request look like an invalid-player request. The Edge
+  // Function remains the compatibility fallback for older deployments.
+  let data = null;
+  let error = null;
+
+  const rpcResult = await supabase.rpc("get_admin_analytics");
+  if (!rpcResult.error && rpcResult.data) {
+    data = rpcResult.data;
+  } else {
+    const fallback = await adminRequest("analytics", { targetId: null });
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   analyticsButton.disabled = false;
   analyticsRefresh.disabled = false;
 
-  if (error) {
+  if (error || !data) {
     analyticsPanel.hidden = false;
     analyticsContent.innerHTML = `
       <div class="analytics-error">
         <strong>Analytics could not be loaded.</strong>
-        <span>${escapeHtml(error.message ?? "Unknown error")}</span>
+        <span>${escapeHtml(error?.message ?? "The analytics service returned no data.")}</span>
       </div>`;
-    notify.error("Analytics failed", error.message);
+    notify.error("Analytics failed", error?.message ?? "No analytics data returned.");
     return;
   }
 

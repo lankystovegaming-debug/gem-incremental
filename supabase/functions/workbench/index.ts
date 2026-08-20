@@ -379,7 +379,7 @@ export default {
 
         const { data: session, error: sessionError } =
           await ctx.supabaseAdmin
-            .from("forge_sessions")
+            .from("workbench_sessions")
             .insert({
               player_id: playerId,
               item_type: itemType,
@@ -426,7 +426,7 @@ export default {
 
         const { data: session, error: sessionError } =
           await ctx.supabaseAdmin
-            .from("forge_sessions")
+            .from("workbench_sessions")
             .select("*")
             .eq("id", sessionId)
             .eq("player_id", playerId)
@@ -454,7 +454,7 @@ export default {
         const sessionAgeMs = Date.now() - new Date(session.created_at ?? 0).getTime();
         const maxSessionAgeMs = Math.max(30_000, Number(config.stage_time_seconds) * 3 * 4_000);
         if (!Number.isFinite(sessionAgeMs) || sessionAgeMs > maxSessionAgeMs) {
-          await ctx.supabaseAdmin.from("forge_sessions")
+          await ctx.supabaseAdmin.from("workbench_sessions")
             .update({ status: "failed", updated_at: new Date().toISOString() })
             .eq("id", sessionId)
             .eq("player_id", playerId)
@@ -482,7 +482,7 @@ export default {
         if (nextStage <= 3) {
           const { data: updated, error: updateError } =
             await ctx.supabaseAdmin
-              .from("forge_sessions")
+              .from("workbench_sessions")
               .update({
                 stage: nextStage,
                 stage_scores: scores,
@@ -598,7 +598,7 @@ export default {
 
         const { data: processingSession, error: processingError } =
           await ctx.supabaseAdmin
-            .from("forge_sessions")
+            .from("workbench_sessions")
             .update({
               stage_scores: scores,
               quality: qualityMultiplier,
@@ -625,7 +625,7 @@ export default {
 
         const { data: item, error: itemError } =
           await ctx.supabaseAdmin
-            .from("forge_items")
+            .from("workbench_items")
             .insert({
               player_id: playerId,
               item_type: session.item_type,
@@ -674,7 +674,7 @@ export default {
 
         const { data: completed, error: completeError } =
           await ctx.supabaseAdmin
-            .from("forge_sessions")
+            .from("workbench_sessions")
             .update({
               stage_scores: scores,
               quality: qualityMultiplier,
@@ -705,7 +705,7 @@ export default {
 
       if (action === "history") {
         const { data, error } = await ctx.supabaseAdmin
-          .from("forge_items")
+          .from("workbench_items")
           .select("*")
           .eq("player_id", playerId)
           .order("created_at", { ascending: false })

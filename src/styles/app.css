@@ -3261,6 +3261,60 @@ textarea {
 }
 
 
+
+/* =========================================================
+   DISTINCT MUTATION GEM SILHOUETTES
+   Each mutation gets a different physical treatment, not just
+   a different glow. This keeps mutated specimens recognizable
+   even at leaderboard/profile icon sizes.
+   ========================================================= */
+.gem-icon--mutation-polished::after {
+  clip-path: polygon(50% 0, 84% 16%, 100% 50%, 82% 86%, 50% 100%, 18% 86%, 0 50%, 16% 16%);
+  filter: saturate(.55) brightness(1.16);
+}
+.gem-icon--mutation-gilded::after {
+  clip-path: polygon(50% 0, 92% 22%, 82% 78%, 50% 100%, 18% 78%, 8% 22%);
+}
+.gem-icon--mutation-prismatic::after {
+  clip-path: polygon(50% 0, 88% 14%, 100% 50%, 76% 92%, 24% 92%, 0 50%, 12% 14%);
+}
+.gem-icon--mutation-celestial::after {
+  clip-path: polygon(50% 0, 61% 34%, 96% 20%, 70% 50%, 96% 80%, 61% 66%, 50% 100%, 39% 66%, 4% 80%, 30% 50%, 4% 20%, 39% 34%);
+}
+.gem-icon--mutation-corrupted::after {
+  clip-path: polygon(46% 0, 70% 13%, 100% 8%, 83% 39%, 100% 66%, 65% 62%, 57% 100%, 35% 73%, 5% 88%, 18% 54%, 0 29%, 37% 34%);
+}
+.gem-icon--mutation-polished .gem-icon__core { transform: scale(1.12); }
+.gem-icon--mutation-gilded .gem-icon__core { border-radius: 18%; transform: rotate(45deg) scale(.82); }
+.gem-icon--mutation-prismatic .gem-icon__core { border-radius: 25%; transform: rotate(30deg) scale(.9); }
+.gem-icon--mutation-celestial .gem-icon__core { border-radius: 50%; transform: scale(.72); }
+.gem-icon--mutation-corrupted .gem-icon__core { border-radius: 8% 48% 18% 52%; transform: rotate(-18deg) scale(.88); }
+.gem-icon--mutated[data-mutation-count="2"] .gem-icon__mutation-ring {
+  transform: rotate(45deg) scaleX(.86);
+  border-width: 2px;
+}
+.gem-icon--mutated[data-mutation-count="3"] .gem-icon__mutation-ring {
+  transform: rotate(70deg) scaleX(.92);
+  border-width: 2px;
+  border-style: dotted;
+}
+.gem-icon--mutated[data-mutation-count="4"] .gem-icon__mutation-ring {
+  inset: -6%;
+  transform: rotate(100deg) scaleX(.98);
+  border-width: 2px;
+  border-style: double;
+}
+.gem-icon--mutated[data-mutation-count="5"] .gem-icon__mutation-ring {
+  inset: -10%;
+  transform: rotate(130deg) scaleX(1);
+  border-width: 2px;
+  border-style: dashed;
+  animation: mutationCrownSpin 2.6s linear infinite;
+}
+@keyframes mutationCrownSpin {
+  to { transform: rotate(490deg) scaleX(1); }
+}
+
 /* =========================================================
    SESSION INSIGHTS
    ========================================================= */

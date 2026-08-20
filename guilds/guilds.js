@@ -3,7 +3,22 @@ import { supabase } from "../src/backend/supabase.js";
 mountShell({ page:"guilds", base:"../" });
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-async function api(action,extra={}){const {data,error}=await supabase.functions.invoke("features",{body:{action,...extra}});if(error||data?.error)throw new Error(data?.message||data?.error||error?.message);return data;}
+async function api(action,extra={}){
+  const {data,error}=await supabase.functions.invoke("features",{body:{action,...extra}});
+  if(error||data?.error){
+    const code=data?.error||error?.code;
+    const messages={
+      guild_create_failed:"The guild could not be created. Please try again.",
+      guild_name_taken:"That guild name is already taken.",
+      already_in_guild:"You are already in a guild.",
+      player_id_required:"Enter the player's UUID.",
+      player_already_in_guild:"That player is already in a guild.",
+      owner_only:"Only the guild owner can do that."
+    };
+    throw new Error(messages[code]||data?.message||code||error?.message||"Guild request failed.");
+  }
+  return data;
+}
 async function load(){
  try{
   const d=await api("guild");
@@ -22,5 +37,13 @@ async function load(){
   $("qSave").onclick=async()=>{try{await api("guild-quest-save",{guildId:d.guild.id,quest:{name:$("qName").value,description:$("qDesc").value,requirements:{type:"guild_points",amount:Number($("qAmount").value||100)},reward_points:Number($("qReward").value||0)}});await load();}catch(e){$("status").textContent=e.message;}};
  }catch(e){$("status").textContent=e.message;}
 }
-$("createBtn").onclick=async()=>{try{await api("guild-create",{name:$("guildName").value.trim()});await load();}catch(e){$("status").textContent=e.message;}};
+$("createBtn").onclick=async()=>{
+  const button=$("createBtn");
+  const name=$("guildName").value.trim();
+  if(name.length<2){$("status").textContent="Guild names need at least 2 characters.";return;}
+  button.disabled=true;
+  try{await api("guild-create",{name});$("guildName").value="";await load();}
+  catch(e){$("status").textContent=e.message;}
+  finally{button.disabled=false;}
+};
 load();
