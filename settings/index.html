@@ -140,6 +140,9 @@
             never sold.
           </span>
         </div>
+        <select class="select" id="autoSellTier"></select>
+      </div>
+
       <div class="setting">
         <div class="setting__copy">
           <strong>Auto keep</strong>
@@ -150,15 +153,12 @@
           <span class="switch__track"></span>
         </label>
       </div>
-      <div class="setting setting--nested" id="autoKeepTierRow">
+      <div class="setting setting--nested" id="autoKeepRarityRow">
         <div class="setting__copy">
           <strong>Keep at or above</strong>
-          <span>Auto Sell will never sell this tier or anything rarer.</span>
+          <span>Enter the minimum effective rarity that Auto Keep should protect.</span>
         </div>
-        <select id="autoKeepTier" class="setting-select" aria-label="Auto keep minimum tier"></select>
-      </div>
-
-        <select class="select" id="autoSellTier"></select>
+        <input class="input setting-number" id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
       </div>
 
       <div class="setting">

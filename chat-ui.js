@@ -19,8 +19,10 @@ import {
 import { gemNameHtml } from "./src/ui/gemStyle.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import {
+  chanceDenominator,
   chanceLabelForResult,
-  meetsChatChanceThreshold
+  CHAT_CHANCE_THRESHOLD,
+  EFFECTIVE_CHAT_CHANCE_THRESHOLD
 } from "./src/logic/chances.js";
 
 const messagesEl = document.querySelector("#chatMessages");
@@ -490,15 +492,26 @@ if (messagesEl && formEl && inputEl) {
   }
 
   function chatChanceIsRareEnough(message) {
-    return meetsChatChanceThreshold(
-      message.gem_name,
+    const baseRarity = Number(message?.rarity ?? 0);
+    if (Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD) return true;
+    const storedEffective = Number(message?.effective_rarity);
+    if (Number.isFinite(storedEffective) && storedEffective > 0) {
+      return storedEffective >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
+    }
+    const calculated = chanceDenominator(
+      { name: message?.gem_name, rarity: baseRarity },
       chatMutationIds(message)
     );
+    return Number.isFinite(calculated) && calculated >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
   }
 
   function exactChatChanceLabel(message) {
+    const storedEffective = Number(message?.effective_rarity);
+    if (Number.isFinite(storedEffective) && storedEffective > 0) {
+      return `1 in ${Math.round(storedEffective).toLocaleString("en-US")}`;
+    }
     return chanceLabelForResult(
-      message.gem_name,
+      { name: message.gem_name, rarity: Number(message?.rarity ?? 0) },
       chatMutationIds(message)
     );
   }
@@ -550,6 +563,7 @@ if (messagesEl && formEl && inputEl) {
 
   function localRollAnnouncement(data) {
     if (!data?.gem?.name) return null;
+    if (data?.gem?.dropType === "relic") return null;
 
     const mutationIds = Array.isArray(data.mutationIds)
       ? data.mutationIds
@@ -557,7 +571,8 @@ if (messagesEl && formEl && inputEl) {
         ? data.mutations.map((mutation) => mutation?.id).filter(Boolean)
         : [];
 
-    if (!meetsChatChanceThreshold(data.gem.name, mutationIds)) {
+    const effectiveRarity = Number(data?.effectiveRarity) || chanceDenominator(data.gem, mutationIds);
+    if (!Number.isFinite(effectiveRarity) || effectiveRarity < EFFECTIVE_CHAT_CHANCE_THRESHOLD) {
       return null;
     }
 
@@ -581,6 +596,7 @@ if (messagesEl && formEl && inputEl) {
       roller_username: "You",
       gem_name: data.gem.name,
       rarity: Number(data.gem.rarity ?? 0),
+      effective_rarity: effectiveRarity,
       luckAtRoll: Number(data.luckAtRoll ?? data.luck_at_roll ?? data.luck ?? 0) || null,
       mutation_ids: mutationIds,
       created_at: now,
@@ -681,7 +697,7 @@ if (messagesEl && formEl && inputEl) {
       isPrivate ? "chat-message--private" : "",
       mine ? "chat-message--mine" : "",
       isSystem ? "chat-message--system" : "",
-      rarityClass(message.rarity),
+      rarityClass(message.effective_rarity ?? message.rarity),
       (!((activeTab === "rare") === rareMessage)) ? "chat-message--tab-hidden" : ""
     ]
       .filter(Boolean)

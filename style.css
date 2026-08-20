@@ -522,6 +522,17 @@ kbd {
   justify-content: space-between;
 }
 
+.field-with-prefix {
+  min-width: 210px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-with-prefix input {
+  min-width: 0;
+  text-align: right;
+}
+
 .automation__row--muted {
   opacity: 0.45;
   pointer-events: none;

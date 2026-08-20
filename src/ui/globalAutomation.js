@@ -95,7 +95,7 @@ async function processRoll(data) {
     outcome = "Auto deposited";
   } else if (getSettings().autoSell && data.specimenId != null) {
     const tier = rarityTier(Number(data.gem?.rarity ?? 0));
-    if (shouldAutoSell(tier.id)) {
+    if (!shouldAutoKeep(data) && shouldAutoSell(tier.id)) {
       const { data: sale, error } = await sellCloudGem(data.specimenId);
       if (!error && sale) outcome = `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`;
       else if (error) console.error("[AUTOMATION] Auto sell failed:", error);
@@ -145,7 +145,7 @@ async function run() {
         if (settings.autoSell) {
           const gems = await loadCloudGems();
           const candidate = (gems ?? [])
-            .filter((gem) => !gem.locked && !shouldAutoKeep(rarityTier(Number(gem.rarity ?? 0)).id))
+            .filter((gem) => !gem.locked && !shouldAutoKeep(gem))
             .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
 
           if (candidate?.id != null) {

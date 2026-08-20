@@ -3,6 +3,7 @@ import { GEM_MUTATIONS, normalizeMutationIds } from "../data/mutations.js";
 
 export const BASE_ROLL_LUCK = 1;
 export const CHAT_CHANCE_THRESHOLD = 100_000;
+export const EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000;
 
 // Player-facing odds intentionally use the configured 1 / rarity chance.
 // Player/equipment/potion modifiers are ignored here.
@@ -67,10 +68,8 @@ export function meetsChatChanceThreshold(
   mutationIds = [],
   luck = BASE_ROLL_LUCK
 ) {
-  return (
-    chanceDenominator(gemOrName, mutationIds, luck) >=
-    CHAT_CHANCE_THRESHOLD
-  );
+  const denominator = chanceDenominator(gemOrName, mutationIds, luck);
+  return Number.isFinite(denominator) && denominator >= CHAT_CHANCE_THRESHOLD;
 }
 
 export function formatChance(probability) {
