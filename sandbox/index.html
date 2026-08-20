@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sandbox [BETA] · Gem Incremental</title>
+<link rel="stylesheet" href="../src/styles/app.css">
+<link rel="stylesheet" href="./sandbox.css">
+</head>
+<body>
+<main class="app-main sandbox-page">
+
+  <section id="sandboxLauncher" class="sandbox-card">
+    <div class="eyebrow">SANDBOX · ADMIN ONLY</div>
+    <h1>Sandbox <b>[BETA]</b></h1>
+    <p id="sandboxStatus" class="muted">Verifying administrator access…</p>
+    <p class="muted sandbox-blurb">
+      A shared 3D hangout on a green baseplate. Your character spawns with
+      your three pinned showcase gems orbiting around it. Nobody's character
+      loads until you enter.
+    </p>
+    <button id="enterButton" class="btn btn--primary" disabled>Enter Sandbox</button>
+  </section>
+
+  <section id="sandboxStage" class="sandbox-stage" hidden>
+    <canvas id="sandboxCanvas"></canvas>
+
+    <div class="sandbox-hud">
+      <div class="sandbox-hud__pill" id="sandboxPlayerCount">1 online</div>
+      <button id="exitButton" class="btn btn--ghost sandbox-hud__exit">Exit Sandbox</button>
+    </div>
+
+    <div class="sandbox-hud sandbox-hud--bottom">
+      <span>Move: <b>WASD</b> / arrow keys</span>
+      <span>Look: <b>drag mouse</b></span>
+    </div>
+  </section>
+
+</main>
+<script type="module" src="./sandbox.js"></script>
+</body>
+</html>

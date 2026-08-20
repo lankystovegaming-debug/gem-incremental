@@ -54,6 +54,7 @@ const PAGES = [
   { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" },
   { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.gem, sectionId: "islands" },
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
+  { id: "sandbox", label: "Sandbox [BETA]", short: "Sandbox", href: "sandbox/", icon: icons.gem, sectionId: "sandbox" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" },
   { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.sparkle, sectionId: "daily-spin" },
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" },

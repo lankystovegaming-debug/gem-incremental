@@ -1,0 +1,95 @@
+.sandbox-page {
+  padding: 0;
+  max-width: none;
+}
+
+.sandbox-card {
+  max-width: 560px;
+  margin: var(--space-7) auto;
+  padding: var(--space-6);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.sandbox-card h1 {
+  font-family: var(--font-display);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.sandbox-blurb {
+  margin-bottom: var(--space-5);
+}
+
+.sandbox-stage {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--nav-height));
+  overflow: hidden;
+  background: #0b0e14;
+}
+
+.sandbox-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.sandbox-stage canvas:active {
+  cursor: grabbing;
+}
+
+.sandbox-hud {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  pointer-events: none;
+}
+
+.sandbox-hud > * {
+  pointer-events: auto;
+}
+
+.sandbox-hud--bottom {
+  top: auto;
+  bottom: var(--space-4);
+  justify-content: center;
+  gap: var(--space-5);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sandbox-hud--bottom b {
+  color: var(--text);
+}
+
+.sandbox-hud__pill {
+  padding: var(--space-2) var(--space-4);
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: 0.85rem;
+  backdrop-filter: blur(6px);
+}
+
+.sandbox-hud__exit {
+  background: var(--overlay);
+  backdrop-filter: blur(6px);
+}
+
+@media (max-width: 640px) {
+  .sandbox-hud--bottom {
+    flex-direction: column;
+    gap: var(--space-1);
+    text-align: center;
+  }
+}
