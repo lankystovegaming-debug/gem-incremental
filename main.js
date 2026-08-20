@@ -68,8 +68,8 @@ const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
-const autoKeepTier = document.getElementById("autoKeepTier");
-const autoKeepTierRow = document.getElementById("autoKeepTierRow");
+const autoKeepRarity = document.getElementById("autoKeepRarity");
+const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
 const sessionInsightsPanel = document.getElementById("sessionInsightsPanel");
 const sessionInsightStats = document.getElementById("sessionInsightStats");
 const sessionHighlights = document.getElementById("sessionHighlights");
@@ -829,10 +829,10 @@ async function resolveOutcome(data) {
 
   const tier = rarityTier(data.gem.rarity);
 
-  if (shouldAutoKeep(tier.id)) {
+  if (shouldAutoKeep(data)) {
     return {
       icon: icons.shield,
-      text: `Kept — ${tier.name} is protected by Auto Keep`,
+      text: "Kept — effective rarity is protected by Auto Keep",
       note: "auto kept"
     };
   }
@@ -1046,8 +1046,6 @@ document.addEventListener("visibilitychange", () => {
 // AUTOMATION CONTROLS
 // =========================================================
 
-if (autoKeepTier) autoKeepTier.innerHTML = SELL_TIERS.map((tier) => `<option value="${tier.id}">${tier.label}</option>`).join("");
-
 autoSellTier.innerHTML = SELL_TIERS.map(
   (tier) => `<option value="${tier.id}">${tier.label}</option>`
 ).join("");
@@ -1058,8 +1056,8 @@ function paintSettings(settings) {
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
-  if (autoKeepTier) autoKeepTier.value = settings.autoKeepTier;
-  if (autoKeepTierRow) autoKeepTierRow.classList.toggle("automation__row--muted", !settings.autoKeep);
+  if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
+  if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("automation__row--muted", !settings.autoKeep);
 
   autoSellTierRow.classList.toggle(
     "automation__row--muted",
@@ -1092,8 +1090,8 @@ if (autoKeepToggle) autoKeepToggle.addEventListener("change", () => {
   updateSettings({ autoKeep: autoKeepToggle.checked });
 });
 
-if (autoKeepTier) autoKeepTier.addEventListener("change", () => {
-  updateSettings({ autoKeepTier: autoKeepTier.value });
+if (autoKeepRarity) autoKeepRarity.addEventListener("change", () => {
+  updateSettings({ autoKeepEffectiveRarity: autoKeepRarity.value });
 });
 
 

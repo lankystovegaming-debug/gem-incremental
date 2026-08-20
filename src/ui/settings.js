@@ -1,3 +1,5 @@
+import { GEM_MUTATIONS } from "../data/mutations.js";
+
 // =========================================================
 // GAMEPLAY SETTINGS
 //
@@ -28,7 +30,7 @@ const DEFAULTS = {
   autoSell: false,
   autoSellTier: "common",
   autoKeep: true,
-  autoKeepTier: "legendary",
+  autoKeepEffectiveRarity: 1_000_000,
   rollAnimations: true,
   cutsceneMinimumRarity: 100000
 };
@@ -66,9 +68,10 @@ function sanitise(value) {
       : DEFAULTS.autoSellTier,
 
     autoKeep: value.autoKeep !== false,
-    autoKeepTier: allowedTiers.includes(value.autoKeepTier)
-      ? value.autoKeepTier
-      : DEFAULTS.autoKeepTier,
+    autoKeepEffectiveRarity: Math.max(
+      1,
+      Math.floor(Number(value.autoKeepEffectiveRarity) || DEFAULTS.autoKeepEffectiveRarity)
+    ),
 
     rollAnimations: value.rollAnimations !== false,
 
@@ -134,9 +137,36 @@ export function shouldAutoSell(gemTierId) {
 // above the configured tier.
 // ---------------------------------------------------------
 
-export function shouldAutoKeep(gemTierId) {
+function mutationIdsFor(result) {
+  if (Array.isArray(result?.mutationIds)) return result.mutationIds;
+  if (Array.isArray(result?.mutation_ids)) return result.mutation_ids;
+  if (Array.isArray(result?.mutations)) {
+    return result.mutations.map((mutation) => mutation?.id).filter(Boolean);
+  }
+  return result?.mutation_id ? [result.mutation_id] : [];
+}
+
+function mutationChanceProduct(result) {
+  return mutationIdsFor(result).reduce((product, id) => {
+    const chance = Number(GEM_MUTATIONS[id]?.chance ?? 1);
+    return product * Math.max(1, chance);
+  }, 1);
+}
+
+export function effectiveRarityForResult(result) {
+  const supplied = Number(result?.effectiveRarity ?? result?.effective_rarity);
+  if (Number.isFinite(supplied) && supplied > 0) return supplied;
+  const base = Number(result?.gem?.rarity ?? result?.rarity ?? 0);
+  return Math.max(0, base) * mutationChanceProduct(result);
+}
+
+export function shouldAutoKeep(result) {
+  const name = String(result?.gem?.name ?? result?.gem_name ?? "");
+  if (result?.gem?.dropType === "relic" || name === "Enchant Relic" || name === "Ancient Relic") {
+    return true;
+  }
   if (!state.autoKeep) return false;
-  return tierRank(gemTierId) >= tierRank(state.autoKeepTier);
+  return effectiveRarityForResult(result) >= state.autoKeepEffectiveRarity;
 }
 
 // ---------------------------------------------------------

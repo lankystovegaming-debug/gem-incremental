@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/potion-crafting-test.mjs && node tests/gem-expansion-test.mjs && node tests/equipment-tiers-test.mjs && node tests/unreleased-features-test.mjs",
+    "test": "node tests/potion-crafting-test.mjs && node tests/gem-expansion-test.mjs && node tests/equipment-tiers-test.mjs && node tests/unreleased-features-test.mjs && node tests/chat-auto-keep-hotfix-test.mjs",
     "dev": "node dev-server.mjs"
   }
 }

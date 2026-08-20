@@ -152,14 +152,17 @@
         </span>
       </label>
 
-      <div class="automation__row automation__row--select" id="autoKeepTierRow">
-        <label class="automation__text" for="autoKeepTier">
+      <div class="automation__row automation__row--select" id="autoKeepRarityRow">
+        <label class="automation__text" for="autoKeepRarity">
           <span class="automation__title">Keep at or above</span>
           <span class="automation__sub">
-            This tier and anything rarer is always protected.
+            Enter the minimum effective rarity that Auto Keep should protect.
           </span>
         </label>
-        <select class="select" id="autoKeepTier"></select>
+        <div class="field field-with-prefix">
+          <span>1 in</span>
+          <input id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
+        </div>
       </div>
 
       <div class="automation__row automation__row--select" id="autoSellTierRow">

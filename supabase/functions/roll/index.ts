@@ -2633,6 +2633,14 @@ export default {
           1
         );
 
+      // Effective rarity uses mutation odds, not their specimen-value boosts.
+      // Every mutation is independent, so their chance denominators multiply.
+      const mutationChanceProduct = mutations.reduce(
+        (total, mutation) => total * Math.max(1, 1 / Number(mutation.chance || 1)),
+        1
+      );
+      const effectiveRarity = Math.max(1, Number(gem.rarity) * mutationChanceProduct);
+
       const primaryMutation =
         mutations[0] ?? null;
 
@@ -3366,15 +3374,10 @@ export default {
       // could show a rare roll that never existed in global_chat_announcements.
       // Base gems at/above 1 in 100,000 are already announced by
       // record_server_roll, so only create the missing mutation-only case.
-      const effectiveChatRarity =
-        Math.max(
-          1,
-          Number(gem.rarity) * Number(mutationMultiplier || 1)
-        );
-
       if (
+        !relicDrop &&
         Number(gem.rarity) < 100_000 &&
-        effectiveChatRarity >= 100_000
+        effectiveRarity >= 1_000_000
       ) {
         const { error: mutationOnlyAnnouncementError } =
           await ctx.supabaseAdmin
@@ -3383,6 +3386,7 @@ export default {
               player_id: playerId,
               gem_name: gem.name,
               rarity: gem.rarity,
+              effective_rarity: effectiveRarity,
               mutation_ids: mutationIds,
               luck_at_roll: luck
             });
@@ -3410,7 +3414,8 @@ export default {
             p_gem_name: gem.name,
             p_gem_rarity: gem.rarity,
             p_mutation_ids: mutationIds,
-            p_luck_at_roll: luck
+            p_luck_at_roll: luck,
+            p_effective_rarity: effectiveRarity
           });
 
         if (announcementMutationError) {
@@ -3522,6 +3527,8 @@ export default {
         mutationIds,
 
         mutationMultiplier,
+
+        effectiveRarity,
 
         // Exact effective luck used for this server-authoritative roll.
         luckAtRoll: luck,

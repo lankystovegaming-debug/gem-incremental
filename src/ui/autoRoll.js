@@ -45,7 +45,7 @@ export function startGlobalAutoRoll(page) {
       if (settings.autoSell) {
         const gems = await loadCloudGems();
         const candidate = (gems ?? [])
-          .filter((gem) => !gem.locked && !shouldAutoKeep(rarityTier(Number(gem.rarity ?? 0)).id))
+          .filter((gem) => !gem.locked && !shouldAutoKeep(gem))
           .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
 
         if (candidate?.id != null) {
@@ -96,6 +96,7 @@ export function startGlobalAutoRoll(page) {
       // the client. Only a specimen that remains in inventory can be sold.
       if (
         !data.autoCraft?.deposited &&
+        !shouldAutoKeep(data) &&
         shouldAutoSell(rarityTier(data.gem?.rarity).id) &&
         data.specimenId != null
       ) {
