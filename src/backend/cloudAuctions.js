@@ -1,47 +1,60 @@
 import { supabase } from "./supabase.js";
 
 // =========================================================
-// AUCTION HOUSE
+// MARKET — LISTINGS (buy now) + BUY ORDERS
 //
-// Players list an owned gem with a starting price; others bid.
-// The gem and the escrowed money are held by the server (the
-// gem is removed from the seller's inventory while listed, the
-// bid is deducted the moment it is placed and refunded when a
-// higher bid arrives). Nothing here trusts the client — every
-// mutation goes through a SECURITY DEFINER RPC that re-checks
-// ownership, funds and timing. The `auctions` / `auction_bids`
-// tables are a public read, so listings load straight from the
-// table; only the writes go through RPCs.
+// Listings: a player lists a lot (gems / relics / potions) at a
+// fixed price. Anyone can buy it outright at that price; if nobody
+// buys before the timer ends, the lot returns to the seller.
+//
+// Buy orders: a player posts "I'll pay $X for a <gem>" and the
+// money is escrowed. Any seller who owns that gem can fulfil the
+// order for the money. Cancelling refunds the buyer.
+//
+// Every mutation goes through a SECURITY DEFINER RPC that re-checks
+// ownership, funds and timing. The `auctions` / `gem_orders` tables
+// are a public read; only the writes go through RPCs.
 // =========================================================
 
 
 const CREATE_MESSAGES = {
   not_authenticated: "You need to be signed in to list items.",
-  invalid_price: "Enter a starting price of at least $1.",
-  too_many_listings: "You can have at most 3 listings on auction at once — wait for some to close.",
+  invalid_price: "Enter a price of at least $1.",
+  too_many_listings: "You can have at most 3 listings at once — wait for some to close.",
   gem_unavailable: "One of those gems is locked or no longer in your inventory.",
   potion_unavailable: "You do not have that many of one of those potions.",
   empty_lot: "Add at least one item to the lot first.",
   lot_too_large: "A lot can hold at most 25 different items.",
-  not_auctionable: "That item cannot be auctioned."
+  not_auctionable: "That item cannot be listed."
 };
 
-const BID_MESSAGES = {
-  not_authenticated: "You need to be signed in to bid.",
-  auction_not_found: "That auction no longer exists.",
-  auction_closed: "Bidding on that auction has ended.",
-  cannot_bid_own: "You cannot bid on your own auction.",
-  already_highest: "You are already the highest bidder.",
-  bid_too_low: "Your bid is below the minimum.",
-  not_enough_money: "You cannot afford that bid."
+const BUY_MESSAGES = {
+  not_authenticated: "You need to be signed in to buy.",
+  auction_not_found: "That listing no longer exists.",
+  auction_closed: "That listing has already closed.",
+  cannot_buy_own: "You cannot buy your own listing.",
+  not_enough_money: "You cannot afford that."
 };
 
 const CANCEL_MESSAGES = {
   not_authenticated: "You need to be signed in.",
-  auction_not_found: "That auction no longer exists.",
-  not_your_auction: "That is not your auction.",
-  auction_closed: "That auction has already closed.",
-  has_bids: "You cannot cancel an auction once it has bids."
+  auction_not_found: "That listing no longer exists.",
+  not_your_auction: "That is not your listing.",
+  auction_closed: "That listing has already closed.",
+  has_bids: "That listing can no longer be cancelled."
+};
+
+const ORDER_MESSAGES = {
+  not_authenticated: "You need to be signed in.",
+  invalid_gem: "Choose a gem to order.",
+  invalid_price: "Enter a price of at least $1.",
+  too_many_orders: "You can have at most 10 open orders at once.",
+  not_enough_money: "You cannot afford that order.",
+  order_not_found: "That order no longer exists.",
+  order_closed: "That order is no longer open.",
+  cannot_fill_own: "You cannot fulfil your own order.",
+  not_your_order: "That is not your order.",
+  gem_unavailable: "You do not have an unlocked gem that matches that order."
 };
 
 
@@ -52,119 +65,99 @@ function friendly(error, table) {
 }
 
 
-// Settle any expired auctions before we read the board, so a
-// just-ended listing shows as sold rather than lingering. Safe
-// for anyone to call — it only touches auctions past their timer.
+// Settle expired listings (return unsold lots) before a read.
 export async function settleDueAuctions() {
   const { error } = await supabase.rpc("settle_due_auctions");
-  if (error) {
-    // Non-fatal: a read still works, the board is just a touch stale.
-    console.warn("settle_due_auctions failed:", error.message);
-  }
+  if (error) console.warn("settle_due_auctions failed:", error.message);
 }
 
 
-// Active listings, soonest-ending first.
+// ---------- LISTINGS ----------
+
 export async function loadActiveAuctions() {
   const { data, error } = await supabase
-    .from("auctions")
-    .select("*")
-    .eq("status", "active")
-    .order("ends_at", { ascending: true })
-    .limit(200);
-
-  if (error) {
-    console.error("Failed to load auctions:", error);
-    return [];
-  }
+    .from("auctions").select("*").eq("status", "active")
+    .order("ends_at", { ascending: true }).limit(200);
+  if (error) { console.error("Failed to load listings:", error); return []; }
   return Array.isArray(data) ? data : [];
 }
 
-
-// The signed-in player's own listings (any status), newest first.
 export async function loadMyAuctions() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
-
   const { data, error } = await supabase
-    .from("auctions")
-    .select("*")
-    .eq("seller_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  if (error) {
-    console.error("Failed to load your auctions:", error);
-    return [];
-  }
+    .from("auctions").select("*").eq("seller_id", user.id)
+    .order("created_at", { ascending: false }).limit(100);
+  if (error) { console.error("Failed to load your listings:", error); return []; }
   return Array.isArray(data) ? data : [];
 }
 
-
-// Recent bid history for one auction (for the detail view).
-export async function loadBidsFor(auctionId) {
-  const { data, error } = await supabase
-    .from("auction_bids")
-    .select("bidder_name, amount, created_at")
-    .eq("auction_id", auctionId)
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (error) {
-    console.error("Failed to load bids:", error);
-    return [];
-  }
-  return Array.isArray(data) ? data : [];
-}
-
-
-export async function createAuction(specimenId, startPrice, durationHours) {
-  const { data, error } = await supabase.rpc("create_auction", {
-    p_specimen_id: Number(specimenId),
-    p_start_price: Number(startPrice),
-    p_duration_hours: Number(durationHours)
-  });
-
-  if (error) return { error: friendly(error, CREATE_MESSAGES) };
-  return { data: { auctionId: data } };
-}
-
-// List a bundle: `items` is an array of
+// List a bundle at a fixed buy-now price. `items` is an array of
 //   { type: "gem", id }  or  { type: "potion", consumableId, quantity }
-export async function createAuctionLot(items, startPrice, durationHours) {
+export async function createAuctionLot(items, price, durationHours) {
   const payload = (Array.isArray(items) ? items : []).map((item) =>
     item.type === "potion"
       ? { type: "potion", consumable_id: item.consumableId, quantity: Number(item.quantity) }
       : { type: "gem", id: Number(item.id) }
   );
-
   const { data, error } = await supabase.rpc("create_auction_lot", {
-    p_items: payload,
-    p_start_price: Number(startPrice),
-    p_duration_hours: Number(durationHours)
+    p_items: payload, p_start_price: Number(price), p_duration_hours: Number(durationHours)
   });
-
   if (error) return { error: friendly(error, CREATE_MESSAGES) };
   return { data: { auctionId: data } };
 }
 
+export async function buyAuction(auctionId) {
+  const { data, error } = await supabase.rpc("buy_auction", { p_auction_id: Number(auctionId) });
+  if (error) return { error: friendly(error, BUY_MESSAGES) };
+  return { data: data ?? null };
+}
 
-export async function placeBid(auctionId, amount) {
-  const { data, error } = await supabase.rpc("place_bid", {
-    p_auction_id: Number(auctionId),
-    p_amount: Number(amount)
-  });
-
-  if (error) return { error: friendly(error, BID_MESSAGES) };
+export async function cancelAuction(auctionId) {
+  const { data, error } = await supabase.rpc("cancel_auction", { p_auction_id: Number(auctionId) });
+  if (error) return { error: friendly(error, CANCEL_MESSAGES) };
   return { data: data ?? null };
 }
 
 
-export async function cancelAuction(auctionId) {
-  const { data, error } = await supabase.rpc("cancel_auction", {
-    p_auction_id: Number(auctionId)
-  });
+// ---------- BUY ORDERS ----------
 
-  if (error) return { error: friendly(error, CANCEL_MESSAGES) };
+export async function loadOpenOrders() {
+  const { data, error } = await supabase
+    .from("gem_orders").select("*").eq("status", "open")
+    .order("price", { ascending: false }).limit(200);
+  if (error) { console.error("Failed to load orders:", error); return []; }
+  return Array.isArray(data) ? data : [];
+}
+
+export async function loadMyOrders() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("gem_orders").select("*").eq("buyer_id", user.id)
+    .order("created_at", { ascending: false }).limit(100);
+  if (error) { console.error("Failed to load your orders:", error); return []; }
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createGemOrder(gemName, price) {
+  const { data, error } = await supabase.rpc("create_gem_order", {
+    p_gem_name: String(gemName), p_price: Number(price)
+  });
+  if (error) return { error: friendly(error, ORDER_MESSAGES) };
+  return { data: { orderId: data } };
+}
+
+export async function fulfillGemOrder(orderId, specimenId) {
+  const { data, error } = await supabase.rpc("fulfill_gem_order", {
+    p_order_id: Number(orderId), p_specimen_id: Number(specimenId)
+  });
+  if (error) return { error: friendly(error, ORDER_MESSAGES) };
+  return { data: data ?? null };
+}
+
+export async function cancelGemOrder(orderId) {
+  const { data, error } = await supabase.rpc("cancel_gem_order", { p_order_id: Number(orderId) });
+  if (error) return { error: friendly(error, ORDER_MESSAGES) };
   return { data: data ?? null };
 }
