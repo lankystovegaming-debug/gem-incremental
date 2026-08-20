@@ -1,0 +1,2 @@
+Canonical profile URL: /user/<uuid>/
+Static hosts bootstrap through /404.html; rewrite-capable hosts may serve /user/index.html directly.

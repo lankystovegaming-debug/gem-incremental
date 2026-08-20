@@ -46,6 +46,37 @@
     <p class="footer-note">Gem Incremental</p>
   </section>
 </main>
+
+<script>
+(function () {
+  // Static hosts (especially GitHub Pages) route unknown /user/<uuid> URLs
+  // through 404.html. Bootstrap the canonical profile shell in-place while
+  // keeping the browser URL untouched.
+  const path = window.location.pathname.replace(/\/+$/, "");
+  const match = path.match(/^\/user\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+  if (!match) return;
+
+  const id = match[1];
+
+  fetch("/user/index.html", { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) throw new Error("Profile shell unavailable");
+      return response.text();
+    })
+    .then((profileHtml) => {
+      document.open();
+      document.write(profileHtml);
+      document.close();
+      // profile.js reads the UUID directly from window.location.pathname.
+      // Reloading is intentionally avoided so the URL remains canonical.
+      window.__gemProfileRoute = id;
+    })
+    .catch((error) => {
+      console.error("[PROFILE ROUTER]", error);
+    });
+})();
+</script>
+
 <script>
 function cycleTheme(){
   const modes=["system","light","dark","neon"];

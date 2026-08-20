@@ -80,7 +80,14 @@ function buildModal(base) {
 }
 
 export function mountHowToPlay(base = "./") {
-  // Reopen link inside the More menu so the utility dock stays compact.
+  // The utility action is now part of the shell's top-bar More menu.
+  const action = document.querySelector('[data-more-action="howto"]');
+  if (action && !action.dataset.wired) {
+    action.dataset.wired = "1";
+    action.addEventListener("click", () => buildModal(base));
+  }
+
+  // Backward compatibility for older cached shell markup.
   const dock = document.querySelector(".contribute-dock");
   const target = dock?.querySelector(".more-menu");
   if (target && !target.querySelector(".howto-dock-link")) {

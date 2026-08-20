@@ -2502,3 +2502,59 @@ html.is-cinematic-active body {
   0%,100% { transform: translateY(0) rotate(-1deg) scale(1); }
   50% { transform: translateY(-12px) rotate(1deg) scale(1.035); }
 }
+
+
+/* =========================================================
+   CINEMATIC STAGING REPAIR
+   Absolute reveal panels must be centered by layout first; the
+   animation transform then operates around that centered origin.
+   This prevents the entire text block from drifting to the left
+   on wide screens or after a browser font/layout change.
+   ========================================================= */
+#ultra-cutscene-overlay .scene__reveal {
+  inset: 0;
+  width: min(940px, 92vw);
+  height: auto;
+  min-height: min(620px, 82vh);
+  margin: auto;
+  box-sizing: border-box;
+  justify-self: center;
+  align-self: center;
+  overflow: hidden;
+}
+
+#ultra-cutscene-overlay .scene__reveal > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#ultra-cutscene-overlay .scene__gem,
+#ultra-cutscene-overlay .scene__tier,
+#ultra-cutscene-overlay .scene__name,
+#ultra-cutscene-overlay .scene__rarity,
+#ultra-cutscene-overlay .scene__mutation,
+#ultra-cutscene-overlay .scene__chance,
+#ultra-cutscene-overlay .scene__outcome {
+  justify-self: center;
+  text-align: center;
+}
+
+#ultra-cutscene-overlay .scene__name,
+#ultra-cutscene-overlay .scene__chance,
+#ultra-cutscene-overlay .scene__outcome {
+  width: min(100%, 860px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 680px) {
+  #ultra-cutscene-overlay .scene__reveal {
+    width: min(94vw, 620px);
+    min-height: min(76vh, 620px);
+    padding: 24px 18px;
+  }
+
+  #ultra-cutscene-overlay .scene__gem {
+    min-height: 130px;
+  }
+}

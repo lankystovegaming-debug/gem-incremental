@@ -125,6 +125,32 @@ export function mountShell({ page, base = "./" }) {
           <span id="shellWalletValue">—</span>
         </span>
 
+        <div class="topbar-more" id="shellMoreAnchor">
+          <button
+            class="btn btn--ghost topbar-more__button"
+            id="shellMoreButton"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="shellMoreMenu"
+          >
+            ${icons.sparkle}
+            <span>More</span>
+            ${icons.chevronDown || ""}
+          </button>
+          <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
+            <div class="menu__label">Quick links</div>
+            <button class="menu__item" type="button" data-more-action="howto">
+              ${icons.book}<span>How to play</span>
+            </button>
+            <a class="menu__item" href="${base}codes/">${icons.sparkle}<span>Codes</span></a>
+            <a class="menu__item" href="${base}updates/">${icons.sparkle}<span>Update log</span></a>
+            <a class="menu__item" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
+            <a class="menu__item" href="${base}support/">${icons.heart}<span>Support the game</span></a>
+            <a class="menu__item" href="${CONTRIBUTE_URL}" target="_blank" rel="noopener noreferrer">${icons.github}<span>Contribute</span></a>
+          </div>
+        </div>
+
         <a
           class="btn btn--ghost btn--icon"
           href="${base}settings/"
@@ -231,7 +257,7 @@ export function mountShell({ page, base = "./" }) {
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
-  mountContributeDock(base);
+  // Utility links are now mounted in the top bar under More.
 
   // First-run "How to play" guide (shows once; reopenable from the dock).
   mountHowToPlay(base);
@@ -249,6 +275,42 @@ export function mountShell({ page, base = "./" }) {
 
 
   const menus = createMenuController();
+
+  // The utility links belong in the top bar so they remain discoverable on
+  // desktop and mobile instead of living in a floating corner dock.
+  const moreAnchor = header.querySelector("#shellMoreAnchor");
+  const moreButton = header.querySelector("#shellMoreButton");
+  const moreMenu = header.querySelector("#shellMoreMenu");
+
+  const closeMore = () => {
+    if (!moreMenu) return;
+    moreMenu.hidden = true;
+    moreButton?.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleMore = () => {
+    if (!moreMenu) return;
+    const open = moreMenu.hidden;
+    moreMenu.hidden = !open;
+    moreButton?.setAttribute("aria-expanded", String(open));
+  };
+
+  moreButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMore();
+  });
+
+  moreMenu?.addEventListener("click", (event) => {
+    if (event.target.closest("a")) closeMore();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (moreAnchor && !moreAnchor.contains(event.target)) closeMore();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMore();
+  });
 
   themeButton.addEventListener("click", () => {
     menus.toggle(themeAnchor, themeButton, renderThemeMenu);

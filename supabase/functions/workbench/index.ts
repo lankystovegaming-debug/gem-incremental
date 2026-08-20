@@ -712,11 +712,18 @@ export default {
           .limit(30);
 
         if (error) {
-          console.error("[WORKBENCH] History query failed:", error);
-          throw error;
+          // History is presentation-only. An older deployment can lack the
+          // forge_items table while config/material inventory still works;
+          // never turn the entire Workbench into a 500 for that.
+          console.warn("[WORKBENCH] History unavailable; returning empty history:", error.message);
+          return json({
+            items: [],
+            degraded: true,
+            message: "Workbench history is unavailable until the Workbench migration is applied."
+          });
         }
 
-        return json({ items: data ?? [] });
+        return json({ items: data ?? [], degraded: false });
       }
 
       return json(

@@ -154,3 +154,31 @@
   from { opacity: 1; transform: scale(.94); }
   to { opacity: 0; transform: scale(1.08); }
 }
+
+
+/* =========================================================
+   JA-ORE STAGING REPAIR
+   Keep the cinematic copy and ore locked to the viewport center
+   regardless of viewport width, font metrics, or animation state.
+   ========================================================= */
+#ja-ore-cutscene .ja-copy {
+  left: 50%;
+  right: auto;
+  width: min(1200px, 92vw);
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  bottom: 12vh;
+}
+
+#ja-ore-cutscene .ja-ore-card {
+  left: 50%;
+  margin-left: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  #ja-ore-cutscene .ja-copy {
+    width: min(94vw, 620px);
+    bottom: 10vh;
+  }
+}

@@ -3720,3 +3720,66 @@ a:focus-visible {
     padding-bottom: 92px;
   }
 }
+
+
+/* =========================================================
+   TOP BAR MORE MENU
+   ========================================================= */
+.topbar-more {
+  position: relative;
+  flex: 0 0 auto;
+}
+.topbar-more__button {
+  min-height: 40px;
+  gap: 7px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+.topbar-more__button svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+.topbar-more__menu {
+  position: fixed;
+  z-index: 1000;
+  top: 64px;
+  right: 12px;
+  width: min(310px, calc(100vw - 24px));
+  padding: 9px;
+  transform-origin: top right;
+  box-shadow: 0 24px 70px -28px rgb(0 0 0 / .95);
+  backdrop-filter: blur(22px);
+}
+.topbar-more__menu[hidden] {
+  display: none;
+}
+.topbar-more__menu .menu__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  width: 100%;
+  text-decoration: none;
+}
+.topbar-more__menu .menu__item svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+@media (max-width: 980px) {
+  .topbar-more__button > span {
+    display: none;
+  }
+  .topbar-more__button {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+@media (max-width: 700px) {
+  .topbar-more__menu {
+    top: 58px;
+    right: 8px;
+  }
+}
