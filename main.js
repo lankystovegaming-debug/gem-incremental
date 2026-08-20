@@ -668,6 +668,18 @@ function renderHistory() {
     .join("");
 }
 
+function sessionHighlight(label,item,formatter){if(!item)return"";return `<div><span>${label}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(formatter(item))}</small></div>`;}
+function sessionRollName(item){const mutations=Array.isArray(item?.mutationNames)?item.mutationNames:[];return [...mutations,item?.name||"Unknown"].join(" ");}
+function renderSessionInsights(){
+  if(!sessionInsightsFeature)return;
+  const state=getSessionInsights(),elapsed=Math.max(0,Date.now()-new Date(state.startedAt).getTime()),hours=Math.floor(elapsed/3600000),minutes=Math.floor(elapsed%3600000/60000);
+  sessionInsightStats.innerHTML=[["Duration",`${hours}h ${minutes}m`],["Rolls",formatCount(state.rolls)],["Kept",formatCount(state.kept)],["Auto kept",formatCount(state.autoKept)],["Auto sold",formatCount(state.autoSold)],["Auto-sell income",formatMoney(state.autoSoldValue)],["Relics",formatCount(state.relics)],["Auto crafted",formatCount(state.autoCrafted)]].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  sessionHighlights.innerHTML=sessionHighlight("Rarest effective",state.bestEffective,item=>`1/${Math.round(item.effectiveRarity).toLocaleString()}`)+sessionHighlight("Rarest base",state.bestBase,item=>`1/${Math.round(item.baseRarity).toLocaleString()}`)+sessionHighlight("Heaviest",state.heaviest,item=>formatWeight(item.weight))+sessionHighlight("Most valuable",state.mostValuable,item=>formatMoney(item.value));
+  sessionBreakdown.innerHTML=Object.entries(state.rarities).sort((a,b)=>b[1]-a[1]).map(([tier,count])=>`<span class="badge">${escapeHtml(tier)} · ${formatCount(count)}</span>`).join("")||"<small>No rolls yet.</small>";
+  sessionNotable.innerHTML=state.notable.slice(0,6).map(item=>`<div><strong>${escapeHtml(sessionRollName(item))}</strong><span>1/${Math.round(item.effectiveRarity).toLocaleString()} · ${escapeHtml(item.decision.replaceAll("-"," "))}</span></div>`).join("")||"<small>Mutation and 1/100,000+ rolls will appear here.</small>";
+}
+window.addEventListener("session-insights:change",renderSessionInsights);
+
 
 // =========================================================
 // ROLLING
