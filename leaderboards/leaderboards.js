@@ -745,7 +745,7 @@ function mutationChanceProductLabel(player) {
   if (!ids.length) return "No mutation multiplier";
 
   const factors = ids
-    .map(id => Number(GEM_MUTATIONS?.[id]?.chance))
+    .map(id => Number(liveMutationCatalog?.[id]?.chance ?? GEM_MUTATIONS?.[id]?.chance))
     .filter(Number.isFinite);
 
   if (!factors.length) return "Mutation odds unavailable";
@@ -1139,19 +1139,22 @@ async function loadLeaderboards() {
 
     bestRoll:
       Array.isArray(bestRollData)
-        ? bestRollData.map(player => ({
-            rank: player.rank,
-            username: player.username,
-            gem_name: player.gem_name,
-            rarity: player.rarity,
-            value: player.value,
-            final_weight: player.final_weight,
-            mutation_ids: Array.isArray(player.mutation_ids) ? player.mutation_ids : [],
-            mutation_multiplier: player.mutation_multiplier,
-            mutation_chance_multiplier: player.mutation_chance_multiplier,
-            base_rarity: player.base_rarity,
-            mutation_chance_product: player.mutation_chance_product
-          }))
+        ? bestRollData
+            .map(player => ({
+              rank: player.rank,
+              username: player.username,
+              gem_name: player.gem_name,
+              rarity: Number(player.rarity ?? 0),
+              value: player.value,
+              final_weight: player.final_weight,
+              mutation_ids: Array.isArray(player.mutation_ids) ? player.mutation_ids : [],
+              mutation_multiplier: player.mutation_multiplier,
+              mutation_chance_multiplier: player.mutation_chance_multiplier,
+              base_rarity: Number(player.base_rarity ?? 0),
+              mutation_chance_product: Number(player.mutation_chance_product ?? 1)
+            }))
+            .sort((a, b) => b.rarity - a.rarity || b.base_rarity - a.base_rarity)
+            .map((player, index) => ({ ...player, rank: index + 1 }))
         : [],
 
     mostWeight:

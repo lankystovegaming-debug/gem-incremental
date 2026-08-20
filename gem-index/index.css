@@ -455,3 +455,17 @@
     height: 36px;
   }
 }
+
+/* Large catalogs must not force the browser to animate/layout every card at once. */
+.index-card {
+  content-visibility: auto;
+  contain: layout paint style;
+  contain-intrinsic-size: 280px 360px;
+  animation: none;
+}
+.index-card:hover {
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.mutation-tabs {
+  contain: content;
+}

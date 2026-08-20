@@ -8,15 +8,7 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { gemNameHtml, gemIconHtml, getGemStyle } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
-import { chanceLabelForResult, rolledResultChance } from "../src/logic/chances.js";
-import {
-  rarityTier,
-  rarityLabel,
-  formatMoney,
-  formatWeight,
-  formatCount,
-  escapeHtml
-} from "../src/ui/format.js";
+import { rarityTier, rarityLabel, formatMoney, formatWeight, formatCount, escapeHtml } from "../src/ui/format.js";
 
 const shell = mountShell({ page: "gem-index", base: "../" });
 const gemList = document.getElementById("gemList");
@@ -32,12 +24,30 @@ const selectedMutationSummary = document.getElementById("selectedMutationSummary
 document.getElementById("searchIcon").innerHTML = icons.search;
 
 let mutationList = Object.values(GEM_MUTATIONS);
+let mutationById = new Map(mutationList.map((mutation) => [mutation.id, mutation]));
+let mutationOrder = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
+let catalogGems = [...gems];
+let indexEntries = [];
+let loadedPlayerId = null;
+let refreshInFlight = null;
+
+const state = {
+  index: {},
+  combinations: {},
+  selectedMutations: new Set(["none"]),
+  loading: true
+};
+
+function rebuildMutationMaps() {
+  mutationById = new Map(mutationList.map((mutation) => [mutation.id, mutation]));
+  mutationOrder = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
+}
 
 function normalizeMutationIds(ids = []) {
-  const order = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
-  return Array.from(new Set((Array.isArray(ids) ? ids : []).map((id) => String(id ?? "").trim().toLowerCase())))
-    .filter((id) => order.has(id))
-    .sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
+  return Array.from(new Set((Array.isArray(ids) ? ids : [])
+    .map((id) => String(id ?? "").trim().toLowerCase())
+    .filter((id) => mutationById.has(id))))
+    .sort((a, b) => (mutationOrder.get(a) ?? 9999) - (mutationOrder.get(b) ?? 9999));
 }
 
 function mutationCombinationKey(ids = []) {
@@ -48,59 +58,17 @@ function mutationCombinationKey(ids = []) {
 function mutationCombinationLabel(ids = []) {
   const normalized = normalizeMutationIds(ids);
   if (!normalized.length) return "No Mutation";
-  return normalized.map((id) => mutationList.find((mutation) => mutation.id === id)?.name ?? id).join(" + ");
+  return normalized.map((id) => mutationById.get(id)?.name ?? id).join(" + ");
 }
 
-// Secret gems are included in the internal catalog so a discovery can reveal
-// them, but they are completely absent from the rendered index beforehand.
-let catalogGems = [...gems];
-let indexEntries = [];
-
-/*
- * Build exact mutation combinations from the LIVE mutation catalog.
- * Admin-created mutations are stored in game_mutations, so this must not be
- * frozen at module load time.
- */
-function buildMutationCombinations() {
-  const ids = mutationList.map((m) => m.id);
-  const combinations = [];
-
-  // The game normally has only a handful of mutations. Generate the full
-  // exact-combination set so every admin mutation behaves like a built-in.
-  const activeIds = ids;
-
-  for (let mask = 0; mask < (1 << activeIds.length); mask += 1) {
-    const selected = activeIds.filter((_, index) => Boolean(mask & (1 << index)));
-    combinations.push({
-      mutationIds: normalizeMutationIds(selected),
-      combinationKey: mutationCombinationKey(selected)
-    });
-  }
-
-  return combinations;
+function comboKey(gemName, combinationKey) {
+  return `${gemName}::${combinationKey}`;
 }
-
-let mutationCombinations = buildMutationCombinations();
-
-const state = {
-  index: {},
-  combinations: {},
-  selectedMutations: new Set(["none"]),
-  loading: true
-};
 
 async function loadCombinations(playerId) {
   const { data, error } = await supabase
     .from("player_gem_mutation_combinations")
-    .select(`
-      gem_name,
-      combination_key,
-      mutation_ids,
-      mutation_multipliers,
-      total_found,
-      highest_value,
-      first_discovered_at
-    `)
+    .select("gem_name,combination_key,mutation_ids,mutation_multipliers,total_found,highest_value,first_discovered_at")
     .eq("player_id", playerId);
 
   if (error) {
@@ -109,37 +77,28 @@ async function loadCombinations(playerId) {
   }
 
   const result = {};
-
   for (const entry of data ?? []) {
-    const key = `${entry.gem_name}::${entry.combination_key}`;
-
+    const ids = normalizeMutationIds(entry.mutation_ids ?? []);
+    const key = comboKey(entry.gem_name, entry.combination_key || mutationCombinationKey(ids));
     result[key] = {
       gemName: entry.gem_name,
-      combinationKey: entry.combination_key,
-      mutationIds: normalizeMutationIds(entry.mutation_ids ?? []),
-      mutationMultipliers:
-        entry.mutation_multipliers &&
-        typeof entry.mutation_multipliers === "object"
-          ? entry.mutation_multipliers
-          : {},
+      combinationKey: entry.combination_key || mutationCombinationKey(ids),
+      mutationIds: ids,
+      mutationMultipliers: entry.mutation_multipliers && typeof entry.mutation_multipliers === "object" ? entry.mutation_multipliers : {},
       totalFound: Number(entry.total_found ?? 0),
       highestValue: Number(entry.highest_value ?? 0),
       firstDiscoveredAt: entry.first_discovered_at
     };
   }
-
   return result;
 }
 
-/* Base odds mirror roll/index.ts at luck = 1. Player/equipment/potion modifiers are intentionally ignored. */
 function exactEntryChance(entry) {
-  const gemProbability = entry.gem.rarity > 0 ? 1 / Number(entry.gem.rarity) : 0;
-  const mutationProbability = entry.mutationIds.reduce((probability, id) => {
-    const mutation = mutationList.find((item) => item.id === id);
-    const chance = Number(mutation?.chance ?? 0);
+  const gemProbability = Number(entry.gem.rarity) > 0 ? 1 / Number(entry.gem.rarity) : 0;
+  return entry.mutationIds.reduce((probability, id) => {
+    const chance = Number(mutationById.get(id)?.chance ?? 0);
     return probability * (chance > 0 ? Math.min(1, 1 / chance) : 0);
-  }, 1);
-  return gemProbability * mutationProbability;
+  }, gemProbability);
 }
 
 function entryChanceLabel(entry) {
@@ -148,217 +107,183 @@ function entryChanceLabel(entry) {
   return `1 in ${Math.max(1, Math.round(1 / probability)).toLocaleString("en-US")}`;
 }
 
-function comboKey(gemName, combinationKey) {
-  return `${gemName}::${combinationKey}`;
+function makeEntry(gem, mutationIds) {
+  const ids = normalizeMutationIds(mutationIds);
+  const combinationKey = mutationCombinationKey(ids);
+  return { gem, mutationIds: ids, combinationKey, key: comboKey(gem.name, combinationKey) };
 }
 
-function allEntries() {
-  const entries = [];
+/*
+ * Never materialize the power-set of mutations. Admins can add arbitrary
+ * mutations, and 12 mutations already produce 4,096 combinations per gem.
+ * The index now materializes only the currently selected exact combination.
+ * "All" shows base gems plus each single mutation; multi-mutation combinations
+ * are available by selecting multiple tabs.
+ */
+function entriesForView() {
+  const selected = [...state.selectedMutations].filter((id) => id !== "none");
 
-  for (const gem of catalogGems) {
-    for (const combination of mutationCombinations) {
-      entries.push({
-        gem,
-        ...combination,
-        key: comboKey(gem.name, combination.combinationKey)
-      });
-    }
-  }
-
-  return entries;
-}
-
-indexEntries = allEntries();
-
-function secretGemIsRevealed(gem) {
-  if (!gem.hideRarityUntilDiscovered) {
-    return true;
-  }
-
-  return Object.values(state.combinations).some(
-    (record) => record.gemName === gem.name
-  );
-}
-
-function currentlyIndexableEntries() {
-  // Keep secret gems in the index as locked placeholders. Previously hidden
-  // gems were removed from the entry list entirely, which made the final
-  // catalog gem appear to be missing until it was discovered.
-  return indexEntries;
-}
-
-function isSecretUndiscovered(entry) {
-  return Boolean(
-    entry.gem.hideRarityUntilDiscovered &&
-    !secretGemIsRevealed(entry.gem)
-  );
-}
-
-function selectedCombination() {
-  if (!state.selectedMutations.size) {
-    return null;
+  if (selected.length) {
+    return catalogGems.map((gem) => makeEntry(gem, selected));
   }
 
   if (state.selectedMutations.has("none")) {
-    return "none";
+    return catalogGems.map((gem) => makeEntry(gem, []));
   }
 
-  return mutationCombinationKey([...state.selectedMutations]);
+  // "All" is deliberately bounded: base + each single mutation. This keeps
+  // the page fast even when admins add many custom mutations.
+  const entries = catalogGems.map((gem) => makeEntry(gem, []));
+  for (const mutation of mutationList) {
+    for (const gem of catalogGems) entries.push(makeEntry(gem, [mutation.id]));
+  }
+  return entries;
 }
 
-function selectedEntries() {
-  const key = selectedCombination();
-  const availableEntries = currentlyIndexableEntries();
+function discoveredRecord(entry) {
+  return state.combinations[entry.key] ?? null;
+}
 
-  return key === null
-    ? availableEntries
-    : availableEntries.filter(
-        (entry) => entry.combinationKey === key
-      );
+function isSecretUndiscovered(entry) {
+  if (!entry.gem.hideRarityUntilDiscovered) return false;
+  return !Object.values(state.combinations).some((record) => record.gemName === entry.gem.name);
+}
+
+function selectedCombination() {
+  const selected = [...state.selectedMutations];
+  if (!selected.length) return null;
+  if (selected.includes("none")) return "none";
+  return mutationCombinationKey(selected);
 }
 
 function renderSummary() {
-  // With no filter: every one of the 32 exact combinations is counted.
-  // With mutations selected: only that EXACT combination is counted.
-  // Therefore a selected view is "found / base gems in that rarity", while
-  // the unfiltered view is "found / base gems × 32 combinations".
-  const scopedEntries = selectedEntries();
+  const selected = [...state.selectedMutations];
+  const mutationCount = mutationList.length;
+  const combinationCount = mutationCount >= 52 ? "very large" : Math.pow(2, mutationCount).toLocaleString("en-US");
 
-  const discovered = scopedEntries.filter(
-    (entry) => Boolean(state.combinations[entry.key])
-  ).length;
-
-  const total = scopedEntries.length;
-
-  discoveryCount.textContent =
-    `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
-
-  discoveryMeter.style.width =
-    `${total ? (discovered / total) * 100 : 0}%`;
-
-  const tiers = new Map();
-
-  for (const entry of scopedEntries) {
-    const tier = rarityTier(entry.gem.rarity);
-    const bucket =
-      tiers.get(tier.id) ??
-      { name: tier.name, found: 0, total: 0 };
-
-    bucket.total += 1;
-
-    if (state.combinations[entry.key]) {
-      bucket.found += 1;
-    }
-
-    tiers.set(tier.id, bucket);
+  if (selected.length && !selected.includes("none")) {
+    const entries = catalogGems.map((gem) => makeEntry(gem, selected));
+    const discovered = entries.filter((entry) => discoveredRecord(entry)).length;
+    const total = entries.length;
+    discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
+    discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
+    renderTierBreakdown(entries);
+    return;
   }
 
-  tierBreakdown.innerHTML = [...tiers.values()]
-    .map(
-      (bucket) => `
-        <div class="tier-stat">
-          <span class="tier-stat__name">${escapeHtml(bucket.name)}</span>
-          <span class="tier-stat__value">
-            ${formatCount(bucket.found)} / ${formatCount(bucket.total)}
-          </span>
-        </div>
-      `
-    )
-    .join("");
+  if (selected.includes("none")) {
+    const entries = catalogGems.map((gem) => makeEntry(gem, []));
+    const discovered = entries.filter((entry) => discoveredRecord(entry)).length;
+    const total = entries.length;
+    discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
+    discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
+    renderTierBreakdown(entries);
+    return;
+  }
+
+  // All view: calculate the full theoretical total without creating it.
+  const total = catalogGems.length * Math.pow(2, mutationCount);
+  const discovered = Object.values(state.combinations).filter((record) => catalogGems.some((gem) => gem.name === record.gemName)).length;
+  discoveryCount.textContent = `${formatCount(discovered)} / ${mutationCount >= 52 ? combinationCount : formatCount(total)} combinations discovered`;
+  discoveryMeter.style.width = `${total ? Math.min(100, (discovered / total) * 100) : 0}%`;
+  renderTierBreakdown(catalogGems.map((gem) => makeEntry(gem, [])));
+}
+
+function renderTierBreakdown(entries) {
+  const tiers = new Map();
+  for (const entry of entries) {
+    const tier = rarityTier(entry.gem.rarity);
+    const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
+    bucket.total += 1;
+    if (discoveredRecord(entry)) bucket.found += 1;
+    tiers.set(tier.id, bucket);
+  }
+  tierBreakdown.innerHTML = [...tiers.values()].map((bucket) => `
+    <div class="tier-stat">
+      <span class="tier-stat__name">${escapeHtml(bucket.name)}</span>
+      <span class="tier-stat__value">${formatCount(bucket.found)} / ${formatCount(bucket.total)}</span>
+    </div>
+  `).join("");
 }
 
 function renderSelectedMutationSummary() {
   const selected = [...state.selectedMutations];
-
   if (!selected.length) {
+    selectedMutationSummary.textContent = "Showing the fast All view: base gems + single mutations. Select multiple mutation tabs for an exact combination.";
     return;
   }
-
-  selectedMutationSummary.textContent =
-    selected.includes("none")
-      ? "Showing exact combination: No Mutation"
-      : `Showing exact combination: ${mutationCombinationLabel(selected)}`;
+  selectedMutationSummary.textContent = selected.includes("none")
+    ? "Showing exact combination: No Mutation"
+    : `Showing exact combination: ${mutationCombinationLabel(selected)}`;
 }
 
-function entryMatchesMutationFilter(entry) {
-  const key = selectedCombination();
+function mutationNameHtml(ids) {
+  const normalized = normalizeMutationIds(ids);
+  if (!normalized.length) return `<span class="index-no-mutation">No Mutation</span>`;
+  return `<div class="index-card__mutations" aria-label="Mutations">${normalized.map((id) => {
+    const mutation = mutationById.get(id);
+    return `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}" style="--mutation-color:${escapeHtml(mutation?.color || "#9fdcff")}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(mutation?.name || id)}</span></span>`;
+  }).join("")}</div>`;
+}
 
-  if (key === null) return true;
+function gemCard(entry) {
+  const tier = rarityTier(entry.gem.rarity);
+  const record = discoveredRecord(entry);
+  const secretLocked = isSecretUndiscovered(entry);
 
-  // A selection represents one exact mutation combination.
-  // This keeps every mutation view to one exact combination per visible gem.
-  return entry.combinationKey === key;
+  if (!record) {
+    return `<article class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}">
+      <div class="index-card__head"><div><div class="index-card__name">???</div><div class="index-card__rarity">${escapeHtml(mutationCombinationLabel(entry.mutationIds))}</div></div><span class="badge badge--tier">${secretLocked ? "Undiscovered" : escapeHtml(tier.name)}</span></div>
+      <p class="index-card__hidden">${secretLocked ? "This secret gem is hidden until discovered." : "Roll this exact gem / mutation combination to reveal its entry."}</p>
+      <div class="index-card__chance"><span class="index-card__key">Actual chance</span><span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span></div>
+    </article>`;
+  }
+
+  const replayable = Number(entry.gem.rarity) >= 100000;
+  const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
+  const replayAttrs = entry.mutationIds.length ? ` data-replay-mutations="${escapeHtml(entry.mutationIds.join(","))}"` : "";
+  const gemStyle = getGemStyle(entry.gem.name);
+
+  return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
+    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+    <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
+    <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
+    ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
+  </article>`;
 }
 
 function visibleEntries() {
   const query = gemSearch.value.trim().toLowerCase();
+  const selected = selectedCombination();
+  const entries = entriesForView();
 
-  const filtered = currentlyIndexableEntries().filter((entry) => {
-    const discovered = Boolean(state.combinations[entry.key]);
-    const name = entry.gem.name.toLowerCase();
+  const filtered = entries.filter((entry) => {
+    const record = discoveredRecord(entry);
     const comboLabel = mutationCombinationLabel(entry.mutationIds).toLowerCase();
-
-    if (
-      query &&
-      !name.includes(query) &&
-      !comboLabel.includes(query)
-    ) {
-      return false;
-    }
-
-    if (gemFilter.value === "discovered" && !discovered) return false;
-    if (gemFilter.value === "undiscovered" && discovered) return false;
-
-    if (!entryMatchesMutationFilter(entry)) return false;
-
+    const name = entry.gem.name.toLowerCase();
+    if (query && !name.includes(query) && !comboLabel.includes(query)) return false;
+    if (gemFilter.value === "discovered" && !record) return false;
+    if (gemFilter.value === "undiscovered" && record) return false;
+    if (selected !== null && entry.combinationKey !== selected) return false;
     return true;
   });
 
-  const mutationOrder = new Map(
-    mutationList.map((mutation, index) => [mutation.id, index])
-  );
+  const sorters = {
+    rarity: (a, b) => Number(a.gem.rarity) - Number(b.gem.rarity),
+    "rarity-desc": (a, b) => Number(b.gem.rarity) - Number(a.gem.rarity),
+    name: (a, b) => a.gem.name.localeCompare(b.gem.name),
+    found: (a, b) => (discoveredRecord(b)?.totalFound ?? 0) - (discoveredRecord(a)?.totalFound ?? 0) || Number(a.gem.rarity) - Number(b.gem.rarity)
+  };
 
-  const compareMutationIds = (a, b) => {
-    if (a.length !== b.length) {
-      return a.length - b.length;
-    }
-
-    for (let i = 0; i < a.length; i += 1) {
-      const delta =
-        (mutationOrder.get(a[i]) ?? 999) -
-        (mutationOrder.get(b[i]) ?? 999);
-
+  return filtered.sort((a, b) => {
+    const ad = normalizeMutationIds(a.mutationIds);
+    const bd = normalizeMutationIds(b.mutationIds);
+    if (ad.length !== bd.length) return ad.length - bd.length;
+    for (let i = 0; i < ad.length; i += 1) {
+      const delta = (mutationOrder.get(ad[i]) ?? 9999) - (mutationOrder.get(bd[i]) ?? 9999);
       if (delta) return delta;
     }
-
-    return 0;
-  };
-
-  const sorters = {
-    rarity: (a, b) => a.gem.rarity - b.gem.rarity,
-    "rarity-desc": (a, b) => b.gem.rarity - a.gem.rarity,
-    name: (a, b) => a.gem.name.localeCompare(b.gem.name),
-    found: (a, b) => {
-      const foundDelta =
-        (state.combinations[b.key]?.totalFound ?? 0) -
-        (state.combinations[a.key]?.totalFound ?? 0);
-
-      if (foundDelta) return foundDelta;
-
-      return a.gem.rarity - b.gem.rarity;
-    }
-  };
-
-  return [...filtered].sort((a, b) => {
-    const comboDelta = compareMutationIds(a.mutationIds, b.mutationIds);
-    if (comboDelta) return comboDelta;
-
-    const sortDelta =
-      (sorters[gemSort.value] ?? sorters.rarity)(a, b);
-
-    if (sortDelta) return sortDelta;
-
-    return a.combinationKey.localeCompare(b.combinationKey);
+    return (sorters[gemSort.value] ?? sorters.rarity)(a, b) || a.gem.name.localeCompare(b.gem.name);
   });
 }
 
@@ -366,206 +291,28 @@ function renderMutationTabs() {
   const tabs = [
     { id: "all", name: "All", special: true },
     { id: "none", name: "No Mutation", special: true },
-    ...mutationList.map((mutation) => ({
-      id: mutation.id,
-      name: mutation.name,
-      special: false
-    }))
+    ...mutationList.map((mutation) => ({ id: mutation.id, name: mutation.name, special: false }))
   ];
-
-  mutationTabs.innerHTML = tabs
-    .map((tab) => {
-      const active = tab.id === "all"
-        ? state.selectedMutations.size === 0
-        : state.selectedMutations.has(tab.id);
-
-      return `
-        <button
-          type="button"
-          class="mutation-tab mutation-tab--${tab.id}${active ? " is-active" : ""}"
-          data-mutation-filter="${tab.id}"
-          aria-pressed="${active}"
-        >
-          ${escapeHtml(tab.name)}
-        </button>
-      `;
-    })
-    .join("");
-}
-
-function mutationNameHtml(ids) {
-  const normalized = normalizeMutationIds(ids);
-
-  if (!normalized.length) {
-    return `<span class="index-no-mutation">No Mutation</span>`;
-  }
-
-  return `
-    <div class="index-card__mutations" aria-label="Mutations">
-      ${normalized
-        .map((id) => {
-          const mutation = GEM_MUTATIONS[id];
-          if (!mutation) return "";
-
-          return `
-            <span class="mutation-name-effect mutation-name-effect--${id}">
-              <span class="mutation-name-effect__fx" aria-hidden="true"></span>
-              <span class="mutation-name-effect__text">${escapeHtml(mutation.name)}</span>
-            </span>
-          `;
-        })
-        .join("")}
-    </div>
-  `;
-}
-
-function gemCard(entry) {
-  const tier = rarityTier(entry.gem.rarity);
-  const record = state.combinations[entry.key];
-  const discovered = Boolean(record);
-  const secretLocked = isSecretUndiscovered(entry);
-
-  if (!discovered) {
-    return `
-      <article
-        class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}"
-        data-combination="${escapeHtml(entry.combinationKey)}"
-      >
-        <div class="index-card__head">
-          <div>
-            <div class="index-card__name">???</div>
-            <div class="index-card__rarity">
-              ${entry.mutationIds.length
-                ? mutationCombinationLabel(entry.mutationIds)
-                : "No Mutation"}
-            </div>
-          </div>
-          <span class="badge badge--tier">${secretLocked ? "Undiscovered" : escapeHtml(tier.name)}</span>
-        </div>
-
-        <p class="index-card__hidden">
-          ${secretLocked
-            ? "This secret gem is in the index, but its rarity is hidden until discovered."
-            : "Roll this exact gem / mutation combination to reveal its entry."}
-        </p>
-
-        <div class="index-card__chance">
-          <span class="index-card__key">Actual chance</span>
-          <span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span>
-        </div>
-      </article>
-    `;
-  }
-
-  const replayable = entry.gem.rarity >= 100000;
-  const baseValue = entry.gem.baseWeight * entry.gem.valuePerGram;
-
-  const replayAttrs = entry.mutationIds.length
-    ? ` data-replay-mutations="${escapeHtml(entry.mutationIds.join(","))}"`
-    : "";
-
-  const gemStyle = getGemStyle(entry.gem.name);
-
-  return `
-    <article
-      class="index-card tier-${tier.id}"
-      data-combination="${escapeHtml(entry.combinationKey)}"
-      style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}"
-    >
-      <div class="index-card__head">
-        <div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div>
-        <div class="index-card__title-block">
-          <div class="index-card__name">
-            ${gemNameHtml(entry.gem.name, escapeHtml)}
-          </div>
-
-          ${mutationNameHtml(entry.mutationIds)}
-
-          <div class="index-card__rarity">
-            ${rarityLabel(entry.gem.rarity)}
-          </div>
-        </div>
-
-        <span class="badge badge--tier">${escapeHtml(tier.name)}</span>
-      </div>
-
-      <p class="index-card__desc">
-        ${escapeHtml(entry.gem.description ?? "No description available.")}
-      </p>
-
-      <div class="index-card__rows">
-        <div class="index-card__row">
-          <span class="index-card__key">Base weight</span>
-          <span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span>
-        </div>
-
-        <div class="index-card__row">
-          <span class="index-card__key">Base value</span>
-          <span class="index-card__val">${formatMoney(baseValue)}</span>
-        </div>
-
-        <div class="index-card__row">
-          <span class="index-card__key">Actual chance</span>
-          <span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span>
-        </div>
-
-        <div class="index-card__row">
-          <span class="index-card__key">Combination found</span>
-          <span class="index-card__val">${formatCount(record.totalFound)}</span>
-        </div>
-
-        <div class="index-card__row">
-          <span class="index-card__key">Highest value</span>
-          <span class="index-card__val">${formatMoney(record.highestValue)}</span>
-        </div>
-      </div>
-
-      ${
-        replayable
-          ? `
-            <button
-              class="button gem-replay-button"
-              type="button"
-              data-replay-gem="${escapeHtml(entry.gem.name)}"
-              ${replayAttrs}
-            >
-              ▶ Replay Cutscene
-            </button>
-          `
-          : ""
-      }
-    </article>
-  `;
+  mutationTabs.innerHTML = tabs.map((tab) => {
+    const active = tab.id === "all" ? state.selectedMutations.size === 0 : state.selectedMutations.has(tab.id);
+    const mutation = mutationById.get(tab.id);
+    return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}"${mutation ? ` style="--mutation-color:${escapeHtml(mutation.color || "#9fdcff")}"` : ""}>${escapeHtml(tab.name)}</button>`;
+  }).join("");
 }
 
 function renderList() {
   if (state.loading) {
-    gemList.innerHTML = Array.from(
-      { length: 8 },
-      () => '<div class="skeleton skeleton--card"></div>'
-    ).join("");
+    gemList.innerHTML = '<div class="skeleton skeleton--card"></div>'.repeat(6);
     return;
   }
-
   const list = visibleEntries();
-
-  gemList.innerHTML = list.length
-    ? list.map(gemCard).join("")
-    : `
-      <div class="empty" style="grid-column:1/-1">
-        ${icons.search}
-        <p class="empty__title">Nothing matches</p>
-        <p>Try a different search or mutation filter.</p>
-      </div>
-    `;
+  gemList.innerHTML = list.length ? list.map(gemCard).join("") : `<div class="empty" style="grid-column:1/-1">${icons.search}<p class="empty__title">Nothing matches</p><p>Try a different search or mutation filter.</p></div>`;
 }
 
 mutationTabs.addEventListener("click", (event) => {
   const button = event.target.closest("[data-mutation-filter]");
   if (!button) return;
-
   const id = button.dataset.mutationFilter;
-
   if (id === "all") {
     state.selectedMutations.clear();
   } else if (id === "none") {
@@ -573,13 +320,9 @@ mutationTabs.addEventListener("click", (event) => {
     state.selectedMutations.add("none");
   } else {
     state.selectedMutations.delete("none");
-    if (state.selectedMutations.has(id)) {
-      state.selectedMutations.delete(id);
-    } else {
-      state.selectedMutations.add(id);
-    }
+    if (state.selectedMutations.has(id)) state.selectedMutations.delete(id);
+    else state.selectedMutations.add(id);
   }
-
   renderMutationTabs();
   renderSelectedMutationSummary();
   renderSummary();
@@ -589,143 +332,82 @@ mutationTabs.addEventListener("click", (event) => {
 gemList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-replay-gem]");
   if (!button) return;
-
-  const gem = catalogGems.find(
-    (entry) => entry.name === button.dataset.replayGem
-  );
-
+  const gem = catalogGems.find((entry) => entry.name === button.dataset.replayGem);
   if (!gem) return;
-
-  const mutationIds = (button.dataset.replayMutations ?? "")
-    .split(",")
-    .filter(Boolean);
-
+  const mutationIds = (button.dataset.replayMutations ?? "").split(",").filter(Boolean);
   button.disabled = true;
-
-  try {
-    await replayGemCutscene({ gem, mutationIds });
-  } finally {
-    button.disabled = false;
-  }
+  try { await replayGemCutscene({ gem, mutationIds }); }
+  finally { button.disabled = false; }
 });
 
+let filterRenderTimer = null;
+function scheduleListRender() {
+  clearTimeout(filterRenderTimer);
+  filterRenderTimer = setTimeout(renderList, 80);
+}
 for (const control of [gemSearch, gemFilter, gemSort]) {
-  control.addEventListener("input", renderList);
-  control.addEventListener("change", renderList);
+  control.addEventListener("input", scheduleListRender);
+  control.addEventListener("change", scheduleListRender);
 }
 
 async function refresh() {
-  const user = await ensurePlayerAuth();
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const user = await ensurePlayerAuth();
+    if (!user) {
+      state.loading = false;
+      discoveryCount.textContent = "Could not sign you in. Refresh to try again.";
+      notify.error("Sign-in failed", "The game could not reach your account.");
+      return;
+    }
+    loadedPlayerId = user.id;
 
-  if (!user) {
-    state.loading = false;
-    discoveryCount.textContent =
-      "Could not sign you in. Refresh to try again.";
-    notify.error(
-      "Sign-in failed",
-      "The game could not reach your account."
-    );
-    return;
-  }
+    const [combinations, playerState, privateGemsResult, mutationCatalogResult] = await Promise.all([
+      loadCombinations(user.id),
+      loadCloudPlayerState(),
+      supabase.from("private_feature_gems").select("name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered").eq("enabled", true).order("sort_order", { ascending: true }).order("rarity", { ascending: true }),
+      supabase.from("game_mutations").select("id,name,chance,multiplier,description,icon,color,sort_order").eq("enabled", true).order("sort_order", { ascending: true })
+    ]);
 
-  const [combinations, playerState, privateGemsResult, mutationCatalogResult] = await Promise.all([
-    loadCombinations(user.id),
-    loadCloudPlayerState(),
-    supabase
-      .from("private_feature_gems")
-      .select("*")
-      .eq("enabled", true)
-      .order("sort_order", { ascending: true })
-      .order("rarity", { ascending: true }),
-    supabase
-      .from("game_mutations")
-      .select("id,name,chance,multiplier,description,icon,color,sort_order")
-      .eq("enabled", true)
-      .order("sort_order", { ascending: true })
-  ]);
+    if (combinations) state.combinations = combinations;
 
-  if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data) && mutationCatalogResult.data.length) {
-    mutationList = mutationCatalogResult.data.map((mutation) => ({
-      id: String(mutation.id),
-      name: String(mutation.name),
-      chance: Number(mutation.chance),
-      multiplier: Number(mutation.multiplier),
-      description: String(mutation.description ?? ""),
-      icon: String(mutation.icon ?? "✦"),
-      color: String(mutation.color ?? "#9fdcff"),
-      sortOrder: Number(mutation.sort_order ?? 0)
-    }));
-    mutationCombinations = buildMutationCombinations();
-  }
+    if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
+      mutationList = mutationCatalogResult.data.map((mutation) => ({
+        id: String(mutation.id), name: String(mutation.name), chance: Number(mutation.chance), multiplier: Number(mutation.multiplier),
+        description: String(mutation.description ?? ""), icon: String(mutation.icon ?? "✦"), color: String(mutation.color ?? "#9fdcff"), sortOrder: Number(mutation.sort_order ?? 0)
+      }));
+      rebuildMutationMaps();
+      // Preserve valid selected custom tabs after an admin catalog change.
+      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
+      if (!state.selectedMutations.size) state.selectedMutations.add("none");
+    } else if (mutationCatalogResult.error) {
+      console.warn("Live mutation catalog unavailable; using built-in catalog:", mutationCatalogResult.error.message);
+    }
 
-  // Admin-created enabled gems are part of the live catalogue. They are
-  // read through the restricted public-read policy added by the migration,
-  // so disabled/unreleased admin gems remain hidden from normal players.
-  if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
-    const builtInNames = new Set(gems.map((gem) => gem.name));
-    const custom = privateGemsResult.data
-      .filter((gem) => !builtInNames.has(gem.name))
-      .map((gem) => ({
-        name: String(gem.name),
-        rarity: Number(gem.rarity),
-        baseWeight: Number(gem.base_weight),
-        valuePerGram: Number(gem.value_per_gram),
+    if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
+      const builtInNames = new Set(gems.map((gem) => gem.name));
+      const custom = privateGemsResult.data.filter((gem) => !builtInNames.has(gem.name)).map((gem) => ({
+        name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
         description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
         hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
       }));
-    catalogGems = [...gems, ...custom];
-  }
+      catalogGems = [...gems, ...custom];
+    } else if (privateGemsResult.error) {
+      console.warn("Live gem catalog unavailable; using bundled gems:", privateGemsResult.error.message);
+      catalogGems = [...gems];
+    }
 
-  // Rebuild after the live gem + mutation catalogs are loaded.
-  indexEntries = allEntries();
-
-  state.loading = false;
-
-  if (combinations) {
-    state.combinations = combinations;
-  } else {
-    notify.error(
-      "Could not load mutation discoveries",
-      "Run the mutation combination migration first."
-    );
-  }
-
-  if (playerState) {
-    shell.setWallet(playerState.money);
-  }
-
-  renderSummary();
-  renderMutationTabs();
-  renderSelectedMutationSummary();
-  renderList();
+    state.loading = false;
+    if (playerState) shell.setWallet(playerState.money);
+    renderSummary();
+    renderMutationTabs();
+    renderSelectedMutationSummary();
+    renderList();
+  })().finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
 }
 
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) refresh();
-});
-
-// Keep the index in sync immediately when an administrator adds, edits,
-// enables, disables, or removes a custom gem. This avoids the old behaviour
-// where the database was correct but the index stayed on its bundled list
-// until a hard reload.
-const gemCatalogChannel = supabase
-  .channel("public-gem-catalog")
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "private_feature_gems" },
-    () => refresh()
-  )
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "game_mutations" },
-    () => refresh()
-  )
-  .subscribe();
-
-window.addEventListener("beforeunload", () => {
-  supabase.removeChannel(gemCatalogChannel);
-});
-
+window.addEventListener("pageshow", (event) => { if (event.persisted) refresh(); });
 renderList();
 renderMutationTabs();
 renderSelectedMutationSummary();

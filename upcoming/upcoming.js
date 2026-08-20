@@ -560,4 +560,20 @@ catch(e){status(e.message,true);}}
 
 $("newRarity").onclick=()=>openRarity();$("rarityCancel").onclick=$("rarityCancelBottom").onclick=()=>{$("rarityEditor").hidden=true;editingRarity=null};$("raritySave").onclick=saveRarity;
 $("newPvpWeapon").onclick=()=>openPvpWeapon();$("addPvpAttack").onclick=()=>pvpAttackRow();$("pvpCancel").onclick=()=>{$("pvpWeaponEditor").hidden=true;editingPvpWeapon=null};$("pvpSave").onclick=savePvpWeapon;
-ensurePlayerAuth().catch(()=>{});
+// Admin users are already authenticated and authorized by the server, so
+// the embedded Feature Lab opens without a second password prompt.
+(async function autoOpenAuthorizedFeatureLab(){
+  try {
+    const user = await ensurePlayerAuth();
+    if (!user || !$('gate') || !$('workspace')) return;
+    const who = await call('whoami');
+    if (who?.allowed && who?.requiresPassword === false) {
+      $('gate').hidden = true;
+      $('workspace').hidden = false;
+      await loadAll();
+    }
+  } catch {
+    // Standalone /upcoming remains password-gated on deployments that do not
+    // have an authorized admin session.
+  }
+})();

@@ -182,3 +182,17 @@
     bottom: 10vh;
   }
 }
+
+/* JA-ORE icon centering repair: center the artwork itself, not just its
+   parent. This also neutralizes transparent padding inside the artwork box. */
+#ja-ore-cutscene .ja-ore-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  background-position: 50% 50%;
+  background-size: contain;
+  background-repeat: no-repeat;
+}

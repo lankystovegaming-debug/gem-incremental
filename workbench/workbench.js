@@ -18,6 +18,8 @@ let animationFrame = 0;
 let stageTimer = null;
 let stageTwoClicks = [];
 let stageTwoBeat = 0;
+let stageTwoStart = 0;
+let stageTwoBeatMs = 900;
 
 const escapeHtml = (value) => String(value ?? "")
   .replaceAll("&", "&amp;")
@@ -154,22 +156,19 @@ function runStageOne() {
 /* Stage 2: a short rhythm sequence. The second minigame is intentionally
  * different from Stage 1, so it does not feel like a renamed copy of the
  * same timing test. */
-function runStageTwo() {
+function runStageTwo(now = performance.now()) {
   const track = $("timingTrack");
   const target = $("target");
-  const now = performance.now();
 
-  // Stage 2 is a real three-beat sync game: the marker sweeps across the
-  // track on a fixed beat cycle. The player can click once per beat and the
-  // score is based on how close the marker is to the centre at that beat.
-  const beatMs = 900;
-  const phase = (now % beatMs) / beatMs;
+  if (!stageTwoStart) stageTwoStart = now;
+  const elapsed = now - stageTwoStart;
+  const beatElapsed = elapsed % stageTwoBeatMs;
+  const phase = beatElapsed / stageTwoBeatMs;
   const pingPong = phase <= 0.5 ? phase * 2 : (1 - phase) * 2;
   const position = 0.08 + pingPong * 0.84;
 
   target.style.left = `${position * Math.max(1, track.clientWidth - 28)}px`;
-  $("stageStatus").textContent = `Beat ${Math.min(stageTwoBeat + 1, 3)} / 3 · Sync the marker with the centre`;
-
+  $("stageStatus").textContent = `Beat ${Math.min(stageTwoBeat + 1, 3)} / 3 · Click near the centre on the beat`;
   animationFrame = requestAnimationFrame(runStageTwo);
 }
 
@@ -193,9 +192,10 @@ function startStage() {
   $("strike").disabled = false;
 
   if (stage === 2) {
-    // A fresh stage always starts with a fresh three-beat sequence.
+    // A fresh stage always starts a deterministic three-beat sequence.
     stageTwoClicks = [];
     stageTwoBeat = 0;
+    stageTwoStart = performance.now();
   }
   $("strike").textContent = stage === 2 ? "SYNC" : "STRIKE";
 
@@ -285,24 +285,23 @@ $("strike").addEventListener("click", async () => {
   /* Stage 2 is a three-beat rhythm challenge. Missing a beat lowers the
    * score, but the server still receives exactly one bounded score per stage. */
   if (Number(session.stage) === 2) {
+    // One click advances one beat. The marker is continuously animated, but
+    // the beat index is deterministic and the server receives only one score
+    // after all three beats have been completed.
     stageTwoClicks.push(score);
     stageTwoBeat = stageTwoClicks.length;
 
     if (stageTwoClicks.length < 3) {
       $("stageStatus").textContent =
         `Beat ${stageTwoClicks.length} / 3 · ${(score * 100).toFixed(0)}%`;
-      // Keep the animation alive between beats. The next click is the next
-      // beat rather than a second submission of the same server stage.
       $("strike").disabled = false;
       return;
     }
 
-    const rhythmScore =
-      stageTwoClicks.reduce((sum, value) => sum + value, 0) /
-      stageTwoClicks.length;
-
+    const rhythmScore = stageTwoClicks.reduce((sum, value) => sum + value, 0) / 3;
     stageTwoClicks = [];
     stageTwoBeat = 0;
+    stageTwoStart = 0;
     await submitStage(rhythmScore);
     return;
   }

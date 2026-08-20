@@ -3872,3 +3872,16 @@ a:focus-visible {
 @media (prefers-reduced-motion:reduce) {
   .scene__energy-lattice,.scene__cinematic-grain { animation:none; }
 }
+
+/* Admin-only feature navigation */
+.nav__link--admin-only,
+.tabbar__link--admin-only {
+  position: relative;
+}
+.nav__link--admin-only::after {
+  content: "ADMIN";
+  margin-left: 5px;
+  font-size: .55em;
+  letter-spacing: .08em;
+  opacity: .7;
+}

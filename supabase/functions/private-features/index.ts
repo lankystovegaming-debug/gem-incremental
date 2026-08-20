@@ -405,15 +405,18 @@ export default {
 
         const action = body.action;
 
-        // The client may check visibility without sending the password.
+        // Administrator identity is already verified by this endpoint.
+        // Do not make an authorized admin type a second shared password just
+        // to open the Admin Panel's Feature Lab. The password remains a
+        // compatibility fallback for older standalone /upcoming usage.
         if (action === "whoami") {
           return json({
             allowed: true,
-            requiresPassword: true
+            requiresPassword: false
           });
         }
 
-        if (!samePassword(body.password)) {
+        if (!allowed && !samePassword(body.password)) {
           return json(
             { error: "private_feature_password_required" },
             401

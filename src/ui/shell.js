@@ -79,7 +79,15 @@ async function loadEnabledSections() {
   try {
     const { data } = await supabase.functions.invoke("features", { body: { action: "sections" } });
     const sections = data?.sections ?? [];
-    return new Map(sections.map((section) => [section.id, section]));
+    // The features endpoint already filters admin-only sections for normal
+    // players. Keep the explicit flag here too so the shell never exposes a
+    // private section if a stale/older endpoint returns it.
+    const isAdmin = data?.isAdmin === true;
+    return new Map(
+      sections
+        .filter((section) => section.admin_only !== true || isAdmin)
+        .map((section) => [section.id, section])
+    );
   } catch {
     return new Map();
   }
