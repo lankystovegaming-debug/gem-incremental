@@ -423,12 +423,16 @@ function hashString(value) {
 function fallbackStyle(name) {
   const hash = hashString(name);
 
+  const primary = FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
+  const secondary = FALLBACK_COLORS[Math.floor(hash / FALLBACK_COLORS.length) % FALLBACK_COLORS.length];
+
   return {
-    color: FALLBACK_COLORS[hash % FALLBACK_COLORS.length],
+    color: primary,
+    gradient: `linear-gradient(145deg, ${primary}, ${secondary})`,
     font: FALLBACK_FONTS[Math.floor(hash / 7) % FALLBACK_FONTS.length],
     weight: 600,
     spacing: "0.01em",
-    glow: "rgba(255,255,255,0.35)"
+    glow: `${primary}88`
   };
 }
 

@@ -3837,3 +3837,38 @@ a:focus-visible {
     right: 8px;
   }
 }
+
+
+/* Wallet expansion on compact layouts. */
+.wallet { cursor: pointer; user-select: none; }
+.wallet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wallet--expanded #shellWalletValue { display: inline !important; }
+
+
+/* Cinematic polish layer: adds depth and movement to every rarity replay
+   without requiring image assets or a canvas renderer. */
+.scene__energy-lattice {
+  position:absolute; inset:-15%; pointer-events:none; opacity:.24;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 20%, color-mix(in srgb, var(--accent) 18%, transparent) 20.2% 20.4%, transparent 20.7% 38%, color-mix(in srgb, var(--accent) 12%, transparent) 38.2% 38.4%, transparent 38.7%),
+    conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--accent) 18%, transparent), transparent 12%, transparent 35%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%);
+  mix-blend-mode:screen; animation:cinematicLattice 8s linear infinite;
+}
+.scene__cinematic-grain {
+  position:absolute; inset:0; pointer-events:none; opacity:.09; mix-blend-mode:screen;
+  background-image:radial-gradient(circle, #fff 0 0.6px, transparent .8px);
+  background-size:4px 4px; animation:cinematicGrain .22s steps(2) infinite;
+}
+.replay-cutscene-overlay .scene__reveal {
+  transform:translateY(12px) scale(.94);
+  opacity:0; filter:blur(12px);
+  transition:transform 1.2s cubic-bezier(.16,1,.3,1), opacity 1s ease, filter 1s ease;
+}
+.replay-cutscene-overlay.is-playing .scene__reveal {
+  transform:none; opacity:1; filter:none;
+}
+@keyframes cinematicLattice { to { transform:rotate(360deg) scale(1.08); } }
+@keyframes cinematicGrain { 0% { transform:translate(0); } 25% { transform:translate(-2px,1px); } 50% { transform:translate(1px,-2px); } 75% { transform:translate(2px,2px); } }
+@media (prefers-reduced-motion:reduce) {
+  .scene__energy-lattice,.scene__cinematic-grain { animation:none; }
+}

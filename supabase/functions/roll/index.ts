@@ -831,7 +831,7 @@ function rollGemWithPickaxePassives(
 // MUTATION RNG
 // =========================================================
 
-const gemMutations = [
+let gemMutations = [
   { id: "polished", name: "Polished", chance: 1 / 100, multiplier: 1.5 },
   { id: "gilded", name: "Gilded", chance: 1 / 500, multiplier: 2.5 },
   { id: "prismatic", name: "Prismatic", chance: 1 / 2500, multiplier: 5 },
@@ -2534,6 +2534,32 @@ export default {
         masterworkWeightFactor;
 
 
+      // Load the admin-managed mutation catalog when available. The bundled
+      // definitions remain the safe fallback for older deployments.
+      try {
+        const { data: configuredMutations, error: mutationCatalogError } =
+          await ctx.supabaseAdmin
+            .from("game_mutations")
+            .select("id,name,chance,multiplier,description,icon,color")
+            .eq("enabled", true)
+            .order("sort_order")
+            .order("name");
+
+        if (!mutationCatalogError && configuredMutations?.length) {
+          gemMutations = configuredMutations.map((mutation: any) => ({
+            id: String(mutation.id),
+            name: String(mutation.name),
+            chance: Math.min(1, 1 / Math.max(0.000001, Number(mutation.chance))),
+            multiplier: Math.max(0.000001, Number(mutation.multiplier)),
+            description: String(mutation.description ?? ""),
+            icon: String(mutation.icon ?? "✦"),
+            color: String(mutation.color ?? "#9fdcff")
+          }));
+        }
+      } catch (mutationCatalogError) {
+        console.warn("Mutation catalog unavailable; using bundled definitions:", mutationCatalogError);
+      }
+
       // Mutation odds are independent, so one roll can have any
       // combination of the five mutations (32 combinations). The
       // multiplier is the higher of the legacy hardcoded boost and the
@@ -3319,7 +3345,8 @@ export default {
               player_id: playerId,
               gem_name: gem.name,
               rarity: gem.rarity,
-              mutation_ids: mutationIds
+              mutation_ids: mutationIds,
+              luck_at_roll: luck
             });
 
         if (mutationOnlyAnnouncementError) {
@@ -3344,7 +3371,8 @@ export default {
             p_player_id: playerId,
             p_gem_name: gem.name,
             p_gem_rarity: gem.rarity,
-            p_mutation_ids: mutationIds
+            p_mutation_ids: mutationIds,
+            p_luck_at_roll: luck
           });
 
         if (announcementMutationError) {
@@ -3456,6 +3484,9 @@ export default {
         mutationIds,
 
         mutationMultiplier,
+
+        // Exact effective luck used for this server-authoritative roll.
+        luckAtRoll: luck,
 
         mutationCombination: {
           key: combinationKey,

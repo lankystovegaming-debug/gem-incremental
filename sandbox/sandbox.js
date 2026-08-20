@@ -197,19 +197,36 @@ function buildCharacter(THREE, shared, { username, color, showcase }) {
     // Mutated showcase gems receive a second orbiting CSS-free torus accent
     // so the 3D sandbox still communicates mutation state without images.
     if (mutationIds.length) {
-      const ring = new THREE.Mesh(
-        shared.gemRingGeo,
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color(style.color),
-          transparent: true,
-          opacity: 0.72
-        })
-      );
-      ring.userData.orbitOffset = mesh.userData.orbitOffset + Math.PI / 3;
-      ring.userData.orbitRadius = mesh.userData.orbitRadius + 0.08;
-      ring.userData.isGemRing = true;
-      mesh.userData.mutationRing = ring;
-      group.add(ring);
+      const aura = new THREE.Group();
+      const color = new THREE.Color(style.color);
+
+      // Three offset rings create a layered aura around mutated gems. They
+      // are generated entirely from Three.js geometry — no image assets.
+      for (let ringIndex = 0; ringIndex < 3; ringIndex += 1) {
+        const ring = new THREE.Mesh(
+          shared.gemAuraRingGeo,
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.18 + ringIndex * 0.08,
+            side: THREE.DoubleSide
+          })
+        );
+        ring.userData.auraIndex = ringIndex;
+        ring.rotation.x = Math.PI / 2 + ringIndex * 0.35;
+        ring.rotation.z = ringIndex * 0.8;
+        aura.add(ring);
+      }
+
+      const auraLight = new THREE.PointLight(color, 0.7 + mutationIds.length * 0.18, 2.8);
+      auraLight.position.set(0, 0, 0);
+      aura.add(auraLight);
+
+      aura.userData.orbitOffset = mesh.userData.orbitOffset;
+      aura.userData.orbitRadius = mesh.userData.orbitRadius;
+      aura.userData.isGemAura = true;
+      mesh.userData.mutationAura = aura;
+      group.add(aura);
     }
     return mesh;
   });
@@ -228,6 +245,7 @@ function makeSharedAssets(THREE) {
     gemCrystalGeo: new THREE.OctahedronGeometry(0.18, 0),
     gemShardGeo: new THREE.TetrahedronGeometry(0.2, 0),
     gemRingGeo: new THREE.TorusGeometry(0.24, 0.018, 6, 20),
+    gemAuraRingGeo: new THREE.TorusGeometry(0.31, 0.012, 6, 32),
     pickHandleGeo: new THREE.CylinderGeometry(0.03, 0.03, 0.6, 6),
     pickHeadGeo: new THREE.BoxGeometry(0.35, 0.09, 0.09),
     skinMat: new THREE.MeshStandardMaterial({ color: 0xd8a878, roughness: 0.8 }),
@@ -486,12 +504,22 @@ async function enterSandbox(user) {
       );
       mesh.rotation.x = t * 0.8 + mesh.userData.orbitOffset;
       mesh.rotation.y = t * 1.15;
-      const ring = mesh.userData.mutationRing;
-      if (ring) {
-        const ringAngle = t * 1.65 + (mesh.userData.orbitOffset ?? 0);
-        ring.position.set(Math.cos(ringAngle) * (radius + 0.06), 2.05 + Math.sin(t * 2.4) * 0.08, Math.sin(ringAngle) * (radius + 0.06));
-        ring.rotation.x = t * 1.7;
-        ring.rotation.z = t * 1.2;
+      const aura = mesh.userData.mutationAura;
+      if (aura) {
+        const auraAngle = t * 1.05 + (mesh.userData.orbitOffset ?? 0);
+        aura.position.set(
+          Math.cos(auraAngle) * radius,
+          2.05 + Math.sin(t * 2.2 + mesh.userData.orbitOffset) * 0.1,
+          Math.sin(auraAngle) * radius
+        );
+        aura.children.forEach((child, index) => {
+          if (!child.isMesh) return;
+          child.rotation.x = t * (0.7 + index * 0.25) + index * 0.8;
+          child.rotation.y = t * (0.5 + index * 0.2);
+          const pulse = 1 + Math.sin(t * 2.8 + index) * 0.12;
+          child.scale.setScalar(pulse + index * 0.12);
+          child.material.opacity = 0.18 + index * 0.08 + Math.sin(t * 2 + index) * 0.04;
+        });
       }
     });
 

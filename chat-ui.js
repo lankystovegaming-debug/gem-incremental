@@ -535,13 +535,17 @@ if (messagesEl && formEl && inputEl) {
     const chance = showFinalChance
       ? exactChatChanceLabel(message)
       : `1 in ${Math.max(1, rarity).toLocaleString("en-US")}`;
+    const luck = Number(message.luckAtRoll);
+    const luckSuffix = Number.isFinite(luck) && luck > 0
+      ? ` with luck of ${luck.toLocaleString("en-US", { maximumFractionDigits: 2 })}x!`
+      : "!";
 
     return `<strong>${escapeHtml(
       message.roller_username
     )}</strong> rolled a rare ${mutationPrefix}${gemNameHtml(
       message.gem_name,
       escapeHtml
-    )} ${escapeHtml(chance)}!`;
+    )} ${escapeHtml(chance)}${escapeHtml(luckSuffix)}`;
   }
 
   function localRollAnnouncement(data) {
@@ -577,6 +581,7 @@ if (messagesEl && formEl && inputEl) {
       roller_username: "You",
       gem_name: data.gem.name,
       rarity: Number(data.gem.rarity ?? 0),
+      luckAtRoll: Number(data.luckAtRoll ?? data.luck_at_roll ?? data.luck ?? 0) || null,
       mutation_ids: mutationIds,
       created_at: now,
       local_only: true

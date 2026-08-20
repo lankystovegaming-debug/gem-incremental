@@ -1,1 +1,68 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workbench [BETA] · Gem Incremental</title><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./workbench.css"></head><body><main class="app-main workbench-page"><section class="workbench-hero"><div class="eyebrow">WORKBENCH</div><h1 id="workbenchTitle">Workbench <b>[BETA]</b></h1><p>Choose your gems, then survive three precision stages. Better timing means better quality.</p></section><section id="setup" class="workbench-card"><div class="row"><div><h2>1 · Crucible</h2><p class="muted">Select 3+ gems. Ore count influences the item class; gem composition influences stats and traits.</p></div><select id="itemType"><option value="weapon">Weapon</option><option value="armor">Armor</option></select></div><div id="materials" class="materials"></div><button id="start" class="btn btn--primary">Start Workbench</button><div id="setupStatus" class="status"></div></section><section id="minigame" class="workbench-card" hidden><div class="stage-head"><span id="stageLabel">Stage 1 / 3</span><span id="qualityHint">Hit the sweet spot</span></div><div class="timing-track"><div id="target"></div><button id="strike">CLICK!</button></div><p class="muted">Click when the marker is closest to the glowing target.</p><div id="stageStatus"></div></section><section id="result" class="workbench-card" hidden><h2>Workbench Result</h2><div id="resultBody"></div><button id="again" class="btn">Try Again</button></section><section class="workbench-card"><h2>Recent creations</h2><div id="history"></div></section></main><script type="module" src="./workbench.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workbench [BETA] · Gem Incremental</title>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./workbench.css">
+</head>
+<body>
+  <main class="app-main workbench-page">
+    <section class="workbench-hero">
+      <div class="eyebrow">PRECISION WORKSHOP</div>
+      <h1 id="workbenchTitle">Workbench [BETA]</h1>
+      <p>Turn selected gems into equipment through three different precision challenges. Your timing is part of the result.</p>
+    </section>
+
+    <section id="setup" class="workbench-card">
+      <div class="row">
+        <div>
+          <h2>1 · Load the Workbench</h2>
+          <p class="muted">Select gems from your inventory. More valuable combinations produce stronger equipment.</p>
+          <p class="muted" id="selectedCount">0 gems selected</p>
+        </div>
+        <label class="field">
+          <span>Equipment type</span>
+          <select id="itemType">
+            <option value="weapon">Weapon</option>
+            <option value="armor">Armor</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="materials" class="materials"></div>
+      <button id="start" class="btn btn--primary" type="button">Start Workbench</button>
+      <div id="setupStatus" class="status" role="status"></div>
+    </section>
+
+    <section id="minigame" class="workbench-card" hidden>
+      <div class="stage-head">
+        <span id="stageLabel">Stage 1 / 3</span>
+        <span id="qualityHint">Hit the centre</span>
+      </div>
+
+      <div class="timing-track" id="timingTrack">
+        <div id="target" class="timing-target"></div>
+        <button id="strike" class="timing-button" type="button">STRIKE</button>
+      </div>
+
+      <p class="muted">Stage 1 is precision. Stage 2 is a three-beat sync challenge. Stage 3 is a final stability test.</p>
+      <div id="stageStatus" role="status"></div>
+    </section>
+
+    <section id="result" class="workbench-card" hidden>
+      <h2>Workbench complete</h2>
+      <div id="resultBody"></div>
+      <button id="again" class="btn" type="button">Start another</button>
+    </section>
+
+    <section class="workbench-card">
+      <h2>Recent creations</h2>
+      <div id="history"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./workbench.js"></script>
+</body>
+</html>

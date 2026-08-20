@@ -1,10 +1,11 @@
 import { invokeFunction } from "../backend/invoke.js";
-import { sellCloudGem } from "../backend/cloudInventory.js";
+import { loadCloudGems, sellCloudGem } from "../backend/cloudInventory.js";
 import {
   getSettings,
   updateSettings,
   onSettingsChange,
-  shouldAutoSell
+  shouldAutoSell,
+  shouldAutoKeep
 } from "./settings.js";
 import { rarityTier } from "./format.js";
 import { notify } from "./toast.js";
@@ -35,12 +36,29 @@ export function startGlobalAutoRoll(page) {
     timer = setTimeout(run, Math.max(0, delay));
   };
 
-  const handleFailure = (error) => {
+  const handleFailure = async (error) => {
     if (!error) return;
 
     if (error.code === "inventory_full") {
+      const settings = getSettings();
+
+      if (settings.autoSell) {
+        const gems = await loadCloudGems();
+        const candidate = (gems ?? [])
+          .filter((gem) => !gem.locked && !shouldAutoKeep(rarityTier(Number(gem.rarity ?? 0)).id))
+          .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
+
+        if (candidate?.id != null) {
+          const { error: sellError } = await sellCloudGem(candidate.id);
+          if (!sellError) {
+            schedule(120);
+            return;
+          }
+        }
+      }
+
       updateSettings({ autoRoll: false });
-      notify.warning("Auto roll paused", "Your inventory filled up.");
+      notify.warning("Auto roll paused", "Inventory is full. Enable Auto Sell or free a slot.");
       return;
     }
 
@@ -58,7 +76,7 @@ export function startGlobalAutoRoll(page) {
       const { data, error } = await invokeFunction("roll");
 
       if (error) {
-        handleFailure(error);
+        await handleFailure(error);
 
         const nextRollAt = error.details?.nextRollAt;
         if (error.code === "cooldown" && nextRollAt) {

@@ -7,6 +7,10 @@ import { withSupabase } from "npm:@supabase/server";
 async function isAdmin(ctx: any, id: string | undefined) {
   if (!id) return false;
 
+  // Keep the configured owner authoritative even if the admins table has not
+  // yet been seeded in a fresh project.
+  if (id === "38d5e8ce-18af-46d3-aa9e-6e601e75dd78") return true;
+
   const { data, error } = await ctx.supabaseAdmin
     .from("admins")
     .select("user_id")
@@ -324,6 +328,84 @@ export default {
           name, durationMinutes, mutationLuckBonus, mutationLuckMultiplier
         });
         return response({ event: data });
+      }
+
+      // =========================================================
+      // MUTATION CATALOG ADMINISTRATION
+      // =========================================================
+      if (action === "mutation_list") {
+        const { data, error } = await ctx.supabaseAdmin
+          .from("game_mutations")
+          .select("*")
+          .order("sort_order")
+          .order("name");
+
+        if (error) {
+          return response({ error: "mutation_list_failed", message: error.message }, 500);
+        }
+
+        return response({ mutations: data ?? [] });
+      }
+
+      if (action === "mutation_save") {
+        const mutation = body.mutation ?? {};
+        const id = String(mutation.id ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]/g, "-")
+          .replace(/-+/g, "-")
+          .slice(0, 64);
+        const name = String(mutation.name ?? "").trim().slice(0, 80);
+        const chance = finiteNumber(mutation.chance);
+        const multiplier = finiteNumber(mutation.multiplier);
+
+        if (!id || !name || chance === null || chance <= 0 || multiplier === null || multiplier <= 0) {
+          return response({ error: "invalid_mutation" }, 400);
+        }
+
+        const payload = {
+          id,
+          name,
+          chance,
+          multiplier,
+          description: String(mutation.description ?? "").slice(0, 500),
+          icon: String(mutation.icon ?? "✦").slice(0, 8),
+          color: String(mutation.color ?? "#9fdcff").slice(0, 32),
+          enabled: mutation.enabled !== false,
+          sort_order: Math.trunc(Number(mutation.sort_order) || 0),
+          updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await ctx.supabaseAdmin
+          .from("game_mutations")
+          .upsert(payload)
+          .select("*")
+          .single();
+
+        if (error) {
+          return response({ error: "mutation_save_failed", message: error.message }, 500);
+        }
+
+        await audit(ctx, adminId, null, "mutation_saved", { id, name, chance, multiplier });
+        return response({ mutation: data });
+      }
+
+      if (action === "mutation_delete") {
+        const id = String(body.id ?? "").trim().toLowerCase();
+
+        if (!id) return response({ error: "invalid_mutation" }, 400);
+
+        const { error } = await ctx.supabaseAdmin
+          .from("game_mutations")
+          .delete()
+          .eq("id", id);
+
+        if (error) {
+          return response({ error: "mutation_delete_failed", message: error.message }, 500);
+        }
+
+        await audit(ctx, adminId, null, "mutation_deleted", { id });
+        return response({ ok: true });
       }
 
       if (!validUuid(targetId)) {

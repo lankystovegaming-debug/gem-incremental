@@ -1,7 +1,7 @@
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { invokeFunction } from "../backend/invoke.js";
-import { loadCloudPlayerState, sellCloudGem } from "../backend/cloudInventory.js";
-import { getSettings, onSettingsChange, shouldAutoSell } from "./settings.js";
+import { loadCloudPlayerState, loadCloudGems, sellCloudGem } from "../backend/cloudInventory.js";
+import { getSettings, onSettingsChange, shouldAutoSell, shouldAutoKeep } from "./settings.js";
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify } from "./toast.js";
 
@@ -140,7 +140,28 @@ async function run() {
         return;
       }
       if (error.code === "inventory_full") {
-        notify.warning("Auto roll paused", "Your inventory is full. Auto sell or auto craft needs to free a slot.");
+        const settings = getSettings();
+
+        if (settings.autoSell) {
+          const gems = await loadCloudGems();
+          const candidate = (gems ?? [])
+            .filter((gem) => !gem.locked && !shouldAutoKeep(rarityTier(Number(gem.rarity ?? 0)).id))
+            .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
+
+          if (candidate?.id != null) {
+            const { error: sellError } = await sellCloudGem(candidate.id);
+            if (!sellError) {
+              schedule(120);
+              return;
+            }
+            console.error("[AUTOMATION] Could not free an inventory slot:", sellError);
+          }
+        }
+
+        notify.warning(
+          "Auto roll paused",
+          "Inventory is full. Enable Auto Sell or free an inventory slot to continue."
+        );
         return;
       }
       console.error("[AUTOMATION] Roll failed:", error);

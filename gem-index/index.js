@@ -1,10 +1,5 @@
 import gems from "../src/data/gems.js";
-import {
-  GEM_MUTATIONS,
-  normalizeMutationIds,
-  mutationCombinationKey,
-  mutationCombinationLabel
-} from "../src/data/mutations.js";
+import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
@@ -36,7 +31,25 @@ const selectedMutationSummary = document.getElementById("selectedMutationSummary
 
 document.getElementById("searchIcon").innerHTML = icons.search;
 
-const mutationList = Object.values(GEM_MUTATIONS);
+let mutationList = Object.values(GEM_MUTATIONS);
+
+function normalizeMutationIds(ids = []) {
+  const order = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
+  return Array.from(new Set((Array.isArray(ids) ? ids : []).map((id) => String(id ?? "").trim().toLowerCase())))
+    .filter((id) => order.has(id))
+    .sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
+}
+
+function mutationCombinationKey(ids = []) {
+  const normalized = normalizeMutationIds(ids);
+  return normalized.length ? normalized.join("+") : "none";
+}
+
+function mutationCombinationLabel(ids = []) {
+  const normalized = normalizeMutationIds(ids);
+  if (!normalized.length) return "No Mutation";
+  return normalized.map((id) => mutationList.find((mutation) => mutation.id === id)?.name ?? id).join(" + ");
+}
 
 // Secret gems are included in the internal catalog so a discovery can reveal
 // them, but they are completely absent from the rendered index beforehand.
@@ -113,11 +126,19 @@ async function loadCombinations(playerId) {
 
 /* Base odds mirror roll/index.ts at luck = 1. Player/equipment/potion modifiers are intentionally ignored. */
 function exactEntryChance(entry) {
-  return rolledResultChance(entry.gem, entry.mutationIds);
+  const gemProbability = entry.gem.rarity > 0 ? 1 / Number(entry.gem.rarity) : 0;
+  const mutationProbability = entry.mutationIds.reduce((probability, id) => {
+    const mutation = mutationList.find((item) => item.id === id);
+    const chance = Number(mutation?.chance ?? 0);
+    return probability * (chance > 0 ? Math.min(1, 1 / chance) : 0);
+  }, 1);
+  return gemProbability * mutationProbability;
 }
 
 function entryChanceLabel(entry) {
-  return chanceLabelForResult(entry.gem, entry.mutationIds);
+  const probability = exactEntryChance(entry);
+  if (!Number.isFinite(probability) || probability <= 0) return "Impossible";
+  return `1 in ${Math.max(1, Math.round(1 / probability)).toLocaleString("en-US")}`;
 }
 
 function comboKey(gemName, combinationKey) {
@@ -600,15 +621,32 @@ async function refresh() {
     return;
   }
 
-  const [combinations, playerState, privateGemsResult] = await Promise.all([
+  const [combinations, playerState, privateGemsResult, mutationCatalogResult] = await Promise.all([
     loadCombinations(user.id),
     loadCloudPlayerState(),
     supabase
       .from("private_feature_gems")
       .select("id,name,rarity,base_weight,value_per_gram,description,hide_rarity_until_discovered")
       .eq("enabled", true)
-      .order("rarity", { ascending: true })
+      .order("rarity", { ascending: true }),
+    supabase
+      .from("game_mutations")
+      .select("id,name,chance,multiplier,description,icon,color")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true })
   ]);
+
+  if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data) && mutationCatalogResult.data.length) {
+    mutationList = mutationCatalogResult.data.map((mutation) => ({
+      id: String(mutation.id),
+      name: String(mutation.name),
+      chance: Number(mutation.chance),
+      multiplier: Number(mutation.multiplier),
+      description: String(mutation.description ?? ""),
+      icon: String(mutation.icon ?? "✦"),
+      color: String(mutation.color ?? "#9fdcff")
+    }));
+  }
 
   // Admin-created enabled gems are part of the live catalogue. They are
   // read through the restricted public-read policy added by the migration,
@@ -652,6 +690,23 @@ async function refresh() {
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) refresh();
+});
+
+// Keep the index in sync immediately when an administrator adds, edits,
+// enables, disables, or removes a custom gem. This avoids the old behaviour
+// where the database was correct but the index stayed on its bundled list
+// until a hard reload.
+const gemCatalogChannel = supabase
+  .channel("public-gem-catalog")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "private_feature_gems" },
+    () => refresh()
+  )
+  .subscribe();
+
+window.addEventListener("beforeunload", () => {
+  supabase.removeChannel(gemCatalogChannel);
 });
 
 renderList();

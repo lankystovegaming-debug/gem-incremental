@@ -159,6 +159,32 @@
       <div id="mutationEventsList" class="admin-event-list"></div>
     </section>
 
+    <section class="card admin-mutations-catalog" id="mutationCatalogPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Mutation Catalog</h2>
+          <p class="page-head__sub">Create, tune, enable, disable, or remove mutation definitions without editing code.</p>
+        </div>
+        <button class="btn" id="mutationCatalogRefresh" type="button">Refresh</button>
+      </div>
+
+      <div class="admin-mutation-editor">
+        <label class="field"><span>ID</span><input id="mutationId" maxlength="64" placeholder="radiant"></label>
+        <label class="field"><span>Name</span><input id="mutationName" maxlength="80" placeholder="Radiant"></label>
+        <label class="field"><span>Chance (1 in)</span><input id="mutationChance" type="number" min="0.000001" step="any" value="1000"></label>
+        <label class="field"><span>Value multiplier</span><input id="mutationMultiplier" type="number" min="0.000001" step="any" value="3"></label>
+        <label class="field"><span>Icon</span><input id="mutationIcon" maxlength="8" value="✦"></label>
+        <label class="field"><span>Colour</span><input id="mutationColor" type="text" value="#9fdcff"></label>
+        <label class="field"><span>Sort order</span><input id="mutationSort" type="number" step="1" value="60"></label>
+        <label class="field field--wide"><span>Description</span><input id="mutationDescription" maxlength="500" placeholder="Describe the mutation."></label>
+        <label class="checkbox-field"><input id="mutationEnabled" type="checkbox" checked><span>Enabled</span></label>
+        <button class="btn btn--primary" id="mutationSave" type="button">Save mutation</button>
+        <button class="btn" id="mutationClear" type="button">Clear</button>
+      </div>
+
+      <div id="mutationCatalogList" class="admin-list"></div>
+    </section>
+
     <section class="card admin-analytics" id="analyticsPanel" hidden>
       <div class="admin-section-head">
         <div>

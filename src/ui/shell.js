@@ -26,6 +26,7 @@ import {
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
 import { mountHowToPlay } from "./onboarding.js";
+import { startActivityHeartbeat } from "./activityHeartbeat.js";
 
 
 // =========================================================
@@ -103,6 +104,10 @@ const MODE_ICONS = {
 
 
 export function mountShell({ page, base = "./" }) {
+  // Start presence reporting once for the entire application. It is silent
+  // when the account is not authenticated and never blocks page rendering.
+  startActivityHeartbeat();
+
   const header = document.createElement("header");
 
   header.className = "topbar";
@@ -274,6 +279,18 @@ export function mountShell({ page, base = "./" }) {
   const accountAnchor = header.querySelector("#shellAccountAnchor");
   const accountButton = header.querySelector("#shellAccountButton");
 
+  // Compact wallets stay icon-only on narrow layouts. A click expands the
+  // value without changing the header width permanently.
+  walletPill?.setAttribute("role", "button");
+  walletPill?.setAttribute("tabindex", "0");
+  const toggleWallet = () => walletPill?.classList.toggle("wallet--expanded");
+  walletPill?.addEventListener("click", toggleWallet);
+  walletPill?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleWallet();
+    }
+  });
 
   const menus = createMenuController();
 

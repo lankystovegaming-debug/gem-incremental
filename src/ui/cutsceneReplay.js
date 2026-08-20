@@ -129,6 +129,8 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       <span class="mega__singularity"></span>
       <span class="mega__title">REPLAY</span>
     </div>
+    <div class="scene__energy-lattice" aria-hidden="true"></div>
+    <div class="scene__cinematic-grain" aria-hidden="true"></div>
     <div class="scene__flash"></div>
     <div class="scene__vignette"></div>
     <div class="scene__scanlines"></div>

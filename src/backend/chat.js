@@ -84,6 +84,7 @@ function normalizeAnnouncement(row, profiles = {}) {
     roller_username: rollerName,
     gem_name: row.gem_name,
     rarity,
+    luckAtRoll: row?.luck_at_roll == null ? null : Number(row.luck_at_roll),
     // Supabase normally returns a text[] as an array, but keep legacy/imported
     // rows readable if the value arrives serialized as JSON or CSV.
     mutation_ids: parseMutationIds(row?.mutation_ids),
@@ -114,7 +115,7 @@ export async function loadChatMessages(limit = 50) {
 
     supabase
       .from("global_chat_announcements")
-      .select("id, player_id, gem_name, rarity, mutation_ids, created_at")
+      .select("id, player_id, gem_name, rarity, mutation_ids, luck_at_roll, created_at")
       .order("created_at", { ascending: false })
       .limit(safeLimit)
   ]);

@@ -23,6 +23,9 @@ const analyticsButton = document.getElementById("analyticsButton");
 const analyticsRefresh = document.getElementById("analyticsRefresh");
 const analyticsPanel = document.getElementById("analyticsPanel");
 const analyticsContent = document.getElementById("analyticsContent");
+const mutationCatalogPanel = document.getElementById("mutationCatalogPanel");
+const mutationCatalogRefresh = document.getElementById("mutationCatalogRefresh");
+const mutationCatalogList = document.getElementById("mutationCatalogList");
 const featureLabButton = document.getElementById("featureLabButton");
 const featureLab = document.getElementById("adminFeatureLab");
 const featureLabBack = document.getElementById("featureLabBack");
@@ -386,6 +389,118 @@ async function runPlayerAction(button) {
 
 
 
+
+async function loadMutationCatalog() {
+  if (!mutationCatalogPanel) return;
+
+  mutationCatalogPanel.hidden = false;
+  mutationCatalogList.innerHTML = '<p class="page-head__sub">Loading mutations…</p>';
+
+  const { data, error } = await adminRequest("mutation_list", { targetId: null });
+
+  if (error) {
+    mutationCatalogList.innerHTML = `<p class="page-head__sub">${escapeHtml(error.message)}</p>`;
+    return;
+  }
+
+  const mutations = data?.mutations ?? [];
+
+  mutationCatalogList.innerHTML = mutations.map((mutation) => `
+    <div class="admin-mutation-row">
+      <div class="admin-mutation-preview" style="--mutation-color:${escapeHtml(mutation.color)}">
+        <span class="admin-mutation-icon">${escapeHtml(mutation.icon)}</span>
+        <div>
+          <strong>${escapeHtml(mutation.name)}</strong>
+          <span>${escapeHtml(mutation.id)} · 1 in ${Number(mutation.chance).toLocaleString()} · ×${Number(mutation.multiplier).toLocaleString()}</span>
+        </div>
+      </div>
+      <div class="admin-button-row">
+        <button class="btn btn--small" type="button" data-mutation-edit="${escapeHtml(mutation.id)}">Edit</button>
+        <button class="btn btn--small" type="button" data-mutation-toggle="${escapeHtml(mutation.id)}" data-enabled="${mutation.enabled}">${mutation.enabled ? "Disable" : "Enable"}</button>
+        <button class="btn btn--danger btn--small" type="button" data-mutation-delete="${escapeHtml(mutation.id)}">Delete</button>
+      </div>
+    </div>
+  `).join("") || '<p class="page-head__sub">No mutations configured.</p>';
+
+  for (const button of mutationCatalogList.querySelectorAll("[data-mutation-edit]")) {
+    button.addEventListener("click", () => {
+      const mutation = mutations.find((item) => item.id === button.dataset.mutationEdit);
+      if (!mutation) return;
+      document.getElementById("mutationId").value = mutation.id;
+      document.getElementById("mutationName").value = mutation.name;
+      document.getElementById("mutationChance").value = mutation.chance;
+      document.getElementById("mutationMultiplier").value = mutation.multiplier;
+      document.getElementById("mutationIcon").value = mutation.icon || "✦";
+      document.getElementById("mutationColor").value = mutation.color || "#9fdcff";
+      document.getElementById("mutationSort").value = mutation.sort_order ?? 0;
+      document.getElementById("mutationDescription").value = mutation.description || "";
+      document.getElementById("mutationEnabled").checked = mutation.enabled !== false;
+      mutationCatalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  for (const button of mutationCatalogList.querySelectorAll("[data-mutation-toggle]")) {
+    button.addEventListener("click", async () => {
+      const mutation = mutations.find((item) => item.id === button.dataset.mutationToggle);
+      if (!mutation) return;
+      button.disabled = true;
+      const { error: toggleError } = await adminRequest("mutation_save", {
+        targetId: null,
+        mutation: { ...mutation, enabled: mutation.enabled !== true }
+      });
+      if (toggleError) notify.error("Mutation update failed", toggleError.message);
+      await loadMutationCatalog();
+    });
+  }
+
+  for (const button of mutationCatalogList.querySelectorAll("[data-mutation-delete]")) {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.mutationDelete;
+      if (!window.confirm(`Delete mutation ${id}? Existing gems keep their saved mutation id, but future rolls will stop using it.`)) return;
+      button.disabled = true;
+      const { error: deleteError } = await adminRequest("mutation_delete", { targetId: null, id });
+      if (deleteError) notify.error("Mutation deletion failed", deleteError.message);
+      await loadMutationCatalog();
+    });
+  }
+}
+
+mutationCatalogRefresh?.addEventListener("click", loadMutationCatalog);
+document.getElementById("mutationSave")?.addEventListener("click", async () => {
+  const mutation = {
+    id: document.getElementById("mutationId").value.trim(),
+    name: document.getElementById("mutationName").value.trim(),
+    chance: Number(document.getElementById("mutationChance").value),
+    multiplier: Number(document.getElementById("mutationMultiplier").value),
+    icon: document.getElementById("mutationIcon").value,
+    color: document.getElementById("mutationColor").value,
+    sort_order: Number(document.getElementById("mutationSort").value || 0),
+    description: document.getElementById("mutationDescription").value,
+    enabled: document.getElementById("mutationEnabled").checked
+  };
+
+  const { error } = await adminRequest("mutation_save", { targetId: null, mutation });
+  if (error) {
+    notify.error("Mutation save failed", error.message);
+    return;
+  }
+
+  notify.success("Mutation saved", `${mutation.name} is now in the mutation catalog.`);
+  await loadMutationCatalog();
+});
+
+document.getElementById("mutationClear")?.addEventListener("click", () => {
+  ["mutationId", "mutationName", "mutationDescription"].forEach((id) => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("mutationChance").value = "1000";
+  document.getElementById("mutationMultiplier").value = "3";
+  document.getElementById("mutationIcon").value = "✦";
+  document.getElementById("mutationColor").value = "#9fdcff";
+  document.getElementById("mutationSort").value = "60";
+  document.getElementById("mutationEnabled").checked = true;
+});
+
 analyticsButton?.addEventListener("click", loadAnalytics);
 analyticsRefresh?.addEventListener("click", loadAnalytics);
 
@@ -432,6 +547,11 @@ async function loadAnalytics() {
 
   const cards = [
     ["Players", formatCount(data.players)],
+    ["Current online", formatCount(data.currentOnline ?? 0)],
+    ["Daily online", formatCount(data.dailyOnline ?? 0)],
+    ["Weekly online", formatCount(data.weeklyOnline ?? 0)],
+    ["D1 retention", `${Number(data.retention1d ?? 0).toFixed(1)}%`],
+    ["D7 retention", `${Number(data.retention7d ?? 0).toFixed(1)}%`],
     ["Total rolls", formatCount(data.totalRolls)],
     ["Inventory gems", formatCount(data.totalInventoryGems)],
     ["Mutated gems", `${formatCount(data.mutatedGems)} (${(Number(data.mutationRate || 0) * 100).toFixed(2)}%)`],
@@ -482,7 +602,24 @@ async function loadAnalytics() {
           ${row("Coverage", `${(Number(data.announcementMutationCoverage ?? 1) * 100).toFixed(2)}%`)}
         </div>
       </section>
-    </div>`;
+    </div>
+
+    <section class="admin-section analytics-hourly">
+      <div class="admin-section-head">
+        <div>
+          <h3>Hourly Online Users</h3>
+          <p class="page-head__sub">Distinct users seen in each hour over the last 24 hours.</p>
+        </div>
+      </div>
+      <div class="analytics-bars">
+        ${(data.hourlyOnline ?? []).slice().reverse().map((point) => {
+          const max = Math.max(1, ...(data.hourlyOnline ?? []).map((item) => Number(item.users || 0)));
+          const height = Math.max(4, Math.round(Number(point.users || 0) / max * 100));
+          const hour = new Date(point.hour).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          return `<div class="analytics-bar-wrap" title="${escapeHtml(hour)} · ${formatCount(point.users)} users"><div class="analytics-bar" style="height:${height}%"></div><span>${escapeHtml(hour)}</span></div>`;
+        }).join("") || '<p class="page-head__sub">Presence data will appear after players visit the site.</p>'}
+      </div>
+    </section>`;
 }
 async function loadAudit() {
   auditButton.disabled = true;
@@ -968,5 +1105,6 @@ if (!user || !whoami?.isAdmin) {
   tryWireAdminEvents();
   await loadSectionControls();
   await wireMutationEvents();
+  await loadMutationCatalog();
   searchInput.focus();
 }
