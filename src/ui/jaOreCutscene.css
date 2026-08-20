@@ -71,3 +71,86 @@
     @media(prefers-reduced-motion:reduce){.ja-rays,.ja-pixel-dust,.ja-title::before,.ja-title::after,.ja-ore-card::before,.ja-ore-glow{animation:none!important}
 .ja-canvas{display:none}
 .ja-copy>*{transition:none}}
+
+
+/* =========================================================
+   JA-ORE CINEMA — RETRO PIXEL + MODERN CINEMA PASS
+   Keeps the pixel-art language but adds depth, staging and
+   a stronger group-combination reveal.
+   ========================================================= */
+
+#ja-ore-cutscene .ja-copy {
+  text-shadow: 0 4px 0 rgb(0 0 0 / .5), 0 0 28px rgb(255 204 76 / .28);
+}
+
+#ja-ore-cutscene .ja-title {
+  letter-spacing: .12em;
+  transform-origin: center;
+}
+
+#ja-ore-cutscene.is-playing .ja-title.show {
+  animation:
+    jaTitleImpact 850ms cubic-bezier(.2,.9,.25,1.15) both,
+    jaTitleGlow 2.4s ease-in-out 700ms infinite alternate;
+}
+
+#ja-ore-cutscene .ja-phrase.show {
+  animation: jaPhraseRise 900ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+#ja-ore-cutscene .ja-ore-card.show {
+  animation:
+    jaOreImpact 1000ms cubic-bezier(.12,.8,.18,1.2) both,
+    jaOreHover 3.2s ease-in-out 1s infinite;
+  box-shadow:
+    0 0 0 1px rgb(255 228 103 / .28),
+    0 0 40px rgb(255 204 60 / .36),
+    0 28px 90px rgb(0 0 0 / .5);
+}
+
+#ja-ore-cutscene .ja-ore-card .gem-icon {
+  width: clamp(120px, 19vw, 220px);
+  height: clamp(120px, 19vw, 220px);
+  filter:
+    drop-shadow(0 0 18px rgb(255 218 70 / .75))
+    drop-shadow(0 22px 35px rgb(0 0 0 / .48));
+}
+
+#ja-ore-cutscene.flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 52%, rgb(255 239 161 / .92), transparent 9%),
+    rgb(255 221 100 / .13);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: jaFlashBloom 500ms ease-out both;
+}
+
+@keyframes jaTitleImpact {
+  0% { opacity: 0; transform: translateY(30px) scale(.7); filter: blur(10px); }
+  65% { opacity: 1; transform: translateY(-3px) scale(1.07); filter: blur(0); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes jaTitleGlow {
+  from { filter: drop-shadow(0 0 8px rgb(255 209 62 / .28)); }
+  to { filter: drop-shadow(0 0 26px rgb(255 209 62 / .75)); }
+}
+@keyframes jaPhraseRise {
+  from { opacity: 0; transform: translateY(22px); letter-spacing: .02em; }
+  to { opacity: 1; transform: translateY(0); letter-spacing: .08em; }
+}
+@keyframes jaOreImpact {
+  0% { opacity: 0; transform: translateY(80px) scale(.45) rotate(-8deg); filter: brightness(2.4) blur(6px); }
+  55% { opacity: 1; transform: translateY(-8px) scale(1.08) rotate(2deg); filter: brightness(1.35) blur(0); }
+  100% { transform: translateY(0) scale(1) rotate(0); filter: brightness(1); }
+}
+@keyframes jaOreHover {
+  0%,100% { transform: translateY(0) rotate(-.6deg); }
+  50% { transform: translateY(-10px) rotate(.6deg); }
+}
+@keyframes jaFlashBloom {
+  from { opacity: 1; transform: scale(.94); }
+  to { opacity: 0; transform: scale(1.08); }
+}

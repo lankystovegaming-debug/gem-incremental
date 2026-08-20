@@ -140,6 +140,23 @@
             never sold.
           </span>
         </div>
+      <div class="setting">
+        <div class="setting__copy">
+          <strong>Auto keep</strong>
+          <span>Protect valuable rolls before Auto Sell can process them.</span>
+        </div>
+        <label class="switch">
+          <input id="autoKeepToggle" type="checkbox" role="switch">
+          <span class="switch__track"></span>
+        </label>
+      </div>
+      <div class="setting setting--nested" id="autoKeepTierRow">
+        <div class="setting__copy">
+          <strong>Keep at or above</strong>
+          <span>Auto Sell will never sell this tier or anything rarer.</span>
+        </div>
+        <select id="autoKeepTier" class="setting-select" aria-label="Auto keep minimum tier"></select>
+      </div>
 
         <select class="select" id="autoSellTier"></select>
       </div>

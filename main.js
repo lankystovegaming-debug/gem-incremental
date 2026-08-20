@@ -22,13 +22,15 @@ import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
 import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
+import { getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
 import { chanceLabelForResult } from "./src/logic/chances.js";
 import {
   getSettings,
   updateSettings,
   onSettingsChange,
   shouldAutoSell,
-  SELL_TIERS
+  SELL_TIERS,
+  shouldAutoKeep
 } from "./src/ui/settings.js";
 import {
   rarityTier,
@@ -65,6 +67,14 @@ const autoRollToggle = document.getElementById("autoRollToggle");
 const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
+const autoKeepToggle = document.getElementById("autoKeepToggle");
+const autoKeepTier = document.getElementById("autoKeepTier");
+const autoKeepTierRow = document.getElementById("autoKeepTierRow");
+const sessionInsightsPanel = document.getElementById("sessionInsightsPanel");
+const sessionInsightStats = document.getElementById("sessionInsightStats");
+const sessionHighlights = document.getElementById("sessionHighlights");
+const sessionBreakdown = document.getElementById("sessionBreakdown");
+const sessionNotable = document.getElementById("sessionNotable");
 
 const historyList = document.getElementById("historyList");
 const clearHistory = document.getElementById("clearHistory");
@@ -440,7 +450,7 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
     <div class="scene__vignette"></div>
     <div class="scene__scanlines"></div>
     <div class="scene__reveal">
-      <div class="scene__gem">${gemIconHtml(gemName, "gem-icon--cinematic")}</div>
+      <div class="scene__gem">${gemIconHtml(gemName, "gem-icon--cinematic", mutationIds)}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
       <h2 class="scene__name ${isXyGem ? "scene__name--xy" : ""}">${gemNameHtml(gemName, escapeHtml, mutationIds.map(id => `gem-styled--mutation-${id}`).join(" "))}</h2>
       ${mutationObjects.length ? `<div class="scene__mutation ${mutationObjects.length > 1 ? "scene__mutation--many" : ""}" aria-label="Mutations">${mutationObjects.map((m, index) => `${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
@@ -536,7 +546,7 @@ function renderRoll(data, outcome) {
       </div>
     ` : ""}
     <div class="gem-reveal">
-      <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll")}</div>
+      <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll", mutationIds)}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}
@@ -671,7 +681,7 @@ function renderHistory() {
 function sessionHighlight(label,item,formatter){if(!item)return"";return `<div><span>${label}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(formatter(item))}</small></div>`;}
 function sessionRollName(item){const mutations=Array.isArray(item?.mutationNames)?item.mutationNames:[];return [...mutations,item?.name||"Unknown"].join(" ");}
 function renderSessionInsights(){
-  if(!sessionInsightsFeature)return;
+  if(!sessionInsightsPanel)return;
   const state=getSessionInsights(),elapsed=Math.max(0,Date.now()-new Date(state.startedAt).getTime()),hours=Math.floor(elapsed/3600000),minutes=Math.floor(elapsed%3600000/60000);
   sessionInsightStats.innerHTML=[["Duration",`${hours}h ${minutes}m`],["Rolls",formatCount(state.rolls)],["Kept",formatCount(state.kept)],["Auto kept",formatCount(state.autoKept)],["Auto sold",formatCount(state.autoSold)],["Auto-sell income",formatMoney(state.autoSoldValue)],["Relics",formatCount(state.relics)],["Auto crafted",formatCount(state.autoCrafted)]].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   sessionHighlights.innerHTML=sessionHighlight("Rarest effective",state.bestEffective,item=>`1/${Math.round(item.effectiveRarity).toLocaleString()}`)+sessionHighlight("Rarest base",state.bestBase,item=>`1/${Math.round(item.baseRarity).toLocaleString()}`)+sessionHighlight("Heaviest",state.heaviest,item=>formatWeight(item.weight))+sessionHighlight("Most valuable",state.mostValuable,item=>formatMoney(item.value));
@@ -679,6 +689,7 @@ function renderSessionInsights(){
   sessionNotable.innerHTML=state.notable.slice(0,6).map(item=>`<div><strong>${escapeHtml(sessionRollName(item))}</strong><span>1/${Math.round(item.effectiveRarity).toLocaleString()} · ${escapeHtml(item.decision.replaceAll("-"," "))}</span></div>`).join("")||"<small>Mutation and 1/100,000+ rolls will appear here.</small>";
 }
 window.addEventListener("session-insights:change",renderSessionInsights);
+renderSessionInsights();
 
 
 // =========================================================
@@ -767,6 +778,8 @@ async function performRoll() {
   view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
 
   const outcome = await resolveOutcome(data);
+  recordSessionRoll(data, outcome);
+  renderSessionInsights();
 
   renderSummary();
 
@@ -815,6 +828,14 @@ async function resolveOutcome(data) {
   }
 
   const tier = rarityTier(data.gem.rarity);
+
+  if (shouldAutoKeep(tier.id)) {
+    return {
+      icon: icons.shield,
+      text: `Kept — ${tier.name} is protected by Auto Keep`,
+      note: "auto kept"
+    };
+  }
 
   if (shouldAutoSell(tier.id) && data.specimenId != null) {
     const { data: sale, error } = await sellCloudGem(data.specimenId);
@@ -1025,6 +1046,8 @@ document.addEventListener("visibilitychange", () => {
 // AUTOMATION CONTROLS
 // =========================================================
 
+if (autoKeepTier) autoKeepTier.innerHTML = SELL_TIERS.map((tier) => `<option value="${tier.id}">${tier.label}</option>`).join("");
+
 autoSellTier.innerHTML = SELL_TIERS.map(
   (tier) => `<option value="${tier.id}">${tier.label}</option>`
 ).join("");
@@ -1034,6 +1057,9 @@ function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
+  if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
+  if (autoKeepTier) autoKeepTier.value = settings.autoKeepTier;
+  if (autoKeepTierRow) autoKeepTierRow.classList.toggle("automation__row--muted", !settings.autoKeep);
 
   autoSellTierRow.classList.toggle(
     "automation__row--muted",
@@ -1060,6 +1086,14 @@ autoSellToggle.addEventListener("change", () => {
 
 autoSellTier.addEventListener("change", () => {
   updateSettings({ autoSellTier: autoSellTier.value });
+});
+
+if (autoKeepToggle) autoKeepToggle.addEventListener("change", () => {
+  updateSettings({ autoKeep: autoKeepToggle.checked });
+});
+
+if (autoKeepTier) autoKeepTier.addEventListener("change", () => {
+  updateSettings({ autoKeepTier: autoKeepTier.value });
 });
 
 

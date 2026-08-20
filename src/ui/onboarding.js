@@ -80,16 +80,17 @@ function buildModal(base) {
 }
 
 export function mountHowToPlay(base = "./") {
-  // Reopen link in the bottom-left dock.
+  // Reopen link inside the More menu so the utility dock stays compact.
   const dock = document.querySelector(".contribute-dock");
-  if (dock && !dock.querySelector(".howto-dock-link")) {
+  const target = dock?.querySelector(".more-menu");
+  if (target && !target.querySelector(".howto-dock-link")) {
     const link = document.createElement("button");
     link.type = "button";
     link.className = "contribute-dock__link howto-dock-link";
     link.title = "How to play";
     link.innerHTML = `${icons.book}<span>How to play</span>`;
     link.addEventListener("click", () => buildModal(base));
-    dock.prepend(link);
+    target.appendChild(link);
   }
 
   // First visit: show it automatically.

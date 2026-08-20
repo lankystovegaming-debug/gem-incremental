@@ -141,6 +141,27 @@
         </span>
       </label>
 
+      <label class="automation__row switch">
+        <input type="checkbox" id="autoKeepToggle">
+        <span class="switch__track"></span>
+        <span class="automation__text">
+          <span class="automation__title">Auto keep</span>
+          <span class="automation__sub">
+            Protects valuable rolls before Auto Sell can process them.
+          </span>
+        </span>
+      </label>
+
+      <div class="automation__row automation__row--select" id="autoKeepTierRow">
+        <label class="automation__text" for="autoKeepTier">
+          <span class="automation__title">Keep at or above</span>
+          <span class="automation__sub">
+            This tier and anything rarer is always protected.
+          </span>
+        </label>
+        <select class="select" id="autoKeepTier"></select>
+      </div>
+
       <div class="automation__row automation__row--select" id="autoSellTierRow">
         <label class="automation__text" for="autoSellTier">
           <span class="automation__title">Sell up to</span>
@@ -165,6 +186,22 @@
       </div>
 
       <div id="historyList" class="history"></div>
+    </section>
+
+    <!-- ================= SESSION INSIGHTS ================= -->
+
+    <section class="card session-insights" id="sessionInsightsPanel" aria-labelledby="sessionInsightsHeading">
+      <div class="automation__head">
+        <div>
+          <span class="badge badge--accent">Live session</span>
+          <h2 id="sessionInsightsHeading">Session insights</h2>
+        </div>
+        <span class="page-head__sub">Kept locally until you clear the session.</span>
+      </div>
+      <div id="sessionInsightStats" class="session-insights__stats"></div>
+      <div id="sessionHighlights" class="session-insights__highlights"></div>
+      <div class="session-insights__breakdown" id="sessionBreakdown"></div>
+      <div class="session-insights__notable" id="sessionNotable"></div>
     </section>
 
     <section class="card expedition-preview" aria-labelledby="expeditionPreviewHeading">

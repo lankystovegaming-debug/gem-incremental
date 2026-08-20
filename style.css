@@ -2415,3 +2415,90 @@ html.is-cinematic-active body {
     max-width: 260px;
   }
 }
+
+
+/* =========================================================
+   CINEMATIC PRESENTATION UPGRADE
+   Existing cutscene mechanics remain unchanged; this layer
+   improves depth, typography, pacing cues and gem presentation.
+   ========================================================= */
+
+.ultra-cutscene-overlay .scene__backdrop {
+  background:
+    radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--gem-color, #9fdcff) 18%, transparent), transparent 22%),
+    radial-gradient(circle at 50% 75%, rgb(0 0 0 / .72), transparent 55%),
+    linear-gradient(160deg, #05070d, #111426 50%, #05060b);
+  transform: scale(1.04);
+  filter: saturate(1.08);
+}
+
+.ultra-cutscene-overlay .scene__reveal {
+  width: min(940px, 92vw);
+  padding: clamp(26px, 4vw, 52px);
+  border: 1px solid rgb(255 255 255 / .13);
+  border-radius: 30px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / .075), rgb(255 255 255 / .018)),
+    rgb(5 8 16 / .55);
+  box-shadow:
+    0 40px 120px rgb(0 0 0 / .65),
+    inset 0 1px 0 rgb(255 255 255 / .09);
+  backdrop-filter: blur(18px);
+}
+
+.ultra-cutscene-overlay .scene__gem {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 20px 45px rgb(0 0 0 / .55));
+}
+
+.ultra-cutscene-overlay .scene__gem .gem-icon {
+  width: 156px;
+  height: 156px;
+  animation: cinematicGemFloat 2.4s ease-in-out infinite;
+}
+
+.ultra-cutscene-overlay .scene__tier {
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  font-size: .72rem;
+  font-weight: 850;
+  color: rgb(255 255 255 / .62);
+}
+
+.ultra-cutscene-overlay .scene__name {
+  margin: 8px 0 4px;
+  font-size: clamp(2.1rem, 7vw, 5.5rem);
+  line-height: .95;
+  text-wrap: balance;
+  text-shadow:
+    0 0 30px color-mix(in srgb, var(--gem-color, var(--accent)) 38%, transparent),
+    0 18px 50px rgb(0 0 0 / .75);
+}
+
+.ultra-cutscene-overlay .scene__mutation {
+  margin-top: 16px;
+  padding: 9px 13px;
+  border: 1px solid rgb(255 255 255 / .11);
+  border-radius: 999px;
+  background: rgb(255 255 255 / .045);
+  backdrop-filter: blur(8px);
+}
+
+.ultra-cutscene-overlay .scene__chance,
+.ultra-cutscene-overlay .scene__outcome {
+  color: rgb(255 255 255 / .72);
+  font-variant-numeric: tabular-nums;
+}
+
+.ultra-cutscene-overlay .scene__letterbox {
+  background: #020308;
+  box-shadow: 0 0 30px rgb(0 0 0 / .65);
+}
+
+@keyframes cinematicGemFloat {
+  0%,100% { transform: translateY(0) rotate(-1deg) scale(1); }
+  50% { transform: translateY(-12px) rotate(1deg) scale(1.035); }
+}

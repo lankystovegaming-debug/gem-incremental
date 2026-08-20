@@ -16,6 +16,7 @@ import { rarityLabel, escapeHtml } from "./format.js";
 import { chanceLabelForResult } from "../logic/chances.js";
 import { getSettings } from "./settings.js";
 import { icons } from "./icons.js";
+import { gemIconHtml } from "./gemStyle.js";
 
 let stylesInjected = false;
 
@@ -60,8 +61,18 @@ function injectStyles() {
     .xy-mut{margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
       font-family:var(--font-mono,monospace);font-size:clamp(.7rem,2vw,1rem);letter-spacing:.14em;
       text-transform:uppercase;color:#c6b0ff;}
+    .xy-gemwrap .gem-icon{
+      width:100%;
+      height:100%;
+      min-width:140px;
+      min-height:140px;
+      animation:xyGemLife 6s ease-in-out infinite;
+    }
+    .xy-gemwrap .gem-icon--mutation-prismatic{filter:drop-shadow(0 0 22px #ff7be5) drop-shadow(0 0 60px #70fff0);}
+    .xy-gemwrap .gem-icon--mutation-celestial{filter:drop-shadow(0 0 24px #a9eaff) drop-shadow(0 0 70px #8f7bff);}
+    .xy-gemwrap .gem-icon--mutation-corrupted{filter:drop-shadow(0 0 22px #ef65ff) drop-shadow(0 0 70px #6b2f9f);}
     @media (prefers-reduced-motion:reduce){
-      .xy-gemwrap.reveal svg{animation:none;}
+      .xy-gemwrap.reveal svg,.xy-gemwrap.reveal .gem-icon{animation:none;}
     }
   `;
   document.head.appendChild(s);
@@ -86,7 +97,7 @@ export function buildXyGemCutscene(data, outcome, duration) {
   overlay.innerHTML = `
     <canvas class="xy-canvas"></canvas>
     <div class="xy-bar top"></div><div class="xy-bar bottom"></div>
-    <div class="xy-gemwrap">${icons.gem}</div>
+    <div class="xy-gemwrap">${gemIconHtml(String(data?.gem?.name ?? "Xy Gem"), "gem-icon--cinematic", mutationIds)}</div>
     <div class="xy-beats">
       <div class="xy-beat xy-kicker" data-b="kicker">Something has surfaced</div>
       <div class="xy-beat xy-title" data-b="title">${gemNameSafe(data)}</div>
@@ -279,3 +290,5 @@ function startAudio(D) {
     p1.start(gatherEnd); p2.start(gatherEnd); p1.stop(endS + 0.2); p2.stop(endS + 0.2);
   } catch { /* audio unavailable — visuals still play */ }
 }
+
+

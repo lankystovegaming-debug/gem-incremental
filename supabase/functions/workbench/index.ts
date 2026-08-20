@@ -105,8 +105,12 @@ async function loadConfig(ctx: any) {
     .maybeSingle();
 
   if (error) {
-    console.error("[WORKBENCH] Config query failed:", error);
-    throw error;
+    // Older deployments may not have the presentation columns yet, or may
+    // have a transient PostgREST schema-cache error. The gameplay defaults
+    // are safe and let the admin open the Workbench while the migration is
+    // being applied instead of returning an opaque HTTP 500.
+    console.warn("[WORKBENCH] Config query failed; using defaults:", error);
+    return { ...DEFAULT_CONFIG };
   }
 
   if (!data) {
@@ -313,8 +317,12 @@ export default {
           .limit(200);
 
         if (error) {
-          console.error("[WORKBENCH] Material query failed:", error);
-          throw error;
+          console.warn("[WORKBENCH] Material query failed:", error);
+          return json({
+            gems: [],
+            degraded: true,
+            message: "Workbench could not read the current gem inventory. Refresh after the latest Workbench migration is applied."
+          });
         }
 
         const gems = (data ?? []).map(normalizeMaterial);
@@ -327,7 +335,7 @@ export default {
           body?.itemType === "armor" ? "armor" : "weapon";
 
         const materialIds = Array.isArray(body?.materialIds)
-          ? body.materialIds.map(String)
+          ? Array.from(new Set(body.materialIds.map(String).filter((id: string) => /^[A-Za-z0-9_-]{1,100}$/.test(id))))
           : [];
 
         if (
@@ -443,6 +451,25 @@ export default {
           );
         }
 
+        const sessionAgeMs = Date.now() - new Date(session.created_at ?? 0).getTime();
+        const maxSessionAgeMs = Math.max(30_000, Number(config.stage_time_seconds) * 3 * 4_000);
+        if (!Number.isFinite(sessionAgeMs) || sessionAgeMs > maxSessionAgeMs) {
+          await ctx.supabaseAdmin.from("forge_sessions")
+            .update({ status: "failed", updated_at: new Date().toISOString() })
+            .eq("id", sessionId)
+            .eq("player_id", playerId)
+            .eq("status", "active");
+          return json({
+            error: "session_expired",
+            message: "That Workbench attempt expired. Start a new attempt."
+          }, 409);
+        }
+
+        const expectedStage = Number(session.stage);
+        if (![1, 2, 3].includes(expectedStage)) {
+          return json({ error: "invalid_stage", message: "The Workbench stage is invalid." }, 409);
+        }
+
         const scores = [
           ...(Array.isArray(session.stage_scores)
             ? session.stage_scores
@@ -450,7 +477,7 @@ export default {
           score,
         ];
 
-        const nextStage = Number(session.stage) + 1;
+        const nextStage = expectedStage + 1;
 
         if (nextStage <= 3) {
           const { data: updated, error: updateError } =
@@ -569,6 +596,33 @@ export default {
           traits,
         };
 
+        const { data: processingSession, error: processingError } =
+          await ctx.supabaseAdmin
+            .from("forge_sessions")
+            .update({
+              stage_scores: scores,
+              quality: qualityMultiplier,
+              updated_at: new Date().toISOString(),
+              status: "completed"
+            })
+            .eq("id", sessionId)
+            .eq("player_id", playerId)
+            .eq("status", "active")
+            .select("*")
+            .maybeSingle();
+
+        if (processingError) {
+          console.error("[WORKBENCH] Session lock failed:", processingError);
+          throw processingError;
+        }
+
+        if (!processingSession) {
+          return json({
+            error: "session_already_processed",
+            message: "That Workbench stage has already been completed."
+          }, 409);
+        }
+
         const { data: item, error: itemError } =
           await ctx.supabaseAdmin
             .from("forge_items")
@@ -630,6 +684,7 @@ export default {
             })
             .eq("id", sessionId)
             .eq("player_id", playerId)
+            .eq("status", "completed")
             .select("*")
             .single();
 

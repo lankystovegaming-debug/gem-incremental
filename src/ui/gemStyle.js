@@ -536,15 +536,18 @@ function iconShapeForName(name) {
   ][hash % 6];
 }
 
-export function gemIconHtml(name, extraClass = "") {
+export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const safeName = String(name ?? "Gem");
   const style = getGemStyle(safeName);
   const colours = gradientColours(style);
   const shape = iconShapeForName(safeName);
 
+  const normalizedMutations = Array.from(new Set(Array.isArray(mutationIds) ? mutationIds.map(String).map((id) => id.trim().toLowerCase()).filter(Boolean) : []));
   const className = [
     "gem-icon",
     `gem-icon--${shape}`,
+    ...normalizedMutations.map((id) => `gem-icon--mutation-${id}`),
+    normalizedMutations.length ? "gem-icon--mutated" : "",
     extraClass
   ]
     .filter(Boolean)
@@ -566,6 +569,7 @@ export function gemIconHtml(name, extraClass = "") {
       <span class="gem-icon__facet gem-icon__facet--b"></span>
       <span class="gem-icon__core"></span>
       <span class="gem-icon__shine"></span>
+      ${normalizedMutations.length ? `<span class="gem-icon__mutation-aura" aria-hidden="true"></span><span class="gem-icon__mutation-ring" aria-hidden="true"></span>` : ""}
     </span>
   `;
 }

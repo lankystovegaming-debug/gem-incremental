@@ -1,6 +1,6 @@
 import { icons } from "./icons.js";
 import { rarityTier, rarityLabel, escapeHtml } from "./format.js";
-import { gemNameHtml } from "./gemStyle.js";
+import { gemNameHtml, gemIconHtml } from "./gemStyle.js";
 import { getGemMutation } from "../data/mutations.js";
 import { getSettings } from "./settings.js";
 import { chanceLabelForResult } from "../logic/chances.js";
@@ -133,7 +133,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
     <div class="scene__vignette"></div>
     <div class="scene__scanlines"></div>
     <div class="scene__reveal">
-      <div class="scene__gem">${icons.gem}</div>
+      <div class="scene__gem">${gemIconHtml(name, "gem-icon--cinematic", ids)}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
       <h2 class="scene__name">${gemNameHtml(
         name,

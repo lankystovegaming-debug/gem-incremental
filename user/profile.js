@@ -101,7 +101,7 @@ function showcaseCard(gem) {
       class="showcase-gem"
       style="--gem-color:${escapeHtml(style.color)};--gem-glow:${escapeHtml(style.glow ?? "transparent")}"
     >
-      <div class="showcase-gem__icon" aria-hidden="true">${gemIconHtml(name, "gem-icon--profile")}</div>
+      <div class="showcase-gem__icon" aria-hidden="true">${gemIconHtml(name, "gem-icon--profile", Array.isArray(gem?.mutation_ids) ? gem.mutation_ids : (Array.isArray(gem?.mutationIds) ? gem.mutationIds : []))}</div>
 
       <div class="showcase-gem__body">
         <div class="showcase-gem__name">
@@ -234,7 +234,7 @@ function renderBestRoll(profile) {
   bestRollContent.innerHTML = `
     <div class="profile-highlight">
       <div class="profile-highlight__gem">
-        ${gemIconHtml(gem.gem_name, "gem-icon--best-roll")}
+        ${gemIconHtml(gem.gem_name, "gem-icon--best-roll", Array.isArray(gem.mutation_ids) ? gem.mutation_ids : [])}
       </div>
 
       <div>

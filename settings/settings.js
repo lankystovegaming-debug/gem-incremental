@@ -138,10 +138,15 @@ renderAppearance();
 const autoRollToggle = document.getElementById("autoRollToggle");
 const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
+const autoKeepToggle = document.getElementById("autoKeepToggle");
+const autoKeepTier = document.getElementById("autoKeepTier");
+const autoKeepTierRow = document.getElementById("autoKeepTierRow");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 
+
+autoKeepTier.innerHTML = SELL_TIERS.map((tier) => `<option value="${tier.id}">${tier.label}</option>`).join("");
 
 autoSellTier.innerHTML = SELL_TIERS.map(
   (tier) => `<option value="${tier.id}">${tier.label}</option>`
@@ -152,6 +157,9 @@ function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
+  if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
+  if (autoKeepTier) autoKeepTier.value = settings.autoKeepTier;
+  if (autoKeepTierRow) autoKeepTierRow.classList.toggle("setting--muted", !settings.autoKeep);
   animationsToggle.checked = settings.rollAnimations;
   cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
 
@@ -169,6 +177,14 @@ autoSellToggle.addEventListener("change", () =>
 
 autoSellTier.addEventListener("change", () =>
   updateSettings({ autoSellTier: autoSellTier.value })
+);
+
+if (autoKeepToggle) autoKeepToggle.addEventListener("change", () =>
+  updateSettings({ autoKeep: autoKeepToggle.checked })
+);
+
+if (autoKeepTier) autoKeepTier.addEventListener("change", () =>
+  updateSettings({ autoKeepTier: autoKeepTier.value })
 );
 
 animationsToggle.addEventListener("change", () =>

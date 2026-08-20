@@ -27,6 +27,8 @@ const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
   autoSellTier: "common",
+  autoKeep: true,
+  autoKeepTier: "legendary",
   rollAnimations: true,
   cutsceneMinimumRarity: 100000
 };
@@ -62,6 +64,11 @@ function sanitise(value) {
     autoSellTier: allowedTiers.includes(value.autoSellTier)
       ? value.autoSellTier
       : DEFAULTS.autoSellTier,
+
+    autoKeep: value.autoKeep !== false,
+    autoKeepTier: allowedTiers.includes(value.autoKeepTier)
+      ? value.autoKeepTier
+      : DEFAULTS.autoKeepTier,
 
     rollAnimations: value.rollAnimations !== false,
 
@@ -115,6 +122,22 @@ export function shouldAutoSell(gemTierId) {
   return tierRank(gemTierId) <= tierRank(state.autoSellTier);
 }
 
+
+
+
+// ---------------------------------------------------------
+// AUTO KEEP RULE
+//
+// Auto-keep is a client-side safety override for Auto Sell. The
+// server still owns the inventory and sale operation; this rule
+// simply prevents the client from asking to sell results at or
+// above the configured tier.
+// ---------------------------------------------------------
+
+export function shouldAutoKeep(gemTierId) {
+  if (!state.autoKeep) return false;
+  return tierRank(gemTierId) >= tierRank(state.autoKeepTier);
+}
 
 // ---------------------------------------------------------
 // CHANGE NOTIFICATIONS

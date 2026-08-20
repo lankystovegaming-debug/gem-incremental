@@ -93,7 +93,11 @@ const MODE_ICONS = {
   ocean: icons.cloud,
   forest: icons.sparkle,
   sunset: icons.sun,
-  ice: icons.sparkle
+  ice: icons.sparkle,
+  aurora: icons.sparkle,
+  graphite: icons.sparkle,
+  midnight: icons.moon,
+  mist: icons.cloud
 };
 
 
@@ -649,61 +653,83 @@ function mountContributeDock(base) {
   }
 
   const dock = document.createElement("div");
-
   dock.className = "contribute-dock";
 
   dock.innerHTML = `
-    <a
-      class="contribute-dock__link"
-      href="${CONTRIBUTE_URL}"
-      target="_blank"
-      rel="noopener noreferrer"
-      title="Contribute on GitHub"
-    >
-      ${icons.github}
-      <span>Contribute</span>
-    </a>
+    <div class="more-menu-anchor">
+      <button
+        class="contribute-dock__more"
+        id="moreMenuButton"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="moreMenu"
+      >
+        ${icons.sparkle}
+        <span>More</span>
+      </button>
 
-    <a
-      class="contribute-dock__link"
-      href="${base}bugs/"
-      title="Report a bug"
-    >
-      ${icons.bug}
-      <span>Report a bug</span>
-    </a>
+      <div class="more-menu" id="moreMenu" hidden>
+        <div class="more-menu__head">
+          <span class="more-menu__eyebrow">QUICK LINKS</span>
+          <strong>More</strong>
+        </div>
 
-    <a
-      class="contribute-dock__link"
-      href="${base}codes/"
-      title="Redeem a code"
-    >
-      ${icons.sparkle}
-      <span>Codes</span>
-    </a>
+        <a class="contribute-dock__link" href="${base}bugs/" title="Report a bug">
+          ${icons.bug}<span>Report a bug</span>
+        </a>
 
-    <a
-      class="contribute-dock__link"
-      href="${base}updates/"
-      title="View the update log"
-    >
-      ${icons.sparkle}
-      <span>Update log</span>
-    </a>
+        <a class="contribute-dock__link" href="${base}codes/" title="Redeem a code">
+          ${icons.sparkle}<span>Codes</span>
+        </a>
 
-    <a
-      class="contribute-dock__link"
-      href="${base}support/"
-      title="Support Gem Incremental"
-    >
-      ${icons.heart}
-      <span>Support the game</span>
-    </a>
+        <a class="contribute-dock__link" href="${base}updates/" title="View the update log">
+          ${icons.sparkle}<span>Update log</span>
+        </a>
+
+        <a class="contribute-dock__link" href="${base}support/" title="Support Gem Incremental">
+          ${icons.heart}<span>Support the game</span>
+        </a>
+
+        <a
+          class="contribute-dock__link"
+          href="${CONTRIBUTE_URL}"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Contribute on GitHub"
+        >
+          ${icons.github}<span>Contribute</span>
+        </a>
+
+      </div>
+    </div>
   `;
 
   document.body.appendChild(dock);
-}
 
+  const button = dock.querySelector("#moreMenuButton");
+  const menu = dock.querySelector("#moreMenu");
+
+  const close = () => {
+    menu.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const next = menu.hidden;
+    menu.hidden = !next;
+    button.setAttribute("aria-expanded", String(next));
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!dock.contains(event.target)) close();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+}
 
 function mountGlobalChat() {
   if (document.getElementById("chatDock")) return;

@@ -20,7 +20,7 @@ function pinHtml(gem) {
   );
 
   return `<span class="showcase-pin" title="${tip}"
-    style="color:${style.color};filter:drop-shadow(0 0 4px ${style.glow ?? "transparent"})">${gemIconHtml(name, "gem-icon--mini")}</span>`;
+    style="color:${style.color};filter:drop-shadow(0 0 4px ${style.glow ?? "transparent"})">${gemIconHtml(name, "gem-icon--mini", mutationIds)}</span>`;
 }
 
 export function showcasePinsHtml(gems) {

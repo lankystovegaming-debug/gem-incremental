@@ -219,8 +219,15 @@ export default {
           .order("created_at", { ascending: false })
           .limit(100);
 
-        if (error) return response({ error: "audit_load_failed" }, 500);
-        return response({ entries: data ?? [] });
+        if (error) {
+          console.error("Admin audit log load failed:", error);
+          return response({
+            entries: [],
+            degraded: true,
+            message: "Audit storage is unavailable in this deployment. Run the latest admin observability migration."
+          });
+        }
+        return response({ entries: data ?? [], degraded: false });
       }
 
 
@@ -614,14 +621,11 @@ export default {
         };
 
         if (Object.values(analyticsErrors).some(Boolean)) {
-          console.error("Admin analytics detailed load failed:", analyticsErrors);
-          return response({
-            error: "analytics_load_failed",
-            message: Object.entries(analyticsErrors)
-              .filter(([, value]) => value)
-              .map(([key, value]) => `${key}: ${(value as any)?.message ?? "query failed"}`)
-              .join(" | ")
-          }, 500);
+          // Analytics should degrade gracefully when an optional table or
+          // column is absent in an older deployment. Core player/economy
+          // numbers are still useful, so do not turn the entire admin panel
+          // into a 500 response.
+          console.warn("Admin analytics partial load:", analyticsErrors);
         }
 
         const players = playersResult.data ?? [];
