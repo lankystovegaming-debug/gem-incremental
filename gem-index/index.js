@@ -11,7 +11,7 @@ import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
-import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { gemNameHtml, gemIconHtml } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
 import { chanceLabelForResult, rolledResultChance } from "../src/logic/chances.js";
 import {
@@ -438,6 +438,7 @@ function gemCard(entry) {
       data-combination="${escapeHtml(entry.combinationKey)}"
     >
       <div class="index-card__head">
+        <div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index")}</div>
         <div class="index-card__title-block">
           <div class="index-card__name">
             ${gemNameHtml(entry.gem.name, escapeHtml)}

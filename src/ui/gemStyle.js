@@ -492,3 +492,88 @@ export function gemNameHtml(name, escapeHtml, extraClass = "") {
 
   return `<span class="${className}" style="${gemStyleAttr(name)}">${safeName}</span>`;
 }
+
+
+// =========================================================
+// CSS GEM ICONS
+//
+// These are deliberately built from CSS only. No image files,
+// sprite sheets, canvas, or remote assets are required.
+//
+// Each gem gets:
+//   • a deterministic silhouette,
+//   • a gem-specific surface gradient,
+//   • a secondary highlight colour,
+//   • a soft halo based on its curated gem style.
+//
+// The same helper is used by rolls, the Gem Index, leaderboards,
+// and public profile showcases so a gem always looks like itself.
+// =========================================================
+
+function gradientColours(style) {
+  const source = String(style?.gradient ?? style?.color ?? "");
+  const matches = source.match(/#[0-9a-f]{3,8}/gi) ?? [];
+
+  const first = matches[0] ?? style?.color ?? "#8fd9ff";
+  const second =
+    matches[matches.length > 1 ? matches.length - 1 : 0] ??
+    style?.color ??
+    "#8fd9ff";
+
+  return { first, second };
+}
+
+function iconShapeForName(name) {
+  const hash = hashString(String(name ?? ""));
+
+  return [
+    "diamond",
+    "crystal",
+    "hex",
+    "shard",
+    "star",
+    "prism"
+  ][hash % 6];
+}
+
+export function gemIconHtml(name, extraClass = "") {
+  const safeName = String(name ?? "Gem");
+  const style = getGemStyle(safeName);
+  const colours = gradientColours(style);
+  const shape = iconShapeForName(safeName);
+
+  const className = [
+    "gem-icon",
+    `gem-icon--${shape}`,
+    extraClass
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `
+    <span
+      class="${className}"
+      style="
+        --gem-color:${style.color};
+        --gem-color-a:${colours.first};
+        --gem-color-b:${colours.second};
+        --gem-glow:${style.glow ?? "transparent"};
+      "
+      data-gem-icon="${escapeAttribute(safeName)}"
+      aria-hidden="true"
+    >
+      <span class="gem-icon__facet gem-icon__facet--a"></span>
+      <span class="gem-icon__facet gem-icon__facet--b"></span>
+      <span class="gem-icon__core"></span>
+      <span class="gem-icon__shine"></span>
+    </span>
+  `;
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}

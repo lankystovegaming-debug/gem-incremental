@@ -1,6 +1,6 @@
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
-import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { gemNameHtml, gemIconHtml } from "../src/ui/gemStyle.js";
 import { getGemStyle } from "../src/ui/gemStyle.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { roleForUsername, roleBadgeHtml } from "../src/ui/roles.js";
@@ -101,7 +101,7 @@ function showcaseCard(gem) {
       class="showcase-gem"
       style="--gem-color:${escapeHtml(style.color)};--gem-glow:${escapeHtml(style.glow ?? "transparent")}"
     >
-      <div class="showcase-gem__icon" aria-hidden="true">◆</div>
+      <div class="showcase-gem__icon" aria-hidden="true">${gemIconHtml(name, "gem-icon--profile")}</div>
 
       <div class="showcase-gem__body">
         <div class="showcase-gem__name">
@@ -234,7 +234,7 @@ function renderBestRoll(profile) {
   bestRollContent.innerHTML = `
     <div class="profile-highlight">
       <div class="profile-highlight__gem">
-        <span aria-hidden="true">◆</span>
+        ${gemIconHtml(gem.gem_name, "gem-icon--best-roll")}
       </div>
 
       <div>

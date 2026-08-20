@@ -25,7 +25,9 @@ export const MODES = [
   { id: "ocean", label: "Ocean" },
   { id: "forest", label: "Forest" },
   { id: "sunset", label: "Sunset" },
-  { id: "ice", label: "Cyber Ice" }
+  { id: "ice", label: "Cyber Ice" },
+  { id: "aurora", label: "Aurora" },
+  { id: "graphite", label: "Graphite" }
 ];
 
 

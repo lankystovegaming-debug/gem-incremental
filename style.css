@@ -2313,3 +2313,105 @@ html.is-cinematic-active body {
 @media (prefers-reduced-motion: reduce) {
   .ultra-xy-gem .xy__energy { animation:none; }
 }
+
+
+/* =========================================================
+   ROLL PAGE — PREMIUM PRESENTATION
+   ========================================================= */
+
+.stage {
+  border-radius: 28px;
+  padding: clamp(22px, 4vw, 40px);
+  background:
+    radial-gradient(
+      620px 320px at 50% 0%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(145deg, var(--surface-raised), var(--surface-solid));
+  box-shadow:
+    0 30px 90px -52px rgb(0 0 0 / 0.95),
+    0 0 48px -38px var(--accent-ring);
+}
+
+.stage__display {
+  min-height: clamp(300px, 43vw, 430px);
+}
+
+.stage__idle-mark {
+  width: 108px;
+  height: 108px;
+  padding: 18px;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle,
+      var(--accent-soft),
+      transparent 68%
+    );
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+
+.roll-button {
+  width: min(420px, 100%);
+  height: 68px;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 97%, white 3%),
+      color-mix(in srgb, var(--accent-strong) 94%, black 6%)
+    );
+  box-shadow:
+    0 20px 38px -24px var(--accent-ring),
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -2px 0 rgb(0 0 0 / 0.14);
+}
+
+.roll-button:hover:not(:disabled) {
+  filter: brightness(1.045) saturate(1.04);
+}
+
+.gem-reveal__name {
+  font-size: clamp(1.45rem, 4vw, 2rem);
+}
+
+.gem-reveal__facts {
+  gap: 10px;
+}
+
+.gem-fact {
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, var(--surface-raised), var(--surface-sunken));
+}
+
+.history__row {
+  padding: 11px 8px;
+  border-radius: 10px;
+  border-top-color: transparent;
+}
+
+.history__row:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+@media (max-width: 600px) {
+  .stage {
+    padding: 18px 14px 24px;
+    border-radius: 20px;
+  }
+
+  .stage__display {
+    min-height: 290px;
+  }
+
+  .roll-button {
+    height: 60px;
+  }
+
+  .gem-reveal__facts {
+    grid-template-columns: 1fr;
+    max-width: 260px;
+  }
+}

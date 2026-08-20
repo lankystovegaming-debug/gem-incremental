@@ -18,7 +18,7 @@ import { loadExpeditionDashboard } from "./src/backend/cloudExpeditions.js";
 import { mountShell } from "./src/ui/shell.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
-import { gemNameHtml } from "./src/ui/gemStyle.js";
+import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
 import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
@@ -440,7 +440,7 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
     <div class="scene__vignette"></div>
     <div class="scene__scanlines"></div>
     <div class="scene__reveal">
-      <div class="scene__gem">${icons.gem}</div>
+      <div class="scene__gem">${gemIconHtml(gemName, "gem-icon--cinematic")}</div>
       <div class="scene__tier">${escapeHtml(tier.name)}</div>
       <h2 class="scene__name ${isXyGem ? "scene__name--xy" : ""}">${gemNameHtml(gemName, escapeHtml, mutationIds.map(id => `gem-styled--mutation-${id}`).join(" "))}</h2>
       ${mutationObjects.length ? `<div class="scene__mutation ${mutationObjects.length > 1 ? "scene__mutation--many" : ""}" aria-label="Mutations">${mutationObjects.map((m, index) => `${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
@@ -536,7 +536,7 @@ function renderRoll(data, outcome) {
       </div>
     ` : ""}
     <div class="gem-reveal">
-      <div class="gem-reveal__art">${icons.gem}</div>
+      <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll")}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}

@@ -328,3 +328,69 @@
     align-items: flex-start;
   }
 }
+
+
+/* Visual identity for showcased gems. */
+.showcase-gem {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      260px 140px at 0% 0%,
+      color-mix(in srgb, var(--gem-color) 10%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(145deg, var(--surface-raised), var(--surface-solid));
+}
+
+.showcase-gem__icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      color-mix(in srgb, var(--gem-color) 20%, transparent),
+      transparent 64%
+    ),
+    color-mix(in srgb, var(--surface-sunken) 90%, var(--gem-color) 10%);
+  border: 1px solid color-mix(in srgb, var(--gem-color) 28%, var(--border));
+}
+
+.profile-highlight__gem {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 26px;
+  background:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 70%
+    ),
+    var(--surface-sunken);
+}
+
+@media (max-width: 600px) {
+  .showcase-gem {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  .showcase-gem__icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 15px;
+  }
+
+  .profile-highlight__gem {
+    width: 88px;
+    height: 88px;
+  }
+}

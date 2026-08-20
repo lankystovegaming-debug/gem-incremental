@@ -343,3 +343,115 @@
   letter-spacing: .025em;
   min-height: 1.1em;
 }
+
+
+/* Gem-bearing cards: the icon is the visual anchor, while the
+   existing rarity/name styling remains the source of truth. */
+.index-card__head {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.index-card__gem-icon {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      circle at 35% 20%,
+      color-mix(in srgb, var(--gem-color, var(--accent)) 18%, transparent),
+      transparent 62%
+    ),
+    color-mix(in srgb, var(--surface-sunken) 94%, var(--gem-color, var(--accent)) 6%);
+  border: 1px solid color-mix(in srgb, var(--gem-color, var(--accent)) 24%, var(--border));
+}
+
+.index-card__gem-icon .gem-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.index-card--locked .index-card__gem-icon {
+  filter: saturate(0.25);
+  opacity: 0.68;
+}
+
+.index-card__title-block {
+  min-width: 0;
+}
+
+.gem-icon--index {
+  --gem-size: 42px;
+}
+
+.gem-icon--index::before {
+  opacity: 0.44;
+}
+
+.gem-icon--roll {
+  width: 116px;
+  height: 116px;
+}
+
+.gem-icon--roll::before {
+  opacity: 0.62;
+  filter: blur(13px);
+}
+
+.gem-icon--cinematic {
+  width: 154px;
+  height: 154px;
+}
+
+.gem-icon--cinematic::before {
+  opacity: 0.72;
+  filter: blur(18px);
+}
+
+.gem-icon--profile {
+  width: 62px;
+  height: 62px;
+}
+
+.gem-icon--best-roll {
+  width: 84px;
+  height: 84px;
+}
+
+.gem-icon--mini {
+  width: 18px;
+  height: 18px;
+}
+
+.gem-icon--mini::before {
+  filter: blur(4px);
+  opacity: 0.4;
+}
+
+.showcase-pin .gem-icon--mini {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 680px) {
+  .index-card__head {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .index-card__head > .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .index-card__gem-icon {
+    min-height: 44px;
+  }
+
+  .index-card__gem-icon .gem-icon {
+    width: 36px;
+    height: 36px;
+  }
+}
