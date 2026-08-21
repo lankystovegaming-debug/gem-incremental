@@ -117,6 +117,12 @@ export default {
         status: 500
       });
     }
+    const { error: seasonSaleError } = await ctx.supabaseAdmin.rpc("record_season_sale", {
+      p_player_id: playerId
+    });
+    if (seasonSaleError && !String(seasonSaleError.message ?? "").includes("does not exist")) {
+      console.error("Season sale progress failed:", seasonSaleError);
+    }
     // =================================
     // SUCCESS
     // =================================

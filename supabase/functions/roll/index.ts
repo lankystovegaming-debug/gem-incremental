@@ -3280,6 +3280,21 @@ export default {
         console.error("Expedition progress update failed:", expeditionProgressError);
       }
 
+      // Season XP and mission progress only receive committed genuine rolls.
+      const { error: seasonProgressError } = await ctx.supabaseAdmin.rpc(
+        "record_season_roll",
+        {
+          p_player_id: playerId,
+          p_rarity: relicDrop ? 0 : gem.rarity,
+          p_effective_rarity: relicDrop ? 0 : effectiveRarity,
+          p_mutation_count: relicDrop ? 0 : mutationIds.length,
+          p_relic: relicDrop
+        }
+      );
+      if (seasonProgressError && !String(seasonProgressError.message ?? "").includes("does not exist")) {
+        console.error("Season progress update failed:", seasonProgressError);
+      }
+
 
       // =====================================================
       // GEMS FOUND SCORE
