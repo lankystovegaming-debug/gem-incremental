@@ -3388,7 +3388,10 @@ export default {
               rarity: gem.rarity,
               effective_rarity: effectiveRarity,
               mutation_ids: mutationIds,
-              luck_at_roll: luck
+              // Chat shows the player's own permanent/equipment Luck, not any
+              // temporary boost (potions, admin-granted maintenance luck), so
+              // an admin-granted 1,000,000x never appears in the feed.
+              luck_at_roll: baseLuck
             });
 
         if (mutationOnlyAnnouncementError) {
@@ -3414,7 +3417,10 @@ export default {
             p_gem_name: gem.name,
             p_gem_rarity: gem.rarity,
             p_mutation_ids: mutationIds,
-            p_luck_at_roll: luck,
+            // Announce the player's own permanent/equipment Luck, not temporary
+            // or admin-granted boosts (the gem + Raw Rare Roll board keep the
+            // true rolled luck via best_roll_history.raw_luck).
+            p_luck_at_roll: baseLuck,
             p_effective_rarity: effectiveRarity
           });
 

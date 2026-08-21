@@ -92,13 +92,21 @@
   animation: card-in 0.28s ease-out backwards;
 }
 
-.gem-card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--tier, var(--accent)) 55%, var(--border));
-  box-shadow: var(--shadow-md);
+.gem-card {
+  /* A faint tier-tinted border so a gem's rarity reads even at rest. */
+  border-color: color-mix(in srgb, var(--tier, var(--border)) 22%, var(--border));
 }
 
-/* Tier stripe down the leading edge. */
+.gem-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tier, var(--accent)) 65%, var(--border));
+  /* Tier-coloured lift so rarer gems glow in their own hue. */
+  box-shadow:
+    var(--shadow-md),
+    0 6px 22px -8px color-mix(in srgb, var(--tier, var(--accent)) 55%, transparent);
+}
+
+/* Tier stripe down the leading edge — a gentle gradient fade. */
 .gem-card::before {
   content: "";
   position: absolute;
@@ -106,9 +114,14 @@
   bottom: var(--space-4);
   left: 0;
 
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--tier, var(--text-faint));
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(
+    to bottom,
+    var(--tier, var(--text-faint)),
+    color-mix(in srgb, var(--tier, var(--text-faint)) 35%, transparent)
+  );
+  box-shadow: 0 0 10px -1px color-mix(in srgb, var(--tier, transparent) 60%, transparent);
 }
 
 .gem-card--locked {
