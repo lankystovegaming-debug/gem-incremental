@@ -1851,8 +1851,8 @@ a.btn--icon[aria-current="page"] {
 
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 7px 11px;
+  gap: 6px;
+  padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: 11px;
   background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
@@ -1866,6 +1866,12 @@ a.btn--icon[aria-current="page"] {
 }
 
 .global-cash:hover { opacity: 1; }
+
+.global-cash__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
 .global-cash__label {
   font-size: 0.58rem;
@@ -1881,6 +1887,9 @@ a.btn--icon[aria-current="page"] {
   color: var(--positive);
   font-variant-numeric: tabular-nums;
 }
+
+/* Player cash (current money) sits apart from all-time global cash. */
+.global-cash__value--cash { color: var(--accent); }
 
 /* Live feed of the sales that pushed the total up. */
 .global-cash__feed {
