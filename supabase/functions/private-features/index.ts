@@ -150,6 +150,7 @@ async function ensureProgressRows(ctx: any, playerId: string) {
 
 function normalizeGem(body: any) {
   return {
+    title: String(body.title ?? "").trim().slice(0, 120),
     name: String(body.name ?? "Untitled Gem").trim().slice(0, 120),
     description: String(body.description ?? "").trim().slice(0, 500),
     rarity: Number(body.rarity ?? 1),

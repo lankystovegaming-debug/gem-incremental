@@ -472,3 +472,14 @@
 .mutation-tabs {
   contain: content;
 }
+
+.index-card__gem-title {
+  min-height: 1.1em;
+  margin-bottom: 0.12rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7fc9e8;
+  font-weight: 800;
+}

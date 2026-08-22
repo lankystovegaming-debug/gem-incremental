@@ -35,3 +35,17 @@ input,select,textarea{border:1px solid var(--border);background:var(--input-bg,v
 #expansionFields textarea{min-height:56px;resize:vertical}
 @media(max-width:800px){.expansion-row-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.expansion-row-grid{grid-template-columns:1fr}}
+
+.gem-admin-title {
+  margin: .18rem 0 .05rem;
+  color: #8fd9f7;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.gem-admin-description {
+  margin: .6rem 0;
+  color: #9bb8c8;
+  line-height: 1.45;
+}

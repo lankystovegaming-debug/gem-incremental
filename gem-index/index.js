@@ -245,7 +245,7 @@ function gemCard(entry) {
   const gemStyle = getGemStyle(entry.gem.name);
 
   return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
-    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
     <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
     <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
@@ -369,12 +369,36 @@ async function refresh() {
     }
     loadedPlayerId = user.id;
 
-    const [combinations, playerState, privateGemsResult, mutationCatalogResult] = await Promise.all([
+    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult] = await Promise.all([
       loadCombinations(user.id),
       loadCloudPlayerState(),
-      supabase.from("private_feature_gems").select("name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered").eq("enabled", true).order("sort_order", { ascending: true }).order("rarity", { ascending: true }),
-      supabase.from("game_mutations").select("id,name,chance,multiplier,description,icon,color,sort_order").eq("enabled", true).order("sort_order", { ascending: true })
+      supabase.rpc("get_public_gem_catalog"),
+      supabase.rpc("get_public_mutation_catalog")
     ]);
+
+    // RPCs are the primary path because they remain readable even when a
+    // project has an older/misconfigured RLS policy. Direct catalog reads are
+    // retained as a compatibility fallback for partially migrated projects.
+    let privateGemsResult = privateGemsRpcResult;
+    let mutationCatalogResult = mutationRpcResult;
+    if (privateGemsResult.error) {
+      console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
+      privateGemsResult = await supabase
+        .from("private_feature_gems")
+        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,enabled,sort_order,starts_at,ends_at,updated_at")
+        .eq("enabled", true)
+        .order("sort_order", { ascending: true })
+        .order("rarity", { ascending: true });
+    }
+    if (mutationCatalogResult.error) {
+      console.warn("Public mutation catalog RPC unavailable; trying direct catalog read:", mutationCatalogResult.error.message);
+      mutationCatalogResult = await supabase
+        .from("game_mutations")
+        .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
+        .eq("enabled", true)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+    }
 
     if (combinations) state.combinations = combinations;
 
@@ -437,7 +461,7 @@ async function refresh() {
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
       const builtInNames = new Set(gems.map((gem) => gem.name));
       const custom = privateGemsResult.data.filter((gem) => !builtInNames.has(gem.name)).map((gem) => ({
-        name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
+        title: String(gem.title ?? gem.metadata?.title ?? ""), name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
         description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
         hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
       }));

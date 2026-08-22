@@ -264,6 +264,7 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
     <section id="gemEditor" class="upcoming-card editor" hidden>
       <div class="editor-head"><div><div class="eyebrow">GEM BUILDER</div><h2 id="gemEditorTitle">New Gem</h2></div><button id="gemCancel" class="icon-button" type="button">×</button></div>
       <div class="form-grid">
+        <label>Title<input id="gemTitle" maxlength="120" placeholder="Celestial Ruby — The Skyfire Gem"><small>Optional display title shown above the gem name in Gem Index.</small></label>
         <label>Name<input id="gemName" maxlength="120" placeholder="Celestial Ruby"></label>
         <label>Rarity / 1 in<input id="gemRarity" type="number" min="0.000001" step="any" value="100"></label>
         <label class="wide">Description<textarea id="gemDescription" rows="3" maxlength="500" placeholder="Describe this gem for its Gem Index card."></textarea></label>
