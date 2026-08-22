@@ -1,174 +1,31 @@
 import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
-
 mountShell({ page: "guilds", base: "../" });
+const $=(id)=>document.getElementById(id);
+const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const fmt=(value)=>Number(value||0).toLocaleString();
+const LEVELS=[0,2500,7500,15000,25000,40000,60000,85000,115000,150000];
+const TRACK_COSTS=[0,500,750,1000,1500,2000,3000,4000,5500,7500,10000];
+const CAPACITY_COSTS={3:750,4:1250,5:2000,6:3000,7:4500,8:6000,9:8000};
+let state=null;
 
-const $ = (id) => document.getElementById(id);
+async function api(action,extra={}){const {data,error}=await supabase.functions.invoke("features",{body:{action,...extra}});if(error||data?.error)throw new Error(data?.message||data?.error||error?.message||"Guild request failed.");return data;}
+function status(message="",error=false){$("status").textContent=message;$("status").classList.toggle("error",error);}
+function levelFor(xp){let level=1;LEVELS.forEach((needed,index)=>{if(xp>=needed)level=index+1;});return Math.min(10,level);}
+function activateTab(name){document.querySelectorAll("[data-tab]").forEach((b)=>b.classList.toggle("active",b.dataset.tab===name));document.querySelectorAll("[data-panel]").forEach((p)=>p.classList.toggle("hidden",p.dataset.panel!==name));}
+document.addEventListener("click",(event)=>{const tab=event.target.closest("[data-tab],[data-open-tab]");if(tab)activateTab(tab.dataset.tab||tab.dataset.openTab);});
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+function renderInvites(invites,target){$(target).innerHTML=invites.length?invites.map((invite)=>`<div class="mission"><span><strong>${esc(invite.guilds?.name||"Guild")}</strong> [${esc(invite.guilds?.tag||"—")}]</span><span><button class="btn" data-invite="${invite.id}" data-accept="1">Accept</button> <button class="btn danger" data-invite="${invite.id}" data-accept="0">Decline</button></span></div>`).join(""):'<p class="muted">No pending invitations.</p>';}
+function renderMembers(data){const me=data.members.find((m)=>m.player_id===data.currentPlayerId);const canManage=["owner","officer"].includes(me?.role);$("leaveGuild").classList.toggle("hidden",me?.role==="owner");$("memberList").innerHTML=data.members.map((member)=>{const initial=esc((member.username||"?")[0].toUpperCase());const eligible=Date.parse(member.eligible_at)<=Date.now();let actions="";if(member.player_id!==data.currentPlayerId&&canManage&&member.role==="member")actions+=`<button class="btn danger" data-member-action="kick" data-player="${member.player_id}">Kick</button>`;if(me?.role==="owner"&&member.player_id!==data.currentPlayerId){if(member.role==="member")actions+=`<button class="btn" data-member-action="promote" data-player="${member.player_id}">Promote</button>`;if(member.role==="officer")actions+=`<button class="btn" data-member-action="demote" data-player="${member.player_id}">Demote</button>`;actions+=`<button class="btn" data-member-action="transfer" data-player="${member.player_id}">Transfer</button>`;}return `<div class="member-row"><div class="avatar">${initial}</div><div><strong>${esc(member.username)}</strong><div class="muted">${fmt(member.weekly_contribution)} this week · ${eligible?"Eligible":"Eligibility pending"}</div></div><span class="role">${esc(member.role)}</span><div class="member-actions">${actions}</div></div>`;}).join("");}
+function renderUpgrades(data){const owner=data.members.some((m)=>m.player_id===data.currentPlayerId&&m.role==="owner");const guild=data.guild;const cards=[{id:"capacity",name:"Member capacity",tier:guild.member_capacity-3,max:7,value:`${guild.member_capacity}/10`,cost:CAPACITY_COSTS[guild.member_capacity]},{id:"luck",name:"Guild Luck",tier:guild.luck_tier,max:10,value:`${(1+guild.luck_tier/100).toFixed(2)}x`,cost:TRACK_COSTS[guild.luck_tier+1]},{id:"speed",name:"Roll Speed",tier:guild.speed_tier,max:10,value:`${(1+guild.speed_tier/100).toFixed(2)}x`,cost:TRACK_COSTS[guild.speed_tier+1]},{id:"weight_luck",name:"Weight Luck",tier:guild.weight_luck_tier,max:10,value:`${(1+guild.weight_luck_tier/100).toFixed(2)}x`,cost:TRACK_COSTS[guild.weight_luck_tier+1]}];$("upgradeGrid").innerHTML=cards.map((card)=>`<div class="upgrade-card"><p class="eyebrow">TIER ${card.tier}/${card.max}</p><h3>${card.name}</h3><strong>${card.value}</strong><button class="btn" data-upgrade="${card.id}" ${!owner||card.tier>=card.max?"disabled":""}>${card.tier>=card.max?"Maximum tier":`${fmt(card.cost)} Guild Points`}</button></div>`).join("");}
+function renderCompetition(data){const c=data.competition;const own=data.standings.find((row)=>row.guild_id===data.guild.id);const title=!c?"No competition scheduled":c.status==="intermission"?"Next Competition: Classified":({rarest:"Rarest Discovery",heavy:"Heavy Hitters",appraisal:"Treasure Appraisal",rarity_rush:"Rarity Rush"}[c.competition_type]||"Guild Competition");const end=c?(c.status==="active"?c.active_ends_at:c.cycle_ends_at):null;let copy=end?`${c.status==="active"?"Competition ends":"Next competition begins"} ${new Date(end).toLocaleString()}.`:"Competition details will appear here.";if(c?.status==="intermission")copy+=" Rewards preview: placement bundles include money, potions, Enchant Relics, and Ancient Relics for the top two guilds.";$("competitionTitle").textContent=title;$("competitionCopy").textContent=copy;$("competitionHeading").textContent=title;$("competitionDescription").textContent=copy;$("competitionScore").textContent=`${fmt(own?.score)} points${own?.rank?` · Rank #${own.rank}`:""}`;$("standings").innerHTML=data.standings.length?data.standings.map((row,index)=>`<div class="standing"><span>#${row.rank||index+1} ${esc(row.guilds?.name||"Guild")} [${esc(row.guilds?.tag||"—")}]</span><strong>${fmt(row.score)}</strong></div>`).join(""):'<p class="muted">No scores recorded yet.</p>';}
+function renderGuild(data){const g=data.guild;document.documentElement.style.setProperty("--guild-primary",g.primary_color);document.documentElement.style.setProperty("--guild-secondary",g.secondary_color);$("guestView").classList.add("hidden");$("guildView").classList.remove("hidden");$("guildTitle").textContent=g.name;$("guildTagline").textContent=`[${g.tag}] · ${g.join_mode.replace("_"," ")}`;$("guildDescriptionText").textContent=g.description;$("guildLevel").textContent=`Level ${levelFor(Number(g.xp))}`;$("guildPoints").textContent=`${fmt(g.guild_points)} Guild Points`;$("guildCapacity").textContent=`${data.members.length}/${g.member_capacity} Members`;const level=levelFor(Number(g.xp)),floor=LEVELS[level-1]||0,next=LEVELS[level]??floor,pct=level===10?100:Math.max(0,Math.min(100,(Number(g.xp)-floor)/(next-floor)*100));$("xpTitle").textContent=`Guild Level ${level}`;$("xpPercent").textContent=`${Math.floor(pct)}%`;$("xpBar").style.width=`${pct}%`;$("xpCopy").textContent=level===10?`${fmt(g.xp)} XP · Maximum level`:`${fmt(g.xp)} / ${fmt(next)} XP`;$("activeBonuses").innerHTML=[["Luck",g.luck_tier],["Roll Speed",g.speed_tier],["Weight Luck",g.weight_luck_tier]].map(([name,tier])=>`<div class="bonus"><span>${name}</span><strong>${(1+Number(tier)/100).toFixed(2)}x</strong></div>`).join("");$("missionPreview").innerHTML=data.missions.length?data.missions.map((m)=>`<div class="mission"><span>${esc(m.difficulty)} ${esc(m.objective.replaceAll("_"," "))}</span><strong>${fmt(m.progress)} / ${fmt(m.target)}</strong></div>`).join(""):'<p class="muted">Missions refresh at 00:00 UTC.</p>';$("activityFeed").innerHTML=data.activity.length?data.activity.map((item)=>`<div class="activity"><span>${esc(item.action.replaceAll("_"," "))}</span><time>${new Date(item.created_at).toLocaleString()}</time></div>`).join(""):'<p class="muted">Guild activity will appear here.</p>';renderMembers(data);renderUpgrades(data);renderCompetition(data);renderInvites(data.invites,"memberInvites");const me=data.members.find((m)=>m.player_id===data.currentPlayerId);$("inviteForm").classList.toggle("hidden",!["owner","officer"].includes(me?.role));const owner=me?.role==="owner";$("guildSettingsPanel").classList.toggle("hidden",!owner);if(owner){$("editGuildName").value=g.name;$("editGuildTag").value=g.tag;$("editGuildDescription").value=g.description;$("editJoinMode").value=g.join_mode;}}
+async function load(){try{status();state=await api("guild");renderInvites(state.invites||[],"guestInvites");if(state.guild)renderGuild(state);else{$("guestView").classList.remove("hidden");$("guildView").classList.add("hidden");}}catch(error){status(error.message,true);}}
 
-async function api(action, extra = {}) {
-  const { data, error } = await supabase.functions.invoke("features", {
-    body: { action, ...extra }
-  });
-
-  if (error || data?.error) {
-    const code = data?.error || error?.code;
-    const messages = {
-      guild_create_failed: "The guild could not be created. Please try again.",
-      guild_name_taken: "That guild name is already taken.",
-      already_in_guild: "You are already in a guild.",
-      player_id_required: "Enter the player's UUID.",
-      player_already_in_guild: "That player is already in a guild.",
-      owner_only: "Only the guild owner can do that."
-    };
-
-    throw new Error(
-      messages[code] ||
-      data?.message ||
-      code ||
-      error?.message ||
-      "Guild request failed."
-    );
-  }
-
-  return data;
-}
-
-function showStatus(message, isError = false) {
-  const status = $("status");
-  status.textContent = message;
-  status.classList.toggle("error", isError);
-}
-
-async function load() {
-  try {
-    const data = await api("guild");
-
-    showStatus("");
-
-    $("inviteList").innerHTML = (data.invites || []).map((invite) => `
-      <div class="row cardx">
-        <span>Guild invite</span>
-        <button class="btn" data-invite-id="${escapeHtml(invite.id)}" data-accept="true">Accept</button>
-        <button class="btn" data-invite-id="${escapeHtml(invite.id)}" data-accept="false">Decline</button>
-      </div>
-    `).join("") || '<p class="muted">No pending invitations.</p>';
-
-    for (const button of document.querySelectorAll("[data-invite-id]")) {
-      button.addEventListener("click", async () => {
-        button.disabled = true;
-
-        try {
-          await api("guild-respond-invite", {
-            inviteId: button.dataset.inviteId,
-            accept: button.dataset.accept === "true"
-          });
-          await load();
-        } catch (error) {
-          showStatus(error.message, true);
-          button.disabled = false;
-        }
-      });
-    }
-
-    if (!data.guild) {
-      $("create").classList.remove("hidden");
-      $("guild").classList.add("hidden");
-      return;
-    }
-
-    $("create").classList.add("hidden");
-    $("guild").classList.remove("hidden");
-
-    $("guildTitle").textContent = data.guild.name;
-    $("guildMeta").textContent = `Owner: ${data.guild.owner_id}`;
-    $("guildPoints").textContent = `${Number(data.guild.points || 0).toLocaleString()} guild points`;
-
-    $("members").innerHTML = (data.members || []).map((member) => `
-      <p>${escapeHtml(member.player_id)} · ${escapeHtml(member.role)}</p>
-    `).join("") || "<p class='muted'>No members.</p>";
-
-    $("quests").innerHTML = (data.quests || []).map((quest) => `
-      <article class="cardx">
-        <h3>${escapeHtml(quest.name)}</h3>
-        <p>${escapeHtml(quest.description)}</p>
-        <p class="muted">
-          Requires ${Number(quest.requirements?.amount ?? 0).toLocaleString()} guild points
-          · Rewards ${Number(quest.reward_points ?? 0).toLocaleString()}
-        </p>
-      </article>
-    `).join("") || '<p class="muted">No guild quests yet.</p>';
-
-    const isOwner = data.guild.owner_id === data.currentPlayerId ||
-      (data.members || []).some((member) => member.player_id === data.currentPlayerId && member.role === "owner");
-
-    $("ownerTools").classList.toggle("hidden", !isOwner);
-
-    $("inviteBtn").onclick = async () => {
-      try {
-        await api("guild-invite", {
-          guildId: data.guild.id,
-          playerId: $("invitePlayer").value.trim()
-        });
-        $("invitePlayer").value = "";
-        await load();
-      } catch (error) {
-        showStatus(error.message, true);
-      }
-    };
-
-    $("qSave").onclick = async () => {
-      try {
-        await api("guild-quest-save", {
-          guildId: data.guild.id,
-          quest: {
-            name: $("qName").value.trim(),
-            description: $("qDesc").value.trim(),
-            requirements: {
-              type: "guild_points",
-              amount: Number($("qAmount").value || 100)
-            },
-            reward_points: Number($("qReward").value || 0)
-          }
-        });
-        await load();
-      } catch (error) {
-        showStatus(error.message, true);
-      }
-    };
-  } catch (error) {
-    showStatus(error.message, true);
-  }
-}
-
-$("createBtn").onclick = async () => {
-  const button = $("createBtn");
-  const name = $("guildName").value.trim();
-
-  if (name.length < 2) {
-    showStatus("Guild names need at least 2 characters.", true);
-    return;
-  }
-
-  button.disabled = true;
-
-  try {
-    await api("guild-create", { name });
-    $("guildName").value = "";
-    await load();
-  } catch (error) {
-    showStatus(error.message, true);
-  } finally {
-    button.disabled = false;
-  }
-};
-
+$("createForm").addEventListener("submit",async(event)=>{event.preventDefault();try{await api("guild-create",{name:$("guildName").value,tag:$("guildTag").value,description:$("guildDescription").value,primaryColor:$("guildPrimary").value,secondaryColor:$("guildSecondary").value,accentColor:$("guildAccent").value,joinMode:$("guildJoinMode").value});await load();}catch(error){status(error.message,true);}});
+$("inviteForm").addEventListener("submit",async(event)=>{event.preventDefault();try{await api("guild-invite",{username:$("inviteUsername").value});$("inviteUsername").value="";status("Invitation sent.");}catch(error){status(error.message,true);}});
+document.addEventListener("click",async(event)=>{const invite=event.target.closest("[data-invite]");const manage=event.target.closest("[data-member-action]");const upgrade=event.target.closest("[data-upgrade]");try{if(invite){await api("guild-respond-invite",{inviteId:invite.dataset.invite,accept:invite.dataset.accept==="1"});await load();}if(manage){const action=manage.dataset.memberAction;if(!confirm(`${action} this member?`))return;await api("guild-manage-member",{playerId:manage.dataset.player,memberAction:action});await load();}if(upgrade){if(!confirm("Purchase this permanent guild upgrade?"))return;await api("guild-upgrade",{track:upgrade.dataset.upgrade});await load();}}catch(error){status(error.message,true);}});
+$("leaveGuild").addEventListener("click",async()=>{if(!confirm("Leave this guild? You will lose its bonuses immediately."))return;try{await api("guild-leave");await load();}catch(error){status(error.message,true);}});
+$("identityForm").addEventListener("submit",async(event)=>{event.preventDefault();try{await api("guild-update-identity",{name:$("editGuildName").value,tag:$("editGuildTag").value,description:$("editGuildDescription").value,joinMode:$("editJoinMode").value});await load();}catch(error){status(error.message,true);}});
+$("disbandGuild").addEventListener("click",async()=>{const confirmation=prompt(`Type ${state?.guild?.name||"the guild name"} to permanently disband this guild.`);if(confirmation===null)return;try{await api("guild-disband",{confirmation});await load();}catch(error){status(error.message,true);}});
 load();
