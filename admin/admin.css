@@ -117,6 +117,11 @@
 .admin-code-form { display: grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .admin-code-form input, .admin-code-form select { width: 100%; margin-top: 6px; }
 .admin-code-form .btn { align-self: end; }
+.code-potion-builder { grid-column: 1 / -1; }
+.code-potion-builder__head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.code-potion-rows { display:grid; gap:8px; margin-top:8px; }
+.code-potion-row { display:grid; grid-template-columns:minmax(180px,1fr) 120px auto; gap:8px; align-items:end; }
+.code-potion-row .btn { align-self:end; }
 .admin-code-list { display: grid; gap: 8px; margin-top: var(--space-4); }
 .admin-code-row { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(180px, auto) auto; align-items: center; gap: var(--space-3); padding: 12px; border-radius: var(--radius-sm); background: var(--surface-sunken); }
 .admin-code-row strong, .admin-code-row span { display: block; }
