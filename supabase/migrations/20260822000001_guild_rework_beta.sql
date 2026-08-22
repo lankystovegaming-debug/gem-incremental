@@ -3,11 +3,20 @@
 
 begin;
 
--- All pre-release guild rows were test data and used the old roll-points model.
-truncate table public.guild_invites, public.guild_quests, public.guild_members, public.guilds cascade;
-
-alter table public.guilds
-  rename column points to legacy_points;
+-- Pre-release guild rows used the old roll-points model. Only wipe them and
+-- migrate the legacy column on a database that has NOT been reworked yet, so
+-- re-running this migration can never destroy live guild data or fail on a
+-- database where the rework is already present.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'guilds' and column_name = 'luck_tier'
+  ) then
+    truncate table public.guild_invites, public.guild_quests, public.guild_members, public.guilds cascade;
+    alter table public.guilds rename column points to legacy_points;
+  end if;
+end $$;
 
 alter table public.guilds
   add column if not exists tag text,
@@ -28,16 +37,21 @@ alter table public.guilds
   add column if not exists tag_changed_at timestamptz,
   add column if not exists updated_at timestamptz not null default now();
 
-alter table public.guilds drop column legacy_points;
+alter table public.guilds drop column if exists legacy_points;
+alter table public.guilds drop constraint if exists guilds_tag_format;
 alter table public.guilds add constraint guilds_tag_format check (tag ~ '^[A-Z0-9]{2,5}$');
+alter table public.guilds drop constraint if exists guilds_description_length;
 alter table public.guilds add constraint guilds_description_length check (char_length(description) between 1 and 200);
+alter table public.guilds drop constraint if exists guilds_join_mode;
 alter table public.guilds add constraint guilds_join_mode check (join_mode in ('invite','request','open'));
+alter table public.guilds drop constraint if exists guilds_capacity_range;
 alter table public.guilds add constraint guilds_capacity_range check (member_capacity between 3 and 10);
+alter table public.guilds drop constraint if exists guilds_upgrade_ranges;
 alter table public.guilds add constraint guilds_upgrade_ranges check (
   luck_tier between 0 and 10 and speed_tier between 0 and 10 and weight_luck_tier between 0 and 10
 );
-create unique index guilds_name_ci_unique on public.guilds(lower(name));
-create unique index guilds_tag_ci_unique on public.guilds(lower(tag));
+create unique index if not exists guilds_name_ci_unique on public.guilds(lower(name));
+create unique index if not exists guilds_tag_ci_unique on public.guilds(lower(tag));
 
 alter table public.guild_members drop constraint if exists guild_members_role_check;
 alter table public.guild_members add constraint guild_members_role_check check (role in ('owner','officer','member'));
@@ -46,7 +60,7 @@ alter table public.guild_members
   add column if not exists lifetime_contribution bigint not null default 0,
   add column if not exists weekly_contribution bigint not null default 0;
 
-create table public.guild_activity (
+create table if not exists public.guild_activity (
   id bigint generated always as identity primary key,
   guild_id uuid not null references public.guilds(id) on delete cascade,
   actor_id uuid references public.players(id) on delete set null,
@@ -55,7 +69,7 @@ create table public.guild_activity (
   created_at timestamptz not null default now()
 );
 
-create table public.guild_member_daily_xp (
+create table if not exists public.guild_member_daily_xp (
   guild_id uuid not null references public.guilds(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
   xp_date date not null,
@@ -63,12 +77,12 @@ create table public.guild_member_daily_xp (
   primary key (guild_id, player_id, xp_date)
 );
 
-create table public.guild_player_cooldowns (
+create table if not exists public.guild_player_cooldowns (
   player_id uuid primary key references public.players(id) on delete cascade,
   can_join_at timestamptz not null
 );
 
-create table public.guild_missions (
+create table if not exists public.guild_missions (
   id uuid primary key default gen_random_uuid(),
   guild_id uuid not null references public.guilds(id) on delete cascade,
   cadence text not null check (cadence in ('daily','weekly')),
@@ -86,7 +100,7 @@ create table public.guild_missions (
   unique (guild_id, cadence, difficulty, starts_at)
 );
 
-create table public.guild_mission_contributions (
+create table if not exists public.guild_mission_contributions (
   mission_id uuid not null references public.guild_missions(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
   contribution numeric not null default 0,
@@ -94,7 +108,7 @@ create table public.guild_mission_contributions (
   primary key (mission_id, player_id)
 );
 
-create table public.guild_competitions (
+create table if not exists public.guild_competitions (
   id uuid primary key default gen_random_uuid(),
   cycle_start timestamptz not null unique,
   active_starts_at timestamptz not null,
@@ -106,7 +120,7 @@ create table public.guild_competitions (
   created_at timestamptz not null default now()
 );
 
-create table public.guild_competition_members (
+create table if not exists public.guild_competition_members (
   competition_id uuid not null references public.guild_competitions(id) on delete cascade,
   guild_id uuid not null references public.guilds(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
@@ -116,7 +130,7 @@ create table public.guild_competition_members (
   primary key (competition_id, player_id)
 );
 
-create table public.guild_competition_results (
+create table if not exists public.guild_competition_results (
   competition_id uuid not null references public.guild_competitions(id) on delete cascade,
   guild_id uuid not null references public.guilds(id) on delete cascade,
   score numeric not null default 0,
@@ -126,9 +140,9 @@ create table public.guild_competition_results (
   primary key (competition_id, guild_id)
 );
 
-create index guild_activity_recent_idx on public.guild_activity(guild_id, created_at desc);
-create index guild_missions_active_idx on public.guild_missions(guild_id, starts_at, ends_at);
-create index guild_competition_scores_idx on public.guild_competition_results(competition_id, score desc);
+create index if not exists guild_activity_recent_idx on public.guild_activity(guild_id, created_at desc);
+create index if not exists guild_missions_active_idx on public.guild_missions(guild_id, starts_at, ends_at);
+create index if not exists guild_competition_scores_idx on public.guild_competition_results(competition_id, score desc);
 
 alter table public.guild_activity enable row level security;
 alter table public.guild_member_daily_xp enable row level security;
