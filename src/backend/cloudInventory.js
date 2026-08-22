@@ -25,6 +25,7 @@ export async function loadCloudGems() {
     .from("inventory_gems")
     .select(`
       id,
+      serial_number,
       gem_name,
       rarity,
       base_weight,

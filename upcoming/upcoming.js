@@ -376,7 +376,7 @@ function openEditor(d=null){
 }
 function openGemEditor(g=null){
   editingGem=g?.id||null;$("gemEditor").hidden=false;$("editor").hidden=true;$("gemEditorTitle").textContent=g?"Edit Gem":"New Gem";
-  $("gemName").value=g?.name||"";$("gemRarity").value=g?.rarity??100;$("gemWeight").value=g?.base_weight??100;$("gemValue").value=g?.value_per_gram??1;$("gemSort").value=g?.sort_order??0;$("gemEnabled").checked=g?.enabled!==false;
+  $("gemName").value=g?.name||"";$("gemRarity").value=g?.rarity??100;$("gemDescription").value=g?.description||g?.metadata?.description||"";$("gemWeight").value=g?.base_weight??100;$("gemValue").value=g?.value_per_gram??1;$("gemSort").value=g?.sort_order??0;$("gemEnabled").checked=g?.enabled!==false;
   $("gemDuration").value=(g?.starts_at||g?.ends_at)?"temporary":"permanent";$("gemStarts").value=dateInput(g?.starts_at);$("gemEnds").value=dateInput(g?.ends_at);
   window.scrollTo({top:$("gemEditor").offsetTop-80,behavior:"smooth"});
 }
@@ -391,7 +391,7 @@ async function saveFeature(){
 }
 async function saveGem(){
   const dates=temporaryDates($("gemDuration").value,$("gemStarts").value,$("gemEnds").value);
-  const gem={id:editingGem||undefined,name:$("gemName").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,enabled:$("gemEnabled").checked,...dates,metadata:{}};
+  const gem={id:editingGem||undefined,name:$("gemName").value.trim(),description:$("gemDescription").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,enabled:$("gemEnabled").checked,...dates,metadata:{}};
   if(!gem.name){status("Give the gem a name.",true);return;}
   try{await call("gem-save",{gem});$("gemEditor").hidden=true;editingGem=null;await loadAll();status("Gem saved.");}catch(e){status(e.message,true);}
 }

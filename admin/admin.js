@@ -653,20 +653,11 @@ async function loadAudit() {
 
 function wireCodes() {
   const panel = document.getElementById("codesPanel");
-  const potion = document.getElementById("codePotion");
-  const quantity = document.getElementById("codePotionQuantity");
   const createButton = document.getElementById("codeCreate");
   const refreshButton = document.getElementById("codesRefresh");
 
   panel.hidden = false;
-  potion.innerHTML = `<option value="">No potion</option>${consumables.map((item) =>
-    `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`
-  ).join("")}`;
-
-  potion.addEventListener("change", () => {
-    if (!potion.value) quantity.value = "0";
-    else if (Number(quantity.value) < 1) quantity.value = "1";
-  });
+  document.getElementById("codePotionAdd").addEventListener("click", () => addCodePotionRow());
 
   document.getElementById("newCode").addEventListener("input", (event) => {
     event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
@@ -675,6 +666,29 @@ function wireCodes() {
   createButton.addEventListener("click", createCode);
   refreshButton.addEventListener("click", loadCodes);
   loadCodes();
+}
+
+function addCodePotionRow(reward = {}) {
+  const row = document.createElement("div");
+  row.className = "code-potion-row";
+  row.innerHTML = `
+    <label class="field"><span>Potion</span><select class="code-potion-id">${consumables.map((item) =>
+      `<option value="${escapeHtml(item.id)}"${item.id === reward.id ? " selected" : ""}>${escapeHtml(item.name)}</option>`
+    ).join("")}</select></label>
+    <label class="field"><span>Quantity</span><input class="code-potion-quantity" type="number" min="1" step="1" value="${Math.max(1, Number(reward.quantity) || 1)}"></label>
+    <button class="btn btn--danger code-potion-remove" type="button">Remove</button>`;
+  row.querySelector(".code-potion-remove").addEventListener("click", () => row.remove());
+  document.getElementById("codePotionRows").appendChild(row);
+}
+
+function readCodePotionRewards() {
+  const combined = new Map();
+  for (const row of document.querySelectorAll(".code-potion-row")) {
+    const id = row.querySelector(".code-potion-id").value;
+    const quantity = Math.max(1, Math.trunc(Number(row.querySelector(".code-potion-quantity").value) || 1));
+    combined.set(id, (combined.get(id) || 0) + quantity);
+  }
+  return [...combined].map(([id, quantity]) => ({ id, quantity }));
 }
 
 async function tryWireAdminEvents() {
@@ -805,10 +819,7 @@ async function createCode() {
   const button = document.getElementById("codeCreate");
   const code = document.getElementById("newCode").value.trim();
   const moneyReward = Math.max(0, Number(document.getElementById("codeMoney").value) || 0);
-  const consumableId = document.getElementById("codePotion").value || null;
-  const consumableQuantity = consumableId
-    ? Math.max(0, Math.trunc(Number(document.getElementById("codePotionQuantity").value) || 0))
-    : 0;
+  const consumableRewards = readCodePotionRewards();
   const expiresValue = document.getElementById("codeExpires").value;
   const limitValue = document.getElementById("codeLimit").value;
 
@@ -816,7 +827,7 @@ async function createCode() {
     notify.error("Invalid code", "Use at least three letters or numbers.");
     return;
   }
-  if (moneyReward <= 0 && consumableQuantity <= 0) {
+  if (moneyReward <= 0 && consumableRewards.length === 0) {
     notify.error("No rewards", "Add money, a potion reward, or both.");
     return;
   }
@@ -825,8 +836,7 @@ async function createCode() {
   const { error } = await createAdminCode({
     code,
     moneyReward,
-    consumableId,
-    consumableQuantity,
+    consumableRewards,
     expiresAt: expiresValue ? new Date(expiresValue).toISOString() : null,
     maxRedemptions: limitValue ? Math.max(1, Math.trunc(Number(limitValue))) : null
   });
@@ -838,6 +848,7 @@ async function createCode() {
   }
 
   document.getElementById("newCode").value = "";
+  document.getElementById("codePotionRows").innerHTML = "";
   notify.success("Code created", `${code} is ready to redeem.`);
   await loadCodes();
 }
@@ -852,12 +863,12 @@ async function loadCodes() {
   }
 
   list.innerHTML = (data ?? []).map((code) => {
-    const potionName = code.consumable_id
-      ? getConsumableById(code.consumable_id)?.name ?? code.consumable_id
-      : null;
+    const potionRewards = Array.isArray(code.consumable_rewards) && code.consumable_rewards.length
+      ? code.consumable_rewards
+      : (code.consumable_id ? [{ id: code.consumable_id, quantity: code.consumable_quantity }] : []);
     const rewards = [
       Number(code.money_reward) > 0 ? formatMoney(code.money_reward) : null,
-      potionName ? `${formatCount(code.consumable_quantity)}× ${potionName}` : null
+      ...potionRewards.map((reward) => `${formatCount(reward.quantity)}× ${getConsumableById(reward.id)?.name ?? reward.id}`)
     ].filter(Boolean).join(" + ");
     const limit = code.max_redemptions == null
       ? `${formatCount(code.redemption_count)} uses`

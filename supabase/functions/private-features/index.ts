@@ -151,6 +151,7 @@ async function ensureProgressRows(ctx: any, playerId: string) {
 function normalizeGem(body: any) {
   return {
     name: String(body.name ?? "Untitled Gem").trim().slice(0, 120),
+    description: String(body.description ?? "").trim().slice(0, 500),
     rarity: Number(body.rarity ?? 1),
     base_weight: Number(body.base_weight ?? 1),
     value_per_gram: Number(body.value_per_gram ?? 0),
