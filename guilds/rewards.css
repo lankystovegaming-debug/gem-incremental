@@ -2,3 +2,10 @@
 .reward-row { display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border); }
 .reward-row > span:last-child { color:#8d94ff;font-weight:800;white-space:nowrap; }
 @media (max-width:760px) { .reward-row { grid-template-columns:1fr; } .reward-row > span:last-child { white-space:normal; } }
+.member-contributions { margin-top:24px;padding-top:18px;border-top:1px solid var(--border); }
+.contribution-row { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border); }
+.contribution-row b { display:inline-block;min-width:32px;color:#8d94ff; }
+.mission--described { align-items:flex-start; }
+.mission--described span { display:grid;gap:4px; }
+.mission--described b { text-transform:capitalize; }
+.mission--described small { max-width:620px;color:var(--text-muted);line-height:1.4; }
