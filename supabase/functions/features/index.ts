@@ -53,7 +53,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild"){
    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
    if(membershipError)throw membershipError;
-   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[];
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[];
    if(membership){
     const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
     if(runtime.error)throw runtime.error;
@@ -77,11 +77,15 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
       competition={...competitionRow,competition_type:active?competitionRow.competition_type:null,status:active?"active":"intermission"};
       const {data:scoreRows}=await ctx.supabaseAdmin.from("guild_competition_results").select("guild_id,score,rank,guilds(name,tag)").eq("competition_id",competitionRow.id).order("score",{ascending:false}).limit(100);
       standings=scoreRows??[];
+      const {data:memberScoreRows,error:memberScoreError}=await ctx.supabaseAdmin.from("guild_competition_members").select("player_id,score,reached_at").eq("competition_id",competitionRow.id).eq("guild_id",guild.id).order("score",{ascending:false}).order("reached_at",{ascending:true});
+      if(memberScoreError)throw memberScoreError;
+      const scores=new Map((memberScoreRows??[]).map((row:any)=>[row.player_id,row]));
+      competitionMembers=members.map((member:any)=>({...member,score:Number(scores.get(member.player_id)?.score??0),reached_at:scores.get(member.player_id)?.reached_at??null})).sort((left:any,right:any)=>right.score-left.score||String(left.username).localeCompare(String(right.username)));
     }
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,competitionRewards:GUILD_COMPETITION_REWARDS,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if (a === "guild-create") {
     const rpc=await ctx.supabaseAdmin.rpc("create_guild_v2",{
