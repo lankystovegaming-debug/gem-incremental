@@ -454,6 +454,11 @@ function gemCard(gem) {
 
       <div class="gem-card__rows">
         <div class="gem-card__row">
+          <span class="gem-card__key">Serial</span>
+          <span class="gem-card__val">${gem.serial_number == null ? "—" : `#${formatCount(gem.serial_number)}`}</span>
+        </div>
+
+        <div class="gem-card__row">
           <span class="gem-card__key">Weight</span>
           <span class="gem-card__val">${formatWeight(gem.final_weight)}</span>
         </div>

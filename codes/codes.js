@@ -52,7 +52,12 @@ form.addEventListener("submit", async (event) => {
 
   const rewards = [];
   if (Number(data.money) > 0) rewards.push(formatMoney(data.money));
-  if (data.consumableId && Number(data.consumableQuantity) > 0) {
+  if (Array.isArray(data.consumables)) {
+    for (const reward of data.consumables) {
+      const name = getConsumableById(reward.id)?.name ?? reward.id;
+      rewards.push(`${formatCount(reward.quantity)}× ${name}`);
+    }
+  } else if (data.consumableId && Number(data.consumableQuantity) > 0) {
     const name = getConsumableById(data.consumableId)?.name ?? data.consumableId;
     rewards.push(`${formatCount(data.consumableQuantity)}× ${name}`);
   }

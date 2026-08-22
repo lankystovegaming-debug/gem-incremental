@@ -92,7 +92,7 @@
       <div class="admin-section-head">
         <div>
           <h2>Promotional Codes</h2>
-          <p class="page-head__sub">Create codes for money, potions, or both.</p>
+          <p class="page-head__sub">Create codes containing money and any combination of potions.</p>
         </div>
         <button class="btn" id="codesRefresh" type="button">Refresh</button>
       </div>
@@ -100,8 +100,10 @@
       <div class="admin-code-form">
         <label class="field"><span>Code</span><input id="newCode" maxlength="32" placeholder="WELCOME"></label>
         <label class="field"><span>Money</span><input id="codeMoney" type="number" min="0" step="0.01" value="0"></label>
-        <label class="field"><span>Potion</span><select id="codePotion"></select></label>
-        <label class="field"><span>Quantity</span><input id="codePotionQuantity" type="number" min="0" step="1" value="0"></label>
+        <div class="field code-potion-builder">
+          <div class="code-potion-builder__head"><span>Potions</span><button class="btn btn--sm" id="codePotionAdd" type="button">＋ Add potion</button></div>
+          <div id="codePotionRows" class="code-potion-rows"></div>
+        </div>
         <label class="field"><span>Expires (optional)</span><input id="codeExpires" type="datetime-local"></label>
         <label class="field"><span>Use limit (optional)</span><input id="codeLimit" type="number" min="1" step="1" placeholder="Unlimited"></label>
         <button class="btn btn--primary" id="codeCreate" type="button">Create code</button>
@@ -477,6 +479,7 @@
       <div class="form-grid">
         <label>Name<input id="gemName" maxlength="120" placeholder="Celestial Ruby"></label>
         <label>Rarity / 1 in<input id="gemRarity" type="number" min="0.000001" step="any" value="100"></label>
+        <label class="wide">Description<textarea id="gemDescription" rows="3" maxlength="500" placeholder="Describe this gem for its Gem Index card."></textarea></label>
         <label>Base weight<input id="gemWeight" type="number" min="0.000001" step="any" value="100"></label>
         <label>Value / gram<input id="gemValue" type="number" min="0" step="any" value="1"></label>
         <label>Sort order<input id="gemSort" type="number" value="0"></label>
