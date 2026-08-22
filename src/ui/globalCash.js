@@ -2,29 +2,34 @@ import { supabase } from "../backend/supabase.js";
 import { getSettings, onSettingsChange } from "./settings.js";
 
 // =========================================================
-// GLOBAL CASH COUNTER
+// CASH COUNTERS
 //
-// An optional (off by default) small side counter showing the
-// sum of every player's lifetime earnings. It rises whenever
-// anyone sells to the game; trading between players only moves
-// money around, so it leaves the total untouched.
+// An optional (off by default) small side panel showing two
+// economy figures plus a live feed of what moves them:
 //
-// The server sum is polled on an interval; between polls the
-// displayed value eases toward the latest figure so it reads as
-// a live, counting-up number rather than a jumpy refresh.
+//   • Global cash  — the sum of every player's LIFETIME earnings.
+//                    Only ever rises (when someone sells to the game).
+//   • Player cash  — the sum of every player's CURRENT money. Falls
+//                    when players buy from the game; player-to-player
+//                    trades just move money around, so they leave it
+//                    unchanged. Assets (gems) are not counted.
+//
+// Both are polled together and eased toward the latest figure so
+// they read as live, counting numbers rather than jumpy refreshes.
 // =========================================================
 
 const POLL_MS = 5000;
 const MAX_FEED = 4;
+const METRICS = ["total", "cash"];
 
 let widget = null;
-let valueEl = null;
+let valueEls = {};      // { total: el, cash: el }
 let feedEl = null;
 let pollTimer = null;
 let rafId = null;
-let displayed = null; // currently shown (tweened) value
-let target = null;    // latest value from the server
-let lastTopId = 0;    // newest sale id already shown (to flash only new ones)
+let displayed = { total: null, cash: null }; // tweened values
+let target = { total: null, cash: null };    // latest from the server
+let lastTopId = 0;      // newest sale id already shown (to flash only new ones)
 
 function formatCash(value) {
   return "$" + Number(value ?? 0).toLocaleString("en-US", {
@@ -50,14 +55,16 @@ function esc(value) {
 }
 
 function paint() {
-  if (valueEl) valueEl.textContent = formatCash(displayed ?? 0);
+  for (const key of METRICS) {
+    if (valueEls[key]) valueEls[key].textContent = formatCash(displayed[key] ?? 0);
+  }
 }
 
 function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-// Renders the most recent sales that pushed the total up. New entries
+// Renders the most recent sales that pushed global cash up. New entries
 // (ids past the last one shown) animate in so the feed reads as live.
 function renderFeed(events) {
   if (!feedEl || !Array.isArray(events)) return;
@@ -76,18 +83,15 @@ async function poll() {
   const { data, error } = await supabase.rpc("get_global_cash_feed");
   if (error || !data) return;
 
-  const next = Number(data.total);
-  if (Number.isFinite(next)) {
-    target = next;
-    // Snap (and paint immediately) on first load, while hidden — where rAF is
-    // paused — or with reduced motion. Otherwise ease toward the new figure.
-    if (displayed === null || document.hidden || prefersReducedMotion()) {
-      displayed = next;
-      paint();
-    } else {
-      ensureAnimating();
-    }
+  const snap = displayed.total === null || document.hidden || prefersReducedMotion();
+  for (const key of METRICS) {
+    const next = Number(data[key]);
+    if (!Number.isFinite(next)) continue;
+    target[key] = next;
+    if (snap) displayed[key] = next;
   }
+  if (snap) paint();
+  else ensureAnimating();
 
   renderFeed(data.events);
 }
@@ -96,17 +100,21 @@ function ensureAnimating() {
   if (rafId != null || !widget) return;
   const step = () => {
     rafId = null;
-    if (!widget || target === null || displayed === null) return;
-
-    const diff = target - displayed;
-    if (Math.abs(diff) < 0.005) {
-      displayed = target;
-    } else {
-      // Exponential ease-in so a new figure counts up over ~1s.
-      displayed += diff * 0.08;
-      rafId = requestAnimationFrame(step);
+    if (!widget) return;
+    let moving = false;
+    for (const key of METRICS) {
+      if (target[key] === null || displayed[key] === null) continue;
+      const diff = target[key] - displayed[key];
+      if (Math.abs(diff) < 0.005) {
+        displayed[key] = target[key];
+      } else {
+        // Exponential ease toward the target (works up or down).
+        displayed[key] += diff * 0.08;
+        moving = true;
+      }
     }
-    if (valueEl) valueEl.textContent = formatCash(displayed);
+    paint();
+    if (moving) rafId = requestAnimationFrame(step);
   };
   rafId = requestAnimationFrame(step);
 }
@@ -118,18 +126,28 @@ function mount() {
   widget.className = "global-cash";
   widget.setAttribute("role", "status");
   widget.setAttribute("aria-live", "off");
-  widget.title = "Total lifetime earnings across every player";
   widget.innerHTML = `
-    <span class="global-cash__label">Global cash</span>
-    <span class="global-cash__value">—</span>
+    <div class="global-cash__stat">
+      <span class="global-cash__label">Global cash</span>
+      <span class="global-cash__value" data-metric="total"
+            title="Total lifetime earnings across every player">—</span>
+    </div>
+    <div class="global-cash__stat">
+      <span class="global-cash__label">Player cash</span>
+      <span class="global-cash__value global-cash__value--cash" data-metric="cash"
+            title="Total money in every player's wallet right now (assets not counted)">—</span>
+    </div>
     <div class="global-cash__feed"></div>
   `;
   document.body.appendChild(widget);
-  valueEl = widget.querySelector(".global-cash__value");
+  valueEls = {
+    total: widget.querySelector('[data-metric="total"]'),
+    cash: widget.querySelector('[data-metric="cash"]')
+  };
   feedEl = widget.querySelector(".global-cash__feed");
 
-  displayed = null;
-  target = null;
+  displayed = { total: null, cash: null };
+  target = { total: null, cash: null };
   lastTopId = 0;
   poll();
   pollTimer = setInterval(poll, POLL_MS);
@@ -140,10 +158,10 @@ function unmount() {
   if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
   widget?.remove();
   widget = null;
-  valueEl = null;
+  valueEls = {};
   feedEl = null;
-  displayed = null;
-  target = null;
+  displayed = { total: null, cash: null };
+  target = { total: null, cash: null };
   lastTopId = 0;
 }
 
