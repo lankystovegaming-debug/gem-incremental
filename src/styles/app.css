@@ -3815,6 +3815,16 @@ textarea::placeholder {
   box-shadow: none !important;
 }
 
+/* Roomier default height so form fields don't feel cramped. Checkboxes,
+   radios and colour swatches keep their own sizing. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+textarea,
+select,
+.select {
+  padding-block: 12px;
+  line-height: 1.35;
+}
+
 .page-head {
   padding-block: 18px 12px;
 }

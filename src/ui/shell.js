@@ -13,6 +13,7 @@ import {
 
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
+import { loadCloudPlayerState } from "../backend/cloudInventory.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
 import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
 import {
@@ -626,22 +627,37 @@ export function mountShell({ page, base = "./" }) {
   initDevPanel();
 
 
-  return {
-    setWallet(amount) {
-      if (amount == null) {
-        walletPill.classList.add("wallet--loading");
+  function applyWallet(amount) {
+    if (amount == null) {
+      walletPill.classList.add("wallet--loading");
+      walletValue.textContent = "—";
+      return;
+    }
 
-        walletValue.textContent = "—";
+    walletPill.classList.remove("wallet--loading");
+    walletValue.textContent = formatMoney(amount, { compact: true });
+    walletPill.title = `Money: ${formatMoney(amount)}`;
+  }
 
-        return;
+
+  // Populate the wallet from the shell itself so EVERY page shows the
+  // player's money — including pages that never call setWallet (guilds,
+  // seasons, and any future page). Pages that also set it just override
+  // with the same value.
+  ensurePlayerAuth()
+    .then((user) => (user ? loadCloudPlayerState() : null))
+    .then((state) => {
+      if (state && state.money != null) {
+        applyWallet(state.money);
       }
+    })
+    .catch(() => {
+      /* Non-fatal: the wallet stays in its loading state. */
+    });
 
-      walletPill.classList.remove("wallet--loading");
 
-      walletValue.textContent = formatMoney(amount, { compact: true });
-
-      walletPill.title = `Money: ${formatMoney(amount)}`;
-    },
+  return {
+    setWallet: applyWallet,
 
     get user() {
       return currentUser;
