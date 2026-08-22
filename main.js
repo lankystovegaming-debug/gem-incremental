@@ -22,7 +22,7 @@ import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
 import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
-import { getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
+import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
 import { chanceLabelForResult } from "./src/logic/chances.js";
 import {
   getSettings,
@@ -71,6 +71,7 @@ const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
 const sessionInsightsPanel = document.getElementById("sessionInsightsPanel");
+const clearSessionInsightsButton = document.getElementById("clearSessionInsights");
 const sessionInsightStats = document.getElementById("sessionInsightStats");
 const sessionHighlights = document.getElementById("sessionHighlights");
 const sessionBreakdown = document.getElementById("sessionBreakdown");
@@ -778,7 +779,7 @@ async function performRoll() {
   view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
 
   const outcome = await resolveOutcome(data);
-  recordSessionRoll(data, outcome);
+  recordSessionRoll(data, { ...outcome, tier: rarityTier(data.gem.rarity).id });
   renderSessionInsights();
 
   renderSummary();
@@ -821,6 +822,7 @@ async function resolveOutcome(data) {
     );
 
     return {
+      type: "auto-crafted",
       icon: icons.anvil,
       text: `Deposited into ${recipe?.name ?? "your Auto Craft target"}`,
       note: "deposited"
@@ -831,6 +833,7 @@ async function resolveOutcome(data) {
 
   if (shouldAutoKeep(data)) {
     return {
+      type: "auto-kept",
       icon: icons.shield,
       text: "Kept — effective rarity is protected by Auto Keep",
       note: "auto kept"
@@ -846,6 +849,8 @@ async function resolveOutcome(data) {
       view.inventoryCount = Math.max(0, view.inventoryCount - 1);
 
       return {
+        type: "auto-sold",
+        soldValue: Number(sale.soldValue ?? data.value),
         icon: icons.coins,
         text: `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`,
         note: "auto sold"
@@ -858,6 +863,7 @@ async function resolveOutcome(data) {
   }
 
   return {
+    type: "kept",
     icon: icons.bag,
     text: `Stored — ${formatCount(data.inventory?.count ?? 0)} of ${formatCount(
       data.inventory?.capacity ?? view.capacity
@@ -1118,6 +1124,11 @@ clearHistory.addEventListener("click", () => {
   history.length = 0;
 
   renderHistory();
+});
+
+clearSessionInsightsButton?.addEventListener("click", () => {
+  clearSessionInsights();
+  renderSessionInsights();
 });
 
 

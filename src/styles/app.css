@@ -3482,6 +3482,13 @@ textarea {
   margin-top: 3px;
   font-size: .78rem;
 }
+.session-insights__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 @media (max-width: 760px) {
   .session-insights__stats,
   .session-insights__highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }

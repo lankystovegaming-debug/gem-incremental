@@ -4,6 +4,7 @@ import { loadCloudPlayerState, loadCloudGems, sellCloudGem } from "../backend/cl
 import { getSettings, onSettingsChange, shouldAutoSell, shouldAutoKeep } from "./settings.js";
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify } from "./toast.js";
+import { recordSessionRoll } from "./sessionInsights.js";
 
 // One browser-wide automation lease prevents two tabs from continuously
 // racing each other. The server cooldown remains the final authority.
@@ -91,17 +92,27 @@ async function processRoll(data) {
   if (!data) return;
 
   let outcome = "Stored in inventory";
+  let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0)).id };
   if (data.autoCraft?.deposited) {
     outcome = "Auto deposited";
+    sessionOutcome.type = "auto-crafted";
+  } else if (shouldAutoKeep(data)) {
+    outcome = "Protected by Auto Keep";
+    sessionOutcome.type = "auto-kept";
   } else if (getSettings().autoSell && data.specimenId != null) {
     const tier = rarityTier(Number(data.gem?.rarity ?? 0));
-    if (!shouldAutoKeep(data) && shouldAutoSell(tier.id)) {
+    if (shouldAutoSell(tier.id)) {
       const { data: sale, error } = await sellCloudGem(data.specimenId);
-      if (!error && sale) outcome = `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`;
+      if (!error && sale) {
+        const soldValue = Number(sale.soldValue ?? data.value);
+        outcome = `Auto sold for ${formatMoney(soldValue)}`;
+        sessionOutcome = { type: "auto-sold", tier: tier.id, soldValue };
+      }
       else if (error) console.error("[AUTOMATION] Auto sell failed:", error);
     }
   }
 
+  recordSessionRoll(data, sessionOutcome);
   window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
   showGlobalRollEffect(data, outcome);
 }
