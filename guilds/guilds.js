@@ -1,5 +1,6 @@
 import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
+import { invokeFunction } from "../src/backend/invoke.js";
 mountShell({ page: "guilds", base: "../" });
 const $=(id)=>document.getElementById(id);
 const esc=(value)=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -9,7 +10,7 @@ const TRACK_COSTS=[0,500,750,1000,1500,2000,3000,4000,5500,7500,10000];
 const CAPACITY_COSTS={3:750,4:1250,5:2000,6:3000,7:4500,8:6000,9:8000};
 let state=null;
 
-async function api(action,extra={}){const {data,error}=await supabase.functions.invoke("features",{body:{action,...extra}});if(error||data?.error)throw new Error(data?.message||data?.error||error?.message||"Guild request failed.");return data;}
+async function api(action,extra={}){const {data,error}=await invokeFunction("features",{action,...extra},{retries:1});if(error)throw new Error(error.message);if(data?.error)throw new Error(data.message||data.error);return data;}
 function status(message="",error=false){$("status").textContent=message;$("status").classList.toggle("error",error);}
 function levelFor(xp){let level=1;LEVELS.forEach((needed,index)=>{if(xp>=needed)level=index+1;});return Math.min(10,level);}
 function activateTab(name){document.querySelectorAll("[data-tab]").forEach((b)=>b.classList.toggle("active",b.dataset.tab===name));document.querySelectorAll("[data-panel]").forEach((p)=>p.classList.toggle("hidden",p.dataset.panel!==name));}

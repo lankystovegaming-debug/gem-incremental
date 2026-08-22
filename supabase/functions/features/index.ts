@@ -11,6 +11,21 @@ const GUILD_COMPETITION_REWARDS=[
   {placement:"6th–10th",items:"1 Enchant Relic · 3 Tier III Potions · $300,000",guildPoints:3750},
   {placement:"Participation",items:"2 Tier II Potions · 1 Tier III Potion · $100,000",guildPoints:2250}
 ];
+const GUILD_ERROR_STATUS:Record<string,number>={
+  unauthenticated:401,management_only:403,owner_only:403,not_in_guild:403,
+  owner_cannot_leave:409,invite_not_found:404,player_not_found:404,
+  member_not_found:404,guild_not_found:404,already_in_guild:409,
+  player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
+  guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
+  guild_level_required:409,max_upgrade:409,insufficient_money:409
+};
+function guildFailure(value:any){
+  const raw=String(value?.message??value?.error??value??"guild_request_failed");
+  const known=Object.keys(GUILD_ERROR_STATUS).find((code)=>raw.includes(code))
+    ?? ["username_required","invalid_name","invalid_tag","invalid_description","invalid_join_mode","invalid_upgrade","invalid_member_action","invalid_role_change","cannot_kick_role","confirmation_mismatch"].find((code)=>raw.includes(code));
+  const code=known??"guild_request_failed";
+  return json({error:code,message:known?undefined:"The guild request could not be completed.",details:raw},GUILD_ERROR_STATUS[code]??(known?400:500));
+}
 async function isAdmin(ctx:any,userId:string){
   if(OWNER_USER_IDS.includes(userId)) return true;
   const {data,error}=await ctx.supabaseAdmin.from("admins").select("user_id").eq("user_id",userId).maybeSingle();
@@ -96,5 +111,5 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-disband"){const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});if(r.error)throw r.error;return json(r.data);}
   return json({error:"unknown_action"},400);
- }catch(e){console.error("FEATURES_API",e);return json({error:"features_api_error",message:e instanceof Error?e.message:String(e)},500);}
+ }catch(e){console.error("FEATURES_API",e);return guildFailure(e);}
 })};
