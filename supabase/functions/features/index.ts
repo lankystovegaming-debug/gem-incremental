@@ -3,6 +3,14 @@ const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"au
 const json=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"Content-Type":"application/json",...cors}});
 function uid(ctx:any){return ctx?.userClaims?.id??ctx?.userClaims?.sub??ctx?.jwtClaims?.sub??null;}
 const OWNER_USER_IDS=["38d5e8ce-18af-46d3-aa9e-6e601e75dd78"];
+const GUILD_COMPETITION_REWARDS=[
+  {placement:"1st",items:"1 Ancient Relic · 4 Enchant Relics · 1 Mythic Potion · 3 Legendary Potions · $2,000,000",guildPoints:10500},
+  {placement:"2nd",items:"1 Ancient Relic · 3 Enchant Relics · 3 Legendary Potions · $1,500,000",guildPoints:9000},
+  {placement:"3rd",items:"3 Enchant Relics · 2 Legendary Potions · $1,000,000",guildPoints:7500},
+  {placement:"4th–5th",items:"2 Enchant Relics · 1 Legendary Potion · 2 Tier III Potions · $600,000",guildPoints:5250},
+  {placement:"6th–10th",items:"1 Enchant Relic · 3 Tier III Potions · $300,000",guildPoints:3750},
+  {placement:"Participation",items:"2 Tier II Potions · 1 Tier III Potion · $100,000",guildPoints:2250}
+];
 async function isAdmin(ctx:any,userId:string){
   if(OWNER_USER_IDS.includes(userId)) return true;
   const {data,error}=await ctx.supabaseAdmin.from("admins").select("user_id").eq("user_id",userId).maybeSingle();
@@ -58,7 +66,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionRewards:GUILD_COMPETITION_REWARDS,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if (a === "guild-create") {
     const rpc=await ctx.supabaseAdmin.rpc("create_guild_v2",{

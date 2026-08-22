@@ -1,0 +1,4 @@
+.competition-rewards { grid-column: 1 / -1; }
+.reward-row { display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border); }
+.reward-row > span:last-child { color:#8d94ff;font-weight:800;white-space:nowrap; }
+@media (max-width:760px) { .reward-row { grid-template-columns:1fr; } .reward-row > span:last-child { white-space:normal; } }
