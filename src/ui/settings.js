@@ -32,7 +32,10 @@ const DEFAULTS = {
   autoKeep: true,
   autoKeepEffectiveRarity: 1_000_000,
   rollAnimations: true,
-  cutsceneMinimumRarity: 100000
+  cutsceneMinimumRarity: 100000,
+  // Off by default: a small side counter showing the sum of every
+  // player's lifetime earnings ("global cash").
+  globalCash: false
 };
 
 
@@ -75,7 +78,9 @@ function sanitise(value) {
 
     rollAnimations: value.rollAnimations !== false,
 
-    cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity))
+    cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity)),
+
+    globalCash: Boolean(value.globalCash)
   };
 }
 

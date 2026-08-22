@@ -26,6 +26,7 @@ import {
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
 import { mountHowToPlay } from "./onboarding.js";
+import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
 
 
@@ -275,6 +276,9 @@ export function mountShell({ page, base = "./" }) {
 
   // First-run "How to play" guide (shows once; reopenable from the dock).
   mountHowToPlay(base);
+
+  // Optional global-cash side counter (off by default; toggled in Settings).
+  initGlobalCash();
 
 
   const walletPill = header.querySelector("#shellWallet");

@@ -144,6 +144,7 @@ const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
 const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
+const globalCashToggle = document.getElementById("globalCashToggle");
 
 
 autoSellTier.innerHTML = SELL_TIERS.map(
@@ -160,6 +161,7 @@ function paintSettings(settings) {
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("setting--muted", !settings.autoKeep);
   animationsToggle.checked = settings.rollAnimations;
   cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
+  if (globalCashToggle) globalCashToggle.checked = settings.globalCash;
 
   autoSellTierRow.classList.toggle("setting--muted", !settings.autoSell);
 }
@@ -189,6 +191,10 @@ if (autoKeepRarity) autoKeepRarity.addEventListener("change", () => {
 
 animationsToggle.addEventListener("change", () =>
   updateSettings({ rollAnimations: animationsToggle.checked })
+);
+
+if (globalCashToggle) globalCashToggle.addEventListener("change", () =>
+  updateSettings({ globalCash: globalCashToggle.checked })
 );
 
 cutsceneMinimumRarity.addEventListener("change", () => {

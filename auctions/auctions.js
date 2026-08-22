@@ -89,8 +89,11 @@ const TABS = [
   { id: "mine", tab: "mineTab", section: "mineSection" }
 ];
 
+const TAB_KEY = "gemIncremental.market.tab";
+
 function selectTab(active) {
   state.tab = active;
+  try { localStorage.setItem(TAB_KEY, active); } catch { /* ignore */ }
   for (const entry of TABS) {
     const tab = document.getElementById(entry.tab);
     const section = document.getElementById(entry.section);
@@ -107,6 +110,15 @@ function selectTab(active) {
 for (const entry of TABS) {
   document.getElementById(entry.tab).addEventListener("click", () => selectTab(entry.id));
 }
+
+// QoL: return to whichever tab you last used instead of always "Buy".
+(function restoreTab() {
+  let saved = null;
+  try { saved = localStorage.getItem(TAB_KEY); } catch { /* ignore */ }
+  if (saved && TABS.some((entry) => entry.id === saved) && saved !== "browse") {
+    selectTab(saved);
+  }
+})();
 
 
 // =========================================================
