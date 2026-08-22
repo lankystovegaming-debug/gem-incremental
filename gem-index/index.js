@@ -209,7 +209,7 @@ function renderTierBreakdown(entries) {
 function renderSelectedMutationSummary() {
   const selected = [...state.selectedMutations];
   if (!selected.length) {
-    selectedMutationSummary.textContent = "Showing the fast All view: base gems + single mutations. Select multiple mutation tabs for an exact combination.";
+    selectedMutationSummary.textContent = "Showing the fast All view: base gems + single mutations. Custom mutations from the live catalog are included. Select multiple mutation tabs for an exact combination.";
     return;
   }
   selectedMutationSummary.textContent = selected.includes("none")
@@ -291,12 +291,19 @@ function renderMutationTabs() {
   const tabs = [
     { id: "all", name: "All", special: true },
     { id: "none", name: "No Mutation", special: true },
-    ...mutationList.map((mutation) => ({ id: mutation.id, name: mutation.name, special: false }))
+    ...mutationList.map((mutation) => ({ id: mutation.id, name: mutation.name, special: false, mutation }))
   ];
+
   mutationTabs.innerHTML = tabs.map((tab) => {
-    const active = tab.id === "all" ? state.selectedMutations.size === 0 : state.selectedMutations.has(tab.id);
-    const mutation = mutationById.get(tab.id);
-    return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}"${mutation ? ` style="--mutation-color:${escapeHtml(mutation.color || "#9fdcff")}"` : ""}>${escapeHtml(tab.name)}</button>`;
+    const active = tab.id === "all"
+      ? state.selectedMutations.size === 0
+      : state.selectedMutations.has(tab.id);
+    const mutation = tab.mutation ?? mutationById.get(tab.id);
+    const customBadge = mutation?.isCustom
+      ? `<span class="mutation-tab__custom" title="Custom mutation">CUSTOM</span>`
+      : "";
+
+    return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}"${mutation ? ` style="--mutation-color:${escapeHtml(mutation.color || "#9fdcff")}"` : ""}>${mutation?.icon ? `<span class="mutation-tab__icon" aria-hidden="true">${escapeHtml(mutation.icon)}</span>` : ""}<span>${escapeHtml(tab.name)}</span>${customBadge}</button>`;
   }).join("");
 }
 
@@ -372,16 +379,59 @@ async function refresh() {
     if (combinations) state.combinations = combinations;
 
     if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
-      mutationList = mutationCatalogResult.data.map((mutation) => ({
-        id: String(mutation.id), name: String(mutation.name), chance: Number(mutation.chance), multiplier: Number(mutation.multiplier),
-        description: String(mutation.description ?? ""), icon: String(mutation.icon ?? "✦"), color: String(mutation.color ?? "#9fdcff"), sortOrder: Number(mutation.sort_order ?? 0)
-      }));
+      // The live catalog is authoritative for custom/admin-created mutations,
+      // but keep bundled mutations as a fallback in case an older database has
+      // not seeded one of the built-ins yet. Never replace the whole catalog
+      // with the five bundled entries.
+      const builtInById = new Map(
+        Object.values(GEM_MUTATIONS).map((mutation, index) => [
+          String(mutation.id),
+          {
+            ...mutation,
+            icon: String(mutation.icon ?? "✦"),
+            color: String(mutation.color ?? "#9fdcff"),
+            sortOrder: Number(mutation.sortOrder ?? index * 10)
+          }
+        ])
+      );
+
+      const liveMutations = mutationCatalogResult.data
+        .map((mutation, index) => ({
+          id: String(mutation.id ?? "").trim().toLowerCase(),
+          name: String(mutation.name ?? mutation.id ?? "Unnamed Mutation"),
+          chance: Number(mutation.chance),
+          multiplier: Number(mutation.multiplier),
+          description: String(mutation.description ?? ""),
+          icon: String(mutation.icon ?? "✦"),
+          color: String(mutation.color ?? "#9fdcff"),
+          sortOrder: Number(mutation.sort_order ?? index * 10),
+          isCustom: !builtInById.has(String(mutation.id ?? "").trim().toLowerCase())
+        }))
+        .filter((mutation) => mutation.id && mutation.chance > 0 && mutation.multiplier > 0);
+
+      // Live rows win for matching IDs, which lets admins customize even the
+      // built-in mutations. Any bundled mutation missing from the DB remains
+      // selectable from the Gem Index bar.
+      const merged = new Map(
+        [...builtInById.entries()].map(([id, mutation]) => [id, { ...mutation, isCustom: false }])
+      );
+      for (const mutation of liveMutations) merged.set(mutation.id, mutation);
+
+      mutationList = [...merged.values()].sort(
+        (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0) || a.name.localeCompare(b.name)
+      );
+
       rebuildMutationMaps();
-      // Preserve valid selected custom tabs after an admin catalog change.
-      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
+
+      // Preserve selections after a live/custom catalog refresh. This is
+      // important when the page is refreshed while an admin has added a
+      // custom mutation.
+      state.selectedMutations = new Set(
+        [...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id))
+      );
       if (!state.selectedMutations.size) state.selectedMutations.add("none");
     } else if (mutationCatalogResult.error) {
-      console.warn("Live mutation catalog unavailable; using built-in catalog:", mutationCatalogResult.error.message);
+      console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
     }
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
