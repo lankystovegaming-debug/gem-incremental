@@ -1846,7 +1846,7 @@ a.btn--icon[aria-current="page"] {
 .global-cash {
   position: fixed;
   left: 12px;
-  top: 76px;
+  bottom: 16px;
   z-index: 60;
 
   display: flex;
@@ -3774,10 +3774,21 @@ input,
 select,
 textarea {
   border-radius: 12px !important;
-  border-color: var(--border-strong) !important;
+  border: 1.5px solid var(--border-strong) !important;
   background:
-    linear-gradient(145deg, var(--surface-sunken), var(--surface-solid)) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .025);
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--surface-sunken) 62%, var(--surface-solid)),
+      var(--surface-solid)) !important;
+  /* A recessed "well" so fields read as real inputs instead of flat panels. */
+  box-shadow:
+    inset 0 1px 3px rgb(0 0 0 / 0.07),
+    inset 0 -1px 0 rgb(255 255 255 / 0.03) !important;
+  color: var(--text);
+}
+input:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus) {
+  border-color: color-mix(in srgb, var(--border-strong) 62%, var(--accent) 38%) !important;
 }
 input:focus,
 select:focus,
@@ -3786,7 +3797,22 @@ button:focus-visible,
 a:focus-visible {
   outline: 0;
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 4px var(--accent-ring) !important;
+  box-shadow:
+    0 0 0 4px var(--accent-ring),
+    inset 0 1px 3px rgb(0 0 0 / 0.06) !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+/* Inputs that live inside their own bordered wrapper (search fields, the
+   money "$" group) stay flat so the wrapper owns the border, not both. */
+.field input,
+.auction-money-input input {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .page-head {
