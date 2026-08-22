@@ -1882,6 +1882,35 @@ a.btn--icon[aria-current="page"] {
   font-variant-numeric: tabular-nums;
 }
 
+/* Live feed of the sales that pushed the total up. */
+.global-cash__feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 5px;
+  max-width: 210px;
+}
+
+.global-cash__feed:empty { display: none; }
+
+.global-cash__event {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-cash__event-who { color: var(--text); font-weight: 700; }
+.global-cash__event b { color: var(--positive); font-weight: 700; }
+
+.global-cash__event--new { animation: global-cash-in 0.5s ease; }
+
+@keyframes global-cash-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
 /* Keep it clear of the mobile tab bar / narrow layouts. */
 @media (max-width: 680px) {
   .global-cash {
@@ -1891,6 +1920,7 @@ a.btn--icon[aria-current="page"] {
     padding: 5px 9px;
   }
   .global-cash__value { font-size: 0.78rem; }
+  .global-cash__feed { max-width: 170px; }
 }
 
 
