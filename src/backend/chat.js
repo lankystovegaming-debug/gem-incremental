@@ -215,6 +215,7 @@ export async function loadChatMessages(limit = 50) {
   ]);
 
   const mutationCatalog = mutationCatalogResult.error ? [] : (mutationCatalogResult.data ?? []);
+  const recoveredKeys = new Set();
   const recoveredAnnouncements = (historyResult.error ? [] : (historyResult.data ?? []))
     .filter((row) => {
       const mutationIds = parseMutationIds(row?.mutation_ids);
@@ -224,6 +225,17 @@ export async function loadChatMessages(limit = 50) {
       return rarity >= 100_000 || (mutationIds.length > 0 && effectiveRarity >= 1_000_000);
     })
     .filter((row) => !nearAnnouncement(row, announcements))
+    .filter((row) => {
+      const key = [
+        row?.player_id ?? "",
+        row?.gem_name ?? "",
+        new Date(row?.created_at ?? 0).getTime(),
+        parseMutationIds(row?.mutation_ids).join("+")
+      ].join("|");
+      if (recoveredKeys.has(key)) return false;
+      recoveredKeys.add(key);
+      return true;
+    })
     .map((row) => normalizeHistoryAnnouncement(row, mutationCatalog));
 
   const allAnnouncements = [...announcements, ...recoveredAnnouncements].map((message) => ({

@@ -528,23 +528,161 @@ function gradientColours(style) {
   return { first, second };
 }
 
-function iconShapeForName(name) {
-  const hash = hashString(String(name ?? ""));
+const REAL_CUTS = {
+  "Diamond": "brilliant",
+  "Red Diamond": "brilliant",
+  "Black Diamond": "brilliant",
+  "Lunar Diamond": "brilliant",
+  "Natural Moissanite": "brilliant",
+  "Presolar Moissanite": "brilliant",
+  "Zircon": "brilliant",
+  "Benitoite": "brilliant",
+  "Emerald": "emerald-cut",
+  "Sapphire": "cushion",
+  "Ruby": "oval",
+  "Red Beryl": "oval",
+  "Spinel": "oval",
+  "Aquamarine": "emerald-cut",
+  "Topaz": "emerald-cut",
+  "Citrine": "cushion",
+  "Amethyst": "cushion",
+  "Garnet": "oval",
+  "Peridot": "oval",
+  "Tourmaline": "cushion",
+  "Paraíba Tourmaline": "cushion",
+  "Tanzanite": "cushion",
+  "Alexandrite": "oval",
+  "Demantoid": "brilliant",
+  "Tsavorite": "brilliant",
+  "Taaffeite": "cushion",
+  "Musgravite": "oval",
+  "Painite": "cushion",
+  "Jeremejevite": "emerald-cut",
+  "Poudretteite": "oval",
+  "Pezzottaite": "oval",
+  "Clinohumite": "oval",
+  "Grandidierite": "emerald-cut",
+  "Serendibite": "emerald-cut",
+  "Blue Garnet": "oval",
+  "Kyawthuite": "oval",
+  "Tugtupite": "oval",
+  "Ringwoodite": "brilliant",
+  "Pallasite Crystal": "crystal",
+  "Quartz": "crystal",
+  "Aether Quartz": "crystal",
+  "Feldspar": "crystal",
+  "Fluorite": "hex",
+  "Calcite": "crystal",
+  "Opal": "cabochon",
+  "Black Opal": "cabochon",
+  "Void Opal": "cabochon",
+  "Martian Opal": "cabochon",
+  "Moonstone": "cabochon",
+  "Agate": "cabochon",
+  "Jasper": "cabochon",
+  "Hematite": "freeform",
+  "Obsidian": "freeform"
+};
 
+function iconShapeForName(name) {
+  const key = String(name ?? "");
+  if (REAL_CUTS[key]) return REAL_CUTS[key];
+
+  const hash = hashString(key);
   return [
     "diamond",
     "crystal",
     "hex",
     "shard",
-    "star",
+    "cushion",
     "prism"
   ][hash % 6];
+}
+
+
+// Real-material profiles used by the high-realism renderer. These are
+// intentionally based on the optical appearance of the corresponding
+// real-world minerals: body colour, transparency, dispersion, metallic
+// reflection, inclusions and the characteristic type of internal light.
+// Fictional gems receive a physically-inspired fantasy material instead.
+const REAL_GEM_MATERIALS = {
+  "Diamond": ["#f8fbff","#bfe8ff","#ffffff",.95,.98,.02,.9,.02,.95],
+  "Red Diamond": ["#8b0018","#ff315f","#ffd8df",.94,.96,.03,.92,.01,.96],
+  "Black Diamond": ["#0c0d11","#7d8290","#e7e9ef",.72,.88,.08,.75,.01,.92],
+  "Lunar Diamond": ["#b8c4dc","#f7fbff","#dce6ff",.92,.97,.03,.88,.03,.94],
+  "Natural Moissanite": ["#d9fbff","#ffffff","#c9b8ff",.98,.96,.02,1,.01,.92],
+  "Presolar Moissanite": ["#ffb66f","#fff2bf","#91d8ff",.98,.94,.03,1,.01,.95],
+  "Ruby": ["#6d0018","#e11d48","#ffb4c5",.82,.88,.06,.78,.06,.9],
+  "Sapphire": ["#082c8a","#2864e8","#91c8ff",.82,.9,.05,.82,.03,.9],
+  "Emerald": ["#063d28","#20a866","#9affca",.68,.82,.08,.62,.2,.82],
+  "Aquamarine": ["#5bbec9","#a7f5ff","#e5ffff",.88,.88,.04,.85,.04,.88],
+  "Topaz": ["#d58b16","#ffd86b","#fff3b0",.9,.9,.04,.86,.03,.88],
+  "Citrine": ["#b56a09","#f5c94d","#fff0a3",.9,.9,.04,.86,.04,.88],
+  "Amethyst": ["#42106e","#9b55d4","#e6baff",.88,.86,.05,.82,.08,.88],
+  "Garnet": ["#420814","#9c1830","#ff9b92",.76,.84,.08,.72,.05,.86],
+  "Peridot": ["#4d6910","#a8d83f","#efffa8",.9,.86,.04,.8,.03,.88],
+  "Tourmaline": ["#183c31","#27b78c","#ff7fc9",.72,.8,.08,.72,.1,.86],
+  "Paraíba Tourmaline": ["#007c7d","#38e9e0","#b7ffff",.84,.84,.04,.86,.04,.9],
+  "Opal": ["#9a8f9b","#f8e8ff","#ffffff",.62,.72,.22,.55,.2,.8],
+  "Black Opal": ["#090812","#5d4b85","#ff8bcf",.54,.78,.25,.52,.28,.86],
+  "Martian Opal": ["#7c211b","#ff775f","#ffe3c8",.56,.7,.24,.52,.25,.82],
+  "Void Opal": ["#07020d","#7b38c7","#ff67cb",.5,.7,.28,.55,.3,.88],
+  "Moonstone": ["#6c7793","#dfe9ff","#ffffff",.5,.62,.16,.58,.12,.78],
+  "Fluorite": ["#51378d","#8dddbb","#d6a9ff",.72,.8,.1,.72,.12,.86],
+  "Zircon": ["#55769b","#b8ddff","#ffffff",.96,.94,.03,1,.02,.92],
+  "Spinel": ["#72062d","#e51d68","#ffb8d4",.9,.9,.04,.88,.03,.88],
+  "Tanzanite": ["#25145f","#5e4ad4","#c8c7ff",.88,.88,.05,.84,.04,.9],
+  "Alexandrite": ["#176b4c","#4fcf91","#b8426d",.84,.84,.08,.8,.05,.9],
+  "Benitoite": ["#063b8e","#348cff","#b9efff",.96,.9,.04,.95,.02,.9],
+  "Red Beryl": ["#650b20","#d73553","#ffb0b7",.82,.86,.06,.8,.04,.88],
+  "Grandidierite": ["#0a5960","#55b8aa","#c2ffff",.8,.78,.08,.74,.08,.86],
+  "Taaffeite": ["#735b93","#c7a9e8","#f4e4ff",.9,.86,.06,.86,.04,.88],
+  "Musgravite": ["#31483d","#7d9e8a","#d8ffe7",.82,.82,.07,.76,.05,.86],
+  "Painite": ["#6b261b","#b95c3b","#ffb36c",.74,.82,.1,.7,.08,.86],
+  "Demantoid": ["#07532e","#3bcf75","#d2ffbd",.92,.88,.05,.9,.03,.9],
+  "Jeremejevite": ["#4b92aa","#a9e7f2","#f2ffff",.92,.88,.05,.88,.03,.88],
+  "Poudretteite": ["#8c557b","#e5a6ce","#fff0fb",.78,.76,.08,.76,.05,.86],
+  "Serendibite": ["#071d24","#31585d","#9cd4cf",.46,.72,.16,.58,.12,.8],
+  "Blue Garnet": ["#103f58","#3e89b2","#b8f4ff",.78,.82,.08,.74,.06,.86],
+  "Kyawthuite": ["#76200b","#d95b1c","#ffd08a",.86,.84,.06,.82,.04,.88],
+  "Pezzottaite": ["#7e1949","#ef6aa8","#ffd0e8",.88,.82,.06,.84,.03,.86],
+  "Clinohumite": ["#7a2f0a","#ff8a3d","#ffd19b",.84,.8,.07,.8,.04,.86],
+  "Tsavorite": ["#075c2d","#43d675","#d5ffbf",.9,.86,.05,.86,.03,.9],
+  "Tugtupite": ["#7d1749","#ff73a8","#ffe0ee",.72,.74,.1,.7,.08,.84],
+  "Meteorite Peridot": ["#4d5221","#b8e95a","#efffa8",.66,.7,.12,.6,.18,.8],
+  "Ringwoodite": ["#1d2f73","#5a83e8","#c5d8ff",.9,.84,.05,.84,.04,.88],
+  "Pallasite Crystal": ["#6b6841","#d3e87a","#fff8b0",.72,.74,.08,.7,.12,.82],
+  "Hematite": ["#292c32","#727883","#e6e9ef",.28,.35,.12,.18,.01,.98],
+  "Obsidian": ["#050608","#222733","#e8f2ff",.04,.18,.04,.15,.02,.92],
+  "Agate": ["#7f5a45","#c99a79","#f6dfbf",.18,.38,.2,.34,.5,.72],
+  "Jasper": ["#6c2e1c","#b96d35","#f0bd75",.12,.28,.2,.25,.55,.68],
+  "Quartz": ["#b9c1c8","#e9f0f5","#ffffff",.98,.82,.03,.9,.06,.84],
+  "Calcite": ["#e5dfd0","#f5f1e8","#ffffff",.92,.62,.05,.76,.12,.78],
+  "Feldspar": ["#9c7b74","#e2c8bf","#fff1e7",.68,.58,.1,.62,.15,.76],
+  "Aether Quartz": ["#6fd8ff","#c9fbff","#ffffff",.98,.9,.02,1,.04,.92],
+  "Chronite": ["#237e86","#c9b37a","#fff1ad",.84,.82,.08,.8,.08,.9],
+  "Neutron Crystal": ["#8ea4d6","#dfe7fd","#ffffff",.96,.95,.02,1,.03,.95],
+  "Antimatter Crystal": ["#7b071d","#ff5b5b","#d7a5ff",.9,.9,.08,.9,.03,.94],
+  "Singularity Shard": ["#08050f","#6a2fb5","#f4f4ff",.98,.96,.02,1,.02,.98],
+  "Ja-ore": ["#8d1f12","#ffcf45","#36c5f0",.8,.78,.1,.78,.2,.88],
+  "Lanky Gem": ["#8b1e71","#ff6ec7","#ffd2f2",.65,.65,.12,.62,.16,.8],
+  "Heart of Xy": ["#1d0938","#ff4fd8","#d5ffff",.98,.95,.03,1,.04,.98],
+  "Carmeltazite": ["#6f174d","#ff9de2","#9ee9ff",.9,.86,.06,.86,.05,.9],
+  "Dark Matter": ["#05010a","#5f27a8","#e4c8ff",.12,.55,.2,.45,.18,.96]
+};
+
+function materialProfileForGem(name, style) {
+  const profile = REAL_GEM_MATERIALS[String(name ?? "")];
+  if (profile) return profile;
+  const colours = gradientColours(style);
+  return [colours.first, colours.second, "#ffffff", .8, .72, .08, .72, .1, .86];
 }
 
 export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const safeName = String(name ?? "Gem");
   const style = getGemStyle(safeName);
   const colours = gradientColours(style);
+  const material = materialProfileForGem(safeName, style);
   const shape = iconShapeForName(safeName);
   const realism = getSettings().gemRealism ?? "classic";
 
@@ -580,6 +718,15 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
         --gem-color-a:${colours.first};
         --gem-color-b:${colours.second};
         --gem-glow:${style.glow ?? "transparent"};
+        --gem-real-a:${material[0]};
+        --gem-real-b:${material[1]};
+        --gem-real-c:${material[2]};
+        --gem-transparency:${material[3]};
+        --gem-refraction:${material[4]};
+        --gem-roughness:${material[5]};
+        --gem-dispersion:${material[6]};
+        --gem-inclusion:${material[7]};
+        --gem-metalness:${material[8]};
       "
       data-gem-icon="${escapeAttribute(safeName)}"
       data-mutation-count="${normalizedMutations.length}"

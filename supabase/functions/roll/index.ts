@@ -3397,20 +3397,51 @@ export default {
         Number(gem.rarity) < 100_000 &&
         effectiveRarity >= 1_000_000
       ) {
-        const { error: mutationOnlyAnnouncementError } =
-          await ctx.supabaseAdmin
+        const announcementPayload = {
+          player_id: playerId,
+          gem_name: gem.name,
+          rarity: gem.rarity,
+          effective_rarity: effectiveRarity,
+          mutation_ids: mutationIds,
+          // Chat shows the player's own permanent/equipment Luck, not any
+          // temporary boost (potions, admin-granted maintenance luck), so
+          // an admin-granted 1,000,000x never appears in the feed.
+          luck_at_roll: baseLuck
+        };
+
+        let mutationOnlyAnnouncementError = null;
+
+        // Prefer the full schema, but keep a compatibility fallback for
+        // deployments where the effective_rarity migration has not yet been
+        // applied. The rare announcement itself must never be lost merely
+        // because one optional metadata column is missing.
+        {
+          const result = await ctx.supabaseAdmin
             .from("global_chat_announcements")
-            .insert({
-              player_id: playerId,
-              gem_name: gem.name,
-              rarity: gem.rarity,
-              effective_rarity: effectiveRarity,
-              mutation_ids: mutationIds,
-              // Chat shows the player's own permanent/equipment Luck, not any
-              // temporary boost (potions, admin-granted maintenance luck), so
-              // an admin-granted 1,000,000x never appears in the feed.
-              luck_at_roll: baseLuck
-            });
+            .insert(announcementPayload);
+
+          mutationOnlyAnnouncementError = result.error;
+
+          if (mutationOnlyAnnouncementError) {
+            const message = String(mutationOnlyAnnouncementError.message ?? "");
+            const missingEffectiveRarity =
+              /effective_rarity|column .* does not exist|schema cache/i.test(message);
+
+            if (missingEffectiveRarity) {
+              const fallbackResult = await ctx.supabaseAdmin
+                .from("global_chat_announcements")
+                .insert({
+                  player_id: playerId,
+                  gem_name: gem.name,
+                  rarity: gem.rarity,
+                  mutation_ids: mutationIds,
+                  luck_at_roll: baseLuck
+                });
+
+              mutationOnlyAnnouncementError = fallbackResult.error;
+            }
+          }
+        }
 
         if (mutationOnlyAnnouncementError) {
           console.error(

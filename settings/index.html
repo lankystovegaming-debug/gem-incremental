@@ -178,7 +178,12 @@
           <div class="realism-control__labels" aria-hidden="true">
             <span>Classic</span><span>Polished</span><span>Faceted</span><span>Gemstone</span><span>Realistic</span><span>Studio</span><span>Photoreal</span>
           </div>
-          <input id="gemRealismRange" class="realism-range" type="range" min="0" max="6" step="1" value="0" aria-label="Gem icon realism">
+          <div class="realism-range-wrap">
+            <input id="gemRealismRange" class="realism-range" type="range" min="0" max="6" step="1" value="0" aria-label="Gem icon realism">
+            <div class="realism-control__ticks" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
           <output id="gemRealismValue" class="realism-control__value" for="gemRealismRange">Classic</output>
         </div>
       </div>

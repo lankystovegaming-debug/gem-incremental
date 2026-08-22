@@ -48,6 +48,7 @@ const rareBadgeEl = document.querySelector("#chatRareBadge");
 
 const CHAT_LAYOUT_STORAGE_KEY = "gem.chat.layout.v1";
 const CHAT_UNREAD_STORAGE_KEY = "gem.chat.unread.v1";
+const CHAT_RARE_ROLL_STORAGE_KEY = "gem.chat.rare-rolls.v2";
 const DEFAULT_CHAT_LAYOUT = Object.freeze({
   layout: "floating",
   width: 360,
@@ -83,6 +84,35 @@ if (messagesEl && formEl && inputEl) {
     } catch {
       // The game still works if browser storage is unavailable.
     }
+  }
+
+  function loadPersistedLocalRareRolls() {
+    const rows = readStorage(CHAT_RARE_ROLL_STORAGE_KEY);
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .filter((row) => row && row.local_only && row.gem_name && row.created_at)
+      .slice(-100);
+  }
+
+  function persistLocalRareRoll(message) {
+    if (!message?.local_only || !message.gem_name || !message.created_at) return;
+    const rows = loadPersistedLocalRareRolls();
+    const key = `${message.roller_id ?? currentUserId ?? ""}|${message.gem_name}|${message.created_at}|${(message.mutation_ids ?? []).join("+")}`;
+    const existing = rows.findIndex((row) =>
+      `${row.roller_id ?? currentUserId ?? ""}|${row.gem_name}|${row.created_at}|${(row.mutation_ids ?? []).join("+")}` === key
+    );
+    if (existing >= 0) rows[existing] = message;
+    else rows.push(message);
+    writeStorage(CHAT_RARE_ROLL_STORAGE_KEY, rows.slice(-100));
+  }
+
+  function clearLocalRareRollsOlderThan(days = 30) {
+    const cutoff = Date.now() - days * 86400000;
+    const rows = loadPersistedLocalRareRolls().filter((row) => {
+      const time = new Date(row.created_at).getTime();
+      return Number.isFinite(time) && time >= cutoff;
+    });
+    writeStorage(CHAT_RARE_ROLL_STORAGE_KEY, rows);
   }
 
   function clamp(value, min, max) {
@@ -618,6 +648,11 @@ if (messagesEl && formEl && inputEl) {
     const announcement = localRollAnnouncement(data);
     if (!announcement) return;
 
+    // Keep a durable browser-side copy as a last-resort recovery path. The
+    // server announcement is authoritative, but this prevents a successful
+    // rare mutation roll from vanishing from the player's chat after a reload
+    // when an older/deployed Edge Function missed the persistence insert.
+    persistLocalRareRoll(announcement);
     renderMessage(announcement, true);
   }
 
@@ -654,6 +689,15 @@ if (messagesEl && formEl && inputEl) {
     const isSystem =
       message.source === "system" || message.source === "announcement";
     const rareMessage = isRareMessage(message);
+
+    if (
+      rareMessage &&
+      isSystem &&
+      message.local_only &&
+      (!message.roller_id || message.roller_id === currentUserId)
+    ) {
+      persistLocalRareRoll(message);
+    }
 
     // Rare rolls are stored and rendered only in the Rare Rolls tab. They
     // never enter General chat.
@@ -872,9 +916,18 @@ if (messagesEl && formEl && inputEl) {
         loadUnreadPrivateMessageCount()
       ]);
 
+      clearLocalRareRollsOlderThan();
+
+      // If the server has not yet recovered a mutation-only announcement,
+      // restore the player's own qualifying local roll instead of losing it
+      // simply because the page was refreshed.
+      const persistedRareRolls = loadPersistedLocalRareRolls().filter(
+        (row) => !row.roller_id || row.roller_id === currentUserId
+      );
+
       messagesEl.innerHTML = "";
 
-      const merged = [...globalMessages, ...privateMessages]
+      const merged = [...globalMessages, ...persistedRareRolls, ...privateMessages]
         .sort(
           (a, b) =>
             new Date(a.created_at).getTime() -

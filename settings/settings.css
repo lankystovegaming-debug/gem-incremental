@@ -148,9 +148,37 @@ label.setting {
 .realism-control__labels { display: grid; grid-template-columns: repeat(7, 1fr); gap: .2rem; color: var(--text-muted); font-size: .67rem; text-align: center; line-height: 1.1; }
 .realism-control__labels span:first-child { text-align: left; }
 .realism-control__labels span:last-child { text-align: right; }
+.realism-range-wrap {
+  position: relative;
+  width: 100%;
+  padding: .2rem 0;
+}
 .realism-range {
   --realism-progress: 0%;
+  position: relative;
+  z-index: 2;
   appearance: none; width: 100%; height: 1.1rem; background: transparent; cursor: pointer; margin: 0;
+}
+.realism-control__ticks {
+  position: absolute;
+  z-index: 1;
+  left: .6rem;
+  right: .6rem;
+  top: 50%;
+  height: .46rem;
+  transform: translateY(-50%);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  pointer-events: none;
+}
+.realism-control__ticks span {
+  justify-self: center;
+  width: .28rem;
+  height: .28rem;
+  margin-top: .09rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-muted) 75%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 80%, transparent);
 }
 .realism-range::-webkit-slider-runnable-track {
   height: .46rem; border-radius: 999px;
