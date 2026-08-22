@@ -493,14 +493,19 @@ if (messagesEl && formEl && inputEl) {
 
   function chatChanceIsRareEnough(message) {
     const baseRarity = Number(message?.rarity ?? 0);
-    if (Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD) return true;
+    const mutationIds = chatMutationIds(message);
+    // Normal/unmutated rolls announce at 1 in 100,000. Once a mutation is
+    // present, the combined effective rarity must reach 1 in 1,000,000.
+    if (mutationIds.length === 0) {
+      return Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD;
+    }
     const storedEffective = Number(message?.effective_rarity);
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       return storedEffective >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
     }
     const calculated = chanceDenominator(
       { name: message?.gem_name, rarity: baseRarity },
-      chatMutationIds(message)
+      mutationIds
     );
     return Number.isFinite(calculated) && calculated >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
   }
@@ -509,6 +514,11 @@ if (messagesEl && formEl && inputEl) {
     const storedEffective = Number(message?.effective_rarity);
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       return `1 in ${Math.round(storedEffective).toLocaleString("en-US")}`;
+    }
+    const mutationDetails = Array.isArray(message?.mutation_details) ? message.mutation_details : [];
+    if (mutationDetails.length) {
+      const denominator = mutationDetails.reduce((product, mutation) => product * Math.max(1, Number(mutation.chance) || 1), Math.max(1, Number(message?.rarity) || 1));
+      return `1 in ${Math.round(denominator).toLocaleString("en-US")}`;
     }
     return chanceLabelForResult(
       { name: message.gem_name, rarity: Number(message?.rarity ?? 0) },
@@ -527,9 +537,9 @@ if (messagesEl && formEl && inputEl) {
     const showFinalChance = chatChanceIsRareEnough(message);
 
     const mutationNames = showFinalChance
-      ? mutationIds
-          .map((id) => getGemMutation(id))
-          .filter(Boolean)
+      ? (Array.isArray(message?.mutation_details) && message.mutation_details.length
+          ? message.mutation_details
+          : mutationIds.map((id) => getGemMutation(id)).filter(Boolean))
       : [];
 
     const mutationPrefix = mutationNames.length

@@ -27,6 +27,7 @@ import {
 } from "../src/ui/theme.js";
 import {
   SELL_TIERS,
+  GEM_REALISM_LEVELS,
   getSettings,
   updateSettings,
   onSettingsChange
@@ -145,6 +146,8 @@ const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 const globalCashToggle = document.getElementById("globalCashToggle");
+const gemRealismRange = document.getElementById("gemRealismRange");
+const gemRealismValue = document.getElementById("gemRealismValue");
 
 
 autoSellTier.innerHTML = SELL_TIERS.map(
@@ -162,10 +165,30 @@ function paintSettings(settings) {
   animationsToggle.checked = settings.rollAnimations;
   cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
   if (globalCashToggle) globalCashToggle.checked = settings.globalCash;
+  if (gemRealismRange) {
+    const index = Math.max(0, GEM_REALISM_LEVELS.findIndex((entry) => entry.id === settings.gemRealism));
+    gemRealismRange.value = String(index);
+    if (gemRealismValue) gemRealismValue.textContent = GEM_REALISM_LEVELS[index]?.label ?? "Classic";
+    gemRealismRange.style.setProperty("--realism-progress", `${(index / (GEM_REALISM_LEVELS.length - 1)) * 100}%`);
+  }
 
   autoSellTierRow.classList.toggle("setting--muted", !settings.autoSell);
 }
 
+
+
+if (gemRealismRange) {
+  gemRealismRange.addEventListener("input", () => {
+    const index = Math.max(0, Math.min(GEM_REALISM_LEVELS.length - 1, Number(gemRealismRange.value) || 0));
+    const level = GEM_REALISM_LEVELS[index];
+    if (gemRealismValue) gemRealismValue.textContent = level.label;
+    gemRealismRange.style.setProperty("--realism-progress", `${(index / (GEM_REALISM_LEVELS.length - 1)) * 100}%`);
+  });
+  gemRealismRange.addEventListener("change", () => {
+    const index = Math.max(0, Math.min(GEM_REALISM_LEVELS.length - 1, Number(gemRealismRange.value) || 0));
+    updateSettings({ gemRealism: GEM_REALISM_LEVELS[index].id });
+  });
+}
 
 autoRollToggle.addEventListener("change", () =>
   updateSettings({ autoRoll: autoRollToggle.checked })

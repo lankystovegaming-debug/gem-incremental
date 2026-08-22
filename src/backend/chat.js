@@ -104,10 +104,71 @@ async function enrich(rows, normalizer, includeProfiles = true) {
   return rows.map(row => normalizer(row, profiles));
 }
 
+
+function mutationChanceProductFromCatalog(ids, catalog) {
+  const byId = new Map((catalog ?? []).map((mutation) => [String(mutation.id), mutation]));
+  return (Array.isArray(ids) ? ids : []).reduce((product, id) => {
+    const chance = Number(byId.get(String(id))?.chance ?? 1);
+    return product * Math.max(1, chance);
+  }, 1);
+}
+
+function chatMutationDetails(ids, catalog) {
+  const byId = new Map((catalog ?? []).map((mutation) => [String(mutation.id), mutation]));
+  return (Array.isArray(ids) ? ids : [])
+    .map((id) => byId.get(String(id)))
+    .filter(Boolean)
+    .map((mutation) => ({
+      id: String(mutation.id),
+      name: String(mutation.name ?? mutation.id),
+      chance: Number(mutation.chance ?? 1),
+      multiplier: Number(mutation.multiplier ?? 1),
+      color: mutation.color ?? "#9fdcff",
+      icon: mutation.icon ?? "✦"
+    }));
+}
+
+function historyAnnouncementKey(row) {
+  return `${row?.player_id ?? ""}|${row?.gem_name ?? ""}|${new Date(row?.created_at ?? 0).getTime()}`;
+}
+
+function nearAnnouncement(historyRow, announcements) {
+  const historyTime = new Date(historyRow?.created_at ?? 0).getTime();
+  return announcements.some((announcement) => {
+    if (announcement?.roller_id !== historyRow?.player_id) return false;
+    if (announcement?.gem_name !== historyRow?.gem_name) return false;
+    const announcementTime = new Date(announcement?.created_at ?? 0).getTime();
+    return Number.isFinite(historyTime) && Number.isFinite(announcementTime) && Math.abs(historyTime - announcementTime) <= 5000;
+  });
+}
+
+function normalizeHistoryAnnouncement(row, mutationCatalog = []) {
+  const mutationIds = parseMutationIds(row?.mutation_ids);
+  const rarity = Number(row?.rarity ?? 0);
+  const effectiveRarity = Math.max(1, rarity * mutationChanceProductFromCatalog(mutationIds, mutationCatalog));
+  return {
+    id: `rare-history-${row.id}`,
+    source: "system",
+    sender_id: null,
+    username: "[SYSTEM]",
+    avatar_url: null,
+    roller_id: row.player_id,
+    roller_username: row.username ?? "Someone",
+    gem_name: row.gem_name,
+    rarity,
+    effective_rarity: effectiveRarity,
+    luckAtRoll: row.base_luck == null ? null : Number(row.base_luck),
+    mutation_ids: mutationIds,
+    message: `${row.username ?? "Someone"} rolled a rare ${row.gem_name} — 1 in ${Math.round(effectiveRarity).toLocaleString("en-US")}!`,
+    created_at: row.created_at,
+    recovered_from_history: true
+  };
+}
+
 export async function loadChatMessages(limit = 50) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
 
-  const [chatResult, announcementResult] = await Promise.all([
+  const [chatResult, announcementResult, historyResult, mutationCatalogResult] = await Promise.all([
     supabase
       .from("chat_messages")
       .select("id, sender_id, message, created_at")
@@ -118,7 +179,24 @@ export async function loadChatMessages(limit = 50) {
       .from("global_chat_announcements")
       .select("id, player_id, gem_name, rarity, effective_rarity, mutation_ids, luck_at_roll, created_at")
       .order("created_at", { ascending: false })
-      .limit(safeLimit)
+      .limit(safeLimit),
+
+    // Best-roll history is a durable recovery path. If a rare announcement
+    // was missed by an older Edge Function/database deployment, a page reload
+    // can still reconstruct the qualifying roll instead of losing it from chat.
+    supabase
+      .from("best_roll_history")
+      .select("id, player_id, username, gem_name, rarity, mutation_ids, base_luck, created_at")
+      .order("created_at", { ascending: false })
+      .limit(Math.min(100, safeLimit * 2)),
+
+    // The live catalog is required for custom mutations whose chances are not
+    // present in the historical five-mutation client constant.
+    supabase
+      .from("game_mutations")
+      .select("id, name, chance, multiplier, color, icon")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true })
   ]);
 
   if (chatResult.error) {
@@ -136,7 +214,24 @@ export async function loadChatMessages(limit = 50) {
     enrich(announcementResult.data ?? [], normalizeAnnouncement)
   ]);
 
-  return [...messages, ...announcements]
+  const mutationCatalog = mutationCatalogResult.error ? [] : (mutationCatalogResult.data ?? []);
+  const recoveredAnnouncements = (historyResult.error ? [] : (historyResult.data ?? []))
+    .filter((row) => {
+      const mutationIds = parseMutationIds(row?.mutation_ids);
+      const rarity = Number(row?.rarity ?? 0);
+      const effectiveRarity = rarity * mutationChanceProductFromCatalog(mutationIds, mutationCatalog);
+      // Normal/unmutated: 1 in 100,000+. Mutated: 1 in 1,000,000+.
+      return rarity >= 100_000 || (mutationIds.length > 0 && effectiveRarity >= 1_000_000);
+    })
+    .filter((row) => !nearAnnouncement(row, announcements))
+    .map((row) => normalizeHistoryAnnouncement(row, mutationCatalog));
+
+  const allAnnouncements = [...announcements, ...recoveredAnnouncements].map((message) => ({
+    ...message,
+    mutation_details: chatMutationDetails(message.mutation_ids, mutationCatalog)
+  }));
+
+  return [...messages, ...allAnnouncements]
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     .slice(-safeLimit);
 }

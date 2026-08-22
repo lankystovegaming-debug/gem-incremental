@@ -25,6 +25,16 @@ export const SELL_TIERS = [
 ];
 
 
+export const GEM_REALISM_LEVELS = [
+  { id: "classic", label: "Classic" },
+  { id: "polished", label: "Polished" },
+  { id: "faceted", label: "Faceted" },
+  { id: "gemstone", label: "Gemstone" },
+  { id: "realistic", label: "Realistic" },
+  { id: "studio", label: "Studio" },
+  { id: "photoreal", label: "Photoreal" }
+];
+
 const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
@@ -35,7 +45,8 @@ const DEFAULTS = {
   cutsceneMinimumRarity: 100000,
   // Off by default: a small side counter showing the sum of every
   // player's lifetime earnings ("global cash").
-  globalCash: false
+  globalCash: false,
+  gemRealism: "classic"
 };
 
 
@@ -80,7 +91,11 @@ function sanitise(value) {
 
     cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity)),
 
-    globalCash: Boolean(value.globalCash)
+    globalCash: Boolean(value.globalCash),
+
+    gemRealism: GEM_REALISM_LEVELS.some((entry) => entry.id === value.gemRealism)
+      ? value.gemRealism
+      : DEFAULTS.gemRealism
   };
 }
 

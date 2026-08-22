@@ -4054,3 +4054,67 @@ select,
   letter-spacing: .08em;
   opacity: .7;
 }
+
+/* =========================================================
+   GEM ICON REALISM SCALE
+   Seven material stages: classic -> photoreal.
+   The original geometry is retained; each stage progressively
+   adds physically-inspired depth, facet contrast, Fresnel edge
+   response, dispersion, micro-reflection and studio lighting.
+   ========================================================= */
+.gem-icon[data-gem-realism="classic"] { --realism:0; --realism-detail:0; --realism-shadow:0; }
+.gem-icon[data-gem-realism="polished"] { --realism:.17; --realism-detail:.18; --realism-shadow:.16; }
+.gem-icon[data-gem-realism="faceted"] { --realism:.34; --realism-detail:.36; --realism-shadow:.32; }
+.gem-icon[data-gem-realism="gemstone"] { --realism:.51; --realism-detail:.54; --realism-shadow:.49; }
+.gem-icon[data-gem-realism="realistic"] { --realism:.68; --realism-detail:.70; --realism-shadow:.66; }
+.gem-icon[data-gem-realism="studio"] { --realism:.84; --realism-detail:.85; --realism-shadow:.82; }
+.gem-icon[data-gem-realism="photoreal"] { --realism:1; --realism-detail:1; --realism-shadow:1; }
+.gem-icon[data-gem-realism]:not([data-gem-realism="classic"]) {
+  isolation:isolate;
+  filter: saturate(calc(1 + var(--realism) * .18)) contrast(calc(1 + var(--realism) * .12));
+}
+.gem-icon[data-gem-realism]:not([data-gem-realism="classic"])::before {
+  background:
+    radial-gradient(ellipse at 27% 17%, rgb(255 255 255 / calc(.34 + var(--realism) * .34)) 0 3%, transparent 4% 100%),
+    radial-gradient(ellipse at 71% 77%, rgb(0 0 0 / calc(.10 + var(--realism) * .22)) 0 18%, transparent 48%),
+    linear-gradient(145deg, color-mix(in srgb, var(--gem-color-a) 92%, white), var(--gem-color-b));
+  box-shadow:
+    inset -7px -9px 15px rgb(0 0 0 / calc(.08 + var(--realism-shadow) * .24)),
+    inset 6px 5px 10px rgb(255 255 255 / calc(.10 + var(--realism-detail) * .26)),
+    0 7px 18px rgb(0 0 0 / calc(.04 + var(--realism-shadow) * .22));
+}
+.gem-icon[data-gem-realism="gemstone"] .gem-icon__facet,
+.gem-icon[data-gem-realism="realistic"] .gem-icon__facet,
+.gem-icon[data-gem-realism="studio"] .gem-icon__facet,
+.gem-icon[data-gem-realism="photoreal"] .gem-icon__facet {
+  background: linear-gradient(145deg, rgb(255 255 255 / calc(.08 + var(--realism-detail) * .24)), transparent 38% 63%, rgb(0 0 0 / calc(.06 + var(--realism-detail) * .17)));
+  mix-blend-mode: screen;
+}
+.gem-icon[data-gem-realism="realistic"] .gem-icon__core,
+.gem-icon[data-gem-realism="studio"] .gem-icon__core,
+.gem-icon[data-gem-realism="photoreal"] .gem-icon__core {
+  box-shadow: inset -4px -5px 7px rgb(0 0 0 / .24), inset 3px 3px 5px rgb(255 255 255 / .24), 0 0 12px var(--gem-glow);
+}
+.gem-icon[data-gem-realism="studio"] .gem-icon__shine,
+.gem-icon[data-gem-realism="photoreal"] .gem-icon__shine {
+  opacity: calc(.48 + var(--realism-detail) * .45);
+  filter: blur(calc(1px - var(--realism-detail) * .7));
+}
+.gem-icon[data-gem-realism="photoreal"]::after {
+  content:"";
+  position:absolute; inset:4%; border-radius:inherit; pointer-events:none; z-index:8;
+  background:
+    linear-gradient(116deg, transparent 0 28%, rgb(255 255 255 / .28) 29% 30%, transparent 31% 59%, rgb(255 255 255 / .11) 60% 61%, transparent 62%),
+    radial-gradient(ellipse at 35% 18%, rgb(255 255 255 / .34), transparent 24%),
+    radial-gradient(ellipse at 76% 82%, rgb(0 0 0 / .18), transparent 30%);
+  mix-blend-mode: screen;
+}
+/* Material cues for real-world gemstone families. */
+.gem-icon[data-gem-icon="Diamond"][data-gem-realism="photoreal"]::after,
+.gem-icon[data-gem-icon="Zircon"][data-gem-realism="photoreal"]::after { background: conic-gradient(from 205deg at 48% 45%, rgb(255 255 255 / .5), transparent 13%, rgb(176 225 255 / .24) 22%, transparent 38%, rgb(255 255 255 / .55) 50%, transparent 66%, rgb(185 225 255 / .2) 82%, transparent); mix-blend-mode: screen; }
+.gem-icon[data-gem-icon="Opal"][data-gem-realism="photoreal"]::after,
+.gem-icon[data-gem-icon="Tourmaline"][data-gem-realism="photoreal"]::after { background: conic-gradient(from 40deg, rgb(255 70 160 / .24), rgb(90 230 255 / .25), rgb(130 255 150 / .24), rgb(255 210 70 / .22), rgb(170 100 255 / .25), rgb(255 70 160 / .24)); filter:saturate(1.35); mix-blend-mode:screen; }
+.gem-icon[data-gem-icon="Emerald"][data-gem-realism="photoreal"]::after { background: radial-gradient(ellipse at 37% 39%, rgb(255 255 255 / .12), transparent 10%), radial-gradient(ellipse at 62% 56%, rgb(20 60 35 / .22), transparent 17%), linear-gradient(117deg, transparent 34%, rgb(255 255 255 / .12) 35% 36%, transparent 37%); }
+.gem-icon[data-gem-icon="Ruby"][data-gem-realism="photoreal"]::after,
+.gem-icon[data-gem-icon="Sapphire"][data-gem-realism="photoreal"]::after { background: linear-gradient(127deg, transparent 24%, rgb(255 255 255 / .20) 25% 27%, transparent 28% 62%, rgb(255 255 255 / .10) 63% 64%, transparent 65%); }
+.gem-icon[data-gem-icon="Hematite"][data-gem-realism="photoreal"]::before { background: linear-gradient(115deg, #1a1514, #6f544b 32%, #171314 48%, #a0786d 63%, #201719); box-shadow: inset -6px -8px 14px rgb(0 0 0 / .45), inset 5px 4px 8px rgb(255 255 255 / .18), 0 8px 18px rgb(0 0 0 / .35); }
