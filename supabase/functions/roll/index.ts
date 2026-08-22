@@ -2323,6 +2323,28 @@ export default {
         luck *= strengthenEnchantMultiplier(2.5);
       }
 
+      // Eligible guild members receive small permanent multiplicative
+      // enhancements. The 24-hour delay prevents join-hopping for bonuses.
+      try {
+        const { data: guildMembership, error: guildBonusError } = await ctx.supabaseAdmin
+          .from("guild_members")
+          .select("eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
+          .eq("player_id", playerId)
+          .maybeSingle();
+        if (guildBonusError) throw guildBonusError;
+        if (guildMembership && Date.parse(guildMembership.eligible_at) <= now.getTime()) {
+          const guild = Array.isArray(guildMembership.guilds)
+            ? guildMembership.guilds[0]
+            : guildMembership.guilds;
+          luck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
+          rollSpeed *= 1 + Math.min(10, Math.max(0, Number(guild?.speed_tier ?? 0))) / 100;
+          weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
+        }
+      } catch (guildBonusError) {
+        // Guild progression is best-effort and must never prevent a roll.
+        console.error("Guild bonus lookup failed:", guildBonusError);
+      }
+
 
       // =====================================================
       // CALCULATE + CLAIM COOLDOWN
@@ -3328,25 +3350,6 @@ export default {
       }
 
 
-      // Guilds: every successful roll contributes guild points when the
-      // Guilds section is enabled. Failure is non-fatal to the roll.
-      try {
-        const { data: guildSection } = await ctx.supabaseAdmin
-          .from("game_section_settings")
-          .select("enabled")
-          .eq("id", "guilds")
-          .maybeSingle();
-        if (guildSection?.enabled) {
-          const { error: guildPointError } = await ctx.supabaseAdmin.rpc(
-            "record_guild_roll_points",
-            { p_player_id: playerId, p_points: 1 }
-          );
-          if (guildPointError) console.error("Guild roll point update failed:", guildPointError);
-        }
-      } catch (guildError) {
-        console.error("Guild roll point update crashed:", guildError);
-      }
-
       // Record the COMPLETE mutation combination as one index entry.
       // "none" is also a real combination, so every roll records exactly
       // one combination: none, or any of the 31 non-empty subsets.
@@ -3460,21 +3463,32 @@ export default {
       }
 
       // =====================================================
-      // GUILD ROLL POINTS
-      // Every successful roll awards the member's guild one point.
+      // GUILD ROLL ACTIVITY
+      // Exactly one best-effort call per successful roll. Spendable Guild
+      // Points come from missions and competitions, never raw roll volume.
       // This is best-effort and never invalidates a successful roll.
       // =====================================================
 
       let guildPoints = null;
       try {
         const { data: guildResult, error: guildError } = await ctx.supabaseAdmin.rpc(
-          "record_guild_roll_points",
-          { p_player_id: playerId, p_points: 1 }
+          "record_guild_roll_activity",
+          {
+            p_player_id: playerId,
+            p_rarity: relicDrop ? 0 : Number(gem.rarity),
+            p_rarity_tier: "",
+            p_effective_rarity: relicDrop ? 0 : effectiveRarity,
+            p_weight_multiplier: relicDrop ? 0 : rolledWeightMultiplier,
+            p_final_weight: relicDrop ? 0 : finalWeight,
+            p_value: relicDrop ? 0 : value,
+            p_mutated: !relicDrop && mutationIds.length > 0,
+            p_is_relic: relicDrop
+          }
         );
-        if (guildError) console.error("Guild roll points update failed:", guildError);
+        if (guildError) console.error("Guild roll activity update failed:", guildError);
         else guildPoints = guildResult ?? null;
       } catch (guildError) {
-        console.error("Guild roll points update crashed:", guildError);
+        console.error("Guild roll activity update crashed:", guildError);
       }
 
       // =====================================================

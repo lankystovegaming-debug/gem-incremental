@@ -28,91 +28,65 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     return json({definitions:visible,progress:progress??[],isAdmin:admin});
   }
   if(a==="guild"){
-   const {data:member}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role").eq("player_id",userId).maybeSingle();
-   let guild:any=null, members:any[]=[], invites:any[]=[], quests:any[]=[];
-   if(member){const g=await ctx.supabaseAdmin.from("guilds").select("*").eq("id",member.guild_id).single(); if(g.error)throw g.error;guild=g.data; const m=await ctx.supabaseAdmin.from("guild_members").select("player_id,role,joined_at").eq("guild_id",guild.id); if(m.error)throw m.error;members=m.data??[]; const q=await ctx.supabaseAdmin.from("guild_quests").select("*").eq("guild_id",guild.id).order("created_at",{ascending:false}); if(q.error)throw q.error;quests=q.data??[];}
-   const iv=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false}); if(iv.error)throw iv.error;invites=iv.data??[];
-   return json({guild,members,invites,quests,currentPlayerId:userId});
+   const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
+   if(membershipError)throw membershipError;
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[];
+   if(membership){
+    const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
+    if(runtime.error)throw runtime.error;
+    const {data:g,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("*").eq("id",membership.guild_id).single();
+    if(guildError)throw guildError; guild=g;
+    const {data:memberRows,error:memberError}=await ctx.supabaseAdmin.from("guild_members").select("player_id,role,joined_at,eligible_at,lifetime_contribution,weekly_contribution").eq("guild_id",guild.id).order("role");
+    if(memberError)throw memberError;
+    const ids=(memberRows??[]).map((row:any)=>row.player_id);
+    const {data:profiles,error:profileError}=ids.length?await ctx.supabaseAdmin.from("players").select("id,username").in("id",ids):{data:[],error:null};
+    if(profileError)throw profileError;
+    const names=new Map((profiles??[]).map((profile:any)=>[profile.id,profile.username]));
+    members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
+    const now=new Date().toISOString();
+    const {data:missionRows,error:missionError}=await ctx.supabaseAdmin.from("guild_missions").select("*").eq("guild_id",guild.id).lte("starts_at",now).gt("ends_at",now).order("cadence").order("difficulty");
+    if(missionError)throw missionError; missions=missionRows??[];
+    const {data:activityRows,error:activityError}=await ctx.supabaseAdmin.from("guild_activity").select("id,actor_id,action,details,created_at").eq("guild_id",guild.id).order("created_at",{ascending:false}).limit(20);
+    if(activityError)throw activityError; activity=activityRows??[];
+    const {data:competitionRow}=await ctx.supabaseAdmin.from("guild_competitions").select("*").lte("cycle_start",now).gt("cycle_ends_at",now).maybeSingle();
+    if(competitionRow){
+      const active=Date.parse(now)>=Date.parse(competitionRow.active_starts_at)&&Date.parse(now)<Date.parse(competitionRow.active_ends_at);
+      competition={...competitionRow,competition_type:active?competitionRow.competition_type:null,status:active?"active":"intermission"};
+      const {data:scoreRows}=await ctx.supabaseAdmin.from("guild_competition_results").select("guild_id,score,rank,guilds(name,tag)").eq("competition_id",competitionRow.id).order("score",{ascending:false}).limit(100);
+      standings=scoreRows??[];
+    }
+   }
+   const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
+   if(inviteError)throw inviteError;
+   return json({guild,membership,members,missions,activity,competition,standings,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if (a === "guild-create") {
-    const name = String(b.name ?? "").trim().slice(0, 50);
-
-    if (name.length < 2) {
-      return json({ error: "invalid_name" }, 400);
-    }
-
-    // Prefer the transactional RPC. Older deployments may not have the RPC
-    // yet, so the fallback below keeps guild creation usable while the
-    // migration is being rolled out.
-    const rpc = await ctx.supabaseAdmin.rpc("create_guild_for_player", {
-      p_name: name,
-      p_player_id: userId
+    const rpc=await ctx.supabaseAdmin.rpc("create_guild_v2",{
+      p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),
+      p_description:String(b.description??""),p_emblem:String(b.emblem??"gem"),
+      p_primary:String(b.primaryColor??"#7c83ff"),p_secondary:String(b.secondaryColor??"#42d6b3"),
+      p_accent:String(b.accentColor??"#f5c451"),p_join_mode:String(b.joinMode??"invite")
     });
-
-    if (!rpc.error) {
-      return json(rpc.data ?? { guild: null });
-    }
-
-    const rpcMessage = String(rpc.error.message ?? "").toLowerCase();
-    const rpcMissing = rpc.error.code === "42883" ||
-      rpc.error.code === "PGRST202" ||
-      rpcMessage.includes("does not exist");
-
-    if (!rpcMissing) {
-      const code = rpcMessage.includes("guild_name_taken")
-        ? "guild_name_taken"
-        : rpcMessage.includes("already_in_guild")
-          ? "already_in_guild"
-          : "guild_create_failed";
-      return json({ error: code, message: rpc.error.message }, code === "guild_create_failed" ? 500 : 409);
-    }
-
-    const { data: existingMember, error: memberLookupError } = await ctx.supabaseAdmin
-      .from("guild_members")
-      .select("guild_id")
-      .eq("player_id", userId)
-      .maybeSingle();
-
-    if (memberLookupError) {
-      return json({ error: "guild_create_failed", message: memberLookupError.message }, 500);
-    }
-
-    if (existingMember) {
-      return json({ error: "already_in_guild" }, 409);
-    }
-
-    const { data: guild, error: guildError } = await ctx.supabaseAdmin
-      .from("guilds")
-      .insert({ name, owner_id: userId })
-      .select("*")
-      .single();
-
-    if (guildError) {
-      const message = String(guildError.message ?? "").toLowerCase();
-      return json({
-        error: message.includes("duplicate") || message.includes("unique")
-          ? "guild_name_taken"
-          : "guild_create_failed",
-        message: guildError.message
-      }, message.includes("duplicate") || message.includes("unique") ? 409 : 500);
-    }
-
-    const { error: ownerError } = await ctx.supabaseAdmin
-      .from("guild_members")
-      .insert({ guild_id: guild.id, player_id: userId, role: "owner" });
-
-    if (ownerError) {
-      // Best-effort rollback for deployments without the transactional RPC.
-      await ctx.supabaseAdmin.from("guilds").delete().eq("id", guild.id);
-      return json({ error: "guild_create_failed", message: ownerError.message }, 500);
-    }
-
-    return json({ guild });
+    if(rpc.error)throw rpc.error; return json(rpc.data);
   }
-  if(a==="guild-invite"){const gid=String(b.guildId??"");const target=String(b.playerId??"");const own=await ctx.supabaseAdmin.from("guilds").select("id").eq("id",gid).eq("owner_id",userId).maybeSingle();if(own.error)throw own.error;if(!own.data)return json({error:"owner_only"},403);if(!target)return json({error:"player_id_required"},400);const {data:inGuild}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",target).maybeSingle();if(inGuild)return json({error:"player_already_in_guild"},409);const r=await ctx.supabaseAdmin.from("guild_invites").insert({guild_id:gid,invited_player_id:target,invited_by:userId});if(r.error)throw r.error;return json({ok:true});}
-  if(a==="guild-respond-invite"){const id=String(b.inviteId??"");const accept=b.accept===true;const iv=await ctx.supabaseAdmin.from("guild_invites").select("*").eq("id",id).eq("invited_player_id",userId).eq("status","pending").single();if(iv.error)throw iv.error;if(accept){const already=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",userId).maybeSingle();if(already.data)return json({error:"already_in_guild"},409);const m=await ctx.supabaseAdmin.from("guild_members").insert({guild_id:iv.data.guild_id,player_id:userId,role:"member"});if(m.error)throw m.error;}const u=await ctx.supabaseAdmin.from("guild_invites").update({status:accept?"accepted":"declined",responded_at:new Date().toISOString()}).eq("id",id);if(u.error)throw u.error;return json({ok:true});}
-  if(a==="guild-quest-save"){const gid=String(b.guildId??"");const own=await ctx.supabaseAdmin.from("guilds").select("id").eq("id",gid).eq("owner_id",userId).maybeSingle();if(own.error)throw own.error;if(!own.data)return json({error:"owner_only"},403);const q=b.quest??{};const payload={name:String(q.name??"Guild Quest").slice(0,120),description:String(q.description??"").slice(0,500),requirements:q.requirements&&typeof q.requirements==="object"?q.requirements:{type:"guild_points",amount:100},reward_points:Math.max(0,Number(q.reward_points??0)),enabled:q.enabled!==false,starts_at:q.starts_at||null,ends_at:q.ends_at||null,updated_at:new Date().toISOString()};let r;if(q.id)r=await ctx.supabaseAdmin.from("guild_quests").update(payload).eq("id",q.id).eq("guild_id",gid).select().single();else r=await ctx.supabaseAdmin.from("guild_quests").insert({...payload,guild_id:gid}).select().single();if(r.error)throw r.error;return json({quest:r.data});}
-  if(a==="guild-quest-delete"){const gid=String(b.guildId??"");const own=await ctx.supabaseAdmin.from("guilds").select("id").eq("id",gid).eq("owner_id",userId).maybeSingle();if(!own.data)return json({error:"owner_only"},403);const r=await ctx.supabaseAdmin.from("guild_quests").delete().eq("id",String(b.id)).eq("guild_id",gid);if(r.error)throw r.error;return json({ok:true});}
+  if(a==="guild-invite"){
+    const username=String(b.username??"").trim(); if(!username)return json({error:"username_required"},400);
+    const {data:actor}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role").eq("player_id",userId).maybeSingle();
+    if(!actor||!["owner","officer"].includes(actor.role))return json({error:"management_only"},403);
+    const {data:target,error:targetError}=await ctx.supabaseAdmin.from("players").select("id,username").ilike("username",username).maybeSingle();
+    if(targetError)throw targetError;if(!target)return json({error:"player_not_found"},404);
+    const {data:inGuild}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",target.id).maybeSingle();
+    if(inGuild)return json({error:"player_already_in_guild"},409);
+    await ctx.supabaseAdmin.from("guild_invites").update({status:"cancelled",responded_at:new Date().toISOString()}).eq("guild_id",actor.guild_id).eq("invited_player_id",target.id).eq("status","pending");
+    const {error}=await ctx.supabaseAdmin.from("guild_invites").insert({guild_id:actor.guild_id,invited_player_id:target.id,invited_by:userId});
+    if(error)throw error;return json({ok:true,username:target.username});
+  }
+  if(a==="guild-respond-invite"){const r=await ctx.supabaseAdmin.rpc("guild_respond_invite_v2",{p_player_id:userId,p_invite_id:String(b.inviteId??""),p_accept:b.accept===true});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-manage-member"){const r=await ctx.supabaseAdmin.rpc("guild_manage_member",{p_actor_id:userId,p_target_id:String(b.playerId??""),p_action:String(b.memberAction??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-leave"){const r=await ctx.supabaseAdmin.rpc("guild_leave_v2",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-upgrade"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_upgrade",{p_player_id:userId,p_track:String(b.track??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-disband"){const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});if(r.error)throw r.error;return json(r.data);}
   return json({error:"unknown_action"},400);
  }catch(e){console.error("FEATURES_API",e);return json({error:"features_api_error",message:e instanceof Error?e.message:String(e)},500);}
 })};
