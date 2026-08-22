@@ -2540,7 +2540,8 @@ h1, h2 {
    ========================================================= */
 @media (min-width: 781px) and (max-width: 1500px) {
   .topbar__inner { gap: 6px; max-width: 100%; padding-inline: 10px; }
-  .nav { flex: 1 1 auto; min-width: 0; overflow: hidden; gap: 1px; }
+  .nav { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; gap: 1px; scrollbar-width: thin; }
+  .nav::-webkit-scrollbar { height: 4px; }
   .nav__link { padding: 6px 7px; gap: 4px; font-size: .78rem; }
   .nav__link span { overflow: hidden; text-overflow: ellipsis; }
   .topbar__tools { gap: 4px; }
@@ -3680,6 +3681,7 @@ body {
 }
 .topbar__inner {
   max-width: 1480px;
+  min-width: 0;
   min-height: 66px;
   margin: 0 auto;
   padding-inline: clamp(12px, 2vw, 26px);
@@ -3699,8 +3701,21 @@ body {
   box-shadow: 0 9px 25px -18px var(--accent);
 }
 .nav {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   gap: 4px;
 }
+.nav::-webkit-scrollbar { height: 4px; }
+.nav::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.nav__link { flex: 0 0 auto; }
+.topbar__spacer { flex: 0 0 0; }
 .nav__link {
   min-height: 38px;
   padding-inline: 11px;

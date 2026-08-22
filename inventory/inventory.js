@@ -25,7 +25,7 @@ import { getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
 import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, masterworkRerollCost, masterworkAttunementCost, masterworkPassive } from "../src/data/masterwork.js";
-import { gemRollChance, formatChance } from "../src/logic/chances.js";
+import { gemRollChance, formatChance, chanceLabelForResult } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -441,7 +441,9 @@ function gemCard(gem) {
             </div>
           ` : ""}
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
-          <div class="gem-card__chance">Actual chance: ${escapeHtml(formatChance(gemRollChance(gem)))}</div>
+          <div class="gem-card__chance">Actual chance: ${escapeHtml(
+            chanceLabelForResult(gem, mutationIds, gem.luck_at_roll ?? 1)
+          )}</div>
         </div>
 
         <div class="gem-card__badges">
