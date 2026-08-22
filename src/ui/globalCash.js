@@ -83,15 +83,17 @@ async function poll() {
   const { data, error } = await supabase.rpc("get_global_cash_feed");
   if (error || !data) return;
 
-  const snap = displayed.total === null || document.hidden || prefersReducedMotion();
+  const still = document.hidden || prefersReducedMotion();
   for (const key of METRICS) {
     const next = Number(data[key]);
-    if (!Number.isFinite(next)) continue;
+    if (!Number.isFinite(next)) continue; // e.g. a metric the server hasn't sent yet
     target[key] = next;
-    if (snap) displayed[key] = next;
+    // Snap a metric the first time its value arrives (so a late/missing
+    // field can't leave it stuck at $0.00), or when motion is off/hidden.
+    if (displayed[key] === null || still) displayed[key] = next;
   }
-  if (snap) paint();
-  else ensureAnimating();
+  paint();
+  if (!still) ensureAnimating();
 
   renderFeed(data.events);
 }
