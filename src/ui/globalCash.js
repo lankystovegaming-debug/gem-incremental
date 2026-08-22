@@ -15,19 +15,38 @@ import { getSettings, onSettingsChange } from "./settings.js";
 // =========================================================
 
 const POLL_MS = 5000;
+const MAX_FEED = 4;
 
 let widget = null;
 let valueEl = null;
+let feedEl = null;
 let pollTimer = null;
 let rafId = null;
 let displayed = null; // currently shown (tweened) value
 let target = null;    // latest value from the server
+let lastTopId = 0;    // newest sale id already shown (to flash only new ones)
 
 function formatCash(value) {
   return "$" + Number(value ?? 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+// Compact money for the feed lines (+$5K, +$2.3M).
+function compact(value) {
+  const n = Number(value) || 0;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return "+$" + (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+  if (abs >= 1e6) return "+$" + (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+  if (abs >= 1e3) return "+$" + (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+  return "+$" + Math.round(n).toLocaleString("en-US");
+}
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
 }
 
 function paint() {
@@ -38,22 +57,39 @@ function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
+// Renders the most recent sales that pushed the total up. New entries
+// (ids past the last one shown) animate in so the feed reads as live.
+function renderFeed(events) {
+  if (!feedEl || !Array.isArray(events)) return;
+  const list = events.slice(0, MAX_FEED);
+  const topId = Number(list[0]?.id ?? lastTopId);
+  feedEl.innerHTML = list.map((e) => {
+    const fresh = Number(e.id) > lastTopId ? " global-cash__event--new" : "";
+    return `<div class="global-cash__event${fresh}">`
+      + `<span class="global-cash__event-who">${esc(e.name || "Someone")}</span> sold `
+      + `${esc(e.gem || "a gem")} <b>${compact(e.amount)}</b></div>`;
+  }).join("");
+  lastTopId = Math.max(lastTopId, topId);
+}
+
 async function poll() {
-  const { data, error } = await supabase.rpc("get_global_cash");
-  const next = Number(data);
-  if (error || !Number.isFinite(next)) return;
+  const { data, error } = await supabase.rpc("get_global_cash_feed");
+  if (error || !data) return;
 
-  target = next;
-
-  // Snap (and paint immediately) on first load, while hidden — where rAF is
-  // paused — or when the viewer asked for reduced motion. Otherwise ease the
-  // displayed value toward the new figure for a live count-up.
-  if (displayed === null || document.hidden || prefersReducedMotion()) {
-    displayed = next;
-    paint();
-  } else {
-    ensureAnimating();
+  const next = Number(data.total);
+  if (Number.isFinite(next)) {
+    target = next;
+    // Snap (and paint immediately) on first load, while hidden — where rAF is
+    // paused — or with reduced motion. Otherwise ease toward the new figure.
+    if (displayed === null || document.hidden || prefersReducedMotion()) {
+      displayed = next;
+      paint();
+    } else {
+      ensureAnimating();
+    }
   }
+
+  renderFeed(data.events);
 }
 
 function ensureAnimating() {
@@ -86,12 +122,15 @@ function mount() {
   widget.innerHTML = `
     <span class="global-cash__label">Global cash</span>
     <span class="global-cash__value">—</span>
+    <div class="global-cash__feed"></div>
   `;
   document.body.appendChild(widget);
   valueEl = widget.querySelector(".global-cash__value");
+  feedEl = widget.querySelector(".global-cash__feed");
 
   displayed = null;
   target = null;
+  lastTopId = 0;
   poll();
   pollTimer = setInterval(poll, POLL_MS);
 }
@@ -102,8 +141,10 @@ function unmount() {
   widget?.remove();
   widget = null;
   valueEl = null;
+  feedEl = null;
   displayed = null;
   target = null;
+  lastTopId = 0;
 }
 
 export function initGlobalCash() {
