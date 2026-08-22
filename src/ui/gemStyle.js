@@ -1,3 +1,4 @@
+import { getSettings } from "./settings.js";
 // =========================================================
 // GEM STYLE
 //
@@ -545,6 +546,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const style = getGemStyle(safeName);
   const colours = gradientColours(style);
   const shape = iconShapeForName(safeName);
+  const realism = getSettings().gemRealism ?? "classic";
 
   // Mutation ids are part of the icon identity. Keep their order stable so
   // the same specimen renders identically on rolls, profiles, leaderboards,
@@ -572,6 +574,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   return `
     <span
       class="${className}"
+      data-gem-realism="${escapeAttribute(realism)}"
       style="
         --gem-color:${style.color};
         --gem-color-a:${colours.first};

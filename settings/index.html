@@ -169,6 +169,20 @@
         <input class="input setting-number" id="cutsceneMinimumRarity" type="number" min="100000" step="1000" inputmode="numeric" aria-label="Cutscene minimum rarity">
       </div>
 
+      <div class="setting setting--realism">
+        <div class="setting__text">
+          <label class="setting__title" for="gemRealismRange">Gem icon realism</label>
+          <span class="setting__sub">Move from the original game icons through increasingly detailed gemstone materials and lighting.</span>
+        </div>
+        <div class="realism-control">
+          <div class="realism-control__labels" aria-hidden="true">
+            <span>Classic</span><span>Polished</span><span>Faceted</span><span>Gemstone</span><span>Realistic</span><span>Studio</span><span>Photoreal</span>
+          </div>
+          <input id="gemRealismRange" class="realism-range" type="range" min="0" max="6" step="1" value="0" aria-label="Gem icon realism">
+          <output id="gemRealismValue" class="realism-control__value" for="gemRealismRange">Classic</output>
+        </div>
+      </div>
+
       <label class="setting switch">
         <span class="setting__text">
           <span class="setting__title">Roll animations</span>

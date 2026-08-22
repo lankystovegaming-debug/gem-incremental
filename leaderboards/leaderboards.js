@@ -965,21 +965,33 @@ async function loadLeaderboards() {
   );
 
 
-  const {
-    data,
-    error
-  } =
-    await supabase.functions
-      .invoke(
-        "leaderboards"
-      );
+  // Use database RPCs for these simple boards instead of the legacy Edge
+  // Function. This removes the 400 failure path when an older function
+  // deployment is still live.
+  const [totalRollsResult, lifetimeEarningsResult, liveMutationResult] = await Promise.all([
+    supabase.rpc("get_total_rolls_leaderboard", { p_limit: 100 }),
+    supabase.rpc("get_lifetime_earnings_leaderboard", { p_limit: 100 }),
+    supabase
+      .from("game_mutations")
+      .select("id,name,chance,multiplier,description,icon,color")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true })
+  ]);
 
-  const { data: liveMutations, error: liveMutationError } = await supabase
-    .from("game_mutations")
-    .select("id,name,chance,multiplier,description,icon,color")
-    .eq("enabled", true)
-    .order("sort_order", { ascending: true });
-
+  const data = {
+    totalRolls: (totalRollsResult.data ?? []).map((row) => ({
+      rank: Number(row.rank ?? 0),
+      username: row.username,
+      totalRolls: Number(row.total_rolls ?? row.totalRolls ?? 0)
+    })),
+    lifetimeEarnings: (lifetimeEarningsResult.data ?? []).map((row) => ({
+      rank: Number(row.rank ?? 0),
+      username: row.username,
+      lifetimeEarnings: Number(row.lifetime_earnings ?? row.lifetimeEarnings ?? 0)
+    }))
+  };
+  const error = totalRollsResult.error || lifetimeEarningsResult.error;
+  const { data: liveMutations, error: liveMutationError } = liveMutationResult;
   if (!liveMutationError && Array.isArray(liveMutations)) {
     liveMutationCatalog = Object.fromEntries(
       liveMutations.map((mutation) => [
