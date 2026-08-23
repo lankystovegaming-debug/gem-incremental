@@ -63,7 +63,8 @@ const FRIENDLY_MESSAGES = {
   ,name_change_cooldown: "The guild name can only be changed once every seven days."
   ,tag_change_cooldown: "The guild tag can only be changed once every seven days."
   ,confirmation_mismatch: "The guild name confirmation did not match."
-  ,insufficient_money: "You do not have enough money to create this guild."
+  ,insufficient_money: "You do not have enough money for that guild action."
+  ,guild_point_purchase_limit: "Your guild has already made all five cash contributions for today."
 };
 
 
