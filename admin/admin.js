@@ -116,6 +116,17 @@ async function inspectPlayer(playerId) {
     }
   } catch { /* Ban status is best-effort; the rest of the panel still loads. */ }
 
+  // Account creation / last sign-in come from auth.users via an admin-gated
+  // RPC (the client can't read the auth schema directly).
+  try {
+    const { data: metaRows } = await supabase.rpc("admin_get_account_meta", { p_target: playerId });
+    const meta = Array.isArray(metaRows) ? metaRows[0] : metaRows;
+    if (meta && data.player) {
+      data.player.created_at = meta.created_at ?? null;
+      data.player.last_sign_in_at = meta.last_sign_in_at ?? null;
+    }
+  } catch { /* Account meta is best-effort; the rest of the panel still loads. */ }
+
   renderPlayer(data);
 }
 
@@ -124,6 +135,15 @@ function renderPlayer(data) {
   const locked = isLocked(player);
   const banned = player.ban_until && new Date(player.ban_until) > new Date();
   const banPermanent = banned && new Date(player.ban_until).getFullYear() > 2100;
+
+  const fmtAccountDate = (value) => {
+    if (!value) return "Unknown";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Unknown";
+    const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+    const ago = days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
+    return `${date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })} · ${ago}`;
+  };
 
   playerPanel.innerHTML = `
     <div class="admin-player-head">
@@ -145,6 +165,8 @@ function renderPlayer(data) {
           ${stat("Capacity", formatCount(player.inventory_capacity))}
           ${stat("Equipment", formatCount(player.equipmentCount))}
           ${stat("Rarest", player.rarest_gem_name ?? "None")}
+          ${stat("Created", fmtAccountDate(player.created_at))}
+          ${stat("Last seen", fmtAccountDate(player.last_sign_in_at))}
         </div>
       </section>
 
