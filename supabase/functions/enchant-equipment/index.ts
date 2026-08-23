@@ -9,11 +9,12 @@ const corsHeaders = {
 const pools = {
   normal: [
     "deep_strike", "lucky_break", "fortune_surge", "collectors_edge",
-    "geologist", "prospectors_instinct"
+    "geologist", "prospectors_instinct", "jackpot_mining", "blitz_vein"
   ],
   ancient: [
     "deep_strike", "lucky_break", "fortune_surge", "collectors_edge",
-    "vein_hunter", "jackpot_mining"
+    "prospectors_instinct", "vein_hunter", "jackpot_mining", "blitz_vein",
+    "slow_starter"
   ]
 };
 
