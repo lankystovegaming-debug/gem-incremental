@@ -371,15 +371,88 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
 }
 
 function normalizeLiveMutationCatalog(rows) {
-  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), { ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff", sortOrder: index * 10, isCustom: false }]));
-  for (const row of rows ?? []) {
+  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), {
+    ...mutation,
+    icon: mutation.icon ?? "✦",
+    color: mutation.color ?? "#9fdcff",
+    sortOrder: index * 10,
+    isCustom: false
+  }]));
+
+  // The live catalog is authoritative. Admin-created rows must replace the
+  // bundled copy when they use a built-in id, and must also survive when the
+  // RPC returns JSON rather than a PostgREST table array.
+  const sourceRows = Array.isArray(rows) ? rows : (rows && typeof rows === "object" ? Object.values(rows) : []);
+  for (const row of sourceRows) {
     const id = String(row?.id ?? "").trim().toLowerCase();
     const chance = Number(row?.chance);
     const multiplier = Number(row?.multiplier);
     if (!id || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 || row?.enabled === false) continue;
-    builtInById.set(id, { id, name: String(row?.name ?? id), chance, multiplier, description: String(row?.description ?? ""), icon: String(row?.icon ?? "✦"), color: String(row?.color ?? "#9fdcff"), sortOrder: Number(row?.sort_order ?? 0), isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id) });
+    builtInById.set(id, {
+      id,
+      name: String(row?.name ?? id),
+      chance,
+      multiplier,
+      description: String(row?.description ?? ""),
+      icon: String(row?.icon ?? "✦"),
+      color: String(row?.color ?? "#9fdcff"),
+      sortOrder: Number.isFinite(Number(row?.sort_order)) ? Number(row.sort_order) : 0,
+      isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id)
+    });
   }
-  return [...builtInById.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+
+  return [...builtInById.values()].sort((a, b) =>
+    Number(a.sortOrder) - Number(b.sortOrder) ||
+    a.name.localeCompare(b.name) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+function mutationRowsFromRpc(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.mutations)) return data.mutations;
+  if (Array.isArray(data?.rows)) return data.rows;
+  if (Array.isArray(data?.data)) return data.data;
+  if (data && typeof data === "object") {
+    // JSONB RPCs return an array directly, but older PostgREST builds can
+    // wrap it. Accept every harmless shape we can normalize locally.
+    const values = Object.values(data);
+    if (values.every((value) => value && typeof value === "object" && !Array.isArray(value))) return values;
+  }
+  return [];
+}
+
+async function loadLiveMutationCatalog() {
+  const attempts = [];
+
+  // Primary table-returning RPC.
+  attempts.push(await supabase.rpc("get_public_mutation_catalog"));
+  if (!attempts.at(-1).error && mutationRowsFromRpc(attempts.at(-1).data).length) {
+    return normalizeLiveMutationCatalog(mutationRowsFromRpc(attempts.at(-1).data));
+  }
+
+  // JSON RPCs are intentionally included for projects whose PostgREST schema
+  // cache still has an older return shape. The *_all endpoint is a last-resort
+  // recovery path; disabled rows are filtered by normalizeLiveMutationCatalog.
+  for (const rpcName of ["get_public_mutation_catalog_json", "get_public_mutation_catalog_all"]) {
+    const result = await supabase.rpc(rpcName);
+    attempts.push(result);
+    const rows = mutationRowsFromRpc(result.data);
+    if (!result.error && rows.length) return normalizeLiveMutationCatalog(rows);
+  }
+
+  // Compatibility fallback for older deployments that have not installed the
+  // RPC migrations yet. This only succeeds when public SELECT is available.
+  const direct = await supabase
+    .from("game_mutations")
+    .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
+    .eq("enabled", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (!direct.error && Array.isArray(direct.data)) return normalizeLiveMutationCatalog(direct.data);
+
+  const lastError = attempts.find((result) => result?.error)?.error || direct.error;
+  throw lastError || new Error("No live mutation catalog source was available.");
 }
 
 async function refresh() {
@@ -394,18 +467,28 @@ async function refresh() {
     }
     loadedPlayerId = user.id;
 
-    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult] = await Promise.all([
+    const [combinations, playerState, privateGemsRpcResult] = await Promise.all([
       loadCombinations(user.id),
       loadCloudPlayerState(),
-      supabase.rpc("get_public_gem_catalog"),
-      supabase.rpc("get_public_mutation_catalog")
+      supabase.rpc("get_public_gem_catalog")
     ]);
 
     // RPCs are the primary path because they remain readable even when a
     // project has an older/misconfigured RLS policy. Direct catalog reads are
     // retained as a compatibility fallback for partially migrated projects.
     let privateGemsResult = privateGemsRpcResult;
-    let mutationCatalogResult = mutationRpcResult;
+    let mutationCatalogResult = null;
+    try {
+      mutationList = await loadLiveMutationCatalog();
+      rebuildMutationMaps();
+      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
+      if (!state.selectedMutations.size) state.selectedMutations.add("none");
+    } catch (error) {
+      console.warn("Live mutation catalog unavailable; using bundled catalog:", error?.message || error);
+      mutationList = normalizeLiveMutationCatalog([]);
+      rebuildMutationMaps();
+    }
+
     if (privateGemsResult.error) {
       console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
       privateGemsResult = await supabase
@@ -415,28 +498,7 @@ async function refresh() {
         .order("sort_order", { ascending: true })
         .order("rarity", { ascending: true });
     }
-    if (mutationCatalogResult.error) {
-      console.warn("Public mutation catalog RPC unavailable; trying direct catalog read:", mutationCatalogResult.error.message);
-      mutationCatalogResult = await supabase
-        .from("game_mutations")
-        .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
-        .eq("enabled", true)
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true });
-    }
-
     if (combinations) state.combinations = combinations;
-
-    if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
-      mutationList = normalizeLiveMutationCatalog(mutationCatalogResult.data);
-      rebuildMutationMaps();
-      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
-      if (!state.selectedMutations.size) state.selectedMutations.add("none");
-    } else if (mutationCatalogResult.error) {
-      console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
-      mutationList = normalizeLiveMutationCatalog([]);
-      rebuildMutationMaps();
-    }
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
       const builtInNames = new Set(gems.map((gem) => gem.name));

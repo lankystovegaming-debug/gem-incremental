@@ -5,6 +5,7 @@ import { getGemMutation } from "../data/mutations.js";
 import { getSettings } from "./settings.js";
 import { chanceLabelForResult } from "../logic/chances.js";
 import { buildJaOreCutscene } from "./jaOreCutscene.js";
+import { buildGlitchedOreCutscene } from "./glitchedOreCutscene.js";
 
 function hashString(value) {
   let hash = 0;
@@ -71,6 +72,19 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
 
   const ids = Array.from(new Set([...(Array.isArray(mutationIds) ? mutationIds : []), ...(mutationId ? [mutationId] : [])])).filter(Boolean);
   const replayName = String(gem?.name ?? "Gem").trim().toLowerCase();
+
+  // Glitched Ore gets its own renderer: chromatic fracture, reality-rift
+  // staging, bounded canvas particles and a hard-impact reveal. The renderer
+  // deliberately caps device-pixel-ratio and particle count so "insane" does
+  // not become a browser-crash button.
+  if (/glitch(?:ed)?[\s_-]*ore/.test(replayName)) {
+    const replayData = {
+      gem: { ...gem, name: String(gem?.name ?? "Glitched Ore"), rarity },
+      mutationIds: ids,
+      mutations: ids.map(id => getGemMutation(id)).filter(Boolean).map(m => ({ id: m.id, name: m.name, multiplier: m.multiplier }))
+    };
+    return buildGlitchedOreCutscene(replayData, Math.max(12000, duration));
+  }
 
   // JA-ore replay now uses the same bespoke retro pixel-cinema scene as a
   // fresh roll, rather than falling back to the generic rarity replay.
