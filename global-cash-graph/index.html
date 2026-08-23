@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="A live, stock-style chart of the whole Gem Incremental economy over time.">
+
+  <title>Cash Market · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./graph.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice", "aurora", "graphite"];
+
+        if (allowedModes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1
+            ? accent
+            : "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Cash Market</h1>
+        <p class="page-head__sub">
+          The whole economy over time — sampled every few minutes.
+        </p>
+      </div>
+    </div>
+
+    <section class="card market">
+      <!-- Ticker: current value + change over the selected range -->
+      <div class="market__head">
+        <div class="market__ticker">
+          <div class="market__metric-row">
+            <span class="market__pill" data-metric-name>Global cash</span>
+            <span class="market__live" title="Updates automatically">
+              <span class="market__live-dot" aria-hidden="true"></span>Live
+            </span>
+          </div>
+          <div class="market__price" data-price>—</div>
+          <div class="market__change" data-change>
+            <span data-change-abs>—</span>
+            <span class="market__change-pct" data-change-pct></span>
+            <span class="market__change-range" data-change-range></span>
+          </div>
+        </div>
+
+        <div class="market__metric-toggle segmented" role="tablist" aria-label="Metric">
+          <button class="segmented__item active" type="button" role="tab" data-metric="lifetime">
+            Global cash
+          </button>
+          <button class="segmented__item" type="button" role="tab" data-metric="money">
+            Player cash
+          </button>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="market__chart-wrap">
+        <div class="market__status" data-status>Loading market data…</div>
+        <svg class="market__chart" data-chart preserveAspectRatio="none"
+             role="img" aria-label="Economy over time"></svg>
+        <div class="market__tooltip" data-tooltip hidden></div>
+      </div>
+
+      <!-- Range selector -->
+      <div class="market__ranges segmented" role="tablist" aria-label="Time range">
+        <button class="segmented__item" type="button" role="tab" data-range="1">1H</button>
+        <button class="segmented__item" type="button" role="tab" data-range="6">6H</button>
+        <button class="segmented__item active" type="button" role="tab" data-range="24">24H</button>
+        <button class="segmented__item" type="button" role="tab" data-range="168">7D</button>
+        <button class="segmented__item" type="button" role="tab" data-range="100000">All</button>
+      </div>
+
+      <p class="market__note">
+        <strong>Global cash</strong> is the sum of every player's lifetime
+        earnings — it only ever rises. <strong>Player cash</strong> is the
+        money currently in every wallet; it falls when players buy from the
+        game. Gems and other assets aren't counted.
+      </p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+
+    const shell = mountShell({ page: "global-cash-graph", base: "../" });
+
+    loadCloudPlayerState().then((state) => {
+      if (state) {
+        shell.setWallet(state.money);
+      }
+    });
+  </script>
+
+  <script type="module" src="./graph.js"></script>
+</body>
+</html>

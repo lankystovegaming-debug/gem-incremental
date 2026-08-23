@@ -4,6 +4,8 @@ const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", impor
 const page = readFileSync(new URL("../admin/admin.js", import.meta.url), "utf8");
 const index = readFileSync(new URL("../gem-index/index.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20260823000001_player_titles_photoreal_catalog.sql", import.meta.url), "utf8");
+const hardening = readFileSync(new URL("../supabase/migrations/20260823000003_titles_and_live_catalog_hardening.sql", import.meta.url), "utf8");
+const chat = readFileSync(new URL("../src/backend/chat.js", import.meta.url), "utf8");
 assert.ok(admin.includes('action === "player_title_set"'));
 assert.ok(admin.includes('action === "player_title_remove"'));
 assert.ok(page.includes('id="playerTitle"'));
@@ -13,4 +15,8 @@ assert.ok(index.includes('normalizeLiveMutationCatalog'));
 assert.ok(index.includes('get_public_mutation_catalog'));
 assert.ok(migration.includes('create table if not exists public.player_titles'));
 assert.ok(migration.includes('create or replace function public.get_chat_profiles'));
+assert.ok(hardening.includes('get_public_player_titles'));
+assert.ok(hardening.includes('get_public_mutation_catalog'));
+assert.ok(chat.includes('get_public_player_titles'));
+assert.ok(chat.includes('get_public_mutation_catalog'));
 console.log("Admin player title + live mutation catalog tests passed.");

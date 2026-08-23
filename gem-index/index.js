@@ -358,15 +358,28 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
 }
 
 function normalizeLiveMutationCatalog(rows) {
-  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), { ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff", sortOrder: index * 10, isCustom: false }]));
+  const builtIns = Object.values(GEM_MUTATIONS).map((mutation, index) => ({
+    ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff",
+    sortOrder: index * 10, isCustom: false
+  }));
+  const byId = new Map(builtIns.map((mutation) => [String(mutation.id).toLowerCase(), mutation]));
   for (const row of rows ?? []) {
     const id = String(row?.id ?? "").trim().toLowerCase();
     const chance = Number(row?.chance);
     const multiplier = Number(row?.multiplier);
     if (!id || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 || row?.enabled === false) continue;
-    builtInById.set(id, { id, name: String(row?.name ?? id), chance, multiplier, description: String(row?.description ?? ""), icon: String(row?.icon ?? "✦"), color: String(row?.color ?? "#9fdcff"), sortOrder: Number(row?.sort_order ?? 0), isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id) });
+    const isBuiltIn = Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id);
+    byId.set(id, {
+      ...(byId.get(id) ?? {}),
+      id, name: String(row?.name ?? byId.get(id)?.name ?? id), chance, multiplier,
+      description: String(row?.description ?? byId.get(id)?.description ?? ""),
+      icon: String(row?.icon ?? byId.get(id)?.icon ?? "✦"),
+      color: String(row?.color ?? byId.get(id)?.color ?? "#9fdcff"),
+      sortOrder: Number(row?.sort_order ?? byId.get(id)?.sortOrder ?? 0),
+      isCustom: !isBuiltIn
+    });
   }
-  return [...builtInById.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return [...byId.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
 async function refresh() {
@@ -416,6 +429,21 @@ async function refresh() {
 
     if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
       mutationList = normalizeLiveMutationCatalog(mutationCatalogResult.data);
+      // If the RPC is reachable but returned only bundled definitions, perform
+      // one direct enabled-catalog read so newly added admin mutations cannot
+      // be hidden by a stale RPC deployment.
+      const hasCustomRows = mutationList.some((mutation) => mutation.isCustom);
+      if (!hasCustomRows) {
+        const directCatalog = await supabase
+          .from("game_mutations")
+          .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
+          .eq("enabled", true)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true });
+        if (!directCatalog.error && Array.isArray(directCatalog.data) && directCatalog.data.length > mutationList.length) {
+          mutationList = normalizeLiveMutationCatalog(directCatalog.data);
+        }
+      }
       rebuildMutationMaps();
       state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
       if (!state.selectedMutations.size) state.selectedMutations.add("none");

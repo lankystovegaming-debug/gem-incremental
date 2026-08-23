@@ -33,8 +33,22 @@ async function getProfiles(ids) {
     p_user_ids: uniqueIds
   });
 
-  if (error) throw error;
-  return data && typeof data === "object" ? data : {};
+  let profiles = data && typeof data === "object" ? data : {};
+  // Title data is intentionally protected in player_titles. If an older
+  // get_chat_profiles deployment does not expose it, hydrate titles through
+  // the dedicated batch RPC instead of silently dropping them.
+  const { data: titleData, error: titleError } = await supabase.rpc("get_public_player_titles", {
+    p_user_ids: uniqueIds
+  });
+  if (!titleError && titleData && typeof titleData === "object") {
+    profiles = Object.fromEntries(uniqueIds.map((id) => [id, {
+      ...(profiles[id] ?? {}),
+      ...(titleData[id] ?? {})
+    }]));
+  } else if (error) {
+    throw error;
+  }
+  return profiles;
 }
 
 function normalizeChatRow(row, profiles = {}) {
@@ -198,11 +212,7 @@ export async function loadChatMessages(limit = 50) {
 
     // The live catalog is required for custom mutations whose chances are not
     // present in the historical five-mutation client constant.
-    supabase
-      .from("game_mutations")
-      .select("id, name, chance, multiplier, color, icon")
-      .eq("enabled", true)
-      .order("sort_order", { ascending: true })
+    supabase.rpc("get_public_mutation_catalog")
   ]);
 
   if (chatResult.error) {
@@ -220,7 +230,15 @@ export async function loadChatMessages(limit = 50) {
     enrich(announcementResult.data ?? [], normalizeAnnouncement)
   ]);
 
-  const mutationCatalog = mutationCatalogResult.error ? [] : (mutationCatalogResult.data ?? []);
+  let mutationCatalog = mutationCatalogResult.error ? [] : (mutationCatalogResult.data ?? []);
+  if (mutationCatalogResult.error) {
+    const fallback = await supabase
+      .from("game_mutations")
+      .select("id, name, chance, multiplier, color, icon, enabled, sort_order")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true });
+    if (!fallback.error) mutationCatalog = fallback.data ?? [];
+  }
   const recoveredKeys = new Set();
   const recoveredAnnouncements = (historyResult.error ? [] : (historyResult.data ?? []))
     .filter((row) => {

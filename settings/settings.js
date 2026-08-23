@@ -146,6 +146,7 @@ const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 const globalCashToggle = document.getElementById("globalCashToggle");
+const cashGraphToggle = document.getElementById("cashGraphToggle");
 const gemRealismRange = document.getElementById("gemRealismRange");
 const gemRealismValue = document.getElementById("gemRealismValue");
 
@@ -165,6 +166,7 @@ function paintSettings(settings) {
   animationsToggle.checked = settings.rollAnimations;
   cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
   if (globalCashToggle) globalCashToggle.checked = settings.globalCash;
+  if (cashGraphToggle) cashGraphToggle.checked = settings.cashGraph;
   if (gemRealismRange) {
     const index = Math.max(0, GEM_REALISM_LEVELS.findIndex((entry) => entry.id === settings.gemRealism));
     gemRealismRange.value = String(index);
@@ -218,6 +220,10 @@ animationsToggle.addEventListener("change", () =>
 
 if (globalCashToggle) globalCashToggle.addEventListener("change", () =>
   updateSettings({ globalCash: globalCashToggle.checked })
+);
+
+if (cashGraphToggle) cashGraphToggle.addEventListener("change", () =>
+  updateSettings({ cashGraph: cashGraphToggle.checked })
 );
 
 cutsceneMinimumRarity.addEventListener("change", () => {
