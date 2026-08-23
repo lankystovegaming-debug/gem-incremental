@@ -800,7 +800,12 @@ if (messagesEl && formEl && inputEl) {
           )}`
         : `<span class="chat-system-tag">[SYSTEM]</span>`;
     } else {
-      label = displayNameHtml(message.sender_id, message.username ?? "Unknown");
+      label = displayNameHtml(
+        message.sender_id,
+        message.username ?? "Unknown",
+        message.title ?? "",
+        message.title_color ?? "#ffd166"
+      );
     }
 
     const effect =
