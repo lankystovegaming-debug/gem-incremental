@@ -142,7 +142,10 @@ function renderPlayer(data) {
     if (Number.isNaN(date.getTime())) return "Unknown";
     const days = Math.floor((Date.now() - date.getTime()) / 86400000);
     const ago = days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
-    return `${date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })} · ${ago}`;
+    return `${date.toLocaleString(undefined, {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    })} · ${ago}`;
   };
 
   playerPanel.innerHTML = `
