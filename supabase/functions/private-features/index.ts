@@ -149,18 +149,22 @@ async function ensureProgressRows(ctx: any, playerId: string) {
 
 
 function normalizeGem(body: any) {
+  const rarity = Number(body.rarity ?? 1);
+  const metadata = body.metadata && typeof body.metadata === "object" ? { ...body.metadata } : {};
+  if (rarity >= 10_000_000) metadata.hideRarityUntilDiscovered = true;
   return {
     title: String(body.title ?? "").trim().slice(0, 120),
     name: String(body.name ?? "Untitled Gem").trim().slice(0, 120),
     description: String(body.description ?? "").trim().slice(0, 500),
-    rarity: Number(body.rarity ?? 1),
+    rarity,
     base_weight: Number(body.base_weight ?? 1),
     value_per_gram: Number(body.value_per_gram ?? 0),
     sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
     enabled: body.enabled !== false,
     starts_at: body.starts_at || null,
     ends_at: body.ends_at || null,
-    metadata: body.metadata && typeof body.metadata === "object" ? body.metadata : {}
+    hide_rarity_until_discovered: rarity >= 10_000_000 || body.hide_rarity_until_discovered === true,
+    metadata
   };
 }
 

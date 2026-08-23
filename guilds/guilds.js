@@ -1,4 +1,5 @@
 import { mountShell } from "../src/ui/shell.js";
+import "./guild-point-exchange.js";
 import { supabase } from "../src/backend/supabase.js";
 import { invokeFunction } from "../src/backend/invoke.js";
 mountShell({ page: "guilds", base: "../" });

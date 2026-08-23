@@ -1,0 +1,7 @@
+import { invokeFunction } from "../src/backend/invoke.js";
+const $=(id)=>document.getElementById(id),fmt=(v)=>Number(v||0).toLocaleString();let purchase=null;
+async function api(action){const {data,error}=await invokeFunction("features",{action},{retries:1});if(error)throw new Error(error.message);if(data?.error)throw new Error(data.message||data.error);return data;}
+function render(data){if(!data?.guild)return;purchase=data.pointPurchases||{remainingPurchases:5,nextCost:1000000,contributors:[]};$("pointPurchaseRemaining").textContent=`${fmt(purchase.remainingPurchases)} / 5 remaining`;$("pointPurchaseCost").textContent=purchase.nextCost==null?"Daily limit reached":`$${fmt(purchase.nextCost)}`;$("pointPurchaseReset").textContent=`Resets ${new Date(purchase.resetsAt).toLocaleString()} (12:00 AM UTC).`;$("purchaseGuildPoints").disabled=purchase.nextCost==null;$("pointPurchaseContributors").textContent=(purchase.contributors||[]).map((entry)=>`${entry.username}: $${fmt(entry.moneySpent)} · ${fmt(entry.pointsAwarded)} GP`).join(" · ")||"No cash contributed today.";}
+async function refresh(){try{render(await api("guild"));}catch(error){console.error("Guild treasury failed to load:",error);}}
+$("purchaseGuildPoints")?.addEventListener("click",async()=>{if(purchase?.nextCost==null||!confirm(`Permanently contribute $${fmt(purchase.nextCost)} for 100 Guild Points?`))return;try{await api("guild-purchase-points");await refresh();}catch(error){$("status").textContent=error.message;$("status").classList.add("error");}});
+refresh();
