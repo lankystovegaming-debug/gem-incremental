@@ -1937,7 +1937,7 @@ export default {
           ? { ...enchantedPickaxe.enchant_state }
           : {};
       let enchantStateChanged = false;
-      let prospectorActiveThisRoll = false;
+      let slowStarterCooldownMultiplier = 1;
 
       // The base-gem names are enough for both Index-completion enchants.
       let discoveredGemNames = new Set<string>();
@@ -2304,7 +2304,7 @@ export default {
       const enchantGrade = enchantedPickaxe?.enchant_grade === "ancient" ? "ancient" : "normal";
 
       if (enchantId === "deep_strike") {
-        const every = enchantGrade === "ancient" ? 8 : 10;
+        const every = enchantGrade === "ancient" ? 5 : 7;
         const counter = Number(enchantState.rolls ?? 0) + 1;
         if (counter >= every) {
           luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
@@ -2316,12 +2316,12 @@ export default {
       if (enchantId === "fortune_surge") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
-          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.35 : 1.25);
+          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
-        } else if (random01() < (enchantGrade === "ancient" ? 0.035 : 0.025)) {
+        } else if (random01() < (enchantGrade === "ancient" ? 0.08 : 0.05)) {
           // The proc affects the next rolls, not the trigger roll.
-          enchantState.remaining = enchantGrade === "ancient" ? 4 : 3;
+          enchantState.remaining = 3;
           enchantStateChanged = true;
         }
       }
@@ -2329,15 +2329,14 @@ export default {
       if (enchantId === "collectors_edge") {
         const catalogSize = gems.length;
         const completion = Math.min(1, discoveredGemNames.size / catalogSize);
-        const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.20 : 0.12);
+        const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.25 : 0.12);
         luck *= strengthenEnchantMultiplier(baseMultiplier);
       }
 
       if (enchantId === "prospectors_instinct") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
-          prospectorActiveThisRoll = true;
-          luck *= strengthenEnchantMultiplier(1.25);
+          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.6 : 1.4);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
         }
@@ -2348,8 +2347,29 @@ export default {
         luck *= strengthenEnchantMultiplier(1 + misses / 100);
       }
 
-      if (enchantId === "jackpot_mining" && random01() < 0.01) {
-        luck *= strengthenEnchantMultiplier(2.5);
+      if (enchantId === "jackpot_mining") {
+        const outcome = random01();
+        if (outcome < 0.08) {
+          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 2.5 : 1.75);
+        } else if (outcome < 0.12) {
+          luck *= 0.5;
+        }
+      }
+
+      if (enchantId === "blitz_vein") {
+        const stacks = Math.min(10, Math.max(0, Number(enchantState.stacks ?? 0)));
+        const progress = stacks / 10;
+        const weightLuckMaximum = enchantGrade === "ancient" ? 1.3 : 1.2;
+        const rollSpeedMaximum = enchantGrade === "ancient" ? 1.25 : 1.15;
+        const multiplierMaximum = enchantGrade === "ancient" ? 1.1 : 1.05;
+        weightLuck *= strengthenEnchantMultiplier(1 + (weightLuckMaximum - 1) * progress);
+        rollSpeed *= strengthenEnchantMultiplier(1 + (rollSpeedMaximum - 1) * progress);
+        weightMultiplier *= strengthenEnchantMultiplier(1 + (multiplierMaximum - 1) * progress);
+      }
+
+      if (enchantId === "slow_starter" && enchantGrade === "ancient") {
+        const rolls = Math.min(99, Math.max(0, Number(enchantState.rolls ?? 0)));
+        slowStarterCooldownMultiplier = Math.max(0.5, 1.75 - rolls * 0.025);
       }
 
       // Eligible guild members receive small permanent multiplicative
@@ -2387,7 +2407,7 @@ export default {
         (
           baseCooldownSeconds /
           rollSpeed
-        ) *
+        ) * slowStarterCooldownMultiplier *
         1000;
 
 
@@ -2569,7 +2589,7 @@ export default {
       // =====================================================
 
       const geologistMultiplier = enchantId === "geologist"
-        ? strengthenEnchantMultiplier(1.3)
+        ? strengthenEnchantMultiplier(1.5)
         : 1;
       const extremeGemMultiplier = (hasEventHorizon ? 1.1 : 1) *
         (masterworkPickaxe === "deep_survey" ? (masterworkPickaxeRank >= 2 ? 1.08 : 1.05) : 1);
@@ -2589,7 +2609,7 @@ export default {
       // Lucky Break keeps the rarer result.
       if (
         !relicDrop && enchantId === "lucky_break" &&
-        random01() < (enchantGrade === "ancient" ? 0.05 : 0.03)
+        random01() < (enchantGrade === "ancient" ? 0.10 : 0.05)
       ) {
         const candidate = rollEquipmentGem();
         if (candidate.rarity > gem.rarity) gem = candidate;
@@ -2597,16 +2617,37 @@ export default {
 
       if (
         !relicDrop && enchantId === "prospectors_instinct" &&
-        !prospectorActiveThisRoll && gem.rarity >= 5000
+        gem.rarity >= (enchantGrade === "ancient" ? 10000 : 5000)
       ) {
-        if (Number(enchantState.remaining ?? 0) <= 0) enchantState.remaining = 3;
+        enchantState.remaining = enchantGrade === "ancient" ? 6 : 4;
         enchantStateChanged = true;
       }
 
-      if (!relicDrop && enchantId === "vein_hunter") {
+      if (enchantId === "vein_hunter") {
         enchantState.misses = gem.rarity >= 10000
           ? 0
           : Math.min(30, Number(enchantState.misses ?? 0) + 1);
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "blitz_vein") {
+        if (!relicDrop && gem.rarity >= 30000) {
+          enchantState.stacks = 0;
+          enchantState.rolls = 0;
+        } else {
+          const interval = enchantGrade === "ancient" ? 10 : 20;
+          const rolls = Number(enchantState.rolls ?? 0) + 1;
+          if (rolls >= interval) {
+            enchantState.stacks = Math.min(10, Number(enchantState.stacks ?? 0) + 1);
+            enchantState.rolls = 0;
+          } else enchantState.rolls = rolls;
+        }
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "slow_starter" && enchantGrade === "ancient") {
+        const rolls = Number(enchantState.rolls ?? 0) + 1;
+        enchantState.rolls = (!relicDrop && gem.rarity >= 10000) || rolls >= 100 ? 0 : rolls;
         enchantStateChanged = true;
       }
 
