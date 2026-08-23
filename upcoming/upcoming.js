@@ -378,10 +378,11 @@ function openEditor(d=null){
 function openGemEditor(g=null){
   editingGem=g?.id||null;$("gemEditor").hidden=false;$("editor").hidden=true;$("gemEditorTitle").textContent=g?"Edit Gem":"New Gem";
   $("gemTitle").value=g?.title||g?.metadata?.title||"";$("gemName").value=g?.name||"";$("gemRarity").value=g?.rarity??100;$("gemDescription").value=g?.description||g?.metadata?.description||"";$("gemWeight").value=g?.base_weight??100;$("gemValue").value=g?.value_per_gram??1;$("gemSort").value=g?.sort_order??0;$("gemEnabled").checked=g?.enabled!==false;
-  $("gemDuration").value=(g?.starts_at||g?.ends_at)?"temporary":"permanent";$("gemStarts").value=dateInput(g?.starts_at);$("gemEnds").value=dateInput(g?.ends_at);
+  const availabilityMode=g?.availability_mode||((g?.starts_at||g?.ends_at)?"date_range":"always");
+  $("gemDuration").value=availabilityMode==="daily"?"daily":availabilityMode==="date_range_daily"?"temporary-daily":availabilityMode==="date_range"?"temporary":"permanent";$("gemStarts").value=dateInput(g?.starts_at);$("gemEnds").value=dateInput(g?.ends_at);$("gemDailyStart").value=String(g?.daily_start_time||"11:00").slice(0,5);$("gemDailyEnd").value=String(g?.daily_end_time||"16:00").slice(0,5);$("gemTimezone").value=g?.availability_timezone||"Asia/Singapore";
   window.scrollTo({top:$("gemEditor").offsetTop-80,behavior:"smooth"});
 }
-function temporaryDates(mode,start,end){return mode==="temporary"?{starts_at:start?new Date(start).toISOString():null,ends_at:end?new Date(end).toISOString():null}:{starts_at:null,ends_at:null};}
+function temporaryDates(mode,start,end){return (mode==="temporary"||mode==="temporary-daily")?{starts_at:start?new Date(start).toISOString():null,ends_at:end?new Date(end).toISOString():null}:{starts_at:null,ends_at:null};}
 
 async function saveFeature(){
   const mode=$("durationMode").value; const dates=temporaryDates(mode,$("startsAt").value,$("endsAt").value);
@@ -392,7 +393,8 @@ async function saveFeature(){
 }
 async function saveGem(){
   const dates=temporaryDates($("gemDuration").value,$("gemStarts").value,$("gemEnds").value);
-  const gem={id:editingGem||undefined,title:$("gemTitle").value.trim(),name:$("gemName").value.trim(),description:$("gemDescription").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,enabled:$("gemEnabled").checked,...dates,metadata:{}};
+  const mode=$("gemDuration").value;const usesDaily=mode==="daily"||mode==="temporary-daily";
+  const gem={id:editingGem||undefined,title:$("gemTitle").value.trim(),name:$("gemName").value.trim(),description:$("gemDescription").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,enabled:$("gemEnabled").checked,...dates,availability_mode:mode==="daily"?"daily":mode==="temporary-daily"?"date_range_daily":mode==="temporary"?"date_range":"always",daily_start_time:usesDaily?$("gemDailyStart").value:null,daily_end_time:usesDaily?$("gemDailyEnd").value:null,availability_timezone:$("gemTimezone").value.trim()||"Asia/Singapore",metadata:{}};
   if(!gem.name){status("Give the gem a name.",true);return;}
   try{await call("gem-save",{gem});$("gemEditor").hidden=true;editingGem=null;await loadAll();status("Gem saved.");}catch(e){status(e.message,true);}
 }
@@ -423,7 +425,7 @@ $("gemCancel").onclick=$("gemCancelBottom").onclick=()=>{$("gemEditor").hidden=t
 $("save").onclick=saveFeature;$("gemSave").onclick=saveGem;
 $("addRequirement").onclick=()=>addRequirementRow();$("addReward").onclick=()=>rewardRow({type:"money",amount:1});
 $("durationMode").onchange=()=>{const temp=$("durationMode").value==="temporary";$("startsAt").disabled=!temp;$("endsAt").disabled=!temp;};
-$("gemDuration").onchange=()=>{const temp=$("gemDuration").value==="temporary";$("gemStarts").disabled=!temp;$("gemEnds").disabled=!temp;};
+$("gemDuration").onchange=()=>{const mode=$("gemDuration").value;const temp=mode==="temporary"||mode==="temporary-daily",daily=mode==="daily"||mode==="temporary-daily";$("gemStarts").disabled=!temp;$("gemEnds").disabled=!temp;$("gemDailyStart").disabled=!daily;$("gemDailyEnd").disabled=!daily;$("gemTimezone").disabled=!daily;};
 $("durationMode").dispatchEvent(new Event("change"));$("gemDuration").dispatchEvent(new Event("change"));
 
 

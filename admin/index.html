@@ -484,9 +484,12 @@
         <label>Base weight<input id="gemWeight" type="number" min="0.000001" step="any" value="100"></label>
         <label>Value / gram<input id="gemValue" type="number" min="0" step="any" value="1"></label>
         <label>Sort order<input id="gemSort" type="number" value="0"></label>
-        <label>Availability<select id="gemDuration"><option value="permanent">Permanent</option><option value="temporary">Temporary</option></select></label>
+        <label>Availability<select id="gemDuration"><option value="permanent">Always available</option><option value="temporary">Date range</option><option value="daily">Daily time window</option><option value="temporary-daily">Date range + daily window</option></select></label>
         <label>Starts at<input id="gemStarts" type="datetime-local"></label>
         <label>Ends at<input id="gemEnds" type="datetime-local"></label>
+        <label>Daily start<input id="gemDailyStart" type="time" value="11:00"></label>
+        <label>Daily end<input id="gemDailyEnd" type="time" value="16:00"></label>
+        <label>Window timezone<input id="gemTimezone" value="Asia/Singapore" placeholder="Asia/Singapore"><small>Players see this converted to their local time.</small></label>
         <label class="toggle-field"><input id="gemEnabled" type="checkbox" checked><span>Enabled</span><small>Disabled gems cannot roll.</small></label>
       </div>
       <div class="editor-actions"><button id="gemCancelBottom" class="btn" type="button">Cancel</button><button id="gemSave" class="btn btn--primary" type="button">Save Gem</button></div>

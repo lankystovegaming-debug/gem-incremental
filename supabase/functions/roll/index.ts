@@ -2492,7 +2492,7 @@ export default {
         const { data: configuredGems, error: configuredGemError } =
           await ctx.supabaseAdmin
             .from("private_feature_gems")
-            .select("name, rarity, base_weight, value_per_gram")
+            .select("name, rarity, base_weight, value_per_gram, availability_mode, daily_start_time, daily_end_time, availability_timezone")
             .eq("enabled", true)
             .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
             .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
@@ -2510,7 +2510,19 @@ export default {
             );
           }
 
-          gems = configuredGems.map((entry: any) => ({
+          const dailyAvailable = (entry: any) => {
+            if (!["daily", "date_range_daily"].includes(String(entry.availability_mode))) return true;
+            if (!entry.daily_start_time || !entry.daily_end_time) return false;
+            try {
+              const parts = new Intl.DateTimeFormat("en-GB", { timeZone: String(entry.availability_timezone || "Asia/Singapore"), hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+              const hour = Number(parts.find((part) => part.type === "hour")?.value || 0);
+              const minute = Number(parts.find((part) => part.type === "minute")?.value || 0);
+              const parse = (value: string) => { const [h, m] = String(value).split(":").map(Number); return h * 60 + m; };
+              const current = hour * 60 + minute, start = parse(entry.daily_start_time), end = parse(entry.daily_end_time);
+              return start === end || (start < end ? current >= start && current < end : current >= start || current < end);
+            } catch { return false; }
+          };
+          gems = configuredGems.filter(dailyAvailable).map((entry: any) => ({
             name: String(entry.name),
             rarity: Number(entry.rarity),
             baseWeight: Number(entry.base_weight),

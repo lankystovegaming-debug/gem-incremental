@@ -145,8 +145,19 @@ function discoveredRecord(entry) {
 }
 
 function isSecretUndiscovered(entry) {
-  if (!entry.gem.hideRarityUntilDiscovered) return false;
+  // The live Supabase catalog is authoritative. Enforce the threshold from
+  // the rarity itself so legacy rows cannot leak before their backfill lands.
+  if (Number(entry.gem.rarity) < 10_000_000 && !entry.gem.hideRarityUntilDiscovered) return false;
   return !Object.values(state.combinations).some((record) => record.gemName === entry.gem.name);
+}
+
+function dailyAvailabilityLabel(gem) {
+  if (!["daily", "date_range_daily"].includes(gem.availabilityMode) || !gem.dailyStartTime || !gem.dailyEndTime) return "";
+  const source = `${String(gem.dailyStartTime).slice(0,5)}–${String(gem.dailyEndTime).slice(0,5)} ${gem.availabilityTimezone || "Asia/Singapore"}`;
+  if ((gem.availabilityTimezone || "Asia/Singapore") !== "Asia/Singapore") return `Available daily: ${source}`;
+  const makeDate = (value) => { const [hour, minute] = String(value).split(":").map(Number); return new Date(Date.UTC(2026,0,1,hour-8,minute)); };
+  const format = (value) => makeDate(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return `Available daily: ${format(gem.dailyStartTime)}–${format(gem.dailyEndTime)} your time (${source})`;
 }
 
 function selectedCombination() {
@@ -247,6 +258,7 @@ function gemCard(entry) {
   return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
     <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
     <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
+    ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
     <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
   </article>`;
@@ -358,28 +370,15 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
 }
 
 function normalizeLiveMutationCatalog(rows) {
-  const builtIns = Object.values(GEM_MUTATIONS).map((mutation, index) => ({
-    ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff",
-    sortOrder: index * 10, isCustom: false
-  }));
-  const byId = new Map(builtIns.map((mutation) => [String(mutation.id).toLowerCase(), mutation]));
+  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), { ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff", sortOrder: index * 10, isCustom: false }]));
   for (const row of rows ?? []) {
     const id = String(row?.id ?? "").trim().toLowerCase();
     const chance = Number(row?.chance);
     const multiplier = Number(row?.multiplier);
     if (!id || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 || row?.enabled === false) continue;
-    const isBuiltIn = Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id);
-    byId.set(id, {
-      ...(byId.get(id) ?? {}),
-      id, name: String(row?.name ?? byId.get(id)?.name ?? id), chance, multiplier,
-      description: String(row?.description ?? byId.get(id)?.description ?? ""),
-      icon: String(row?.icon ?? byId.get(id)?.icon ?? "✦"),
-      color: String(row?.color ?? byId.get(id)?.color ?? "#9fdcff"),
-      sortOrder: Number(row?.sort_order ?? byId.get(id)?.sortOrder ?? 0),
-      isCustom: !isBuiltIn
-    });
+    builtInById.set(id, { id, name: String(row?.name ?? id), chance, multiplier, description: String(row?.description ?? ""), icon: String(row?.icon ?? "✦"), color: String(row?.color ?? "#9fdcff"), sortOrder: Number(row?.sort_order ?? 0), isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id) });
   }
-  return [...byId.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return [...builtInById.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
 async function refresh() {
@@ -394,13 +393,11 @@ async function refresh() {
     }
     loadedPlayerId = user.id;
 
-    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult, mutationJsonResult, mutationAllResult] = await Promise.all([
+    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult] = await Promise.all([
       loadCombinations(user.id),
       loadCloudPlayerState(),
       supabase.rpc("get_public_gem_catalog"),
-      supabase.rpc("get_public_mutation_catalog"),
-      supabase.rpc("get_public_mutation_catalog_json"),
-      supabase.rpc("get_public_mutation_catalog_all")
+      supabase.rpc("get_public_mutation_catalog")
     ]);
 
     // RPCs are the primary path because they remain readable even when a
@@ -408,32 +405,11 @@ async function refresh() {
     // retained as a compatibility fallback for partially migrated projects.
     let privateGemsResult = privateGemsRpcResult;
     let mutationCatalogResult = mutationRpcResult;
-    let mutationJsonData = Array.isArray(mutationJsonResult?.data)
-      ? mutationJsonResult.data
-      : (Array.isArray(mutationJsonResult?.data?.mutations) ? mutationJsonResult.data.mutations : []);
-    if (!mutationJsonData.length && typeof mutationJsonResult?.data === "string") {
-      try {
-        const parsed = JSON.parse(mutationJsonResult.data);
-        mutationJsonData = Array.isArray(parsed) ? parsed : [];
-      } catch {}
-    }
-    let mutationAllData = Array.isArray(mutationAllResult?.data)
-      ? mutationAllResult.data
-      : [];
-    if (!mutationAllData.length && typeof mutationAllResult?.data === "string") {
-      try {
-        const parsed = JSON.parse(mutationAllResult.data);
-        mutationAllData = Array.isArray(parsed) ? parsed : [];
-      } catch {}
-    }
-    if (mutationAllData.length) {
-      mutationJsonData = mutationAllData.filter((row) => row?.enabled !== false);
-    }
     if (privateGemsResult.error) {
       console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
       privateGemsResult = await supabase
         .from("private_feature_gems")
-        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,enabled,sort_order,starts_at,ends_at,updated_at")
+        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
         .eq("enabled", true)
         .order("sort_order", { ascending: true })
         .order("rarity", { ascending: true });
@@ -451,37 +427,14 @@ async function refresh() {
     if (combinations) state.combinations = combinations;
 
     if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
-      const rows = mutationJsonData.length > mutationCatalogResult.data.length
-        ? mutationJsonData
-        : mutationCatalogResult.data;
-      mutationList = normalizeLiveMutationCatalog(rows);
-      // If the RPC is reachable but returned only bundled definitions, perform
-      // one direct enabled-catalog read so newly added admin mutations cannot
-      // be hidden by a stale RPC deployment.
-      const hasCustomRows = mutationList.some((mutation) => mutation.isCustom);
-      if (!hasCustomRows) {
-        const directCatalog = await supabase
-          .from("game_mutations")
-          .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
-          .eq("enabled", true)
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true });
-        if (!directCatalog.error && Array.isArray(directCatalog.data) && directCatalog.data.length > mutationList.length) {
-          mutationList = normalizeLiveMutationCatalog(directCatalog.data);
-        }
-      }
+      mutationList = normalizeLiveMutationCatalog(mutationCatalogResult.data);
       rebuildMutationMaps();
       state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
       if (!state.selectedMutations.size) state.selectedMutations.add("none");
     } else if (mutationCatalogResult.error) {
-      if (mutationJsonData.length) {
-        mutationList = normalizeLiveMutationCatalog(mutationJsonData);
-        rebuildMutationMaps();
-      } else {
-        console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
-        mutationList = normalizeLiveMutationCatalog([]);
-        rebuildMutationMaps();
-      }
+      console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
+      mutationList = normalizeLiveMutationCatalog([]);
+      rebuildMutationMaps();
     }
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
@@ -490,6 +443,7 @@ async function refresh() {
         title: String(gem.title ?? gem.metadata?.title ?? ""), name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
         description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
         hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
+        ,availabilityMode: String(gem.availability_mode || "always"), dailyStartTime: gem.daily_start_time, dailyEndTime: gem.daily_end_time, availabilityTimezone: String(gem.availability_timezone || "Asia/Singapore")
       }));
       catalogGems = [...gems, ...custom];
     } else if (privateGemsResult.error) {
@@ -507,17 +461,7 @@ async function refresh() {
   return refreshInFlight;
 }
 
-const mutationRealtime = supabase
-  .channel("gem-index-mutation-catalog")
-  .on("postgres_changes", { event: "*", schema: "public", table: "game_mutations" }, () => {
-    refresh();
-  })
-  .subscribe((status) => {
-    if (status === "SUBSCRIBED") console.info("[GEM INDEX] Live mutation catalog subscription active.");
-  });
-
 window.addEventListener("pageshow", (event) => { if (event.persisted) refresh(); });
-window.addEventListener("pagehide", () => { try { supabase.removeChannel(mutationRealtime); } catch {} });
 renderList();
 renderMutationTabs();
 renderSelectedMutationSummary();
