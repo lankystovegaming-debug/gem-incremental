@@ -587,6 +587,13 @@ const REAL_CUTS = {
 function iconShapeForName(name) {
   const key = String(name ?? "");
   if (REAL_CUTS[key]) return REAL_CUTS[key];
+  const lower = key.toLowerCase();
+  // Raw mineral/ore names are shown as irregular natural specimens rather
+  // than being forced into a jewellery cut. This is especially useful for
+  // admin-created names such as Uranium, Uraninite, Malachite or Pyrite.
+  if (/(uranium|uraninite|betafite|torbernite|autunite|pyrite|malachite|ore|meteorite|pallasite)/.test(lower)) return "freeform";
+  if (/(opal|moonstone|labradorite|sunstone)/.test(lower)) return "cabochon";
+  if (/(diamond|moissanite|zircon)/.test(lower)) return "brilliant";
 
   const hash = hashString(key);
   return [
@@ -672,8 +679,23 @@ const REAL_GEM_MATERIALS = {
 };
 
 function materialProfileForGem(name, style) {
-  const profile = REAL_GEM_MATERIALS[String(name ?? "")];
+  const key = String(name ?? "");
+  const profile = REAL_GEM_MATERIALS[key];
   if (profile) return profile;
+
+  // Admin-created gems are not limited to the bundled catalogue. Infer a
+  // physically-inspired material from the name so a custom “Uranium”,
+  // “Uraninite”, “Emerald”, “Ruby”, etc. still gets a recognisable real-world
+  // treatment at Photoreal rather than falling back to a generic gradient.
+  const lower = key.toLowerCase();
+  if (/(uranium|uraninite|betafite|torbernite|autunite)/.test(lower)) return ["#173b1a","#4fbf3f","#d8ff73",.46,.58,.16,.34,.72,.12];
+  if (/(gold|pyrite|chalcopyrite|brass)/.test(lower)) return ["#6d4d08","#d8a52a","#fff0a0",.82,.5,.22,.72,.08,.96];
+  if (/(silver|platinum|metal)/.test(lower)) return ["#4d535c","#cfd7df","#ffffff",.12,.28,.16,.18,.02,.99];
+  if (/(emerald|beryl|malachite)/.test(lower)) return ["#063d28","#20a866","#b8ffd7",.64,.82,.08,.6,.3,.72];
+  if (/(ruby|corundum|red beryl)/.test(lower)) return ["#5b0015","#e21b43","#ffd0d8",.84,.88,.06,.82,.08,.86];
+  if (/(sapphire|iolite|kyanite)/.test(lower)) return ["#062d78","#2f71e8","#b8ddff",.84,.9,.05,.86,.06,.86];
+  if (/(opal|labradorite|moonstone|sunstone)/.test(lower)) return ["#4f566f","#dfe9ff","#ffffff",.5,.62,.16,.54,.2,.76];
+  if (/(quartz|amethyst|citrine|agate|jasper|chalcedony)/.test(lower)) return ["#6b6370","#d4dbe4","#ffffff",.9,.82,.07,.72,.14,.82];
   const colours = gradientColours(style);
   return [colours.first, colours.second, "#ffffff", .8, .72, .08, .72, .1, .86];
 }
@@ -729,6 +751,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
         --gem-metalness:${material[8]};
       "
       data-gem-icon="${escapeAttribute(safeName)}"
+      data-gem-material="${escapeAttribute(materialMaterialClass(safeName))}"
       data-mutation-count="${normalizedMutations.length}"
       data-mutations="${escapeAttribute(normalizedMutations.join(","))}"
       aria-hidden="true"
@@ -740,6 +763,15 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
       ${normalizedMutations.length ? `<span class="gem-icon__mutation-aura" aria-hidden="true"></span><span class="gem-icon__mutation-ring" aria-hidden="true"></span>` : ""}
     </span>
   `;
+}
+
+function materialMaterialClass(name) {
+  const lower = String(name ?? "").toLowerCase();
+  if (/(uranium|uraninite|betafite|torbernite|autunite)/.test(lower)) return "radioactive-ore";
+  if (/(gold|pyrite|chalcopyrite|brass|silver|platinum|metal)/.test(lower)) return "metallic";
+  if (/(opal|labradorite|moonstone|sunstone)/.test(lower)) return "iridescent";
+  if (/(hematite|obsidian|agate|jasper)/.test(lower)) return "opaque-mineral";
+  return "crystalline";
 }
 
 function escapeAttribute(value) {

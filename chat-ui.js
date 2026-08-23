@@ -480,8 +480,14 @@ if (messagesEl && formEl && inputEl) {
     return "";
   }
 
-  function displayNameHtml(userId, username) {
-    return `${roleBadgeHtml(roleForId(userId))}<span>${escapeHtml(username ?? "Unknown")}</span>`;
+  function titleBadgeHtml(title, color) {
+    if (!title) return "";
+    const safeColor = /^#[0-9a-f]{6}$/i.test(String(color ?? "")) ? String(color) : "#ffd166";
+    return `<span class="player-title-badge" style="--player-title-color:${escapeHtml(safeColor)}">${escapeHtml(title)}</span>`;
+  }
+
+  function displayNameHtml(userId, username, title = "", titleColor = "#ffd166") {
+    return `${roleBadgeHtml(roleForId(userId))}<span>${escapeHtml(username ?? "Unknown")}</span>${titleBadgeHtml(title, titleColor)}`;
   }
 
   function avatarHtml(message) {
@@ -778,7 +784,7 @@ if (messagesEl && formEl && inputEl) {
     } else if (isSystem) {
       label = message.roller_username
         ? `<span class="chat-system-tag">[SYSTEM]</span> · ${displayNameHtml(
-            message.roller_id, message.roller_username
+            message.roller_id, message.roller_username, message.roller_title, message.roller_title_color
           )}`
         : `<span class="chat-system-tag">[SYSTEM]</span>`;
     } else {

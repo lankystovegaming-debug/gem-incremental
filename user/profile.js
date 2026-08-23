@@ -191,6 +191,7 @@ function renderHero(profile) {
       <h1 id="profileName">
         ${escapeHtml(username)}
         ${roleBadgeHtml(role)}
+        ${profile.title ? `<span class="player-title-badge player-title-badge--profile" style="--player-title-color:${escapeHtml(/^#[0-9a-f]{6}$/i.test(String(profile.title_color ?? "")) ? profile.title_color : "#ffd166")}">${escapeHtml(profile.title)}</span>` : ""}
       </h1>
 
       <p>

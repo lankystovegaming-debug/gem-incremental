@@ -357,6 +357,18 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
   control.addEventListener("change", scheduleListRender);
 }
 
+function normalizeLiveMutationCatalog(rows) {
+  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), { ...mutation, icon: mutation.icon ?? "✦", color: mutation.color ?? "#9fdcff", sortOrder: index * 10, isCustom: false }]));
+  for (const row of rows ?? []) {
+    const id = String(row?.id ?? "").trim().toLowerCase();
+    const chance = Number(row?.chance);
+    const multiplier = Number(row?.multiplier);
+    if (!id || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 || row?.enabled === false) continue;
+    builtInById.set(id, { id, name: String(row?.name ?? id), chance, multiplier, description: String(row?.description ?? ""), icon: String(row?.icon ?? "✦"), color: String(row?.color ?? "#9fdcff"), sortOrder: Number(row?.sort_order ?? 0), isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id) });
+  }
+  return [...builtInById.values()].sort((a,b) => Number(a.sortOrder)-Number(b.sortOrder) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+}
+
 async function refresh() {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
@@ -403,59 +415,14 @@ async function refresh() {
     if (combinations) state.combinations = combinations;
 
     if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
-      // The live catalog is authoritative for custom/admin-created mutations,
-      // but keep bundled mutations as a fallback in case an older database has
-      // not seeded one of the built-ins yet. Never replace the whole catalog
-      // with the five bundled entries.
-      const builtInById = new Map(
-        Object.values(GEM_MUTATIONS).map((mutation, index) => [
-          String(mutation.id),
-          {
-            ...mutation,
-            icon: String(mutation.icon ?? "✦"),
-            color: String(mutation.color ?? "#9fdcff"),
-            sortOrder: Number(mutation.sortOrder ?? index * 10)
-          }
-        ])
-      );
-
-      const liveMutations = mutationCatalogResult.data
-        .map((mutation, index) => ({
-          id: String(mutation.id ?? "").trim().toLowerCase(),
-          name: String(mutation.name ?? mutation.id ?? "Unnamed Mutation"),
-          chance: Number(mutation.chance),
-          multiplier: Number(mutation.multiplier),
-          description: String(mutation.description ?? ""),
-          icon: String(mutation.icon ?? "✦"),
-          color: String(mutation.color ?? "#9fdcff"),
-          sortOrder: Number(mutation.sort_order ?? index * 10),
-          isCustom: !builtInById.has(String(mutation.id ?? "").trim().toLowerCase())
-        }))
-        .filter((mutation) => mutation.id && mutation.chance > 0 && mutation.multiplier > 0);
-
-      // Live rows win for matching IDs, which lets admins customize even the
-      // built-in mutations. Any bundled mutation missing from the DB remains
-      // selectable from the Gem Index bar.
-      const merged = new Map(
-        [...builtInById.entries()].map(([id, mutation]) => [id, { ...mutation, isCustom: false }])
-      );
-      for (const mutation of liveMutations) merged.set(mutation.id, mutation);
-
-      mutationList = [...merged.values()].sort(
-        (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0) || a.name.localeCompare(b.name)
-      );
-
+      mutationList = normalizeLiveMutationCatalog(mutationCatalogResult.data);
       rebuildMutationMaps();
-
-      // Preserve selections after a live/custom catalog refresh. This is
-      // important when the page is refreshed while an admin has added a
-      // custom mutation.
-      state.selectedMutations = new Set(
-        [...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id))
-      );
+      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
       if (!state.selectedMutations.size) state.selectedMutations.add("none");
     } else if (mutationCatalogResult.error) {
       console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
+      mutationList = normalizeLiveMutationCatalog([]);
+      rebuildMutationMaps();
     }
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {

@@ -107,7 +107,7 @@ async function audit(ctx: any, adminId: string, targetId: string | null,
 }
 
 async function playerSummary(ctx: any, player: any) {
-  const [authResult, gemResult, equipmentResult, consumableResult, boostResult] =
+  const [authResult, gemResult, equipmentResult, consumableResult, boostResult, titleResult] =
     await Promise.all([
       ctx.supabaseAdmin.auth.admin.getUserById(player.id),
       ctx.supabaseAdmin.from("inventory_gems")
@@ -117,7 +117,9 @@ async function playerSummary(ctx: any, player: any) {
       ctx.supabaseAdmin.from("player_consumables")
         .select("consumable_id, quantity").eq("player_id", player.id),
       ctx.supabaseAdmin.from("player_boosts")
-        .select("family, tier, effect_value, expires_at").eq("player_id", player.id)
+        .select("family, tier, effect_value, expires_at").eq("player_id", player.id),
+      ctx.supabaseAdmin.from("player_titles")
+        .select("title,color").eq("player_id", player.id).maybeSingle()
     ]);
 
   return {
@@ -128,7 +130,9 @@ async function playerSummary(ctx: any, player: any) {
     gemCount: gemResult.count ?? 0,
     equipmentCount: equipmentResult.count ?? 0,
     consumables: consumableResult.data ?? [],
-    boosts: boostResult.data ?? []
+    boosts: boostResult.data ?? [],
+    title: titleResult.data?.title ?? "",
+    title_color: titleResult.data?.color ?? "#ffd166"
   };
 }
 
@@ -436,6 +440,29 @@ export default {
           gems: gems.data ?? [],
           equipment: equipment.data ?? []
         });
+      }
+
+      if (action === "player_title_set") {
+        const title = String(body.title ?? "").trim().slice(0, 40);
+        const color = String(body.color ?? "#ffd166").trim();
+        if (!title || !/^#[0-9a-f]{6}$/i.test(color)) {
+          return response({ error: "invalid_player_title" }, 400);
+        }
+        const { data, error } = await ctx.supabaseAdmin
+          .from("player_titles")
+          .upsert({ player_id: targetId, title, color: color.toLowerCase(), updated_at: new Date().toISOString() }, { onConflict: "player_id" })
+          .select("player_id,title,color,updated_at")
+          .single();
+        if (error) return response({ error: "player_title_save_failed", message: error.message }, 500);
+        await audit(ctx, adminId, targetId, "player_title_set", { title, color: color.toLowerCase() });
+        return response({ title: data });
+      }
+
+      if (action === "player_title_remove") {
+        const { error } = await ctx.supabaseAdmin.from("player_titles").delete().eq("player_id", targetId);
+        if (error) return response({ error: "player_title_remove_failed", message: error.message }, 500);
+        await audit(ctx, adminId, targetId, "player_title_removed", {});
+        return response({ ok: true });
       }
 
       if (action === "money") {

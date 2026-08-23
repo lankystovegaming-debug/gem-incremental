@@ -46,6 +46,8 @@ function normalizeChatRow(row, profiles = {}) {
     sender_id: row.sender_id,
     username: profile.username ?? "Unknown",
     avatar_url: profile.avatar_url ?? null,
+    title: profile.title ?? "",
+    title_color: profile.title_color ?? "#ffd166",
     message: row.message,
     created_at: row.created_at
   };
@@ -82,6 +84,8 @@ function normalizeAnnouncement(row, profiles = {}) {
     avatar_url: null,
     roller_id: row.player_id,
     roller_username: rollerName,
+    roller_title: profile.title ?? "",
+    roller_title_color: profile.title_color ?? "#ffd166",
     gem_name: row.gem_name,
     rarity,
     effective_rarity: row?.effective_rarity == null ? null : Number(row.effective_rarity),
@@ -154,6 +158,8 @@ function normalizeHistoryAnnouncement(row, mutationCatalog = []) {
     avatar_url: null,
     roller_id: row.player_id,
     roller_username: row.username ?? "Someone",
+    roller_title: row.title ?? "",
+    roller_title_color: row.title_color ?? "#ffd166",
     gem_name: row.gem_name,
     rarity,
     effective_rarity: effectiveRarity,

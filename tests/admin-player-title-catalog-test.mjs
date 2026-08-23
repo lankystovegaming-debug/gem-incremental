@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
+const page = readFileSync(new URL("../admin/admin.js", import.meta.url), "utf8");
+const index = readFileSync(new URL("../gem-index/index.js", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/20260823000001_player_titles_photoreal_catalog.sql", import.meta.url), "utf8");
+assert.ok(admin.includes('action === "player_title_set"'));
+assert.ok(admin.includes('action === "player_title_remove"'));
+assert.ok(page.includes('id="playerTitle"'));
+assert.ok(page.includes('player-title-set'));
+assert.ok(page.includes('player-title-remove'));
+assert.ok(index.includes('normalizeLiveMutationCatalog'));
+assert.ok(index.includes('get_public_mutation_catalog'));
+assert.ok(migration.includes('create table if not exists public.player_titles'));
+assert.ok(migration.includes('create or replace function public.get_chat_profiles'));
+console.log("Admin player title + live mutation catalog tests passed.");
