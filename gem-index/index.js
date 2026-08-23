@@ -371,86 +371,111 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
 }
 
 function normalizeLiveMutationCatalog(rows) {
-  const builtInById = new Map(Object.values(GEM_MUTATIONS).map((mutation, index) => [String(mutation.id), {
-    ...mutation,
-    icon: mutation.icon ?? "✦",
-    color: mutation.color ?? "#9fdcff",
-    sortOrder: index * 10,
-    isCustom: false
-  }]));
+  const builtInById = new Map(
+    Object.values(GEM_MUTATIONS).map((mutation, index) => [
+      String(mutation.id).toLowerCase(),
+      {
+        ...mutation,
+        icon: mutation.icon ?? "✦",
+        color: mutation.color ?? "#9fdcff",
+        sortOrder: (index + 1) * 10,
+        isCustom: false,
+        isLive: false
+      }
+    ])
+  );
 
-  // The live catalog is authoritative. Admin-created rows must replace the
-  // bundled copy when they use a built-in id, and must also survive when the
-  // RPC returns JSON rather than a PostgREST table array.
-  const sourceRows = Array.isArray(rows) ? rows : (rows && typeof rows === "object" ? Object.values(rows) : []);
+  const sourceRows = mutationRowsFromRpc(rows);
+
   for (const row of sourceRows) {
     const id = String(row?.id ?? "").trim().toLowerCase();
+    const name = String(row?.name ?? "").trim();
     const chance = Number(row?.chance);
     const multiplier = Number(row?.multiplier);
-    if (!id || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 || row?.enabled === false) continue;
+
+    // Do not let a malformed admin row poison the whole catalog.
+    if (!id || !name || !Number.isFinite(chance) || chance <= 0 ||
+        !Number.isFinite(multiplier) || multiplier <= 0) continue;
+
+    const isBuiltIn = Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id);
+
     builtInById.set(id, {
       id,
-      name: String(row?.name ?? id),
+      name,
       chance,
       multiplier,
       description: String(row?.description ?? ""),
       icon: String(row?.icon ?? "✦"),
       color: String(row?.color ?? "#9fdcff"),
-      sortOrder: Number.isFinite(Number(row?.sort_order)) ? Number(row.sort_order) : 0,
-      isCustom: !Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id)
+      sortOrder: Number.isFinite(Number(row?.sort_order))
+        ? Number(row.sort_order)
+        : (isBuiltIn ? (Object.keys(GEM_MUTATIONS).indexOf(id) + 1) * 10 : 1000),
+      isCustom: !isBuiltIn,
+      isLive: true,
+      enabled: row?.enabled !== false
     });
   }
 
-  return [...builtInById.values()].sort((a, b) =>
-    Number(a.sortOrder) - Number(b.sortOrder) ||
-    a.name.localeCompare(b.name) ||
-    a.id.localeCompare(b.id)
-  );
+  return [...builtInById.values()]
+    .filter((mutation) => mutation.enabled !== false)
+    .sort((a, b) =>
+      Number(a.sortOrder) - Number(b.sortOrder) ||
+      (a.isCustom === b.isCustom ? 0 : a.isCustom ? 1 : -1) ||
+      a.name.localeCompare(b.name) ||
+      a.id.localeCompare(b.id)
+    );
 }
 
 function mutationRowsFromRpc(data) {
-  if (Array.isArray(data)) return data;
+  if (!data) return [];
 
-  // PostgREST normally returns the JSONB value directly, but proxies and
-  // older schema caches can wrap it one or more levels deep. Unwrap arrays
-  // wherever they occur instead of assuming a single response shape.
-  if (data && typeof data === "object") {
-    for (const key of ["mutations", "rows", "data", "result", "catalog", "items"]) {
-      if (key in data) {
-        const rows = mutationRowsFromRpc(data[key]);
-        if (rows.length) return rows;
-      }
-    }
+  if (Array.isArray(data)) {
+    return data.flatMap((value) => mutationRowsFromRpc(value));
+  }
 
-    const values = Object.values(data);
-    if (values.length) {
-      const nestedRows = [];
-      for (const value of values) {
-        const rows = mutationRowsFromRpc(value);
-        if (rows.length) nestedRows.push(...rows);
-      }
-      if (nestedRows.length) return nestedRows;
-
-      // A single mutation object can itself be the JSONB payload.
-      if ("id" in data && "name" in data) return [data];
+  if (typeof data === "string") {
+    const text = data.trim();
+    if (!text) return [];
+    try {
+      return mutationRowsFromRpc(JSON.parse(text));
+    } catch {
+      return [];
     }
   }
 
-  return [];
+  if (typeof data !== "object") return [];
+
+  // JSON/JSONB RPCs can arrive wrapped by PostgREST, a proxy, or an Edge
+  // Function. Keep unwrapping until actual mutation rows are found.
+  for (const key of ["mutations", "rows", "data", "result", "catalog", "items"]) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      const rows = mutationRowsFromRpc(data[key]);
+      if (rows.length) return rows;
+    }
+  }
+
+  if ("id" in data && "name" in data) return [data];
+
+  const nested = [];
+  for (const value of Object.values(data)) {
+    const rows = mutationRowsFromRpc(value);
+    if (rows.length) nested.push(...rows);
+  }
+  return nested;
 }
 
 function mergeLiveMutationRows(...sources) {
   const merged = new Map();
 
-  for (const rows of sources) {
-    for (const row of mutationRowsFromRpc(rows)) {
+  for (const source of sources) {
+    for (const row of mutationRowsFromRpc(source)) {
       const id = String(row?.id ?? "").trim().toLowerCase();
       if (!id) continue;
 
-      // Later sources are allowed to replace earlier copies. This is useful
-      // when an old RPC returns only the bundled five mutations while the
-      // direct table/new RPC contains admin-created rows.
-      merged.set(id, row);
+      // Prefer the most complete/latest source, but never discard a custom
+      // mutation merely because an older RPC returned the bundled five.
+      const previous = merged.get(id);
+      merged.set(id, previous ? { ...previous, ...row } : row);
     }
   }
 
@@ -461,43 +486,72 @@ async function loadLiveMutationCatalog() {
   const sources = [];
   const errors = [];
 
-  // Use a unique v2 RPC first. This avoids being trapped by an older
-  // PostgREST schema cache or an overloaded legacy function signature.
-  const primary = await supabase.rpc("get_gem_index_mutation_catalog");
-  if (!primary.error) sources.push(primary.data);
-  else errors.push(primary.error);
-
-  // Keep all legacy RPCs as compatibility sources. IMPORTANT: do not return
-  // as soon as one of them gives the five built-ins; that was the bug that
-  // caused admin-created mutations to disappear from the Gem Index.
+  // v3 deliberately has a new name and a minimal column set. This avoids
+  // older deployments whose game_mutations table/RPC is missing updated_at.
   for (const rpcName of [
-    "get_public_mutation_catalog",
+    "get_gem_index_mutation_catalog_v3",
+    "get_gem_index_mutation_catalog",
     "get_public_mutation_catalog_json",
-    "get_public_mutation_catalog_all"
+    "get_public_mutation_catalog_all",
+    "get_public_mutation_catalog"
   ]) {
-    const result = await supabase.rpc(rpcName);
-    if (!result.error) sources.push(result.data);
-    else errors.push(result.error);
+    try {
+      const result = await supabase.rpc(rpcName);
+      if (!result.error && result.data != null) {
+        const rows = mutationRowsFromRpc(result.data);
+        if (rows.length) sources.push(rows);
+      } else if (result.error) {
+        errors.push(`${rpcName}: ${result.error.message}`);
+      }
+    } catch (error) {
+      errors.push(`${rpcName}: ${error?.message || error}`);
+    }
   }
 
-  // Direct table read is another compatibility source. Merge it rather than
-  // using it only when every RPC fails, because a stale RPC can be incomplete.
-  const direct = await supabase
-    .from("game_mutations")
-    .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
+  // Direct read is intentionally requested with only the columns required by
+  // the Gem Index. A stale schema must not make the whole catalog disappear.
+  for (const selectClause of [
+    "id,name,chance,multiplier,description,icon,color,enabled,sort_order",
+    "*"
+  ]) {
+    try {
+      const direct = await supabase
+        .from("game_mutations")
+        .select(selectClause)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
 
-  if (!direct.error) sources.push(direct.data);
-  else errors.push(direct.error);
+      if (!direct.error && Array.isArray(direct.data) && direct.data.length) {
+        sources.push(direct.data);
+        break;
+      }
+      if (direct.error) errors.push(`game_mutations: ${direct.error.message}`);
+    } catch (error) {
+      errors.push(`game_mutations: ${error?.message || error}`);
+    }
+  }
 
-  const rows = mergeLiveMutationRows(...sources);
-  const catalog = normalizeLiveMutationCatalog(rows);
+  const mergedRows = mergeLiveMutationRows(...sources);
+  const catalog = normalizeLiveMutationCatalog(mergedRows);
+
+  // Five bundled mutations is NOT considered proof that the live catalog
+  // worked. If a live source returned custom rows, they must survive.
+  const liveCustomCount = catalog.filter((mutation) => mutation.isCustom).length;
+  if (liveCustomCount > 0) {
+    console.info(`[Gem Index] loaded ${liveCustomCount} admin-created mutation(s)`, catalog.filter((m) => m.isCustom).map((m) => m.id));
+  } else if (sources.length) {
+    console.info("[Gem Index] live catalog loaded; no custom mutations were returned");
+  } else {
+    console.warn("[Gem Index] all live mutation sources failed", errors);
+  }
 
   if (catalog.length > 0) return catalog;
 
-  const lastError = errors.find(Boolean);
-  throw lastError || new Error("No live mutation catalog source was available.");
+  throw new Error(
+    errors.length
+      ? `No live mutation catalog source was available: ${errors[0]}`
+      : "No live mutation catalog source was available."
+  );
 }
 
 async function refresh() {
@@ -529,7 +583,10 @@ async function refresh() {
       state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
       if (!state.selectedMutations.size) state.selectedMutations.add("none");
     } catch (error) {
-      console.warn("Live mutation catalog unavailable; using bundled catalog:", error?.message || error);
+      // Keep the page usable if the database migration has not been deployed,
+      // but make the failure visible in the console instead of pretending the
+      // five bundled mutations are the live admin catalog.
+      console.error("[Gem Index] LIVE mutation catalog failed:", error);
       mutationList = normalizeLiveMutationCatalog([]);
       rebuildMutationMaps();
     }
