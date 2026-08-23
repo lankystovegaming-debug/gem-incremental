@@ -11,15 +11,13 @@ const GUILD_COMPETITION_REWARDS=[
   {placement:"6th–10th",items:"1 Enchant Relic · 3 Tier III Potions · $300,000",guildPoints:3750},
   {placement:"Participation",items:"2 Tier II Potions · 1 Tier III Potion · $100,000",guildPoints:2250}
 ];
-const GUILD_POINT_CASH_COSTS=[1000000,1500000,2000000,3000000,5000000];
 const GUILD_ERROR_STATUS:Record<string,number>={
   unauthenticated:401,management_only:403,owner_only:403,not_in_guild:403,
   owner_cannot_leave:409,invite_not_found:404,player_not_found:404,
   member_not_found:404,guild_not_found:404,already_in_guild:409,
   player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
   guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
-  guild_level_required:409,max_upgrade:409,insufficient_money:409,
-  guild_point_purchase_limit:409
+  guild_level_required:409,max_upgrade:409,insufficient_money:409
 };
 function guildFailure(value:any){
   const raw=String(value?.message??value?.error??value??"guild_request_failed");
@@ -55,7 +53,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild"){
    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
    if(membershipError)throw membershipError;
-   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null;
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[];
    if(membership){
     const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
     if(runtime.error)throw runtime.error;
@@ -69,13 +67,6 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     const names=new Map((profiles??[]).map((profile:any)=>[profile.id,profile.username]));
     members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
     const now=new Date().toISOString();
-    const contributionDate=now.slice(0,10);
-    const {data:cashRows,error:cashError}=await ctx.supabaseAdmin.from("guild_point_cash_contributions").select("player_id,purchase_number,money_spent,points_awarded,created_at").eq("guild_id",guild.id).eq("contribution_date",contributionDate).order("purchase_number");
-    if(cashError)throw cashError;
-    const totals=new Map<string,{playerId:string,username:string,moneySpent:number,pointsAwarded:number,purchases:number}>();
-    for(const row of cashRows??[]){const current=totals.get(row.player_id)??{playerId:row.player_id,username:names.get(row.player_id)||"Unknown player",moneySpent:0,pointsAwarded:0,purchases:0};current.moneySpent+=Number(row.money_spent||0);current.pointsAwarded+=Number(row.points_awarded||0);current.purchases+=1;totals.set(row.player_id,current);}
-    const purchaseCount=(cashRows??[]).length;
-    pointPurchases={purchaseCount,remainingPurchases:Math.max(0,5-purchaseCount),nextCost:GUILD_POINT_CASH_COSTS[purchaseCount]??null,resetsAt:`${new Date(Date.parse(`${contributionDate}T00:00:00Z`)+86400000).toISOString()}`,contributors:[...totals.values()].sort((left,right)=>right.moneySpent-left.moneySpent||left.username.localeCompare(right.username))};
     const {data:missionRows,error:missionError}=await ctx.supabaseAdmin.from("guild_missions").select("*").eq("guild_id",guild.id).lte("starts_at",now).gt("ends_at",now).order("cadence").order("difficulty");
     if(missionError)throw missionError; missions=missionRows??[];
     const {data:activityRows,error:activityError}=await ctx.supabaseAdmin.from("guild_activity").select("id,actor_id,action,details,created_at").eq("guild_id",guild.id).order("created_at",{ascending:false}).limit(20);
@@ -94,7 +85,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if (a === "guild-create") {
     const rpc=await ctx.supabaseAdmin.rpc("create_guild_v2",{
@@ -121,7 +112,6 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-manage-member"){const r=await ctx.supabaseAdmin.rpc("guild_manage_member",{p_actor_id:userId,p_target_id:String(b.playerId??""),p_action:String(b.memberAction??"")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-leave"){const r=await ctx.supabaseAdmin.rpc("guild_leave_v2",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-upgrade"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_upgrade",{p_player_id:userId,p_track:String(b.track??"")});if(r.error)throw r.error;return json(r.data);}
-  if(a==="guild-purchase-points"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_points_with_cash",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-disband"){const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});if(r.error)throw r.error;return json(r.data);}
   return json({error:"unknown_action"},400);
