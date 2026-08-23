@@ -1891,6 +1891,40 @@ a.btn--icon[aria-current="page"] {
 /* Player cash (current money) sits apart from all-time global cash. */
 .global-cash__value--cash { color: var(--accent); }
 
+/* Live "online now" count with a pulsing presence dot. */
+.global-cash__online {
+  display: flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--text-muted);
+}
+
+.global-cash__online-num {
+  color: var(--positive);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.global-cash__dot {
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--positive);
+  animation: global-cash-pulse 2s ease-out infinite;
+}
+
+@keyframes global-cash-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive) 55%, transparent); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-cash__dot { animation: none; }
+}
+
 /* Live feed of the sales that pushed the total up. */
 .global-cash__feed {
   display: flex;
