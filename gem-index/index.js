@@ -410,48 +410,93 @@ function normalizeLiveMutationCatalog(rows) {
 
 function mutationRowsFromRpc(data) {
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.mutations)) return data.mutations;
-  if (Array.isArray(data?.rows)) return data.rows;
-  if (Array.isArray(data?.data)) return data.data;
+
+  // PostgREST normally returns the JSONB value directly, but proxies and
+  // older schema caches can wrap it one or more levels deep. Unwrap arrays
+  // wherever they occur instead of assuming a single response shape.
   if (data && typeof data === "object") {
-    // JSONB RPCs return an array directly, but older PostgREST builds can
-    // wrap it. Accept every harmless shape we can normalize locally.
+    for (const key of ["mutations", "rows", "data", "result", "catalog", "items"]) {
+      if (key in data) {
+        const rows = mutationRowsFromRpc(data[key]);
+        if (rows.length) return rows;
+      }
+    }
+
     const values = Object.values(data);
-    if (values.every((value) => value && typeof value === "object" && !Array.isArray(value))) return values;
+    if (values.length) {
+      const nestedRows = [];
+      for (const value of values) {
+        const rows = mutationRowsFromRpc(value);
+        if (rows.length) nestedRows.push(...rows);
+      }
+      if (nestedRows.length) return nestedRows;
+
+      // A single mutation object can itself be the JSONB payload.
+      if ("id" in data && "name" in data) return [data];
+    }
   }
+
   return [];
 }
 
+function mergeLiveMutationRows(...sources) {
+  const merged = new Map();
+
+  for (const rows of sources) {
+    for (const row of mutationRowsFromRpc(rows)) {
+      const id = String(row?.id ?? "").trim().toLowerCase();
+      if (!id) continue;
+
+      // Later sources are allowed to replace earlier copies. This is useful
+      // when an old RPC returns only the bundled five mutations while the
+      // direct table/new RPC contains admin-created rows.
+      merged.set(id, row);
+    }
+  }
+
+  return [...merged.values()];
+}
+
 async function loadLiveMutationCatalog() {
-  const attempts = [];
+  const sources = [];
+  const errors = [];
 
-  // Primary table-returning RPC.
-  attempts.push(await supabase.rpc("get_public_mutation_catalog"));
-  if (!attempts.at(-1).error && mutationRowsFromRpc(attempts.at(-1).data).length) {
-    return normalizeLiveMutationCatalog(mutationRowsFromRpc(attempts.at(-1).data));
-  }
+  // Use a unique v2 RPC first. This avoids being trapped by an older
+  // PostgREST schema cache or an overloaded legacy function signature.
+  const primary = await supabase.rpc("get_gem_index_mutation_catalog");
+  if (!primary.error) sources.push(primary.data);
+  else errors.push(primary.error);
 
-  // JSON RPCs are intentionally included for projects whose PostgREST schema
-  // cache still has an older return shape. The *_all endpoint is a last-resort
-  // recovery path; disabled rows are filtered by normalizeLiveMutationCatalog.
-  for (const rpcName of ["get_public_mutation_catalog_json", "get_public_mutation_catalog_all"]) {
+  // Keep all legacy RPCs as compatibility sources. IMPORTANT: do not return
+  // as soon as one of them gives the five built-ins; that was the bug that
+  // caused admin-created mutations to disappear from the Gem Index.
+  for (const rpcName of [
+    "get_public_mutation_catalog",
+    "get_public_mutation_catalog_json",
+    "get_public_mutation_catalog_all"
+  ]) {
     const result = await supabase.rpc(rpcName);
-    attempts.push(result);
-    const rows = mutationRowsFromRpc(result.data);
-    if (!result.error && rows.length) return normalizeLiveMutationCatalog(rows);
+    if (!result.error) sources.push(result.data);
+    else errors.push(result.error);
   }
 
-  // Compatibility fallback for older deployments that have not installed the
-  // RPC migrations yet. This only succeeds when public SELECT is available.
+  // Direct table read is another compatibility source. Merge it rather than
+  // using it only when every RPC fails, because a stale RPC can be incomplete.
   const direct = await supabase
     .from("game_mutations")
     .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order,updated_at")
-    .eq("enabled", true)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
-  if (!direct.error && Array.isArray(direct.data)) return normalizeLiveMutationCatalog(direct.data);
 
-  const lastError = attempts.find((result) => result?.error)?.error || direct.error;
+  if (!direct.error) sources.push(direct.data);
+  else errors.push(direct.error);
+
+  const rows = mergeLiveMutationRows(...sources);
+  const catalog = normalizeLiveMutationCatalog(rows);
+
+  if (catalog.length > 0) return catalog;
+
+  const lastError = errors.find(Boolean);
   throw lastError || new Error("No live mutation catalog source was available.");
 }
 

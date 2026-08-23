@@ -229,9 +229,9 @@
 /* Mutation selector belongs to the Gem Index itself. */
 .mutation-filter-heading{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin:0 0 .55rem;color:var(--text);font-weight:800}
 .mutation-filter-heading small{color:var(--text-faint);font-size:.72rem;font-weight:600}
-.mutation-tabs{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.15rem;padding:.35rem;border:1px solid var(--border);border-radius:14px;background:var(--surface-solid);overflow-x:auto}
+.mutation-tabs{display:flex;flex-wrap:nowrap;gap:.45rem;margin:0 0 1.15rem;padding:.35rem;border:1px solid var(--border);border-radius:14px;background:var(--surface-solid);overflow-x:auto}
 .mutation-tab{appearance:none;border:1px solid transparent;border-radius:10px;padding:.55rem .8rem;background:transparent;color:var(--text-muted);font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;transition:transform .16s ease,background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}
-.mutation-tab{display:inline-flex;align-items:center;gap:.38rem}
+.mutation-tab{display:inline-flex;align-items:center;gap:.38rem;flex:0 0 auto}
 .mutation-tab__icon{font-size:.9em;line-height:1}
 .mutation-tab__custom{padding:.12rem .3rem;border:1px solid color-mix(in srgb,var(--mutation-color,var(--accent)) 55%,transparent);border-radius:999px;color:var(--mutation-color,var(--accent));font-size:.52rem;line-height:1;font-weight:900;letter-spacing:.05em}
 .mutation-tab:hover{transform:translateY(-1px);color:var(--text)}
