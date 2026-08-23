@@ -24,6 +24,7 @@ const METRICS = ["total", "cash"];
 
 let widget = null;
 let valueEls = {};      // { total: el, cash: el }
+let onlineEl = null;
 let feedEl = null;
 let pollTimer = null;
 let rafId = null;
@@ -95,6 +96,10 @@ async function poll() {
   paint();
   if (!still) ensureAnimating();
 
+  if (onlineEl && Number.isFinite(Number(data.online))) {
+    onlineEl.textContent = Number(data.online).toLocaleString("en-US");
+  }
+
   renderFeed(data.events);
 }
 
@@ -129,6 +134,10 @@ function mount() {
   widget.setAttribute("role", "status");
   widget.setAttribute("aria-live", "off");
   widget.innerHTML = `
+    <div class="global-cash__online" title="Players active in the last couple of minutes">
+      <span class="global-cash__dot" aria-hidden="true"></span>
+      <span class="global-cash__online-num">—</span>&nbsp;online now
+    </div>
     <div class="global-cash__stat">
       <span class="global-cash__label">Global cash</span>
       <span class="global-cash__value" data-metric="total"
@@ -146,6 +155,7 @@ function mount() {
     total: widget.querySelector('[data-metric="total"]'),
     cash: widget.querySelector('[data-metric="cash"]')
   };
+  onlineEl = widget.querySelector(".global-cash__online-num");
   feedEl = widget.querySelector(".global-cash__feed");
 
   displayed = { total: null, cash: null };
@@ -161,6 +171,7 @@ function unmount() {
   widget?.remove();
   widget = null;
   valueEls = {};
+  onlineEl = null;
   feedEl = null;
   displayed = { total: null, cash: null };
   target = { total: null, cash: null };
