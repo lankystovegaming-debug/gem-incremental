@@ -684,6 +684,11 @@ export function mountShell({ page, base = "./" }) {
       if (state && state.money != null) {
         applyWallet(state.money);
       }
+      // A banned player is stopped at the door on every page. The server
+      // (roll and other actions) rejects them too; this is the visible half.
+      if (state && state.ban_until && new Date(state.ban_until) > new Date()) {
+        showBanScreen(state.ban_until, state.ban_reason);
+      }
     })
     .catch(() => {
       /* Non-fatal: the wallet stays in its loading state. */
@@ -697,6 +702,117 @@ export function mountShell({ page, base = "./" }) {
       return currentUser;
     }
   };
+}
+
+
+// =========================================================
+// BAN / SUSPENSION SCREEN
+// =========================================================
+// A full-screen block shown on every page while the player is banned. The
+// server rejects banned players independently, so bypassing this overlay in
+// devtools only leaves an unplayable game behind it.
+function showBanScreen(banUntil, reason) {
+  if (document.getElementById("banScreen")) return;
+
+  const until = new Date(banUntil);
+  const permanent = until.getTime() - Date.now() > 50 * 365 * 24 * 3600 * 1000;
+
+  if (!document.getElementById("banScreenStyles")) {
+    const style = document.createElement("style");
+    style.id = "banScreenStyles";
+    style.textContent = `
+      .ban-screen{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;
+        font-family:"Exo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+        background:radial-gradient(120% 120% at 50% -10%, color-mix(in srgb, var(--danger,#ef4444) 16%, transparent), transparent 60%),
+          color-mix(in srgb, var(--bg,#0b0e14) 86%, #000);
+        backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%)}
+      .ban-screen__card{position:relative;max-width:460px;width:100%;text-align:center;overflow:hidden;
+        background:linear-gradient(180deg, color-mix(in srgb,var(--danger,#ef4444) 6%, var(--surface-raised,#161b22)), var(--surface-raised,#161b22));
+        border:1px solid var(--border,#2a2f3a);border-radius:var(--radius-lg,20px);
+        box-shadow:var(--shadow-lg,0 30px 80px -24px rgba(0,0,0,.8)), 0 0 0 1px color-mix(in srgb,var(--danger,#ef4444) 18%, transparent);
+        padding:38px 34px 26px;animation:banIn .42s cubic-bezier(.2,.8,.2,1)}
+      .ban-screen__card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+        background:linear-gradient(90deg,transparent,var(--danger,#ef4444),transparent);opacity:.95}
+      .ban-screen__badge{width:64px;height:64px;margin:2px auto 18px;border-radius:50%;display:grid;place-items:center;
+        color:var(--danger,#ef4444);background:color-mix(in srgb,var(--danger,#ef4444) 15%,transparent);
+        box-shadow:0 0 0 7px color-mix(in srgb,var(--danger,#ef4444) 7%,transparent)}
+      .ban-screen__badge svg{width:32px;height:32px}
+      .ban-screen__eyebrow{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:.22em;
+        text-transform:uppercase;color:var(--danger,#ef4444);margin-bottom:11px}
+      .ban-screen__title{margin:0 0 12px;font-size:1.75rem;line-height:1.08;font-weight:800;
+        letter-spacing:-.015em;color:var(--text,#f4f6fb)}
+      .ban-screen__reason{margin:0 auto 22px;max-width:36ch;color:var(--text-muted,#9aa4b2);font-size:1.02rem;line-height:1.55}
+      .ban-screen__label{display:block;font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;
+        color:var(--text-faint,#6b7280);margin-bottom:11px}
+      .ban-screen__timer{display:flex;justify-content:center;gap:9px}
+      .ban-screen__seg{min-width:60px;padding:11px 8px;border-radius:14px;
+        background:color-mix(in srgb,var(--danger,#ef4444) 9%, var(--surface,#0f1319));
+        border:1px solid color-mix(in srgb,var(--danger,#ef4444) 22%,transparent)}
+      .ban-screen__seg b{display:block;font-size:1.6rem;font-weight:800;line-height:1;color:var(--text,#f4f6fb);font-variant-numeric:tabular-nums}
+      .ban-screen__seg span{display:block;margin-top:7px;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted,#9aa4b2)}
+      .ban-screen__perm{font-size:1.02rem;font-weight:700;color:var(--danger,#ef4444);
+        background:color-mix(in srgb,var(--danger,#ef4444) 10%,transparent);
+        border:1px solid color-mix(in srgb,var(--danger,#ef4444) 26%,transparent);border-radius:12px;padding:13px 16px}
+      .ban-screen__foot{margin:20px 0 0;font-size:.82rem;color:var(--text-muted,#9aa4b2)}
+      @keyframes banIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+      @media (prefers-reduced-motion:reduce){.ban-screen__card{animation:none}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const overlay = document.createElement("div");
+  overlay.id = "banScreen";
+  overlay.className = "ban-screen";
+  overlay.setAttribute("role", "alertdialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", permanent ? "You have been banned" : "You have been suspended");
+  overlay.innerHTML = `
+    <div class="ban-screen__card">
+      <div class="ban-screen__badge">${icons.shield ?? "&#9940;"}</div>
+      <span class="ban-screen__eyebrow">Account restricted</span>
+      <h1 class="ban-screen__title">${permanent ? "You&rsquo;ve been banned" : "You&rsquo;ve been suspended"}</h1>
+      <p class="ban-screen__reason"></p>
+      ${permanent
+        ? `<div class="ban-screen__perm">This restriction is permanent.</div>`
+        : `<span class="ban-screen__label">Access returns in</span>
+           <div class="ban-screen__timer">
+             <div class="ban-screen__seg" data-seg-d hidden><b data-d>0</b><span>days</span></div>
+             <div class="ban-screen__seg"><b data-h>00</b><span>hrs</span></div>
+             <div class="ban-screen__seg"><b data-m>00</b><span>min</span></div>
+             <div class="ban-screen__seg"><b data-s>00</b><span>sec</span></div>
+           </div>`}
+      <p class="ban-screen__foot">Think this is a mistake? Reach out through Support.</p>
+    </div>`;
+
+  // Reason is set as text, never markup, so it can't inject anything.
+  overlay.querySelector(".ban-screen__reason").textContent =
+    reason || "No reason was provided.";
+
+  document.body.appendChild(overlay);
+  document.documentElement.style.overflow = "hidden";
+
+  if (!permanent) {
+    const segD = overlay.querySelector("[data-seg-d]");
+    const elD = overlay.querySelector("[data-d]");
+    const elH = overlay.querySelector("[data-h]");
+    const elM = overlay.querySelector("[data-m]");
+    const elS = overlay.querySelector("[data-s]");
+    const tick = () => {
+      const ms = until.getTime() - Date.now();
+      if (ms <= 0) { window.location.reload(); return; }
+      let s = Math.floor(ms / 1000);
+      const d = Math.floor(s / 86400); s -= d * 86400;
+      const h = Math.floor(s / 3600); s -= h * 3600;
+      const m = Math.floor(s / 60); s -= m * 60;
+      if (d > 0) { segD.hidden = false; elD.textContent = String(d); }
+      elH.textContent = pad(h);
+      elM.textContent = pad(m);
+      elS.textContent = pad(s);
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
 }
 
 
