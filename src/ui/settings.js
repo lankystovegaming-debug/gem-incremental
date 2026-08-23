@@ -46,6 +46,9 @@ const DEFAULTS = {
   // Off by default: a small side counter showing the sum of every
   // player's lifetime earnings ("global cash").
   globalCash: false,
+  // Off by default: unlocks the Global Cash graph page (stock-style
+  // chart of the economy over time).
+  cashGraph: false,
   gemRealism: "classic"
 };
 
@@ -92,6 +95,7 @@ function sanitise(value) {
     cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity)),
 
     globalCash: Boolean(value.globalCash),
+    cashGraph: Boolean(value.cashGraph),
 
     gemRealism: GEM_REALISM_LEVELS.some((entry) => entry.id === value.gemRealism)
       ? value.gemRealism
