@@ -156,6 +156,25 @@
   animation: chat-million-glow 2.2s ease-in-out infinite;
 }
 
+.chat-message--cosmic {
+  border-color: #f472b6;
+  background: linear-gradient(135deg, color-mix(in srgb, #f472b6 16%, var(--surface-sunken)), var(--surface-sunken));
+  box-shadow: 0 0 26px color-mix(in srgb, #f472b6 32%, transparent);
+}
+
+.chat-message--transcendent {
+  border-color: #c4b5fd;
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 20%, var(--surface-sunken)), color-mix(in srgb, #38bdf8 10%, var(--surface-sunken)));
+  box-shadow: 0 0 32px color-mix(in srgb, #a78bfa 40%, transparent);
+}
+
+.chat-message--secret {
+  border-color: #f8fafc;
+  background: radial-gradient(circle at top right, #312e81 0, #09090b 58%);
+  box-shadow: 0 0 38px color-mix(in srgb, #ffffff 38%, transparent);
+  animation: chat-million-glow 1.5s ease-in-out infinite;
+}
+
 .chat-message__avatar {
   flex: 0 0 auto;
 }

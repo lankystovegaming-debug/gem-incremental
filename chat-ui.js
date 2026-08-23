@@ -474,6 +474,9 @@ if (messagesEl && formEl && inputEl) {
   function rarityClass(rarity) {
     const n = Number(rarity ?? 0);
 
+    if (n >= 1_000_000_000) return "chat-message--secret";
+    if (n >= 100_000_000) return "chat-message--transcendent";
+    if (n >= 10_000_000) return "chat-message--cosmic";
     if (n >= 1_000_000) return "chat-message--million";
     if (n >= 100_000) return "chat-message--hundredk";
 
@@ -599,9 +602,18 @@ if (messagesEl && formEl && inputEl) {
       ? ` with luck of ${luck.toLocaleString("en-US", { maximumFractionDigits: 2 })}x!`
       : "!";
 
+    const announcementRarity = Number(message.effective_rarity ?? message.rarity ?? 0);
+    const announcementCopy = announcementRarity >= 1_000_000_000
+      ? "uncovered a secret"
+      : announcementRarity >= 100_000_000
+        ? "made a transcendent discovery"
+        : announcementRarity >= 10_000_000
+          ? "found a cosmic gem"
+          : "rolled a rare";
+
     return `<strong>${escapeHtml(
       message.roller_username
-    )}</strong> rolled a rare ${mutationPrefix}${gemNameHtml(
+    )}</strong> ${announcementCopy} ${mutationPrefix}${gemNameHtml(
       message.gem_name,
       escapeHtml
     )} ${escapeHtml(chance)}${escapeHtml(luckSuffix)}`;

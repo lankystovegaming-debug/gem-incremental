@@ -16,8 +16,8 @@ const expected = {
   "Void Opal": [250000, "exotic"],
   Chronite: [480000, "exotic"],
   "Neutron Crystal": [800000, "exotic"],
-  "Antimatter Crystal": [1800000, "cosmic"],
-  "Singularity Shard": [4000000, "cosmic"],
+  "Antimatter Crystal": [1800000, "exalted"],
+  "Singularity Shard": [4000000, "exalted"],
   "Lanky Gem": [10000000, "cosmic"]
 };
 
@@ -40,7 +40,13 @@ assert.equal(rarityTier(100).id, "epic");
 assert.equal(rarityTier(1000).id, "legendary");
 assert.equal(rarityTier(10000).id, "mythic");
 assert.equal(rarityTier(100000).id, "exotic");
-assert.equal(rarityTier(1000000).id, "cosmic");
+assert.equal(rarityTier(1000000).id, "exalted");
+assert.equal(rarityTier(9999999).id, "exalted");
+assert.equal(rarityTier(10000000).id, "cosmic");
+assert.equal(rarityTier(99999999).id, "cosmic");
+assert.equal(rarityTier(100000000).id, "transcendent");
+assert.equal(rarityTier(999999999).id, "transcendent");
+assert.equal(rarityTier(1000000000).id, "secret");
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
