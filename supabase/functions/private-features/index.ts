@@ -163,6 +163,10 @@ function normalizeGem(body: any) {
     enabled: body.enabled !== false,
     starts_at: body.starts_at || null,
     ends_at: body.ends_at || null,
+    availability_mode: ["always","date_range","daily","date_range_daily"].includes(String(body.availability_mode)) ? String(body.availability_mode) : "always",
+    daily_start_time: body.daily_start_time || null,
+    daily_end_time: body.daily_end_time || null,
+    availability_timezone: String(body.availability_timezone || "Asia/Singapore"),
     hide_rarity_until_discovered: rarity >= 10_000_000 || body.hide_rarity_until_discovered === true,
     metadata
   };
