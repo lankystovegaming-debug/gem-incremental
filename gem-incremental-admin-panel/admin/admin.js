@@ -100,6 +100,17 @@ function renderPlayer(data) {
         </div>
       </section>
 
+      <section class="admin-section admin-section--title">
+        <h3>Player Title</h3>
+        <p class="admin-help">Give this player a title with a custom colour, or remove it.</p>
+        <div class="admin-control admin-control--two">
+          <input id="playerTitle" maxlength="40" value="${escapeHtml(player.title ?? "")}" placeholder="Celestial Collector" aria-label="Player title">
+          <input id="playerTitleColor" type="color" value="${escapeHtml(player.title_color || "#ffd166")}" aria-label="Title colour">
+          <button class="btn btn--primary" data-action="player-title-set" type="button">Give / Update</button>
+          <button class="btn btn--danger" data-action="player-title-remove" type="button">Remove Title</button>
+        </div>
+      </section>
+
       <section class="admin-section">
         <h3>Money</h3>
         <div class="admin-control">
@@ -195,7 +206,14 @@ async function runPlayerAction(button) {
   const action = button.dataset.action;
   let request;
 
-  if (action === "money-add" || action === "money-remove") {
+  if (action === "player-title-set") {
+    const title = document.getElementById("playerTitle")?.value.trim() || "";
+    const color = document.getElementById("playerTitleColor")?.value || "#ffd166";
+    if (!title) { notify.error("Title required", "Enter a title or remove it."); return; }
+    request = ["player_title_set", { title, color }];
+  } else if (action === "player-title-remove") {
+    request = ["player_title_remove", {}];
+  } else if (action === "money-add" || action === "money-remove") {
     const value = Math.abs(Number(document.getElementById("moneyAmount").value));
     request = ["money", { amount: action === "money-add" ? value : -value }];
   } else if (action === "grant-gem") {

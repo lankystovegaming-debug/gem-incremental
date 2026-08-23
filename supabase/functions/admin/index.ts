@@ -131,8 +131,8 @@ async function playerSummary(ctx: any, player: any) {
     equipmentCount: equipmentResult.count ?? 0,
     consumables: consumableResult.data ?? [],
     boosts: boostResult.data ?? [],
-    title: titleResult.data?.title ?? "",
-    title_color: titleResult.data?.color ?? "#ffd166"
+    title: titleResult.data?.title ?? player.display_title ?? "",
+    title_color: titleResult.data?.color ?? player.display_title_color ?? "#ffd166"
   };
 }
 
@@ -419,7 +419,7 @@ export default {
       if (action === "inspect") {
         const { data: player, error } = await ctx.supabaseAdmin
           .from("players")
-          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck, leaderboard_hidden")
+          .select("id, username, money, total_rolls, inventory_capacity, next_roll_at, rarest_gem_name, rarest_gem_rarity, mutation_luck, leaderboard_hidden, display_title, display_title_color")
           .eq("id", targetId)
           .maybeSingle();
 
@@ -448,19 +448,36 @@ export default {
         if (!title || !/^#[0-9a-f]{6}$/i.test(color)) {
           return response({ error: "invalid_player_title" }, 400);
         }
+        const normalizedColor = color.toLowerCase();
+        const now = new Date().toISOString();
+
         const { data, error } = await ctx.supabaseAdmin
           .from("player_titles")
-          .upsert({ player_id: targetId, title, color: color.toLowerCase(), updated_at: new Date().toISOString() }, { onConflict: "player_id" })
+          .upsert({ player_id: targetId, title, color: normalizedColor, updated_at: now }, { onConflict: "player_id" })
           .select("player_id,title,color,updated_at")
           .single();
         if (error) return response({ error: "player_title_save_failed", message: error.message }, 500);
-        await audit(ctx, adminId, targetId, "player_title_set", { title, color: color.toLowerCase() });
+
+        // Keep a durable copy on players as well. This makes titles survive
+        // older profile/chat RPCs and older deployments of the separate admin UI.
+        const { error: playerError } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ display_title: title, display_title_color: normalizedColor })
+          .eq("id", targetId);
+        if (playerError) return response({ error: "player_title_player_sync_failed", message: playerError.message }, 500);
+
+        await audit(ctx, adminId, targetId, "player_title_set", { title, color: normalizedColor });
         return response({ title: data });
       }
 
       if (action === "player_title_remove") {
         const { error } = await ctx.supabaseAdmin.from("player_titles").delete().eq("player_id", targetId);
         if (error) return response({ error: "player_title_remove_failed", message: error.message }, 500);
+        const { error: playerError } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ display_title: "", display_title_color: "#ffd166" })
+          .eq("id", targetId);
+        if (playerError) return response({ error: "player_title_player_sync_failed", message: playerError.message }, 500);
         await audit(ctx, adminId, targetId, "player_title_removed", {});
         return response({ ok: true });
       }

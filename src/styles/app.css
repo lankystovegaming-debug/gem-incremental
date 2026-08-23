@@ -3048,6 +3048,63 @@ textarea {
 }
 
 
+
+/* =========================================================
+   PHOTOREAL SPECIMEN ATLAS
+   These are locally generated, background-removed mineral
+   specimens used only at the Photoreal level. They replace
+   the synthetic vector "gem" silhouette with photographic
+   specimen imagery while preserving the normal icon levels.
+   ========================================================= */
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"]) {
+  overflow: visible;
+  clip-path: none !important;
+  filter: drop-shadow(0 9px 10px rgb(0 0 0 / .38)) saturate(1.02) contrast(1.04);
+  background: transparent !important;
+}
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"])::before,
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"])::after {
+  clip-path: none !important;
+  border-radius: 0 !important;
+  background-repeat: no-repeat !important;
+}
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"])::after {
+  inset: 0 !important;
+  background-position: center !important;
+  background-size: contain !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  opacity: 1 !important;
+}
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"])::before,
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"]) .gem-icon__facet--a,
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"]) .gem-icon__facet--b,
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"]) .gem-icon__core,
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen]:not([data-gem-specimen="none"]) .gem-icon__shine {
+  display: none !important;
+}
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="quartz"]::after { background-image: url("../assets/photoreal/specimens2/quartz.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="calcite"]::after { background-image: url("../assets/photoreal/specimens2/calcite.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="jasper"]::after { background-image: url("../assets/photoreal/specimens2/jasper.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="uranium"]::after { background-image: url("../assets/photoreal/specimens2/uranium.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="amethyst"]::after { background-image: url("../assets/photoreal/specimens2/amethyst.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="opal"]::after { background-image: url("../assets/photoreal/specimens2/opal.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="hematite"]::after { background-image: url("../assets/photoreal/specimens2/hematite.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="labradorite"]::after { background-image: url("../assets/photoreal/specimens2/labradorite.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="tourmaline"]::after { background-image: url("../assets/photoreal/specimens2/tourmaline.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="sapphire"]::after { background-image: url("../assets/photoreal/specimens2/sapphire.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="ruby"]::after { background-image: url("../assets/photoreal/specimens2/ruby.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="aquamarine"]::after { background-image: url("../assets/photoreal/specimens2/aquamarine.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="emerald"]::after { background-image: url("../assets/photoreal/specimens2/emerald.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="pyrite"]::after { background-image: url("../assets/photoreal/specimens2/pyrite.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="obsidian"]::after { background-image: url("../assets/photoreal/specimens2/obsidian.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="moonstone"]::after { background-image: url("../assets/photoreal/specimens2/moonstone.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="uranium-specimen"]::after { background-image: url("../assets/photoreal/specimens2/uranium-specimen.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="citrine"]::after { background-image: url("../assets/photoreal/specimens2/citrine.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="diamond"]::after { background-image: url("../assets/photoreal/specimens2/diamond.webp") !important; }
+.gem-icon[data-gem-realism="photoreal"][data-gem-specimen="turquoise"]::after { background-image: url("../assets/photoreal/specimens2/turquoise.webp") !important; }
+
+
 /* =========================================================
    REAL-WORLD GEM MATERIAL RENDERER
    The first four levels preserve the original icon language.
@@ -4488,7 +4545,7 @@ select,
 /* ================================================================
    PHOTOREAL MATERIAL PASS v2
    The runtime layer stays compact for performance; the accompanying
-   photoreal-material-library.css contains the full 2M+ line material archive
+   the large unused photoreal CSS archive is intentionally omitted; these compact rules are the active photoreal pass
    requested for this build and is intentionally not loaded by default.
    ================================================================ */
 .gem-icon[data-gem-realism="photoreal"] {
@@ -4548,7 +4605,7 @@ select,
 .player-title-badge--profile { font-size:.34em; }
 /* High-detail real specimen reference for uranium/uraninite-style custom gems. */
 .gem-icon[data-gem-realism="photoreal"][data-gem-material="radioactive-ore"] .gem-icon__core {
-  background-image: url("../assets/photoreal/uranium-specimen-cutout.png"), radial-gradient(circle at 38% 32%, rgb(255 255 255 / .18), transparent 10%);
+  background-image: url("../assets/photoreal/uranium-specimen-cutout.webp"), radial-gradient(circle at 38% 32%, rgb(255 255 255 / .18), transparent 10%);
   background-size: cover, cover;
   background-position: center, center;
   background-blend-mode: normal, screen;

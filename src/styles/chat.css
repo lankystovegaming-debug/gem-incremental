@@ -742,3 +742,24 @@
   35% { opacity: 1; transform: scale(1.35) rotate(8deg); }
   100% { opacity: 0; transform: translateY(-18px) scale(.7) rotate(28deg); }
 }
+
+
+/* Player title badge — intentionally compact so custom titles never
+   distort chat rows. The color is supplied by the title system. */
+.player-title-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: .42rem;
+  padding: .08rem .42rem;
+  border: 1px solid color-mix(in srgb, var(--player-title-color) 72%, white 8%);
+  border-radius: 999px;
+  color: var(--player-title-color);
+  background: color-mix(in srgb, var(--player-title-color) 12%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--player-title-color) 18%, transparent);
+  font-size: .72em;
+  font-weight: 800;
+  line-height: 1.25;
+  vertical-align: middle;
+  white-space: nowrap;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--player-title-color) 24%, transparent);
+}

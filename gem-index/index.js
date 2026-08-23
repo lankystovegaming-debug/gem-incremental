@@ -394,11 +394,13 @@ async function refresh() {
     }
     loadedPlayerId = user.id;
 
-    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult] = await Promise.all([
+    const [combinations, playerState, privateGemsRpcResult, mutationRpcResult, mutationJsonResult, mutationAllResult] = await Promise.all([
       loadCombinations(user.id),
       loadCloudPlayerState(),
       supabase.rpc("get_public_gem_catalog"),
-      supabase.rpc("get_public_mutation_catalog")
+      supabase.rpc("get_public_mutation_catalog"),
+      supabase.rpc("get_public_mutation_catalog_json"),
+      supabase.rpc("get_public_mutation_catalog_all")
     ]);
 
     // RPCs are the primary path because they remain readable even when a
@@ -406,6 +408,27 @@ async function refresh() {
     // retained as a compatibility fallback for partially migrated projects.
     let privateGemsResult = privateGemsRpcResult;
     let mutationCatalogResult = mutationRpcResult;
+    let mutationJsonData = Array.isArray(mutationJsonResult?.data)
+      ? mutationJsonResult.data
+      : (Array.isArray(mutationJsonResult?.data?.mutations) ? mutationJsonResult.data.mutations : []);
+    if (!mutationJsonData.length && typeof mutationJsonResult?.data === "string") {
+      try {
+        const parsed = JSON.parse(mutationJsonResult.data);
+        mutationJsonData = Array.isArray(parsed) ? parsed : [];
+      } catch {}
+    }
+    let mutationAllData = Array.isArray(mutationAllResult?.data)
+      ? mutationAllResult.data
+      : [];
+    if (!mutationAllData.length && typeof mutationAllResult?.data === "string") {
+      try {
+        const parsed = JSON.parse(mutationAllResult.data);
+        mutationAllData = Array.isArray(parsed) ? parsed : [];
+      } catch {}
+    }
+    if (mutationAllData.length) {
+      mutationJsonData = mutationAllData.filter((row) => row?.enabled !== false);
+    }
     if (privateGemsResult.error) {
       console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
       privateGemsResult = await supabase
@@ -428,7 +451,10 @@ async function refresh() {
     if (combinations) state.combinations = combinations;
 
     if (!mutationCatalogResult.error && Array.isArray(mutationCatalogResult.data)) {
-      mutationList = normalizeLiveMutationCatalog(mutationCatalogResult.data);
+      const rows = mutationJsonData.length > mutationCatalogResult.data.length
+        ? mutationJsonData
+        : mutationCatalogResult.data;
+      mutationList = normalizeLiveMutationCatalog(rows);
       // If the RPC is reachable but returned only bundled definitions, perform
       // one direct enabled-catalog read so newly added admin mutations cannot
       // be hidden by a stale RPC deployment.
@@ -448,9 +474,14 @@ async function refresh() {
       state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
       if (!state.selectedMutations.size) state.selectedMutations.add("none");
     } else if (mutationCatalogResult.error) {
-      console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
-      mutationList = normalizeLiveMutationCatalog([]);
-      rebuildMutationMaps();
+      if (mutationJsonData.length) {
+        mutationList = normalizeLiveMutationCatalog(mutationJsonData);
+        rebuildMutationMaps();
+      } else {
+        console.warn("Live mutation catalog unavailable; using bundled catalog:", mutationCatalogResult.error.message);
+        mutationList = normalizeLiveMutationCatalog([]);
+        rebuildMutationMaps();
+      }
     }
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
@@ -476,7 +507,17 @@ async function refresh() {
   return refreshInFlight;
 }
 
+const mutationRealtime = supabase
+  .channel("gem-index-mutation-catalog")
+  .on("postgres_changes", { event: "*", schema: "public", table: "game_mutations" }, () => {
+    refresh();
+  })
+  .subscribe((status) => {
+    if (status === "SUBSCRIBED") console.info("[GEM INDEX] Live mutation catalog subscription active.");
+  });
+
 window.addEventListener("pageshow", (event) => { if (event.persisted) refresh(); });
+window.addEventListener("pagehide", () => { try { supabase.removeChannel(mutationRealtime); } catch {} });
 renderList();
 renderMutationTabs();
 renderSelectedMutationSummary();

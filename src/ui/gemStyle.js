@@ -707,6 +707,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const material = materialProfileForGem(safeName, style);
   const shape = iconShapeForName(safeName);
   const realism = getSettings().gemRealism ?? "classic";
+  const specimen = specimenForGem(safeName);
 
   // Mutation ids are part of the icon identity. Keep their order stable so
   // the same specimen renders identically on rolls, profiles, leaderboards,
@@ -752,6 +753,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
       "
       data-gem-icon="${escapeAttribute(safeName)}"
       data-gem-material="${escapeAttribute(materialMaterialClass(safeName))}"
+      data-gem-specimen="${escapeAttribute(specimen)}"
       data-mutation-count="${normalizedMutations.length}"
       data-mutations="${escapeAttribute(normalizedMutations.join(","))}"
       aria-hidden="true"
@@ -763,6 +765,79 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
       ${normalizedMutations.length ? `<span class="gem-icon__mutation-aura" aria-hidden="true"></span><span class="gem-icon__mutation-ring" aria-hidden="true"></span>` : ""}
     </span>
   `;
+}
+
+
+function specimenForGem(name) {
+  const key = String(name ?? "").toLowerCase();
+  const exact = {
+    quartz: "quartz",
+    calcite: "calcite",
+    feldspar: "feldspar",
+    fluorite: "green-prismatic",
+    hematite: "hematite",
+    jasper: "jasper",
+    amethyst: "amethyst",
+    opal: "opal",
+    "black opal": "opal",
+    "void opal": "opal",
+    "martian opal": "opal",
+    garnet: "ruby",
+    "red beryl": "ruby",
+    ruby: "ruby",
+    "red diamond": "ruby",
+    "black diamond": "obsidian",
+    "lunar diamond": "diamond",
+    diamond: "diamond",
+    sapphire: "sapphire",
+    "blue garnet": "sapphire",
+    tourmaline: "tourmaline",
+    "paraíba tourmaline": "tourmaline",
+    peridot: "green-prismatic",
+    "meteorite peridot": "green-prismatic",
+    emerald: "emerald",
+    tsavorite: "emerald",
+    demantoid: "emerald",
+    "natural moissanite": "diamond",
+    "presolar moissanite": "diamond",
+    zircon: "diamond",
+    topaz: "citrine",
+    citrine: "citrine",
+    aquamarine: "aquamarine",
+    spinel: "ruby",
+    painite: "ruby",
+    kyawthuite: "citrine",
+    tanzanite: "sapphire",
+    alexandrite: "emerald",
+    benitoite: "sapphire",
+    grandidierite: "aquamarine",
+    taaffeite: "amethyst",
+    musgravite: "hematite",
+    demantoid: "emerald",
+    jeremejevite: "aquamarine",
+    poudretteite: "amethyst",
+    serendibite: "hematite",
+    pezzottaite: "tourmaline",
+    clinohumite: "citrine",
+    tugtupite: "tourmaline",
+    ringwoodite: "sapphire",
+    "pallasite crystal": "hematite",
+    obsidian: "obsidian",
+    moonstone: "moonstone",
+    agate: "none"
+  };
+  if (exact[key]) return exact[key];
+  if (/(uranium|uraninite|betafite|torbernite|autunite)/.test(key)) return "uranium-specimen";
+  if (/(pyrite|gold|chalcopyrite)/.test(key)) return "pyrite";
+  if (/(obsidian)/.test(key)) return "obsidian";
+  if (/(opal)/.test(key)) return "opal";
+  if (/(moonstone|labradorite|sunstone)/.test(key)) return "moonstone";
+  if (/(ruby|corundum|spinel|painite)/.test(key)) return "ruby";
+  if (/(sapphire|benitoite|tanzanite|iolite|kyanite)/.test(key)) return "sapphire";
+  if (/(tourmaline|tugtupite|pezzottaite)/.test(key)) return "tourmaline";
+  if (/(emerald|beryl|malachite|tsavorite|demantoid)/.test(key)) return "emerald";
+  if (/(quartz|crystal|zircon|topaz|moissanite)/.test(key)) return "quartz";
+  return "none";
 }
 
 function materialMaterialClass(name) {

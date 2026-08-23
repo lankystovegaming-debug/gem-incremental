@@ -394,3 +394,19 @@
     height: 88px;
   }
 }
+
+
+.player-title-badge--profile {
+  display: inline-flex;
+  align-items: center;
+  margin-left: .55rem;
+  padding: .12rem .5rem;
+  border: 1px solid color-mix(in srgb, var(--player-title-color) 75%, white 8%);
+  border-radius: 999px;
+  color: var(--player-title-color);
+  background: color-mix(in srgb, var(--player-title-color) 12%, transparent);
+  font-size: .42em;
+  font-weight: 800;
+  vertical-align: middle;
+  white-space: nowrap;
+}
