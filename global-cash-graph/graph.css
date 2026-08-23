@@ -1,0 +1,239 @@
+/* =========================================================
+   CASH MARKET  —  stock-style economy chart
+   ========================================================= */
+
+.market {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- Ticker header ---------- */
+
+.market__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.market__ticker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.market__metric-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.market__pill {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.market__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--positive, #22c55e);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--positive, #22c55e) 14%, transparent);
+}
+
+.market__live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--positive, #22c55e);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive, #22c55e) 60%, transparent);
+  animation: market-pulse 2s ease-out infinite;
+}
+
+@keyframes market-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--positive, #22c55e) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.market__price {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.market__change {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.market__change--up { color: var(--positive, #22c55e); }
+.market__change--down { color: var(--negative, #ef4444); }
+
+.market__change-pct { font-size: 0.85rem; }
+
+.market__change-range {
+  color: var(--text-faint);
+  font-weight: 500;
+  font-size: 0.82rem;
+}
+
+/* ---------- Toggles ---------- */
+
+.market__metric-toggle {
+  flex: 0 0 auto;
+}
+
+.market__ranges {
+  align-self: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ---------- Chart ---------- */
+
+.market__chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 340px;
+}
+
+.market__chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.market__status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+/* SVG primitives */
+.market__grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.55;
+}
+
+.market__ylabel {
+  fill: var(--text-faint);
+  font-size: 11px;
+  text-anchor: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.market__xlabel {
+  fill: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.market__line {
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.market__line--up { stroke: var(--positive, #22c55e); }
+.market__line--down { stroke: var(--negative, #ef4444); }
+
+.market__fill-top--up { stop-color: var(--positive, #22c55e); stop-opacity: 0.28; }
+.market__fill-top--down { stop-color: var(--negative, #ef4444); stop-opacity: 0.26; }
+.market__fill-bottom { stop-color: var(--positive, #22c55e); stop-opacity: 0; }
+
+.market__dot--up { fill: var(--positive, #22c55e); }
+.market__dot--down { fill: var(--negative, #ef4444); }
+
+.market__crosshair {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  transition: opacity 0.12s ease;
+}
+
+.market__hoverdot {
+  fill: var(--surface-solid, var(--surface));
+  stroke: var(--text);
+  stroke-width: 2;
+  transition: opacity 0.12s ease;
+}
+
+/* ---------- Tooltip ---------- */
+
+.market__tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--surface-solid, var(--surface-raised));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-md);
+  padding: 7px 11px;
+  min-width: 92px;
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.market__tip-val {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.market__tip-time {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Note ---------- */
+
+.market__note {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.market__note strong { color: var(--text); }
+
+@media (max-width: 560px) {
+  .market__head { flex-direction: column; }
+  .market__metric-toggle { width: 100%; }
+  .market__chart-wrap { height: 280px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .market__live-dot { animation: none; }
+  .market__tooltip { transition: none; }
+}

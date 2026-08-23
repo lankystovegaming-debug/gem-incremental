@@ -29,6 +29,7 @@ import { initDevPanel } from "./devpanel.js";
 import { mountHowToPlay } from "./onboarding.js";
 import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
+import { getSettings, onSettingsChange } from "./settings.js";
 
 
 // =========================================================
@@ -72,10 +73,14 @@ const PAGES = [
   { id: "collection-hall", label: "Collection Hall", short: "Collections", href: "collection-hall/", icon: icons.book, sectionId: "collection-hall" },
   { id: "mining-events", label: "Mining Events", short: "Events", href: "mining-events/", icon: icons.pickaxe || icons.anvil, sectionId: "mining-events" },
   { id: "merchant-caravan", label: "Merchant Caravan", short: "Caravan", href: "merchant-caravan/", icon: icons.gavel, sectionId: "merchant-caravan" },
-  { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.sparkle, sectionId: "research-tree" }
+  { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.sparkle, sectionId: "research-tree" },
+  // Client-only page: shown only when the "Global cash graph" device
+  // setting is on. Not server-gated, so it lives outside PUBLIC_PAGES
+  // and the section loader.
+  { id: "global-cash-graph", label: "Cash Market", short: "Market", href: "global-cash-graph/", icon: icons.chart, settingGated: "cashGraph" }
 ];
 
-const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId);
+const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
 
 async function loadEnabledSections() {
   try {
@@ -220,6 +225,35 @@ export function mountShell({ page, base = "./" }) {
   ).join("");
 
   document.body.appendChild(tabbar);
+
+  // Client-setting-gated pages (e.g. the Cash Market graph) are shown or
+  // hidden purely from the device settings, with no server round-trip, and
+  // update live when the toggle changes on this or another tab.
+  const syncSettingGatedNav = () => {
+    const settings = getSettings();
+    for (const item of PAGES.filter((page) => page.settingGated)) {
+      const enabled = Boolean(settings[item.settingGated]);
+      const existingLink = header.querySelector(`.nav [data-setting-link="${item.id}"]`);
+      const existingTab = tabbar.querySelector(`[data-setting-link="${item.id}"]`);
+      if (enabled) {
+        if (!existingLink) {
+          header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(item, page, base, "nav__link"));
+          const link = header.querySelector(".nav__link:last-child");
+          if (link) link.dataset.settingLink = item.id;
+        }
+        if (!existingTab) {
+          tabbar.insertAdjacentHTML("beforeend", navLink(item, page, base, "tabbar__link", true));
+          const tab = tabbar.querySelector(".tabbar__link:last-child");
+          if (tab) tab.dataset.settingLink = item.id;
+        }
+      } else {
+        existingLink?.remove();
+        existingTab?.remove();
+      }
+    }
+  };
+  syncSettingGatedNav();
+  onSettingsChange(syncSettingGatedNav);
 
   // Site feature switches are controlled from Upcoming. Feature pages and
   // their top-bar links remain hidden until an authorized user enables them.
