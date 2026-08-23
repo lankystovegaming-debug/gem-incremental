@@ -1647,6 +1647,35 @@ export default {
       }
 
       // =====================================================
+      // BAN / SUSPENSION CHECK
+      //
+      // A banned player is blocked at the door. The client also shows a ban
+      // screen; enforcing here means removing that overlay buys nothing. Ban
+      // state lives in its own table (user_roll_luck_rarity_mult).
+      // =====================================================
+
+      const { data: banRow } = await ctx.supabaseAdmin
+        .from("user_roll_luck_rarity_mult")
+        .select("active_until, note")
+        .eq("player_id", playerId)
+        .maybeSingle();
+
+      if (
+        banRow?.active_until &&
+        new Date(banRow.active_until) > new Date()
+      ) {
+        return jsonResponse(
+          {
+            error: "banned",
+            bannedUntil: banRow.active_until,
+            reason: banRow.note ?? null
+          },
+          { status: 403 }
+        );
+      }
+
+
+      // =====================================================
       // LOAD LIVE MUTATION CATALOG
       // =====================================================
       // Admin-created mutations live in game_mutations. Keep the historical

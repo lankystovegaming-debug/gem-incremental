@@ -105,12 +105,25 @@ async function inspectPlayer(playerId) {
     return;
   }
 
+  // App-level ban status lives in its own SECURITY DEFINER RPC (so banning
+  // needs no edge-function redeploy). Fetch it and merge onto the player.
+  try {
+    const { data: banRows } = await supabase.rpc("admin_get_ban", { p_target: playerId });
+    const ban = Array.isArray(banRows) ? banRows[0] : banRows;
+    if (ban && data.player) {
+      data.player.ban_until = ban.ban_until ?? null;
+      data.player.ban_reason = ban.ban_reason ?? null;
+    }
+  } catch { /* Ban status is best-effort; the rest of the panel still loads. */ }
+
   renderPlayer(data);
 }
 
 function renderPlayer(data) {
   const player = data.player;
   const locked = isLocked(player);
+  const banned = player.ban_until && new Date(player.ban_until) > new Date();
+  const banPermanent = banned && new Date(player.ban_until).getFullYear() > 2100;
 
   playerPanel.innerHTML = `
     <div class="admin-player-head">
@@ -239,6 +252,7 @@ function renderPlayer(data) {
       <section class="admin-section">
         <h3>Account Controls</h3>
         ${player.leaderboard_hidden ? '<p class="admin-note">Hidden from every leaderboard.</p>' : ""}
+        ${banned ? `<p class="admin-note admin-note--danger">BANNED &mdash; ${banPermanent ? "permanent" : "until " + new Date(player.ban_until).toLocaleString()} &middot; &ldquo;${escapeHtml(player.ban_reason || "No reason")}&rdquo;</p>` : ""}
         <div class="admin-button-row">
           <button class="btn" data-action="reset-cooldown" type="button">Reset roll cooldown</button>
           <button class="btn ${player.leaderboard_hidden ? "btn--primary" : ""}" data-action="leaderboard-visibility" data-hidden="${player.leaderboard_hidden ? "true" : "false"}" type="button">
@@ -247,6 +261,20 @@ function renderPlayer(data) {
           <button class="btn btn--danger" data-action="account-lock" data-locked="${locked}" type="button">
             ${locked ? "Unlock account" : "Lock account"}
           </button>
+        </div>
+        <div class="admin-advanced-row" style="margin-top:12px">
+          <select id="banDuration" aria-label="Ban duration">
+            <option value="1">1 hour</option>
+            <option value="6">6 hours</option>
+            <option value="24" selected>1 day</option>
+            <option value="72">3 days</option>
+            <option value="168">7 days</option>
+            <option value="720">30 days</option>
+            <option value="0">Permanent</option>
+          </select>
+          <input id="banReason" type="text" maxlength="300" placeholder="Reason shown to the player" value="${banned ? escapeHtml(player.ban_reason || "") : ""}">
+          <button class="btn btn--danger" data-action="ban" type="button">${banned ? "Update ban" : "Ban / Suspend"}</button>
+          ${banned ? '<button class="btn" data-action="unban" type="button">Lift ban</button>' : ""}
         </div>
       </section>
 
@@ -304,8 +332,46 @@ function wirePlayerActions() {
   }
 }
 
+async function runBanAction(button, action) {
+  if (!selectedPlayerId) return;
+  let rpc, args, successMsg;
+
+  if (action === "ban") {
+    const hours = Number(document.getElementById("banDuration").value);
+    const reason = document.getElementById("banReason")?.value.trim() || "";
+    const label = hours === 0 ? "permanently" : `for ${hours} hour(s)`;
+    if (!window.confirm(`Ban this player ${label}? They'll see a ban screen every time they open the game.`)) return;
+    rpc = "admin_ban_player";
+    args = { p_target: selectedPlayerId, p_hours: hours, p_reason: reason };
+    successMsg = "Player banned.";
+  } else {
+    if (!window.confirm("Lift this player's ban?")) return;
+    rpc = "admin_unban_player";
+    args = { p_target: selectedPlayerId };
+    successMsg = "Ban lifted.";
+  }
+
+  button.disabled = true;
+  const { error } = await supabase.rpc(rpc, args);
+  if (error) {
+    notify.error("Ban action failed", error.message);
+    button.disabled = false;
+    return;
+  }
+  notify.success("Done", successMsg);
+  await inspectPlayer(selectedPlayerId);
+}
+
 async function runPlayerAction(button) {
   const action = button.dataset.action;
+
+  // Timed app-level bans go through SECURITY DEFINER RPCs, not the admin
+  // edge function, so they work without an edge-function redeploy.
+  if (action === "ban" || action === "unban") {
+    await runBanAction(button, action);
+    return;
+  }
+
   let request;
 
   if (action === "player-title-set") {

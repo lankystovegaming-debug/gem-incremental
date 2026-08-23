@@ -85,8 +85,17 @@ export async function loadCloudPlayerState() {
     return null;
   }
 
+  // Ban status is kept in its own table (own-row read is allowed by RLS).
+  const { data: ban } = await supabase
+    .from("user_roll_luck_rarity_mult")
+    .select("active_until, note")
+    .eq("player_id", user.id)
+    .maybeSingle();
+  const ban_until = ban?.active_until ?? null;
+  const ban_reason = ban?.note ?? null;
+
   if (!data) {
-    return { ...DEFAULT_PLAYER_STATE, total_rolls: 0 };
+    return { ...DEFAULT_PLAYER_STATE, total_rolls: 0, ban_until, ban_reason };
   }
 
   return {
@@ -95,7 +104,9 @@ export async function loadCloudPlayerState() {
     ),
     money: Number(data.money ?? 0),
     total_rolls: Number(data.total_rolls ?? 0),
-    next_roll_at: data.next_roll_at ?? null
+    next_roll_at: data.next_roll_at ?? null,
+    ban_until,
+    ban_reason
   };
 }
 
