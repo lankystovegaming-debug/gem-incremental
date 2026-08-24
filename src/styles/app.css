@@ -4727,3 +4727,18 @@ select,
   .gem-icon[data-gem-realism="photoreal"]::before,
   .gem-icon[data-gem-realism="photoreal"]::after { animation:none !important; transition:none !important; }
 }
+
+/* ---------------------------------------------------------
+   Mobile: keep form controls at 16px so iOS Safari does not
+   auto-zoom on focus. Scoped to small screens; desktop sizing
+   is unchanged. Checkboxes/radios/ranges/colour excluded.
+   --------------------------------------------------------- */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea,
+  .input,
+  .select {
+    font-size: 16px;
+  }
+}

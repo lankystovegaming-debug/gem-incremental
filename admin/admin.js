@@ -124,6 +124,8 @@ async function inspectPlayer(playerId) {
     if (meta && data.player) {
       data.player.created_at = meta.created_at ?? null;
       data.player.last_sign_in_at = meta.last_sign_in_at ?? null;
+      data.player.last_ip = meta.last_ip ?? null;
+      data.player.last_ip_at = meta.last_ip_at ?? null;
     }
   } catch { /* Account meta is best-effort; the rest of the panel still loads. */ }
 
@@ -170,6 +172,7 @@ function renderPlayer(data) {
           ${stat("Rarest", player.rarest_gem_name ?? "None")}
           ${stat("Created", fmtAccountDate(player.created_at))}
           ${stat("Last seen", fmtAccountDate(player.last_sign_in_at))}
+          ${stat("IP address", player.last_ip ? escapeHtml(player.last_ip) : "Not captured yet")}
         </div>
       </section>
 
