@@ -71,6 +71,14 @@ export async function settleDueAuctions() {
   if (error) console.warn("settle_due_auctions failed:", error.message);
 }
 
+// Refund buy orders that have remained unfilled for three days. A scheduled
+// database job performs this automatically; this call keeps the market fresh
+// immediately when somebody opens it after a quiet period.
+export async function settleDueMarketOrders() {
+  const { error } = await supabase.rpc("expire_stale_gem_orders");
+  if (error) console.warn("expire_stale_gem_orders failed:", error.message);
+}
+
 
 // ---------- LISTINGS ----------
 

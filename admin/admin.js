@@ -880,7 +880,8 @@ async function loadEvents() {
   }
 
   const now = Date.now();
-  list.innerHTML = (data ?? []).map((event) => {
+  const events = Array.isArray(data) ? data : [];
+  const renderEvent = (event) => {
     const running = event.active && new Date(event.ends_at).getTime() > now;
     const boosts = [
       Number(event.luck_bonus) > 0 ? `+${formatPercent(event.luck_bonus)} Luck` : null,
@@ -898,7 +899,20 @@ async function loadEvents() {
       <div><span>${running ? "Active" : "Ended"}</span><span>${escapeHtml(new Date(event.ends_at).toLocaleString())}</span></div>
       ${running ? `<button class="btn btn--danger" data-event-stop="${escapeHtml(event.id)}" type="button">Stop event</button>` : ""}
     </div>`;
-  }).join("") || `<p class="page-head__sub">No events have been run yet.</p>`;
+  };
+
+  const activeEvents = events.filter((event) => event.active && new Date(event.ends_at).getTime() > now);
+  const pastEvents = events.filter((event) => !activeEvents.includes(event));
+  list.innerHTML = events.length ? `
+    <div class="admin-event-group">
+      <h3>Current event</h3>
+      ${activeEvents.map(renderEvent).join("") || `<p class="page-head__sub">No event is currently active.</p>`}
+    </div>
+    ${pastEvents.length ? `<details class="admin-event-archive">
+      <summary>Past events <span>${pastEvents.length}</span></summary>
+      <div class="admin-event-archive__list">${pastEvents.map(renderEvent).join("")}</div>
+    </details>` : ""}
+  ` : `<p class="page-head__sub">No events have been run yet.</p>`;
 
   for (const button of list.querySelectorAll("[data-event-stop]")) {
     button.addEventListener("click", async () => {
