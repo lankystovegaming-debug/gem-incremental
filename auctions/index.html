@@ -99,6 +99,7 @@
             </div>
           </div>
         </div>
+        <p class="sell-card__hint" id="orderFeePreview"></p>
         <button class="btn btn--primary btn--block" id="orderButton" type="button">Post order</button>
       </div>
 
@@ -161,10 +162,15 @@
             <select class="select auction-select" id="sellDuration">
               <option value="1">1 hour</option>
               <option value="6">6 hours</option>
+              <option value="12">12 hours</option>
               <option value="24" selected>24 hours</option>
+              <option value="48">48 hours</option>
+              <option value="72">72 hours</option>
             </select>
           </div>
         </div>
+
+        <p class="sell-card__hint" id="sellFeePreview"></p>
 
         <button class="btn btn--primary btn--block" id="listButton" type="button" disabled>
           List for sale

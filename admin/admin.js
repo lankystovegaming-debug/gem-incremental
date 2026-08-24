@@ -657,6 +657,11 @@ async function loadAnalytics() {
   document.getElementById("analyticsGenerated").textContent =
     `Generated ${new Date(data.generatedAt ?? Date.now()).toLocaleString()}`;
 
+  // The fee ledger is intentionally unavailable through the public analytics
+  // RPC. Only the authenticated admin Edge Function may return its totals.
+  const feeResult = await adminRequest("market_fee_analytics", { targetId: null });
+  const marketFees = feeResult.error ? null : feeResult.data?.fees;
+
   const cards = [
     ["Players", formatCount(data.players)],
     ["Current online", formatCount(data.currentOnline ?? 0)],
@@ -671,7 +676,13 @@ async function loadAnalytics() {
     ["Inventory value", formatMoney(data.totalInventoryValue)],
     ["Rare announcements", formatCount(data.rareAnnouncements ?? 0)],
     ["Mutation coverage", `${(Number(data.announcementMutationCoverage ?? 1) * 100).toFixed(2)}%`],
-    ["Pending one-roll boosts", formatCount(data.pendingOneRollBoosts ?? 0)]
+    ["Pending one-roll boosts", formatCount(data.pendingOneRollBoosts ?? 0)],
+    ...(marketFees ? [
+      ["Market fees removed", formatMoney(marketFees.total ?? 0)],
+      ["Listing fees", formatMoney(marketFees.listingTotal ?? 0)],
+      ["Order fees", formatMoney(marketFees.orderTotal ?? 0)],
+      ["Market fees · 24h", formatMoney(marketFees.last24Hours ?? 0)]
+    ] : [])
   ];
 
   const row = (label, value) =>
