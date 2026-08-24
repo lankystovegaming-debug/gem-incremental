@@ -2,8 +2,8 @@ import gems from "../data/gems.js";
 import { GEM_MUTATIONS, normalizeMutationIds } from "../data/mutations.js";
 
 export const BASE_ROLL_LUCK = 1;
-export const CHAT_CHANCE_THRESHOLD = 100_000;
-export const EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000;
+export const CHAT_CHANCE_THRESHOLD = 1_000_000;
+export const EFFECTIVE_CHAT_CHANCE_THRESHOLD = 100_000_000;
 
 // Player-facing odds intentionally use the configured 1 / rarity chance.
 // Player/equipment/potion modifiers are ignored here.

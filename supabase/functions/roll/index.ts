@@ -3439,12 +3439,12 @@ export default {
       // Mutation-only rare rolls need a persisted announcement too.
       // The client used to manufacture these locally, which meant the chat
       // could show a rare roll that never existed in global_chat_announcements.
-      // Base gems at/above 1 in 100,000 are already announced by
+      // Base gems at/above 1 in 1,000,000 are already announced by
       // record_server_roll, so only create the missing mutation-only case.
       if (
         !relicDrop &&
-        Number(gem.rarity) < 100_000 &&
-        effectiveRarity >= 1_000_000
+        Number(gem.rarity) < 1_000_000 &&
+        effectiveRarity >= 100_000_000
       ) {
         const announcementPayload = {
           player_id: playerId,

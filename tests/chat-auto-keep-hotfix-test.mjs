@@ -44,7 +44,7 @@ const rollFunction = fs.readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
   "utf8"
 );
-assert.match(rollFunction, /effectiveRarity\s*>=\s*1_000_000/);
+assert.match(rollFunction, /effectiveRarity\s*>=\s*100_000_000/);
 assert.match(rollFunction, /effective_rarity:\s*effectiveRarity/);
 assert.doesNotMatch(
   rollFunction,
