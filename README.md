@@ -1,164 +1,109 @@
 # Gem Incremental
 
-A browser incremental game about rolling for gems, building a
-collection and crafting equipment that improves the next roll.
+Gem Incremental is a browser-based incremental game about rolling gems, building a collection, upgrading equipment, and competing through seasonal and social progression.
 
-Live at [gemincremental.com](https://gemincremental.com).
+Play at [gemincremental.com](https://gemincremental.com).
 
-Every action that changes a save is decided by a Supabase Edge
-Function, so the client never grants itself money, gems or
-equipment. The pages here are a static front end over that API —
-there is no build step.
+The website is a static front end backed by Supabase. Progress-changing actions—including rolls, sales, crafting, rewards, and upgrades—are validated by the server through database functions and Edge Functions.
 
-## Playing
+## Game systems
 
-- **Roll** — pull one gem from the deposit. Each roll has a
-  server-enforced cooldown. `R` or `Space` rolls too.
-- **Inventory** — lock the gems you want to keep, sell the rest,
-  and buy storage upgrades.
-- **Crafting** — spend gems and money on pickaxes, lanterns,
-  boots and bags. Auto Craft deposits matching gems the moment
-  they are rolled.
-- **Gem Index** — a record of every gem, revealed as you find it.
-- **Leaderboards** — total rolls, rarest gem and lifetime
-  earnings, for players who have set a username.
-- **Stats** — your bonuses and lifetime records.
-- **Settings** — theme, accent colour and automation.
-- **Account** — turn a guest save into a permanent account.
+- **Rolling** — discover gems with different rarities, weights, mutations, values, serial numbers, and availability windows.
+- **Inventory** — search, filter, lock, sell, delete, and automatically manage specimens. Relics are displayed separately and do not consume inventory slots.
+- **Equipment** — craft and equip pickaxes, boots, and bags. Pickaxes provide both Luck and Roll Speed, while higher tiers can offer unique passives.
+- **Enchanting** — use Enchant Relics and Ancient Relics to apply one enchant to a pickaxe. Rerolling always changes the current enchant.
+- **Masterwork Forge** — improve high-tier equipment through five Masterwork levels and unlock additional passives.
+- **Gem Index** — track discovered gems and mutation combinations. Undiscovered endgame gems remain concealed while still showing relevant availability information.
+- **Shop and Market** — buy rotating offers, open loot boxes, and trade specimens through the Auction House.
+- **Expeditions** — enter daily and weekly expeditions, complete generated objectives, and choose reward packages.
+- **Seasons** — progress through a 50-tier free and premium reward track using roll XP and tiered missions.
+- **Guilds** — create a guild, manage members and roles, complete missions, purchase upgrades, and compete in rotating guild competitions.
+- **Leaderboards and Stats** — compare rolls, earnings, finds, weights, Luck, and historical records while viewing your current calculated bonuses.
+- **Feature controls** — selected mechanics can be enabled or disabled without redeploying the website.
 
-### Automation
+## Accounts and saves
 
-Auto roll and auto sell are on the Roll page and in Settings.
-Both are device preferences, not server state: the server still
-authorises every individual roll and sale.
+Players begin with an anonymous Supabase account so the game can be played immediately. That browser session is the only way to recover an unlinked guest save.
 
-- **Auto roll** keeps rolling while the Roll page is open. It
-  stops on its own if the inventory fills up or several rolls
-  fail in a row.
-- **Auto sell** sells freshly rolled gems up to the tier you
-  choose. Anything rarer is kept, and locked gems are never
-  touched.
+A guest account can be made permanent without changing its player ID through:
 
-### Accounts and saves
+- email and password;
+- Google account linking, when the provider is enabled.
 
-Players start as an anonymous guest so the game is playable
-immediately. That guest session is the **only** key to that
-save — there is no way to sign back into an anonymous user once
-its session is gone. The interface therefore never signs a guest
-out, and never signs a guest into a different account while
-their save still holds progress.
+Registered players can sign back in, upload a profile picture, and request password resets. Authentication providers are only displayed when they are configured for the active Supabase project.
 
-Two routes make a guest save permanent, and both keep the same
-player id, so nothing is lost:
+## Automation
 
-- **Email and password**, on the Account page.
-- **Google**, which links the identity to the existing guest
-  user rather than creating a second one.
+Auto Roll, Auto Sell, Auto Keep, and Auto Craft reduce repetitive inventory management. The client controls when these actions are requested, but the server still validates every roll, sale, deposit, and reward.
 
-Players without a guest save can create a new email/password account
-from the Account page. Registered players can upload a profile picture
-there and request a password-reset email when they lose their password.
+Session Insights records local session activity such as rolls, kept and sold gems, income, relics, rarity distribution, and notable finds. Players can clear this local summary whenever they choose.
 
-The Google button only appears when the provider is actually
-enabled on the project — the client reads `/auth/v1/settings`
-and hides what is not configured, so nothing is offered that
-would fail.
+## Project structure
 
-## Layout
-
+```text
+index.html              Roll page
+inventory/              Inventory and equipment management
+crafting/               Equipment and consumable recipes
+enchanting-lab/         Pickaxe enchanting
+forge/                  Masterwork Forge
+gem-index/              Gem and mutation catalogue
+leaderboards/           Public rankings
+debug/                   My Stats
+seasons/                 Season pass and missions
+guilds/                  Guild management and competitions
+expeditions/             Daily and weekly expeditions
+auctions/                Auction House
+lootbox/                 Loot boxes
+admin/                   Feature Lab and administration tools
+updates/                 Player-facing update log
+src/backend/             Supabase client and cloud operations
+src/data/                Client-side definitions and display metadata
+src/logic/               Shared game calculations
+src/ui/                  Navigation, dialogs, formatting, and components
+src/styles/              Shared design system
+supabase/functions/      Server-authoritative Edge Functions
+supabase/migrations/     Database migrations and RPC definitions
+tests/                   Node-based regression checks
 ```
-index.html          Roll page
-inventory/          Collection and storage upgrades
-crafting/           Recipes, deposits and Auto Craft
-gem-index/          Gem encyclopaedia
-leaderboards/       Public rankings
-account/            Email, password and username
-debug/              Stats page
-settings/           Appearance and automation
-src/data/           Gem and recipe tables (shared with the server)
-src/logic/          Pure game rules, unit tested under tests/
-src/backend/        Supabase client, auth and cloud reads
-src/ui/             Shell, theme, toasts, dialogs, formatting
-src/styles/app.css  Design tokens and shared components
-src/assets/fonts/   Self-hosted Inter (latin + latin-ext subsets)
-tests/              Node test scripts and one-off migration pages
-```
+
+The live gem catalogue is stored in Supabase and can be managed through Feature Lab. Client-side gem data should not be treated as the source of truth for the current production catalogue.
 
 ## Running locally
 
-Any static file server works, as long as it serves the directory
-root — the pages use relative paths and ES modules, which will
-not load over `file://`.
+The front end has no compilation step. Serve the repository root with any static web server; ES modules will not work correctly through `file://`.
 
 ```bash
-python -m http.server 8423
+python3 -m http.server 8423
 ```
 
-Then open <http://localhost:8423>.
+Then open [http://localhost:8423](http://localhost:8423).
 
-## Supabase setup
+## Testing
 
-The client points at a project via the publishable key in
-`src/backend/supabase.js`.
-
-### Player rows
-
-The Edge Functions reject requests with `Player record not
-found.` unless `public.players` holds a row for the signed-in
-user. `ensureCloudPlayer()` creates it on load, which is enough,
-but a trigger removes the round trip and the failure mode:
-
-```sql
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer set search_path = ''
-as $$
-begin
-  insert into public.players (id)
-  values (new.id)
-  on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-```
-
-### Google sign-in (optional)
-
-Google stays hidden in the interface until it is configured, so
-these steps are only needed to offer it:
-
-- Enable the **Google** provider under *Authentication →
-  Providers*, using a Google OAuth client whose authorised
-  redirect URI is
-  `https://<project>.supabase.co/auth/v1/callback`.
-- Enable **manual linking** in the project's authentication
-  settings. Without it a guest cannot attach Google to an
-  existing save, and the interface says so rather than risking
-  the save.
-- Add the site to the **Redirect URLs** allow list, including
-  the sub-pages players can sign in from:
-
-  ```
-  https://gemincremental.com/**
-  http://localhost:8423/**
-  ```
-
-## Tests
-
-The pure game logic has Node test scripts:
+Run the complete regression suite with:
 
 ```bash
-node tests/rolling-test.js
-node tests/weight-test.js
-node tests/inventory-test.js
-node tests/roll-result-test.js
+npm test
 ```
 
-The `tests/*.html` files are one-off migration and diagnostic
-tools, not part of the game.
+Tests cover the major game systems and also verify that important client, migration, and Edge Function changes remain connected.
+
+## Supabase development
+
+The browser client configuration is located in `src/backend/supabase.js`. Production secrets and the service-role key must never be committed or exposed to the client.
+
+Database changes belong in `supabase/migrations/`. Edge Functions are stored under `supabase/functions/` and should be deployed only after any database functions or columns they require are available remotely.
+
+Typical function deployment:
+
+```bash
+supabase functions deploy <function-name> --project-ref <project-ref>
+```
+
+Before applying migrations, compare local and remote migration history. This repository has previously received migrations from multiple development branches, so do not repair or rewrite remote migration history without first confirming the exact mismatch.
+
+## Contributing
+
+Create a feature branch, keep unrelated changes separate, run `npm test`, and open a pull request into `main`. Database migrations and Edge Function deployment requirements should be called out clearly in the pull request description.
+
+Please use the in-game bug-report link or the repository issue tracker for reproducible problems.
