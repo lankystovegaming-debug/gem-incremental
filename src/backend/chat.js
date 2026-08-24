@@ -146,6 +146,31 @@ function chatMutationDetails(ids, catalog) {
     }));
 }
 
+let mutationCatalogCache = [];
+let mutationCatalogCacheExpiresAt = 0;
+
+async function loadLiveMutationCatalog() {
+  if (mutationCatalogCache.length && Date.now() < mutationCatalogCacheExpiresAt) {
+    return mutationCatalogCache;
+  }
+
+  const rpcResult = await supabase.rpc("get_public_mutation_catalog");
+  let catalog = rpcResult.error ? [] : (rpcResult.data ?? []);
+
+  if (rpcResult.error) {
+    const fallback = await supabase
+      .from("game_mutations")
+      .select("id, name, chance, multiplier, color, icon, enabled, sort_order")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true });
+    if (!fallback.error) catalog = fallback.data ?? [];
+  }
+
+  mutationCatalogCache = catalog;
+  mutationCatalogCacheExpiresAt = Date.now() + 60_000;
+  return catalog;
+}
+
 function historyAnnouncementKey(row) {
   return `${row?.player_id ?? ""}|${row?.gem_name ?? ""}|${new Date(row?.created_at ?? 0).getTime()}`;
 }
@@ -313,6 +338,10 @@ export function subscribeToChat(onMessage) {
             [payload.new],
             normalizeAnnouncement
           );
+          if (message) {
+            const catalog = await loadLiveMutationCatalog();
+            message.mutation_details = chatMutationDetails(message.mutation_ids, catalog);
+          }
           if (message) onMessage(message);
         } catch (error) {
           console.error("[CHAT] Failed to process rare announcement:", error);
@@ -325,6 +354,10 @@ export function subscribeToChat(onMessage) {
       async (payload) => {
         try {
           const [message] = await enrich([payload.new], normalizeAnnouncement);
+          if (message) {
+            const catalog = await loadLiveMutationCatalog();
+            message.mutation_details = chatMutationDetails(message.mutation_ids, catalog);
+          }
           if (message) onMessage(message);
         } catch (error) {
           console.error("[CHAT] Failed to process rare announcement update:", error);
