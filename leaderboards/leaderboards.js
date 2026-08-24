@@ -801,7 +801,7 @@ function renderBestRoll() {
           Best rolls of all time across every player. Every successful roll is
           eligible, even after the specimen leaves inventory. Ranking uses
           effective rarity only: base gem denominator × every mutation
-          denominator. Price is ignored.
+          denominator. Price is ignored. (calculated from 24 August)
         </p>
       </div>
     </div>
