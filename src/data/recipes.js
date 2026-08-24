@@ -24,7 +24,8 @@ const recipes = [
       tier: 1,
 
       bonus: {
-        luck: 0.05
+        luck: 0.05,
+        rollSpeed: 0.05
       }
     }
   },
@@ -54,7 +55,8 @@ const recipes = [
       tier: 2,
 
       bonus: {
-        luck: 0.15
+        luck: 0.15,
+        rollSpeed: 0.10
       }
     }
   },
@@ -84,7 +86,8 @@ const recipes = [
       tier: 3,
 
       bonus: {
-        luck: 0.50
+        luck: 0.50,
+        rollSpeed: 0.25
       }
     }
   },
@@ -114,7 +117,8 @@ const recipes = [
       tier: 4,
 
       bonus: {
-        luck: 0.80
+        luck: 0.80,
+        rollSpeed: 0.40
       }
     }
   },
@@ -145,7 +149,8 @@ const recipes = [
       tier: 5,
 
       bonus: {
-        luck: 1.50
+        luck: 1.50,
+        rollSpeed: 0.60
       }
     }
   },
@@ -169,7 +174,7 @@ const recipes = [
       name: "Mythic Pickaxe",
       category: "pickaxe",
       tier: 6,
-      bonus: { luck: 2.50 }
+      bonus: { luck: 2.50, rollSpeed: 0.80 }
     }
   },
 
@@ -192,7 +197,7 @@ const recipes = [
       name: "Aether Pickaxe",
       category: "pickaxe",
       tier: 7,
-      bonus: { luck: 4.00 }
+      bonus: { luck: 4.00, rollSpeed: 1.25 }
     }
   },
 
@@ -215,7 +220,7 @@ const recipes = [
       name: "Voidbreaker Pickaxe",
       category: "pickaxe",
       tier: 8,
-      bonus: { luck: 7.00 }
+      bonus: { luck: 7.00, rollSpeed: 1.80 }
     }
   },
 
@@ -240,7 +245,7 @@ const recipes = [
       name: "Veteran Pickaxe",
       category: "pickaxe",
       tier: 9,
-      bonus: { luck: 10.00 }
+      bonus: { luck: 10.00, rollSpeed: 2.10 }
     }
   },
 
@@ -265,7 +270,7 @@ const recipes = [
       name: "Ascendant Pickaxe",
       category: "pickaxe",
       tier: 10,
-      bonus: { luck: 14.00 }
+      bonus: { luck: 14.00, rollSpeed: 2.40 }
     }
   },
 
@@ -286,7 +291,7 @@ const recipes = [
       name: "Eclipse Pickaxe",
       category: "pickaxe",
       tier: 11,
-      bonus: { luck: 16 }
+      bonus: { luck: 16, rollSpeed: 2.55 }
     }
   },
 
@@ -307,7 +312,7 @@ const recipes = [
       name: "Singularity Pickaxe",
       category: "pickaxe",
       tier: 12,
-      bonus: { luck: 18 }
+      bonus: { luck: 18, rollSpeed: 2.70 }
     }
   },
 
@@ -328,7 +333,7 @@ const recipes = [
       name: "Transcendent Pickaxe",
       category: "pickaxe",
       tier: 13,
-      bonus: { luck: 21 }
+      bonus: { luck: 21, rollSpeed: 2.85 }
     }
   },
 
@@ -1299,4 +1304,4 @@ const recipes = [
   }
 ];
 
-export default recipes;
+export default recipes.filter((recipe) => recipe.category !== "lantern");

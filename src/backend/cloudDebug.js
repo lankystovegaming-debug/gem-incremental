@@ -107,11 +107,15 @@ export async function loadCloudDebugState() {
       )
       .select(`
         equipment_id,
+        category,
         equipped,
         luck_bonus,
         roll_speed_bonus,
         weight_luck_bonus,
-        weight_multiplier_bonus
+        weight_multiplier_bonus,
+        masterwork_level,
+        masterwork_passive,
+        masterwork_passive_rank
       `);
 
 
@@ -235,29 +239,37 @@ export async function loadCloudDebugState() {
     }
 
 
+    const masterworkFactor = 1 + Math.min(5, Math.max(0, Number(item.masterwork_level ?? 0))) / 100;
+
     luck +=
       Number(
         item.luck_bonus ??
         0
-      );
+      ) * masterworkFactor;
 
     rollSpeed +=
       Number(
         item.roll_speed_bonus ??
         0
-      );
+      ) * masterworkFactor;
 
     weightLuck +=
       Number(
         item.weight_luck_bonus ??
         0
-      );
+      ) * masterworkFactor;
 
     weightMultiplier +=
       Number(
         item.weight_multiplier_bonus ??
         0
-      );
+      ) * masterworkFactor;
+  }
+
+  const equippedLantern = (equipment ?? []).find(item => item.equipped && item.category === "lantern");
+  const lanternPassiveRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
+  if (equippedLantern?.masterwork_passive === "focused_beam") {
+    luck *= lanternPassiveRank >= 2 ? 1.05 : 1.03;
   }
 
 
@@ -266,11 +278,15 @@ export async function loadCloudDebugState() {
     of boosts ??
     []
   ) {
-    const effectValue =
+    let effectValue =
       Number(
         boost.effect_value ??
         0
       );
+
+    if (boost.family === "rollSpeed" && equippedLantern?.masterwork_passive === "potion_afterglow") {
+      effectValue *= lanternPassiveRank >= 2 ? 1.15 : 1.10;
+    }
 
 
     if (
@@ -303,6 +319,10 @@ export async function loadCloudDebugState() {
         weightMultiplier += effectValue;
         break;
     }
+  }
+
+  if (equippedLantern?.masterwork_passive === "overclocked_flame") {
+    rollSpeed *= lanternPassiveRank >= 2 ? 1.08 : 1.05;
   }
 
 

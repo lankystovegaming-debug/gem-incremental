@@ -20,6 +20,19 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{try{
  }
  if(action==="purchase-premium"){const{data,error}=await ctx.supabase.rpc("purchase_season_premium",{p_season_id:String(body.seasonId??"")});if(error)throw error;return json(data);}
  if(action==="claim-tier"){const{data,error}=await ctx.supabase.rpc("claim_season_tier",{p_season_id:String(body.seasonId??""),p_tier:Number(body.tier),p_lane:String(body.lane??"free")});if(error)throw error;return json(data);}
+ if(action==="claim-all"){
+  const seasonId=String(body.seasonId??"");
+  const[{data:season,error:se},{data:progress,error:pe}]=await Promise.all([
+   ctx.supabaseAdmin.from("season_definitions").select("tiers,ends_at").eq("id",seasonId).single(),
+   ctx.supabaseAdmin.from("player_seasons").select("xp,premium,claimed_tiers").eq("season_id",seasonId).eq("player_id",playerId).single()
+  ]);if(se)throw se;if(pe)throw pe;if(Date.now()>=new Date(new Date(season.ends_at).getTime()+7*86400000).getTime())throw new Error("claim_period_ended");
+  const claimed=new Set(Array.isArray(progress.claimed_tiers)?progress.claimed_tiers:[]);let count=0;
+  for(const tier of Array.isArray(season.tiers)?season.tiers:[]){
+   if(Number(progress.xp)<Number(tier.xp))continue;
+   for(const lane of progress.premium?["free","premium"]:["free"]){const key=`${lane}:${tier.tier}`;if(claimed.has(key))continue;const{error}=await ctx.supabase.rpc("claim_season_tier",{p_season_id:seasonId,p_tier:Number(tier.tier),p_lane:lane});if(error&&!String(error.message??"").includes("already_claimed"))throw error;claimed.add(key);count++;}
+  }
+  return json({claimed:count});
+ }
  if(action==="reroll-daily"){const{data,error}=await ctx.supabase.rpc("reroll_daily_season_mission",{p_season_id:String(body.seasonId??""),p_slot:Number(body.slot)});if(error)throw error;return json(data);}
  return json({error:"unknown_action"},400);
 }catch(error){const message=error instanceof Error?error.message:String(error);console.error("SEASONS",error);const code=["not_enough_money","season_not_active","tier_locked","already_claimed","premium_required","claim_period_ended","mission_in_progress","reroll_used"].find(x=>message.includes(x))??"seasons_error";return json({error:code,message},code==="seasons_error"?500:409);}})};
