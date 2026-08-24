@@ -622,14 +622,21 @@ function renderRoll(data, outcome) {
 
 function addHistory(data, note) {
   const tier = rarityTier(data.gem.rarity);
+  const liveMutations = Array.isArray(data?.mutations)
+    ? data.mutations.filter((mutation) => mutation?.id)
+    : (data?.mutation?.id ? [data.mutation] : []);
 
   history.unshift({
     name: data.gem.name,
     tier,
     weight: data.finalWeight,
     value: data.value,
-    mutationIds: Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : []),
-    chance: chanceLabelForRollResult(data, data.gem, Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : [])),
+    mutations: liveMutations.map((mutation) => ({
+      id: String(mutation.id),
+      name: String(mutation.name ?? getGemMutation(mutation.id)?.name ?? mutation.id)
+    })),
+    mutationIds: liveMutations.map((mutation) => mutation.id),
+    chance: chanceLabelForRollResult(data, data.gem, liveMutations.map((mutation) => mutation.id)),
     note
   });
 
@@ -641,14 +648,17 @@ function addHistory(data, note) {
 }
 
 
-function historyMutationNamesHtml(ids = []) {
-  const normalized = Array.isArray(ids) ? ids : [];
+function historyMutationNamesHtml(mutations = [], legacyIds = []) {
+  const normalized = Array.isArray(mutations) && mutations.length
+    ? mutations
+    : (Array.isArray(legacyIds) ? legacyIds : []).map((id) => ({ id }));
   if (!normalized.length) return "";
-  return `<span class="history__mutations">${normalized.map((id, index) => {
-    const m = getGemMutation(id);
-    if (!m) return "";
+  return `<span class="history__mutations">${normalized.map((mutation, index) => {
+    const id = String(mutation?.id ?? "");
+    const name = mutation?.name ?? getGemMutation(id)?.name ?? id;
+    if (!id || !name) return "";
     const separator = index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : "";
-    return `${separator}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`;
+    return `${separator}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(name)}</span></span>`;
   }).join("")}</span>`;
 }
 
@@ -666,7 +676,7 @@ function renderHistory() {
           <span class="history__dot"></span>
 
           <span class="history__name">${gemNameHtml(entry.name, escapeHtml)}</span>
-          ${historyMutationNamesHtml(entry.mutationIds)}
+          ${historyMutationNamesHtml(entry.mutations, entry.mutationIds)}
 
           <span class="history__meta">${escapeHtml(entry.chance)} · ${escapeHtml(
             entry.note || formatWeight(entry.weight)
