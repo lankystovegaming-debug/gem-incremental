@@ -14,7 +14,7 @@ export default {
     if (!allowedActions.has(action) || (action !== "convert_relics" && !Number.isInteger(equipmentRowId))) {
       return Response.json({ error: "invalid_request" }, { status: 400 });
     }
-    const { data, error } = await ctx.supabase.rpc("masterwork_equipment_beta", {
+    const { data, error } = await ctx.supabase.rpc("masterwork_equipment_with_cache_tokens", {
       p_equipment_row_id: equipmentRowId,
       p_action: action,
       p_choice: typeof body.choice === "string" ? body.choice : null

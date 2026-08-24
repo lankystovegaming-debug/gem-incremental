@@ -14,7 +14,7 @@ The website is a static front end backed by Supabase. Progress-changing actions�
 - **Enchanting** — use Enchant Relics and Ancient Relics to apply one enchant to a pickaxe. Rerolling always changes the current enchant.
 - **Masterwork Forge** — improve high-tier equipment through five Masterwork levels and unlock additional passives.
 - **Gem Index** — track discovered gems and mutation combinations. Undiscovered endgame gems remain concealed while still showing relevant availability information.
-- **Shop and Market** — buy rotating offers, open loot boxes, and trade specimens through the Auction House.
+- **Shop and Market** — buy rotating offers, choose rewards from Mining Caches, and trade specimens through the Auction House.
 - **Expeditions** — enter daily and weekly expeditions, complete generated objectives, and choose reward packages.
 - **Seasons** — progress through a 50-tier free and premium reward track using roll XP and tiered missions.
 - **Guilds** — create a guild, manage members and roles, complete missions, purchase upgrades, and compete in rotating guild competitions.
