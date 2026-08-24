@@ -1,7 +1,22 @@
 import { withSupabase } from "npm:@supabase/server";
+import { Redis } from "npm:@upstash/redis";
+import { Ratelimit } from "npm:@upstash/ratelimit";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"Content-Type":"application/json",...cors}});
 function uid(ctx:any){return ctx?.userClaims?.id??ctx?.userClaims?.sub??ctx?.jwtClaims?.sub??null;}
+const redis=new Redis({url:Deno.env.get("UPSTASH_REDIS_REST_URL"),token:Deno.env.get("UPSTASH_REDIS_REST_TOKEN")});
+const guildCreateRateLimit=new Ratelimit({redis,limiter:Ratelimit.slidingWindow(3,"10 m"),prefix:"ratelimit:guild-create",analytics:false});
+async function limitGuildCreation(userId:string){
+ try{
+  const result=await guildCreateRateLimit.limit(userId);
+  if(result.success)return null;
+  const retryAfterSeconds=Math.max(1,Math.ceil((result.reset-Date.now())/1000));
+  return new Response(JSON.stringify({error:"guild_create_rate_limited",message:"Too many guild creation attempts. Please wait before trying again.",limit:result.limit,remaining:result.remaining,reset:result.reset,retryAfterSeconds}),{status:429,headers:{"Content-Type":"application/json","Retry-After":String(retryAfterSeconds),...cors}});
+ }catch(error){
+  console.error("GUILD_CREATE_RATE_LIMIT",error);
+  return json({error:"rate_limit_unavailable",message:"Guild creation is temporarily unavailable. Please try again shortly."},503);
+ }
+}
 const OWNER_USER_IDS=["38d5e8ce-18af-46d3-aa9e-6e601e75dd78"];
 const GUILD_COMPETITION_REWARDS=[
   {placement:"1st",items:"1 Ancient Relic · 4 Enchant Relics · 1 Mythic Potion · 3 Legendary Potions · $2,000,000",guildPoints:10500},
@@ -97,6 +112,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if (a === "guild-create") {
+    const limited=await limitGuildCreation(userId);if(limited)return limited;
     const rpc=await ctx.supabaseAdmin.rpc("create_guild_v2",{
       p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),
       p_description:String(b.description??""),p_emblem:String(b.emblem??"gem"),
