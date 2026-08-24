@@ -533,11 +533,10 @@ if (messagesEl && formEl && inputEl) {
   function chatChanceIsRareEnough(message) {
     const baseRarity = Number(message?.rarity ?? 0);
     const mutationIds = chatMutationIds(message);
-    // Normal/unmutated rolls announce at 1 in 100,000. Once a mutation is
-    // present, the combined effective rarity must reach 1 in 1,000,000.
-    if (mutationIds.length === 0) {
-      return Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD;
-    }
+    // Naturally rare gems announce at 1 in 1,000,000+. A lower base gem may
+    // announce only when its mutation combination reaches 1 in 100,000,000.
+    if (Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD) return true;
+    if (mutationIds.length === 0) return false;
     const storedEffective = Number(message?.effective_rarity);
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       return storedEffective >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
@@ -602,21 +601,25 @@ if (messagesEl && formEl && inputEl) {
       ? ` with luck of ${luck.toLocaleString("en-US", { maximumFractionDigits: 2 })}x!`
       : "!";
 
-    const announcementRarity = Number(message.effective_rarity ?? message.rarity ?? 0);
-    const announcementCopy = announcementRarity >= 1_000_000_000
+    const effectiveRarity = Number(message.effective_rarity ?? message.rarity ?? 0);
+    const effectiveOnly = rarity < CHAT_CHANCE_THRESHOLD && effectiveRarity >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
+    const announcementCopy = effectiveOnly
+      ? "achieved an effective-rarity anomaly with"
+      : rarity >= 1_000_000_000
       ? "uncovered a secret"
-      : announcementRarity >= 100_000_000
+      : rarity >= 100_000_000
         ? "made a transcendent discovery"
-        : announcementRarity >= 10_000_000
+        : rarity >= 10_000_000
           ? "found a cosmic gem"
-          : "rolled a rare";
+          : "found an exalted gem";
+    const chanceCopy = effectiveOnly ? `${chance} effective rarity` : chance;
 
     return `<strong>${escapeHtml(
       message.roller_username
     )}</strong> ${announcementCopy} ${mutationPrefix}${gemNameHtml(
       message.gem_name,
       escapeHtml
-    )} ${escapeHtml(chance)}${escapeHtml(luckSuffix)}`;
+    )} ${escapeHtml(chanceCopy)}${escapeHtml(luckSuffix)}`;
   }
 
   function localRollAnnouncement(data) {
@@ -634,11 +637,11 @@ if (messagesEl && formEl && inputEl) {
       return null;
     }
 
-    // Base gems at/above 1 in 100,000 already have a persisted server
+    // Base gems at/above 1 in 1,000,000 already have a persisted server
     // announcement. Do not create a second local copy for those rolls.
     // Local announcements are only for mutation combinations that become
     // rare enough while the base gem itself is still below the threshold.
-    if (Number(data.gem.rarity ?? 0) >= 100_000) {
+    if (Number(data.gem.rarity ?? 0) >= CHAT_CHANCE_THRESHOLD) {
       return null;
     }
 
