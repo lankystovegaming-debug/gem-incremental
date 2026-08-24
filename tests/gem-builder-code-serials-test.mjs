@@ -24,6 +24,8 @@ assert.match(privateFeatures, /title: String\(body\.title/);
 assert.match(privateFeatures, /description: String\(body\.description/);
 assert.match(gemIndex, /get_public_gem_catalog/);
 assert.match(gemIndex, /Number\(entry\.gem\.rarity\) < 10_000_000/);
+assert.doesNotMatch(gemIndex, /secretLocked \? "Undiscovered"/);
+assert.match(gemIndex, /badge badge--tier">\$\{escapeHtml\(tier\.name\)\}/);
 assert.match(concealMigration, /where rarity >= 10000000/);
 assert.match(concealMigration, /hide_rarity_until_discovered = true/);
 assert.match(gemIndex, /get_public_mutation_catalog/);
