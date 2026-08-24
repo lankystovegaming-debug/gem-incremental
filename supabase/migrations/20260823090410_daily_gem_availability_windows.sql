@@ -16,7 +16,9 @@ alter table public.private_feature_gems
   add constraint private_feature_gems_availability_mode_check
   check (availability_mode in ('always','date_range','daily','date_range_daily'));
 
-create or replace function public.get_public_gem_catalog()
+drop function if exists public.get_public_gem_catalog();
+
+create function public.get_public_gem_catalog()
 returns table (
   id uuid, title text, name text, rarity numeric, base_weight numeric,
   value_per_gram numeric, description text, metadata jsonb,
