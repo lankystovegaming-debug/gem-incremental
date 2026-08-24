@@ -132,7 +132,17 @@
 .admin-event-form input { width: 100%; margin-top: 6px; }
 .admin-event-form .btn { align-self: end; }
 .admin-event-list { display: grid; gap: 8px; margin-top: var(--space-4); }
+.admin-event-group { display: grid; gap: 8px; }
+.admin-event-group h3 { margin: 0; color: var(--text-muted); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+.admin-event-archive { margin-top: 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-sunken); }
+.admin-event-archive summary { display: flex; align-items: center; justify-content: space-between; padding: 12px; color: var(--text); cursor: pointer; font-weight: 700; list-style: none; }
+.admin-event-archive summary::-webkit-details-marker { display: none; }
+.admin-event-archive summary::after { content: "+"; color: var(--text-muted); font-size: 1.1rem; }
+.admin-event-archive[open] summary::after { content: "−"; }
+.admin-event-archive summary span { min-width: 2rem; padding: 2px 8px; border-radius: 999px; background: var(--surface-raised); color: var(--text-muted); font-size: .75rem; text-align: center; }
+.admin-event-archive__list { display: grid; gap: 8px; max-height: 520px; padding: 0 8px 8px; overflow-y: auto; }
 .admin-event-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(170px, auto) auto; align-items: center; gap: var(--space-3); padding: 12px; border-radius: var(--radius-sm); background: var(--surface-sunken); }
+.admin-event-archive .admin-event-row { background: var(--surface-raised); }
 .admin-event-row strong, .admin-event-row span { display: block; }
 .admin-event-row span { margin-top: 2px; color: var(--text-muted); font-size: .78rem; }
 

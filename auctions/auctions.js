@@ -3,6 +3,7 @@ import { loadCloudGems, loadCloudPlayerState } from "../src/backend/cloudInvento
 import { loadCloudConsumables } from "../src/backend/cloudConsumables.js";
 import {
   settleDueAuctions,
+  settleDueMarketOrders,
   loadActiveAuctions,
   loadMyAuctions,
   createAuctionLot,
@@ -358,6 +359,10 @@ function orderCard(order) {
           <span class="auction-line__key">Pays</span>
           <span class="auction-line__val auction-line__val--money">${formatMoney(order.price)}</span>
         </div>
+        <div class="auction-line">
+          <span class="auction-line__key">Expires</span>
+          <span class="auction-line__val js-countdown" data-ends="${new Date(new Date(order.created_at).getTime() + 3 * 86400000).toISOString()}">${remainingText(new Date(new Date(order.created_at).getTime() + 3 * 86400000).toISOString())}</span>
+        </div>
       </div>
       ${
         mine
@@ -595,7 +600,7 @@ listButton.addEventListener("click", async () => {
 const STATUS_LABELS = {
   active: "Active", sold: "Sold", returned: "Unsold — returned", cancelled: "Cancelled"
 };
-const ORDER_STATUS_LABELS = { open: "Open", filled: "Filled", cancelled: "Cancelled" };
+const ORDER_STATUS_LABELS = { open: "Open", filled: "Filled", cancelled: "Cancelled", expired: "Expired — refunded" };
 
 function renderMine() {
   if (state.loading) return;
@@ -731,7 +736,7 @@ async function refresh() {
 
 refreshButton.addEventListener("click", async () => {
   refreshButton.disabled = true;
-  await settleDueAuctions();
+  await Promise.all([settleDueAuctions(), settleDueMarketOrders()]);
   await refresh();
   refreshButton.disabled = false;
 });
@@ -747,7 +752,7 @@ async function boot() {
     return;
   }
   state.userId = user.id;
-  await settleDueAuctions();
+  await Promise.all([settleDueAuctions(), settleDueMarketOrders()]);
   await refresh();
 }
 
