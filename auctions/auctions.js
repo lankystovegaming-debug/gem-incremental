@@ -77,6 +77,54 @@ const listButton = document.getElementById("listButton");
 const orderGem = document.getElementById("orderGem");
 const orderPrice = document.getElementById("orderPrice");
 const orderButton = document.getElementById("orderButton");
+const orderFeePreview = document.getElementById("orderFeePreview");
+const sellFeePreview = document.getElementById("sellFeePreview");
+
+function priceSurcharge(price) {
+  if (price < 100000) return 0;
+  if (price < 1000000) return 0.0025;
+  if (price < 10000000) return 0.005;
+  if (price < 50000000) return 0.01;
+  if (price < 100000000) return 0.015;
+  if (price < 500000000) return 0.02;
+  return 0.03;
+}
+
+function saleFeeRate(price, hours) {
+  const durationSurcharge = hours <= 6 ? 0 : hours <= 12 ? 0.0025 : hours <= 24 ? 0.005 : hours <= 48 ? 0.01 : 0.015;
+  return Math.min(0.05, 0.005 + priceSurcharge(price) + durationSurcharge);
+}
+
+function orderFeeRate(price) {
+  if (price < 100000) return 0.01;
+  if (price < 1000000) return 0.0125;
+  if (price < 10000000) return 0.015;
+  if (price < 50000000) return 0.02;
+  if (price < 100000000) return 0.03;
+  if (price < 500000000) return 0.04;
+  return 0.05;
+}
+
+function feeAmount(price, rate) {
+  return Math.round(Math.max(0, price) * rate * 100) / 100;
+}
+
+function formatRate(rate) {
+  return `${(rate * 100).toFixed(2).replace(/\.00$/, "")}%`;
+}
+
+function renderFeePreviews() {
+  const order = Math.max(0, Math.floor(Number(orderPrice.value) || 0));
+  const orderRate = orderFeeRate(order);
+  const orderFee = feeAmount(order, orderRate);
+  orderFeePreview.textContent = `Order fee: ${formatMoney(orderFee)} (${formatRate(orderRate)}). The fee is not refunded if the order is cancelled or expires.`;
+
+  const sale = Math.max(0, Math.floor(Number(sellPrice.value) || 0));
+  const hours = Number(sellDuration.value);
+  const saleRate = saleFeeRate(sale, hours);
+  const saleFee = feeAmount(sale, saleRate);
+  sellFeePreview.textContent = `Fee when sold: ${formatMoney(saleFee)} (${formatRate(saleRate)}). You receive ${formatMoney(Math.max(0, sale - saleFee))}.`;
+}
 
 
 // =========================================================
@@ -417,12 +465,17 @@ orderButton.addEventListener("click", async () => {
   const price = Math.floor(Number(orderPrice.value));
   if (!gemName) { notify.error("Pick a gem", "Choose which gem to order."); return; }
   if (!Number.isFinite(price) || price < 1) { notify.error("Invalid price", "Enter at least $1."); return; }
-  if (price > state.money) { notify.error("Not enough money", `You have ${formatMoney(state.money)}.`); return; }
+  const feeRate = orderFeeRate(price);
+  const fee = feeAmount(price, feeRate);
+  const total = price + fee;
+  if (total > state.money) { notify.error("Not enough money", `The offer and fee cost ${formatMoney(total)}. You have ${formatMoney(state.money)}.`); return; }
 
   const choice = await confirmDialog({
     title: `Order a ${gemName}?`,
-    body: `<p>You’ll pay <strong>${escapeHtml(formatMoney(price))}</strong> to whoever fills it.
-      The money is held now and refunded if you cancel.</p>`,
+    body: `<p><strong>Offer:</strong> ${escapeHtml(formatMoney(price))}</p>
+      <p><strong>Order fee:</strong> ${escapeHtml(formatMoney(fee))} (${escapeHtml(formatRate(feeRate))})</p>
+      <p><strong>Charged now:</strong> ${escapeHtml(formatMoney(total))}</p>
+      <p style="margin-top:10px">Cancelling or expiring refunds the ${escapeHtml(formatMoney(price))} offer. The order fee is not refunded.</p>`,
     confirmLabel: "Post order"
   });
   if (choice !== "confirm") return;
@@ -465,6 +518,7 @@ function renderSell() {
   renderGemChecklist();
   renderPotionChecklist();
   renderLotSummary();
+  renderFeePreviews();
 }
 
 function renderGemChecklist() {
@@ -531,6 +585,9 @@ function renderLotSummary() {
 }
 
 sellGemSearch.addEventListener("input", renderGemChecklist);
+orderPrice.addEventListener("input", renderFeePreviews);
+sellPrice.addEventListener("input", renderFeePreviews);
+sellDuration.addEventListener("change", renderFeePreviews);
 sellGemList.addEventListener("change", (event) => {
   const box = event.target.closest("[data-gem]");
   if (!box) return;
@@ -561,6 +618,9 @@ listButton.addEventListener("click", async () => {
   const price = Math.floor(Number(sellPrice.value));
   const hours = Number(sellDuration.value);
   if (!Number.isFinite(price) || price < 1) { notify.error("Invalid price", "Enter at least $1."); return; }
+  const feeRate = saleFeeRate(price, hours);
+  const fee = feeAmount(price, feeRate);
+  const proceeds = price - fee;
 
   const items = [
     ...[...state.lot.gems].map((id) => ({ type: "gem", id })),
@@ -576,6 +636,8 @@ listButton.addEventListener("click", async () => {
     body: `
       <p>Buy-now price <strong>${escapeHtml(formatMoney(price))}</strong>, listed for
       <strong>${hours} hour${hours === 1 ? "" : "s"}</strong>.</p>
+      <p style="margin-top:10px"><strong>Fee if sold:</strong> ${escapeHtml(formatMoney(fee))} (${escapeHtml(formatRate(feeRate))})<br>
+      <strong>You receive:</strong> ${escapeHtml(formatMoney(proceeds))}</p>
       <p style="margin-top:10px"><strong>Lot:</strong> ${escapeHtml(summary.join(", "))}</p>
       <p style="margin-top:10px">It leaves your inventory while listed and returns if nobody buys it.</p>`,
     confirmLabel: "List it"
