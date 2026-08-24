@@ -8,12 +8,13 @@ function mutationChanceProduct(ids=[]){return ids.reduce((total,id)=>total*Math.
 function normalizeItem(item){
   if(!item)return item;
   const ids=Array.isArray(item.mutations)?item.mutations:[];
-  return{...item,mutations:ids,mutationNames:ids.map(id=>getGemMutation(id)?.name||id),effectiveRarity:Number(item.baseRarity||0)*mutationChanceProduct(ids)};
+  const supplied=Number(item.effectiveRarity);
+  return{...item,mutations:ids,mutationNames:Array.isArray(item.mutationNames)&&item.mutationNames.length?item.mutationNames:ids.map(id=>getGemMutation(id)?.name||id),effectiveRarity:Number.isFinite(supplied)&&supplied>0?supplied:Number(item.baseRarity||0)*mutationChanceProduct(ids)};
 }
 function load(){try{const state={...fresh(),...JSON.parse(sessionStorage.getItem(KEY)||"null")};state.bestEffective=normalizeItem(state.bestEffective);state.bestBase=normalizeItem(state.bestBase);state.heaviest=normalizeItem(state.heaviest);state.mostValuable=normalizeItem(state.mostValuable);state.notable=(Array.isArray(state.notable)?state.notable:[]).map(normalizeItem).filter(item=>!isRelic(item));const candidates=[state.bestEffective,state.bestBase,state.heaviest,state.mostValuable,...state.notable].filter(Boolean);state.bestEffective=candidates.reduce((best,item)=>rarer(best,item,"effectiveRarity"),null);return state;}catch{return fresh();}}
 function save(value){try{sessionStorage.setItem(KEY,JSON.stringify(value));}catch{} window.dispatchEvent(new CustomEvent("session-insights:change",{detail:value}));return value;}
 function mutations(data){return Array.isArray(data?.mutations)?data.mutations:[];}
-function result(data,outcome){const mutationList=mutations(data),ids=mutationList.map(item=>item.id),base=Number(data?.gem?.rarity||0);return{name:String(data?.gem?.name||"Unknown"),baseRarity:base,effectiveRarity:base*mutationChanceProduct(ids),weight:Number(data?.finalWeight||0),value:Number(data?.value||0),mutations:ids,mutationNames:mutationList.map(item=>item.name||getGemMutation(item.id)?.name||item.id),dropType:data?.gem?.dropType||"gem",decision:outcome?.type||"kept",reason:outcome?.reason||"Stored",at:new Date().toISOString()};}
+function result(data,outcome){const mutationList=mutations(data),ids=mutationList.map(item=>item.id),base=Number(data?.gem?.rarity||0),supplied=Number(data?.effectiveRarity??data?.effective_rarity);return{name:String(data?.gem?.name||"Unknown"),baseRarity:base,effectiveRarity:Number.isFinite(supplied)&&supplied>0?supplied:base*mutationChanceProduct(ids),weight:Number(data?.finalWeight||0),value:Number(data?.value||0),mutations:ids,mutationNames:mutationList.map(item=>item.name||getGemMutation(item.id)?.name||item.id),dropType:data?.gem?.dropType||"gem",decision:outcome?.type||"kept",reason:outcome?.reason||"Stored",at:new Date().toISOString()};}
 function rarer(current,item,key){return!current||Number(item[key])>Number(current[key])?item:current;}
 
 export function recordSessionRoll(data,outcome={type:"kept"}){

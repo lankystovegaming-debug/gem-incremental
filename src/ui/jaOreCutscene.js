@@ -8,7 +8,7 @@
 // =========================================================
 
 import { rarityLabel, escapeHtml } from "./format.js";
-import { chanceLabelForResult } from "../logic/chances.js";
+import { chanceLabelForRollResult } from "../logic/chances.js";
 
 let injected = false;
 const JA_ORE_STYLESHEET = new URL("./jaOreCutscene.css", import.meta.url);
@@ -144,7 +144,7 @@ export function buildJaOreCutscene(data, outcome, duration = 15000) {
           : ""
       }
       <div class="ja-chance" data-ja="chance">
-        Actual chance: ${escapeHtml(chanceLabelForResult(gemName, mutationIds))}
+        Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data?.gem, mutationIds))}
       </div>
     </div>
 

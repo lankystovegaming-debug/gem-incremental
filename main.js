@@ -23,7 +23,7 @@ import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
-import { chanceLabelForResult } from "./src/logic/chances.js";
+import { chanceLabelForRollResult } from "./src/logic/chances.js";
 import {
   getSettings,
   updateSettings,
@@ -456,7 +456,7 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
       <h2 class="scene__name ${isXyGem ? "scene__name--xy" : ""}">${gemNameHtml(gemName, escapeHtml, mutationIds.map(id => `gem-styled--mutation-${id}`).join(" "))}</h2>
       ${mutationObjects.length ? `<div class="scene__mutation ${mutationObjects.length > 1 ? "scene__mutation--many" : ""}" aria-label="Mutations">${mutationObjects.map((m, index) => `${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
-      <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForResult(gemName, mutationIds))}</div>
+      <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}</div>
       <div class="scene__outcome">${outcome.icon}${escapeHtml(outcome.text)}</div>
     </div>
     <div class="scene__letterbox scene__letterbox-top"></div>
@@ -552,7 +552,7 @@ function renderRoll(data, outcome) {
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
-      <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForResult(data.gem.name, mutationIds))}`}</p>
+      <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
       ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
@@ -629,7 +629,7 @@ function addHistory(data, note) {
     weight: data.finalWeight,
     value: data.value,
     mutationIds: Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : []),
-    chance: chanceLabelForResult(data.gem.name, Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : [])),
+    chance: chanceLabelForRollResult(data, data.gem, Array.isArray(data?.mutations) ? data.mutations.map(m => m.id).filter(Boolean) : (data?.mutation?.id ? [data.mutation.id] : [])),
     note
   });
 

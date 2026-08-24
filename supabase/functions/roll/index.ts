@@ -3636,7 +3636,8 @@ export default {
           mutations.map((mutation) => ({
             id: mutation.id,
             name: mutation.name,
-            multiplier: mutation.multiplier
+            multiplier: mutation.multiplier,
+            chance: Math.max(1, 1 / Number(mutation.chance || 1))
           })),
 
         mutationIds,
