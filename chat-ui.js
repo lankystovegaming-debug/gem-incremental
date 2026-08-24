@@ -657,6 +657,14 @@ if (messagesEl && formEl && inputEl) {
       effective_rarity: effectiveRarity,
       luckAtRoll: Number(data.luckAtRoll ?? data.luck_at_roll ?? data.luck ?? 0) || null,
       mutation_ids: mutationIds,
+      mutation_details: (Array.isArray(data?.mutations) ? data.mutations : [])
+        .filter((mutation) => mutation?.id)
+        .map((mutation) => ({
+          id: String(mutation.id),
+          name: String(mutation.name ?? mutation.id),
+          chance: Number(mutation.chance ?? 1),
+          multiplier: Number(mutation.multiplier ?? 1)
+        })),
       created_at: now,
       local_only: true
     };
