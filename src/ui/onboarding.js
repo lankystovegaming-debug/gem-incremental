@@ -14,7 +14,7 @@ const SEEN_KEY = "gemIncremental.seenHowToPlay";
 const STEPS = [
   { icon: icons.dice, title: "1 · Roll a gem", text: "Press the big button — or <kbd>R</kbd> / <kbd>Space</kbd> — to pull a gem from the deposit. Rarer gems are worth more." },
   { icon: icons.bag, title: "2 · Keep or sell", text: "Open your Inventory to sell gems for money. Lock the ones you want to keep so they’re never sold by accident." },
-  { icon: icons.anvil, title: "3 · Craft & upgrade", text: "Spend gems and money on pickaxes, lanterns, boots and bags. Better gear means more Luck, faster rolls and heavier gems." },
+  { icon: icons.anvil, title: "3 · Craft & upgrade", text: "Spend gems and money on pickaxes, boots and bags. Better gear means more Luck, faster rolls and heavier gems." },
   { icon: icons.potion, title: "4 · Boost your luck", text: "Brew potions, open loot boxes, and enchant your pickaxe with relics to dig up the rarest specimens faster." },
   { icon: icons.gavel, title: "5 · Compete & trade", text: "Climb the leaderboards, pin your best gems to your profile, and buy or sell at the Auction House." }
 ];

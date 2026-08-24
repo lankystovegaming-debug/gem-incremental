@@ -3193,24 +3193,23 @@ export default {
       // auto-crafting the specimen must not erase it from the leaderboard.
       // =====================================================
 
-      const {
-        error: bestRollHistoryError
-      } = await ctx.supabaseAdmin
-        .from("best_roll_history")
-        .insert({
-          player_id: playerId,
-          username: player.username ?? playerId,
-          gem_name: gem.name,
-          rarity: gem.rarity,
-          final_weight: finalWeight,
-          value,
-          mutation_id: primaryMutation?.id ?? null,
-          mutation_ids: mutationIds,
-          mutation_multiplier: mutationMultiplier,
-          raw_luck: luck,
-          base_luck: baseLuck,
-          roll_number: Number(player.total_rolls ?? 0) + 1
-        });
+      const { error: bestRollHistoryError } = await ctx.supabaseAdmin.rpc(
+        "record_roll_leaderboard_entry",
+        {
+          p_player_id: playerId,
+          p_username: player.username ?? playerId,
+          p_gem_name: gem.name,
+          p_rarity: relicDrop ? 0 : gem.rarity,
+          p_final_weight: finalWeight,
+          p_value: value,
+          p_mutation_id: primaryMutation?.id ?? null,
+          p_mutation_ids: mutationIds,
+          p_mutation_multiplier: mutationMultiplier,
+          p_raw_luck: luck,
+          p_base_luck: baseLuck,
+          p_roll_number: Number(player.total_rolls ?? 0) + 1
+        }
+      );
 
       // The roll is already committed at this point. History is analytics,
       // so a history write failure must never turn a successful roll into a
@@ -3397,38 +3396,6 @@ export default {
       );
       if (seasonProgressError && !String(seasonProgressError.message ?? "").includes("does not exist")) {
         console.error("Season progress update failed:", seasonProgressError);
-      }
-
-
-      // =====================================================
-      // GEMS FOUND SCORE
-      // =====================================================
-
-      // Gems Found is a lifetime count score based on the base rarity
-      // denominator of every gem found. Mutations do not alter this score.
-      // Relics are not gems, so they never count toward Gems Found.
-      if (!relicDrop) {
-        const {
-          error: gemsFoundScoreError
-        } =
-          await ctx.supabaseAdmin.rpc(
-            "record_gems_found_score",
-            {
-              p_player_id: playerId,
-              p_rarity: gem.rarity
-            }
-          );
-
-        // The roll is already committed, so leaderboard analytics must never
-        // turn a successful roll into a duplicate retry.
-        if (
-          gemsFoundScoreError
-        ) {
-          console.error(
-            "Gems Found score update failed:",
-            gemsFoundScoreError
-          );
-        }
       }
 
 

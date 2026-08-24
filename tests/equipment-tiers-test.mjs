@@ -7,8 +7,6 @@ const expected = {
   "eclipse-pickaxe": ["pickaxe", 11, "luck", 16, 500000],
   "singularity-pickaxe": ["pickaxe", 12, "luck", 18, 1100000],
   "transcendent-pickaxe": ["pickaxe", 13, "luck", 21, 2500000],
-  "event-horizon-lantern": ["lantern", 9, "rollSpeed", 2.1, 175000],
-  "singularity-lantern": ["lantern", 10, "rollSpeed", 2.4, 400000],
   "eventide-boots": ["boots", 9, "weightLuck", 4.75, 250000],
   "singularity-striders": ["boots", 10, "weightLuck", 5.75, 600000]
 };
@@ -21,6 +19,11 @@ for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)
   assert.equal(recipe.reward.bonus[stat], bonus);
   assert.equal(recipe.moneyCost, cost);
 }
+
+assert.equal(recipes.some((recipe) => recipe.category === "lantern"), false);
+assert.equal(recipes.find((recipe) => recipe.id === "eclipse-pickaxe").reward.bonus.rollSpeed, 2.55);
+assert.equal(recipes.find((recipe) => recipe.id === "singularity-pickaxe").reward.bonus.rollSpeed, 2.7);
+assert.equal(recipes.find((recipe) => recipe.id === "transcendent-pickaxe").reward.bonus.rollSpeed, 2.85);
 
 assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), [
   "eclipse-pickaxe",
