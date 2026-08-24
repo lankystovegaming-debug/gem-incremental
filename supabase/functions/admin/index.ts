@@ -412,6 +412,15 @@ export default {
         return response({ ok: true });
       }
 
+      // Global fee analytics does not target a player, so handle it before
+      // validating targetId for player-specific administration actions.
+      if (action === "market_fee_analytics") {
+        const { data, error } = await ctx.supabaseAdmin.rpc("admin_market_fee_summary");
+        if (error) return response({ error: "market_fee_analytics_failed", message: error.message }, 500);
+        await audit(ctx, adminId, null, "market_fee_analytics_viewed");
+        return response({ fees: data ?? {} });
+      }
+
       if (!validUuid(targetId)) {
         return response({ error: "invalid_player_id" }, 400);
       }
@@ -684,13 +693,6 @@ export default {
       // =========================================================
       // GLOBAL ADMIN ANALYTICS
       // =========================================================
-      if (action === "market_fee_analytics") {
-        const { data, error } = await ctx.supabaseAdmin.rpc("admin_market_fee_summary");
-        if (error) return response({ error: "market_fee_analytics_failed", message: error.message }, 500);
-        await audit(ctx, adminId, null, "market_fee_analytics_viewed");
-        return response({ fees: data ?? {} });
-      }
-
       if (action === "analytics") {
         // Prefer the aggregate SECURITY DEFINER RPC. This avoids RLS/row-limit
         // surprises and makes the analytics panel work consistently.
