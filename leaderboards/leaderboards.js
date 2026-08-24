@@ -602,7 +602,7 @@ function renderLifetimeEarnings() {
 
         <p class="leaderboard-description">
           Total money earned by selling
-          gems.
+          gems. (calculated from 23 August)
         </p>
       </div>
     </div>
