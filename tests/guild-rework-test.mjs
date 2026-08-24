@@ -18,6 +18,11 @@ assert.equal((roll.match(/record_guild_roll_activity/g)||[]).length,1,"roll must
 assert.equal((roll.match(/record_guild_roll_points/g)||[]).length,0,"old double-award RPC must be gone from roll");
 assert.match(features,/guild_manage_member/);
 assert.match(features,/guild_purchase_upgrade/);
+assert.match(features,/Ratelimit\.slidingWindow\(3,"10 m"\)/);
+assert.match(features,/prefix:"ratelimit:guild-create"/);
+assert.match(features,/guild_create_rate_limited/);
+assert.match(features,/"Retry-After"/);
+assert.match(features,/const limited=await limitGuildCreation\(userId\);if\(limited\)return limited;/);
 assert.match(page,/data-tab="overview"/);
 assert.match(page,/data-tab="competition"/);
 assert.match(page,/data-tab="upgrades"/);
