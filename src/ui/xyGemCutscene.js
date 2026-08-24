@@ -13,7 +13,7 @@
 // =========================================================
 
 import { rarityLabel, escapeHtml } from "./format.js";
-import { chanceLabelForResult } from "../logic/chances.js";
+import { chanceLabelForRollResult } from "../logic/chances.js";
 import { getSettings } from "./settings.js";
 import { icons } from "./icons.js";
 import { gemIconHtml } from "./gemStyle.js";
@@ -103,7 +103,7 @@ export function buildXyGemCutscene(data, outcome, duration) {
       <div class="xy-beat xy-title" data-b="title">${gemNameSafe(data)}</div>
       <div class="xy-beat xy-sub" data-b="sub">${escapeHtml(rarityLabel(data?.gem?.rarity ?? 100000000))}</div>
       ${mutationNames.length ? `<div class="xy-beat xy-mut" data-b="mut">${mutationNames.map((n) => escapeHtml(n)).join(" · ")}</div>` : ""}
-      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForResult(String(data?.gem?.name ?? "Xy Gem"), mutationIds))}</div>
+      <div class="xy-beat xy-chance" data-b="chance">Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data?.gem, mutationIds))}</div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -290,5 +290,4 @@ function startAudio(D) {
     p1.start(gatherEnd); p2.start(gatherEnd); p1.stop(endS + 0.2); p2.stop(endS + 0.2);
   } catch { /* audio unavailable — visuals still play */ }
 }
-
 

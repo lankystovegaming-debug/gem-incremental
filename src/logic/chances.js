@@ -100,3 +100,18 @@ export function chanceLabelForResult(
     rolledResultChance(gemOrName, mutationIds, luck)
   );
 }
+
+// Live rolls already include the effective rarity calculated by the
+// server-authoritative mutation catalog. Prefer it so admin-created mutations
+// do not fall back to the five bundled mutation definitions in this client.
+export function chanceLabelForRollResult(
+  result,
+  gemOrName = result?.gem,
+  mutationIds = []
+) {
+  const denominator = Number(result?.effectiveRarity ?? result?.effective_rarity);
+  if (Number.isFinite(denominator) && denominator > 0) {
+    return formatChance(1 / denominator);
+  }
+  return chanceLabelForResult(gemOrName, mutationIds);
+}
