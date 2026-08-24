@@ -369,7 +369,7 @@ function setCategory(category) {
   state.category = category;
 
   if (hideOwnedRow) {
-    hideOwnedRow.hidden = category === "potion";
+    hideOwnedRow.hidden = category === "potion" || category === "lantern";
   }
 
   for (const tab of categoryTabs) {
@@ -418,6 +418,18 @@ function renderRecipes() {
   }
 
   renderAutoBanner();
+
+  if (state.category === "lantern") {
+    subtitle.textContent = "Lanterns are legacy equipment";
+    recipeList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        ${icons.info}
+        <p class="empty__title">Lanterns have been deprecated.</p>
+        <p>Existing lanterns can still be equipped, but new lanterns can no longer be crafted.</p>
+      </div>
+    `;
+    return;
+  }
 
   const equipmentRecipes = recipes.filter((recipe) => !isConsumableRecipe(recipe));
   const owned = equipmentRecipes.filter((recipe) =>
