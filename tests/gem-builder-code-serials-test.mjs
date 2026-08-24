@@ -51,5 +51,8 @@ assert.match(migration, /assign_inventory_gem_serial/);
 assert.match(migration, /p_owner, r\.serial_number/);
 assert.match(cloudInventory, /serial_number/);
 assert.match(inventory, />Serial</);
+assert.match(inventory, /get_public_mutation_catalog/);
+assert.match(inventory, /function inventoryMutation/);
+assert.match(inventory, /state\.mutationCatalog\.get/);
 
 console.log("Gem Builder, code bundle, and specimen serial checks passed.");

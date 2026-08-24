@@ -9,7 +9,7 @@ const [inventory, playerCloud, css, guildPage, guildJs, features, migration, upd
   read("../supabase/migrations/20260822000002_qol_hotfix.sql"), read("../updates/index.html")
 ]);
 
-assert.match(inventory, /chanceLabelForResult\(gem, mutationIds, gem\.luck_at_roll \?\? 1\)/);
+assert.match(inventory, /inventoryChanceLabel\(gem, mutationIds\)/);
 assert.match(playerCloud, /ensure_player_record/);
 assert.match(css, /overscroll-behavior-inline: contain/);
 assert.match(guildPage, /id="competitionRewards"/);

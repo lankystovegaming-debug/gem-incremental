@@ -1,4 +1,5 @@
 import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { supabase } from "../src/backend/supabase.js";
 import {
   loadCloudGems,
   loadCloudPlayerState,
@@ -21,11 +22,11 @@ import {
 } from "../src/backend/cloudConsumables.js";
 import { setShowcase, loadMyShowcase } from "../src/backend/cloudShowcase.js";
 import { getConsumableById } from "../src/data/consumables.js";
-import { getGemMutation } from "../src/data/mutations.js";
+import { GEM_MUTATIONS, getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
 import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, masterworkRerollCost, masterworkAttunementCost, masterworkPassive } from "../src/data/masterwork.js";
-import { gemRollChance, formatChance, chanceLabelForResult } from "../src/logic/chances.js";
+import { gemRollChance, formatChance } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";
@@ -138,8 +139,63 @@ const state = {
   capacity: 15,
   money: 0,
   loading: true,
-  showcaseIds: []
+  showcaseIds: [],
+  mutationCatalog: new Map(Object.values(GEM_MUTATIONS).map((mutation) => [mutation.id, mutation]))
 };
+
+function normalizeMutationCatalog(rows = []) {
+  const catalog = new Map(Object.values(GEM_MUTATIONS).map((mutation) => [mutation.id, mutation]));
+
+  for (const row of rows) {
+    const id = String(row?.id ?? "").trim().toLowerCase();
+    const chance = Number(row?.chance);
+    const multiplier = Number(row?.multiplier);
+    if (!id || row?.enabled === false || !Number.isFinite(chance) || chance <= 0 || !Number.isFinite(multiplier) || multiplier <= 0) continue;
+    catalog.set(id, {
+      id,
+      name: String(row?.name ?? id),
+      chance,
+      multiplier,
+      description: String(row?.description ?? ""),
+      icon: String(row?.icon ?? "✦"),
+      color: String(row?.color ?? "#9fdcff")
+    });
+  }
+
+  return catalog;
+}
+
+async function loadMutationCatalog() {
+  let result = await supabase.rpc("get_public_mutation_catalog");
+  if (result.error) {
+    console.warn("Public mutation catalog RPC unavailable; trying direct catalog read:", result.error.message);
+    result = await supabase
+      .from("game_mutations")
+      .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order")
+      .eq("enabled", true);
+  }
+  if (result.error) {
+    console.warn("Live mutation catalog unavailable; using bundled mutations:", result.error.message);
+    return normalizeMutationCatalog();
+  }
+  return normalizeMutationCatalog(result.data ?? []);
+}
+
+function inventoryMutation(id, savedMultiplier = null) {
+  const normalizedId = String(id ?? "").trim().toLowerCase();
+  const mutation = state.mutationCatalog.get(normalizedId) ?? getGemMutation(normalizedId, savedMultiplier);
+  if (!mutation) return null;
+  return { ...mutation, multiplier: Number(savedMultiplier ?? mutation.multiplier) };
+}
+
+function inventoryChanceLabel(gem, mutationIds) {
+  const mutationDenominator = mutationIds.reduce((product, id) => {
+    const chance = Number(state.mutationCatalog.get(String(id).toLowerCase())?.chance);
+    return product * (Number.isFinite(chance) && chance > 0 ? chance : 1);
+  }, 1);
+  const denominator = Number(gem.rarity) * mutationDenominator;
+  return formatChance(Number.isFinite(denominator) && denominator > 0 ? 1 / denominator : 0);
+}
 
 
 // =========================================================
@@ -420,7 +476,7 @@ function gemCard(gem) {
   const mutationMultipliers = gem.mutation_multipliers && typeof gem.mutation_multipliers === "object"
     ? gem.mutation_multipliers
     : {};
-  const mutations = mutationIds.map(id => getGemMutation(id, mutationMultipliers[id] ?? null)).filter(Boolean);
+  const mutations = mutationIds.map(id => inventoryMutation(id, mutationMultipliers[id] ?? null)).filter(Boolean);
 
   return `
     <article
@@ -442,7 +498,7 @@ function gemCard(gem) {
           ` : ""}
           <div class="gem-card__rarity">${rarityLabel(gem.rarity)}</div>
           <div class="gem-card__chance">Actual chance: ${escapeHtml(
-            chanceLabelForResult(gem, mutationIds, gem.luck_at_roll ?? 1)
+            inventoryChanceLabel(gem, mutationIds)
           )}</div>
         </div>
 
@@ -1424,14 +1480,15 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment, potions, boosts, oneRollBoost, showcase] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts, oneRollBoost, showcase, mutationCatalog] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
     loadCloudConsumables(),
     loadActiveBoosts(),
     loadPendingOneRollBoost(),
-    loadMyShowcase()
+    loadMyShowcase(),
+    loadMutationCatalog()
   ]);
 
   state.loading = false;
@@ -1439,6 +1496,8 @@ async function refresh() {
   if (gems) {
     state.gems = gems;
   }
+
+  state.mutationCatalog = mutationCatalog;
 
   state.showcaseIds = (Array.isArray(showcase) ? showcase : [])
     .map((entry) => Number(entry?.id))
