@@ -27,5 +27,9 @@ assert.match(page, /id="sellFeePreview"/);
 assert.match(admin, /Market fees removed/);
 assert.match(admin, /market_fee_analytics/);
 assert.match(adminFunction, /action === "market_fee_analytics"/);
+assert.ok(
+  adminFunction.indexOf('action === "market_fee_analytics"') < adminFunction.indexOf("if (!validUuid(targetId))"),
+  "global fee analytics must run before player target validation"
+);
 
 console.log("Progressive Market fee checks passed.");
