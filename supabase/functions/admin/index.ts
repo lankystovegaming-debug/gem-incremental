@@ -57,6 +57,32 @@ const GEM_CATALOG = [
   valuePerGram: Number(valuePerGram)
 }));
 
+// Live, admin-managed gem catalog (private_feature_gems) is the source of truth
+// for grants, so admin-created/custom gems are grantable too. GEM_CATALOG above
+// is only a fallback used if the live read fails.
+async function loadGemCatalog(ctx: any) {
+  try {
+    const { data, error } = await ctx.supabaseAdmin
+      .from("private_feature_gems")
+      .select("name, rarity, base_weight, value_per_gram")
+      .eq("enabled", true)
+      .order("sort_order", { ascending: true })
+      .order("rarity", { ascending: true });
+    if (!error && Array.isArray(data) && data.length) {
+      return data.map((entry: any) => ({
+        name: String(entry.name),
+        rarity: Number(entry.rarity),
+        baseWeight: Number(entry.base_weight),
+        valuePerGram: Number(entry.value_per_gram)
+      }));
+    }
+    if (error) console.error("Live gem catalog load failed; using bundled:", error.message);
+  } catch (catalogError) {
+    console.error("Live gem catalog load crashed; using bundled:", catalogError);
+  }
+  return GEM_CATALOG;
+}
+
 const CONSUMABLE_IDS = new Set([
   "lucky-potion-1", "lucky-potion-2", "lucky-potion-3",
   "speed-potion-1", "speed-potion-2", "speed-potion-3",
@@ -539,7 +565,7 @@ export default {
       }
 
       if (action === "grant_gem") {
-        const gem = GEM_CATALOG.find((entry) => entry.name === body.gemName);
+        const gem = (await loadGemCatalog(ctx)).find((entry) => entry.name === body.gemName);
         const multiplier = finiteNumber(body.weightMultiplier);
         if (!gem || multiplier === null || multiplier < 0.01 || multiplier > 1000) {
           return response({ error: "invalid_gem" }, 400);
@@ -1121,7 +1147,7 @@ export default {
           mutationIds.map((id) => [id, MUTATION_CATALOG[id].multiplier])
         );
 
-        const rows = GEM_CATALOG.map((gem) => ({
+        const rows = (await loadGemCatalog(ctx)).map((gem) => ({
           player_id: targetId,
           gem_name: gem.name,
           rarity: gem.rarity,
