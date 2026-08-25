@@ -3,7 +3,7 @@ import { supabase } from "./supabase.js";
 const CHAT_CHANNEL = "global-chat";
 const MAX_MESSAGE_LENGTH = 500;
 const BASE_ANNOUNCEMENT_THRESHOLD = 1_000_000;
-const EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 100_000_000;
+const EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 10_000_000;
 
 let chatChannel = null;
 
