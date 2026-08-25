@@ -28,16 +28,14 @@ let onlineEl = null;
 let feedEl = null;
 let pollTimer = null;
 let rafId = null;
-// The counter glides continuously between polls by extrapolating each metric's
-// rate of change, instead of easing to the polled value and stopping. `anchor`
-// is the server value at the last poll, `rate` its measured units/ms, and
-// `displayed` eases toward a target that keeps advancing at that rate.
-let displayed = { total: null, cash: null };
-let anchor = { total: null, cash: null };
-let anchorTime = { total: 0, cash: 0 };
-let rate = { total: 0, cash: 0 };       // units per millisecond
-let prevVal = { total: null, cash: null };
-let prevTime = { total: 0, cash: 0 };
+// The counter shows the economy with a smooth ~5s lag: on each poll it eases
+// from its current value to the freshly-polled (real) value over one poll
+// interval. It only ever heads toward a value that has actually happened, so it
+// never overshoots or ticks backward to correct a prediction.
+let displayed = { total: null, cash: null };   // what's on screen
+let fromVal = { total: null, cash: null };     // value the current glide started from
+let toVal = { total: null, cash: null };       // latest real value from the server
+let tweenStart = { total: 0, cash: 0 };        // when the current glide began
 let lastTopId = 0;      // newest sale id already shown (to flash only new ones)
 
 function formatCash(value) {
@@ -102,21 +100,16 @@ async function poll() {
       // Snap on the first value (so a late/missing field can't leave it stuck
       // at $0.00), or when motion is off/hidden.
       displayed[key] = next;
-      anchor[key] = next;
-      anchorTime[key] = now;
-      rate[key] = 0;
+      fromVal[key] = next;
+      toVal[key] = next;
+      tweenStart[key] = now;
     } else {
-      // Measure how fast this metric moved over the last interval and keep
-      // advancing at that rate between polls. Damp slightly so a rising counter
-      // stays a hair behind reality and always eases upward, never backward.
-      const dt = Math.max(1, now - prevTime[key]);
-      const observed = (next - prevVal[key]) / dt;
-      rate[key] = (rate[key] * 0.35 + observed * 0.65) * 0.9;
-      anchor[key] = next;
-      anchorTime[key] = now;
+      // Start a fresh glide from wherever we are now to the just-polled value,
+      // taking one poll interval — a smooth 5s lag, no prediction.
+      fromVal[key] = displayed[key];
+      toVal[key] = next;
+      tweenStart[key] = now;
     }
-    prevVal[key] = next;
-    prevTime[key] = now;
   }
   paint();
   if (!still) ensureAnimating();
@@ -130,25 +123,18 @@ async function poll() {
 
 function ensureAnimating() {
   if (rafId != null || !widget) return;
-  const EASE = 0.12;
   const step = () => {
     rafId = null;
     if (!widget) return;
     const now = performance.now();
     let active = false;
     for (const key of METRICS) {
-      if (displayed[key] === null || anchor[key] === null) continue;
-      // Predict where the metric is now by extrapolating its measured rate.
-      // Cap the horizon so a missed poll can't let the prediction run away.
-      const elapsed = Math.min(now - anchorTime[key], POLL_MS * 1.5);
-      const predicted = anchor[key] + rate[key] * elapsed;
-      const diff = predicted - displayed[key];
-      displayed[key] += diff * EASE;
-      // Keep the loop alive while the metric is still moving or catching up, so
-      // the number glides continuously instead of stopping between polls.
-      if ((Math.abs(rate[key]) > 1e-9 && elapsed < POLL_MS * 1.5) || Math.abs(diff) > 0.005) {
-        active = true;
-      }
+      if (toVal[key] === null || fromVal[key] === null) continue;
+      // Glide from the value the last poll started at to the latest real value
+      // across one poll interval, so it arrives just as the next poll lands.
+      const t = Math.min(1, (now - tweenStart[key]) / POLL_MS);
+      displayed[key] = fromVal[key] + (toVal[key] - fromVal[key]) * t;
+      if (t < 1) active = true;
     }
     paint();
     if (active) rafId = requestAnimationFrame(step);
@@ -189,11 +175,9 @@ function mount() {
   feedEl = widget.querySelector(".global-cash__feed");
 
   displayed = { total: null, cash: null };
-  anchor = { total: null, cash: null };
-  anchorTime = { total: 0, cash: 0 };
-  rate = { total: 0, cash: 0 };
-  prevVal = { total: null, cash: null };
-  prevTime = { total: 0, cash: 0 };
+  fromVal = { total: null, cash: null };
+  toVal = { total: null, cash: null };
+  tweenStart = { total: 0, cash: 0 };
   lastTopId = 0;
   poll();
   pollTimer = setInterval(poll, POLL_MS);
@@ -208,11 +192,9 @@ function unmount() {
   onlineEl = null;
   feedEl = null;
   displayed = { total: null, cash: null };
-  anchor = { total: null, cash: null };
-  anchorTime = { total: 0, cash: 0 };
-  rate = { total: 0, cash: 0 };
-  prevVal = { total: null, cash: null };
-  prevTime = { total: 0, cash: 0 };
+  fromVal = { total: null, cash: null };
+  toVal = { total: null, cash: null };
+  tweenStart = { total: 0, cash: 0 };
   lastTopId = 0;
 }
 
