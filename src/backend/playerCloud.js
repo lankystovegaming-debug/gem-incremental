@@ -5,8 +5,8 @@ import {
 export async function ensureCloudPlayer(
   user
 ) {
-  // Prefer the SECURITY DEFINER setup path. It keeps account creation
-  // reliable even when direct inserts are restricted by RLS.
+  // Player rows are server-managed. Never fall back to a browser upsert:
+  // doing so would require restoring write privileges on protected columns.
   const {
     data: ensuredPlayer,
     error: ensureError
@@ -19,32 +19,13 @@ export async function ensureCloudPlayer(
   }
 
   if (ensureError) {
-    console.warn("Server-side player setup unavailable; using fallback:", ensureError);
-  }
-
-  const {
-    data,
-    error
-  } =
-    ensureError
-      ? await supabase
-          .from("players")
-          .upsert(
-            { id: user.id, last_seen: new Date().toISOString() },
-            { onConflict: "id" }
-          )
-          .select()
-          .single()
-      : { data: null, error: new Error("Player setup returned no row.") };
-
-  if (error) {
     console.error(
       "Failed to create/load cloud player:",
-      error
+      ensureError
     );
-
     return null;
   }
 
-  return data;
+  console.error("Failed to create/load cloud player: setup returned no row.");
+  return null;
 }
