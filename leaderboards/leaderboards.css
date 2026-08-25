@@ -150,6 +150,32 @@
   text-align: right;
 }
 
+.museum-prestige-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.museum-prestige-score > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.museum-prestige-score small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.museum-prestige-score strong {
+  font-size: 1rem;
+}
+
 .gem-score {
   display: flex;
   flex-direction: column;

@@ -902,7 +902,7 @@ function renderMuseumPrestige() {
   const rows = entries.map(player => `<div class="leaderboard-row">
     <div class="rank">${rankDisplay(player.rank)}</div>
     <div class="player-name" data-profile-username="${escapeHtml(player.username)}">${avatarHtml(player.username)}<span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span><span class="lb-best-gem">Tier ${formatNumber(player.tier)} · ${formatNumber(player.collections_completed)} permanent collections</span></span></div>
-    <div class="score"><strong>${formatNumber(player.prestige)}</strong><span>${formatNumber(player.highest_exhibit_score)} active exhibit score</span></div>
+    <div class="score museum-prestige-score"><span><small>Total Prestige</small><strong>${formatNumber(player.prestige)}</strong></span><span><small>Active Exhibit Score</small><strong>${formatNumber(player.highest_exhibit_score)}</strong></span></div>
   </div>`).join("");
   leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Museum Prestige</h2><p class="leaderboard-description">Current valid Museum Prestige from active exhibits and completed collections. Removing an exhibit immediately updates its score.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Curator</div><div class="score">Prestige</div></div><div class="leaderboard-list">${rows}</div>`;
 }
