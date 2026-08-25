@@ -18,7 +18,7 @@ import {
 import { isRelic } from "../src/data/enchants.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { getConsumableById } from "../src/data/consumables.js";
-import gems from "../src/data/gems.js";
+import { loadGemCatalog } from "../src/backend/gemCatalog.js";
 
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
@@ -363,7 +363,7 @@ function matchingGemsFor(gemName) {
 
 function populateOrderGemSelect() {
   if (orderGem.dataset.filled) return;
-  const names = [...new Set(gems.map((g) => g.name))].sort((a, b) => a.localeCompare(b));
+  const names = [...new Set(state.catalogNames ?? [])].sort((a, b) => a.localeCompare(b));
   orderGem.innerHTML = names.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   orderGem.dataset.filled = "1";
 }
@@ -770,12 +770,15 @@ function pruneLot() {
 }
 
 async function refresh() {
-  const [auctions, mine, orders, myOrders, gems_, playerState, consumables] = await Promise.all([
+  const [auctions, mine, orders, myOrders, gems_, playerState, consumables, catalog] = await Promise.all([
     loadActiveAuctions(), loadMyAuctions(), loadOpenOrders(), loadMyOrders(),
-    loadCloudGems(), loadCloudPlayerState(), loadCloudConsumables()
+    loadCloudGems(), loadCloudPlayerState(), loadCloudConsumables(),
+    loadGemCatalog().catch(() => [])
   ]);
 
   state.loading = false;
+  // Live gem catalog drives the buy-order picker (so custom gems are orderable).
+  state.catalogNames = (catalog ?? []).map((g) => g.name);
   state.auctions = auctions;
   state.mine = mine;
   state.orders = orders;

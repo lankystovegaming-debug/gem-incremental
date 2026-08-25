@@ -1,4 +1,4 @@
-import gems from "../src/data/gems.js";
+import { loadGemCatalog } from "../src/backend/gemCatalog.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
@@ -53,6 +53,10 @@ adminPanelBack?.addEventListener("click", () => {
 });
 
 let selectedPlayerId = null;
+
+// The live gem catalog (private_feature_gems) — loaded once, lazily, and used
+// for the Grant Gem dropdown so admins can grant custom/admin-created gems too.
+let gemCatalog = [];
 
 function isLocked(player) {
   return player.bannedUntil && new Date(player.bannedUntil) > new Date();
@@ -129,6 +133,13 @@ async function inspectPlayer(playerId) {
     }
   } catch { /* Account meta is best-effort; the rest of the panel still loads. */ }
 
+  // Ensure the live gem catalog is loaded before rendering the Grant Gem
+  // dropdown (best-effort: an empty catalog just yields an empty select).
+  if (!gemCatalog.length) {
+    try { gemCatalog = await loadGemCatalog(); }
+    catch (catalogError) { console.error("Gem catalog load failed:", catalogError); }
+  }
+
   renderPlayer(data);
 }
 
@@ -199,7 +210,7 @@ function renderPlayer(data) {
       <section class="admin-section">
         <h3>Grant Gem</h3>
         <div class="admin-control admin-control--two">
-          <select id="gemName">${gems.map((gem) => `<option>${escapeHtml(gem.name)}</option>`).join("")}</select>
+          <select id="gemName">${gemCatalog.map((gem) => `<option>${escapeHtml(gem.name)}</option>`).join("")}</select>
           <input id="gemWeight" type="number" min="0.01" max="1000" step="0.01" value="1" aria-label="Weight multiplier">
           <button class="btn btn--primary" data-action="grant-gem" type="button">Grant gem</button>
         </div>
