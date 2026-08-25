@@ -3444,7 +3444,7 @@ export default {
       if (
         !relicDrop &&
         Number(gem.rarity) < 1_000_000 &&
-        effectiveRarity >= 100_000_000
+        effectiveRarity >= 10_000_000
       ) {
         const announcementPayload = {
           player_id: playerId,

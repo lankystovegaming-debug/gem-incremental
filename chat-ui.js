@@ -534,7 +534,7 @@ if (messagesEl && formEl && inputEl) {
     const baseRarity = Number(message?.rarity ?? 0);
     const mutationIds = chatMutationIds(message);
     // Naturally rare gems announce at 1 in 1,000,000+. A lower base gem may
-    // announce only when its mutation combination reaches 1 in 100,000,000.
+    // announce only when its mutation combination reaches 1 in 10,000,000.
     if (Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD) return true;
     if (mutationIds.length === 0) return false;
     const storedEffective = Number(message?.effective_rarity);
