@@ -1,0 +1,48 @@
+.exch-price{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;
+}
+.exch-label{
+  display:block; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--text-muted); font-family:var(--font-mono, ui-monospace, monospace);
+}
+.exch-price__value{
+  font:800 clamp(2rem,6vw,3.3rem) var(--font-display, "Exo 2", system-ui, sans-serif);
+  line-height:1; margin:7px 0; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+}
+.exch-note{ font-size:.8rem; color:var(--text-muted); }
+.exch-note sup, .exch-note sub{ font-size:.7em; }
+.exch-price__cash{ text-align:right; min-width:140px; }
+.exch-price__cash strong{ display:block; margin-top:6px; font-size:1.4rem; font-variant-numeric:tabular-nums; }
+
+.exch-position{ margin-top:16px; }
+.exch-position h2, .exch-buy h2, .exch-sell h2{
+  font:700 1.1rem var(--font-display, "Exo 2", system-ui, sans-serif); margin:0 0 14px;
+}
+.exch-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.exch-stats strong{ display:block; font-size:1.22rem; margin-top:5px; font-variant-numeric:tabular-nums; }
+.exch-pnl{ color:var(--text); }
+.exch-pnl.is-up{ color:var(--positive, #22c55e); }
+.exch-pnl.is-down{ color:var(--danger, #ef4444); }
+
+.exch-trade{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.exch-trade .field{ display:block; }
+.exch-trade .field span{
+  display:block; margin-bottom:6px; font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-muted); font-family:var(--font-mono, ui-monospace, monospace);
+}
+.exch-trade input{ width:100%; }
+.exch-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; min-height:28px;
+}
+.exch-est{
+  font-family:var(--font-mono, ui-monospace, monospace); font-size:.85rem;
+  color:var(--accent-ink, var(--accent)); font-variant-numeric:tabular-nums;
+}
+.exch-buy .btn--primary, .exch-sell .btn--danger{ width:100%; margin-top:12px; }
+.exch-fee{ font-size:.74rem; color:var(--text-muted); margin:11px 0 0; }
+
+@media (max-width:640px){
+  .exch-stats{ grid-template-columns:1fr 1fr; }
+  .exch-trade{ grid-template-columns:1fr; }
+  .exch-price__cash{ text-align:left; }
+}
