@@ -237,3 +237,27 @@
   .market__live-dot { animation: none; }
   .market__tooltip { transition: none; }
 }
+
+.furnace { margin-top: var(--space-5); }
+.furnace__head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start; }
+.furnace__head h2, .furnace__leaderboard h3 { margin: 0; }
+.furnace__head p { margin: 4px 0 0; color: var(--text-muted); }
+.furnace__lifetime { text-align: right; flex: 0 0 auto; }
+.furnace__lifetime span { display: block; color: var(--text-muted); font-size: .78rem; text-transform: uppercase; }
+.furnace__lifetime strong { color: var(--negative, #ef4444); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.furnace__form { margin-top: var(--space-5); }
+.furnace__form > label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: .82rem; font-weight: 600; }
+.furnace__entry { display: flex; align-items: center; gap: 8px; }
+.furnace__entry > span { color: var(--text-muted); font-weight: 700; }
+.furnace__entry input { min-width: 0; flex: 1; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); color: var(--text); background: var(--surface); font: inherit; }
+.furnace__quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.furnace__warning, .furnace__status { margin: 10px 0 0; font-size: .82rem; color: var(--text-muted); }
+.furnace__warning { color: var(--negative, #ef4444); }
+.furnace__status { min-height: 1.25em; }
+.furnace__leaderboard { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.furnace__leaderboard ol { margin: 12px 0 0; padding-left: 2rem; }
+.furnace__leaderboard li { padding: 8px 0 8px 4px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+.furnace__leaderboard li span { color: var(--text); }
+.furnace__leaderboard li strong { float: right; color: var(--negative, #ef4444); font-variant-numeric: tabular-nums; }
+.furnace__empty { list-style: none; margin-left: -2rem; }
+@media (max-width: 560px) { .furnace__head { flex-direction: column; } .furnace__lifetime { text-align: left; } }
