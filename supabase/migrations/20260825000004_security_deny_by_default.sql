@@ -69,4 +69,20 @@ alter default privileges in schema public
 -- grants to anon/authenticated/service_role remain intact.
 revoke execute on all functions in schema public from public;
 
+-- Edge Functions use the secret service_role and must retain unrestricted
+-- server-side access. These grants do not apply to browser JWTs.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on all tables in schema public to service_role;
+grant usage, select, update on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
+-- Keep newly created database objects usable by trusted Edge Functions while
+-- their browser-facing permissions remain explicit and default-deny.
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to service_role;
+alter default privileges in schema public
+  grant usage, select, update on sequences to service_role;
+alter default privileges in schema public
+  grant execute on functions to service_role;
+
 commit;
