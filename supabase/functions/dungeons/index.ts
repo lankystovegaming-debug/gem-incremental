@@ -18,7 +18,9 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{
   if(a==="attack"){
    const {data:r,error:re}=await ctx.supabaseAdmin.from("dungeon_runs").select("*").eq("id",String(b.runId)).eq("player_id",playerId).eq("status","active").single();if(re)throw re;
    const {data:enemy,error:ee}=await ctx.supabaseAdmin.from("dungeon_enemies").select("*").eq("id",r.enemy_ids[r.enemy_index-1]).single();if(ee)throw ee;
-   const damage=Math.max(1,Number(b.damage??10)-Number(enemy.defense??0));let eh=Math.max(0,Number(r.enemy_health)-damage);let ph=Number(r.player_health)-Number(enemy.attack??10);
+   const {data:player,error:pe}=await ctx.supabaseAdmin.from("players").select("max_equipment_tier").eq("id",playerId).single();if(pe)throw pe;
+   const attackPower=10+Math.max(0,Math.min(13,Number(player?.max_equipment_tier)||0))*2;
+   const damage=Math.max(1,attackPower-Number(enemy.defense??0));let eh=Math.max(0,Number(r.enemy_health)-damage);let ph=Number(r.player_health)-Number(enemy.attack??10);
    let idx=r.enemy_index,status="active";let loot=r.loot||[];
    if(eh<=0){if(Array.isArray(enemy.loot))loot=[...loot,...enemy.loot];idx+=1;const {data:next}=await ctx.supabaseAdmin.from("dungeon_enemies").select("*").eq("id",r.enemy_ids[idx-1]??"").maybeSingle();if(next)eh=next.max_health;else status="won";}
    if(ph<=0)status="lost";
