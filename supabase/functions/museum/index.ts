@@ -7,7 +7,7 @@ function databaseCode(error: any) {
   const text = String(error?.message ?? "");
   const known = [
     "invalid_museum_slot", "specimen_not_found", "specimen_already_exhibited",
-    "museum_slot_occupied", "museum_slot_empty", "museum_capacity_maxed",
+    "museum_slot_occupied", "museum_slot_empty", "museum_capacity_maxed", "museum_specimen_protected",
     "not_enough_money", "specimen_is_exhibited", "gem_locked"
   ];
   return known.find((code) => text.includes(code)) ?? "museum_action_failed";
@@ -51,7 +51,7 @@ export default {
     const [profileResult, exhibitsResult, gemsResult, definitionsResult, registrationsResult, completionsResult, playerResult] = await Promise.all([
       ctx.supabaseAdmin.from("museum_profiles").select("*").eq("player_id", playerId).single(),
       ctx.supabaseAdmin.from("museum_exhibits").select("slot,specimen_id,prestige,snapshot,added_at").eq("player_id", playerId).order("slot"),
-      ctx.supabaseAdmin.from("inventory_gems").select("id,gem_name,rarity,effective_rarity,base_weight,final_weight,value,mutation_ids,serial_number,locked,museum_locked,created_at").eq("player_id", playerId).order("effective_rarity", { ascending: false }).limit(500),
+      ctx.supabaseAdmin.from("inventory_gems").select("id,gem_name,rarity,mutation_chance_multiplier,base_weight,final_weight,value,mutation_ids,serial_number,locked,museum_locked,created_at").eq("player_id", playerId).order("rarity", { ascending: false }).limit(500),
       ctx.supabaseAdmin.from("museum_collection_definitions").select("*").eq("enabled", true).order("sort_order"),
       ctx.supabaseAdmin.from("museum_registrations").select("specimen_snapshot,registered_at").eq("player_id", playerId),
       ctx.supabaseAdmin.from("museum_collection_completions").select("collection_id,completed_at").eq("player_id", playerId),
