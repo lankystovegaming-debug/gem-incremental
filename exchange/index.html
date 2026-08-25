@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Invest your cash in shares of the whole Gem Incremental economy.">
+
+  <title>Exchange · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2"
+        href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./exchange.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice", "aurora", "graphite"];
+        if (allowedModes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+        document.documentElement.setAttribute(
+          "data-accent",
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1 ? accent : "indigo"
+        );
+      } catch (error) { /* defaults apply */ }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <div class="page-head">
+      <div class="page-head__title">
+        <h1>Exchange</h1>
+        <p class="page-head__sub">
+          Invest your cash in the whole economy. One share is a millionth of all
+          player cash, and its price rises and falls as players earn and spend —
+          so your holdings gain or lose. A 1% commission applies to every trade.
+        </p>
+      </div>
+    </div>
+
+    <div id="exchangeStatus" class="status"></div>
+
+    <section class="card exch-price">
+      <div>
+        <span class="exch-label">Share price</span>
+        <div class="exch-price__value" id="sharePrice">—</div>
+        <span class="exch-note">1 share &asymp; <sup>1</sup>&frasl;<sub>1,000,000</sub> of all player cash · moves with the economy</span>
+      </div>
+      <div class="exch-price__cash">
+        <span class="exch-label">Your cash</span>
+        <strong id="playerCash">—</strong>
+      </div>
+    </section>
+
+    <section class="card exch-position">
+      <h2>Your position</h2>
+      <div class="exch-stats">
+        <div><span class="exch-label">Shares</span><strong id="posShares">—</strong></div>
+        <div><span class="exch-label">Value now</span><strong id="posValue">—</strong></div>
+        <div><span class="exch-label">Invested</span><strong id="posInvested">—</strong></div>
+        <div><span class="exch-label">Profit / Loss</span><strong id="posPnl" class="exch-pnl">—</strong></div>
+      </div>
+    </section>
+
+    <div class="exch-trade">
+      <section class="card exch-buy">
+        <h2>Buy</h2>
+        <label class="field">
+          <span>Amount to invest</span>
+          <input id="buyAmount" type="number" min="0" step="1000" inputmode="numeric" placeholder="e.g. 50000">
+        </label>
+        <div class="exch-row">
+          <button class="btn" id="buyMax" type="button">Max</button>
+          <span class="exch-est" id="buyEst"></span>
+        </div>
+        <button class="btn btn--primary" id="buyBtn" type="button">Buy shares</button>
+        <p class="exch-fee">You receive shares at the current price, minus 1% commission.</p>
+      </section>
+
+      <section class="card exch-sell">
+        <h2>Sell</h2>
+        <label class="field">
+          <span>Shares to sell</span>
+          <input id="sellShares" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 10">
+        </label>
+        <div class="exch-row">
+          <button class="btn" id="sellAll" type="button">Sell all</button>
+          <span class="exch-est" id="sellEst"></span>
+        </div>
+        <button class="btn btn--danger" id="sellBtn" type="button">Sell shares</button>
+        <p class="exch-fee">Proceeds are at the current price, minus 1% commission.</p>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="./exchange.js"></script>
+</body>
+</html>
