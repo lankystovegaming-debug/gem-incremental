@@ -13,6 +13,9 @@ assert.match(migration, /_auction_restore_lot\(uuid,jsonb\).*public, anon, authe
 assert.match(migration, /create_guild_for_player\(text\).*public, anon, authenticated/is);
 assert.match(migration, /alter default privileges in schema public[\s\S]*revoke execute on functions from public/i);
 assert.match(migration, /revoke execute on all functions in schema public from public/i);
+assert.match(migration, /grant select, insert, update, delete on all tables in schema public to service_role/i);
+assert.match(migration, /grant execute on all functions in schema public to service_role/i);
+assert.match(migration, /grant execute on functions to service_role/i);
 
 assert.doesNotMatch(playerCloud, /\.from\(["']players["']\)[\s\S]{0,200}\.upsert\(/);
 assert.doesNotMatch(dungeons, /b\.damage|body\.damage/);
