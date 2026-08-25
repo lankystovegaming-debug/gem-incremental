@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Curate your Gem Museum and build Museum Prestige.">
+  <title>Gem Museum · Gem Incremental</title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./museum.css">
+</head>
+<body>
+  <main class="app-main museum-page">
+    <header class="museum-hero">
+      <div><span class="badge badge--accent">v0.12.0 Beta</span><p class="museum-eyebrow">Private collection</p>
+        <h1>Gem Museum</h1><p>Curate living exhibits, complete permanent collections, and earn Prestige from specimens that matter.</p></div>
+      <div class="museum-hero__stats"><div><span>Prestige</span><strong id="prestige">0</strong></div><div><span>Museum tier</span><strong id="museumTier">1</strong></div><div><span>Collections</span><strong id="collectionCount">0</strong></div></div>
+    </header>
+
+    <div class="status" id="museumStatus">Opening the hall…</div>
+
+    <section class="card museum-section">
+      <header class="museum-section__head"><div><p class="museum-eyebrow">Active gallery</p><h2>Your Exhibits</h2><p>Displayed specimens remain yours, but cannot be sold, deleted, crafted, or traded until removed.</p></div>
+        <button class="btn" id="expandButton" disabled>Expand museum</button></header>
+      <div class="museum-slots" id="museumSlots"></div>
+    </section>
+
+    <section class="museum-columns">
+      <div class="card museum-section"><header class="museum-section__head"><div><p class="museum-eyebrow">Curator desk</p><h2>Available Specimens</h2><p>Select a specimen, then choose an empty exhibit slot or register it permanently.</p></div></header>
+        <div class="museum-filters"><input class="input" id="museumSearch" type="search" placeholder="Search your gems"><select class="select" id="museumSort"><option value="prestige">Highest Prestige</option><option value="rarity">Rarest</option><option value="newest">Newest</option></select></div>
+        <div class="specimen-list" id="specimenList"></div></div>
+      <div class="card museum-section"><header class="museum-section__head"><div><p class="museum-eyebrow">Collections</p><h2>Collection Book</h2><p>Showcases depend on your current exhibits. Permanent registrations consume the specimen and never lose progress.</p></div></header>
+        <div class="collection-list" id="collectionList"></div></div>
+    </section>
+
+    <section class="card museum-roadmap"><h2>Coming after Beta</h2><div><span>Public museum visits</span><span>Weekly commissions</span><span>Patron gifts</span><span>Limited exhibitions</span></div><p>These systems are visible on the roadmap but deliberately disabled while the core Museum is tested.</p></section>
+  </main>
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+    const shell=mountShell({page:"inventory",base:"../"});
+    loadCloudPlayerState().then(s=>s&&shell.setWallet(s.money));
+  </script>
+  <script type="module" src="./museum.js"></script>
+</body></html>

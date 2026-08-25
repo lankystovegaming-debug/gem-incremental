@@ -661,6 +661,8 @@ async function loadAnalytics() {
   // RPC. Only the authenticated admin Edge Function may return its totals.
   const feeResult = await adminRequest("market_fee_analytics", { targetId: null });
   const marketFees = feeResult.error ? null : feeResult.data?.fees;
+  const museumResult = await adminRequest("museum_analytics", { targetId: null });
+  const museum = museumResult.error ? null : museumResult.data?.museum;
 
   const cards = [
     ["Players", formatCount(data.players)],
@@ -682,6 +684,13 @@ async function loadAnalytics() {
       ["Listing fees", formatMoney(marketFees.listingTotal ?? 0)],
       ["Order fees", formatMoney(marketFees.orderTotal ?? 0)],
       ["Market fees · 24h", formatMoney(marketFees.last24Hours ?? 0)]
+    ] : []),
+    ...(museum ? [
+      ["Museum curators", formatCount(museum.curators ?? 0)],
+      ["Museum exhibits", formatCount(museum.exhibits ?? 0)],
+      ["Permanent registrations", formatCount(museum.registrations ?? 0)],
+      ["Museum Prestige", formatCount(museum.prestige ?? 0)],
+      ["Museum expansion sink", formatMoney(museum.moneyRemoved ?? 0)]
     ] : [])
   ];
 

@@ -65,6 +65,17 @@ const FRIENDLY_MESSAGES = {
   ,confirmation_mismatch: "The guild name confirmation did not match."
   ,insufficient_money: "You do not have enough money for that guild action."
   ,guild_point_purchase_limit: "Your guild has already made all five cash contributions for today."
+  ,museum_closed: "The Gem Museum is currently closed."
+  ,specimen_not_found: "That specimen is no longer in your inventory."
+  ,specimen_already_exhibited: "That specimen is already on display."
+  ,specimen_is_exhibited: "Remove that specimen from its exhibit before registering it."
+  ,museum_slot_occupied: "That exhibit slot is already occupied."
+  ,museum_slot_empty: "That exhibit slot is already empty."
+  ,museum_capacity_maxed: "Your museum already has all ten exhibit slots."
+  ,invalid_museum_slot: "That exhibit slot is not available."
+  ,museum_action_failed: "The Museum could not complete that action."
+  ,museum_load_failed: "The Museum could not load your collection."
+  ,museum_specimen_protected: "Remove this specimen from its Museum exhibit before changing it."
 };
 
 
