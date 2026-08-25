@@ -421,6 +421,27 @@ export default {
         return response({ fees: data ?? {} });
       }
 
+      if (action === "museum_analytics") {
+        const [profiles, exhibits, registrations, purchases] = await Promise.all([
+          ctx.supabaseAdmin.from("museum_profiles").select("prestige,collections_completed"),
+          ctx.supabaseAdmin.from("museum_exhibits").select("specimen_id", { count: "exact", head: true }),
+          ctx.supabaseAdmin.from("museum_registrations").select("id", { count: "exact", head: true }),
+          ctx.supabaseAdmin.from("museum_purchases").select("money_removed")
+        ]);
+        const error = profiles.error || exhibits.error || registrations.error || purchases.error;
+        if (error) return response({ error: "museum_analytics_failed", message: error.message }, 500);
+        const rows = profiles.data ?? [];
+        await audit(ctx, adminId, null, "museum_analytics_viewed");
+        return response({ museum: {
+          curators: rows.length,
+          exhibits: exhibits.count ?? 0,
+          registrations: registrations.count ?? 0,
+          prestige: rows.reduce((sum, row) => sum + Number(row.prestige ?? 0), 0),
+          collections: rows.reduce((sum, row) => sum + Number(row.collections_completed ?? 0), 0),
+          moneyRemoved: (purchases.data ?? []).reduce((sum, row) => sum + Number(row.money_removed ?? 0), 0)
+        }});
+      }
+
       if (!validUuid(targetId)) {
         return response({ error: "invalid_player_id" }, 400);
       }

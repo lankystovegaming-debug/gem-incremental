@@ -46,6 +46,8 @@
   }
 }
 
+.museum-entry{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:var(--space-5);padding:clamp(20px,3vw,34px);border:1px solid color-mix(in srgb,var(--accent) 52%,var(--border));border-radius:var(--radius-lg);background:radial-gradient(circle at 90% 20%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 38%),linear-gradient(135deg,var(--surface),var(--surface-sunken));color:var(--text);text-decoration:none;transition:transform .18s ease,border-color .18s ease}.museum-entry:hover{transform:translateY(-2px);border-color:var(--accent)}.museum-entry h2{margin:5px 0}.museum-entry p{color:var(--text-muted)}.museum-entry__eyebrow{color:var(--accent);font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.museum-entry__action{white-space:nowrap;font-weight:750;color:var(--accent)}@media(max-width:600px){.museum-entry{align-items:flex-start;flex-direction:column}}
+
 
 /* ---------------------------------------------------------
    TOOLBAR

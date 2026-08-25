@@ -38,13 +38,16 @@ export default {
     // =================================
     // VERIFY PLAYER OWNS GEM
     // =================================
-    const { data: gem, error: gemError } = await ctx.supabase.from("inventory_gems").select("id, locked").eq("id", specimenId).single();
+    const { data: gem, error: gemError } = await ctx.supabase.from("inventory_gems").select("id, locked, museum_locked").eq("id", specimenId).single();
     if (gemError || !gem) {
       return Response.json({
         error: "Gem not found."
       }, {
         status: 404
       });
+    }
+    if (gem.museum_locked) {
+      return Response.json({ error: "museum_specimen_protected", message: "Remove this specimen from its Museum exhibit before changing its lock." }, { status: 409 });
     }
     // =================================
     // TOGGLE LOCK

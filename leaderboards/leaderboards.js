@@ -73,6 +73,8 @@ const baseLuckTab =
     "baseLuckTab"
   );
 
+const museumPrestigeTab = document.getElementById("museumPrestigeTab");
+
 
 let leaderboardData = {
   totalRolls: [],
@@ -82,7 +84,8 @@ let leaderboardData = {
   bestRoll: [],
   mostWeight: [],
   rawRareRoll: [],
-  baseLuck: []
+  baseLuck: [],
+  museumPrestige: []
 };
 
 
@@ -330,6 +333,7 @@ function updateTabs() {
   mostWeightTab.classList.toggle("active", activeLeaderboard === "mostWeight");
   rawRareRollTab.classList.toggle("active", activeLeaderboard === "rawRareRoll");
   baseLuckTab.classList.toggle("active", activeLeaderboard === "baseLuck");
+  museumPrestigeTab.classList.toggle("active", activeLeaderboard === "museumPrestige");
 }
 
 
@@ -889,6 +893,20 @@ function renderBaseLuck() {
     <div class="leaderboard-list">${rows}</div>`;
 }
 
+function renderMuseumPrestige() {
+  const entries = leaderboardData.museumPrestige;
+  if (!entries.length) {
+    leaderboardCard.innerHTML = `<h2>Museum Prestige</h2><p class="empty-message">No curated museums yet.</p>`;
+    return;
+  }
+  const rows = entries.map(player => `<div class="leaderboard-row">
+    <div class="rank">${rankDisplay(player.rank)}</div>
+    <div class="player-name" data-profile-username="${escapeHtml(player.username)}">${avatarHtml(player.username)}<span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username)}</span><span class="lb-best-gem">Tier ${formatNumber(player.tier)} · ${formatNumber(player.collections_completed)} permanent collections</span></span></div>
+    <div class="score"><strong>${formatNumber(player.prestige)}</strong><span>${formatNumber(player.highest_exhibit_score)} active exhibit score</span></div>
+  </div>`).join("");
+  leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Museum Prestige</h2><p class="leaderboard-description">Current valid Museum Prestige from active exhibits and completed collections. Removing an exhibit immediately updates its score.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Curator</div><div class="score">Prestige</div></div><div class="leaderboard-list">${rows}</div>`;
+}
+
 // =========================================================
 // PROFILE LINKS
 //
@@ -947,6 +965,8 @@ function renderLeaderboard() {
     renderRawRareRoll();
   } else if (activeLeaderboard === "baseLuck") {
     renderBaseLuck();
+  } else if (activeLeaderboard === "museumPrestige") {
+    renderMuseumPrestige();
   } else {
     renderLifetimeEarnings();
   }
@@ -1064,6 +1084,11 @@ async function loadLeaderboards() {
     { p_limit: 100 }
   );
 
+  const { data: museumPrestigeData, error: museumPrestigeError } = await supabase.rpc(
+    "get_museum_prestige_leaderboard",
+    { p_limit: 100 }
+  );
+
   // Rarest Gem intentionally uses the exact same inventory-only effective
   // rarity logic as Best Roll: base gem denominator multiplied by every
   // mutation's denominator. This prevents the old base-rarity / sold-gem
@@ -1100,6 +1125,7 @@ async function loadLeaderboards() {
   if (mostWeightError) console.error("Highest Weight leaderboard load failed:", mostWeightError);
   if (rawRareRollError) console.error("Raw Rare Roll leaderboard load failed:", rawRareRollError);
   if (baseLuckError) console.error("Base Luck leaderboard load failed:", baseLuckError);
+  if (museumPrestigeError) console.error("Museum Prestige leaderboard load failed:", museumPrestigeError);
 
 
   leaderboardData = {
@@ -1182,6 +1208,11 @@ async function loadLeaderboards() {
     baseLuck:
       Array.isArray(baseLuckData)
         ? baseLuckData.map(player => ({ ...player }))
+        : [],
+
+    museumPrestige:
+      Array.isArray(museumPrestigeData)
+        ? museumPrestigeData.map(player => ({ ...player }))
         : []
   };
 
@@ -1269,6 +1300,11 @@ rawRareRollTab.addEventListener("click", () => {
 
 baseLuckTab.addEventListener("click", () => {
   activeLeaderboard = "baseLuck";
+  renderLeaderboard();
+});
+
+museumPrestigeTab.addEventListener("click", () => {
+  activeLeaderboard = "museumPrestige";
   renderLeaderboard();
 });
 
