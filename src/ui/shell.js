@@ -385,6 +385,13 @@ export function mountShell({ page, base = "./" }) {
   const moreButton = header.querySelector("#shellMoreButton");
   const moreMenu = header.querySelector("#shellMoreMenu");
 
+  // Portal the dropdowns out of the topbar. The topbar uses backdrop-filter,
+  // which traps position:fixed descendants inside its (low) stacking context,
+  // so page cards and overlays could paint over the menus. As direct children
+  // of <body> their z-index competes at the document root and they sit on top.
+  if (exploreMenu) document.body.appendChild(exploreMenu);
+  if (moreMenu) document.body.appendChild(moreMenu);
+
   const closeMore = () => {
     if (!moreMenu) return;
     moreMenu.hidden = true;
@@ -418,8 +425,10 @@ export function mountShell({ page, base = "./" }) {
   });
 
   document.addEventListener("click", (event) => {
-    if (exploreAnchor && !exploreAnchor.contains(event.target)) closeExplore();
-    if (moreAnchor && !moreAnchor.contains(event.target)) closeMore();
+    // The menus are portaled to <body>, so a click inside a menu is outside its
+    // anchor — check the menu too, or clicking inside would close it.
+    if (exploreAnchor && !exploreAnchor.contains(event.target) && !exploreMenu?.contains(event.target)) closeExplore();
+    if (moreAnchor && !moreAnchor.contains(event.target) && !moreMenu?.contains(event.target)) closeMore();
   });
 
   document.addEventListener("keydown", (event) => {
