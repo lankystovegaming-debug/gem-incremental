@@ -97,16 +97,16 @@ language sql
 immutable
 as $$
   select round((
-    20 * log(10, greatest(1, coalesce(p_gem.rarity, 1))::numeric)
-    + least(180::numeric, 15 * log(10, greatest(1, coalesce(p_gem.effective_rarity, p_gem.rarity, 1))::numeric))
-    + least(75::numeric, 25 * (ln(greatest(1, coalesce(p_gem.final_weight, 1) / greatest(coalesce(p_gem.base_weight, 1), 0.000001))) / ln(2)))
-    + case cardinality(coalesce(p_gem.mutation_ids, '{}'::text[])) when 0 then 0 when 1 then 15 when 2 then 35 when 3 then 60 else 90 end
+    20 * log(10, greatest(1, coalesce((p_gem).rarity, 1))::numeric)
+    + least(180::numeric, 15 * log(10, greatest(1, coalesce((p_gem).rarity, 1) * greatest(coalesce((p_gem).mutation_chance_multiplier, 1), 1))::numeric))
+    + least(75::numeric, 25 * (ln(greatest(1, coalesce((p_gem).final_weight, 1) / greatest(coalesce((p_gem).base_weight, 1), 0.000001))) / ln(2)))
+    + case cardinality(coalesce((p_gem).mutation_ids, '{}'::text[])) when 0 then 0 when 1 then 15 when 2 then 35 when 3 then 60 else 90 end
     + case
-        when p_gem.serial_number = 1 then 100
-        when p_gem.serial_number between 2 and 10 then 60
-        when p_gem.serial_number between 11 and 50 then 35
-        when p_gem.serial_number between 51 and 100 then 20
-        when p_gem.serial_number between 101 and 500 then 10
+        when (p_gem).serial_number = 1 then 100
+        when (p_gem).serial_number between 2 and 10 then 60
+        when (p_gem).serial_number between 11 and 50 then 35
+        when (p_gem).serial_number between 51 and 100 then 20
+        when (p_gem).serial_number between 101 and 500 then 10
         else 0
       end
   )::numeric, 2)
@@ -194,6 +194,7 @@ create or replace function public.museum_place_exhibit(p_player_id uuid, p_speci
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_gem public.inventory_gems; v_capacity integer;
 begin
+  perform set_config('app.museum_internal', 'on', true);
   insert into public.museum_profiles(player_id) values(p_player_id) on conflict do nothing;
   select capacity into v_capacity from public.museum_profiles where player_id=p_player_id for update;
   if p_slot < 1 or p_slot > v_capacity then raise exception 'invalid_museum_slot'; end if;
@@ -204,7 +205,7 @@ begin
   update public.inventory_gems set locked=true, museum_locked=true where id=p_specimen_id;
   insert into public.museum_exhibits(player_id,slot,specimen_id,prestige,snapshot)
   values(p_player_id,p_slot,p_specimen_id,public.museum_specimen_score(v_gem),
-    jsonb_build_object('id',v_gem.id,'gem_name',v_gem.gem_name,'rarity',v_gem.rarity,'effective_rarity',v_gem.effective_rarity,
+    jsonb_build_object('id',v_gem.id,'gem_name',v_gem.gem_name,'rarity',v_gem.rarity,'effective_rarity',greatest(1,v_gem.rarity * greatest(coalesce(v_gem.mutation_chance_multiplier,1),1)),
       'base_weight',v_gem.base_weight,'final_weight',v_gem.final_weight,'mutation_ids',to_jsonb(coalesce(v_gem.mutation_ids,'{}'::text[])),
       'serial_number',v_gem.serial_number,'value',v_gem.value));
   return public.museum_recalculate(p_player_id);
@@ -214,6 +215,7 @@ create or replace function public.museum_remove_exhibit(p_player_id uuid, p_slot
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_specimen bigint;
 begin
+  perform set_config('app.museum_internal', 'on', true);
   select specimen_id into v_specimen from public.museum_exhibits where player_id=p_player_id and slot=p_slot for update;
   if not found then raise exception 'museum_slot_empty'; end if;
   delete from public.museum_exhibits where player_id=p_player_id and slot=p_slot;
@@ -242,11 +244,12 @@ create or replace function public.museum_register_specimen(p_player_id uuid, p_s
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_gem public.inventory_gems; v_snapshot jsonb;
 begin
+  perform set_config('app.museum_internal', 'on', true);
   select * into v_gem from public.inventory_gems where id=p_specimen_id and player_id=p_player_id for update;
   if not found then raise exception 'specimen_not_found'; end if;
   if v_gem.museum_locked then raise exception 'specimen_is_exhibited'; end if;
   if v_gem.locked then raise exception 'gem_locked'; end if;
-  v_snapshot := jsonb_build_object('id',v_gem.id,'gem_name',v_gem.gem_name,'rarity',v_gem.rarity,'effective_rarity',v_gem.effective_rarity,
+  v_snapshot := jsonb_build_object('id',v_gem.id,'gem_name',v_gem.gem_name,'rarity',v_gem.rarity,'effective_rarity',greatest(1,v_gem.rarity * greatest(coalesce(v_gem.mutation_chance_multiplier,1),1)),
     'base_weight',v_gem.base_weight,'final_weight',v_gem.final_weight,'mutation_ids',to_jsonb(coalesce(v_gem.mutation_ids,'{}'::text[])),
     'serial_number',v_gem.serial_number,'value',v_gem.value,'prestige',public.museum_specimen_score(v_gem));
   insert into public.museum_registrations(player_id,original_specimen_id,specimen_snapshot) values(p_player_id,p_specimen_id,v_snapshot);
@@ -257,7 +260,7 @@ end $$;
 create or replace function public.get_museum_prestige_leaderboard(p_limit integer default 100)
 returns table(rank bigint, player_id uuid, username text, avatar_url text, prestige numeric, tier integer, collections_completed integer, highest_exhibit_score numeric)
 language sql stable security definer set search_path=public as $$
-  select row_number() over(order by m.prestige desc,p.total_rolls desc,p.username),p.id,p.username,p.avatar_url,
+  select row_number() over(order by m.prestige desc,p.total_rolls desc,p.username),p.id,p.username,null::text as avatar_url,
     m.prestige,m.tier,m.collections_completed,m.highest_exhibit_score
   from public.museum_profiles m join public.players p on p.id=m.player_id
   where m.prestige > 0 order by m.prestige desc,p.total_rolls desc,p.username limit greatest(1,least(coalesce(p_limit,100),100));
@@ -266,7 +269,9 @@ $$;
 create or replace function public.prevent_museum_specimen_mutation()
 returns trigger language plpgsql as $$
 begin
-  if old.museum_locked and coalesce(current_setting('request.jwt.claim.role',true),'') <> 'service_role' then
+  if old.museum_locked
+     and coalesce(current_setting('request.jwt.claim.role',true),'') <> 'service_role'
+     and coalesce(current_setting('app.museum_internal',true),'') <> 'on' then
     raise exception 'museum_specimen_protected';
   end if;
   return case when tg_op='DELETE' then old else new end;
@@ -290,4 +295,5 @@ revoke execute on function public.museum_place_exhibit(uuid,bigint,integer),publ
 grant execute on function public.museum_place_exhibit(uuid,bigint,integer),public.museum_remove_exhibit(uuid,integer),public.museum_expand(uuid),public.museum_register_specimen(uuid,bigint),public.museum_recalculate(uuid) to service_role;
 grant execute on function public.get_museum_prestige_leaderboard(integer) to anon,authenticated,service_role;
 
+drop policy if exists museum_definitions_read on public.museum_collection_definitions;
 create policy museum_definitions_read on public.museum_collection_definitions for select using (enabled);

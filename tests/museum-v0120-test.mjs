@@ -19,6 +19,8 @@ assert.match(sql, /20 \* log\(10, greatest/);
 assert.match(sql, /least\(180::numeric, 15 \* log/);
 assert.match(sql, /when 2 then \.5 when 3 then \.25 else \.1/);
 assert.match(sql, /museum_specimen_protected/);
+assert.match(sql, /set_config\('app\.museum_internal', 'on', true\)/);
+assert.match(sql, /drop policy if exists museum_definitions_read/);
 assert.match(sql, /revoke execute on function public\.museum_place_exhibit/);
 assert.match(sql, /get_museum_prestige_leaderboard/);
 

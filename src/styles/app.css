@@ -4374,6 +4374,62 @@ select,
   position: relative;
   flex: 0 0 auto;
 }
+
+/* Secondary destinations live in one stable Explore menu. This keeps the
+   main bar focused even as feature-switched pages are enabled later. */
+.topbar-explore {
+  position: relative;
+  flex: 0 0 auto;
+}
+.topbar-explore__button {
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+.topbar-explore__button > svg:last-child {
+  width: 13px;
+  height: 13px;
+}
+.topbar-explore__menu {
+  position: fixed;
+  z-index: 1000;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 9px;
+  box-shadow: 0 24px 70px -28px rgb(0 0 0 / .95);
+  backdrop-filter: blur(22px);
+}
+.topbar-explore__menu[hidden] { display: none; }
+.topbar-explore__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  width: 100%;
+  text-decoration: none;
+}
+.topbar-explore__item svg,
+.topbar-explore__item .nav__custom-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+.topbar-explore__item[aria-current="page"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 980px) {
+  .topbar-explore__button > span { display: none; }
+  .topbar-explore__button {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+  .topbar-explore__button > svg:last-child { display: none; }
+}
 .topbar-more__button {
   min-height: 40px;
   gap: 7px;
