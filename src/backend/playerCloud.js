@@ -7,7 +7,16 @@ export async function ensureCloudPlayer(
 ) {
   // Prefer the SECURITY DEFINER setup path. It keeps account creation
   // reliable even when direct inserts are restricted by RLS.
-  const { error: ensureError } = await supabase.rpc("ensure_player_record");
+  const {
+    data: ensuredPlayer,
+    error: ensureError
+  } = await supabase.rpc("ensure_player_record");
+
+  if (!ensureError && ensuredPlayer) {
+    return Array.isArray(ensuredPlayer)
+      ? ensuredPlayer[0] ?? null
+      : ensuredPlayer;
+  }
 
   if (ensureError) {
     console.warn("Server-side player setup unavailable; using fallback:", ensureError);
@@ -26,12 +35,7 @@ export async function ensureCloudPlayer(
           )
           .select()
           .single()
-      : await supabase
-          .from("players")
-          .update({ last_seen: new Date().toISOString() })
-          .eq("id", user.id)
-          .select()
-          .single();
+      : { data: null, error: new Error("Player setup returned no row.") };
 
   if (error) {
     console.error(
