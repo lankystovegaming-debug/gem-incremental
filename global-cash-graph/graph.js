@@ -1,4 +1,6 @@
 import { supabase } from "../src/backend/supabase.js";
+import { burnMoney, loadFurnaceState } from "../src/backend/cloudFurnace.js";
+import { confirmDialog } from "../src/ui/dialog.js";
 
 // =========================================================
 // CASH MARKET
@@ -27,6 +29,11 @@ const changeRangeEl = document.querySelector("[data-change-range]");
 const metricNameEl = document.querySelector("[data-metric-name]");
 const metricButtons = [...document.querySelectorAll("[data-metric]")];
 const rangeButtons = [...document.querySelectorAll("[data-range]")];
+const furnaceForm = document.querySelector("[data-furnace-form]");
+const furnaceInput = document.querySelector("[data-furnace-amount]");
+const furnaceLifetime = document.querySelector("[data-furnace-lifetime]");
+const furnaceStatus = document.querySelector("[data-furnace-status]");
+const furnaceLeaderboard = document.querySelector("[data-furnace-leaderboard]");
 
 const PAD = { left: 62, right: 14, top: 16, bottom: 26 };
 
@@ -41,6 +48,8 @@ let hours = 24;
 let rows = [];       // [{ t: ms, lifetime, money }]
 let layout = null;   // last-drawn geometry, for hover mapping
 let pollTimer = null;
+let furnaceMoney = 0;
+let furnaceBusy = false;
 
 // ---------------------------------------------------------
 // FORMATTING
@@ -61,6 +70,65 @@ function fullMoney(value) {
   return "$" + Number(value || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2, maximumFractionDigits: 2
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]
+  ));
+}
+
+function friendlyBurnError(error) {
+  const message = String(error?.message ?? "");
+  if (message.includes("insufficient_money")) return "You don't have enough money to burn that amount.";
+  if (message.includes("not_authenticated")) return "Sign in to use the Furnace.";
+  if (message.includes("invalid_burn_amount")) return "Enter an amount of at least $0.01.";
+  return "The Furnace didn't light. Please try again.";
+}
+
+async function refreshFurnace() {
+  const { data, error } = await loadFurnaceState();
+  if (error) { furnaceStatus.textContent = "Couldn't load Furnace data."; return; }
+  furnaceMoney = data.money;
+  furnaceLifetime.textContent = fullMoney(data.lifetimeMoneyBurned);
+  furnaceInput.disabled = !data.authenticated;
+  furnaceForm.querySelectorAll("button").forEach((button) => { button.disabled = !data.authenticated; });
+  furnaceStatus.textContent = data.authenticated ? "" : "Sign in to burn money.";
+  furnaceLeaderboard.innerHTML = data.leaderboard.length
+    ? data.leaderboard.map((row) => `<li><span>${escapeHtml(row.username)}</span><strong>${fullMoney(row.lifetime_money_burned)}</strong></li>`).join("")
+    : '<li class="furnace__empty">No money has been burned yet. Be the first.</li>';
+}
+
+async function requestBurn({ amount = null, burnAll = false }) {
+  if (furnaceBusy) return;
+  const requested = burnAll ? furnaceMoney : Number(amount);
+  if (!Number.isFinite(requested) || requested <= 0) {
+    furnaceStatus.textContent = "Enter an amount of at least $0.01.";
+    furnaceInput.focus();
+    return;
+  }
+  const choice = await confirmDialog({
+    title: `Burn ${fullMoney(requested)}?`,
+    body: "<p>This money will be permanently destroyed. This cannot be undone.</p>",
+    confirmLabel: burnAll ? "Burn everything" : "Burn money",
+    tone: "danger"
+  });
+  if (choice !== "confirm") return;
+  furnaceBusy = true;
+  furnaceForm.querySelectorAll("button, input").forEach((control) => { control.disabled = true; });
+  furnaceStatus.textContent = "Burning…";
+  const { data, error } = await burnMoney({ amount: requested, burnAll });
+  furnaceBusy = false;
+  if (error) {
+    furnaceStatus.textContent = friendlyBurnError(error);
+    await refreshFurnace();
+    return;
+  }
+  furnaceMoney = Number(data.money ?? 0);
+  furnaceInput.value = "";
+  window.cashMarketShell?.setWallet(furnaceMoney);
+  await Promise.all([refreshFurnace(), refresh()]);
+  furnaceStatus.textContent = `${fullMoney(data.burned)} permanently burned.`;
 }
 
 function axisMoney(value) {
@@ -331,6 +399,15 @@ rangeButtons.forEach((btn) => btn.addEventListener("click", () => {
   refresh(true);
 }));
 
+furnaceForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  requestBurn({ amount: furnaceInput.value });
+});
+document.querySelectorAll("[data-furnace-quick]").forEach((button) => {
+  button.addEventListener("click", () => requestBurn({ amount: button.dataset.furnaceQuick }));
+});
+document.querySelector("[data-furnace-max]").addEventListener("click", () => requestBurn({ burnAll: true }));
+
 chart.addEventListener("pointermove", onMove);
 chart.addEventListener("pointerleave", onLeave);
 
@@ -350,4 +427,5 @@ document.addEventListener("visibilitychange", () => {
 });
 
 refresh(true);
+refreshFurnace();
 pollTimer = setInterval(refresh, POLL_MS);

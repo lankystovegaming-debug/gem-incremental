@@ -105,6 +105,42 @@
         game. Gems and other assets aren't counted.
       </p>
     </section>
+
+    <section class="card furnace" aria-labelledby="furnaceTitle">
+      <div class="furnace__head">
+        <div>
+          <h2 id="furnaceTitle">🔥 The Furnace</h2>
+          <p>Got too much money? Here's a solution.</p>
+        </div>
+        <div class="furnace__lifetime">
+          <span>Lifetime burned</span>
+          <strong data-furnace-lifetime>—</strong>
+        </div>
+      </div>
+      <form class="furnace__form" data-furnace-form>
+        <label for="furnaceAmount">Amount to burn</label>
+        <div class="furnace__entry">
+          <span aria-hidden="true">$</span>
+          <input id="furnaceAmount" data-furnace-amount type="number" min="0.01" step="0.01"
+                 inputmode="decimal" placeholder="Enter amount" autocomplete="off">
+          <button class="btn btn--danger" type="submit">Burn</button>
+        </div>
+        <div class="furnace__quick" aria-label="Quick burn amounts">
+          <button class="btn btn--ghost btn--sm" type="button" data-furnace-quick="1000000">$1M</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-furnace-quick="10000000">$10M</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-furnace-quick="100000000">$100M</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-furnace-max>Max</button>
+        </div>
+        <p class="furnace__warning">Money burned in the Furnace is permanently destroyed.</p>
+        <p class="furnace__status" data-furnace-status aria-live="polite"></p>
+      </form>
+      <div class="furnace__leaderboard">
+        <h3>🔥 Top Money Burners</h3>
+        <ol data-furnace-leaderboard>
+          <li class="furnace__empty">Loading…</li>
+        </ol>
+      </div>
+    </section>
   </main>
 
   <script type="module">
@@ -112,6 +148,7 @@
     import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
     const shell = mountShell({ page: "global-cash-graph", base: "../" });
+    window.cashMarketShell = shell;
 
     loadCloudPlayerState().then((state) => {
       if (state) {
