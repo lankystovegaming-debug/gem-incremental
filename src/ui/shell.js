@@ -80,6 +80,9 @@ const PAGES = [
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
+const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions"]);
+const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
+const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
 
 async function loadEnabledSections() {
   try {
@@ -134,8 +137,28 @@ export function mountShell({ page, base = "./" }) {
       </a>
 
       <nav class="nav" aria-label="Primary">
-        ${PUBLIC_PAGES.map((item) => navLink(item, page, base, "nav__link")).join("")}
+        ${CORE_PAGES.map((item) => navLink(item, page, base, "nav__link")).join("")}
       </nav>
+
+      <div class="topbar-explore" id="shellExploreAnchor">
+        <button
+          class="nav__link topbar-explore__button"
+          id="shellExploreButton"
+          type="button"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="shellExploreMenu"
+          ${EXPLORE_PAGES.some((item) => item.id === page) ? 'aria-current="page"' : ""}
+        >
+          ${icons.compass || icons.sparkle}
+          <span>Explore</span>
+          ${icons.chevronDown || ""}
+        </button>
+        <div class="menu topbar-explore__menu" id="shellExploreMenu" hidden>
+          <div class="menu__label">Explore</div>
+          ${EXPLORE_PAGES.map((item) => menuNavLink(item, page, base)).join("")}
+        </div>
+      </div>
 
       <div class="topbar__spacer"></div>
 
@@ -219,7 +242,7 @@ export function mountShell({ page, base = "./" }) {
   tabbar.className = "tabbar";
   tabbar.setAttribute("aria-label", "Primary");
 
-  tabbar.innerHTML = PUBLIC_PAGES.map((item) =>
+  tabbar.innerHTML = CORE_PAGES.map((item) =>
     navLink(item, page, base, "tabbar__link", true)
   ).join("");
 
@@ -232,22 +255,16 @@ export function mountShell({ page, base = "./" }) {
     const settings = getSettings();
     for (const item of PAGES.filter((page) => page.settingGated)) {
       const enabled = Boolean(settings[item.settingGated]);
-      const existingLink = header.querySelector(`.nav [data-setting-link="${item.id}"]`);
-      const existingTab = tabbar.querySelector(`[data-setting-link="${item.id}"]`);
+      const existingLink = header.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
       if (enabled) {
         if (!existingLink) {
-          header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(item, page, base, "nav__link"));
-          const link = header.querySelector(".nav__link:last-child");
+          header.querySelector("#shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(item, page, base));
+          const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
           if (link) link.dataset.settingLink = item.id;
-        }
-        if (!existingTab) {
-          tabbar.insertAdjacentHTML("beforeend", navLink(item, page, base, "tabbar__link", true));
-          const tab = tabbar.querySelector(".tabbar__link:last-child");
-          if (tab) tab.dataset.settingLink = item.id;
+          if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
         }
       } else {
         existingLink?.remove();
-        existingTab?.remove();
       }
     }
   };
@@ -269,12 +286,10 @@ export function mountShell({ page, base = "./" }) {
           : item.icon
       };
       if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
-      header.querySelector(".nav")?.insertAdjacentHTML("beforeend", navLink(configured, page, base, "nav__link"));
-      const link = header.querySelector(".nav__link:last-child");
+      header.querySelector("#shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));
+      const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
       if (link) link.dataset.sectionLink = item.id;
-      tabbar.insertAdjacentHTML("beforeend", navLink(configured, page, base, "tabbar__link", true));
-      const tab = tabbar.querySelector(".tabbar__link:last-child");
-      if (tab) tab.dataset.sectionLink = item.id;
+      if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
     };
     PAGES.filter(x => x.sectionId).forEach(add);
     const mainSections = {"roll-stage":"section-roll-stage","summary":"section-summary","automation":"section-automation","session-history":"section-session-history"};
@@ -340,6 +355,30 @@ export function mountShell({ page, base = "./" }) {
 
   const menus = createMenuController();
 
+  const exploreAnchor = header.querySelector("#shellExploreAnchor");
+  const exploreButton = header.querySelector("#shellExploreButton");
+  const exploreMenu = header.querySelector("#shellExploreMenu");
+
+  const closeExplore = () => {
+    if (!exploreMenu) return;
+    exploreMenu.hidden = true;
+    exploreButton?.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleExplore = () => {
+    if (!exploreMenu || !exploreButton) return;
+    const open = exploreMenu.hidden;
+    exploreMenu.hidden = !open;
+    exploreButton.setAttribute("aria-expanded", String(open));
+    if (open) {
+      closeMore();
+      const rect = exploreButton.getBoundingClientRect();
+      const width = Math.max(270, exploreMenu.offsetWidth || 270);
+      exploreMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
+      exploreMenu.style.top = `${rect.bottom + 8}px`;
+    }
+  };
+
   // The utility links belong in the top bar so they remain discoverable on
   // desktop and mobile instead of living in a floating corner dock.
   const moreAnchor = header.querySelector("#shellMoreAnchor");
@@ -357,7 +396,17 @@ export function mountShell({ page, base = "./" }) {
     const open = moreMenu.hidden;
     moreMenu.hidden = !open;
     moreButton?.setAttribute("aria-expanded", String(open));
+    if (open) closeExplore();
   };
+
+  exploreButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleExplore();
+  });
+
+  exploreMenu?.addEventListener("click", (event) => {
+    if (event.target.closest("a")) closeExplore();
+  });
 
   moreButton?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -369,11 +418,15 @@ export function mountShell({ page, base = "./" }) {
   });
 
   document.addEventListener("click", (event) => {
+    if (exploreAnchor && !exploreAnchor.contains(event.target)) closeExplore();
     if (moreAnchor && !moreAnchor.contains(event.target)) closeMore();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMore();
+    if (event.key === "Escape") {
+      closeExplore();
+      closeMore();
+    }
   });
 
   themeButton.addEventListener("click", () => {
@@ -432,15 +485,11 @@ export function mountShell({ page, base = "./" }) {
           return;
         }
 
-        header.querySelector(".nav")?.insertAdjacentHTML(
+        header.querySelector("#shellExploreMenu")?.insertAdjacentHTML(
           "beforeend",
-          navLink(adminPage, page, base, "nav__link")
+          menuNavLink(adminPage, page, base)
         );
-
-        tabbar.insertAdjacentHTML(
-          "beforeend",
-          navLink(adminPage, page, base, "tabbar__link", true)
-        );
+        if (page === "admin") header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
       });
 
       // Upcoming Features is intentionally not a separate navigation item.
@@ -1240,6 +1289,23 @@ function navLink(item, activePage, base, className, short = false) {
       href="${base}${item.href}"
       aria-label="${safeAria}"
       title="${safeAria}"
+      ${active ? 'aria-current="page"' : ""}
+    >
+      ${item.icon}
+      <span>${safeLabel}</span>
+    </a>
+  `;
+}
+
+function menuNavLink(item, activePage, base) {
+  const active = item.id === activePage || (item.match?.includes(activePage) ?? false);
+  const safeLabel = escapeHtml(item.label);
+  return `
+    <a
+      class="menu__item topbar-explore__item"
+      href="${base}${item.href}"
+      aria-label="${safeLabel}"
+      title="${safeLabel}"
       ${active ? 'aria-current="page"' : ""}
     >
       ${item.icon}
