@@ -4,7 +4,19 @@ mountShell({page:"daily-spin",base:"../"});
 const $=id=>document.getElementById(id);
 let config=null,spinning=false;
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-async function api(action){const {data,error}=await supabase.functions.invoke("daily-spin",{body:{action}});if(error||data?.error)throw new Error(data?.message||data?.error||error?.message||"Daily Spin failed");return data;}
+// Driven directly by RPCs (the daily-spin edge function isn't deployed):
+// "config" -> get_daily_spin_state, "spin" -> claim_daily_spin.
+function friendlySpin(msg){const m=String(msg||"");if(m.includes("already_claimed"))return "You already claimed today's spin.";if(m.includes("feature_disabled"))return "Daily Spin isn't available right now.";if(m.includes("not_authenticated"))return "Sign in to spin.";return "Daily Spin failed. Try again.";}
+async function api(action){
+  if(action==="config"){
+    const {data,error}=await supabase.rpc("get_daily_spin_state");
+    if(error)throw new Error(friendlySpin(error.message));
+    return data;
+  }
+  const {data,error}=await supabase.rpc("claim_daily_spin");
+  if(error)throw new Error(friendlySpin(error.message));
+  return data; // { reward:{id,label,...} }
+}
 function render(d){
  config=d.config;
  $("title").textContent=config.title||"Daily Spin";

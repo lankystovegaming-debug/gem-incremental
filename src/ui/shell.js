@@ -27,6 +27,7 @@ import {
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
 import { mountTour } from "./tour.js";
+import { mountDailyLogin } from "./dailyLogin.js";
 import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
 import { getSettings, onSettingsChange } from "./settings.js";
@@ -61,6 +62,7 @@ const PAGES = [
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" },
   { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.sparkle, sectionId: "daily-spin" },
+  { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords || icons.shield, sectionId: "wars" },
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" },
   { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.bolt || icons.sparkle, sectionId: "world-bosses" },
   { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.gem, sectionId: "relic-vault" },
@@ -331,6 +333,9 @@ export function mountShell({ page, base = "./" }) {
   // First-run guided tour: spotlights the roll button, wallet and nav for new
   // players (shows once), and reopenable from More -> How to play.
   mountTour({ base, page });
+
+  // Daily login streak: prompts once a day when a reward is claimable.
+  mountDailyLogin();
 
   // Optional global-cash side counter (off by default; toggled in Settings).
   initGlobalCash();
