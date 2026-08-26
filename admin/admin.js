@@ -34,7 +34,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1240,6 +1240,82 @@ function wireAnnouncements() {
 }
 
 
+// =========================================================
+// SHAREHOLDERS — read-only Exchange holdings overview (admin only)
+// =========================================================
+
+const shareholdersPanel = document.getElementById("shareholdersPanel");
+const shareholdersRefresh = document.getElementById("shareholdersRefresh");
+const shareholdersSummary = document.getElementById("shareholdersSummary");
+const shareholdersContent = document.getElementById("shareholdersContent");
+
+function plCell(pl, isPercent) {
+  const n = Number(pl ?? 0);
+  const up = n >= 0;
+  const text = isPercent
+    ? `${up ? "+" : "−"}${Math.abs(n).toFixed(1)}%`
+    : `${up ? "+" : "−"}${formatMoney(Math.abs(n))}`;
+  return `<td class="num ${up ? "is-up" : "is-down"}">${text}</td>`;
+}
+
+async function loadShareholders() {
+  if (!shareholdersPanel) return;
+  shareholdersPanel.hidden = false;
+  shareholdersContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_get_shareholders");
+  if (error) {
+    shareholdersContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load shareholders</p><p>${escapeHtml(error.message)}</p></div>`;
+    shareholdersSummary.textContent = "Failed to load.";
+    return;
+  }
+
+  const holders = Array.isArray(data?.holders) ? data.holders : [];
+  const price = Number(data?.price ?? 0);
+  const totalPl = Number(data?.totalPl ?? 0);
+  shareholdersSummary.innerHTML =
+    `<strong>${data?.holderCount ?? holders.length}</strong> holder(s) · ` +
+    `index <strong>$${price.toFixed(2)}</strong> · ` +
+    `invested ${formatMoney(Number(data?.totalInvested ?? 0))} · ` +
+    `value ${formatMoney(Number(data?.totalValue ?? 0))} · ` +
+    `net P/L <span class="${totalPl >= 0 ? "is-up" : "is-down"}">${totalPl >= 0 ? "+" : "−"}${formatMoney(Math.abs(totalPl))}</span>`;
+
+  if (!holders.length) {
+    shareholdersContent.innerHTML = '<div class="empty"><p class="empty__title">No one is holding shares.</p></div>';
+    return;
+  }
+
+  const rows = holders.map((h) => `
+      <tr>
+        <td>${escapeHtml(h.username ?? "Unknown")}</td>
+        <td class="num">${Number(h.shares ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+        <td class="num">${formatMoney(Number(h.invested ?? 0))}</td>
+        <td class="num">${formatMoney(Number(h.value ?? 0))}</td>
+        ${plCell(h.pl, false)}
+        ${plCell(h.plPct, true)}
+      </tr>`).join("");
+
+  shareholdersContent.innerHTML = `
+    <div class="shareholders-table-wrap">
+      <table class="shareholders-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th class="num">Shares</th>
+            <th class="num">Invested</th>
+            <th class="num">Value</th>
+            <th class="num">P/L</th>
+            <th class="num">P/L %</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+shareholdersRefresh?.addEventListener("click", loadShareholders);
+
 searchButton.addEventListener("click", searchPlayers);
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchPlayers();
@@ -1274,5 +1350,6 @@ if (!user || !whoami?.isAdmin) {
   await loadSectionControls();
   await wireMutationEvents();
   await loadMutationCatalog();
+  await loadShareholders();
   searchInput.focus();
 }

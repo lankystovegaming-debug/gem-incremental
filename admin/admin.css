@@ -416,3 +416,16 @@
 .analytics-bar-wrap { min-width:34px; height:160px; display:flex; flex-direction:column; justify-content:end; align-items:center; gap:6px; }
 .analytics-bar { width:100%; min-height:4px; border-radius:8px 8px 3px 3px; background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 35%,transparent)); box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 18%,transparent); }
 .analytics-bar-wrap span { font-size:.62rem; color:var(--text-faint); writing-mode:vertical-rl; transform:rotate(180deg); }
+
+/* Shareholders overview (Exchange holdings, read-only) */
+.shareholders-content { margin-top: var(--space-3); }
+.shareholders-table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.shareholders-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 560px; }
+.shareholders-table thead th { position: sticky; top: 0; background: var(--surface-raised); color: var(--text-muted); font-weight: 600; text-align: left; padding: 10px 12px; font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; }
+.shareholders-table th.num, .shareholders-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.shareholders-table tbody td { padding: 9px 12px; border-top: 1px solid var(--border); background: var(--surface-sunken); }
+.shareholders-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-sunken) 60%, var(--surface-raised)); }
+.shareholders-table tbody tr:first-child td { border-top: none; }
+.shareholders-table td:first-child { font-weight: 600; color: var(--text); }
+.shareholders-content .is-up, #shareholdersSummary .is-up { color: #35d07f; }
+.shareholders-content .is-down, #shareholdersSummary .is-down { color: #ff6b6b; }
