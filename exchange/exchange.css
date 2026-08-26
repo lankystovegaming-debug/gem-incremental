@@ -41,8 +41,40 @@
 .exch-buy .btn--primary, .exch-sell .btn--danger{ width:100%; margin-top:12px; }
 .exch-fee{ font-size:.74rem; color:var(--text-muted); margin:11px 0 0; }
 
+.exch-chart-toggle{ margin-top:12px; }
+
+.exch-chart{ margin-top:16px; }
+.exch-chart__head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.exch-chart__now{ display:flex; align-items:baseline; gap:10px; margin-top:6px; flex-wrap:wrap; }
+.exch-chart__now strong{ font-size:1.5rem; font-variant-numeric:tabular-nums; }
+.exch-chart__chg{ font-size:.9rem; font-family:var(--font-mono, ui-monospace, monospace); color:var(--text-muted); }
+.exch-chart__chg.is-up{ color:var(--positive, #22c55e); }
+.exch-chart__chg.is-down{ color:var(--danger, #ef4444); }
+
+.exch-range{ display:inline-flex; gap:4px; padding:4px; border-radius:10px; background:var(--surface-sunken, rgba(0,0,0,.2)); }
+.exch-range__btn{
+  border:0; background:transparent; color:var(--text-muted); cursor:pointer;
+  font:600 .78rem var(--font-mono, ui-monospace, monospace); padding:5px 11px; border-radius:7px;
+  transition:background .12s ease, color .12s ease;
+}
+.exch-range__btn:hover{ color:var(--text); }
+.exch-range__btn.is-active{ background:var(--accent, #6366f1); color:#fff; }
+
+.exch-chart__plot{ width:100%; }
+.exch-chart__svg{ width:100%; height:auto; display:block; }
+.exch-chart__grid{ stroke:var(--border, rgba(255,255,255,.08)); stroke-width:1; }
+.exch-chart__ylab, .exch-chart__xlab{
+  fill:var(--text-muted); font-family:var(--font-mono, ui-monospace, monospace); font-size:11px;
+}
+.exch-chart__empty{ padding:48px 12px; text-align:center; color:var(--text-muted); font-size:.9rem; }
+.exch-chart__foot{ font-size:.72rem; color:var(--text-muted); margin:10px 0 0; }
+
 @media (max-width:640px){
   .exch-stats{ grid-template-columns:1fr 1fr; }
   .exch-trade{ grid-template-columns:1fr; }
   .exch-price__cash{ text-align:left; }
+  .exch-chart__head{ flex-direction:column; }
 }
