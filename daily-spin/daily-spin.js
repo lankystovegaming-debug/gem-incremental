@@ -2,11 +2,11 @@ import {mountShell} from "../src/ui/shell.js";
 import {supabase} from "../src/backend/supabase.js";
 mountShell({page:"daily-spin",base:"../"});
 const $=id=>document.getElementById(id);
-let config=null,spinning=false;
+let config=null,spinning=false,wheelRotation=0;
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 // Driven directly by RPCs (the daily-spin edge function isn't deployed):
 // "config" -> get_daily_spin_state, "spin" -> claim_daily_spin.
-function friendlySpin(msg){const m=String(msg||"");if(m.includes("already_claimed"))return "You already claimed today's spin.";if(m.includes("feature_disabled"))return "Daily Spin isn't available right now.";if(m.includes("not_authenticated"))return "Sign in to spin.";return "Daily Spin failed. Try again.";}
+function friendlySpin(msg){const m=String(msg||"");if(m.includes("already_claimed"))return "You already claimed today's spin.";if(m.includes("feature_disabled"))return "Daily Spin isn't available right now.";if(m.includes("not_authenticated")||m.includes("permission denied"))return "Sign in to spin.";return "Daily Spin failed. Try again.";}
 async function api(action){
   if(action==="config"){
     const {data,error}=await supabase.rpc("get_daily_spin_state");
@@ -27,6 +27,9 @@ function render(d){
  const palette=["#7dd3fc","#a78bfa","#f9a8d4","#fbbf24","#34d399","#fb7185","#60a5fa","#c084fc","#22d3ee","#f97316"];
  const stops=rewards.map((r,i)=>{const start=cursor/total*100;cursor+=Math.max(0,Number(r.chance)||0);const end=cursor/total*100;return `${palette[i%palette.length]} ${start}% ${end}%`;}).join(",");
  $("wheel").style.background=`conic-gradient(from -90deg,${stops||"#7dd3fc 0 100%"})`;
+ // Give the wheel an explicit rotation baseline so the first spin's CSS
+ // transition animates (transitioning from `transform:none` is unreliable).
+ $("wheel").style.transform=`rotate(${wheelRotation}deg)`;
  $("prizes").innerHTML=rewards.map(r=>`<div class="prize"><span>${esc(r.label||"Reward")}</span><small>${Number(r.chance||0)} weight</small></div>`).join("");
  $("spinButton").disabled=Boolean(d.claimed);
  $("spinButton").textContent=d.claimed?"Today's spin claimed":"Spin for today's reward";
@@ -50,7 +53,12 @@ $("spinButton").onclick=async()=>{
    const centerPercent=(before+width/2)/total;
    const targetDegrees=360-(centerPercent*360);
    const turns=6+Math.floor(Math.random()*3);
-   $("wheel").style.transform=`rotate(${turns*360 + targetDegrees}deg)`;
+   // Always advance the wheel FORWARD from its current angle to the target, so
+   // the transition animates on every spin (and never lands on the same value).
+   const currentMod=((wheelRotation%360)+360)%360;
+   wheelRotation+=turns*360+(((targetDegrees-currentMod)%360)+360)%360;
+   void $("wheel").offsetWidth; // commit the current transform before the new one
+   $("wheel").style.transform=`rotate(${wheelRotation}deg)`;
    await new Promise(r=>setTimeout(r,5200));
    $("result").hidden=false;
    $("resultLabel").textContent=d.reward?.label||"Reward claimed";
