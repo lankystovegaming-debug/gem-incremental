@@ -59,7 +59,33 @@
       <div class="exch-price__cash">
         <span class="exch-label">Your cash</span>
         <strong id="playerCash">—</strong>
+        <button class="btn btn--sm exch-chart-toggle" id="chartToggle" type="button" aria-expanded="false">
+          📈 Show stock
+        </button>
       </div>
+    </section>
+
+    <section class="card exch-chart" id="chartCard" hidden>
+      <div class="exch-chart__head">
+        <div>
+          <span class="exch-label">Share price history</span>
+          <div class="exch-chart__now">
+            <strong id="chartLast">—</strong>
+            <span id="chartChange" class="exch-chart__chg"></span>
+          </div>
+        </div>
+        <div class="exch-range" role="tablist" aria-label="Chart range">
+          <button class="exch-range__btn is-active" data-hours="1" type="button">1H</button>
+          <button class="exch-range__btn" data-hours="6" type="button">6H</button>
+          <button class="exch-range__btn" data-hours="24" type="button">24H</button>
+          <button class="exch-range__btn" data-hours="720" type="button">All</button>
+        </div>
+      </div>
+      <div class="exch-chart__plot" id="chartPlot"></div>
+      <p class="exch-chart__foot">
+        Price = all player cash plus invested principal, per million. Updated every few minutes.
+        Points before today are reconstructed from the economy's history.
+      </p>
     </section>
 
     <section class="card exch-position">

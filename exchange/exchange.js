@@ -26,10 +26,51 @@ function shares(value) {
   return Number(value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 });
 }
 
+// Share price shown to 4 dp.
+function price4(value) {
+  return "$" + Number(value ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits: 4, maximumFractionDigits: 4
+  });
+}
+
+// Smooth live price, exactly like the global cash counter: on each new value we
+// glide from what's on screen to the fresh value over one poll interval, easing
+// every animation frame (~ms) so the digits count rather than jump. Only ever
+// heads toward a value that has actually happened — never overshoots or ticks
+// backward.
+const PRICE_GLIDE_MS = 5000;
+let pShown = null, pFrom = null, pTo = null, pStart = 0, pRaf = null;
+
+function paintPrice() {
+  if (pShown == null) return;
+  const el = $("sharePrice");
+  if (el) el.textContent = price4(pShown);
+  const last = $("chartLast");
+  if (last && chartOpen) last.textContent = price4(pShown);
+}
+function glidePrice() {
+  pRaf = null;
+  if (pTo == null || pFrom == null) return;
+  const t = Math.min(1, (performance.now() - pStart) / PRICE_GLIDE_MS);
+  pShown = pFrom + (pTo - pFrom) * t;
+  paintPrice();
+  if (t < 1) pRaf = requestAnimationFrame(glidePrice);
+  else pShown = pTo;
+}
+function retargetPrice(value) {
+  const v = Number(value);
+  if (!isFinite(v)) return;
+  pFrom = pShown == null ? v : pShown;
+  pTo = v;
+  pStart = performance.now();
+  if (pShown == null) pShown = v;
+  if (pRaf == null) pRaf = requestAnimationFrame(glidePrice);
+}
+
 function render() {
   if (!market) return;
   const price = Number(market.price);
-  $("sharePrice").textContent = money(price);
+  retargetPrice(price);
   $("playerCash").textContent = money(market.money);
   $("posShares").textContent = shares(market.shares);
   $("posValue").textContent = money(market.value);
@@ -123,16 +164,133 @@ $("sellAll").addEventListener("click", () => {
 $("buyAmount").addEventListener("input", updateEstimates);
 $("sellShares").addEventListener("input", updateEstimates);
 
+// =========================================================
+// PRICE CHART ("Show stock")
+// =========================================================
+
+let chartOpen = false;
+let chartHours = 1;
+let chartPoints = [];
+
+function fmtTime(date, hours) {
+  const d = new Date(date);
+  if (hours <= 24) {
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  }
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function buildChartSvg(points, hours) {
+  if (!points || points.length < 2) {
+    return '<div class="exch-chart__empty">Not enough data yet — check back in a few minutes.</div>';
+  }
+  const W = 820, H = 280, padL = 62, padR = 14, padT = 16, padB = 26;
+  const xs = points.map((p) => new Date(p.at).getTime());
+  const ys = points.map((p) => Number(p.price));
+  const xMin = xs[0], xMax = xs[xs.length - 1];
+  let yMin = Math.min(...ys), yMax = Math.max(...ys);
+  if (yMin === yMax) { yMin -= 1; yMax += 1; }
+  const yPad = (yMax - yMin) * 0.12;
+  yMin -= yPad; yMax += yPad;
+
+  const px = (x) => padL + ((x - xMin) / (xMax - xMin || 1)) * (W - padL - padR);
+  const py = (y) => padT + (1 - (y - yMin) / (yMax - yMin || 1)) * (H - padT - padB);
+
+  const line = points.map((p, i) => `${i ? "L" : "M"}${px(xs[i]).toFixed(1)} ${py(ys[i]).toFixed(1)}`).join(" ");
+  const area = `${line} L${px(xMax).toFixed(1)} ${py(yMin).toFixed(1)} L${px(xMin).toFixed(1)} ${py(yMin).toFixed(1)} Z`;
+
+  const up = ys[ys.length - 1] >= ys[0];
+  const stroke = up ? "var(--positive, #22c55e)" : "var(--danger, #ef4444)";
+
+  // horizontal gridlines + y labels (4 rows)
+  let grid = "";
+  for (let i = 0; i <= 3; i++) {
+    const val = yMax - (i / 3) * (yMax - yMin);
+    const y = py(val);
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" class="exch-chart__grid"/>`;
+    grid += `<text x="${padL - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" class="exch-chart__ylab">$${val >= 1000 ? (val / 1000).toFixed(1) + "k" : val.toFixed(0)}</text>`;
+  }
+  const lastX = px(xMax), lastY = py(ys[ys.length - 1]);
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="exch-chart__svg" role="img" aria-label="Share price over time">
+    <defs><linearGradient id="exchFill" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="${stroke}" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#exchFill)"/>
+    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" fill="${stroke}"/>
+    <text x="${padL}" y="${H - 8}" text-anchor="start" class="exch-chart__xlab">${fmtTime(xMin, hours)}</text>
+    <text x="${W - padR}" y="${H - 8}" text-anchor="end" class="exch-chart__xlab">${fmtTime(xMax, hours)}</text>
+  </svg>`;
+}
+
+function renderChart() {
+  const plot = $("chartPlot");
+  if (!plot) return;
+  plot.innerHTML = buildChartSvg(chartPoints, chartHours);
+
+  const chgEl = $("chartChange");
+  if (chartPoints.length >= 1) {
+    const last = Number(chartPoints[chartPoints.length - 1].price);
+    // The live price label is driven by the glide animator; when there's no
+    // signed-in market yet, glide from the latest history point instead.
+    retargetPrice(market ? Number(market.price) : last);
+    if (chartPoints.length >= 2) {
+      const first = Number(chartPoints[0].price);
+      const diff = last - first;
+      const pct = first !== 0 ? (diff / first) * 100 : 0;
+      const up = diff >= 0;
+      chgEl.textContent = `${up ? "▲" : "▼"} ${money(Math.abs(diff))} (${up ? "+" : "−"}${Math.abs(pct).toFixed(2)}%)`;
+      chgEl.classList.toggle("is-up", up);
+      chgEl.classList.toggle("is-down", !up);
+    } else {
+      chgEl.textContent = "";
+    }
+  }
+}
+
+async function loadChart() {
+  if (!chartOpen) return;
+  const { data, error } = await supabase.rpc("get_share_price_history", { p_hours: chartHours });
+  if (error) { console.error("get_share_price_history failed:", error); return; }
+  chartPoints = Array.isArray(data) ? data : [];
+  renderChart();
+}
+
+$("chartToggle")?.addEventListener("click", async () => {
+  chartOpen = !chartOpen;
+  const card = $("chartCard");
+  const btn = $("chartToggle");
+  card.hidden = !chartOpen;
+  btn.setAttribute("aria-expanded", String(chartOpen));
+  btn.textContent = chartOpen ? "📈 Hide stock" : "📈 Show stock";
+  if (chartOpen) {
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    await loadChart();
+  }
+});
+
+for (const b of document.querySelectorAll(".exch-range__btn")) {
+  b.addEventListener("click", async () => {
+    chartHours = Number(b.dataset.hours);
+    for (const o of document.querySelectorAll(".exch-range__btn")) o.classList.toggle("is-active", o === b);
+    await loadChart();
+  });
+}
+
 async function boot() {
   await ensurePlayerAuth();
   await loadMarket();
-  pollTimer = setInterval(loadMarket, 15000);
+  pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 15000);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     } else if (!pollTimer) {
       loadMarket();
-      pollTimer = setInterval(loadMarket, 15000);
+      loadChart();
+      pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 5000);
     }
   });
 }
