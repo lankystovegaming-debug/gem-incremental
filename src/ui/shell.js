@@ -256,11 +256,15 @@ export function mountShell({ page, base = "./" }) {
     const settings = getSettings();
     for (const item of PAGES.filter((page) => page.settingGated)) {
       const enabled = Boolean(settings[item.settingGated]);
-      const existingLink = header.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
+      // The Explore menu is portaled to <body> (see below), so it is no longer
+      // inside <header>. Query it globally — scoping to `header` here would make
+      // the "already present?" check always miss and append a duplicate on every
+      // settings change.
+      const existingLink = document.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
       if (enabled) {
         if (!existingLink) {
           document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(item, page, base));
-          const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
+          const link = document.querySelector("#shellExploreMenu .menu__item:last-child");
           if (link) link.dataset.settingLink = item.id;
           if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
         }
@@ -286,9 +290,9 @@ export function mountShell({ page, base = "./" }) {
           ? `<span class="nav__custom-icon" aria-hidden="true">${escapeHtml(section.icon)}</span>`
           : item.icon
       };
-      if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
+      if (document.querySelector(`[data-section-link="${item.id}"]`)) return;
       document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));
-      const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
+      const link = document.querySelector("#shellExploreMenu .menu__item:last-child");
       if (link) link.dataset.sectionLink = item.id;
       if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
     };
