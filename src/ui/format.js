@@ -82,10 +82,15 @@ export function abbreviate(value) {
 
   const scaled = amount / unit.size;
 
-  return (
-    scaled.toFixed(scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2)
-      .replace(/\.?0+$/, "") + unit.suffix
-  );
+  // Trim only trailing zeros in the FRACTIONAL part (e.g. "1.50" -> "1.5",
+  // "2.00" -> "2"). Never strip zeros from a whole number — "160" must stay
+  // "160", not become "16".
+  const fixed = scaled.toFixed(scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2);
+  const trimmed = fixed.includes(".")
+    ? fixed.replace(/0+$/, "").replace(/\.$/, "")
+    : fixed;
+
+  return trimmed + unit.suffix;
 }
 
 
