@@ -26,10 +26,51 @@ function shares(value) {
   return Number(value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 4 });
 }
 
+// Share price shown to 4 dp.
+function price4(value) {
+  return "$" + Number(value ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits: 4, maximumFractionDigits: 4
+  });
+}
+
+// Smooth live price, exactly like the global cash counter: on each new value we
+// glide from what's on screen to the fresh value over one poll interval, easing
+// every animation frame (~ms) so the digits count rather than jump. Only ever
+// heads toward a value that has actually happened — never overshoots or ticks
+// backward.
+const PRICE_GLIDE_MS = 5000;
+let pShown = null, pFrom = null, pTo = null, pStart = 0, pRaf = null;
+
+function paintPrice() {
+  if (pShown == null) return;
+  const el = $("sharePrice");
+  if (el) el.textContent = price4(pShown);
+  const last = $("chartLast");
+  if (last && chartOpen) last.textContent = price4(pShown);
+}
+function glidePrice() {
+  pRaf = null;
+  if (pTo == null || pFrom == null) return;
+  const t = Math.min(1, (performance.now() - pStart) / PRICE_GLIDE_MS);
+  pShown = pFrom + (pTo - pFrom) * t;
+  paintPrice();
+  if (t < 1) pRaf = requestAnimationFrame(glidePrice);
+  else pShown = pTo;
+}
+function retargetPrice(value) {
+  const v = Number(value);
+  if (!isFinite(v)) return;
+  pFrom = pShown == null ? v : pShown;
+  pTo = v;
+  pStart = performance.now();
+  if (pShown == null) pShown = v;
+  if (pRaf == null) pRaf = requestAnimationFrame(glidePrice);
+}
+
 function render() {
   if (!market) return;
   const price = Number(market.price);
-  $("sharePrice").textContent = money(price);
+  retargetPrice(price);
   $("playerCash").textContent = money(market.money);
   $("posShares").textContent = shares(market.shares);
   $("posValue").textContent = money(market.value);
@@ -190,11 +231,12 @@ function renderChart() {
   if (!plot) return;
   plot.innerHTML = buildChartSvg(chartPoints, chartHours);
 
-  const lastEl = $("chartLast");
   const chgEl = $("chartChange");
   if (chartPoints.length >= 1) {
     const last = Number(chartPoints[chartPoints.length - 1].price);
-    lastEl.textContent = money(last);
+    // The live price label is driven by the glide animator; when there's no
+    // signed-in market yet, glide from the latest history point instead.
+    retargetPrice(market ? Number(market.price) : last);
     if (chartPoints.length >= 2) {
       const first = Number(chartPoints[0].price);
       const diff = last - first;
@@ -248,7 +290,7 @@ async function boot() {
     } else if (!pollTimer) {
       loadMarket();
       loadChart();
-      pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 15000);
+      pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 5000);
     }
   });
 }
