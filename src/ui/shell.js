@@ -259,7 +259,7 @@ export function mountShell({ page, base = "./" }) {
       const existingLink = header.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
       if (enabled) {
         if (!existingLink) {
-          header.querySelector("#shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(item, page, base));
+          document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(item, page, base));
           const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
           if (link) link.dataset.settingLink = item.id;
           if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
@@ -287,7 +287,7 @@ export function mountShell({ page, base = "./" }) {
           : item.icon
       };
       if (header.querySelector(`[data-section-link="${item.id}"]`)) return;
-      header.querySelector("#shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));
+      document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));
       const link = header.querySelector("#shellExploreMenu .menu__item:last-child");
       if (link) link.dataset.sectionLink = item.id;
       if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
@@ -358,7 +358,7 @@ export function mountShell({ page, base = "./" }) {
 
   const exploreAnchor = header.querySelector("#shellExploreAnchor");
   const exploreButton = header.querySelector("#shellExploreButton");
-  const exploreMenu = header.querySelector("#shellExploreMenu");
+  const exploreMenu = document.getElementById("shellExploreMenu");
 
   const closeExplore = () => {
     if (!exploreMenu) return;
@@ -495,7 +495,7 @@ export function mountShell({ page, base = "./" }) {
           return;
         }
 
-        header.querySelector("#shellExploreMenu")?.insertAdjacentHTML(
+        document.getElementById("shellExploreMenu")?.insertAdjacentHTML(
           "beforeend",
           menuNavLink(adminPage, page, base)
         );
