@@ -160,6 +160,7 @@ function normalizeGem(body: any) {
     base_weight: Number(body.base_weight ?? 1),
     value_per_gram: Number(body.value_per_gram ?? 0),
     sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
+    affected_by_luck: body.affected_by_luck !== false,
     enabled: body.enabled !== false,
     starts_at: body.starts_at || null,
     ends_at: body.ends_at || null,

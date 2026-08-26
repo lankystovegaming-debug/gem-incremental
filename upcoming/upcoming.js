@@ -377,7 +377,7 @@ function openEditor(d=null){
 }
 function openGemEditor(g=null){
   editingGem=g?.id||null;$("gemEditor").hidden=false;$("editor").hidden=true;$("gemEditorTitle").textContent=g?"Edit Gem":"New Gem";
-  $("gemTitle").value=g?.title||g?.metadata?.title||"";$("gemName").value=g?.name||"";$("gemRarity").value=g?.rarity??100;$("gemDescription").value=g?.description||g?.metadata?.description||"";$("gemWeight").value=g?.base_weight??100;$("gemValue").value=g?.value_per_gram??1;$("gemSort").value=g?.sort_order??0;$("gemEnabled").checked=g?.enabled!==false;
+  $("gemTitle").value=g?.title||g?.metadata?.title||"";$("gemName").value=g?.name||"";$("gemRarity").value=g?.rarity??100;$("gemDescription").value=g?.description||g?.metadata?.description||"";$("gemWeight").value=g?.base_weight??100;$("gemValue").value=g?.value_per_gram??1;$("gemSort").value=g?.sort_order??0;$("gemAffectedByLuck").checked=g?.affected_by_luck!==false;$("gemEnabled").checked=g?.enabled!==false;
   const availabilityMode=g?.availability_mode||((g?.starts_at||g?.ends_at)?"date_range":"always");
   $("gemDuration").value=availabilityMode==="daily"?"daily":availabilityMode==="date_range_daily"?"temporary-daily":availabilityMode==="date_range"?"temporary":"permanent";$("gemStarts").value=dateInput(g?.starts_at);$("gemEnds").value=dateInput(g?.ends_at);$("gemDailyStart").value=String(g?.daily_start_time||"11:00").slice(0,5);$("gemDailyEnd").value=String(g?.daily_end_time||"16:00").slice(0,5);$("gemTimezone").value=g?.availability_timezone||"Asia/Singapore";
   window.scrollTo({top:$("gemEditor").offsetTop-80,behavior:"smooth"});
@@ -394,7 +394,7 @@ async function saveFeature(){
 async function saveGem(){
   const dates=temporaryDates($("gemDuration").value,$("gemStarts").value,$("gemEnds").value);
   const mode=$("gemDuration").value;const usesDaily=mode==="daily"||mode==="temporary-daily";
-  const gem={id:editingGem||undefined,title:$("gemTitle").value.trim(),name:$("gemName").value.trim(),description:$("gemDescription").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,enabled:$("gemEnabled").checked,...dates,availability_mode:mode==="daily"?"daily":mode==="temporary-daily"?"date_range_daily":mode==="temporary"?"date_range":"always",daily_start_time:usesDaily?$("gemDailyStart").value:null,daily_end_time:usesDaily?$("gemDailyEnd").value:null,availability_timezone:$("gemTimezone").value.trim()||"Asia/Singapore",metadata:{}};
+  const gem={id:editingGem||undefined,title:$("gemTitle").value.trim(),name:$("gemName").value.trim(),description:$("gemDescription").value.trim(),rarity:Number($("gemRarity").value),base_weight:Number($("gemWeight").value),value_per_gram:Number($("gemValue").value),sort_order:Number($("gemSort").value)||0,affected_by_luck:$("gemAffectedByLuck").checked,enabled:$("gemEnabled").checked,...dates,availability_mode:mode==="daily"?"daily":mode==="temporary-daily"?"date_range_daily":mode==="temporary"?"date_range":"always",daily_start_time:usesDaily?$("gemDailyStart").value:null,daily_end_time:usesDaily?$("gemDailyEnd").value:null,availability_timezone:$("gemTimezone").value.trim()||"Asia/Singapore",metadata:{}};
   if(!gem.name){status("Give the gem a name.",true);return;}
   try{await call("gem-save",{gem});$("gemEditor").hidden=true;editingGem=null;await loadAll();status("Gem saved.");}catch(e){status(e.message,true);}
 }
