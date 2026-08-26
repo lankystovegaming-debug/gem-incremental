@@ -246,6 +246,7 @@ function gemCard(entry) {
     return `<article class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}">
       <div class="index-card__head"><div><div class="index-card__name">???</div><div class="index-card__rarity">${escapeHtml(mutationCombinationLabel(entry.mutationIds))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
       <p class="index-card__hidden">${secretLocked ? "This secret gem is hidden until discovered." : "Roll this exact gem / mutation combination to reveal its entry."}</p>
+      ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
       ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
       <div class="index-card__chance"><span class="index-card__key">Actual chance</span><span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span></div>
     </article>`;
@@ -259,6 +260,7 @@ function gemCard(entry) {
   return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
     <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
     <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
+    ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
     ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
     <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
@@ -595,7 +597,7 @@ async function refresh() {
       console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
       privateGemsResult = await supabase
         .from("private_feature_gems")
-        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
+        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
         .eq("enabled", true)
         .order("sort_order", { ascending: true })
         .order("rarity", { ascending: true });
@@ -608,6 +610,7 @@ async function refresh() {
         title: String(gem.title ?? gem.metadata?.title ?? ""), name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
         description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
         hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
+        ,affectedByLuck: gem.affected_by_luck !== false
         ,availabilityMode: String(gem.availability_mode || "always"), dailyStartTime: gem.daily_start_time, dailyEndTime: gem.daily_end_time, availabilityTimezone: String(gem.availability_timezone || "Asia/Singapore")
       }));
       catalogGems = [...gems, ...custom];

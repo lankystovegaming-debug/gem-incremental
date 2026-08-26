@@ -743,8 +743,8 @@ function rollGem(
     gems
       .filter(
         (gem) =>
-          gem.rarity >=
-          rarityFloor
+          gem.affectedByLuck === false ||
+          gem.rarity >= rarityFloor
       )
       .sort(
         (a, b) =>
@@ -752,10 +752,10 @@ function rollGem(
           a.rarity
       );
 
-  const fallbackGem =
-    rollableGems[
-      rollableGems.length - 1
-    ];
+  const fallbackPool = rollableGems.filter((gem) => gem.affectedByLuck !== false);
+  const fallbackGem = (fallbackPool.length ? fallbackPool : rollableGems)[
+    (fallbackPool.length ? fallbackPool : rollableGems).length - 1
+  ];
 
 
   for (
@@ -764,8 +764,9 @@ function rollGem(
   ) {
     const chance =
       Math.min(
-        safeLuck /
-        gem.rarity,
+        gem.affectedByLuck === false
+          ? 1 / gem.rarity
+          : safeLuck / gem.rarity,
         1
       );
 
@@ -810,16 +811,22 @@ function rollGemWithPickaxePassives(
   const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
   const rarityFloor = Math.min(safeLuck, maximumRarity);
   const rollable = gems
-    .filter((gem) => gem.rarity >= rarityFloor)
+    .filter((gem) => gem.affectedByLuck === false || gem.rarity >= rarityFloor)
     .sort((a, b) => b.rarity - a.rarity);
 
   for (const gem of rollable) {
+    if (gem.affectedByLuck === false) {
+      if (random01() < Math.min(1 / gem.rarity, 1)) return gem;
+      continue;
+    }
     let gemLuck = safeLuck;
     if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
-  return rollable[rollable.length - 1];
+  const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
+  const pool = fallbackPool.length ? fallbackPool : rollable;
+  return pool[pool.length - 1];
 }
 
 
@@ -2537,7 +2544,7 @@ export default {
         const { data: configuredGems, error: configuredGemError } =
           await ctx.supabaseAdmin
             .from("private_feature_gems")
-            .select("name, rarity, base_weight, value_per_gram, availability_mode, daily_start_time, daily_end_time, availability_timezone")
+            .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone")
             .eq("enabled", true)
             .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
             .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
@@ -2571,7 +2578,8 @@ export default {
             name: String(entry.name),
             rarity: Number(entry.rarity),
             baseWeight: Number(entry.base_weight),
-            valuePerGram: Number(entry.value_per_gram)
+            valuePerGram: Number(entry.value_per_gram),
+            affectedByLuck: entry.affected_by_luck !== false
           }));
         } else if (configuredGemError && configuredGemError.code !== "42P01") {
           console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
