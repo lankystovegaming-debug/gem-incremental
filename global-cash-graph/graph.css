@@ -255,6 +255,7 @@
 .furnace__warning { color: var(--negative, #ef4444); }
 .furnace__status { min-height: 1.25em; }
 .furnace__leaderboard { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.furnace__leaderboard > p { margin: 4px 0 0; color: var(--text-muted); font-size: .82rem; }
 .furnace__leaderboard ol { margin: 12px 0 0; padding-left: 2rem; }
 .furnace__leaderboard li { padding: 8px 0 8px 4px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
 .furnace__leaderboard li span { color: var(--text); }
