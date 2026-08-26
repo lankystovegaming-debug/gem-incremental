@@ -1,0 +1,42 @@
+.wars-challenge h2, .wars-col h2 { font: 700 1.05rem var(--font-display, "Exo 2", system-ui, sans-serif); margin: 0 0 14px; }
+.wars-form { display: grid; grid-template-columns: 1.4fr 1.4fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.wars-form .field { display: block; }
+.wars-form .field span { display: block; margin-bottom: 6px; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); font-family: var(--font-mono, ui-monospace, monospace); }
+.wars-form input, .wars-form select { width: 100%; }
+.wars-form .btn { white-space: nowrap; }
+.wars-note { margin: 12px 0 0; font-size: .8rem; color: var(--text-muted); }
+
+.wars-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.wars-count { display: inline-flex; min-width: 20px; height: 20px; padding: 0 6px; align-items: center; justify-content: center; border-radius: 999px; background: var(--surface-sunken); color: var(--text-muted); font: 700 .72rem var(--font-mono, ui-monospace, monospace); vertical-align: middle; margin-left: 4px; }
+.wars-items { display: flex; flex-direction: column; gap: 10px; }
+.wars-empty { color: var(--text-muted); font-size: .88rem; margin: 4px 0; }
+
+.war-card { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface-sunken); }
+.war-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.war-card__head strong { display: block; font-size: .95rem; }
+.war-card__meta { font-size: .74rem; color: var(--text-muted); }
+.war-tag { font: 700 .66rem var(--font-mono, ui-monospace, monospace); padding: 3px 8px; border-radius: 999px; letter-spacing: .04em; white-space: nowrap; }
+.war-tag--friendly { color: var(--accent, #7c8cf8); background: color-mix(in srgb, var(--accent, #7c8cf8) 15%, transparent); }
+.war-tag--wager { color: #f5b23f; background: color-mix(in srgb, #f5b23f 16%, transparent); }
+
+.war-card__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.war-card__actions .btn { padding: 6px 12px; font-size: .82rem; }
+.war-pending { font-size: .82rem; color: var(--text-muted); flex: 1; }
+.war-card__timer { margin: 8px 0 0; font-size: .8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.war-score { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.war-score__side { flex: 1; text-align: center; padding: 8px; border-radius: 9px; background: var(--surface-raised); }
+.war-score__side span { display: block; font-size: .7rem; color: var(--text-muted); margin-bottom: 3px; }
+.war-score__side strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.war-score__side.is-lead { background: color-mix(in srgb, var(--positive, #22c55e) 16%, var(--surface-raised)); }
+.war-score__side.is-lead strong { color: var(--positive, #22c55e); }
+.war-score__vs { font: 700 .7rem var(--font-mono, ui-monospace, monospace); color: var(--text-muted); }
+
+.war-result { font: 700 .82rem var(--font-mono, ui-monospace, monospace); }
+.war-result.is-win { color: var(--positive, #22c55e); }
+.war-result.is-loss { color: var(--danger, #ef4444); }
+.war-result.is-tie { color: var(--text-muted); text-transform: capitalize; }
+
+@media (max-width: 820px) { .wars-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .wars-lists { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .wars-form { grid-template-columns: 1fr; } }

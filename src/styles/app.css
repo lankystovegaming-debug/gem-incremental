@@ -4843,3 +4843,22 @@ select,
 @media (prefers-reduced-motion: reduce) {
   .tour-hole, .tour-pop { transition: none; }
 }
+
+/* =========================================================
+   DAILY LOGIN STREAK modal — dailyLogin.js
+   ========================================================= */
+.daily-modal { max-width: 420px; text-align: center; }
+.daily-modal__spark { font-size: 2rem; margin-bottom: 6px; }
+.daily-modal__streak { color: var(--text-muted); margin: 4px 0 14px; }
+.daily-modal__streak strong { color: var(--text); }
+.daily-track { display: flex; gap: 7px; justify-content: center; margin: 4px 0 16px; }
+.daily-day { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface-sunken); border: 1px solid var(--border); color: var(--text-muted);
+  font: 700 .82rem var(--font-mono, ui-monospace, monospace); }
+.daily-day.is-done { color: var(--positive, #22c55e); border-color: color-mix(in srgb, var(--positive, #22c55e) 45%, transparent); }
+.daily-day.is-today { color: #fff; background: var(--accent, #7c8cf8); border-color: transparent;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #7c8cf8) 30%, transparent); }
+.daily-modal__reward { margin: 4px 0 16px; }
+.daily-modal__reward strong { color: var(--accent, #7c8cf8); }
+.daily-modal__actions { justify-content: center; }
+.daily-modal__status { min-height: 1em; margin: 8px 0 0; font-size: .85rem; color: var(--text-muted); }

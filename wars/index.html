@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Player Wars · Gem Incremental</title>
+<link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./wars.css">
+<script>(function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon","gradient","ocean","forest","sunset","ice","aurora","graphite"].indexOf(m)!==-1)document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",["indigo","emerald","amber","rose","cyan"].indexOf(a)!==-1?a:"indigo")}catch(e){}})();</script>
+</head>
+<body>
+<main class="app-main wars-page">
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1>Player Wars ⚔</h1>
+      <p class="page-head__sub">Challenge another player to out-gain them on a metric you pick, over a window you pick. Play for pride (the game pays a prize) or wager money — winner takes the pot minus a 5% rake.</p>
+    </div>
+  </div>
+
+  <div id="warsStatus" class="status"></div>
+
+  <section class="card wars-challenge">
+    <h2>Start a war</h2>
+    <div class="wars-form">
+      <label class="field"><span>Opponent username</span><input id="warOpponent" autocomplete="off" placeholder="e.g. cat"></label>
+      <label class="field"><span>Compete on</span>
+        <select id="warMetric" class="select">
+          <option value="rolls">Most rolls</option>
+          <option value="rare">Most rare gems (index score)</option>
+          <option value="rarest">Rarest single gem</option>
+          <option value="heavy">Heaviest gem</option>
+          <option value="money">Most money earned</option>
+        </select>
+      </label>
+      <label class="field"><span>Duration</span>
+        <select id="warDuration" class="select"><option value="1">1 hour</option><option value="6">6 hours</option><option value="24" selected>24 hours</option></select>
+      </label>
+      <label class="field"><span>Wager ($, 0 = friendly)</span><input id="warStake" type="number" min="0" step="1000" value="0" inputmode="numeric"></label>
+      <button class="btn btn--primary" id="warChallengeBtn" type="button">Send challenge</button>
+    </div>
+    <p class="wars-note" id="warStakeNote">Friendly: winner gets a prize from the game. No money at risk.</p>
+  </section>
+
+  <section class="wars-lists">
+    <div class="card wars-col"><h2>Incoming <span class="wars-count" id="incomingCount">0</span></h2><div id="incomingList" class="wars-items"></div></div>
+    <div class="card wars-col"><h2>Active <span class="wars-count" id="activeCount">0</span></h2><div id="activeList" class="wars-items"></div></div>
+    <div class="card wars-col"><h2>Sent <span class="wars-count" id="sentCount">0</span></h2><div id="sentList" class="wars-items"></div></div>
+    <div class="card wars-col"><h2>History <span class="wars-count" id="historyCount">0</span></h2><div id="historyList" class="wars-items"></div></div>
+  </section>
+</main>
+<script type="module" src="./wars.js"></script>
+</body>
+</html>
