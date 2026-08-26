@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),"utf8");
+const catalog=read("supabase/migrations/20260826000002_achievement_catalog_v0130.sql");
+const backfill=read("supabase/migrations/20260826000003_achievement_progress_backfill_v013.sql");
+const updates=read("updates/index.html");
+assert.match(catalog,/vc<>138 or hc<>18 or va<>10145 or ta<>11565/);
+assert.match(backfill,/refresh_player_achievements_v013/);
+assert.match(backfill,/authoritativeSnapshot/);
+assert.match(backfill,/player_achievement_cosmetics/);
+assert.doesNotMatch(backfill,/Enchant Relic|Ancient Relic/);
+assert.match(backfill,/revoke all on function public\.achievement_set_progress_v013/);
+assert.match(backfill,/auth\.uid\(\) is not null and auth\.uid\(\) is distinct from p_uid/);
+assert.match(updates,/v0\.13\.0 Beta/);
+assert.match(updates,/138 visible goals/);
+console.log("Achievement v0.13.0 completion checks passed.");

@@ -147,7 +147,9 @@ function evaluateNode(events: any[], requirement: any): { complete: boolean; val
 
   if (requirement.type === "rolls") {
     const target = Math.max(1, num(requirement.amount, 1));
-    const value = events.length;
+    // roll_number is the authoritative lifetime counter. Using the retained
+    // event count capped achievements at MAX_PROGRESS_EVENTS.
+    const value = Math.max(0, ...events.map((event) => num(event.roll_number)));
     return { complete: value >= target, value: Math.min(value, target) };
   }
 
@@ -252,15 +254,9 @@ export async function processProgressEvent(
 
     if (result.complete) {
       completedIds.add(String(definition.id));
-      if (!saved.reward_granted) {
-        await grantRewards(supabaseAdmin, playerId, definition.rewards ?? []);
-        await supabaseAdmin
-          .from("private_feature_progress")
-          .update({ reward_granted: true, reward_granted_at: new Date().toISOString() })
-          .eq("player_id", playerId)
-          .eq("feature_id", definition.id);
-      }
-      completed.push({ id: definition.id, name: definition.name, rewards: definition.rewards ?? [] });
+      // Completion awards AP through the database trigger. Item rewards remain
+      // unclaimed until the player presses Claim on the achievement itself.
+      completed.push({ id: definition.id, name: definition.name, ap: num(definition.metadata?.ap), rewards: definition.rewards ?? [] });
     }
   }
 
