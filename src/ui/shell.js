@@ -26,7 +26,7 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
-import { mountHowToPlay } from "./onboarding.js";
+import { mountTour } from "./tour.js";
 import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
 import { getSettings, onSettingsChange } from "./settings.js";
@@ -328,8 +328,9 @@ export function mountShell({ page, base = "./" }) {
   // Bottom-left dock: contribute on GitHub / report a bug.
   // Utility links are now mounted in the top bar under More.
 
-  // First-run "How to play" guide (shows once; reopenable from the dock).
-  mountHowToPlay(base);
+  // First-run guided tour: spotlights the roll button, wallet and nav for new
+  // players (shows once), and reopenable from More -> How to play.
+  mountTour({ base, page });
 
   // Optional global-cash side counter (off by default; toggled in Settings).
   initGlobalCash();
