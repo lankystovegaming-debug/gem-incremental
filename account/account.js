@@ -301,7 +301,19 @@ function attachProfilePictureListener(
 
 
 function accountPageUrl() {
-  return `${window.location.origin}/account/`;
+  // Resolve from the current document instead of the domain root. The game
+  // can be hosted below a path (for example /gem-incremental/ on GitHub
+  // Pages), where `${origin}/account/` points at the wrong application.
+  const url =
+    new URL(
+      "./",
+      window.location.href
+    );
+
+  url.search = "";
+  url.hash = "";
+
+  return url.href;
 }
 
 

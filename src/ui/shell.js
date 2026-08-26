@@ -942,9 +942,17 @@ function reportOAuthErrorFromUrl() {
     const error = params.get("error_description") ?? params.get("error");
 
     if (error) {
+      const errorCode = params.get("error_code") ?? params.get("error");
+      const decodedError = decodeURIComponent(error).replace(/\+/g, " ");
+      const expiredEmailLink =
+        errorCode === "otp_expired" ||
+        /email link is invalid|expired|otp_expired/i.test(decodedError);
+
       notify.error(
         "Sign-in failed",
-        decodeURIComponent(error).replace(/\+/g, " ")
+        expiredEmailLink
+          ? "This email link has expired or was already opened. Request a new link from the Account page and use only the newest email."
+          : decodedError
       );
 
       history.replaceState(null, "", window.location.pathname);
