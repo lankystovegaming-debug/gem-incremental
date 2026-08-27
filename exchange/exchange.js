@@ -119,13 +119,32 @@ function renderMarketStatus() {
   document.querySelector(".exch-trade")?.classList.toggle("is-closed", closed);
 }
 
+// The server fills at the MIDPOINT of a trade's own price impact, so a big
+// order moves its own fill. Mirror that exact math here so the buy/sell
+// previews match what you actually get (no more "shows 402M, pays 177M").
+function priceAt(invested) {
+  if (!market || market.priceScale == null) return Number(market?.price ?? 0);
+  const base = (Math.max(0, invested) + Number(market.cashWeight) * Number(market.cash)) / 1e6;
+  return Math.max(0.01, Number(market.priceScale) * Math.pow(base, Number(market.priceExponent)));
+}
+function quoteBuy(amount) {
+  const I = Number(market.totalInvested);
+  const eff = (priceAt(I) + priceAt(I + amount)) / 2;
+  return amount / (eff * (1 + FEE));
+}
+function quoteSell(sh) {
+  const I = Number(market.totalInvested);
+  const basisOut = Number(market.shares) > 0 ? Number(market.invested) * (sh / Number(market.shares)) : 0;
+  const eff = (priceAt(I) + priceAt(Math.max(0, I - basisOut))) / 2;
+  return sh * eff * (1 - FEE);
+}
+
 function updateEstimates() {
   if (!market) return;
-  const price = Number(market.price);
   const amount = Number($("buyAmount").value);
-  $("buyEst").textContent = amount > 0 ? `≈ ${shares(amount / (price * (1 + FEE)))} shares` : "";
+  $("buyEst").textContent = amount > 0 ? `≈ ${shares(quoteBuy(amount))} shares` : "";
   const sh = Number($("sellShares").value);
-  $("sellEst").textContent = sh > 0 ? `≈ ${money(sh * price * (1 - FEE))}` : "";
+  $("sellEst").textContent = sh > 0 ? `≈ ${money(quoteSell(sh))}` : "";
 }
 
 function friendly(error) {
