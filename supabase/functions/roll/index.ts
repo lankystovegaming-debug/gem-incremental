@@ -3428,7 +3428,7 @@ export default {
         (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
       );
       const { error: expeditionProgressError } = await ctx.supabaseAdmin.rpc(
-        "record_expedition_roll",
+        "record_abandoned_mine_roll",
         {
           p_player_id: playerId,
           p_payload: {

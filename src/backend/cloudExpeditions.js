@@ -1,40 +1,11 @@
 import { supabase } from "./supabase.js";
-
-const MESSAGES = {
-  insufficient_funds: "You cannot afford that expedition.",
-  expedition_already_active: "Finish or abandon your active expedition first.",
-  expedition_limit_reached: "You have used every entry for this reset period.",
-  daily_void_used: "You have already used today's Void entry.",
-  expedition_entry_closed: "Entries are closed because the reset is too close.",
-  reroll_limit_reached: "You have no quest rerolls remaining.",
-  quest_not_rerollable: "That quest cannot be rerolled.",
-  no_alternative_quest: "There is no fair alternative for that quest.",
-  expedition_not_active: "That expedition is no longer active.",
-  invalid_reward_choice: "Choose one of the available guaranteed reward packages."
-};
-
-function normalise(error) {
-  if (!error) return null;
-  const code = Object.keys(MESSAGES).find((value) => error.message?.includes(value)) ?? error.code;
-  return { code, message: MESSAGES[code] ?? "The expedition request could not be completed." };
-}
-
-export async function loadExpeditionDashboard() {
-  const { data, error } = await supabase.rpc("get_expedition_dashboard_v2");
-  return { data, error: normalise(error) };
-}
-
-export async function enterExpedition(cadence, difficulty, rewardChoice) {
-  const { data, error } = await supabase.rpc("enter_expedition_v2", { p_cadence: cadence, p_difficulty: difficulty, p_reward_choice: rewardChoice });
-  return { data, error: normalise(error) };
-}
-
-export async function abandonExpedition(id) {
-  const { error } = await supabase.rpc("abandon_expedition", { p_expedition_id: id });
-  return { error: normalise(error) };
-}
-
-export async function rerollExpeditionQuest(id) {
-  const { data, error } = await supabase.rpc("reroll_expedition_quest", { p_quest_id: id });
-  return { data, error: normalise(error) };
-}
+const MESSAGES={insufficient_funds:"You do not have enough money for that operation.",mine_depth_out_of_sequence:"That depth is not ready for funding.",mine_route_unavailable:"This route decision is no longer available.",invalid_mine_route:"That route is not valid here.",supply_camp_unavailable:"A Supply Camp cannot be built here.",mine_overdepth_unavailable:"Mine Overdepth is not available yet.",mine_not_active:"That expedition is no longer active.",mine_not_extracted:"Extract before settling the expedition."};
+function normalise(error){if(!error)return null;const code=Object.keys(MESSAGES).find(value=>error.message?.includes(value))??error.code;return{code,message:MESSAGES[code]??"The expedition request could not be completed."};}
+async function rpc(name,args){const{data,error}=await supabase.rpc(name,args);return{data,error:normalise(error)};}
+export const loadExpeditionDashboard=()=>rpc("get_abandoned_mine_dashboard");
+export const fundMineDepth=depth=>rpc("fund_abandoned_mine",{p_depth:depth});
+export const chooseMineRoute=(runId,route)=>rpc("choose_abandoned_mine_route",{p_run_id:runId,p_route:route});
+export const buildSupplyCamp=runId=>rpc("build_abandoned_mine_camp",{p_run_id:runId});
+export const continueMineOverdepth=runId=>rpc("continue_mine_overdepth",{p_run_id:runId});
+export const extractMine=(runId,forced=false)=>rpc("extract_abandoned_mine",{p_run_id:runId,p_forced:forced});
+export const settleMine=runId=>rpc("settle_abandoned_mine",{p_run_id:runId});
