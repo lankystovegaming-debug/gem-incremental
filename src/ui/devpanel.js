@@ -3,6 +3,7 @@ import { ensurePlayerAuth } from "../backend/auth.js";
 import { invokeFunction } from "../backend/invoke.js";
 import { sellCloudGem } from "../backend/cloudInventory.js";
 import gems from "../data/gems.js";
+import { loadGemCatalog } from "../backend/gemCatalog.js";
 import consumables from "../data/consumables.js";
 import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
@@ -298,6 +299,22 @@ async function open() {
   const gemSelect = panel.querySelector("#devGem");
   const gemQtyInput = panel.querySelector("#devGemQty");
   const gemMultInput = panel.querySelector("#devGemMult");
+
+  // The gem dropdown is seeded from the bundled list, but the live catalog
+  // (private_feature_gems) is the source of truth and includes every
+  // admin-created / endgame gem the bundle misses — repopulate with all of it.
+  let catalogGems = gems;
+  loadGemCatalog()
+    .then((list) => {
+      if (!Array.isArray(list) || !list.length) return;
+      catalogGems = list;
+      const selected = gemSelect.value;
+      gemSelect.innerHTML = list
+        .map((gem) => `<option value="${gem.name}">${gem.name} (1 in ${formatCount(gem.rarity)})</option>`)
+        .join("");
+      if (list.some((gem) => gem.name === selected)) gemSelect.value = selected;
+    })
+    .catch(() => { /* keep the bundled list as fallback */ });
   const potionSelect = panel.querySelector("#devPotion");
   const potionQtyInput = panel.querySelector("#devPotionQty");
   const familySelect = panel.querySelector("#devBoostFamily");
@@ -567,7 +584,7 @@ async function open() {
   panel
     .querySelector('[data-action="gem"]')
     .addEventListener("click", async () => {
-      const gem = gems.find((entry) => entry.name === gemSelect.value);
+      const gem = catalogGems.find((entry) => entry.name === gemSelect.value);
 
       if (!gem) {
         return;
@@ -648,7 +665,7 @@ async function open() {
   panel
     .querySelector('[data-action="rarest"]')
     .addEventListener("click", async () => {
-      const gem = gems.find((entry) => entry.name === gemSelect.value);
+      const gem = catalogGems.find((entry) => entry.name === gemSelect.value);
 
       if (!gem) {
         return;
