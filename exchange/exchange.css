@@ -78,3 +78,22 @@
   .exch-price__cash{ text-align:left; }
   .exch-chart__head{ flex-direction:column; }
 }
+
+/* Market open/closed banner */
+.exch-market-status{
+  display:flex; align-items:center; gap:9px; margin:0 0 14px; padding:11px 16px;
+  border-radius:12px; font-size:.9rem; border:1px solid var(--border);
+}
+.exch-market-status strong{ font-weight:800; }
+.exch-dot{ width:9px; height:9px; border-radius:999px; flex:none; }
+.exch-market-status.is-open{ background:color-mix(in srgb,var(--positive,#22c55e) 12%,transparent);
+  border-color:color-mix(in srgb,var(--positive,#22c55e) 40%,var(--border)); color:var(--text); }
+.exch-market-status.is-open .exch-dot{ background:var(--positive,#22c55e);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--positive,#22c55e) 25%,transparent); }
+.exch-market-status.is-closed{ background:color-mix(in srgb,var(--danger,#ef4444) 12%,transparent);
+  border-color:color-mix(in srgb,var(--danger,#ef4444) 40%,var(--border)); color:var(--text); }
+.exch-market-status.is-closed .exch-dot{ background:var(--danger,#ef4444); }
+
+/* Dim the trade panels while the market is closed */
+.exch-trade.is-closed{ opacity:.55; filter:grayscale(.35); }
+.exch-trade.is-closed .btn{ cursor:not-allowed; }
