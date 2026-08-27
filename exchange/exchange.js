@@ -86,7 +86,37 @@ function render() {
   pnlEl.classList.toggle("is-up", Number(market.shares) > 0 && up);
   pnlEl.classList.toggle("is-down", Number(market.shares) > 0 && !up);
 
+  renderMarketStatus();
   updateEstimates();
+}
+
+// Show whether the Exchange is open, and disable trading while it's closed.
+// The server also enforces the hours, so this is UX, not security.
+function renderMarketStatus() {
+  const el = $("marketStatus");
+  if (!el || !market) return;
+  const open = market.open !== false; // older payloads without the field = open
+  if (open) {
+    el.hidden = false;
+    el.className = "exch-market-status is-open";
+    el.innerHTML = `<span class="exch-dot"></span> Market <strong>open</strong> · trading hours ${market.hours || "07:30–21:30 SGT"}`;
+  } else {
+    let when = "";
+    if (market.opensAt) {
+      const mins = Math.max(0, Math.round((new Date(market.opensAt).getTime() - Date.now()) / 60000));
+      const h = Math.floor(mins / 60), m = mins % 60;
+      when = ` · reopens in ${h > 0 ? h + "h " : ""}${m}m`;
+    }
+    el.hidden = false;
+    el.className = "exch-market-status is-closed";
+    el.innerHTML = `<span class="exch-dot"></span> Market <strong>closed</strong>${when} · trading hours ${market.hours || "07:30–21:30 SGT"}`;
+  }
+  const closed = !open;
+  for (const id of ["buyBtn", "sellBtn", "buyMax", "sellAll", "buyAmount", "sellShares"]) {
+    const c = $(id);
+    if (c) c.disabled = closed;
+  }
+  document.querySelector(".exch-trade")?.classList.toggle("is-closed", closed);
 }
 
 function updateEstimates() {
@@ -102,6 +132,7 @@ function friendly(error) {
   const message = String(error?.message ?? "");
   if (message.includes("insufficient_funds")) return "You don't have that much cash.";
   if (message.includes("no_shares")) return "You have no shares to sell.";
+  if (message.includes("market_closed")) return "The market is closed. Trading is open 07:30–21:30 SGT.";
   if (message.includes("invalid_amount")) return "Enter a valid amount.";
   if (message.includes("not_authenticated")) return "Sign in first.";
   return "Something went wrong. Try again.";
