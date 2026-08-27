@@ -18,7 +18,7 @@
 .exch-position h2, .exch-buy h2, .exch-sell h2{
   font:700 1.1rem var(--font-display, "Exo 2", system-ui, sans-serif); margin:0 0 14px;
 }
-.exch-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.exch-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:16px; }
 .exch-stats strong{ display:block; font-size:1.22rem; margin-top:5px; font-variant-numeric:tabular-nums; }
 .exch-pnl{ color:var(--text); }
 .exch-pnl.is-up{ color:var(--positive, #22c55e); }

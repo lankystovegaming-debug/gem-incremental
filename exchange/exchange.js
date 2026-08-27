@@ -38,7 +38,7 @@ function price4(value) {
 // every animation frame (~ms) so the digits count rather than jump. Only ever
 // heads toward a value that has actually happened — never overshoots or ticks
 // backward.
-const PRICE_GLIDE_MS = 5000;
+const PRICE_GLIDE_MS = 2000;
 let pShown = null, pFrom = null, pTo = null, pStart = 0, pRaf = null;
 
 function paintPrice() {
@@ -73,6 +73,10 @@ function render() {
   retargetPrice(price);
   $("playerCash").textContent = money(market.money);
   $("posShares").textContent = shares(market.shares);
+  // Average price paid per share = invested / shares (includes the buy fee).
+  $("posAvg").textContent = Number(market.shares) > 0
+    ? money(Number(market.invested) / Number(market.shares))
+    : "—";
   $("posValue").textContent = money(market.value);
   $("posInvested").textContent = money(market.invested);
 
@@ -333,14 +337,14 @@ for (const b of document.querySelectorAll(".exch-range__btn")) {
 async function boot() {
   await ensurePlayerAuth();
   await loadMarket();
-  pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 15000);
+  pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 2000);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     } else if (!pollTimer) {
       loadMarket();
       loadChart();
-      pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 5000);
+      pollTimer = setInterval(() => { loadMarket(); loadChart(); }, 2000);
     }
   });
 }
