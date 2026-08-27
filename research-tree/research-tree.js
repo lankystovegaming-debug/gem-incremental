@@ -1,39 +1,19 @@
-import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
-
+import { invokeFunction } from "../src/backend/invoke.js";
 mountShell({ page: "research-tree", base: "../" });
-const $ = (id) => document.getElementById(id);
-
-const details = {
-  "artifact-archives": ["Artifacts are collectible equipment objects.", "Configure rarity, slots, stats, sockets, sets, acquisition and salvage rewards."],
-  "gem-fusion": ["Fusion recipes consume configurable gem inputs.", "Configure success weights, catalysts, outputs, failure refunds and bonus rolls."],
-  "enchanting-lab": ["Enchantments can target any configured equipment type.", "Configure gem costs, stat effects, level scaling, failure rules and caps."],
-  "collection-hall": ["Collections track long-term sets and milestones.", "Configure unique-gem counts, rarity targets, mutation targets, rewards and permanent bonuses."],
-  "mining-events": ["Events temporarily modify mining and roll conditions.", "Configure schedules, phases, spawn weights, boosts, event loot and stacking rules."],
-  "merchant-caravan": ["Merchants rotate stock on a configurable schedule.", "Configure currencies, prices, stock, purchase limits, refresh rules and special offers."],
-  "research-tree": ["Research nodes form a permanent progression graph.", "Configure prerequisites, costs, stat effects, caps, refund rules and unlock IDs."]
-};
-const [intro,config] = details["research-tree"];
-$("details").innerHTML = `<p><strong>${intro}</strong></p><p>${config}</p><ul><li>All content is server-controlled.</li><li>The page remains unavailable until the Upcoming Features switch is ON.</li><li>Admin configuration never requires editing this page.</li></ul>`;
-
-async function load() {
-  try {
-    const { data, error } = await supabase.functions.invoke("expansion-features", { body: { action: "list" } });
-    if (error || data?.error) throw new Error(data?.message || data?.error || error?.message || "Feature unavailable");
-    const section = (data.sections || []).find(s => s.id === "research-tree");
-    const enabled = section?.enabled === true;
-    $("featureState").textContent = enabled ? "LIVE" : "OFF";
-    $("featureState").className = `state-pill ${enabled ? "on" : "off"}`;
-    const defs = data.definitions?.filter(d => d.feature_type === "research-tree") || [];
-    $("definitions").innerHTML = defs.map(d => `<div class="expansion-item">
-      <div><strong>${escapeHtml(d.name)}</strong><small>${escapeHtml(d.description || "No description.")}</small></div>
-      <span>${d.permanent ? "Permanent" : "Timed"}</span>
-    </div>`).join("") || `<div class="expansion-empty">${enabled ? "No live definitions configured." : "Enable this feature from Upcoming Features."}</div>`;
-  } catch (error) {
-    $("featureState").textContent = "OFF";
-    $("featureState").className = "state-pill off";
-    $("definitions").innerHTML = `<div class="expansion-empty">${escapeHtml(error.message)}</div>`;
-  }
-}
-function escapeHtml(v) { return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+const $=(id)=>document.getElementById(id);
+const branches=["mining","specimen","engineering","exploration"];
+const labels={mining:"Mining Science",specimen:"Specimen Studies",engineering:"Engineering",exploration:"Exploration"};
+let state=null,active="mining",pendingNode=null;
+const money=(v)=>new Intl.NumberFormat(undefined,{style:"currency",currency:"USD",maximumFractionDigits:0}).format(Number(v||0));
+const esc=(v)=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+async function call(action,body={}){const {data,error}=await invokeFunction("features",{action,...body},{retries:0});if(error)throw new Error(error.message);return data;}
+async function load(){try{state=await call("research");render();}catch(error){$("tree").innerHTML=`<div class="research-empty">${esc(error.message)}</div>`;}}
+function render(){const bought=new Set(state.purchases||[]),p=state.profile||{};$("rpAvailable").textContent=`${Number(p.points_available||0).toLocaleString()} RP`;$("rpLifetime").textContent=`${Number(p.points_earned||0).toLocaleString()} earned`;$("rpSpent").textContent=`${Number(p.points_spent||0).toLocaleString()} RP`;$("apTotal").textContent=Number(state.achievementPoints||0).toLocaleString();$("nodeCount").textContent=`${Math.max(0,bought.size-1)} / ${Math.max(0,(state.nodes||[]).length-1)}`;$("branchTabs").innerHTML=branches.map(branch=>`<button class="${active===branch?"active":""}" data-branch="${branch}">${labels[branch]}</button>`).join("");const nodes=(state.nodes||[]).filter(n=>n.branch===active);$("tree").innerHTML=[1,2,3,4].map(stage=>`<section class="research-stage"><header><span>STAGE ${["","I","II","III","IV"][stage]}</span><small>${stage===1?"Open":`${stage===2?100:stage===3?400:1000} AP required`}</small></header><div class="node-grid">${nodes.filter(n=>n.stage===stage).map(n=>nodeCard(n,bought,p)).join("")}</div></section>`).join("");}
+function nodeCard(n,bought,p){const owned=bought.has(n.id),missing=(n.prerequisites||[]).filter(id=>!bought.has(id)),apLocked=Number(state.achievementPoints||0)<Number(n.required_ap||0),poor=Number(p.points_available||0)<Number(n.cost||0),locked=missing.length||apLocked;return `<article class="research-node ${owned?"owned":locked?"locked":""}"><div class="node-top"><span>${owned?"RESEARCHED":locked?"LOCKED":`${n.cost} RP`}</span><b>Stage ${n.stage}</b></div><h3>${esc(n.name)}</h3><p>${esc(n.description)}</p>${missing.length?`<small>Requires: ${missing.map(id=>esc(nodeName(id))).join(", ")}</small>`:""}${apLocked?`<small>Requires ${n.required_ap} AP</small>`:""}<button data-node="${n.id}" ${owned||locked||poor?"disabled":""}>${owned?"Owned":poor?`Need ${n.cost} RP`:"Research"}</button></article>`;}
+function nodeName(id){return state.nodes.find(n=>n.id===id)?.name||id;}
+document.addEventListener("click",(event)=>{const branch=event.target.closest("[data-branch]");if(branch){active=branch.dataset.branch;render();return;}const node=event.target.closest("[data-node]");if(node){pendingNode=state.nodes.find(n=>n.id===node.dataset.node);$("confirmTitle").textContent=pendingNode.name;$("confirmText").textContent=`Spend ${pendingNode.cost} Research Points? This takes effect immediately.`;$("confirmDialog").showModal();}});
+$("confirmAction").addEventListener("click",async(event)=>{event.preventDefault();if(!pendingNode)return;event.target.disabled=true;try{state=await call("research-purchase",{nodeId:pendingNode.id});$("confirmDialog").close();render();}catch(error){alert(error.message);}finally{event.target.disabled=false;}});
+$("resetOpen").addEventListener("click",()=>{const r=state.reset||{},available=r.availableAt&&Date.parse(r.availableAt)>Date.now()?` Available ${new Date(r.availableAt).toLocaleString()}.`:"";$("resetText").textContent=`This refunds all spent RP and deactivates every node. Cost: ${money(r.cost)}.${available}`;$("resetConfirm").value="";$("resetDialog").showModal();});
+$("resetAction").addEventListener("click",async(event)=>{event.preventDefault();if($("resetConfirm").value!=="RESET"){alert("Type RESET exactly.");return;}event.target.disabled=true;try{state=await call("research-reset");$("resetDialog").close();render();}catch(error){alert(error.message);}finally{event.target.disabled=false;}});
 load();
