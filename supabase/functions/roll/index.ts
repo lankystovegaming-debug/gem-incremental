@@ -805,7 +805,9 @@ function rollGemWithPickaxePassives(
   luck: number,
   discovered: Set<string>,
   geologistMultiplier = 1,
-  extremeGemMultiplier = 1
+  extremeGemMultiplier = 1,
+  legendaryGemMultiplier = 1,
+  timeWindowMultiplier = 1
 ) {
   const safeLuck = Math.max(1, luck);
   const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
@@ -821,7 +823,9 @@ function rollGemWithPickaxePassives(
     }
     let gemLuck = safeLuck;
     if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
+    if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
+    if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
   const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
@@ -1619,7 +1623,22 @@ export default {
             next_roll_at,
             inventory_capacity,
             total_rolls,
-            mutation_luck
+            mutation_luck,
+            player_research_effects(
+              luck_multiplier,
+              legendary_luck_multiplier,
+              extreme_luck_multiplier,
+              window_luck_multiplier,
+              roll_speed_multiplier,
+              weight_luck_multiplier,
+              gem_value_multiplier,
+              mutation_chance_multiplier,
+              mutated_value_multiplier,
+              compound_value_per_mutation,
+              potion_strength_multiplier,
+              inventory_bonus,
+              statistical_breakthrough
+            )
           `)
           .eq(
             "id",
@@ -1826,10 +1845,21 @@ export default {
         inventoryCount ??
         0;
 
+      const researchEffectsAtCapacityRaw = (player as any).player_research_effects;
+      const researchEffectsAtCapacity = Array.isArray(researchEffectsAtCapacityRaw)
+        ? researchEffectsAtCapacityRaw[0] ?? {}
+        : researchEffectsAtCapacityRaw ?? {};
+      const researchInventoryBonus = Math.max(
+        0,
+        Math.trunc(Number(researchEffectsAtCapacity.inventory_bonus ?? 0)) || 0
+      );
+      const effectiveInventoryCapacity =
+        Number(player.inventory_capacity ?? 0) + researchInventoryBonus;
+
 
       if (
         currentInventoryCount >=
-        player.inventory_capacity
+        effectiveInventoryCapacity
       ) {
         return jsonResponse(
           {
@@ -1840,7 +1870,7 @@ export default {
               currentInventoryCount,
 
             capacity:
-              player.inventory_capacity
+              effectiveInventoryCapacity
           },
           {
             status: 409
@@ -2163,6 +2193,20 @@ export default {
 
       if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
 
+      const researchEffectsRaw = (player as any).player_research_effects;
+      const researchEffects = Array.isArray(researchEffectsRaw)
+        ? researchEffectsRaw[0] ?? {}
+        : researchEffectsRaw ?? {};
+      const researchNumber = (key: string, fallback = 1) => {
+        const value = Number(researchEffects[key] ?? fallback);
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+      };
+
+      luck *= researchNumber("luck_multiplier");
+      rollSpeed *= researchNumber("roll_speed_multiplier");
+      weightLuck *= researchNumber("weight_luck_multiplier");
+      const researchPotionStrength = researchNumber("potion_strength_multiplier");
+
 
       baseLuck =
         luck;
@@ -2176,7 +2220,7 @@ export default {
           Number(
             boost.effect_value ??
             0
-          );
+          ) * researchPotionStrength;
 
         if (boost.family === "rollSpeed" && masterworkLantern === "potion_afterglow") {
           effectValue *= masterworkLanternRank >= 2 ? 1.15 : 1.10;
@@ -2231,7 +2275,7 @@ export default {
           oneRollBoost
             ?.effect_value ??
           0
-        );
+        ) * researchPotionStrength;
 
       if (
         Number.isFinite(
@@ -2579,7 +2623,8 @@ export default {
             rarity: Number(entry.rarity),
             baseWeight: Number(entry.base_weight),
             valuePerGram: Number(entry.value_per_gram),
-            affectedByLuck: entry.affected_by_luck !== false
+            affectedByLuck: entry.affected_by_luck !== false,
+            timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode))
           }));
         } else if (configuredGemError && configuredGemError.code !== "42P01") {
           console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
@@ -2596,14 +2641,22 @@ export default {
         ? strengthenEnchantMultiplier(1.5)
         : 1;
       const extremeGemMultiplier = (hasEventHorizon ? 1.1 : 1) *
-        (masterworkPickaxe === "deep_survey" ? (masterworkPickaxeRank >= 2 ? 1.08 : 1.05) : 1);
+        (masterworkPickaxe === "deep_survey" ? (masterworkPickaxeRank >= 2 ? 1.08 : 1.05) : 1) *
+        researchNumber("extreme_luck_multiplier");
+      const legendaryGemMultiplier = researchNumber("legendary_luck_multiplier");
+      const timeWindowMultiplier = researchNumber("window_luck_multiplier");
+      if (researchEffects.statistical_breakthrough === true && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) {
+        luck *= 1.2;
+      }
       const rollEquipmentGem = () =>
-        geologistMultiplier !== 1 || extremeGemMultiplier !== 1
+        geologistMultiplier !== 1 || extremeGemMultiplier !== 1 || legendaryGemMultiplier !== 1 || timeWindowMultiplier !== 1
           ? rollGemWithPickaxePassives(
               luck,
               discoveredGemNames,
               geologistMultiplier,
-              extremeGemMultiplier
+              extremeGemMultiplier,
+              legendaryGemMultiplier,
+              timeWindowMultiplier
             )
           : rollGem(luck);
 
@@ -2718,6 +2771,7 @@ export default {
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
+      mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
@@ -2764,10 +2818,15 @@ export default {
         );
 
 
+      const researchMutationValue = mutations.length
+        ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, mutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
+        : 1;
       const value =
         finalWeight *
         gem.valuePerGram *
-        mutationMultiplier;
+        mutationMultiplier *
+        researchNumber("gem_value_multiplier") *
+        researchMutationValue;
 
 
       const specimen = {
@@ -3684,8 +3743,7 @@ export default {
             finalInventoryCount,
 
           capacity:
-            player
-              .inventory_capacity
+            effectiveInventoryCapacity
         },
 
         cooldown: {

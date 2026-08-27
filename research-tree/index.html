@@ -2,21 +2,13 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Research Tree · Gem Incremental</title>
-<link rel="icon" href="../src/assets/favicon.ico">
-<link rel="stylesheet" href="../src/styles/app.css">
-<link rel="stylesheet" href="research-tree.css">
+<link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="research-tree.css">
 </head><body>
-<main class="expansion-page">
-<section class="expansion-hero">
-  <div class="expansion-icon">⌬</div>
-  <div><div class="expansion-kicker">UNRELEASED PROGRESSION</div><h1>Research Tree</h1>
-  <p>Branching research nodes with prerequisites, costs and permanent configurable effects. This page is intentionally disabled until you enable it from Upcoming Features.</p></div>
-  <span id="featureState" class="state-pill off">OFF</span>
-</section>
-<section class="expansion-grid">
-  <article class="expansion-panel"><h2>Configured content</h2><div id="definitions" class="expansion-list"><div class="expansion-empty">Loading…</div></div></article>
-  <article class="expansion-panel"><h2>How it works</h2><div id="details" class="expansion-details"></div></article>
-</section>
+<main class="research-page">
+<header class="research-hero"><div><div class="research-kicker">PERMANENT PROGRESSION</div><h1>Research Tree <span>Beta</span></h1><p>Spend Research Points earned from discoveries and long-term progression. Purchased effects are calculated once and safely reused by the game.</p></div><div class="research-balance"><small>Available</small><strong id="rpAvailable">— RP</strong><span id="rpLifetime">— earned</span></div></header>
+<section class="research-summary"><div><small>Achievement Points</small><strong id="apTotal">—</strong></div><div><small>Invested</small><strong id="rpSpent">— RP</strong></div><div><small>Nodes</small><strong id="nodeCount">—</strong></div><button id="resetOpen" class="secondary">Reset research</button></section>
+<nav id="branchTabs" class="branch-tabs" aria-label="Research branches"></nav><section id="tree" class="research-tree"><div class="research-empty">Loading research…</div></section>
 </main>
-<script type="module" src="research-tree.js"></script>
-</body></html>
+<dialog id="confirmDialog"><form method="dialog"><h2 id="confirmTitle"></h2><p id="confirmText"></p><div class="dialog-actions"><button value="cancel" class="secondary">Cancel</button><button id="confirmAction" value="confirm">Confirm</button></div></form></dialog>
+<dialog id="resetDialog"><form method="dialog"><h2>Reset all research?</h2><p id="resetText"></p><label>Type <strong>RESET</strong><input id="resetConfirm" autocomplete="off"></label><div class="dialog-actions"><button value="cancel" class="secondary">Cancel</button><button id="resetAction" value="confirm" class="danger">Reset research</button></div></form></dialog>
+<script type="module" src="research-tree.js"></script></body></html>

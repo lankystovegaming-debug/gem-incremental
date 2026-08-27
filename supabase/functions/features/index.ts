@@ -34,7 +34,10 @@ const GUILD_ERROR_STATUS:Record<string,number>={
   player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
   guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
   guild_level_required:409,max_upgrade:409,insufficient_money:409,
-  guild_point_purchase_limit:409
+  guild_point_purchase_limit:409,research_node_not_found:404,
+  research_node_owned:409,research_ap_gate:409,research_prerequisite_missing:409,
+  research_points_insufficient:409,research_reset_cooldown:409,
+  research_reset_money_insufficient:409,research_shop_daily_limit:409
 };
 function guildFailure(value:any){
   const raw=String(value?.message??value?.error??value??"guild_request_failed");
@@ -77,6 +80,18 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   }
   if(a==="achievement-milestone-claim"){
     const result=await ctx.supabaseAdmin.rpc("claim_achievement_milestone_v013",{p_player_id:userId,p_ap:Number(b.ap??0)});
+    if(result.error)throw result.error;return json(result.data);
+  }
+  if(a==="research"){
+    const result=await ctx.supabaseAdmin.rpc("get_research_tree_v014",{p_player_id:userId});
+    if(result.error)throw result.error;return json(result.data);
+  }
+  if(a==="research-purchase"){
+    const result=await ctx.supabaseAdmin.rpc("purchase_research_node_v014",{p_player_id:userId,p_node_id:String(b.nodeId??"")});
+    if(result.error)throw result.error;return json(result.data);
+  }
+  if(a==="research-reset"){
+    const result=await ctx.supabaseAdmin.rpc("reset_research_tree_v014",{p_player_id:userId});
     if(result.error)throw result.error;return json(result.data);
   }
   if(a==="guild"){

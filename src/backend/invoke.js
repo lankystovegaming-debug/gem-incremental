@@ -76,6 +76,14 @@ const FRIENDLY_MESSAGES = {
   ,museum_action_failed: "The Museum could not complete that action."
   ,museum_load_failed: "The Museum could not load your collection."
   ,museum_specimen_protected: "Remove this specimen from its Museum exhibit before changing it."
+  ,research_node_not_found: "That research node no longer exists."
+  ,research_node_owned: "You already own that research node."
+  ,research_ap_gate: "You need more Achievement Points to unlock that research stage."
+  ,research_prerequisite_missing: "Complete the earlier research node first."
+  ,research_points_insufficient: "You do not have enough Research Points."
+  ,research_reset_cooldown: "Research can only be reset once every seven days."
+  ,research_reset_money_insufficient: "You cannot afford to reset your research."
+  ,research_shop_daily_limit: "You can only buy one Research Notes offer per UTC day."
 };
 
 
