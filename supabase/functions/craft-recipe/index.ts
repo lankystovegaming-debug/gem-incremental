@@ -8,12 +8,18 @@ function getRequirementKey(requirement, index) {
   }
   return `${requirement.type}-${index}`;
 }
-function requirementComplete(progress, requirement, index, totalRolls = 0) {
+function requirementComplete(progress, requirement, index, player) {
   if (requirement.type === "equipment") {
     return true;
   }
   if (requirement.type === "lifetime-rolls") {
-    return Number(totalRolls) >= Number(requirement.rolls ?? 0);
+    return Number(player.total_rolls) >= Number(requirement.rolls ?? 0);
+  }
+  if (requirement.type === "roll-history-condition") {
+    const best = Number(requirement.minimumRarity >= 1000000
+      ? player.best_rare_natural_weight_1m
+      : player.best_rare_natural_weight_100k);
+    return best >= Number(requirement.minimumWeightMultiplier ?? 0);
   }
   const key = getRequirementKey(requirement, index);
   const value = progress[key];
@@ -89,7 +95,7 @@ export default {
     // =================================
     const { data: player, error: playerError } = await ctx.supabase
       .from("players")
-      .select("money, total_rolls")
+      .select("money, total_rolls, best_rare_natural_weight_100k, best_rare_natural_weight_1m")
       .eq("id", playerId)
       .single();
     if (playerError || !player) {
@@ -185,7 +191,7 @@ export default {
       if (requirement.type === "equipment") {
         return true;
       }
-      return requirementComplete(progress, requirement, index, player.total_rolls);
+      return requirementComplete(progress, requirement, index, player);
     });
     if (!requirementsComplete) {
       return Response.json({

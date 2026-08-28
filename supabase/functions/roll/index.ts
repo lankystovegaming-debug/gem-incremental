@@ -884,8 +884,10 @@ function getMutationCombinationKey(mutationIds: string[]) {
 // WEIGHT RNG
 // =========================================================
 
-function rollWeightMultiplier(
-  weightLuck = 1
+export function rollWeightMultiplier(
+  weightLuck = 1,
+  continuationChance = 1 / 3,
+  maximumMultiplier: number | null = null
 ) {
   const safeWeightLuck =
     Math.max(
@@ -980,11 +982,16 @@ function rollWeightMultiplier(
   let wholeMultiplier =
     2;
 
-  // Each additional whole multiplier is now a 1-in-3 roll.
+  // Production baseline: each additional whole multiplier is a 1-in-3 roll.
   while (
-    random01() < (1 / 3)
+    (maximumMultiplier == null || wholeMultiplier < maximumMultiplier) &&
+    random01() < continuationChance
   ) {
     wholeMultiplier++;
+  }
+
+  if (maximumMultiplier != null && wholeMultiplier >= maximumMultiplier) {
+    return maximumMultiplier;
   }
 
 
@@ -992,6 +999,22 @@ function rollWeightMultiplier(
     wholeMultiplier,
     wholeMultiplier + 1
   );
+}
+
+export function getLateGameFinalWeightFactor(
+  equipmentId: string | null,
+  naturalWeight: number,
+  baseRarity: number,
+  compressionRoll = false
+) {
+  switch (equipmentId) {
+    case "riftwoven-bag": return naturalWeight >= 3 ? 1.10 : 1;
+    case "vault-of-plenty": return baseRarity >= 100000 ? 1.125 : 1;
+    case "dimensional-vault": return naturalWeight >= 0.90 && naturalWeight <= 1.10 ? 1.20 : 1;
+    case "singularity-vault": return compressionRoll ? 1.25 : 1;
+    case "bottomless-singularity": return naturalWeight >= 5 ? 1.25 : 1;
+    default: return 1;
+  }
 }
 
 
@@ -1625,6 +1648,11 @@ export default {
             total_rolls,
             mutation_luck,
             rarity_resonance,
+            gravitational_surge_progress,
+            gravitational_surge_ready,
+            bag_compression_progress,
+            best_rare_natural_weight_100k,
+            best_rare_natural_weight_1m,
             player_research_effects(
               luck_multiplier,
               legendary_luck_multiplier,
@@ -1955,6 +1983,9 @@ export default {
       const masterworkPickaxeRank = Number(equippedPickaxe?.masterwork_passive_rank ?? 0);
       const equippedLantern = (equippedEquipment ?? []).find((item) => item.category === "lantern") ?? null;
       const equippedBoots = (equippedEquipment ?? []).find((item) => item.category === "boots") ?? null;
+      const equippedBag = (equippedEquipment ?? []).find((item) => item.category === "bag") ?? null;
+      const hasHeavyFooting = equippedBoots?.equipment_id === "event-horizon-boots";
+      const hasGravitationalSurge = equippedBoots?.equipment_id === "gravitational-boots";
       const masterworkLantern = equippedLantern?.masterwork_passive ?? null;
       const masterworkLanternRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
       const masterworkBoots = equippedBoots?.masterwork_passive ?? null;
@@ -2716,10 +2747,37 @@ export default {
       }
 
 
-      const rolledWeightMultiplier =
-        rollWeightMultiplier(
-          weightLuck
-        );
+      let surgeProgress = Math.min(99, Math.max(0, Number(player.gravitational_surge_progress ?? 0)));
+      let surgeReady = player.gravitational_surge_ready === true;
+      if (hasGravitationalSurge && !surgeReady) {
+        surgeProgress += 1;
+        if (surgeProgress >= 100) {
+          surgeProgress = 0;
+          surgeReady = true;
+        }
+      }
+
+      let rolledWeightMultiplier = rollWeightMultiplier(
+        weightLuck,
+        surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3,
+        surgeReady && hasGravitationalSurge ? 10 : null
+      );
+      if (hasGravitationalSurge && surgeReady && rolledWeightMultiplier >= 2) {
+        surgeReady = false;
+      }
+      if (hasHeavyFooting && rolledWeightMultiplier >= 2 && random01() < 0.15) {
+        rolledWeightMultiplier += 1;
+      }
+
+      let compressionProgress = Math.min(49, Math.max(0, Number(player.bag_compression_progress ?? 0)));
+      let compressionRoll = false;
+      if (equippedBag?.equipment_id === "singularity-vault") {
+        compressionProgress += 1;
+        if (compressionProgress >= 50) {
+          compressionProgress = 0;
+          compressionRoll = true;
+        }
+      }
 
 
       const rolledWeight =
@@ -2734,10 +2792,18 @@ export default {
       if (gem.rarity >= 100000 && masterworkBoots === "heavy_step") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.12 : 1.08;
       if (!discoveredGemNames.has(gem.name) && masterworkBoots === "trailblazer") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.25 : 1.15;
 
+      const bagPassiveWeightFactor = getLateGameFinalWeightFactor(
+        equippedBag?.equipment_id ?? null,
+        rolledWeightMultiplier,
+        Number(gem.rarity),
+        compressionRoll
+      );
+
       const finalWeight =
         rolledWeight *
         weightMultiplier *
-        masterworkWeightFactor;
+        masterworkWeightFactor *
+        bagPassiveWeightFactor;
 
 
       // Load the admin-managed mutation catalog when available. The bundled
@@ -3257,9 +3323,25 @@ export default {
         random01() < 0.05 &&
         hasDuplicateCapacity
       ) {
-        const duplicateWeightMultiplier = rollWeightMultiplier(weightLuck);
+        let duplicateWeightMultiplier = rollWeightMultiplier(
+          weightLuck,
+          surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3,
+          surgeReady && hasGravitationalSurge ? 10 : null
+        );
+        if (hasGravitationalSurge && surgeReady && duplicateWeightMultiplier >= 2) {
+          surgeReady = false;
+        }
+        if (hasHeavyFooting && duplicateWeightMultiplier >= 2 && random01() < 0.15) {
+          duplicateWeightMultiplier += 1;
+        }
         const duplicateRolledWeight = gem.baseWeight * duplicateWeightMultiplier;
-        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * masterworkWeightFactor;
+        const duplicateBagPassiveFactor = getLateGameFinalWeightFactor(
+          equippedBag?.equipment_id ?? null,
+          duplicateWeightMultiplier,
+          Number(gem.rarity),
+          compressionRoll
+        );
+        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * masterworkWeightFactor * duplicateBagPassiveFactor;
         const duplicateMutations = rollGemMutations(mutationChanceMultiplier);
         const duplicateMutationMultiplier = duplicateMutations.reduce(
           (total, mutation) => total * mutation.multiplier,
@@ -3319,6 +3401,38 @@ export default {
           .update({ rarity_resonance: rarityResonance })
           .eq("id", playerId);
         if (resonanceError) console.error("Rarity Resonance persistence failed:", resonanceError);
+      }
+
+      const progressionStateUpdate: Record<string, unknown> = {};
+      if (hasGravitationalSurge) {
+        progressionStateUpdate.gravitational_surge_progress = surgeProgress;
+        progressionStateUpdate.gravitational_surge_ready = surgeReady;
+      }
+      if (equippedBag?.equipment_id === "singularity-vault") {
+        progressionStateUpdate.bag_compression_progress = compressionProgress;
+      }
+      if (!relicDrop && gem.rarity >= 100000) {
+        progressionStateUpdate.best_rare_natural_weight_100k = Math.max(
+          Number(player.best_rare_natural_weight_100k ?? 0),
+          rolledWeightMultiplier,
+          Number(veinHunterDuplicate?.rolled_weight_multiplier ?? 0)
+        );
+      }
+      if (!relicDrop && gem.rarity >= 1000000) {
+        progressionStateUpdate.best_rare_natural_weight_1m = Math.max(
+          Number(player.best_rare_natural_weight_1m ?? 0),
+          rolledWeightMultiplier,
+          Number(veinHunterDuplicate?.rolled_weight_multiplier ?? 0)
+        );
+      }
+      if (Object.keys(progressionStateUpdate).length) {
+        const { error: progressionStateError } = await ctx.supabaseAdmin
+          .from("players")
+          .update(progressionStateUpdate)
+          .eq("id", playerId);
+        if (progressionStateError) {
+          console.error("Late-game equipment state persistence failed:", progressionStateError);
+        }
       }
 
       if (enchantedPickaxe && enchantStateChanged) {
