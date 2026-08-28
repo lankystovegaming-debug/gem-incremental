@@ -2,12 +2,12 @@
 <html lang="en"><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0e14">
   <meta name="description" content="Fund a descent into the server-authoritative Abandoned Mine."><title>Expeditions · Gem Incremental</title>
-  <link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./expeditions.css">
+  <link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./expeditions.css"><link rel="stylesheet" href="./loot-table.css">
   <script>(function(){try{var m=localStorage.getItem("gemIncremental.theme.mode"),a=localStorage.getItem("gemIncremental.theme.accent");if(m)document.documentElement.dataset.theme=m;document.documentElement.dataset.accent=a||"indigo"}catch(e){}})()</script>
 </head><body><main class="app-main expedition-page">
   <div class="page-head"><div class="page-head__title"><p class="expedition-eyebrow">Expeditions v2</p><h1>Expedition Board</h1><p class="page-head__sub">Fund each descent, manage Danger, and decide how much cargo you are willing to risk.</p></div><a class="btn" href="../">Back to Roll</a></div>
   <section class="destination-grid" aria-label="Expedition destinations">
-    <article class="card destination destination--active"><span class="badge badge--accent">Open</span><h2>Abandoned Mine</h2><p>Ten funded depths. Every genuine roll moves the crew and may uncover cargo, incidents, or protected artifacts.</p><a class="btn btn--primary" href="#mineConsole">Open mine console</a></article>
+    <article class="card destination destination--active"><span class="badge badge--accent">Open</span><h2>Abandoned Mine</h2><p>Ten funded depths. Every genuine roll moves the crew and may uncover cargo, incidents, or protected artifacts.</p><div class="destination__actions"><a class="btn btn--primary" href="#mineConsole">Open mine console</a><button class="btn" id="viewLootTable" type="button">View Loot Table</button></div></article>
     <article class="card destination destination--wip" aria-disabled="true"><span class="badge">WIP · inaccessible</span><h2>Crystal Caverns</h2><p>Destination mechanics are not yet available.</p></article>
     <article class="card destination destination--wip" aria-disabled="true"><span class="badge">WIP · inaccessible</span><h2>Volcanic Depths</h2><p>Destination mechanics are not yet available.</p></article>
     <article class="card destination destination--wip" aria-disabled="true"><span class="badge">WIP · inaccessible</span><h2>Ancient Ruins</h2><p>Destination mechanics are not yet available.</p></article>
@@ -16,4 +16,5 @@
   <section id="mineConsole" class="mine-console" aria-live="polite"></section>
   <section class="card artifact-panel"><div><p class="expedition-eyebrow">Museum archive</p><h2>Registered artifacts</h2></div><div id="artifactList"></div></section>
   <section class="card expedition-history"><h2>Abandoned Mine history</h2><div id="historyList"></div></section>
+  <dialog id="lootTableDialog" class="loot-dialog"><div class="loot-dialog__head"><div><p class="expedition-eyebrow">Abandoned Mine</p><h2>Loot Table</h2></div><button class="btn" type="button" data-close-loot>Close</button></div><div id="lootTableContent"></div></dialog>
 </main><script type="module" src="./expeditions.js"></script></body></html>
