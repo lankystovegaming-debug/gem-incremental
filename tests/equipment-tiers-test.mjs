@@ -91,6 +91,13 @@ assert.match(rollSource, /naturalWeight >= 0\.90 && naturalWeight <= 1\.10/);
 assert.match(rollSource, /compressionProgress >= 50/);
 assert.match(rollSource, /bagPassiveWeightFactor/);
 
+const cloudInventorySource = readFileSync(
+  new URL("../src/backend/cloudInventory.js", import.meta.url),
+  "utf8"
+);
+assert.match(cloudInventorySource, /error\?\.code === "42703"/);
+assert.match(cloudInventorySource, /select\("inventory_capacity, money, total_rolls, next_roll_at"\)/);
+
 const migration = readFileSync(
   new URL("../supabase/migrations/20260828160000_pickaxe_t14_t15_rollspeed.sql", import.meta.url),
   "utf8"
