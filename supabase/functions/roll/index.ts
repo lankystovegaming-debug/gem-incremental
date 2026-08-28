@@ -1624,6 +1624,7 @@ export default {
             inventory_capacity,
             total_rolls,
             mutation_luck,
+            rarity_resonance,
             player_research_effects(
               luck_multiplier,
               legendary_luck_multiplier,
@@ -1948,6 +1949,8 @@ export default {
       const hasMutationResonance = equippedPickaxe?.equipment_id === "eclipse-pickaxe";
       const hasEventHorizon = equippedPickaxe?.equipment_id === "singularity-pickaxe";
       const hasEnchantConduit = equippedPickaxe?.equipment_id === "transcendent-pickaxe";
+      const hasVeinHunter = equippedPickaxe?.equipment_id === "astral-pickaxe";
+      const hasRarityResonance = equippedPickaxe?.equipment_id === "celestial-pickaxe";
       const masterworkPickaxe = equippedPickaxe?.masterwork_passive ?? null;
       const masterworkPickaxeRank = Number(equippedPickaxe?.masterwork_passive_rank ?? 0);
       const equippedLantern = (equippedEquipment ?? []).find((item) => item.category === "lantern") ?? null;
@@ -2648,6 +2651,9 @@ export default {
       if (researchEffects.statistical_breakthrough === true && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) {
         luck *= 1.2;
       }
+      const resonanceBeforeRoll = Math.min(100, Math.max(0, Number(player.rarity_resonance ?? 0)));
+      const resonanceEmpowered = hasRarityResonance && resonanceBeforeRoll >= 100;
+      if (resonanceEmpowered) luck *= 3;
       const rollEquipmentGem = () =>
         geologistMultiplier !== 1 || extremeGemMultiplier !== 1 || legendaryGemMultiplier !== 1 || timeWindowMultiplier !== 1
           ? rollGemWithPickaxePassives(
@@ -2662,6 +2668,7 @@ export default {
 
       let gem = rollRelic() ?? rollEquipmentGem();
       const relicDrop = isRelic(gem);
+      const luckBasedGem = !relicDrop && gem.affectedByLuck !== false;
 
       // Lucky Break keeps the rarer result.
       if (
@@ -3135,6 +3142,8 @@ export default {
       let savedGem =
         null;
 
+      let veinHunterDuplicate = null;
+
 
       if (
         !autoDeposited
@@ -3233,6 +3242,83 @@ export default {
 
         savedGem =
           insertedGem;
+      }
+
+      // Vein Hunter creates a true second specimen: only the base gem is
+      // copied. Weight and every mutation are rolled again independently.
+      // The bonus specimen does not count as another lifetime roll.
+      const primaryOccupiesSlot = !autoDeposited && !relicDrop;
+      const hasDuplicateCapacity = currentInventoryCount + (primaryOccupiesSlot ? 1 : 0) < effectiveInventoryCapacity;
+      if (
+        hasVeinHunter &&
+        luckBasedGem &&
+        gem.rarity >= 10000 &&
+        gem.rarity <= 1000000 &&
+        random01() < 0.05 &&
+        hasDuplicateCapacity
+      ) {
+        const duplicateWeightMultiplier = rollWeightMultiplier(weightLuck);
+        const duplicateRolledWeight = gem.baseWeight * duplicateWeightMultiplier;
+        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * masterworkWeightFactor;
+        const duplicateMutations = rollGemMutations(mutationChanceMultiplier);
+        const duplicateMutationMultiplier = duplicateMutations.reduce(
+          (total, mutation) => total * mutation.multiplier,
+          1
+        );
+        const duplicateMutationIds = duplicateMutations.map((mutation) => mutation.id);
+        const duplicateMutationMultipliers = Object.fromEntries(
+          duplicateMutations.map((mutation) => [mutation.id, mutation.multiplier])
+        );
+        const duplicateResearchMutationValue = duplicateMutations.length
+          ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
+          : 1;
+        const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
+          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue;
+
+        const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
+          .from("inventory_gems")
+          .insert({
+            player_id: playerId,
+            gem_name: gem.name,
+            rarity: gem.rarity,
+            base_weight: gem.baseWeight,
+            value_per_gram: gem.valuePerGram,
+            rolled_weight_multiplier: duplicateWeightMultiplier,
+            rolled_weight: duplicateRolledWeight,
+            final_weight: duplicateFinalWeight,
+            mutation_id: duplicateMutations[0]?.id ?? null,
+            mutation_multiplier: duplicateMutationMultiplier,
+            mutation_ids: duplicateMutationIds,
+            mutation_multipliers: duplicateMutationMultipliers,
+            mutation_chance_multiplier: mutationChanceMultiplier,
+            value: duplicateValue,
+            locked: false,
+            roll_number: Number(player.total_rolls ?? 0) + 1,
+            luck_at_roll: luck
+          })
+          .select()
+          .single();
+
+        if (duplicateError) {
+          console.error("Vein Hunter duplicate insert failed:", duplicateError);
+        } else {
+          veinHunterDuplicate = duplicateGem;
+        }
+      }
+
+      if (hasRarityResonance && luckBasedGem) {
+        // A 1/100,000+ result never changes the meter, including while it is
+        // charged. The charge is consumed only by an eligible common result.
+        const rarityResonance = gem.rarity >= 100000
+          ? resonanceBeforeRoll
+          : resonanceEmpowered
+            ? 0
+            : Math.min(100, resonanceBeforeRoll + 1);
+        const { error: resonanceError } = await ctx.supabaseAdmin
+          .from("players")
+          .update({ rarity_resonance: rarityResonance })
+          .eq("id", playerId);
+        if (resonanceError) console.error("Rarity Resonance persistence failed:", resonanceError);
       }
 
       if (enchantedPickaxe && enchantStateChanged) {
@@ -3643,6 +3729,7 @@ export default {
           ? currentInventoryCount
           : currentInventoryCount +
             1;
+      const inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0);
 
 
       // =====================================================
@@ -3719,6 +3806,16 @@ export default {
 
         value,
 
+        equipmentPassives: {
+          veinHunterDuplicate,
+          rarityResonance: hasRarityResonance ? {
+            before: resonanceBeforeRoll,
+            after: luckBasedGem ? (gem.rarity >= 100000 ? resonanceBeforeRoll : resonanceEmpowered ? 0 : Math.min(100, resonanceBeforeRoll + 1)) : resonanceBeforeRoll,
+            empowered: resonanceEmpowered && luckBasedGem,
+            consumed: resonanceEmpowered && luckBasedGem && gem.rarity < 100000
+          } : null
+        },
+
         autoCraft: {
           deposited:
             autoDeposited,
@@ -3740,7 +3837,7 @@ export default {
 
         inventory: {
           count:
-            finalInventoryCount,
+            inventoryCountWithDuplicate,
 
           capacity:
             effectiveInventoryCapacity

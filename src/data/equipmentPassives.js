@@ -10,6 +10,14 @@ export const EQUIPMENT_PASSIVES = {
   "transcendent-pickaxe": {
     name: "Enchant Conduit",
     description: "Increases the strength of this pickaxe's enchant by 10%."
+  },
+  "astral-pickaxe": {
+    name: "Vein Hunter",
+    description: "5% chance for a 1/10,000–1/1,000,000 base-rarity gem to grant a second copy with independently rolled weight and mutations."
+  },
+  "celestial-pickaxe": {
+    name: "Rarity Resonance",
+    description: "Luck-based rolls worse than 1/100,000 build Resonance. At 100, the next eligible roll gets 3x final Luck."
   }
 };
 
