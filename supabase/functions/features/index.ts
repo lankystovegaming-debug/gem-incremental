@@ -52,6 +52,14 @@ async function isAdmin(ctx:any,userId:string){
   if(error){console.error("FEATURES_ADMIN_LOOKUP",error.message);return false;}
   return data?.user_id===userId;
 }
+async function guildOwnedBy(ctx:any,userId:string){
+  const {data:guild,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,logo_path").eq("owner_id",userId).maybeSingle();
+  if(guildError)throw guildError;
+  if(!guild)return null;
+  const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("role").eq("guild_id",guild.id).eq("player_id",userId).maybeSingle();
+  if(membershipError)throw membershipError;
+  return membership?.role==="owner"?guild:null;
+}
 export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:cors}); const userId=uid(ctx); if(!userId)return json({error:"unauthenticated"},401); let b:any={};try{b=await req.json()}catch{} const a=b.action;
  try{
   if(a==="sections"){
@@ -166,7 +174,44 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-upgrade"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_upgrade",{p_player_id:userId,p_track:String(b.track??"")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-purchase-points"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_points_with_cash",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
-  if(a==="guild-disband"){const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-update-logo"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const logoPath=String(b.logoPath??"").trim();
+    const expectedPrefix=`${guild.id}/`;
+    if(!logoPath.startsWith(expectedPrefix)||!new RegExp(`^${guild.id}/logo\\.(jpg|jpeg|png|webp)$`,"i").test(logoPath))return json({error:"invalid_guild_logo",message:"Upload a JPG, PNG, or WebP guild logo first."},400);
+    const {error:updateError}=await ctx.supabaseAdmin.from("guilds").update({logo_path:logoPath,updated_at:new Date().toISOString()}).eq("id",guild.id).eq("owner_id",userId);
+    if(updateError)throw updateError;
+    if(guild.logo_path&&guild.logo_path!==logoPath){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_OLD_OBJECT_REMOVE",removeError.message);
+    }
+    await ctx.supabaseAdmin.from("guild_activity").insert({guild_id:guild.id,actor_id:userId,action:"logo_updated"});
+    return json({ok:true,logoPath});
+  }
+  if(a==="guild-remove-logo"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const {error:updateError}=await ctx.supabaseAdmin.from("guilds").update({logo_path:null,updated_at:new Date().toISOString()}).eq("id",guild.id).eq("owner_id",userId);
+    if(updateError)throw updateError;
+    if(guild.logo_path){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_OBJECT_REMOVE",removeError.message);
+    }
+    await ctx.supabaseAdmin.from("guild_activity").insert({guild_id:guild.id,actor_id:userId,action:"logo_removed"});
+    return json({ok:true});
+  }
+  if(a==="guild-disband"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});
+    if(r.error)throw r.error;
+    if(guild.logo_path){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_DISBAND_OBJECT_REMOVE",removeError.message);
+    }
+    return json(r.data);
+  }
   return json({error:"unknown_action"},400);
  }catch(e){console.error("FEATURES_API",e);return guildFailure(e);}
 })};
