@@ -32,6 +32,8 @@ const GUILD_ERROR_STATUS:Record<string,number>={
   owner_cannot_leave:409,invite_not_found:404,player_not_found:404,
   member_not_found:404,guild_not_found:404,already_in_guild:409,
   player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
+  guild_not_open:409,guild_not_requestable:409,join_request_pending:409,
+  join_request_not_found:404,
   guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
   guild_level_required:409,max_upgrade:409,insufficient_money:409,
   guild_point_purchase_limit:409,research_node_not_found:404,
@@ -105,7 +107,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild"){
    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
    if(membershipError)throw membershipError;
-   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null;
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null,joinRequests:any[]=[];
    if(membership){
     const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
     if(runtime.error)throw runtime.error;
@@ -118,6 +120,15 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     if(profileError)throw profileError;
     const names=new Map((profiles??[]).map((profile:any)=>[profile.id,profile.username]));
     members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
+    if(["owner","officer"].includes(membership.role)){
+      const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("id,player_id,requested_at").eq("guild_id",guild.id).eq("status","pending").order("requested_at");
+      if(requestError)throw requestError;
+      const requestIds=(requestRows??[]).map((row:any)=>row.player_id);
+      const {data:requestProfiles,error:requestProfileError}=requestIds.length?await ctx.supabaseAdmin.from("players").select("id,username").in("id",requestIds):{data:[],error:null};
+      if(requestProfileError)throw requestProfileError;
+      const requestNames=new Map((requestProfiles??[]).map((profile:any)=>[profile.id,profile.username]));
+      joinRequests=(requestRows??[]).map((row:any)=>({...row,username:requestNames.get(row.player_id)||"Unknown player"}));
+    }
     const now=new Date().toISOString();
     const contributionDate=now.slice(0,10);
     const {data:cashRows,error:cashError}=await ctx.supabaseAdmin.from("guild_point_cash_contributions").select("player_id,purchase_number,money_spent,points_awarded,created_at").eq("guild_id",guild.id).eq("contribution_date",contributionDate).order("purchase_number");
@@ -144,7 +155,22 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,joinRequests,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+  }
+  if(a==="guild-directory"){
+    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",userId).maybeSingle();
+    if(membershipError)throw membershipError;
+    const {data:guildRows,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,name,tag,description,join_mode,xp,member_capacity,primary_color,secondary_color,accent_color,logo_path,updated_at").order("xp",{ascending:false}).order("name").limit(48);
+    if(guildError)throw guildError;
+    const guildIds=(guildRows??[]).map((guild:any)=>guild.id);
+    const {data:memberRows,error:memberError}=guildIds.length?await ctx.supabaseAdmin.from("guild_members").select("guild_id").in("guild_id",guildIds):{data:[],error:null};
+    if(memberError)throw memberError;
+    const memberCounts=new Map<string,number>();
+    for(const row of memberRows??[])memberCounts.set(row.guild_id,(memberCounts.get(row.guild_id)??0)+1);
+    const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("guild_id").eq("player_id",userId).eq("status","pending");
+    if(requestError)throw requestError;
+    const pendingGuildIds=new Set((requestRows??[]).map((row:any)=>row.guild_id));
+    return json({inGuild:Boolean(membership),guilds:(guildRows??[]).map((guild:any)=>({...guild,memberCount:memberCounts.get(guild.id)??0,pendingRequest:pendingGuildIds.has(guild.id)}))});
   }
   if (a === "guild-create") {
     const limited=await limitGuildCreation(userId);if(limited)return limited;
@@ -156,6 +182,9 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     });
     if(rpc.error)throw rpc.error; return json(rpc.data);
   }
+  if(a==="guild-join-open"){const r=await ctx.supabaseAdmin.rpc("guild_join_open_v1",{p_player_id:userId,p_guild_id:String(b.guildId??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-request-join"){const r=await ctx.supabaseAdmin.rpc("guild_request_join_v1",{p_player_id:userId,p_guild_id:String(b.guildId??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-manage-join-request"){const r=await ctx.supabaseAdmin.rpc("guild_manage_join_request_v1",{p_actor_id:userId,p_request_id:String(b.requestId??""),p_accept:b.accept===true});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-invite"){
     const username=String(b.username??"").trim(); if(!username)return json({error:"username_required"},400);
     const {data:actor}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role").eq("player_id",userId).maybeSingle();
