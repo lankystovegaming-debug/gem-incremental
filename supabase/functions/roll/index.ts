@@ -3435,6 +3435,8 @@ export default {
             gemName: relicDrop ? null : gem.name,
             rarity: relicDrop ? 0 : gem.rarity,
             weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
+            finalWeight: relicDrop ? 0 : finalWeight,
+            displayedValue: relicDrop ? 0 : value,
             mutationIds: relicDrop ? [] : mutationIds,
             boostFamilies: (activeBoosts ?? []).map((boost) => boost.family),
             boostTiers,
