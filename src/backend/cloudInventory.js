@@ -75,6 +75,8 @@ export async function loadCloudPlayerState() {
       inventory_capacity,
       money,
       total_rolls,
+      best_rare_natural_weight_100k,
+      best_rare_natural_weight_1m,
       next_roll_at
     `)
     .eq("id", user.id)
@@ -104,6 +106,8 @@ export async function loadCloudPlayerState() {
     ),
     money: Number(data.money ?? 0),
     total_rolls: Number(data.total_rolls ?? 0),
+    best_rare_natural_weight_100k: Number(data.best_rare_natural_weight_100k ?? 0),
+    best_rare_natural_weight_1m: Number(data.best_rare_natural_weight_1m ?? 0),
     next_roll_at: data.next_roll_at ?? null,
     ban_until,
     ban_reason

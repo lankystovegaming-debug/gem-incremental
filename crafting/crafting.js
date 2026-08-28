@@ -60,6 +60,8 @@ const state = {
   consumables: [],
   money: 0,
   totalRolls: 0,
+  bestRareNaturalWeight100k: 0,
+  bestRareNaturalWeight1m: 0,
   category: "pickaxe",
   loading: true
 };
@@ -111,7 +113,9 @@ function equipmentContext() {
   return {
     equipment: state.equipment.map((item) => ({ id: item.equipment_id })),
     consumables: state.consumables,
-    totalRolls: state.totalRolls
+    totalRolls: state.totalRolls,
+    bestRareNaturalWeight100k: state.bestRareNaturalWeight100k,
+    bestRareNaturalWeight1m: state.bestRareNaturalWeight1m
   };
 }
 
@@ -178,6 +182,17 @@ function describeRequirement(requirement, value) {
         text: `${formatCount(state.totalRolls)} / ${formatCount(requirement.rolls)}`,
         fraction: ratio(state.totalRolls, requirement.rolls)
       };
+
+    case "roll-history-condition": {
+      const have = Number(requirement.minimumRarity >= 1000000
+        ? state.bestRareNaturalWeight1m
+        : state.bestRareNaturalWeight100k);
+      return {
+        label: requirement.label,
+        text: have >= requirement.minimumWeightMultiplier ? "Complete" : `Best: ${have.toFixed(2)}×`,
+        fraction: ratio(have, requirement.minimumWeightMultiplier)
+      };
+    }
 
     case "gem-total-weight":
       return {
@@ -563,7 +578,7 @@ function recipeCard(recipe) {
                 ? `<span class="requirement__check">${icons.check}</span>`
                 : owned
                 ? ""
-                : requirement.type === "lifetime-rolls"
+                : ["lifetime-rolls", "roll-history-condition"].includes(requirement.type)
                 ? `<span class="requirement__check requirement__check--missing">${icons.x}</span>`
                 : `<button
                      class="btn btn--sm"
@@ -994,6 +1009,8 @@ async function refresh() {
   if (playerState) {
     state.money = playerState.money;
     state.totalRolls = playerState.total_rolls;
+    state.bestRareNaturalWeight100k = playerState.best_rare_natural_weight_100k;
+    state.bestRareNaturalWeight1m = playerState.best_rare_natural_weight_1m;
   }
 
   if (equipment) {
