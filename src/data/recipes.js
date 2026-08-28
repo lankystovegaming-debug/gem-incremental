@@ -87,7 +87,7 @@ const recipes = [
 
       bonus: {
         luck: 0.50,
-        rollSpeed: 0.25
+        rollSpeed: 0.20
       }
     }
   },
@@ -118,7 +118,7 @@ const recipes = [
 
       bonus: {
         luck: 0.80,
-        rollSpeed: 0.40
+        rollSpeed: 0.30
       }
     }
   },
@@ -150,7 +150,7 @@ const recipes = [
 
       bonus: {
         luck: 1.50,
-        rollSpeed: 0.60
+        rollSpeed: 0.45
       }
     }
   },
@@ -174,7 +174,7 @@ const recipes = [
       name: "Mythic Pickaxe",
       category: "pickaxe",
       tier: 6,
-      bonus: { luck: 2.50, rollSpeed: 0.80 }
+      bonus: { luck: 2.50, rollSpeed: 0.60 }
     }
   },
 
@@ -197,7 +197,7 @@ const recipes = [
       name: "Aether Pickaxe",
       category: "pickaxe",
       tier: 7,
-      bonus: { luck: 4.00, rollSpeed: 1.25 }
+      bonus: { luck: 4.00, rollSpeed: 0.80 }
     }
   },
 
@@ -220,7 +220,7 @@ const recipes = [
       name: "Voidbreaker Pickaxe",
       category: "pickaxe",
       tier: 8,
-      bonus: { luck: 7.00, rollSpeed: 1.80 }
+      bonus: { luck: 7.00, rollSpeed: 1.00 }
     }
   },
 
@@ -245,7 +245,7 @@ const recipes = [
       name: "Veteran Pickaxe",
       category: "pickaxe",
       tier: 9,
-      bonus: { luck: 10.00, rollSpeed: 2.10 }
+      bonus: { luck: 10.00, rollSpeed: 1.15 }
     }
   },
 
@@ -270,7 +270,7 @@ const recipes = [
       name: "Ascendant Pickaxe",
       category: "pickaxe",
       tier: 10,
-      bonus: { luck: 14.00, rollSpeed: 2.40 }
+      bonus: { luck: 14.00, rollSpeed: 1.30 }
     }
   },
 
@@ -291,7 +291,7 @@ const recipes = [
       name: "Eclipse Pickaxe",
       category: "pickaxe",
       tier: 11,
-      bonus: { luck: 16, rollSpeed: 2.55 }
+      bonus: { luck: 16, rollSpeed: 1.40 }
     }
   },
 
@@ -312,7 +312,7 @@ const recipes = [
       name: "Singularity Pickaxe",
       category: "pickaxe",
       tier: 12,
-      bonus: { luck: 18, rollSpeed: 2.70 }
+      bonus: { luck: 18, rollSpeed: 1.50 }
     }
   },
 
@@ -333,7 +333,52 @@ const recipes = [
       name: "Transcendent Pickaxe",
       category: "pickaxe",
       tier: 13,
-      bonus: { luck: 21, rollSpeed: 2.85 }
+      bonus: { luck: 21, rollSpeed: 1.60 }
+    }
+  },
+
+  {
+    id: "astral-pickaxe",
+    name: "Astral Pickaxe",
+    category: "pickaxe",
+    requirements: [
+      { type: "equipment", equipmentId: "transcendent-pickaxe" },
+      { type: "gem-count", gem: "Peridot", amount: 750 },
+      { type: "gem-count", gem: "Topaz", amount: 500 },
+      { type: "gem-count", gem: "Tourmaline", amount: 250 },
+      { type: "gem-count", gem: "Antimatter Crystal", amount: 1 },
+      { type: "lifetime-rolls", rolls: 40000 }
+    ],
+    moneyCost: 50000000,
+    reward: {
+      id: "astral-pickaxe",
+      name: "Astral Pickaxe",
+      category: "pickaxe",
+      tier: 14,
+      bonus: { luck: 23, rollSpeed: 1.70 }
+    }
+  },
+
+  {
+    id: "celestial-pickaxe",
+    name: "Celestial Pickaxe",
+    category: "pickaxe",
+    requirements: [
+      { type: "equipment", equipmentId: "astral-pickaxe" },
+      { type: "gem-count", gem: "Opal", amount: 300 },
+      { type: "gem-count", gem: "Zircon", amount: 200 },
+      { type: "gem-count", gem: "Moonstone", amount: 150 },
+      { type: "gem-count", gem: "Lunar Diamond", amount: 1 },
+      { type: "gem-count", gem: "Singularity Shard", amount: 1 },
+      { type: "lifetime-rolls", rolls: 60000 }
+    ],
+    moneyCost: 125000000,
+    reward: {
+      id: "celestial-pickaxe",
+      name: "Celestial Pickaxe",
+      category: "pickaxe",
+      tier: 15,
+      bonus: { luck: 25, rollSpeed: 1.80 }
     }
   },
 
