@@ -1,14 +1,54 @@
 import assert from "node:assert/strict";import fs from "node:fs";
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),"utf8");
-const legacy=read("supabase/migrations/20260819000003_expeditions_v090_beta.sql"),migration=read("supabase/migrations/20260827133021_abandoned_mine_expeditions.sql"),roll=read("supabase/functions/roll/index.ts"),client=read("src/backend/cloudExpeditions.js"),html=read("expeditions/index.html"),page=read("expeditions/expeditions.js");
+const legacy=read("supabase/migrations/20260819000003_expeditions_v090_beta.sql"),migration=read("supabase/migrations/20260827133021_abandoned_mine_expeditions.sql"),balance=read("supabase/migrations/20260827143000_abandoned_mine_depth_balance_correction.sql"),corrective=read("supabase/migrations/20260827150000_correct_abandoned_mine_runtime_state_machine.sql"),checkpoint=read("supabase/migrations/20260828000408_abandoned_mine_supply_camp_checkpoint_flow.sql"),roll=read("supabase/functions/roll/index.ts"),client=read("src/backend/cloudExpeditions.js"),html=read("expeditions/index.html"),page=read("expeditions/expeditions.js");
 assert.match(legacy,/create table if not exists public\.player_expeditions/);assert.doesNotMatch(migration,/drop table.*player_expeditions|truncate.*player_expeditions/is);assert.match(migration,/daily\/weekly tables and functions are intentionally retained/i);
 for(const table of ["abandoned_mine_runs","abandoned_mine_funding","museum_artifact_registrations"])assert.match(migration,new RegExp(`create table public\\.${table}`));
 assert.match(migration,/abandoned_mine_one_open_run[\s\S]*where status <> 'settled'/);assert.match(migration,/alter table public\.abandoned_mine_runs enable row level security/);assert.match(migration,/revoke all on public\.abandoned_mine_runs[\s\S]*authenticated/);
-assert.match(migration,/array\[100000,175000,300000,500000,800000,1250000,2000000,3250000,5000000,7500000\]/);assert.match(migration,/p_depth<>v_run\.depth\+1/);assert.match(migration,/set money=money-v_cost where id=v_uid and money>=v_cost/);assert.match(migration,/insert into public\.abandoned_mine_funding/);
+const approvedDepths={funding:[100000,150000,250000,400000,650000,1000000,1600000,2500000,4000000,6500000],progress:[100,150,200,275,350,450,575,725,900,1100],danger:[0,5,10,18,27,38,50,63,75,85]};
+for(const values of Object.values(approvedDepths))assert.match(balance,new RegExp(`array\\[${values.join(",")}\\]`));
+assert.match(balance,/danger=public\.abandoned_mine_base_danger\(p_depth\)/);assert.doesNotMatch(balance,/p_depth=1 then 4 else 6/);
+assert.match(balance,/where status='active' and progress=0[\s\S]*overdepth=0/);assert.match(balance,/set target=public\.abandoned_mine_depth_target\(depth,overdepth\)/);
+assert.match(balance,/preserve funding ledger history/i);assert.doesNotMatch(balance,/update public\.abandoned_mine_funding|delete from public\.abandoned_mine_funding/);
+assert.match(balance,/p_depth<>v_run\.depth\+1/);assert.match(balance,/set money=money-v_cost where id=v_uid and money>=v_cost/);assert.match(balance,/insert into public\.abandoned_mine_funding/);
 assert.match(roll,/"record_abandoned_mine_roll"/);assert.doesNotMatch(roll,/"record_expedition_roll"/);assert.equal((roll.match(/player_research_effects\(/g)||[]).length,1);assert.match(roll,/researchNumber\("luck_multiplier"\)/);assert.match(migration,/create or replace function public\.record_abandoned_mine_roll/);assert.match(migration,/progress=progress\+1/);
+const correctedRoll=corrective.match(/create or replace function public\.record_abandoned_mine_roll[\s\S]*?end \$\$;/)?.[0]||"";
+const correctedFund=corrective.match(/create or replace function public\.fund_abandoned_mine[\s\S]*?end \$\$;/)?.[0]||"";
+assert.match(correctedRoll,/where player_id=p_player_id and status='active'/);
+assert.doesNotMatch(correctedRoll,/danger\s*=|v_incident|incident_log|v_run\.danger|random\(\) < .*danger/);
+assert.match(correctedFund,/random\(\) < v_run\.danger::numeric\/100/);
+assert.match(correctedFund,/v_severity_roll < \.65[\s\S]*v_severity_roll < \.92/);
+assert.match(correctedFund,/v_incident='major'[\s\S]*v_modifier:=v_modifier\+5/);
+assert.match(corrective,/where r\.status in \('awaiting_funding','active','awaiting_route','ready_to_extract'\)/);
+assert.match(corrective,/danger = public\.abandoned_mine_effective_danger/);
+assert.doesNotMatch(corrective,/update public\.abandoned_mine_funding|delete from public\.abandoned_mine_funding/);
+const progressFor=({rarity=0,mutations=0,weight=1})=>1+(rarity>=50?1:0)+(rarity>=1000?3:0)+(rarity>=10000?7:0)+(mutations>0?3:0)+(weight>=2?3:0);
+assert.equal(progressFor({}),1);assert.equal(progressFor({rarity:50}),2);assert.equal(progressFor({rarity:1000}),5);assert.equal(progressFor({rarity:10000}),12);assert.equal(progressFor({rarity:10000,mutations:1,weight:2}),18);
+assert.match(correctedRoll,/v_rarity >= 50[\s\S]*v_rarity >= 1000[\s\S]*v_rarity >= 10000[\s\S]*jsonb_array_length\(v_mutations\) > 0[\s\S]*v_weight >= 2/);
+let d1={danger:0,progress:0};for(let i=0;i<29;i++)d1={...d1,progress:d1.progress+progressFor({})};assert.deepEqual(d1,{danger:0,progress:29});
+assert.match(correctedRoll,/if v_run\.progress < v_run\.target and v_new_progress >= v_run\.target then[\s\S]*v_cargo[\s\S]*if random\(\) <[\s\S]*v_artifact/);
 for(const severity of ["minor","major","critical"])assert.match(migration,new RegExp(`'${severity}'`));for(const field of ["danger","secured_cargo","unsecured_cargo","protected_discoveries","incident_log"])assert.match(migration,new RegExp(field));
 assert.match(migration,/depth not in \(3,6,9\)/);assert.match(migration,/secured_cargo=secured_cargo\|\|unsecured_cargo,unsecured_cargo='\[\]'/);for(const route of ["reinforced_tunnel","rich_vein","supply_line","unstable_descent"])assert.match(migration,new RegExp(route));assert.match(migration,/depth in \(4,7\) then 'awaiting_route'/);
 assert.match(migration,/create or replace function public\.extract_abandoned_mine/);assert.match(migration,/case when status='forced_extraction' then secured_cargo else secured_cargo\|\|unsecured_cargo end/);assert.match(migration,/status=case when status='forced_extraction' then 'forced_extraction' else 'extracted' end/);assert.match(migration,/create or replace function public\.settle_abandoned_mine/);assert.match(migration,/on conflict\(player_id,artifact_key\) do nothing/);assert.match(migration,/v_duplicate_value:=v_duplicate_value\+/);assert.match(migration,/lifetime_earnings=lifetime_earnings\+v_cargo_value\+v_duplicate_value/);assert.match(migration,/create or replace function public\.continue_mine_overdepth/);assert.match(migration,/overdepth=overdepth\+1/);
 for(const name of ["Crystal Caverns","Volcanic Depths","Ancient Ruins","Lost Jungle"]){assert.match(html,new RegExp(name));const card=html.match(new RegExp(`<article class="card destination destination--wip"[^>]*>[\\s\\S]*?<h2>${name}<\\/h2>[\\s\\S]*?<\\/article>`))?.[0];assert.ok(card,`${name} WIP card missing`);assert.doesNotMatch(card,/<button|<a /,`${name} must be completely inaccessible`);}
-assert.equal((html.match(/destination--active/g)||[]).length,1);for(const rpc of ["get_abandoned_mine_dashboard","fund_abandoned_mine","choose_abandoned_mine_route","build_abandoned_mine_camp","continue_mine_overdepth","extract_abandoned_mine","settle_abandoned_mine"])assert.match(client,new RegExp(rpc));assert.doesNotMatch(client,/daily|weekly|reroll|enter_expedition/i);assert.match(page,/Build Supply Camp/);assert.match(page,/Continue into Mine Overdepth/);assert.match(page,/Extract voluntarily/);
+assert.match(checkpoint,/add constraint abandoned_mine_runs_status_check[\s\S]*'checkpoint_decision'/);
+assert.match(checkpoint,/depth in \(3,6,9\)[\s\S]*not \(v_run\.camps[\s\S]*then 'checkpoint_decision'/);
+assert.match(checkpoint,/p_service not in \('secure','resupply'\)/);
+assert.match(checkpoint,/if p_service='secure'[\s\S]*checkpoint_secure_cost[\s\S]*else[\s\S]*checkpoint_resupply_cost/);
+assert.match(checkpoint,/secured_cargo=secured_cargo\|\|unsecured_cargo,unsecured_cargo='\[\]'::jsonb/);
+assert.match(checkpoint,/danger_modifier=danger_modifier-v_relief/);
+assert.match(checkpoint,/status='awaiting_funding'/);
+assert.match(checkpoint,/v_run\.status not in \('awaiting_funding','checkpoint_decision'\)/);
+assert.match(checkpoint,/drop function if exists public\.build_abandoned_mine_camp/);
+for(const [depth,secure,resupply] of [[3,150000,300000],[6,750000,1250000],[9,3000000,5000000]]){
+  assert.match(checkpoint,new RegExp(`checkpoint_secure_cost[\\s\\S]*when ${depth} then ${secure}`));
+  assert.match(checkpoint,new RegExp(`checkpoint_resupply_cost[\\s\\S]*when ${depth} then ${resupply}`));
+}
+assert.match(checkpoint,/where depth in \(3,6,9\) and progress>=target and status='awaiting_funding'/);
+assert.match(checkpoint,/where depth between 1 and 10 and progress<target and status='awaiting_funding'/);
+assert.equal((html.match(/destination--active/g)||[]).length,1);for(const rpc of ["get_abandoned_mine_dashboard","fund_abandoned_mine","choose_abandoned_mine_route","choose_abandoned_mine_camp_service","continue_mine_overdepth","extract_abandoned_mine","settle_abandoned_mine"])assert.match(client,new RegExp(rpc));assert.doesNotMatch(client,/daily|weekly|reroll|enter_expedition|build_abandoned_mine_camp/i);
+assert.match(page,/Secure Current Cargo/);assert.match(page,/Full Resupply/);assert.doesNotMatch(page,/Build Supply Camp|run\.depth\*100000/);assert.match(page,/dashboard\.checkpointServices/);assert.match(page,/run\.status==="checkpoint_decision"/);assert.match(page,/Continue into Mine Overdepth/);assert.match(page,/Extract voluntarily/);
+// Regression: an actively progressing D6 (86/450) renders only voluntary extraction.
+assert.doesNotMatch(page,/\[3,6,9\]\.includes\(run\.depth\)/);
+const actionsFor=run=>run.status==="checkpoint_decision"?["secure","resupply","fund","extract"]:["extract"];
+assert.deepEqual(actionsFor({depth:6,progress:86,target:450,status:"active",camps:[]}),["extract"]);
 console.log("Abandoned Mine expedition redesign tests passed.");
