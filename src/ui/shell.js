@@ -55,26 +55,26 @@ const PAGES = [
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
-  { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.sparkle, sectionId: "quests" },
-  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.shield, sectionId: "guilds" },
-  { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.gem, sectionId: "islands" },
+  { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.quest, sectionId: "quests" },
+  { id: "guilds", label: "Guilds", short: "Guilds", href: "guilds/", icon: icons.users, sectionId: "guilds" },
+  { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.island, sectionId: "islands" },
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
-  { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.shield, sectionId: "dungeons" },
-  { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.sparkle, sectionId: "daily-spin" },
-  { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords || icons.shield, sectionId: "wars" },
-  { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords || icons.shield, sectionId: "pvp" },
-  { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.bolt || icons.sparkle, sectionId: "world-bosses" },
-  { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.gem, sectionId: "relic-vault" },
-  { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.trophy, sectionId: "seasons" },
-  { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.gavel, sectionId: "bounties" },
-  { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.sparkle, sectionId: "treasure-expeditions" },
-  { id: "artifact-archives", label: "Artifact Archives", short: "Artifacts", href: "artifact-archives/", icon: icons.gem, sectionId: "artifact-archives" },
-  { id: "gem-fusion", label: "Gem Fusion Lab", short: "Fusion", href: "gem-fusion/", icon: icons.sparkle, sectionId: "gem-fusion" },
-  { id: "enchanting-lab", label: "Enchanting Lab", short: "Enchant", href: "enchanting-lab/", icon: icons.sparkle, sectionId: "enchanting-lab" },
+  { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.castle, sectionId: "dungeons" },
+  { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.wheel, sectionId: "daily-spin" },
+  { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords, sectionId: "wars" },
+  { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords, sectionId: "pvp" },
+  { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.skull, sectionId: "world-bosses" },
+  { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.vault, sectionId: "relic-vault" },
+  { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.calendar, sectionId: "seasons" },
+  { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.quest, sectionId: "bounties" },
+  { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.map, sectionId: "treasure-expeditions" },
+  { id: "artifact-archives", label: "Artifact Archives", short: "Artifacts", href: "artifact-archives/", icon: icons.archive, sectionId: "artifact-archives" },
+  { id: "gem-fusion", label: "Gem Fusion Lab", short: "Fusion", href: "gem-fusion/", icon: icons.flask, sectionId: "gem-fusion" },
+  { id: "enchanting-lab", label: "Enchanting Lab", short: "Enchant", href: "enchanting-lab/", icon: icons.wand, sectionId: "enchanting-lab" },
   { id: "collection-hall", label: "Collection Hall", short: "Collections", href: "collection-hall/", icon: icons.book, sectionId: "collection-hall" },
-  { id: "mining-events", label: "Mining Events", short: "Events", href: "mining-events/", icon: icons.pickaxe || icons.anvil, sectionId: "mining-events" },
-  { id: "merchant-caravan", label: "Merchant Caravan", short: "Caravan", href: "merchant-caravan/", icon: icons.gavel, sectionId: "merchant-caravan" },
-  { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.sparkle, sectionId: "research-tree" },
+  { id: "mining-events", label: "Mining Events", short: "Events", href: "mining-events/", icon: icons.pickaxe, sectionId: "mining-events" },
+  { id: "merchant-caravan", label: "Merchant Caravan", short: "Caravan", href: "merchant-caravan/", icon: icons.caravan, sectionId: "merchant-caravan" },
+  { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.branch, sectionId: "research-tree" },
   // Client-only page: shown only when the "Global cash graph" device
   // setting is on. Not server-gated, so it lives outside PUBLIC_PAGES
   // and the section loader.
@@ -287,9 +287,10 @@ export function mountShell({ page, base = "./" }) {
         ...item,
         label: section.label || item.label,
         short: section.short_label || section.label || item.short,
-        icon: section.icon
-          ? `<span class="nav__custom-icon" aria-hidden="true">${escapeHtml(section.icon)}</span>`
-          : item.icon
+        // Section configuration controls availability and wording, but uses the
+        // purpose-built navigation icon. This prevents a generic configured gem
+        // symbol from making every Explore destination look identical.
+        icon: item.icon
       };
       if (document.querySelector(`[data-section-link="${item.id}"]`)) return;
       document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));

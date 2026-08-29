@@ -37,9 +37,14 @@ for(const action of ["research","research-purchase","research-reset"]){
   assert(features.includes(`a===\"${action}\"`),`missing ${action} action`);
 }
 assert.match(ui,/data-node/);
+assert.match(ui,/researchMapLines/);
+assert.match(ui,/drawMapLines/);
+assert.match(ui,/data-map-node/);
 assert.match(ui,/resetConfirm/);
 assert.match(css,/font-family: var\(--font\)/);
 assert.match(css,/font-family: var\(--font-display\)/);
 assert.match(css,/\.research-node\.owned/);
+assert.match(css,/\.research-map__line\.owned/);
+assert.match(css,/@media \(min-width: 900px\)/);
 assert.doesNotMatch(css,/var\(--panel\)|var\(--muted\)|Arial/);
 console.log("Research Tree v0.14.0 performance and integration tests passed.");

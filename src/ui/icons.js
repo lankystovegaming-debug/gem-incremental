@@ -240,6 +240,95 @@ export const icons = {
     <path d="M8 11H4M20 11h-4M8 15H4M20 15h-4M8 19l-2 2M16 19l2 2" />
   `),
 
+  compass: svg(`
+    <circle cx="12" cy="12" r="8.8" />
+    <path d="m15.8 8.2-2.1 5.5-5.5 2.1 2.1-5.5 5.5-2.1Z" />
+  `),
+
+  chevronDown: svg(`<path d="m6.5 9 5.5 5.5L17.5 9" />`),
+
+  quest: svg(`
+    <path d="M6 3.5h11.5a2 2 0 0 1 2 2V20L15.7 18 12 20l-3.7-2L4.5 20V5.5a2 2 0 0 1 2-2Z" />
+    <path d="M8.5 8.5h7M8.5 12h5" />
+  `),
+
+  users: svg(`
+    <circle cx="9" cy="8.5" r="3" />
+    <path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.8M18.5 20a5.3 5.3 0 0 0-2.8-4.7" />
+  `),
+
+  island: svg(`
+    <path d="M3 17c2.2-1.6 4.5-1.6 6.7 0s4.5 1.6 6.7 0 4.5-1.6 4.6-1.6" />
+    <path d="M5 13.5c2.5-3.8 5-5.7 7-5.7 2.8 0 5.3 1.9 7 5.7" />
+    <path d="M12 7.8V4.5M12 4.5l2 1.8M12 4.5l-2 1.8" />
+  `),
+
+  castle: svg(`
+    <path d="M4 20V7h3V4h3v3h4V4h3v3h3v13H4Z" />
+    <path d="M9.5 20v-4.5a2.5 2.5 0 0 1 5 0V20M7.5 11h.01M16.5 11h.01" />
+  `),
+
+  wheel: svg(`
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18" />
+    <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
+  `),
+
+  swords: svg(`
+    <path d="m7 4 13 13M15 4l-3 3M17 6l3-2v3l-2 2M6 17l-2 3h3l2-2" />
+    <path d="m17 4-13 13M9 4l3 3M7 6 4 4v3l2 2M18 17l2 3h-3l-2-2" />
+  `),
+
+  skull: svg(`
+    <path d="M6.5 14.5A7 7 0 1 1 18 14.5V18l-2.5 2-1.5-1.2L12 20l-2-1.2L8.5 20 6 18v-3.5Z" />
+    <circle cx="9.5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <path d="M10 16h4" />
+  `),
+
+  vault: svg(`
+    <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 8v8M8 12h8" />
+  `),
+
+  calendar: svg(`
+    <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+    <path d="M7.5 3v4M16.5 3v4M3.5 9h17M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01" />
+  `),
+
+  map: svg(`
+    <path d="m3.5 6 5-2 7 2 5-2v14l-5 2-7-2-5 2V6Z" />
+    <path d="M8.5 4v14M15.5 6v14" />
+  `),
+
+  archive: svg(`
+    <path d="M4 7h16v13H4zM3 4h18v3H3z" />
+    <path d="M10 12h4" />
+  `),
+
+  flask: svg(`
+    <path d="M9 3h6M10 3v5L5.5 17A2.8 2.8 0 0 0 8 21h8a2.8 2.8 0 0 0 2.5-4l-4.5-9V3" />
+    <path d="M7.5 15h9" />
+  `),
+
+  wand: svg(`
+    <path d="m5 19 10-10M13.5 5.5l.8-2 .8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8ZM18.5 13.5l.6-1.5.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6Z" />
+  `),
+
+  pickaxe: svg(`
+    <path d="m8 20 8-16M4 7c3.8-3 12.2-3 16 0M6.5 9.5 4 7l2-2.5M17.5 9.5 20 7l-2-2.5" />
+  `),
+
+  caravan: svg(`
+    <path d="M3 16h18v-6H7l-2 3H3v3Z" />
+    <path d="M7 10V7h8l3 3M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+  `),
+
+  branch: svg(`
+    <path d="M12 21V4M12 10 6 6M12 14l6-4M6 6V3.5M6 6H3.5M18 10V7.5M18 10h2.5M12 4l-2-2M12 4l2-2" />
+  `),
+
   github: svg(`
     <path d="M9 19c-4 1.4-4-2.1-6-2.5m12 4.5v-3.4a3 3 0 0 0-.8-2.3c2.6-.3 5.3-1.3 5.3-5.8a4.5 4.5 0 0 0-1.3-3.1 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.3 3.4 5.3 3.7 5.3 3.7a4.2 4.2 0 0 0-.1 3.2 4.5 4.5 0 0 0-1.3 3.1c0 4.5 2.7 5.5 5.3 5.8a3 3 0 0 0-.8 2.3V21" />
   `),
