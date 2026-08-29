@@ -2236,9 +2236,23 @@ export default {
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
 
+      const { data: crystalEffectsData, error: crystalEffectsError } = await ctx.supabaseAdmin
+        .rpc("crystal_player_effects", { p_uid: playerId });
+      if (crystalEffectsError) console.warn("Crystal artifact passives unavailable:", crystalEffectsError);
+      const crystalEffects = crystalEffectsData ?? {};
+      const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
+      const crystalWeightLuckMultiplier = Math.max(1, Number(crystalEffects.weightLuckMultiplier ?? 1));
+      const crystalWeightMultiplierMultiplier = Math.max(1, Number(crystalEffects.weightMultiplierMultiplier ?? 1));
+      const crystalMutationMultiplier = Math.max(1, Number(crystalEffects.mutationChanceMultiplier ?? 1));
+      const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
+      const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
+
       luck *= researchNumber("luck_multiplier");
+      luck += crystalLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
       weightLuck *= researchNumber("weight_luck_multiplier");
+      weightLuck *= crystalWeightLuckMultiplier;
+      weightMultiplier *= crystalWeightMultiplierMultiplier;
       const researchPotionStrength = researchNumber("potion_strength_multiplier");
 
 
@@ -2845,6 +2859,7 @@ export default {
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= crystalMutationMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
@@ -2899,7 +2914,9 @@ export default {
         gem.valuePerGram *
         mutationMultiplier *
         researchNumber("gem_value_multiplier") *
-        researchMutationValue;
+        researchMutationValue *
+        crystalGemValueMultiplier *
+        (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1);
 
 
       const specimen = {
