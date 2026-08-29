@@ -10,6 +10,7 @@ const remainingMoneyFix = read("supabase/migrations/20260829014406_fix_hell_rema
 const dangerPersistenceFix = read("supabase/migrations/20260829020013_fix_hell_danger_persistence.sql");
 const diverseEvents = read("supabase/migrations/20260829021925_diversify_hell_events.sql");
 const diverseCards = read("supabase/migrations/20260829024500_diversify_hell_cards.sql");
+const curseStacking = read("supabase/migrations/20260829031500_normalize_hell_curse_stacking.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -63,6 +64,14 @@ assert.match(diverseCards,/jsonb_agg\(value->>'key'\)/,
 assert.match(diverseCards,/abandoned_mine_hell_cards_v2\(p_depth,p_od,previous_cards\)/);
 assert.doesNotMatch(diverseCards,/update public\.abandoned_mine_runs[\s\S]*'cards'/,
   "the migration must not reroll a persisted open hand");
+assert.match(diverseCards,/"name":"Hell Pressure"/,
+  "the Danger-only variant must not promise an undefined conditional mechanic");
+assert.match(curseStacking,/card->>'key'='next_reveal_tax'[\s\S]*'revealTax',least\(2,coalesce/,
+  "Lesser reveal tax must use the same cumulative cap as its Curse counterpart");
+assert.match(curseStacking,/card->>'key'='recovery_wear'[\s\S]*'recoveryPenalty',least\(\.15,coalesce/,
+  "Lesser recovery wear must use the same cumulative cap as its Curse counterpart");
+assert.match(curseStacking,/update public\.abandoned_mine_runs[\s\S]*status<>'settled'/,
+  "open runs with previously excessive aggregate penalties must be normalized");
 assert.match(page,/function hellEventEffect\(option\)/);
 for(const eventEffect of ["secure all current cargo","unsecured cargo","next incident chance","future reveal prices","emergency recovery penalty"])assert.match(page,new RegExp(eventEffect));
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
