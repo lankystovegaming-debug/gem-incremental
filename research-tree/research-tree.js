@@ -120,7 +120,7 @@ function mapNode(node, bought, profile) {
   const action = planning && !status.owned ? (status.apLocked ? "" : `data-map-plan="${esc(node.id)}"`) : (!status.owned && !status.locked && !status.poor ? `data-map-node="${esc(node.id)}"` : "");
   const disabled = !action ? "disabled" : "";
   const detail = status.owned ? "Researched" : status.locked ? "Prerequisite required" : status.poor ? `Need ${node.cost} RP` : planning ? (status.selected ? "Remove from plan" : "Add to plan") : `Research for ${node.cost} RP`;
-  return `<button id="research-map-node-${esc(node.id)}" class="${classes}" type="button" ${action} ${disabled} title="${esc(node.name)} — ${esc(detail)}" aria-label="${esc(node.name)}. ${esc(detail)}"><span>${isRoot ? "START" : status.owned ? "✓" : `${node.cost} RP`}</span><strong>${esc(node.name)}</strong></button>`;
+  return `<button id="research-map-node-${esc(node.id)}" class="${classes}" type="button" ${action} ${disabled} title="${esc(node.name)} — ${esc(node.description)} — ${esc(detail)}" aria-label="${esc(node.name)}. Effect: ${esc(node.description)}. ${esc(detail)}"><span>${isRoot ? "START" : status.owned ? "✓" : `${node.cost} RP`}</span><strong>${esc(node.name)}</strong><small class="research-map__effect">${esc(node.description || "No effect specification available.")}</small></button>`;
 }
 
 function queueMapLines() {
@@ -167,7 +167,7 @@ function openPurchase(nodeId) {
   pendingNode = state.nodes.find((node) => node.id === nodeId);
   if (!pendingNode) return;
   $("confirmTitle").textContent = pendingNode.name;
-  $("confirmText").textContent = `Spend ${pendingNode.cost} Research Points? This takes effect immediately.`;
+  $("confirmText").textContent = `Effect: ${pendingNode.description || "No effect specification available."} Spend ${pendingNode.cost} Research Points? This takes effect immediately.`;
   $("confirmDialog").showModal();
 }
 
