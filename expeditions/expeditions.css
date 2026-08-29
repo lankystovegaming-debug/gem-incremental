@@ -49,6 +49,7 @@
 .hell-card--lesser{border-color:color-mix(in srgb,#f59e0b 55%,var(--border))}
 .hell-card__type{margin-bottom:.25rem;color:var(--text-muted)}
 .hell-card__effect{min-height:3em;margin-top:0;color:var(--text)}
+.hell-event__effect{min-height:2.5em;color:var(--text);font-weight:700}
 .hell-resolution{margin:1rem 0;padding:1rem 1.1rem;border-radius:var(--radius-md);border:1px solid color-mix(in srgb,#ef4444 50%,var(--border));background:color-mix(in srgb,#ef4444 10%,var(--surface-sunken))}
 .hell-resolution h3{margin:.25rem 0 .5rem}
 .hell-resolution__incident{margin-bottom:0;font-weight:700}
@@ -56,6 +57,9 @@
 .hell-resolution__incident--critical{color:#fb7185}
 .hell-card div{display:flex;gap:.5rem;flex-wrap:wrap}
 .hell-reward{margin:1rem 0;padding:1rem;border-radius:var(--radius-md);background:color-mix(in srgb,#ef4444 12%,var(--surface-sunken));border:1px solid color-mix(in srgb,#ef4444 45%,var(--border))}
+.loot-summary--hell{border-color:color-mix(in srgb,#ef4444 45%,var(--border))}
+.hell-loot-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}
+.hell-loot-list p{margin:0;padding:.8rem;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-sunken)}
 .artifact-panel,.expedition-history{margin-top:1.5rem}
 .history-row{display:flex;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
 .history-row:last-child{border:0}
