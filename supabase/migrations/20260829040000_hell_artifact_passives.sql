@@ -20,7 +20,8 @@ create or replace function public.abandoned_mine_hell_add_doom(p_state jsonb,p_a
 returns jsonb language plpgsql volatile security definer set search_path='' as $$
 declare
   s jsonb:=p_state; effects jsonb:=public.expedition_artifact_effects(p_player_id);
-  adjusted integer:=case when p_amount>0 then ceil(p_amount*coalesce((effects->>'doomGainMultiplier')::numeric,1))::integer else p_amount end;
+  raw_adjusted numeric:=p_amount*coalesce((effects->>'doomGainMultiplier')::numeric,1);
+  adjusted integer:=case when p_amount>0 then floor(raw_adjusted)::integer+case when random()<raw_adjusted-floor(raw_adjusted) then 1 else 0 end else p_amount end;
   doom integer:=greatest(0,coalesce((s->>'doom')::integer,0)+adjusted);
   breaks jsonb:=coalesce(s->'doomBreaks','[]');
   pool text[]:=array['shattered_instruments','broken_safeguards','severed_funding','faulty_warning','torn_records','failed_recovery','hope_extinguished'];pick text;
@@ -38,7 +39,8 @@ end $$;
 create or replace function public.abandoned_mine_hell_add_doom(p_state jsonb,p_amount integer,p_od integer)
 returns jsonb language plpgsql volatile security definer set search_path='' as $$
 declare
-  adjusted integer:=case when p_amount>0 then ceil(p_amount*coalesce((p_state->>'doomGainMultiplier')::numeric,1))::integer else p_amount end;
+  raw_adjusted numeric:=p_amount*coalesce((p_state->>'doomGainMultiplier')::numeric,1);
+  adjusted integer:=case when p_amount>0 then floor(raw_adjusted)::integer+case when random()<raw_adjusted-floor(raw_adjusted) then 1 else 0 end else p_amount end;
   s jsonb:=p_state;doom integer:=greatest(0,coalesce((s->>'doom')::integer,0)+adjusted);
   breaks jsonb:=coalesce(s->'doomBreaks','[]');
   pool text[]:=array['shattered_instruments','broken_safeguards','severed_funding','faulty_warning','torn_records','failed_recovery','hope_extinguished'];pick text;

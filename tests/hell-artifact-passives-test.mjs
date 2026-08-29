@@ -17,6 +17,7 @@ for (const [key, field, value] of [
   assert.match(sql, new RegExp(`${field}'.*${value}`));
 }
 assert.match(sql,/from public\.museum_artifact_registrations/);
+assert.match(sql,/random\(\)<raw_adjusted-floor\(raw_adjusted\)/);
 assert.doesNotMatch(sql,/incident.*mitigation/i);
 assert.match(roll,/player_expedition_artifact_effects/);
 assert.match(roll,/luck \+= expeditionArtifactLuckBonus/);
