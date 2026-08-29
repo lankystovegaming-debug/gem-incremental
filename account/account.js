@@ -628,22 +628,13 @@ async function saveUsername() {
   const {
     error
   } =
-    await supabase
-      .from(
-        "players"
-      )
-      .upsert(
-        {
-          id:
-            user.id,
-
+    await supabase.rpc(
+      "set_own_username",
+      {
+        p_username:
           username
-        },
-        {
-          onConflict:
-            "id"
-        }
-      );
+      }
+    );
 
 
   if (error) {
