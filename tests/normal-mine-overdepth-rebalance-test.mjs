@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const sql=fs.readFileSync(new URL("../supabase/migrations/20260829041000_normal_mine_overdepth_rebalance.sql",import.meta.url),"utf8");
+for(const n of [10000000,15000000,22000000,32000000,46000000,66000000,94000000,134000000,190000000,270000000])assert.match(sql,new RegExp(String(n)));
+assert.match(sql,/v_cost\*1\.4/);
+assert.match(sql,/lo\*1\.32/);
+assert.match(sql,/abandoned_mine_overdepth_cargo_range/);
+assert.match(sql,/create or replace function public\.record_normal_abandoned_mine_roll/);
+assert.doesNotMatch(sql,/fundingCosts.*200000/i);
+console.log("Normal Mine Overdepth rebalance tests passed.");
