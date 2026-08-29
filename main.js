@@ -70,6 +70,7 @@ const autoSellTierRow = document.getElementById("autoSellTierRow");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
+const automationPulse = document.getElementById("automationPulse");
 const sessionInsightsPanel = document.getElementById("sessionInsightsPanel");
 const clearSessionInsightsButton = document.getElementById("clearSessionInsights");
 const sessionInsightStats = document.getElementById("sessionInsightStats");
@@ -119,6 +120,7 @@ const view = {
 };
 
 const history = [];
+const automationStats = { startedAt: Date.now(), rolls: 0, earned: 0, kept: 0, sold: 0, status: "Idle" };
 
 const MAX_HISTORY = 12;
 
@@ -203,6 +205,12 @@ function renderSummary() {
       : "");
 }
 
+function renderAutomationPulse() {
+  if (!automationPulse) return;
+  const minutes = Math.max(1 / 60, (Date.now() - automationStats.startedAt) / 60000);
+  automationPulse.innerHTML = `<strong>${getSettings().autoRoll ? "Auto roll active" : automationStats.status}</strong><span>${(automationStats.rolls / minutes).toFixed(1)} rolls/min</span><span>${formatMoney(automationStats.earned, { compact: true })} earned</span><span>${automationStats.kept} kept · ${automationStats.sold} sold</span>`;
+}
+
 function previewValue(quest) {
   const p=quest?.progress||{},t=quest?.target||{};
   if ("count" in t) return [p.count||0,t.count];
@@ -279,11 +287,15 @@ function showReady() {
 
     rollHint.innerHTML =
       'Sell or craft to free a slot — <a href="./inventory/">open inventory</a>';
+    automationStats.status = "Paused · inventory full";
+    renderAutomationPulse();
 
     return;
   }
 
   view.ready = true;
+  automationStats.status = getSettings().autoRoll ? "Auto roll active" : "Ready";
+  renderAutomationPulse();
 
   setButton({ mode: "", label: "Roll", disabled: false });
 
@@ -322,6 +334,8 @@ function startCooldown(endsAt, totalMs) {
   rollHint.innerHTML = getSettings().autoRoll
     ? "Auto roll is on — the next roll fires automatically."
     : "<kbd>R</kbd> or <kbd>Space</kbd> to roll";
+  automationStats.status = getSettings().autoRoll ? "Waiting for cooldown" : "Cooldown";
+  renderAutomationPulse();
 
   function tick() {
     const remaining = endsAt - Date.now();
@@ -789,6 +803,11 @@ async function performRoll() {
   view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
 
   const outcome = await resolveOutcome(data);
+  automationStats.rolls += 1;
+  automationStats.earned += Number(outcome?.soldValue ?? 0);
+  if (outcome?.type === "auto-sold") automationStats.sold += 1;
+  else if (["auto-kept", "kept"].includes(outcome?.type)) automationStats.kept += 1;
+  renderAutomationPulse();
   recordSessionRoll(data, { ...outcome, tier: rarityTier(data.gem.rarity).id });
   renderSessionInsights();
 
@@ -1079,6 +1098,7 @@ function paintSettings(settings) {
     "automation__row--muted",
     !settings.autoSell
   );
+  renderAutomationPulse();
 }
 
 

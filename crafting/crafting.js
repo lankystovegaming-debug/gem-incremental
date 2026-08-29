@@ -46,6 +46,7 @@ const hideOwnedRow = document.getElementById("hideOwnedRow");
 const autoBanner = document.getElementById("autoCraftBanner");
 const autoBannerName = document.getElementById("autoCraftName");
 const autoBannerClear = document.getElementById("autoCraftClear");
+const craftingNext = document.getElementById("craftingNext");
 
 document.getElementById("autoCraftIcon").innerHTML = icons.bolt;
 
@@ -67,6 +68,7 @@ const state = {
 };
 
 const POTION_AUTO_STORAGE_KEY = "gemIncremental.crafting.autoPotionRecipe";
+const PINNED_RECIPE_STORAGE_KEY = "gemIncremental.crafting.pinnedRecipes";
 let potionAutoTimer = null;
 let potionAutoBusy = false;
 
@@ -83,6 +85,18 @@ function setAutoPotionRecipeId(recipeId) {
     if (recipeId) localStorage.setItem(POTION_AUTO_STORAGE_KEY, recipeId);
     else localStorage.removeItem(POTION_AUTO_STORAGE_KEY);
   } catch {}
+}
+
+function pinnedRecipeIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(PINNED_RECIPE_STORAGE_KEY) || "[]")); }
+  catch { return new Set(); }
+}
+
+function togglePinnedRecipe(recipeId) {
+  const pinned = pinnedRecipeIds();
+  if (pinned.has(recipeId)) pinned.delete(recipeId); else pinned.add(recipeId);
+  try { localStorage.setItem(PINNED_RECIPE_STORAGE_KEY, JSON.stringify([...pinned])); } catch {}
+  renderRecipes();
 }
 
 function isPotionAutoTarget(recipeId) {
@@ -433,6 +447,7 @@ function renderRecipes() {
   }
 
   renderAutoBanner();
+  renderCraftingRecommendation();
 
   if (state.category === "lantern") {
     subtitle.textContent = "Lanterns are legacy equipment";
@@ -486,6 +501,19 @@ function renderRecipes() {
   }
 }
 
+function renderCraftingRecommendation() {
+  const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier));
+  const next = candidates.sort((a, b) => {
+    const aReady = isRecipeReady(a) ? 1 : 0, bReady = isRecipeReady(b) ? 1 : 0;
+    return bReady - aReady || Number(a.reward.tier) - Number(b.reward.tier);
+  })[0];
+  if (!next) { craftingNext.innerHTML = `<div><span class="badge badge--positive">Complete</span><h2>All current equipment is crafted</h2><p>Focus on Masterwork upgrades or keep an eye on future recipe releases.</p></div>`; return; }
+  const ready = isRecipeReady(next);
+  craftingNext.innerHTML = `<div><span class="badge badge--accent">Recommended next</span><h2>${escapeHtml(next.name)}</h2><p>${ready ? "Ready to craft now — this is your next available equipment upgrade." : `Closest next equipment upgrade · Tier ${next.reward.tier}. Pin it to keep its material goal visible.`}</p></div><div class="row"><button class="btn" data-pin-recipe="${escapeHtml(next.id)}">${pinnedRecipeIds().has(next.id) ? "Unpin recipe" : "Pin recipe"}</button><button class="btn btn--primary" data-open-recipe="${escapeHtml(next.id)}">View recipe</button></div>`;
+  craftingNext.querySelector("[data-pin-recipe]")?.addEventListener("click", () => togglePinnedRecipe(next.id));
+  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { setCategory(next.category); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
+}
+
 
 function recipeCard(recipe) {
   const progress = ensureRecipeProgress(state.crafting, recipe);
@@ -502,6 +530,7 @@ function recipeCard(recipe) {
     getAutoPotionRecipeId() === recipe.id;
 
   const bonuses = formatReward(recipe);
+  const pinned = pinnedRecipeIds().has(recipe.id);
 
   const requirementsHtml = recipe.requirements
     .map((requirement, index) => {
@@ -630,6 +659,8 @@ function recipeCard(recipe) {
         }
       </div>
 
+      <button class="btn btn--sm recipe-card__pin" data-action="pin" type="button">${pinned ? "★ Pinned" : "☆ Pin"}</button>
+
       <div class="recipe-card__bonuses">
         ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
       </div>
@@ -744,6 +775,8 @@ function wireRecipeCard(card) {
   if (!recipe) {
     return;
   }
+
+  card.querySelector('[data-action="pin"]')?.addEventListener("click", () => togglePinnedRecipe(recipeId));
 
   card
     .querySelector('[data-action="auto"]')

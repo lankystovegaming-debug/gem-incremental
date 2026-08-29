@@ -79,6 +79,13 @@ const orderPrice = document.getElementById("orderPrice");
 const orderButton = document.getElementById("orderButton");
 const orderFeePreview = document.getElementById("orderFeePreview");
 const sellFeePreview = document.getElementById("sellFeePreview");
+const watchGemButton = document.getElementById("watchGemButton");
+const marketWatchlist = document.getElementById("marketWatchlist");
+const WATCHLIST_KEY = "gemIncremental.market.watchlist";
+
+function watches(){try{return JSON.parse(localStorage.getItem(WATCHLIST_KEY)||"[]");}catch{return [];}}
+function saveWatches(value){try{localStorage.setItem(WATCHLIST_KEY,JSON.stringify(value.slice(0,12)));}catch{}}
+function renderWatchlist(){if(!marketWatchlist)return;const list=watches();if(!list.length){marketWatchlist.innerHTML="<h2>Watchlist</h2><p>Watch a gem to see the best current buy order and the median live offer.</p>";return;}const rows=list.map(name=>{const prices=state.orders.filter(o=>o.status==="open"&&o.gem_name===name).map(o=>Number(o.price)).sort((a,b)=>a-b),median=prices.length?prices[Math.floor(prices.length/2)]:0,summary=prices.length?`Best ${formatMoney(prices.at(-1))} · Median ${formatMoney(median)}`:"No open orders";return `<div class="auction-line"><span>${escapeHtml(name)}</span><span>${summary}</span><button class="btn btn--sm" data-unwatch="${escapeHtml(name)}">Remove</button></div>`;}).join("");marketWatchlist.innerHTML=`<div><h2>Watchlist</h2><p>Live order-book benchmarks refresh with the market.</p></div>${rows}`;marketWatchlist.querySelectorAll("[data-unwatch]").forEach(button=>button.addEventListener("click",()=>{saveWatches(watches().filter(name=>name!==button.dataset.unwatch));renderWatchlist();}));}
 
 function priceSurcharge(price) {
   if (price < 100000) return 0;
@@ -371,6 +378,7 @@ function populateOrderGemSelect() {
 function renderOrders() {
   if (state.loading) return;
   populateOrderGemSelect();
+  renderWatchlist();
 
   const open = state.orders.filter((o) => o.status === "open");
   if (open.length === 0) {
@@ -385,6 +393,8 @@ function renderOrders() {
   ordersList.innerHTML = open.map(orderCard).join("");
   for (const card of ordersList.querySelectorAll(".order-card")) wireOrderCard(card);
 }
+
+watchGemButton?.addEventListener("click",()=>{const name=orderGem.value;if(!name)return;const list=watches();if(!list.includes(name))saveWatches([...list,name]);renderWatchlist();notify.success("Added to watchlist",`${name} will show its current order-book prices here.`);});
 
 function orderCard(order) {
   const mine = order.buyer_id === state.userId;
@@ -794,6 +804,7 @@ async function refresh() {
     `${formatCount(state.orders.filter((o) => o.status === "open").length)} open order${state.orders.filter((o) => o.status === "open").length === 1 ? "" : "s"}`;
 
   renderBrowse();
+  renderWatchlist();
   if (state.tab === "orders") renderOrders();
   else if (state.tab === "sell") renderSell();
   else if (state.tab === "mine") renderMine();

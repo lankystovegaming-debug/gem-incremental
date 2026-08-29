@@ -108,7 +108,10 @@ const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
 const gemRarity = document.getElementById("gemRarity");
 const gemSort = document.getElementById("gemSort");
+const savedFilter = document.getElementById("savedFilter");
 const sellAllButton = document.getElementById("sellAllButton");
+const lockVisibleButton = document.getElementById("lockVisibleButton");
+const sellDuplicatesButton = document.getElementById("sellDuplicatesButton");
 const deleteRulesButton = document.getElementById("deleteRulesButton");
 const deleteRulesPanel = document.getElementById("deleteRulesPanel");
 const deleteRulesClose = document.getElementById("deleteRulesClose");
@@ -418,6 +421,12 @@ function renderGems() {
     gemRarity.value !== "all";
 
   sellAllButton.disabled = sellable.length === 0;
+  const unlockable = gems.filter((gem) => !gem.locked && !isRelic(gem));
+  lockVisibleButton.disabled = unlockable.length === 0;
+  lockVisibleButton.textContent = unlockable.length ? `Lock ${formatCount(unlockable.length)} visible` : "Lock visible";
+  const duplicateIds = duplicateGems().map((gem) => gem.id);
+  sellDuplicatesButton.disabled = duplicateIds.length === 0;
+  sellDuplicatesButton.textContent = duplicateIds.length ? `Sell ${formatCount(duplicateIds.length)} duplicates` : "Sell duplicates";
 
   sellAllButton.textContent =
     sellable.length === 0
@@ -463,6 +472,28 @@ function renderGems() {
   for (const card of inventoryList.querySelectorAll(".gem-card")) {
     wireGemCard(card);
   }
+}
+
+function duplicateGems() {
+  const strongestByName = new Map();
+  const duplicates = [];
+  for (const gem of [...state.gems].filter((entry) => !entry.locked && !isRelic(entry)).sort((a, b) => Number(b.value) - Number(a.value))) {
+    const key = `${gem.gem_name}:${JSON.stringify(gem.mutation_ids ?? [])}`;
+    if (strongestByName.has(key)) duplicates.push(gem);
+    else strongestByName.set(key, gem.id);
+  }
+  return duplicates;
+}
+
+function applySavedFilter(value) {
+  if (value === "valuable") {
+    gemSearch.value = ""; gemFilter.value = "all"; gemRarity.value = "legendary"; gemSort.value = "rarity";
+  } else if (value === "duplicates") {
+    gemSearch.value = ""; gemFilter.value = "unlocked"; gemRarity.value = "all"; gemSort.value = "value";
+  } else if (value === "unlocked") {
+    gemSearch.value = ""; gemFilter.value = "unlocked"; gemRarity.value = "all"; gemSort.value = "newest";
+  }
+  renderGems();
 }
 
 
@@ -856,6 +887,42 @@ sellAllButton.addEventListener("click", async () => {
       `+${formatMoney(earned)}`
     );
   }
+});
+
+lockVisibleButton?.addEventListener("click", async () => {
+  const targets = visibleGems().filter((gem) => !gem.locked && !isRelic(gem));
+  if (!targets.length) return;
+  lockVisibleButton.disabled = true;
+  let changed = 0;
+  for (const gem of targets) {
+    const { error } = await toggleCloudGemLock(gem.id);
+    if (error) { notify.error("Locking stopped", error.message); break; }
+    gem.locked = true; changed += 1;
+  }
+  renderAll();
+  if (changed) notify.success("Gems protected", `${formatCount(changed)} visible gem${changed === 1 ? "" : "s"} locked.`);
+});
+
+sellDuplicatesButton?.addEventListener("click", async () => {
+  const targets = duplicateGems();
+  if (!targets.length) return;
+  const choice = await confirmDialog({
+    title: `Sell ${formatCount(targets.length)} duplicate gems?`,
+    body: `<p>Your highest-value copy of every gem and mutation combination stays protected.</p>`,
+    confirmLabel: "Sell duplicates", tone: "danger"
+  });
+  if (choice !== "confirm") return;
+  sellDuplicatesButton.disabled = true;
+  let sold = 0, earned = 0;
+  for (const gem of targets) {
+    const { data, error } = await sellCloudGem(gem.id);
+    if (error) { notify.error("Duplicate sale stopped", error.message); break; }
+    state.gems = state.gems.filter((entry) => entry.id !== gem.id);
+    state.money = Number(data?.money ?? state.money);
+    earned += Number(data?.soldValue ?? gem.value); sold += 1;
+  }
+  renderAll();
+  if (sold) notify.success("Duplicates sold", `${formatCount(sold)} gems · +${formatMoney(earned)}`);
 });
 
 
@@ -1461,6 +1528,7 @@ function renderAll() {
 for (const control of [gemSearch, gemFilter, gemRarity, gemSort]) {
   control.addEventListener("input", renderGems);
 }
+savedFilter?.addEventListener("change", () => applySavedFilter(savedFilter.value));
 
 
 // =========================================================
