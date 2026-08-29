@@ -7,6 +7,7 @@ const targetCastFix = read("supabase/migrations/20260829011537_fix_hell_mode_obj
 const moneyFix = read("supabase/migrations/20260829013122_fix_hell_funding_money_ambiguity.sql");
 const nullEventFix = read("supabase/migrations/20260829013711_fix_hell_null_event_phase.sql");
 const remainingMoneyFix = read("supabase/migrations/20260829014406_fix_hell_remaining_money_ambiguities.sql");
+const dangerPersistenceFix = read("supabase/migrations/20260829020013_fix_hell_danger_persistence.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -38,6 +39,12 @@ assert.equal((remainingMoneyFix.match(/returning p\.money into v_money/g)||[]).l
   "every remaining wallet action must qualify players.money");
 assert.doesNotMatch(remainingMoneyFix, /\bdeclare[^;]*\bmoney numeric/,
   "Hell wallet actions must not declare a colliding money variable");
+assert.match(dangerPersistenceFix,
+  /danger=greatest\(v_run\.danger,coalesce\(\(v_state->>'dangerFloor'\)::integer,0\)\)/,
+  "funding the next Hell depth must preserve current Danger and its floor");
+assert.doesNotMatch(dangerPersistenceFix,
+  /danger=greatest\(0,coalesce\(\(v_state->>'dangerFloor'/,
+  "funding must not reset Hell Danger to zero or only its floor");
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
 assert.match(sql, /when p_od<=2 then 0/);
 assert.match(sql, /else \.45 end/);
