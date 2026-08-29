@@ -2253,7 +2253,18 @@ export default {
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
 
+      const { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError } =
+        await ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId });
+      if (expeditionArtifactEffectsError) {
+        console.warn("Expedition artifact passives unavailable:", expeditionArtifactEffectsError);
+      }
+      const expeditionArtifactEffects = expeditionArtifactEffectsData ?? {};
+      const expeditionArtifactLuckBonus = Math.max(0, Number(expeditionArtifactEffects.luckBonus ?? 0));
+      const expeditionArtifactMutationMultiplier = Math.max(1, Number(expeditionArtifactEffects.mutationChanceMultiplier ?? 1));
+      const expeditionArtifactGemValueMultiplier = Math.max(1, Number(expeditionArtifactEffects.gemValueMultiplier ?? 1));
+
       luck *= researchNumber("luck_multiplier");
+      luck += expeditionArtifactLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
       weightLuck *= researchNumber("weight_luck_multiplier");
       const researchPotionStrength = researchNumber("potion_strength_multiplier");
@@ -2863,6 +2874,7 @@ export default {
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
@@ -2918,6 +2930,7 @@ export default {
         mutationMultiplier *
         researchNumber("gem_value_multiplier") *
         researchMutationValue *
+        expeditionArtifactGemValueMultiplier *
         (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
 
