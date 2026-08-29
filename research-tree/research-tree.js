@@ -12,6 +12,7 @@ let pendingNode = null;
 let planning = false;
 let mapFrame = 0;
 const planned = new Set();
+const RESEARCH_CACHE_KEY = "gemIncremental.researchTree.v014";
 
 const money = (value) => new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(value || 0));
 const esc = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -23,11 +24,39 @@ async function call(action, body = {}) {
 }
 
 async function load() {
+  const cached = readCache();
+  if (cached) { state = cached; render(); }
   try {
     state = await call("research");
+    writeCache(state);
     render();
+    // Reconcile historical discovery sources after the tree is already on
+    // screen. This keeps the interactive map fast even for veteran players.
+    void refreshSources();
   } catch (error) {
-    $("tree").innerHTML = `<div class="research-empty">${esc(error.message)}</div>`;
+    if (!cached) $("tree").innerHTML = `<div class="research-empty">${esc(error.message)}</div>`;
+  }
+}
+
+function readCache() {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(RESEARCH_CACHE_KEY) || "null");
+    return cached?.nodes && cached?.profile ? cached : null;
+  } catch { return null; }
+}
+
+function writeCache(value) {
+  try { sessionStorage.setItem(RESEARCH_CACHE_KEY, JSON.stringify(value)); } catch { /* Storage is optional. */ }
+}
+
+async function refreshSources() {
+  try {
+    const refreshed = await call("research-sync");
+    state = refreshed;
+    writeCache(state);
+    render();
+  } catch {
+    // The initial tree is valid. A later visit or purchase will retry source reconciliation.
   }
 }
 
@@ -162,6 +191,7 @@ $("confirmAction").addEventListener("click", async (event) => {
   event.target.disabled = true;
   try {
     state = await call("research-purchase", { nodeId: pendingNode.id });
+    writeCache(state);
     $("confirmDialog").close();
     render();
   } catch (error) { alert(error.message); } finally { event.target.disabled = false; }
@@ -180,6 +210,7 @@ $("resetAction").addEventListener("click", async (event) => {
   event.target.disabled = true;
   try {
     state = await call("research-reset");
+    writeCache(state);
     $("resetDialog").close();
     render();
   } catch (error) { alert(error.message); } finally { event.target.disabled = false; }
