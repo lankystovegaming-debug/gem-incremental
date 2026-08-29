@@ -8,6 +8,7 @@ const moneyFix = read("supabase/migrations/20260829013122_fix_hell_funding_money
 const nullEventFix = read("supabase/migrations/20260829013711_fix_hell_null_event_phase.sql");
 const remainingMoneyFix = read("supabase/migrations/20260829014406_fix_hell_remaining_money_ambiguities.sql");
 const dangerPersistenceFix = read("supabase/migrations/20260829020013_fix_hell_danger_persistence.sql");
+const diverseEvents = read("supabase/migrations/20260829021925_diversify_hell_events.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -45,6 +46,14 @@ assert.match(dangerPersistenceFix,
 assert.doesNotMatch(dangerPersistenceFix,
   /danger=greatest\(0,coalesce\(\(v_state->>'dangerFloor'/,
   "funding must not reset Hell Danger to zero or only its floor");
+for(const name of ["Forked Mineworks","Collapsed Junction","Flooded Galleries","Old Railway","Ventilation Network","Deep Shaft","Exposed Ore Vein","Broken Mine Railway","Functional Cargo Lift","Failing Supports","Abandoned Survey Station","Sealed Mining Chamber"])assert.match(diverseEvents,new RegExp(name));
+assert.equal((diverseEvents.match(/'secureCargo',true/g)||[]).length,1,
+  "only Functional Cargo Lift may offer full cargo securing");
+assert.match(diverseEvents,/when 'Functional Cargo Lift'[\s\S]*'secureCargo',true/);
+assert.match(diverseEvents,/hell_state=jsonb_set\(hell_state,'\{event,options\}'/,
+  "unresolved generic events must be upgraded without rerolling their identity");
+assert.match(page,/function hellEventEffect\(option\)/);
+for(const eventEffect of ["secure all current cargo","unsecured cargo","next incident chance","future reveal prices","emergency recovery penalty"])assert.match(page,new RegExp(eventEffect));
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
 assert.match(sql, /when p_od<=2 then 0/);
 assert.match(sql, /else \.45 end/);
