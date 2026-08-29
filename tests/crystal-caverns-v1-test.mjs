@@ -8,4 +8,8 @@ for(const artifact of["crystal-splinter","heart-of-the-cavern","impossible-cryst
 assert.match(sql,/array\['pocket','resonance','deposit'\]/);assert.match(sql,/random\(\)<\.35/);assert.match(sql,/r\.instability:=r\.instability\+30/);assert.match(sql,/if r\.status<>'forced_extraction'then r\.unsecured_cargo/);assert.match(sql,/on conflict\(player_id,artifact_key\)do nothing/);
 for(const rpc of["get_crystal_caverns_dashboard","start_crystal_caverns","fund_crystal_depth","resolve_crystal_decision","continue_crystal_overdepth","extract_crystal_caverns","settle_crystal_caverns"])assert.match(client,new RegExp(rpc));
 assert.match(page,/Instability is unchanged/);assert.match(page,/FRACTURE THE HEART/);assert.match(roll,/crystal_player_effects/);assert.match(roll,/rolledWeightMultiplier >= 2 \? crystalHeavyGemValueMultiplier/);
+assert.equal((roll.match(/luck \*= researchNumber\("luck_multiplier"\)/g)||[]).length,1,"research Luck must be applied exactly once");
+assert.match(roll,/luck \+= crystalLuckBonus;[\s\S]*luck \+= expeditionArtifactLuckBonus;/);
+assert.match(roll,/mutationChanceMultiplier \*= crystalMutationMultiplier;[\s\S]*mutationChanceMultiplier \*= expeditionArtifactMutationMultiplier;/);
+assert.match(roll,/crystalGemValueMultiplier \*[\s\S]*expeditionArtifactGemValueMultiplier \*[\s\S]*crystalHeavyGemValueMultiplier[\s\S]*bedrock-crown/);
 console.log("Crystal Caverns V1 tests passed.");

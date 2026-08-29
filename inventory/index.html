@@ -179,9 +179,18 @@
           <option value="weight">Heaviest first</option>
         </select>
 
+        <select class="select" id="savedFilter" aria-label="Saved inventory filters">
+          <option value="">Saved filters</option>
+          <option value="valuable">Valuable finds</option>
+          <option value="duplicates">Duplicates</option>
+          <option value="unlocked">Unlocked cleanup</option>
+        </select>
+
         <button class="btn btn--danger" id="sellAllButton" type="button" disabled>
           Sell unlocked
         </button>
+        <button class="btn" id="lockVisibleButton" type="button" disabled>Lock visible</button>
+        <button class="btn btn--danger" id="sellDuplicatesButton" type="button" disabled>Sell duplicates</button>
         <button class="btn btn--danger" id="deleteRulesButton" type="button" disabled>
           Delete by rules
         </button>

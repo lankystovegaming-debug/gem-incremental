@@ -1968,6 +1968,16 @@ export default {
         );
       }
 
+      const { data: mineArtifactRows, error: mineArtifactError } = await ctx.supabaseAdmin
+        .from("museum_artifact_registrations")
+        .select("artifact_key")
+        .eq("player_id", playerId);
+      if (mineArtifactError) {
+        console.error("Failed to load Museum artifact passives:", mineArtifactError);
+        return jsonResponse({ error: "Failed to load Museum artifact passives." }, { status: 500 });
+      }
+      const mineArtifacts = new Set((mineArtifactRows ?? []).map((row: any) => String(row.artifact_key)));
+
       const equippedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe"
       ) ?? null;
@@ -2225,6 +2235,13 @@ export default {
           ) * masterworkFactor;
       }
 
+      // Normal Abandoned Mine Museum passives are permanent collection bonuses.
+      if (mineArtifacts.has("miners-lamp")) rollSpeed += 0.02;
+      if (mineArtifacts.has("clockwork-drill")) rollSpeed += 0.05;
+      if (mineArtifacts.has("surveyors-compass")) weightLuck += 0.03;
+      if (mineArtifacts.has("silver-pick")) weightMultiplier += 0.05;
+      if (mineArtifacts.has("vein-prism")) luck += 0.05;
+
       if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
 
       const researchEffectsRaw = (player as any).player_research_effects;
@@ -2247,8 +2264,19 @@ export default {
       const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
       const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
 
+      const { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError } =
+        await ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId });
+      if (expeditionArtifactEffectsError) {
+        console.warn("Expedition artifact passives unavailable:", expeditionArtifactEffectsError);
+      }
+      const expeditionArtifactEffects = expeditionArtifactEffectsData ?? {};
+      const expeditionArtifactLuckBonus = Math.max(0, Number(expeditionArtifactEffects.luckBonus ?? 0));
+      const expeditionArtifactMutationMultiplier = Math.max(1, Number(expeditionArtifactEffects.mutationChanceMultiplier ?? 1));
+      const expeditionArtifactGemValueMultiplier = Math.max(1, Number(expeditionArtifactEffects.gemValueMultiplier ?? 1));
+
       luck *= researchNumber("luck_multiplier");
       luck += crystalLuckBonus;
+      luck += expeditionArtifactLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
       weightLuck *= researchNumber("weight_luck_multiplier");
       weightLuck *= crystalWeightLuckMultiplier;
@@ -2857,9 +2885,11 @@ export default {
         );
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
+      if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
       mutationChanceMultiplier *= crystalMutationMultiplier;
+      mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
@@ -2916,7 +2946,9 @@ export default {
         researchNumber("gem_value_multiplier") *
         researchMutationValue *
         crystalGemValueMultiplier *
-        (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1);
+        expeditionArtifactGemValueMultiplier *
+        (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
+        (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
 
       const specimen = {
@@ -3372,7 +3404,8 @@ export default {
           ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
           : 1;
         const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
-          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue;
+          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
+          (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
         const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
           .from("inventory_gems")

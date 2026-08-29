@@ -96,6 +96,10 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     const result=await ctx.supabaseAdmin.rpc("get_research_tree_v014",{p_player_id:userId});
     if(result.error)throw result.error;return json(result.data);
   }
+  if(a==="research-sync"){
+    const result=await ctx.supabaseAdmin.rpc("refresh_research_tree_v014",{p_player_id:userId});
+    if(result.error)throw result.error;return json(result.data);
+  }
   if(a==="research-purchase"){
     const result=await ctx.supabaseAdmin.rpc("purchase_research_node_v014",{p_player_id:userId,p_node_id:String(b.nodeId??"")});
     if(result.error)throw result.error;return json(result.data);
