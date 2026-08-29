@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const sql = read("supabase/migrations/20260828153546_abandoned_mine_hell_mode_v1.sql");
+const targetCastFix = read("supabase/migrations/20260829011537_fix_hell_mode_objective_target_cast.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -17,6 +18,8 @@ assert.match(sql, /'depthCosts',to_jsonb\(array\[100000,125000,150000,200000,250
 assert.match(sql, /'revealCosts',to_jsonb\(array\[100000,150000,250000,400000,650000,1000000,1500000,2250000,3250000,5000000\]/);
 assert.match(sql, /'doomThreshold',90/);
 assert.match(sql, /'weeklyMythicCap',5/);
+assert.match(targetCastFix, /target=ceil\(coalesce\([\s\S]*::numeric[\s\S]*::integer/,
+  "decimal Hell objective targets must not be cast from text directly to integer");
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
 assert.match(sql, /when p_od<=2 then 0/);
 assert.match(sql, /else \.45 end/);
