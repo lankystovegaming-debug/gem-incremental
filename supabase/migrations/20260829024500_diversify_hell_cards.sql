@@ -20,7 +20,7 @@ declare
     {"cardId":"frayed_lifeline","key":"recovery_damage","kind":"curse","name":"Frayed Lifeline"},
     {"cardId":"danger_floor","key":"danger_floor","kind":"curse","name":"Danger Floor"},
     {"cardId":"sealed_air","key":"danger_floor","kind":"curse","name":"Sealed Air"},
-    {"cardId":"conditional_risk","key":"conditional_risk","kind":"curse","name":"Conditional Risk"},
+    {"cardId":"conditional_risk","key":"conditional_risk","kind":"curse","name":"Hell Pressure"},
     {"cardId":"echoing_steps","key":"conditional_risk","kind":"curse","name":"Echoing Steps"},
     {"cardId":"minor_danger","key":"minor_danger","kind":"lesser","name":"Minor Danger"},
     {"cardId":"dust_cloud","key":"minor_danger","kind":"lesser","name":"Dust Cloud"},
