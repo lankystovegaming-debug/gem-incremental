@@ -77,6 +77,9 @@ assert.match(page, /No Supply Camps/);
 assert.match(page, /Face-down card/);
 for (const effect of ["Adds 2–5 Danger", "next incident check", "card reveal price", "emergency unsecured-cargo recovery", "Reduces Doom by 1–5"]) assert.match(page,new RegExp(effect));
 assert.match(page,/hellCardEffect\(card,run\)/);
+assert.match(page,/function selectedHellCardResult\(run,state\)/);
+for(const resultText of ["Chosen card revealed","No incident occurred","incident occurred"])assert.match(page,new RegExp(resultText));
+assert.match(page,/selectedHellCardResult\(run,state\)/);
 assert.match(page, /Critical extraction will lose them/);
 assert.doesNotMatch(sql, /Crystal Caverns|Volcanic Depths|Ancient Ruins|Lost Jungle/);
 
