@@ -89,6 +89,66 @@
 
 .guild-form textarea { min-height: 92px; resize: vertical; }
 
+/* ---------- discovery ---------- */
+
+.guild-directory { grid-column: 1 / -1; }
+
+.directory-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.directory-heading h2 { margin: 0; }
+.directory-heading .muted { margin: 4px 0 0; }
+
+.directory-search {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 250px);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.directory-search input { width: 100%; }
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--space-3);
+}
+
+.directory-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.directory-emblem {
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--directory-primary, var(--accent)), var(--directory-secondary, var(--accent-2)));
+}
+
+.directory-emblem img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.directory-card h3 { margin: 0; font-size: 1rem; }
+.directory-card p { grid-column: 1 / -1; margin: 0; font-size: 0.84rem; line-height: 1.35; }
+.directory-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; color: var(--text-muted); font-size: 0.78rem; }
+.directory-card .btn { grid-column: 1 / -1; justify-self: start; }
+
 .colour-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .colour-grid input {
   height: 46px;
@@ -121,12 +181,34 @@
   width: 76px;
   height: 76px;
   border-radius: var(--radius-lg);
+  overflow: hidden;
   display: grid;
   place-items: center;
   font-size: 2rem;
   color: #fff;
   background: linear-gradient(145deg, var(--guild-primary, var(--accent)), var(--guild-secondary, var(--accent)));
   box-shadow: 0 8px 20px -10px var(--guild-primary, var(--accent));
+}
+
+.guild-emblem img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--surface-sunken);
+}
+
+.guild-logo-settings {
+  display: grid;
+  gap: 8px;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.guild-logo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .guild-heading { flex: 1; min-width: 0; }
@@ -369,6 +451,7 @@ button.danger:hover {
   .activity-panel { grid-column: auto; }
   .bonus-grid,
   .upgrade-grid { grid-template-columns: 1fr 1fr; }
+  .directory-heading { align-items: stretch; flex-direction: column; }
 }
 
 @media (max-width: 560px) {

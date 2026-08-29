@@ -6,6 +6,7 @@ const sql=read("supabase/migrations/20260827024337_research_tree_v0140_beta.sql"
 const roll=read("supabase/functions/roll/index.ts");
 const features=read("supabase/functions/features/index.ts");
 const ui=read("research-tree/research-tree.js");
+const css=read("research-tree/research-tree.css");
 
 const nodes=[...sql.matchAll(/^\('([^']+)','(root|mining|specimen|engineering|exploration)',/gm)];
 assert.equal(nodes.length,98,"expected root plus 97 purchasable research nodes");
@@ -37,4 +38,8 @@ for(const action of ["research","research-purchase","research-reset"]){
 }
 assert.match(ui,/data-node/);
 assert.match(ui,/resetConfirm/);
+assert.match(css,/font-family: var\(--font\)/);
+assert.match(css,/font-family: var\(--font-display\)/);
+assert.match(css,/\.research-node\.owned/);
+assert.doesNotMatch(css,/var\(--panel\)|var\(--muted\)|Arial/);
 console.log("Research Tree v0.14.0 performance and integration tests passed.");

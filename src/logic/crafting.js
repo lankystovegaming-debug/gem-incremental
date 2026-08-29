@@ -212,6 +212,15 @@ export function isRequirementComplete(
     return Number(inventory?.totalRolls ?? 0) >= Number(requirement.rolls ?? 0);
   }
 
+  if (requirement.type === "roll-history-condition") {
+    const recorded = Number(
+      Number(requirement.minimumRarity ?? 0) >= 1000000
+        ? inventory?.bestRareNaturalWeight1m
+        : inventory?.bestRareNaturalWeight100k
+    );
+    return recorded >= Number(requirement.minimumWeightMultiplier ?? 0);
+  }
+
   if (
     requirement.type ===
     "gem-count"
@@ -439,7 +448,8 @@ export function tryAutoDeposit(
     if (
       requirement.type === "equipment" ||
       requirement.type === "consumable" ||
-      requirement.type === "lifetime-rolls"
+      requirement.type === "lifetime-rolls" ||
+      requirement.type === "roll-history-condition"
     ) {
       continue;
     }
@@ -522,7 +532,8 @@ export function manuallyDepositRequirement(
   if (
     requirement.type === "consumable" ||
     requirement.type === "equipment" ||
-    requirement.type === "lifetime-rolls"
+    requirement.type === "lifetime-rolls" ||
+    requirement.type === "roll-history-condition"
   ) {
     return false;
   }

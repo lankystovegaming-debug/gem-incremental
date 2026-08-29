@@ -174,6 +174,15 @@ async function open() {
         Give coins
       </button>
 
+      <label class="devpanel__field">
+        <span>Research Points</span>
+        <input type="number" id="devResearchPoints" value="10" min="1" max="1000000" step="1">
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="researchpoints" type="button">
+        Give Research Points
+      </button>
+
       <div class="devpanel__sep"></div>
 
       <label class="devpanel__field">
@@ -295,6 +304,7 @@ async function open() {
   const slotsInput = panel.querySelector("#devSlots");
   const rollsInput = panel.querySelector("#devRolls");
   const coinsInput = panel.querySelector("#devCoins");
+  const researchPointsInput = panel.querySelector("#devResearchPoints");
   const mutationLuckInput = panel.querySelector("#devMutationLuck");
   const gemSelect = panel.querySelector("#devGem");
   const gemQtyInput = panel.querySelector("#devGemQty");
@@ -526,6 +536,55 @@ async function open() {
       status.textContent = `${who()} now has ${formatCount(total)} coins.`;
 
       notify.success("Sent", `+${formatCount(amount)} coins for ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
+  // GIVE RESEARCH POINTS
+  //
+  // The server writes these grants through the RP ledger and
+  // increments both earned and available points. This keeps the
+  // grant auditable and ensures a research reset does not erase it.
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="researchpoints"]')
+    .addEventListener("click", async () => {
+      const amount = Math.floor(Number(researchPointsInput.value));
+
+      if (!Number.isFinite(amount) || amount < 1 || amount > 1000000) {
+        const message = "Enter 1 to 1,000,000 Research Points.";
+
+        status.textContent = message;
+
+        notify.error("Invalid amount", message);
+
+        return;
+      }
+
+      if (!(await confirmSend(`Give ${formatCount(amount)} Research Point${amount === 1 ? "" : "s"}.`))) {
+        return;
+      }
+
+      const result = await callDependency("research_points", targetValue(), {
+        amount
+      });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      const total = result.data?.points_available;
+
+      status.textContent = `${who()} now has ${formatCount(total)} Research Points.`;
+
+      notify.success("Sent", `+${formatCount(amount)} Research Points for ${who()}.`);
 
       refreshIfSelf(isSelf());
     });
@@ -881,6 +940,10 @@ async function callDependency(action, target, payload) {
 
   if (/target_not_found/.test(message)) {
     return { ok: false, message: "No player with that name." };
+  }
+
+  if (/invalid_research_points/.test(message)) {
+    return { ok: false, message: "Enter 1 to 1,000,000 Research Points." };
   }
 
   return { ok: false, message: "The action could not be completed." };

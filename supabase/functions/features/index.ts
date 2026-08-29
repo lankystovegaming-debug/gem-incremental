@@ -32,6 +32,8 @@ const GUILD_ERROR_STATUS:Record<string,number>={
   owner_cannot_leave:409,invite_not_found:404,player_not_found:404,
   member_not_found:404,guild_not_found:404,already_in_guild:409,
   player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
+  guild_not_open:409,guild_not_requestable:409,join_request_pending:409,
+  join_request_not_found:404,
   guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
   guild_level_required:409,max_upgrade:409,insufficient_money:409,
   guild_point_purchase_limit:409,research_node_not_found:404,
@@ -51,6 +53,14 @@ async function isAdmin(ctx:any,userId:string){
   const {data,error}=await ctx.supabaseAdmin.from("admins").select("user_id").eq("user_id",userId).maybeSingle();
   if(error){console.error("FEATURES_ADMIN_LOOKUP",error.message);return false;}
   return data?.user_id===userId;
+}
+async function guildOwnedBy(ctx:any,userId:string){
+  const {data:guild,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,logo_path").eq("owner_id",userId).maybeSingle();
+  if(guildError)throw guildError;
+  if(!guild)return null;
+  const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("role").eq("guild_id",guild.id).eq("player_id",userId).maybeSingle();
+  if(membershipError)throw membershipError;
+  return membership?.role==="owner"?guild:null;
 }
 export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:cors}); const userId=uid(ctx); if(!userId)return json({error:"unauthenticated"},401); let b:any={};try{b=await req.json()}catch{} const a=b.action;
  try{
@@ -97,7 +107,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild"){
    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
    if(membershipError)throw membershipError;
-   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null;
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null,joinRequests:any[]=[];
    if(membership){
     const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
     if(runtime.error)throw runtime.error;
@@ -110,6 +120,15 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     if(profileError)throw profileError;
     const names=new Map((profiles??[]).map((profile:any)=>[profile.id,profile.username]));
     members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
+    if(["owner","officer"].includes(membership.role)){
+      const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("id,player_id,requested_at").eq("guild_id",guild.id).eq("status","pending").order("requested_at");
+      if(requestError)throw requestError;
+      const requestIds=(requestRows??[]).map((row:any)=>row.player_id);
+      const {data:requestProfiles,error:requestProfileError}=requestIds.length?await ctx.supabaseAdmin.from("players").select("id,username").in("id",requestIds):{data:[],error:null};
+      if(requestProfileError)throw requestProfileError;
+      const requestNames=new Map((requestProfiles??[]).map((profile:any)=>[profile.id,profile.username]));
+      joinRequests=(requestRows??[]).map((row:any)=>({...row,username:requestNames.get(row.player_id)||"Unknown player"}));
+    }
     const now=new Date().toISOString();
     const contributionDate=now.slice(0,10);
     const {data:cashRows,error:cashError}=await ctx.supabaseAdmin.from("guild_point_cash_contributions").select("player_id,purchase_number,money_spent,points_awarded,created_at").eq("guild_id",guild.id).eq("contribution_date",contributionDate).order("purchase_number");
@@ -136,7 +155,22 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,joinRequests,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+  }
+  if(a==="guild-directory"){
+    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",userId).maybeSingle();
+    if(membershipError)throw membershipError;
+    const {data:guildRows,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,name,tag,description,join_mode,xp,member_capacity,primary_color,secondary_color,accent_color,logo_path,updated_at").order("xp",{ascending:false}).order("name").limit(48);
+    if(guildError)throw guildError;
+    const guildIds=(guildRows??[]).map((guild:any)=>guild.id);
+    const {data:memberRows,error:memberError}=guildIds.length?await ctx.supabaseAdmin.from("guild_members").select("guild_id").in("guild_id",guildIds):{data:[],error:null};
+    if(memberError)throw memberError;
+    const memberCounts=new Map<string,number>();
+    for(const row of memberRows??[])memberCounts.set(row.guild_id,(memberCounts.get(row.guild_id)??0)+1);
+    const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("guild_id").eq("player_id",userId).eq("status","pending");
+    if(requestError)throw requestError;
+    const pendingGuildIds=new Set((requestRows??[]).map((row:any)=>row.guild_id));
+    return json({inGuild:Boolean(membership),guilds:(guildRows??[]).map((guild:any)=>({...guild,memberCount:memberCounts.get(guild.id)??0,pendingRequest:pendingGuildIds.has(guild.id)}))});
   }
   if (a === "guild-create") {
     const limited=await limitGuildCreation(userId);if(limited)return limited;
@@ -148,6 +182,9 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     });
     if(rpc.error)throw rpc.error; return json(rpc.data);
   }
+  if(a==="guild-join-open"){const r=await ctx.supabaseAdmin.rpc("guild_join_open_v1",{p_player_id:userId,p_guild_id:String(b.guildId??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-request-join"){const r=await ctx.supabaseAdmin.rpc("guild_request_join_v1",{p_player_id:userId,p_guild_id:String(b.guildId??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-manage-join-request"){const r=await ctx.supabaseAdmin.rpc("guild_manage_join_request_v1",{p_actor_id:userId,p_request_id:String(b.requestId??""),p_accept:b.accept===true});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-invite"){
     const username=String(b.username??"").trim(); if(!username)return json({error:"username_required"},400);
     const {data:actor}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role").eq("player_id",userId).maybeSingle();
@@ -166,7 +203,44 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-upgrade"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_upgrade",{p_player_id:userId,p_track:String(b.track??"")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-purchase-points"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_points_with_cash",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
-  if(a==="guild-disband"){const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-update-logo"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const logoPath=String(b.logoPath??"").trim();
+    const expectedPrefix=`${guild.id}/`;
+    if(!logoPath.startsWith(expectedPrefix)||!new RegExp(`^${guild.id}/logo\\.(jpg|jpeg|png|webp)$`,"i").test(logoPath))return json({error:"invalid_guild_logo",message:"Upload a JPG, PNG, or WebP guild logo first."},400);
+    const {error:updateError}=await ctx.supabaseAdmin.from("guilds").update({logo_path:logoPath,updated_at:new Date().toISOString()}).eq("id",guild.id).eq("owner_id",userId);
+    if(updateError)throw updateError;
+    if(guild.logo_path&&guild.logo_path!==logoPath){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_OLD_OBJECT_REMOVE",removeError.message);
+    }
+    await ctx.supabaseAdmin.from("guild_activity").insert({guild_id:guild.id,actor_id:userId,action:"logo_updated"});
+    return json({ok:true,logoPath});
+  }
+  if(a==="guild-remove-logo"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const {error:updateError}=await ctx.supabaseAdmin.from("guilds").update({logo_path:null,updated_at:new Date().toISOString()}).eq("id",guild.id).eq("owner_id",userId);
+    if(updateError)throw updateError;
+    if(guild.logo_path){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_OBJECT_REMOVE",removeError.message);
+    }
+    await ctx.supabaseAdmin.from("guild_activity").insert({guild_id:guild.id,actor_id:userId,action:"logo_removed"});
+    return json({ok:true});
+  }
+  if(a==="guild-disband"){
+    const guild=await guildOwnedBy(ctx,userId);
+    if(!guild)return json({error:"owner_only"},403);
+    const r=await ctx.supabaseAdmin.rpc("guild_disband_v2",{p_player_id:userId,p_confirmation:String(b.confirmation??"")});
+    if(r.error)throw r.error;
+    if(guild.logo_path){
+      const {error:removeError}=await ctx.supabaseAdmin.storage.from("guild-logos").remove([guild.logo_path]);
+      if(removeError)console.error("GUILD_LOGO_DISBAND_OBJECT_REMOVE",removeError.message);
+    }
+    return json(r.data);
+  }
   return json({error:"unknown_action"},400);
  }catch(e){console.error("FEATURES_API",e);return guildFailure(e);}
 })};

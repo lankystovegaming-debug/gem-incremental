@@ -69,16 +69,31 @@ export async function loadCloudPlayerState() {
     return null;
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("players")
     .select(`
       inventory_capacity,
       money,
       total_rolls,
+      best_rare_natural_weight_100k,
+      best_rare_natural_weight_1m,
       next_roll_at
     `)
     .eq("id", user.id)
     .maybeSingle();
+
+  // Keep mixed-version deployments usable while the database migration is
+  // rolling out. Postgres 42703 means the new milestone columns do not exist
+  // yet; older columns remain safe to read and the gates display as unmet.
+  if (error?.code === "42703") {
+    const legacyResult = await supabase
+      .from("players")
+      .select("inventory_capacity, money, total_rolls, next_roll_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    data = legacyResult.data;
+    error = legacyResult.error;
+  }
 
   if (error) {
     console.error("Failed to load cloud player state:", error);
@@ -104,6 +119,8 @@ export async function loadCloudPlayerState() {
     ),
     money: Number(data.money ?? 0),
     total_rolls: Number(data.total_rolls ?? 0),
+    best_rare_natural_weight_100k: Number(data.best_rare_natural_weight_100k ?? 0),
+    best_rare_natural_weight_1m: Number(data.best_rare_natural_weight_1m ?? 0),
     next_roll_at: data.next_roll_at ?? null,
     ban_until,
     ban_reason

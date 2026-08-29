@@ -408,6 +408,31 @@
     inset 0 -2px 0 rgb(0 0 0 / 0.25);
 }
 
+/* The roll-stage surface remains still; the moving layer is clipped to its
+   transparent one-pixel border so Neon gets a little life without becoming
+   visually noisy. */
+:root[data-theme="neon"] .stage {
+  border-color: transparent;
+  background:
+    radial-gradient(480px 260px at 50% 40%, var(--accent-soft), transparent 68%) padding-box,
+    linear-gradient(145deg, var(--surface-raised), var(--surface-sunken)) padding-box,
+    linear-gradient(110deg, #35e0ff, #8c7dff, #ff5f9e, #ffc93c, #2bf5a0, #35e0ff) border-box;
+  background-size: auto, auto, 320% 100%;
+  background-position: center, center, 0 50%;
+  animation: neon-roll-stage-border 7s linear infinite;
+}
+
+@keyframes neon-roll-stage-border {
+  to { background-position: center, center, 320% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="neon"] .stage {
+    animation: none;
+    background-position: center, center, 50% 50%;
+  }
+}
+
 :root[data-theme="neon"] .gem-reveal__name {
   color: var(--tier, var(--accent));
   text-shadow:
