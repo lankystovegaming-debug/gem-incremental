@@ -216,6 +216,45 @@ dialog input:focus-visible {
 
 .research-tree { display: grid; gap: 16px; margin-top: 18px; }
 
+/* Desktop gets a true left-to-right dependency map. The card list remains the
+   compact, touch-friendly presentation below the desktop breakpoint. */
+.research-map-host { display: none; margin-top: 18px; }
+.research-map__viewport { overflow: auto; padding: 2px 2px 14px; }
+.research-map {
+  position: relative;
+  min-width: 1120px;
+  min-height: 760px;
+  padding: 26px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 5%, transparent) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(color-mix(in srgb, var(--accent) 5%, transparent) 1px, transparent 1px) 0 0 / 42px 42px,
+    radial-gradient(600px 360px at 8% 50%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+    linear-gradient(145deg, var(--surface-solid), var(--surface-sunken));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .03);
+}
+.research-map__columns { position: relative; z-index: 1; display: grid; grid-template-columns: 130px repeat(4, minmax(190px, 1fr)); gap: 34px; min-height: 708px; }
+.research-map__column { display: flex; flex-direction: column; min-width: 0; }
+.research-map__column > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-height: 28px; padding-bottom: 11px; border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border)); color: var(--accent); font-family: var(--font-display); font-size: .68rem; font-weight: 800; letter-spacing: .12em; }
+.research-map__column > header small { color: var(--text-muted); font-family: var(--font); font-size: .67rem; font-weight: 700; letter-spacing: 0; }
+.research-map__nodes { display: grid; align-content: space-evenly; flex: 1; gap: 16px; padding-top: 14px; }
+.research-map__column[data-stage="0"] .research-map__nodes { align-content: center; }
+.research-map__column[data-stage="1"] .research-map__nodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.research-map__line { fill: none; stroke: color-mix(in srgb, var(--border-strong) 82%, transparent); stroke-width: 2; stroke-linecap: round; }
+.research-map__line.owned { stroke: color-mix(in srgb, var(--positive) 76%, var(--accent)); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--positive) 40%, transparent)); }
+.research-map__line.planned { stroke: var(--accent); stroke-dasharray: 5 6; }
+.research-map__lines { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+.research-map__node { position: relative; z-index: 2; min-height: 74px; width: 100%; padding: 11px 12px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border)); border-radius: 14px; color: var(--text); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--surface-raised)), var(--surface-sunken)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .035), 0 10px 22px -22px #000; text-align: left; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.research-map__node > span { display: block; margin-bottom: 4px; color: var(--accent); font-family: var(--font-display); font-size: .6rem; font-weight: 850; letter-spacing: .08em; }
+.research-map__node > strong { display: block; font-size: .79rem; line-height: 1.2; }
+.research-map__node:not(:disabled):hover { border-color: var(--accent); box-shadow: 0 13px 26px -18px var(--accent-ring), inset 0 1px 0 rgb(255 255 255 / .05); transform: translateY(-2px) scale(1.015); }
+.research-map__node.owned { border-color: color-mix(in srgb, var(--positive) 65%, var(--border)); background: linear-gradient(145deg, color-mix(in srgb, var(--positive) 15%, var(--surface-raised)), var(--surface-sunken)); }
+.research-map__node.owned > span { color: var(--positive); }
+.research-map__node.locked { opacity: .58; filter: saturate(.58); }
+.research-map__node.planned { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 12px 26px -18px var(--accent-ring); }
+
 .research-stage {
   padding: 20px;
   border: 1px solid var(--border);
@@ -342,6 +381,11 @@ dialog input:focus { border-color: var(--accent); outline: 0; }
   .node-grid { grid-template-columns: 1fr; }
 }
 
+@media (min-width: 900px) {
+  .research-map-host { display: block; }
+  .research-tree { display: none; }
+}
+
 @media (max-width: 460px) {
   .research-summary { grid-template-columns: 1fr; }
   .research-stage { padding: 15px; }
@@ -353,5 +397,6 @@ dialog input:focus { border-color: var(--accent); outline: 0; }
 @media (prefers-reduced-motion: reduce) {
   .research-page button,
   dialog button,
-  .research-node { transition: none; }
+  .research-node,
+  .research-map__node { transition: none; }
 }
