@@ -75,6 +75,8 @@ assert.match(sql, /revoke all on function public\.get_normal_abandoned_mine_dash
 assert.match(page, /Hell Mode/);
 assert.match(page, /No Supply Camps/);
 assert.match(page, /Face-down card/);
+for (const effect of ["Adds 2–5 Danger", "next incident check", "card reveal price", "emergency unsecured-cargo recovery", "Reduces Doom by 1–5"]) assert.match(page,new RegExp(effect));
+assert.match(page,/hellCardEffect\(card,run\)/);
 assert.match(page, /Critical extraction will lose them/);
 assert.doesNotMatch(sql, /Crystal Caverns|Volcanic Depths|Ancient Ruins|Lost Jungle/);
 

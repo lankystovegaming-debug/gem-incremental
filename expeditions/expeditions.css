@@ -47,6 +47,8 @@
 .hell-card--hidden{background:linear-gradient(145deg,color-mix(in srgb,#7f1d1d 30%,var(--surface-sunken)),var(--surface-sunken));border-style:dashed}
 .hell-card--curse{border-color:color-mix(in srgb,#ef4444 55%,var(--border))}
 .hell-card--lesser{border-color:color-mix(in srgb,#f59e0b 55%,var(--border))}
+.hell-card__type{margin-bottom:.25rem;color:var(--text-muted)}
+.hell-card__effect{min-height:3em;margin-top:0;color:var(--text)}
 .hell-card div{display:flex;gap:.5rem;flex-wrap:wrap}
 .hell-reward{margin:1rem 0;padding:1rem;border-radius:var(--radius-md);background:color-mix(in srgb,#ef4444 12%,var(--surface-sunken));border:1px solid color-mix(in srgb,#ef4444 45%,var(--border))}
 .artifact-panel,.expedition-history{margin-top:1.5rem}
