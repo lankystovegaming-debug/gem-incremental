@@ -1,11 +1,20 @@
 import { supabase } from "./supabase.js";
-const MESSAGES={insufficient_funds:"You do not have enough money for that operation.",mine_depth_out_of_sequence:"That depth is not ready for funding.",mine_route_unavailable:"This route decision is no longer available.",invalid_mine_route:"That route is not valid here.",supply_camp_unavailable:"That checkpoint service is no longer available.",invalid_camp_service:"That Supply Camp service is not valid.",mine_overdepth_unavailable:"Mine Overdepth is not available yet.",mine_not_active:"That expedition is no longer active.",mine_not_extracted:"Extract before settling the expedition."};
+const MESSAGES={insufficient_funds:"You do not have enough money for that operation.",mine_run_already_open:"Finish the current Mine run before starting another.",mine_depth_out_of_sequence:"That depth is not ready for funding.",hell_depth_out_of_sequence:"That Hell depth is not ready.",hell_event_unavailable:"That Hell event has already moved on.",invalid_hell_event_option:"That event option is unavailable.",hell_paid_support_disabled:"Severed Funding has disabled paid support.",hell_safeguards_disabled:"Broken Safeguards prevents securing new cargo.",hell_cards_unavailable:"The Hell hand is not ready.",hell_card_invalid:"That card cannot be used.",hell_reveals_disabled:"A Doom Break has disabled card reveals.",hell_overdepth_unavailable:"Hell Overdepth is not available yet.",hell_extraction_unavailable:"Extraction is not available during this phase.",hell_not_extracted:"Extract safely before settling this Hell run.",mine_route_unavailable:"This route decision is no longer available.",invalid_mine_route:"That route is not valid here.",supply_camp_unavailable:"That checkpoint service is no longer available.",invalid_camp_service:"That Supply Camp service is not valid.",mine_overdepth_unavailable:"Mine Overdepth is not available yet.",mine_not_active:"That expedition is no longer active.",mine_not_extracted:"Extract before settling the expedition."};
 function normalise(error){if(!error)return null;const code=Object.keys(MESSAGES).find(value=>error.message?.includes(value))??error.code;return{code,message:MESSAGES[code]??"The expedition request could not be completed."};}
 async function rpc(name,args){const{data,error}=await supabase.rpc(name,args);return{data,error:normalise(error)};}
 export const loadExpeditionDashboard=()=>rpc("get_abandoned_mine_dashboard");
+export const loadHellDashboard=()=>rpc("get_abandoned_mine_hell_dashboard");
 export const fundMineDepth=depth=>rpc("fund_abandoned_mine",{p_depth:depth});
 export const chooseMineRoute=(runId,route)=>rpc("choose_abandoned_mine_route",{p_run_id:runId,p_route:route});
 export const chooseSupplyCampService=(runId,service)=>rpc("choose_abandoned_mine_camp_service",{p_run_id:runId,p_service:service});
 export const continueMineOverdepth=runId=>rpc("continue_mine_overdepth",{p_run_id:runId});
 export const extractMine=(runId,forced=false)=>rpc("extract_abandoned_mine",{p_run_id:runId,p_forced:forced});
 export const settleMine=runId=>rpc("settle_abandoned_mine",{p_run_id:runId});
+export const startHellMine=()=>rpc("start_abandoned_mine_hell");
+export const fundHellDepth=depth=>rpc("fund_abandoned_mine_hell",{p_depth:depth});
+export const chooseHellEvent=(runId,option)=>rpc("resolve_abandoned_mine_hell_event",{p_run_id:runId,p_option:option});
+export const revealHellCard=(runId,slot)=>rpc("reveal_abandoned_mine_hell_card",{p_run_id:runId,p_slot:slot});
+export const selectHellCard=(runId,slot)=>rpc("select_abandoned_mine_hell_card",{p_run_id:runId,p_slot:slot});
+export const continueHellOverdepth=runId=>rpc("continue_abandoned_mine_hell_overdepth",{p_run_id:runId});
+export const extractHellMine=runId=>rpc("extract_abandoned_mine_hell",{p_run_id:runId});
+export const settleHellMine=runId=>rpc("settle_abandoned_mine_hell",{p_run_id:runId});

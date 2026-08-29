@@ -39,13 +39,23 @@
 .route-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;width:100%}
 .route-grid article{padding:1rem;border:1px solid var(--border);border-radius:var(--radius-md)}
 .route-grid h3{margin:0}
+.mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1rem}
+.mode-grid article,.hell-card,.hell-actions>article{padding:1rem;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-sunken)}
+.mode-card--hell,.mine-run--hell{border-color:color-mix(in srgb,#ef4444 55%,var(--border));box-shadow:inset 0 1px 0 rgb(239 68 68/.18)}
+.hell-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;align-items:stretch}
+.hell-actions>.btn{align-self:end}
+.hell-card--hidden{background:linear-gradient(145deg,color-mix(in srgb,#7f1d1d 30%,var(--surface-sunken)),var(--surface-sunken));border-style:dashed}
+.hell-card--curse{border-color:color-mix(in srgb,#ef4444 55%,var(--border))}
+.hell-card--lesser{border-color:color-mix(in srgb,#f59e0b 55%,var(--border))}
+.hell-card div{display:flex;gap:.5rem;flex-wrap:wrap}
+.hell-reward{margin:1rem 0;padding:1rem;border-radius:var(--radius-md);background:color-mix(in srgb,#ef4444 12%,var(--surface-sunken));border:1px solid color-mix(in srgb,#ef4444 45%,var(--border))}
 .artifact-panel,.expedition-history{margin-top:1.5rem}
 .history-row{display:flex;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
 .history-row:last-child{border:0}
 @media(max-width:1000px){.destination-grid{grid-template-columns:repeat(2,1fr)}
 .destination--active{grid-column:span 2}
 }
-@media(max-width:680px){.destination-grid,.cargo-grid,.route-grid{grid-template-columns:1fr}
+@media(max-width:680px){.destination-grid,.cargo-grid,.route-grid,.mode-grid,.hell-actions{grid-template-columns:1fr}
 .destination--active{grid-column:auto}
 .mine-run__head{flex-direction:column}
 .danger-meter{justify-items:start}
