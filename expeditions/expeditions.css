@@ -56,6 +56,9 @@
 .hell-resolution__incident--critical{color:#fb7185}
 .hell-card div{display:flex;gap:.5rem;flex-wrap:wrap}
 .hell-reward{margin:1rem 0;padding:1rem;border-radius:var(--radius-md);background:color-mix(in srgb,#ef4444 12%,var(--surface-sunken));border:1px solid color-mix(in srgb,#ef4444 45%,var(--border))}
+.loot-summary--hell{border-color:color-mix(in srgb,#ef4444 45%,var(--border))}
+.hell-loot-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}
+.hell-loot-list p{margin:0;padding:.8rem;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-sunken)}
 .artifact-panel,.expedition-history{margin-top:1.5rem}
 .history-row{display:flex;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
 .history-row:last-child{border:0}

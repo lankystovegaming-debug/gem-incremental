@@ -88,6 +88,9 @@ assert.match(page,/function selectedHellCardResult\(run,state\)/);
 for(const resultText of ["Chosen card revealed","No incident occurred","incident occurred"])assert.match(page,new RegExp(resultText));
 assert.match(page,/selectedHellCardResult\(run,state\)/);
 assert.match(page, /Critical extraction will lose them/);
+assert.match(page,/function renderHellLootTable\(\)/);
+for(const lootText of ["Hell Overdepth artifacts","Chance per clear","Hell Cache · one high-end roll","Hell Cache · three minor rolls","Critical extraction loses them"])assert.match(page,new RegExp(lootText));
+assert.match(page,/if\(run\?\.mode==="hell"\)renderHellLootTable\(\)/);
 assert.doesNotMatch(sql, /Crystal Caverns|Volcanic Depths|Ancient Ruins|Lost Jungle/);
 
 console.log("Abandoned Mine Hell Mode V1 tests passed.");
