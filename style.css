@@ -2569,3 +2569,27 @@ html.is-cinematic-active body {
     min-height: 130px;
   }
 }
+
+
+/* The roll surface should feel substantial, not empty. These final values
+   leave room for gem reveals while reclaiming height on laptops and phones. */
+.stage__display {
+  min-height: clamp(280px, 34vw, 360px);
+}
+
+@media (max-width: 600px) {
+  .stage__display {
+    min-height: 272px;
+  }
+
+  .stage__idle-mark {
+    width: 88px;
+    height: 88px;
+    padding: 15px;
+    border-radius: 22px;
+  }
+
+  .stage__idle-text {
+    max-width: 290px;
+  }
+}
