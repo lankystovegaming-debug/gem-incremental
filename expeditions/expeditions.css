@@ -63,6 +63,9 @@
 .artifact-panel,.expedition-history{margin-top:1.5rem}
 .history-row{display:flex;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
 .history-row:last-child{border:0}
+.artifact-history-row{align-items:flex-start}
+.artifact-passive{display:flex!important;gap:.45rem;margin-top:.4rem;color:var(--text-muted);line-height:1.35}
+.artifact-passive span{color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:.7rem}
 @media(max-width:1000px){.destination-grid{grid-template-columns:repeat(2,1fr)}
 .destination--active{grid-column:span 2}
 }

@@ -1968,6 +1968,16 @@ export default {
         );
       }
 
+      const { data: mineArtifactRows, error: mineArtifactError } = await ctx.supabaseAdmin
+        .from("museum_artifact_registrations")
+        .select("artifact_key")
+        .eq("player_id", playerId);
+      if (mineArtifactError) {
+        console.error("Failed to load Museum artifact passives:", mineArtifactError);
+        return jsonResponse({ error: "Failed to load Museum artifact passives." }, { status: 500 });
+      }
+      const mineArtifacts = new Set((mineArtifactRows ?? []).map((row: any) => String(row.artifact_key)));
+
       const equippedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe"
       ) ?? null;
@@ -2224,6 +2234,13 @@ export default {
             0
           ) * masterworkFactor;
       }
+
+      // Normal Abandoned Mine Museum passives are permanent collection bonuses.
+      if (mineArtifacts.has("miners-lamp")) rollSpeed += 0.02;
+      if (mineArtifacts.has("clockwork-drill")) rollSpeed += 0.05;
+      if (mineArtifacts.has("surveyors-compass")) weightLuck += 0.03;
+      if (mineArtifacts.has("silver-pick")) weightMultiplier += 0.05;
+      if (mineArtifacts.has("vein-prism")) luck += 0.05;
 
       if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
 
@@ -2843,6 +2860,7 @@ export default {
         );
 
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
+      if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
 
@@ -2899,7 +2917,8 @@ export default {
         gem.valuePerGram *
         mutationMultiplier *
         researchNumber("gem_value_multiplier") *
-        researchMutationValue;
+        researchMutationValue *
+        (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
 
       const specimen = {
@@ -3355,7 +3374,8 @@ export default {
           ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
           : 1;
         const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
-          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue;
+          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
+          (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
         const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
           .from("inventory_gems")
