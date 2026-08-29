@@ -9,6 +9,7 @@ const nullEventFix = read("supabase/migrations/20260829013711_fix_hell_null_even
 const remainingMoneyFix = read("supabase/migrations/20260829014406_fix_hell_remaining_money_ambiguities.sql");
 const dangerPersistenceFix = read("supabase/migrations/20260829020013_fix_hell_danger_persistence.sql");
 const diverseEvents = read("supabase/migrations/20260829021925_diversify_hell_events.sql");
+const diverseCards = read("supabase/migrations/20260829024500_diversify_hell_cards.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -52,6 +53,16 @@ assert.equal((diverseEvents.match(/'secureCargo',true/g)||[]).length,1,
 assert.match(diverseEvents,/when 'Functional Cargo Lift'[\s\S]*'secureCargo',true/);
 assert.match(diverseEvents,/hell_state=jsonb_set\(hell_state,'\{event,options\}'/,
   "unresolved generic events must be upgraded without rerolling their identity");
+for(const cardName of ["Falling Rock","Unstable Timber","Falsified Ledger","Frayed Lifeline","Sealed Air","Echoing Steps","Dust Cloud","False Alarm","Price Gouging","Damaged Harness","Abandoned Cache","Cool Breeze"])assert.match(diverseCards,new RegExp(cardName));
+assert.match(diverseCards,/not \(\(c\.value->>'key'\)=any\(v_picked_effects\)\)/,
+  "renamed variants of one effect must not appear in the same hand");
+assert.match(diverseCards,/not \(coalesce\(p_excluded_effects,'\[\]'::jsonb\) \? \(c\.value->>'key'\)\)/,
+  "new hands must avoid every effect from the previous depth");
+assert.match(diverseCards,/jsonb_agg\(value->>'key'\)/,
+  "the previous hand must be excluded by effect rather than display identity");
+assert.match(diverseCards,/abandoned_mine_hell_cards_v2\(p_depth,p_od,previous_cards\)/);
+assert.doesNotMatch(diverseCards,/update public\.abandoned_mine_runs[\s\S]*'cards'/,
+  "the migration must not reroll a persisted open hand");
 assert.match(page,/function hellEventEffect\(option\)/);
 for(const eventEffect of ["secure all current cargo","unsecured cargo","next incident chance","future reveal prices","emergency recovery penalty"])assert.match(page,new RegExp(eventEffect));
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
