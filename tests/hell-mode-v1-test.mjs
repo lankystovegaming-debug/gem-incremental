@@ -6,6 +6,7 @@ const sql = read("supabase/migrations/20260828153546_abandoned_mine_hell_mode_v1
 const targetCastFix = read("supabase/migrations/20260829011537_fix_hell_mode_objective_target_cast.sql");
 const moneyFix = read("supabase/migrations/20260829013122_fix_hell_funding_money_ambiguity.sql");
 const nullEventFix = read("supabase/migrations/20260829013711_fix_hell_null_event_phase.sql");
+const remainingMoneyFix = read("supabase/migrations/20260829014406_fix_hell_remaining_money_ambiguities.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -30,6 +31,13 @@ assert.match(nullEventFix, /jsonb_typeof\(v_state->'event'\)='object'/,
   "only a persisted event object may enter the Event phase");
 assert.match(nullEventFix, /hell_state->>'phase'='event'[\s\S]*jsonb_typeof\(hell_state->'event'\) is distinct from 'object'/,
   "the migration must recover runs already stuck on a JSON null event");
+for (const fn of ["resolve_abandoned_mine_hell_event", "reveal_abandoned_mine_hell_card", "settle_abandoned_mine_hell"]) {
+  assert.match(remainingMoneyFix, new RegExp(`function public\\.${fn}`));
+}
+assert.equal((remainingMoneyFix.match(/returning p\.money into v_money/g)||[]).length,3,
+  "every remaining wallet action must qualify players.money");
+assert.doesNotMatch(remainingMoneyFix, /\bdeclare[^;]*\bmoney numeric/,
+  "Hell wallet actions must not declare a colliding money variable");
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
 assert.match(sql, /when p_od<=2 then 0/);
 assert.match(sql, /else \.45 end/);
