@@ -2253,6 +2253,17 @@ export default {
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
 
+      const { data: crystalEffectsData, error: crystalEffectsError } = await ctx.supabaseAdmin
+        .rpc("crystal_player_effects", { p_uid: playerId });
+      if (crystalEffectsError) console.warn("Crystal artifact passives unavailable:", crystalEffectsError);
+      const crystalEffects = crystalEffectsData ?? {};
+      const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
+      const crystalWeightLuckMultiplier = Math.max(1, Number(crystalEffects.weightLuckMultiplier ?? 1));
+      const crystalWeightMultiplierMultiplier = Math.max(1, Number(crystalEffects.weightMultiplierMultiplier ?? 1));
+      const crystalMutationMultiplier = Math.max(1, Number(crystalEffects.mutationChanceMultiplier ?? 1));
+      const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
+      const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
+
       const { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError } =
         await ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId });
       if (expeditionArtifactEffectsError) {
@@ -2264,9 +2275,12 @@ export default {
       const expeditionArtifactGemValueMultiplier = Math.max(1, Number(expeditionArtifactEffects.gemValueMultiplier ?? 1));
 
       luck *= researchNumber("luck_multiplier");
+      luck += crystalLuckBonus;
       luck += expeditionArtifactLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
       weightLuck *= researchNumber("weight_luck_multiplier");
+      weightLuck *= crystalWeightLuckMultiplier;
+      weightMultiplier *= crystalWeightMultiplierMultiplier;
       const researchPotionStrength = researchNumber("potion_strength_multiplier");
 
 
@@ -2874,6 +2888,7 @@ export default {
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
@@ -2930,7 +2945,9 @@ export default {
         mutationMultiplier *
         researchNumber("gem_value_multiplier") *
         researchMutationValue *
+        crystalGemValueMultiplier *
         expeditionArtifactGemValueMultiplier *
+        (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
         (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
 
 
@@ -3667,7 +3684,7 @@ export default {
           p_payload: {
             gemName: relicDrop ? null : gem.name,
             rarity: relicDrop ? 0 : gem.rarity,
-            weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
+            weightMultiplier: relicDrop ? 0 : finalWeight / gem.baseWeight,
             finalWeight: relicDrop ? 0 : finalWeight,
             displayedValue: relicDrop ? 0 : value,
             mutationIds: relicDrop ? [] : mutationIds,

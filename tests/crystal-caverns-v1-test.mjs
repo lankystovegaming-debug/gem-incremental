@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";import fs from "node:fs";const read=p=>fs.readFileSync(new URL(`../${p}`,import.meta.url),"utf8"),sql=read("supabase/migrations/20260829042000_crystal_caverns_v1.sql"),client=read("src/backend/cloudExpeditions.js"),page=read("crystal-caverns/crystal-caverns.js"),roll=read("supabase/functions/roll/index.ts");
+for(const table of["crystal_cavern_runs","crystal_cavern_artifacts"])assert.match(sql,new RegExp(`create table public\\.${table}`));
+for(const rpc of["start_crystal_caverns","fund_crystal_depth","record_crystal_cavern_roll","resolve_crystal_decision","continue_crystal_overdepth","extract_crystal_caverns","settle_crystal_caverns","get_crystal_caverns_dashboard"])assert.match(sql,new RegExp(`function public\\.${rpc}`));
+for(const n of[200000,300000,450000,650000,900000,1300000,2000000,3000000,4500000,7000000])assert.match(sql,new RegExp(String(n)));
+for(const n of[12000000,18000000,26000000,38000000,54000000,76000000,108000000,152000000,214000000,300000000])assert.match(sql,new RegExp(String(n)));
+assert.match(sql,/3-2\*exp\(-greatest\(0,p_i\)::numeric\/125\)/);assert.match(sql,/\.65\*exp\(-power\(greatest\(0,p_i\)::numeric\/145,1\.406\)/);assert.match(sql,/\.08\+\.92\*\(1-exp\(-power\(greatest\(0,p_i\)::numeric\/320,1\.767\)\)\)/);
+for(const artifact of["crystal-splinter","heart-of-the-cavern","impossible-crystal","shattered-heart"])assert.match(sql,new RegExp(artifact));
+assert.match(sql,/array\['pocket','resonance','deposit'\]/);assert.match(sql,/random\(\)<\.35/);assert.match(sql,/r\.instability:=r\.instability\+30/);assert.match(sql,/if r\.status<>'forced_extraction'then r\.unsecured_cargo/);assert.match(sql,/on conflict\(player_id,artifact_key\)do nothing/);
+for(const rpc of["get_crystal_caverns_dashboard","start_crystal_caverns","fund_crystal_depth","resolve_crystal_decision","continue_crystal_overdepth","extract_crystal_caverns","settle_crystal_caverns"])assert.match(client,new RegExp(rpc));
+assert.match(page,/Instability is unchanged/);assert.match(page,/FRACTURE THE HEART/);assert.match(roll,/crystal_player_effects/);assert.match(roll,/rolledWeightMultiplier >= 2 \? crystalHeavyGemValueMultiplier/);
+assert.equal((roll.match(/luck \*= researchNumber\("luck_multiplier"\)/g)||[]).length,1,"research Luck must be applied exactly once");
+assert.match(roll,/luck \+= crystalLuckBonus;[\s\S]*luck \+= expeditionArtifactLuckBonus;/);
+assert.match(roll,/mutationChanceMultiplier \*= crystalMutationMultiplier;[\s\S]*mutationChanceMultiplier \*= expeditionArtifactMutationMultiplier;/);
+assert.match(roll,/crystalGemValueMultiplier \*[\s\S]*expeditionArtifactGemValueMultiplier \*[\s\S]*crystalHeavyGemValueMultiplier[\s\S]*bedrock-crown/);
+console.log("Crystal Caverns V1 tests passed.");
