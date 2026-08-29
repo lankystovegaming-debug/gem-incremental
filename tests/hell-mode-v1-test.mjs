@@ -4,6 +4,7 @@ import fs from "node:fs";
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const sql = read("supabase/migrations/20260828153546_abandoned_mine_hell_mode_v1.sql");
 const targetCastFix = read("supabase/migrations/20260829011537_fix_hell_mode_objective_target_cast.sql");
+const moneyFix = read("supabase/migrations/20260829013122_fix_hell_funding_money_ambiguity.sql");
 const roll = read("supabase/functions/roll/index.ts");
 const client = read("src/backend/cloudExpeditions.js");
 const page = read("expeditions/expeditions.js");
@@ -20,6 +21,10 @@ assert.match(sql, /'doomThreshold',90/);
 assert.match(sql, /'weeklyMythicCap',5/);
 assert.match(targetCastFix, /target=ceil\(coalesce\([\s\S]*::numeric[\s\S]*::integer/,
   "decimal Hell objective targets must not be cast from text directly to integer");
+assert.match(moneyFix, /update public\.players p[\s\S]*set money=p\.money-v_cost[\s\S]*returning p\.money into v_money/,
+  "Hell funding must qualify the player money column and use distinct variable names");
+assert.doesNotMatch(moneyFix, /\bdeclare[^;]*\bmoney numeric/,
+  "Hell funding must not declare a variable that collides with players.money");
 assert.match(sql, /public\.abandoned_mine_hell_triple_chance/);
 assert.match(sql, /when p_od<=2 then 0/);
 assert.match(sql, /else \.45 end/);
