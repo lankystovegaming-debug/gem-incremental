@@ -1126,9 +1126,11 @@ const consumableRow =
             "player_id",
             playerId
           )
-          .eq(
-            "locked",
-            false
+          // Legacy specimens can have a null lock flag. The inventory UI
+          // already treats null as unlocked, so keep manual crafting
+          // compatible while the database backfill rolls out.
+          .or(
+            "locked.eq.false,locked.is.null"
           )
           .order(
             "final_weight",
