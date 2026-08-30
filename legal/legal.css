@@ -1,0 +1,137 @@
+/* Privacy & Terms page. Uses the shared app.css design tokens. */
+
+.legal-page {
+  padding-bottom: 80px;
+}
+
+.legal-hero {
+  padding: clamp(20px, 4vw, 34px) 0 10px;
+}
+
+.legal-hero__eyebrow {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.legal-hero h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+}
+
+.legal-hero__copy {
+  max-width: 60ch;
+  color: var(--text-muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.legal-hero__meta {
+  margin-top: 12px;
+  color: var(--text-faint);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.legal-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.legal-jump a {
+  padding: 8px 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: var(--surface-solid);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.legal-jump a:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: var(--surface-hover);
+}
+
+.legal-doc {
+  margin-top: 20px;
+  padding: clamp(20px, 3.5vw, 34px);
+  scroll-margin-top: calc(var(--nav-height, 60px) + 16px);
+}
+
+.legal-doc h2 {
+  margin-bottom: 6px;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+}
+
+.legal-doc h3 {
+  margin: 24px 0 6px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+.legal-doc p {
+  max-width: 72ch;
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  line-height: 1.66;
+}
+
+.legal-doc ul {
+  max-width: 72ch;
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.legal-doc li {
+  margin-bottom: 7px;
+}
+
+.legal-doc strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.legal-doc em {
+  color: var(--text);
+  font-style: italic;
+}
+
+.legal-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.legal-link:hover {
+  color: var(--accent-strong, var(--accent));
+}
+
+.legal-foot {
+  margin: 28px 0 0;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .legal-doc {
+    padding: 18px 16px;
+    border-radius: 16px;
+  }
+}
