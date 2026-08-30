@@ -5,6 +5,7 @@ const migration=await readFile(new URL("../supabase/migrations/20260822000001_gu
 const roll=await readFile(new URL("../supabase/functions/roll/index.ts",import.meta.url),"utf8");
 const features=await readFile(new URL("../supabase/functions/features/index.ts",import.meta.url),"utf8");
 const page=await readFile(new URL("../guilds/index.html",import.meta.url),"utf8");
+const guildScript=await readFile(new URL("../guilds/guilds.js",import.meta.url),"utf8");
 
 assert.match(migration,/member_capacity integer not null default 3/);
 assert.match(migration,/luck_tier between 0 and 10/);
@@ -18,6 +19,9 @@ assert.equal((roll.match(/record_guild_roll_activity/g)||[]).length,1,"roll must
 assert.equal((roll.match(/record_guild_roll_points/g)||[]).length,0,"old double-award RPC must be gone from roll");
 assert.match(features,/guild_manage_member/);
 assert.match(features,/guild_purchase_upgrade/);
+assert.match(features,/a==="guild-disband"/);
+assert.match(features,/guild_disband_v2/);
+assert.match(features,/a==="guild-directory"/);
 assert.match(features,/Ratelimit\.slidingWindow\(3,"10 m"\)/);
 assert.match(features,/prefix:"ratelimit:guild-create"/);
 assert.match(features,/guild_create_rate_limited/);
@@ -26,4 +30,7 @@ assert.match(features,/const limited=await limitGuildCreation\(userId\);if\(limi
 assert.match(page,/data-tab="overview"/);
 assert.match(page,/data-tab="competition"/);
 assert.match(page,/data-tab="upgrades"/);
+assert.match(guildScript,/loadDirectory\(\{allowUnavailable:true\}\)/);
+assert.match(guildScript,/includes\("unknown_action"\)/);
+assert.match(guildScript,/fullyLoaded\?"Guild disbanded\."/);
 console.log("Guild rework tests passed.");
