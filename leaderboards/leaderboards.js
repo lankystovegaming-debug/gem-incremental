@@ -770,6 +770,14 @@ function baseGemRarity(player) {
 function renderBestRoll() {
   const entries = leaderboardData.bestRoll;
 
+  if (leaderboardData.bestRollLoadFailed) {
+    leaderboardCard.innerHTML = `
+      <h2>Best Roll</h2>
+      <p class="empty-message">Best Roll is temporarily unavailable. Please try again.</p>
+    `;
+    return;
+  }
+
   if (!entries.length) {
     leaderboardCard.innerHTML = `
       <h2>Best Roll</h2>
@@ -1194,6 +1202,8 @@ async function loadLeaderboards() {
             .sort((a, b) => b.rarity - a.rarity || b.base_rarity - a.base_rarity)
             .map((player, index) => ({ ...player, rank: index + 1 }))
         : [],
+
+    bestRollLoadFailed: Boolean(bestRollError),
 
     mostWeight:
       Array.isArray(mostWeightData)
