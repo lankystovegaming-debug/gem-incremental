@@ -93,15 +93,15 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     return json({definitions:visible,progress:progress??[],isAdmin:admin});
   }
   if(a==="achievements"){
-    const result=await ctx.supabaseAdmin.rpc("get_player_achievements_v013",{p_player_id:userId});
+    const result=await ctx.supabase.rpc("get_player_achievements_v013",{p_player_id:userId});
     if(result.error)throw result.error;return json(result.data);
   }
   if(a==="achievement-claim"){
-    const result=await ctx.supabaseAdmin.rpc("claim_achievement_reward_v013",{p_player_id:userId,p_feature_id:String(b.featureId??"")});
+    const result=await ctx.supabase.rpc("claim_achievement_reward_v013",{p_player_id:userId,p_feature_id:String(b.featureId??"")});
     if(result.error)throw result.error;return json(result.data);
   }
   if(a==="achievement-milestone-claim"){
-    const result=await ctx.supabaseAdmin.rpc("claim_achievement_milestone_v013",{p_player_id:userId,p_ap:Number(b.ap??0)});
+    const result=await ctx.supabase.rpc("claim_achievement_milestone_v013",{p_player_id:userId,p_ap:Number(b.ap??0)});
     if(result.error)throw result.error;return json(result.data);
   }
   if(a==="research"){

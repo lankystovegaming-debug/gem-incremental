@@ -501,6 +501,29 @@ function renderRecipes() {
   }
 }
 
+function renderRecipeInPlace(recipeId, focusSelector = null) {
+  const currentCard = [...recipeList.querySelectorAll(".recipe-card")]
+    .find((card) => card.dataset.recipe === recipeId);
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+
+  if (!currentCard || !recipe) {
+    return;
+  }
+
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+  const container = document.createElement("div");
+  container.innerHTML = recipeCard(recipe).trim();
+
+  const replacement = container.firstElementChild;
+  currentCard.replaceWith(replacement);
+  wireRecipeCard(replacement);
+
+  renderCraftingRecommendation();
+  window.scrollTo(scrollX, scrollY);
+  replacement.querySelector(focusSelector)?.focus({ preventScroll: true });
+}
+
 function renderCraftingRecommendation() {
   const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier));
   const next = candidates.sort((a, b) => {
@@ -719,7 +742,7 @@ async function depositRequirementFully(recipeId, index) {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     const before = JSON.stringify(state.crafting.progress[recipeId] ?? {});
 
-    const { error } = await manuallyDepositCloudRequirement(recipeId, index);
+    const { data, error } = await manuallyDepositCloudRequirement(recipeId, index);
 
     if (error) {
       // "Nothing to deposit" once we have already moved some gems is
@@ -729,14 +752,13 @@ async function depositRequirementFully(recipeId, index) {
 
     deposited += 1;
 
-    const fresh = await loadCloudCraftingState();
-
-    if (fresh) {
-      state.crafting = fresh;
-      // Auto potion deposits happen one item at a time. Repaint after every
-      // server-confirmed deposit so the UI visibly advances (1/3, 2/3, 3/3)
-      // instead of jumping straight from 0 to the next cycle after crafting.
-      renderRecipes();
+    if (data?.progress) {
+      state.crafting.progress[recipeId] = data.progress;
+    } else {
+      // Keep compatibility with an older deployed function response while
+      // still avoiding a full-page repaint.
+      const fresh = await loadCloudCraftingState();
+      if (fresh) state.crafting = fresh;
     }
 
     const after = JSON.stringify(state.crafting.progress[recipeId] ?? {});
@@ -869,7 +891,10 @@ function wireRecipeCard(card) {
         return;
       }
 
-      await refresh();
+      renderRecipeInPlace(
+        recipeId,
+        `[data-action="deposit"][data-index="${index}"]`
+      );
     });
   }
 
@@ -919,7 +944,7 @@ function wireRecipeCard(card) {
         );
       }
 
-      await refresh();
+      renderRecipeInPlace(recipeId, '[data-action="deposit-all"]');
     });
 }
 
