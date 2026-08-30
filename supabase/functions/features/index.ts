@@ -54,8 +54,16 @@ async function isAdmin(ctx:any,userId:string){
   if(error){console.error("FEATURES_ADMIN_LOOKUP",error.message);return false;}
   return data?.user_id===userId;
 }
+function missingGuildLogoColumn(error:any){
+  return error?.code==="42703"&&String(error?.message??"").includes("logo_path");
+}
 async function guildOwnedBy(ctx:any,userId:string){
-  const {data:guild,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,logo_path").eq("owner_id",userId).maybeSingle();
+  let {data:guild,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,logo_path").eq("owner_id",userId).maybeSingle();
+  if(missingGuildLogoColumn(guildError)){
+    const legacy=await ctx.supabaseAdmin.from("guilds").select("id").eq("owner_id",userId).maybeSingle();
+    guild=legacy.data?{...legacy.data,logo_path:null}:null;
+    guildError=legacy.error;
+  }
   if(guildError)throw guildError;
   if(!guild)return null;
   const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("role").eq("guild_id",guild.id).eq("player_id",userId).maybeSingle();
@@ -164,7 +172,12 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-directory"){
     const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",userId).maybeSingle();
     if(membershipError)throw membershipError;
-    const {data:guildRows,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,name,tag,description,join_mode,xp,member_capacity,primary_color,secondary_color,accent_color,logo_path,updated_at").order("xp",{ascending:false}).order("name").limit(48);
+    let {data:guildRows,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,name,tag,description,join_mode,xp,member_capacity,primary_color,secondary_color,accent_color,logo_path,updated_at").order("xp",{ascending:false}).order("name").limit(48);
+    if(missingGuildLogoColumn(guildError)){
+      const legacy=await ctx.supabaseAdmin.from("guilds").select("id,name,tag,description,join_mode,xp,member_capacity,primary_color,secondary_color,accent_color,updated_at").order("xp",{ascending:false}).order("name").limit(48);
+      guildRows=(legacy.data??[]).map((guild:any)=>({...guild,logo_path:null}));
+      guildError=legacy.error;
+    }
     if(guildError)throw guildError;
     const guildIds=(guildRows??[]).map((guild:any)=>guild.id);
     const {data:memberRows,error:memberError}=guildIds.length?await ctx.supabaseAdmin.from("guild_members").select("guild_id").in("guild_id",guildIds):{data:[],error:null};
