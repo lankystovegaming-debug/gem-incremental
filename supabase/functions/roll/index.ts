@@ -1100,6 +1100,13 @@ function specimenMatches(
   requirement: any,
   specimen: any
 ) {
+  const baseWeight = Number(specimen.base_weight);
+  const finalWeight = Number(specimen.final_weight);
+  const weightMultiplier =
+    Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)
+      ? finalWeight / baseWeight
+      : Number(specimen.rolled_weight_multiplier);
+
   if (
     requirement.gem &&
     specimen.gem_name !==
@@ -1112,7 +1119,7 @@ function specimenMatches(
   if (
     requirement.minimumWeightMultiplier !=
       null &&
-    specimen.rolled_weight_multiplier <
+    weightMultiplier <
       requirement.minimumWeightMultiplier
   ) {
     return false;
@@ -1122,7 +1129,7 @@ function specimenMatches(
   if (
     requirement.maximumWeightMultiplier !=
       null &&
-    specimen.rolled_weight_multiplier >
+    weightMultiplier >
       requirement.maximumWeightMultiplier
   ) {
     return false;
@@ -2920,6 +2927,9 @@ export default {
       const specimen = {
         gem_name:
           gem.name,
+
+        base_weight:
+          gem.baseWeight,
 
         rarity:
           gem.rarity,

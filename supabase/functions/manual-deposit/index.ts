@@ -154,6 +154,13 @@ function getRarityPoints(specimen: any) {
 
 
 function specimenMatches(requirement: any, specimen: any) {
+  const baseWeight = Number(specimen?.base_weight);
+  const finalWeight = Number(specimen?.final_weight);
+  const weightMultiplier =
+    Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)
+      ? finalWeight / baseWeight
+      : Number(specimen?.rolled_weight_multiplier);
+
   if (
     requirement?.gem &&
     specimen?.gem_name !== requirement.gem
@@ -163,7 +170,7 @@ function specimenMatches(requirement: any, specimen: any) {
 
   if (
     requirement?.minimumWeightMultiplier != null &&
-    Number(specimen?.rolled_weight_multiplier) <
+    weightMultiplier <
       Number(requirement.minimumWeightMultiplier)
   ) {
     return false;
@@ -171,7 +178,7 @@ function specimenMatches(requirement: any, specimen: any) {
 
   if (
     requirement?.maximumWeightMultiplier != null &&
-    Number(specimen?.rolled_weight_multiplier) >
+    weightMultiplier >
       Number(requirement.maximumWeightMultiplier)
   ) {
     return false;
@@ -1117,6 +1124,7 @@ const consumableRow =
             id,
             gem_name,
             rarity,
+            base_weight,
             rolled_weight_multiplier,
             final_weight,
             value,
