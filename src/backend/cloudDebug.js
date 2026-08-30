@@ -161,15 +161,31 @@ export async function loadCloudDebugState() {
 
 
   // -------------------------------------------------------
-  // PENDING ONE-ROLL BOOST + GLOBAL ADMIN EVENT
+  // PENDING ONE-ROLL BOOST + PERMANENT MODIFIERS + GLOBAL ADMIN EVENT
   // -------------------------------------------------------
 
-  const [oneRollResult, adminEventResult] = await Promise.all([
+  const [
+    oneRollResult,
+    researchEffectsResult,
+    permanentModifiersResult,
+    adminEventResult
+  ] = await Promise.all([
     supabase
       .from("player_one_roll_boosts")
       .select("effect_value")
       .eq("player_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("player_research_effects")
+      .select(`
+        luck_multiplier,
+        roll_speed_multiplier,
+        weight_luck_multiplier,
+        potion_strength_multiplier
+      `)
+      .eq("player_id", user.id)
+      .maybeSingle(),
+    supabase.rpc("get_current_roll_stat_modifiers"),
     loadActiveAdminEvent()
   ]);
 
@@ -177,7 +193,20 @@ export async function loadCloudDebugState() {
     console.error("Failed to load pending one-roll boost:", oneRollResult.error);
   }
 
+  if (researchEffectsResult.error) {
+    console.error("Failed to load research effects for stats:", researchEffectsResult.error);
+  }
+
+  if (permanentModifiersResult.error) {
+    console.error(
+      "Failed to load guild and artifact modifiers for stats:",
+      permanentModifiersResult.error
+    );
+  }
+
   const oneRollBoost = oneRollResult.data ?? null;
+  const researchEffects = researchEffectsResult.data ?? {};
+  const permanentModifiers = permanentModifiersResult.data?.[0] ?? {};
   const activeAdminEvent = Array.isArray(adminEventResult.data)
     ? adminEventResult.data[0] ?? null
     : adminEventResult.data ?? null;
@@ -227,6 +256,14 @@ export async function loadCloudDebugState() {
   let weightMultiplier =
     1;
 
+  const positiveNumber = (value, fallback = 1) => {
+    const number = Number(value ?? fallback);
+
+    return Number.isFinite(number) && number > 0
+      ? number
+      : fallback;
+  };
+
 
   for (
     const item
@@ -266,11 +303,28 @@ export async function loadCloudDebugState() {
       ) * masterworkFactor;
   }
 
+  // Permanent Museum artifacts are applied in the same phase as equipment
+  // before research, events, and guild multipliers.
+  luck += Number(permanentModifiers.artifact_luck_bonus ?? 0);
+  rollSpeed += Number(permanentModifiers.artifact_roll_speed_bonus ?? 0);
+  weightLuck += Number(permanentModifiers.artifact_weight_luck_bonus ?? 0);
+  weightMultiplier += Number(permanentModifiers.artifact_weight_multiplier_bonus ?? 0);
+
   const equippedLantern = (equipment ?? []).find(item => item.equipped && item.category === "lantern");
   const lanternPassiveRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
   if (equippedLantern?.masterwork_passive === "focused_beam") {
     luck *= lanternPassiveRank >= 2 ? 1.05 : 1.03;
   }
+
+  // Keep the displayed values in the same order as the authoritative roll
+  // service: research scales permanent gear first, then scales potion power.
+  luck *= positiveNumber(researchEffects.luck_multiplier);
+  rollSpeed *= positiveNumber(researchEffects.roll_speed_multiplier);
+  weightLuck *= positiveNumber(researchEffects.weight_luck_multiplier);
+
+  const researchPotionStrength = positiveNumber(
+    researchEffects.potion_strength_multiplier
+  );
 
 
   for (
@@ -282,7 +336,7 @@ export async function loadCloudDebugState() {
       Number(
         boost.effect_value ??
         0
-      );
+      ) * researchPotionStrength;
 
     if (boost.family === "rollSpeed" && equippedLantern?.masterwork_passive === "potion_afterglow") {
       effectValue *= lanternPassiveRank >= 2 ? 1.15 : 1.10;
@@ -325,9 +379,22 @@ export async function loadCloudDebugState() {
     rollSpeed *= lanternPassiveRank >= 2 ? 1.08 : 1.05;
   }
 
+  if (
+    equippedLantern?.masterwork_passive === "flashpoint" &&
+    (Number(player.total_rolls ?? 0) + 1) % 250 === 0
+  ) {
+    rollSpeed *= lanternPassiveRank >= 2 ? 1.4 : 1.25;
+  }
+
+  const equippedBoots = (equipment ?? []).find(item => item.equipped && item.category === "boots");
+  const bootsPassiveRank = Number(equippedBoots?.masterwork_passive_rank ?? 0);
+  if (equippedBoots?.masterwork_passive === "fortune_walker") {
+    weightLuck *= bootsPassiveRank >= 2 ? 1.08 : 1.05;
+  }
+
 
   if (oneRollBoost) {
-    luck += Number(oneRollBoost.effect_value ?? 0);
+    luck += Number(oneRollBoost.effect_value ?? 0) * researchPotionStrength;
   }
 
 
@@ -348,6 +415,12 @@ export async function loadCloudDebugState() {
       (weightMultiplier + Number(activeAdminEvent.weight_multiplier_bonus ?? 0)) *
       Number(activeAdminEvent.weight_multiplier_multiplier ?? 1);
   }
+
+
+  // The server applies guild bonuses last.
+  luck *= positiveNumber(permanentModifiers.guild_luck_multiplier);
+  rollSpeed *= positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
+  weightLuck *= positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
 
 
   // -------------------------------------------------------

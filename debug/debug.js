@@ -137,7 +137,7 @@ function render(cloudState) {
       BONUS_ROWS.map(([key, label]) =>
         bonusRow(cloudState.stats[key], label)
       ).join(""),
-      "Shows equipped items, active potions, pending one-roll Luck, and global Admin Events."
+      "Shows your effective next-roll bonuses, including equipment, research, potions, guild upgrades, artifacts, and Admin Events. Conditional enchant effects can vary by roll."
     ),
 
     card(

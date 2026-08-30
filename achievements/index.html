@@ -1,1 +1,47 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Achievements · Gem Incremental</title><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="./achievements.css"></head><body><main class="achievement-page"><section class="achievement-hero"><div><span class="eyebrow">v0.13.0 BETA</span><h1>Achievements</h1><p>Permanent milestones across every corner of Gem Incremental.</p></div><div id="summary" class="achievement-summary" aria-live="polite"></div></section><section class="milestone-panel"><div class="section-heading"><div><span class="eyebrow">ACHIEVEMENT POINTS</span><h2>Milestone track</h2></div><p>AP is permanent and cannot be spent.</p></div><div id="milestones" class="milestone-track"></div></section><section class="achievement-browser"><div class="achievement-controls"><div id="categoryTabs" class="achievement-tabs" role="tablist"></div><label>Show<select id="stateFilter"><option value="all">All states</option><option value="ready">Ready to claim</option><option value="progress">In progress</option><option value="completed">Claimed</option><option value="locked">Locked</option></select></label></div><div id="status" class="achievement-status">Loading achievements…</div><div id="cards" class="achievement-grid"></div></section></main><div id="toast" class="achievement-toast" role="status" aria-live="polite"></div><script type="module" src="./achievements.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Achievements · Gem Incremental</title>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./achievements.css">
+</head>
+<body>
+  <main class="achievement-page">
+    <section class="achievement-hero">
+      <div class="achievement-hero__copy">
+        <span class="eyebrow">v0.13.0 BETA</span>
+        <h1>Achievements</h1>
+        <p>Permanent milestones across every corner of Gem Incremental. Explore, collect, and turn your progress into lasting rewards.</p>
+      </div>
+      <div id="summary" class="achievement-summary" aria-live="polite"></div>
+    </section>
+
+    <section class="milestone-panel">
+      <div class="section-heading">
+        <div><span class="eyebrow">ACHIEVEMENT POINTS</span><h2>Milestone track</h2></div>
+        <p>AP is permanent. Reach a milestone, then claim its reward.</p>
+      </div>
+      <div id="milestones" class="milestone-track"></div>
+    </section>
+
+    <section class="achievement-browser">
+      <div class="achievement-browser__head">
+        <div><span class="eyebrow">YOUR COLLECTION</span><h2>Every milestone, in one place</h2></div>
+        <div id="status" class="achievement-status">Loading achievements…</div>
+      </div>
+      <div class="achievement-controls">
+        <div id="categoryTabs" class="achievement-tabs" role="tablist" aria-label="Achievement category"></div>
+        <div class="achievement-filter-row">
+          <label class="achievement-search"><span>Search</span><input id="achievementSearch" type="search" placeholder="Find an achievement" autocomplete="off"></label>
+          <label class="achievement-select"><span>Show</span><select id="stateFilter"><option value="all">All states</option><option value="ready">Ready to claim</option><option value="progress">In progress</option><option value="completed">Claimed</option><option value="locked">Locked</option></select></label>
+        </div>
+      </div>
+      <div id="cards" class="achievement-grid"></div>
+    </section>
+  </main>
+  <div id="toast" class="achievement-toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./achievements.js"></script>
+</body>
+</html>

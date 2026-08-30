@@ -109,8 +109,26 @@ function renderPlanner(bought, profile) {
 
 function treeMap(nodes, bought, profile) {
   const root = (state.nodes || []).find((node) => node.id === "research-fundamentals");
-  const byStage = [root ? [root] : [], ...[1, 2, 3, 4].map((stage) => nodes.filter((node) => node.stage === stage))];
+  const byStage = orderedTreeLayers(nodes, root);
   return `<div class="research-map__viewport"><section class="research-map" aria-label="${esc(labels[active])} two-dimensional research tree"><svg id="researchMapLines" class="research-map__lines" aria-hidden="true"></svg><div class="research-map__columns">${byStage.map((stageNodes, index) => `<section class="research-map__column" data-stage="${index}"><header><span>${index ? `STAGE ${["", "I", "II", "III", "IV"][index]}` : "ROOT"}</span>${index ? `<small>${index === 1 ? "Open" : `${index === 2 ? 100 : index === 3 ? 400 : 1000} AP`}</small>` : ""}</header><div class="research-map__nodes">${stageNodes.map((node) => mapNode(node, bought, profile)).join("")}</div></section>`).join("")}</div></section></div>`;
+}
+
+function orderedTreeLayers(nodes, root) {
+  const positions = new Map(root ? [[root.id, 0]] : []);
+  const layers = [root ? [root] : []];
+  for (let stage = 1; stage <= 4; stage++) {
+    const layer = nodes.filter((node) => node.stage === stage).sort((left, right) => {
+      const center = (node) => {
+        const parents = node.prerequisites || [];
+        const known = parents.map((id) => positions.get(id)).filter(Number.isFinite);
+        return known.length ? known.reduce((sum, value) => sum + value, 0) / known.length : Number(node.sort_order || 0);
+      };
+      return center(left) - center(right) || Number(left.sort_order || 0) - Number(right.sort_order || 0);
+    });
+    layer.forEach((node, index) => positions.set(node.id, index));
+    layers.push(layer);
+  }
+  return layers;
 }
 
 function mapNode(node, bought, profile) {
@@ -137,10 +155,10 @@ function drawMapLines() {
   svg.setAttribute("width", bounds.width);
   svg.setAttribute("height", bounds.height);
   const bought = new Set(state.purchases || []);
-  svg.innerHTML = (state.nodes || [])
+  const connections = (state.nodes || [])
     .filter((node) => node.branch === active)
-    .flatMap((node) => (node.prerequisites || []).map((parentId) => ({ node, parentId })))
-    .map(({ node, parentId }) => {
+    .flatMap((node) => (node.prerequisites || []).map((parentId) => ({ node, parentId })));
+  svg.innerHTML = connections.map(({ node, parentId }, index) => {
       const from = document.getElementById(`research-map-node-${parentId}`);
       const to = document.getElementById(`research-map-node-${node.id}`);
       if (!from || !to) return "";
@@ -150,9 +168,13 @@ function drawMapLines() {
       const y1 = a.top + a.height / 2 - bounds.top;
       const x2 = b.left - bounds.left;
       const y2 = b.top + b.height / 2 - bounds.top;
-      const bend = Math.max(38, (x2 - x1) * .44);
+      // Each dependency gets a small, dedicated lane in the empty space between
+      // stages. Orthogonal routing is far easier to follow than overlapping
+      // bezier curves when a node has more than one prerequisite.
+      const lane = index % 4;
+      const laneX = x1 + Math.max(26, Math.min(x2 - x1 - 24, (x2 - x1) * .42 + lane * 9));
       const activeLine = bought.has(parentId) && bought.has(node.id) ? " owned" : planned.has(node.id) ? " planned" : "";
-      return `<path class="research-map__line${activeLine}" d="M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}" />`;
+      return `<path class="research-map__line${activeLine}" d="M ${x1} ${y1} H ${laneX} V ${y2} H ${x2}" />`;
     }).join("");
 }
 
