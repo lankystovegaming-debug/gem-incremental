@@ -20,7 +20,7 @@ const repairedNames = [...repair.matchAll(
 )].map((match) => match[1]);
 
 for (const name of [
-  "Index Expert", "The Complete Index", "Three Mutation Types",
+  "Index Expert", "The Complete Index", "Five Mutation Types", "Ten Mutation Types",
   "Mutation Mastery", "Patron", "Tier X Boots", "Tier VIII Bag",
   "Fully Equipped", "Masterwork Artisan", "Arcane Mastery",
   "Competition Contributor", "Three-Time Champion", "Trusted Trader",
@@ -30,8 +30,14 @@ for (const name of [
   assert.ok(repairedNames.includes(name), `${name} must have authoritative tracking`);
 }
 
-assert.match(repair, /'The Complete Index', v, 60/);
-assert.match(repair, /'Mutation Mastery', v, 5/);
+assert.match(repair, /select count\(\*\) into v_catalog_total from public\.game_gems/);
+assert.match(repair, /'The Complete Index', v, v_catalog_total/);
+assert.match(repair, /from public\.game_mutations where enabled/);
+assert.match(repair, /'Mutation Mastery', v, v_catalog_total/);
+assert.match(repair, /'Fully Equipped', v_total, 12/);
+assert.match(repair, /'Expedition Master', v, 25/);
+assert.match(repair, /'Cache Connoisseur', v, 25/);
+assert.match(repair, /'Living Museum', v, 10000/);
 assert.match(repair, /from public\.daily_shop_purchases/);
 assert.match(repair, /from public\.guild_competition_members/);
 assert.match(repair, /from public\.player_season_missions/);

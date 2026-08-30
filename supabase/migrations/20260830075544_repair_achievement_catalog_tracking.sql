@@ -7,19 +7,19 @@ begin;
 alter function public.refresh_player_achievements_v013(uuid)
   rename to refresh_player_achievements_v013_pre_catalog_audit;
 
--- Five bundled mutations and 63 bundled gems make the former 10-mutation and
--- 100/150-index targets impossible. Preserve the achievement IDs and AP while
--- giving those slots honest, reachable milestones.
+-- Rebalance numeric names whose original targets exceed the live backend.
+-- IDs and AP stay stable, so existing completion and rewards are preserved.
 update public.private_feature_definitions
 set name = case name
-    when 'Five Mutation Types' then 'Three Mutation Types'
-    when 'Ten Mutation Types' then 'Four Mutation Types'
+    when 'One in a Billion' then 'One in Ten Million'
+    when 'Museum Prestige 12000' then 'Museum Prestige 5000'
+    when 'Prestige Gallery' then 'Prestige Gallery 7500'
     else name
   end,
   updated_at = now()
 where feature_kind = 'achievement'
   and metadata->>'catalogVersion' = 'v0.13.0-beta'
-  and name in ('Five Mutation Types', 'Ten Mutation Types');
+  and name in ('One in a Billion', 'Museum Prestige 12000', 'Prestige Gallery');
 
 -- Hidden placeholders had no persistent condition and could never complete.
 -- Retire them until a real server-owned event is introduced; they no longer
@@ -54,6 +54,7 @@ declare
   v4 numeric := 0;
   v5 numeric := 0;
   v_total numeric := 0;
+  v_catalog_total numeric := 0;
 begin
   if auth.uid() is not null and auth.uid() is distinct from p_uid then
     raise exception 'forbidden';
@@ -61,14 +62,21 @@ begin
 
   perform public.refresh_player_achievements_v013_pre_catalog_audit(p_uid);
 
-  -- Discovery: reachable index milestones based on the 63-gem live catalog.
+  -- Discovery: the final Index target follows the authoritative backend
+  -- catalog, so adding or removing gems cannot make it stale again.
   select count(distinct gem_name) into v
   from public.best_roll_history where player_id = p_uid;
+  select count(*) into v_catalog_total from public.game_gems;
   perform public.achievement_set_progress_v013(p_uid, 'Index Apprentice', v, 10);
   perform public.achievement_set_progress_v013(p_uid, 'Index Explorer', v, 20);
   perform public.achievement_set_progress_v013(p_uid, 'Index Scholar', v, 30);
   perform public.achievement_set_progress_v013(p_uid, 'Index Expert', v, 40);
-  perform public.achievement_set_progress_v013(p_uid, 'The Complete Index', v, 60);
+  perform public.achievement_set_progress_v013(p_uid, 'The Complete Index', v, v_catalog_total);
+
+  -- The backend's rarest base gem is currently 1 in 10 million.
+  select coalesce(max(rarity), 0) into v
+  from public.best_roll_history where player_id = p_uid;
+  perform public.achievement_set_progress_v013(p_uid, 'One in Ten Million', v, 10000000);
 
   -- Mutation catalog completion, measured by distinct mutations actually
   -- rolled rather than the total number of mutated specimens.
@@ -77,9 +85,11 @@ begin
   cross join lateral unnest(coalesce(h.mutation_ids, '{}'::text[]))
     as mutations(mutation_id)
   where h.player_id = p_uid;
-  perform public.achievement_set_progress_v013(p_uid, 'Three Mutation Types', v, 3);
-  perform public.achievement_set_progress_v013(p_uid, 'Four Mutation Types', v, 4);
-  perform public.achievement_set_progress_v013(p_uid, 'Mutation Mastery', v, 5);
+  select count(*) into v_catalog_total
+  from public.game_mutations where enabled;
+  perform public.achievement_set_progress_v013(p_uid, 'Five Mutation Types', v, 5);
+  perform public.achievement_set_progress_v013(p_uid, 'Ten Mutation Types', v, 10);
+  perform public.achievement_set_progress_v013(p_uid, 'Mutation Mastery', v, v_catalog_total);
 
   -- Daily Shop purchase history is durable and includes quantities.
   select coalesce(sum(quantity), 0) into v
@@ -109,7 +119,7 @@ begin
   v_total := least(v, v2, v3);
   perform public.achievement_set_progress_v013(p_uid, 'Capable Loadout', v_total, 5);
   perform public.achievement_set_progress_v013(p_uid, 'Advanced Loadout', v_total, 10);
-  perform public.achievement_set_progress_v013(p_uid, 'Fully Equipped', v_total, 13);
+  perform public.achievement_set_progress_v013(p_uid, 'Fully Equipped', v_total, 12);
   perform public.achievement_set_progress_v013(p_uid, 'Masterwork Artisan', v4, 15);
   perform public.achievement_set_progress_v013(p_uid, 'Arcane Mastery', v5, 3);
 
@@ -160,12 +170,31 @@ begin
   perform public.achievement_set_progress_v013(p_uid, 'Depth Explorer', v, 1);
   perform public.achievement_set_progress_v013(p_uid, 'Voidwalker', v2, 1);
 
+  select count(*) into v
+  from public.player_expeditions
+  where player_id = p_uid and completed_at is not null;
+  perform public.achievement_set_progress_v013(p_uid, 'Expedition Veteran', v, 15);
+  perform public.achievement_set_progress_v013(p_uid, 'Expedition Master', v, 25);
+
+  select count(*) into v
+  from public.mining_cache_opens
+  where player_id = p_uid and claimed_at is not null;
+  perform public.achievement_set_progress_v013(p_uid, 'Cache Connoisseur', v, 25);
+
   -- A mission tier awarded means that mission produced at least one reward.
   select count(*) into v
   from public.player_season_missions
   where player_id = p_uid and awarded_tiers > 0;
   perform public.achievement_set_progress_v013(p_uid, 'First Season Mission', v, 1);
   perform public.achievement_set_progress_v013(p_uid, 'Season Veteran', v, 50);
+
+  -- Museum targets follow the current ten-slot, eight-collection backend and
+  -- its observed prestige curve (current leaders are around 7,000 prestige).
+  select coalesce(prestige, 0) into v
+  from public.museum_profiles where player_id = p_uid;
+  perform public.achievement_set_progress_v013(p_uid, 'Museum Prestige 5000', v, 5000);
+  perform public.achievement_set_progress_v013(p_uid, 'Prestige Gallery 7500', v, 7500);
+  perform public.achievement_set_progress_v013(p_uid, 'Living Museum', v, 10000);
 
   -- Serial achievements use retained inventory plus permanently registered
   -- museum snapshots, so museum donations continue to count.
