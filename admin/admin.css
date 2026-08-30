@@ -429,3 +429,26 @@
 .shareholders-table td:first-child { font-weight: 600; color: var(--text); }
 .shareholders-content .is-up, #shareholdersSummary .is-up { color: #35d07f; }
 .shareholders-content .is-down, #shareholdersSummary .is-down { color: #ff6b6b; }
+
+/* Guild roster (admin-only "who is in which guild" overview) */
+.admin-section-head__tools { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+#guildRosterSearch { min-width: 200px; }
+.guild-roster-content { margin-top: var(--space-3); display: grid; gap: var(--space-3); }
+.guild-roster-card { border: 1px solid var(--border); border-radius: var(--radius-md, 14px); background: var(--surface-sunken); overflow: hidden; }
+.guild-roster-card > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 12px 14px; cursor: pointer; list-style: none; flex-wrap: wrap; }
+.guild-roster-card > summary::-webkit-details-marker { display: none; }
+.guild-roster-card > summary:hover { background: var(--surface-raised); }
+.guild-roster-card__name { font-weight: 700; color: var(--text); }
+.guild-roster-card__tag { color: var(--accent); margin-right: 4px; }
+.guild-roster-card__meta { display: flex; gap: 14px; flex-wrap: wrap; color: var(--text-muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.guild-roster-table-wrap { overflow-x: auto; border-top: 1px solid var(--border); }
+.guild-roster-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 520px; }
+.guild-roster-table thead th { background: var(--surface-raised); color: var(--text-muted); font-weight: 600; text-align: left; padding: 9px 12px; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+.guild-roster-table th.num, .guild-roster-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.guild-roster-table tbody td { padding: 8px 12px; border-top: 1px solid var(--border); }
+.guild-roster-table td:first-child { font-weight: 600; color: var(--text); }
+.guild-roster-empty { color: var(--text-muted); text-align: center; }
+.guild-role { display: inline-block; padding: 1px 8px; border-radius: var(--radius-pill, 999px); font-size: .7rem; font-weight: 700; letter-spacing: .02em; }
+.guild-role--owner { color: #ffd166; background: color-mix(in srgb, #ffd166 16%, transparent); }
+.guild-role--officer { color: #6ea8ff; background: color-mix(in srgb, #6ea8ff 16%, transparent); }
+.guild-role--member { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }

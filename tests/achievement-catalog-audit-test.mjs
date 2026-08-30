@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const catalog = read("supabase/migrations/20260826000002_achievement_catalog_v0130.sql");
 const repair = read("supabase/migrations/20260830075544_repair_achievement_catalog_tracking.sql");
+const features = read("supabase/functions/features/index.ts");
 
 const groups = [...catalog.matchAll(
   /seed_achievement_series_v013\('([^']+)',string_to_array\('([^']+)'/g
@@ -56,5 +57,14 @@ assert.doesNotMatch(
   repair,
   /grant execute on function public\.refresh_player_achievements_v013\(uuid\)\s+to authenticated/
 );
+
+for (const rpc of [
+  "get_player_achievements_v013",
+  "claim_achievement_reward_v013",
+  "claim_achievement_milestone_v013"
+]) {
+  assert.match(features, new RegExp(`ctx\\.supabase\\.rpc\\("${rpc}"`));
+  assert.doesNotMatch(features, new RegExp(`ctx\\.supabaseAdmin\\.rpc\\("${rpc}"`));
+}
 
 console.log("Achievement catalog audit checks passed.");
