@@ -1316,6 +1316,122 @@ async function loadShareholders() {
 
 shareholdersRefresh?.addEventListener("click", loadShareholders);
 
+
+// =========================================================
+// GUILD ROSTER — read-only "who is in which guild" overview (admin only)
+// =========================================================
+
+const guildRosterPanel = document.getElementById("guildRosterPanel");
+const guildRosterRefresh = document.getElementById("guildRosterRefresh");
+const guildRosterSummary = document.getElementById("guildRosterSummary");
+const guildRosterContent = document.getElementById("guildRosterContent");
+const guildRosterSearch = document.getElementById("guildRosterSearch");
+
+// Cached so the search box can filter without another round-trip.
+let guildRosterCache = [];
+
+function guildRoleTag(role) {
+  const key = String(role ?? "member").toLowerCase();
+  const label = key === "owner" ? "Owner" : key === "officer" ? "Officer" : "Member";
+  return `<span class="guild-role guild-role--${key}">${label}</span>`;
+}
+
+function guildRosterDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+}
+
+function guildMemberRows(members) {
+  return (members ?? []).map((member) => `
+      <tr>
+        <td>${escapeHtml(member.username ?? "Unknown")}</td>
+        <td>${guildRoleTag(member.role)}</td>
+        <td class="num">${formatMoney(Number(member.lifetimeContribution ?? 0), { compact: true })}</td>
+        <td class="num">${formatMoney(Number(member.weeklyContribution ?? 0), { compact: true })}</td>
+        <td class="num">${guildRosterDate(member.joinedAt)}</td>
+      </tr>`).join("");
+}
+
+function guildRosterCard(guild) {
+  const members = Array.isArray(guild.members) ? guild.members : [];
+  const capacity = Number(guild.memberCapacity ?? 0);
+  const tiers = `L+${Number(guild.luckTier ?? 0)} · S+${Number(guild.speedTier ?? 0)} · W+${Number(guild.weightLuckTier ?? 0)}`;
+  return `
+    <details class="guild-roster-card" open>
+      <summary>
+        <span class="guild-roster-card__name">
+          ${guild.tag ? `<b class="guild-roster-card__tag">[${escapeHtml(guild.tag)}]</b>` : ""}
+          ${escapeHtml(guild.name ?? "Unnamed guild")}
+        </span>
+        <span class="guild-roster-card__meta">
+          <span>${members.length}${capacity ? ` / ${capacity}` : ""} members</span>
+          <span>Owner: ${escapeHtml(guild.ownerName ?? "—")}</span>
+          <span title="Luck / Speed / Weight-luck tier bonuses (%)">${tiers}</span>
+          <span>${formatCount(Number(guild.guildPoints ?? 0))} GP</span>
+        </span>
+      </summary>
+      <div class="guild-roster-table-wrap">
+        <table class="guild-roster-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Role</th>
+              <th class="num">Lifetime</th>
+              <th class="num">Weekly</th>
+              <th class="num">Joined</th>
+            </tr>
+          </thead>
+          <tbody>${members.length ? guildMemberRows(members) : '<tr><td colspan="5" class="guild-roster-empty">No members.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </details>`;
+}
+
+function renderGuildRoster() {
+  const term = (guildRosterSearch?.value ?? "").trim().toLowerCase();
+  const guilds = term
+    ? guildRosterCache.filter((guild) => {
+        const haystacks = [guild.name, guild.tag, guild.ownerName,
+          ...(guild.members ?? []).map((member) => member.username)];
+        return haystacks.some((value) => String(value ?? "").toLowerCase().includes(term));
+      })
+    : guildRosterCache;
+
+  if (!guildRosterCache.length) {
+    guildRosterContent.innerHTML = '<div class="empty"><p class="empty__title">No guilds have been formed yet.</p></div>';
+    return;
+  }
+  if (!guilds.length) {
+    guildRosterContent.innerHTML = '<div class="empty"><p class="empty__title">No guilds or players match that filter.</p></div>';
+    return;
+  }
+  guildRosterContent.innerHTML = guilds.map(guildRosterCard).join("");
+}
+
+async function loadGuildRoster() {
+  if (!guildRosterPanel) return;
+  guildRosterPanel.hidden = false;
+  guildRosterContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_get_guild_roster");
+  if (error) {
+    guildRosterContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load guild roster</p><p>${escapeHtml(error.message)}</p></div>`;
+    guildRosterSummary.textContent = "Failed to load.";
+    return;
+  }
+
+  guildRosterCache = Array.isArray(data?.guilds) ? data.guilds : [];
+  guildRosterSummary.innerHTML =
+    `<strong>${Number(data?.guildCount ?? guildRosterCache.length)}</strong> guild(s) · ` +
+    `<strong>${Number(data?.memberCount ?? 0)}</strong> member(s)`;
+  renderGuildRoster();
+}
+
+guildRosterRefresh?.addEventListener("click", loadGuildRoster);
+guildRosterSearch?.addEventListener("input", renderGuildRoster);
+
 searchButton.addEventListener("click", searchPlayers);
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchPlayers();
@@ -1351,5 +1467,6 @@ if (!user || !whoami?.isAdmin) {
   await wireMutationEvents();
   await loadMutationCatalog();
   await loadShareholders();
+  await loadGuildRoster();
   searchInput.focus();
 }
