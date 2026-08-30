@@ -193,6 +193,7 @@ export function mountShell({ page, base = "./" }) {
             <a class="menu__item" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
             <a class="menu__item" href="${base}support/">${icons.heart}<span>Support the game</span></a>
             <a class="menu__item" href="${CONTRIBUTE_URL}" target="_blank" rel="noopener noreferrer">${icons.github}<span>Contribute</span></a>
+            <a class="menu__item" href="${base}legal/">${icons.shield}<span>Privacy &amp; Terms</span></a>
           </div>
         </div>
 
