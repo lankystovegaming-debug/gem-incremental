@@ -241,7 +241,7 @@ dialog input:focus-visible {
 .research-map__column > header small { color: var(--text-muted); font-family: var(--font); font-size: .67rem; font-weight: 700; letter-spacing: 0; }
 .research-map__nodes { display: grid; align-content: space-evenly; flex: 1; gap: 12px; padding-top: 14px; }
 .research-map__column[data-stage="0"] .research-map__nodes { align-content: center; }
-.research-map__line { fill: none; stroke: color-mix(in srgb, var(--border-strong) 82%, transparent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.research-map__line { fill: none; stroke: color-mix(in srgb, var(--border-strong) 55%, transparent); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .research-map__line.owned { stroke: color-mix(in srgb, var(--positive) 76%, var(--accent)); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--positive) 40%, transparent)); }
 .research-map__line.planned { stroke: var(--accent); stroke-dasharray: 5 6; }
 .research-map__lines { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
