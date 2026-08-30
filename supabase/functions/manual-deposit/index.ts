@@ -1114,11 +1114,8 @@ const consumableRow =
       // GEM DEPOSIT
       // =====================================================
 
-      const {
-        data: gems,
-        error: gemsError
-      } =
-        await ctx.supabase
+      let gemQuery =
+        ctx.supabase
           .from("inventory_gems")
           .select(`
             id,
@@ -1139,7 +1136,36 @@ const consumableRow =
           // compatible while the database backfill rolls out.
           .or(
             "locked.eq.false,locked.is.null"
-          )
+          );
+
+      // PostgREST caps a response at the project's maximum row count
+      // (1,000 by default). Filter named-gem requirements in Postgres so a
+      // rare, heavy specimen cannot disappear behind a large inventory's
+      // first 1,000 lighter gems.
+      if (
+        typeof requirement.gem === "string" &&
+        requirement.gem
+      ) {
+        gemQuery = gemQuery.eq(
+          "gem_name",
+          requirement.gem
+        );
+      } else if (
+        requirement.type === "gem-range" &&
+        Array.isArray(requirement.gems) &&
+        requirement.gems.length > 0
+      ) {
+        gemQuery = gemQuery.in(
+          "gem_name",
+          requirement.gems
+        );
+      }
+
+      const {
+        data: gems,
+        error: gemsError
+      } =
+        await gemQuery
           .order(
             "final_weight",
             {
