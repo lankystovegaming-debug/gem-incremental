@@ -900,8 +900,13 @@ a:hover {
     height: 20px;
   }
 
-  .app-main {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  /* Reserve room for the fixed tab bar on the BODY, not just `.app-main`.
+     Page CSS (often inline, loaded after this file) overrides class-level
+     rules, so only a body-level guard reliably clears the bar on every page —
+     `.feature-page`, `.research-page`, `.page-wrap`, `.expansion-page`, etc.
+     all sit inside <body>, so none of them can hide content behind the bar. */
+  body {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
 }
 
@@ -4925,6 +4930,30 @@ select,
 html {
   min-width: 320px;
   scroll-padding-top: calc(var(--nav-height) + var(--space-3));
+
+  /* Mobile polish that applies to every page: stop iOS/Android from
+     auto-inflating body text on rotation, and remove the grey tap-flash
+     that fires on every touch of a link or button. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* `manipulation` drops the ~300ms double-tap-to-zoom delay on controls while
+   still allowing the page itself to pan and pinch-zoom. Scoped to interactive
+   elements so scroll containers keep their default touch behaviour. */
+a,
+button,
+.btn,
+.nav__link,
+.tabbar__link,
+.menu__item,
+[role="button"],
+label,
+summary,
+input[type="checkbox"],
+input[type="radio"] {
+  touch-action: manipulation;
 }
 
 .app-main {
@@ -4980,9 +5009,10 @@ html {
     -webkit-backdrop-filter: none;
   }
 
+  /* The tab-bar clearance now lives on <body> (see the 780px block above),
+     so `.app-main` only needs its tightened mobile top padding here. */
   .app-main {
     padding-top: 16px;
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 
   .page-head {
