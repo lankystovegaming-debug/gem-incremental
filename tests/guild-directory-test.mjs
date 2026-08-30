@@ -24,6 +24,12 @@ assert.match(features,/guild-join-open/);
 assert.match(features,/guild-request-join/);
 assert.match(features,/guild-manage-join-request/);
 assert.match(features,/pendingRequest/);
+assert.match(features,/function missingGuildJoinRequests/);
+assert.match(features,/\["42P01","PGRST205"\]/);
+assert.match(features,/requestError&&!missingGuildJoinRequests\(requestError\)/);
+assert.match(features,/availableRequestRows=missingGuildJoinRequests\(requestError\)\?\[\]/);
+assert.match(features,/directoryActionsAvailable=!missingGuildJoinRequests\(requestError\)/);
+assert.match(features,/return json\(\{inGuild:Boolean\(membership\),directoryActionsAvailable/);
 
 assert.match(page,/id="guildDirectory"/);
 assert.match(page,/id="guildDirectorySearch"/);
@@ -31,6 +37,8 @@ assert.match(page,/id="joinRequestList"/);
 assert.match(script,/function renderDirectory/);
 assert.match(script,/function actOnDirectory/);
 assert.match(script,/function renderJoinRequests/);
+assert.match(script,/directoryActionsAvailable=data\.directoryActionsAvailable!==false/);
+assert.match(script,/Joining temporarily unavailable/);
 assert.match(css,/\.directory-grid/);
 
 console.log("Guild directory tests passed.");
