@@ -11,7 +11,6 @@ alter function public.refresh_player_achievements_v013(uuid)
 -- IDs and AP stay stable, so existing completion and rewards are preserved.
 update public.private_feature_definitions
 set name = case name
-    when 'One in a Billion' then 'One in Ten Million'
     when 'Museum Prestige 12000' then 'Museum Prestige 5000'
     when 'Prestige Gallery' then 'Prestige Gallery 7500'
     else name
@@ -19,7 +18,15 @@ set name = case name
   updated_at = now()
 where feature_kind = 'achievement'
   and metadata->>'catalogVersion' = 'v0.13.0-beta'
-  and name in ('One in a Billion', 'Museum Prestige 12000', 'Prestige Gallery');
+  and name in ('Museum Prestige 12000', 'Prestige Gallery');
+
+update public.private_feature_definitions
+set description = 'Craft a Tier 15 Pickaxe, Tier 12 Boots, and a Tier 12 Bag.',
+    metadata = jsonb_set(metadata, '{target}', '3'::jsonb, true),
+    updated_at = now()
+where feature_kind = 'achievement'
+  and metadata->>'catalogVersion' = 'v0.13.0-beta'
+  and name = 'Fully Equipped';
 
 -- Hidden placeholders had no persistent condition and could never complete.
 -- Retire them until a real server-owned event is introduced; they no longer
@@ -66,17 +73,19 @@ begin
   -- catalog, so adding or removing gems cannot make it stale again.
   select count(distinct gem_name) into v
   from public.best_roll_history where player_id = p_uid;
-  select count(*) into v_catalog_total from public.game_gems;
+  select count(*) into v_catalog_total
+  from public.private_feature_gems where enabled;
   perform public.achievement_set_progress_v013(p_uid, 'Index Apprentice', v, 10);
-  perform public.achievement_set_progress_v013(p_uid, 'Index Explorer', v, 20);
-  perform public.achievement_set_progress_v013(p_uid, 'Index Scholar', v, 30);
-  perform public.achievement_set_progress_v013(p_uid, 'Index Expert', v, 40);
+  perform public.achievement_set_progress_v013(p_uid, 'Index Explorer', v, 25);
+  perform public.achievement_set_progress_v013(p_uid, 'Index Scholar', v, 50);
+  perform public.achievement_set_progress_v013(p_uid, 'Index Expert', v, 100);
   perform public.achievement_set_progress_v013(p_uid, 'The Complete Index', v, v_catalog_total);
 
-  -- The backend's rarest base gem is currently 1 in 10 million.
+  -- Private feature gems extend beyond one billion rarity, so the original
+  -- billion-tier discovery remains valid when this backend catalog is used.
   select coalesce(max(rarity), 0) into v
   from public.best_roll_history where player_id = p_uid;
-  perform public.achievement_set_progress_v013(p_uid, 'One in Ten Million', v, 10000000);
+  perform public.achievement_set_progress_v013(p_uid, 'One in a Billion', v, 1000000000);
 
   -- Mutation catalog completion, measured by distinct mutations actually
   -- rolled rather than the total number of mutated specimens.
@@ -119,7 +128,10 @@ begin
   v_total := least(v, v2, v3);
   perform public.achievement_set_progress_v013(p_uid, 'Capable Loadout', v_total, 5);
   perform public.achievement_set_progress_v013(p_uid, 'Advanced Loadout', v_total, 10);
-  perform public.achievement_set_progress_v013(p_uid, 'Fully Equipped', v_total, 12);
+  v_total := case when v >= 15 then 1 else 0 end
+    + case when v2 >= 12 then 1 else 0 end
+    + case when v3 >= 12 then 1 else 0 end;
+  perform public.achievement_set_progress_v013(p_uid, 'Fully Equipped', v_total, 3);
   perform public.achievement_set_progress_v013(p_uid, 'Masterwork Artisan', v4, 15);
   perform public.achievement_set_progress_v013(p_uid, 'Arcane Mastery', v5, 3);
 
@@ -243,5 +255,97 @@ revoke all on function public.refresh_player_achievements_v013(uuid)
   from public, anon, authenticated;
 grant execute on function public.refresh_player_achievements_v013(uuid)
   to service_role;
+
+-- Rebalanced targets never revoke completion: achievement_set_progress_v013
+-- only moves current_value upward and ORs the completed flag. Disabled legacy
+-- goals are also returned to players who completed them, so claimed history
+-- remains visible as Completed without making the goal obtainable for others.
+create or replace function public.get_player_achievements_v013(p_player_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  defs jsonb;
+  prog jsonb;
+  points integer;
+  visible_total integer;
+  visible_done integer;
+  unclaimed integer;
+  ranking bigint;
+  milestones jsonb;
+begin
+  if auth.uid() is distinct from p_player_id then raise exception 'forbidden'; end if;
+  perform public.ensure_private_feature_progress(p_player_id);
+  perform public.refresh_player_achievements_v013(p_player_id);
+
+  select coalesce(jsonb_agg(to_jsonb(d) order by d.sort_order), '[]') into defs
+  from public.private_feature_definitions d
+  where d.feature_kind = 'achievement'
+    and (
+      d.enabled
+      or exists (
+        select 1 from public.private_feature_progress p
+        where p.player_id = p_player_id and p.feature_id = d.id and p.completed
+      )
+    );
+
+  select coalesce(jsonb_agg(to_jsonb(p)), '[]') into prog
+  from public.private_feature_progress p
+  join public.private_feature_definitions d on d.id = p.feature_id
+  where p.player_id = p_player_id and d.feature_kind = 'achievement';
+
+  select coalesce(achievement_points, 0) into points
+  from public.player_achievement_profiles where player_id = p_player_id;
+
+  select count(*) filter (
+    where not coalesce((d.metadata->>'hidden')::boolean, false)
+      and (d.enabled or p.completed)
+  ), count(*) filter (
+    where p.completed and not coalesce((d.metadata->>'hidden')::boolean, false)
+  ), count(*) filter (where p.completed and not p.reward_granted)
+  into visible_total, visible_done, unclaimed
+  from public.private_feature_definitions d
+  left join public.private_feature_progress p
+    on p.feature_id = d.id and p.player_id = p_player_id
+  where d.feature_kind = 'achievement';
+
+  select rank into ranking from (
+    select player_id, dense_rank() over (order by achievement_points desc) rank
+    from public.player_achievement_profiles
+  ) ranked where player_id = p_player_id;
+
+  select jsonb_agg(
+    m || jsonb_build_object(
+      'unlocked', points >= (m->>'ap')::integer,
+      'claimed', claimed.ap is not null
+    ) order by (m->>'ap')::integer
+  ) into milestones
+  from jsonb_array_elements(public.achievement_milestones_v013()) m
+  left join public.player_achievement_milestones claimed
+    on claimed.player_id = p_player_id and claimed.ap = (m->>'ap')::integer;
+
+  return jsonb_build_object(
+    'definitions', defs,
+    'progress', prog,
+    'summary', jsonb_build_object(
+      'ap', points,
+      'visibleCompleted', coalesce(visible_done, 0),
+      'visibleTotal', visible_total,
+      'completionPercent', case when visible_total = 0 then 0
+        else round(100.0 * visible_done / visible_total, 1) end,
+      'rank', ranking,
+      'unclaimed', coalesce(unclaimed, 0)
+    ),
+    'milestones', coalesce(milestones, '[]')
+  );
+end;
+$function$;
+
+revoke all on function public.get_player_achievements_v013(uuid)
+  from public, anon, authenticated;
+grant execute on function public.get_player_achievements_v013(uuid)
+  to authenticated, service_role;
 
 commit;
