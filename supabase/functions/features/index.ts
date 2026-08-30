@@ -57,6 +57,10 @@ async function isAdmin(ctx:any,userId:string){
 function missingGuildLogoColumn(error:any){
   return error?.code==="42703"&&String(error?.message??"").includes("logo_path");
 }
+function missingGuildJoinRequests(error:any){
+  const message=String(error?.message??"");
+  return ["42P01","PGRST205"].includes(String(error?.code??""))&&message.includes("guild_join_requests");
+}
 async function guildOwnedBy(ctx:any,userId:string){
   let {data:guild,error:guildError}=await ctx.supabaseAdmin.from("guilds").select("id,logo_path").eq("owner_id",userId).maybeSingle();
   if(missingGuildLogoColumn(guildError)){
@@ -134,12 +138,13 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
     if(["owner","officer"].includes(membership.role)){
       const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("id,player_id,requested_at").eq("guild_id",guild.id).eq("status","pending").order("requested_at");
-      if(requestError)throw requestError;
-      const requestIds=(requestRows??[]).map((row:any)=>row.player_id);
+      if(requestError&&!missingGuildJoinRequests(requestError))throw requestError;
+      const availableRequestRows=missingGuildJoinRequests(requestError)?[]:(requestRows??[]);
+      const requestIds=availableRequestRows.map((row:any)=>row.player_id);
       const {data:requestProfiles,error:requestProfileError}=requestIds.length?await ctx.supabaseAdmin.from("players").select("id,username").in("id",requestIds):{data:[],error:null};
       if(requestProfileError)throw requestProfileError;
       const requestNames=new Map((requestProfiles??[]).map((profile:any)=>[profile.id,profile.username]));
-      joinRequests=(requestRows??[]).map((row:any)=>({...row,username:requestNames.get(row.player_id)||"Unknown player"}));
+      joinRequests=availableRequestRows.map((row:any)=>({...row,username:requestNames.get(row.player_id)||"Unknown player"}));
     }
     const now=new Date().toISOString();
     const contributionDate=now.slice(0,10);
@@ -185,9 +190,10 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     const memberCounts=new Map<string,number>();
     for(const row of memberRows??[])memberCounts.set(row.guild_id,(memberCounts.get(row.guild_id)??0)+1);
     const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("guild_id").eq("player_id",userId).eq("status","pending");
-    if(requestError)throw requestError;
-    const pendingGuildIds=new Set((requestRows??[]).map((row:any)=>row.guild_id));
-    return json({inGuild:Boolean(membership),guilds:(guildRows??[]).map((guild:any)=>({...guild,memberCount:memberCounts.get(guild.id)??0,pendingRequest:pendingGuildIds.has(guild.id)}))});
+    if(requestError&&!missingGuildJoinRequests(requestError))throw requestError;
+    const directoryActionsAvailable=!missingGuildJoinRequests(requestError);
+    const pendingGuildIds=new Set((directoryActionsAvailable?(requestRows??[]):[]).map((row:any)=>row.guild_id));
+    return json({inGuild:Boolean(membership),directoryActionsAvailable,guilds:(guildRows??[]).map((guild:any)=>({...guild,memberCount:memberCounts.get(guild.id)??0,pendingRequest:pendingGuildIds.has(guild.id)}))});
   }
   if (a === "guild-create") {
     const limited=await limitGuildCreation(userId);if(limited)return limited;
