@@ -485,6 +485,18 @@ function duplicateGems() {
   return duplicates;
 }
 
+function finalWeightMultiplier(gem) {
+  const baseWeight = Number(gem.base_weight);
+  const finalWeight = Number(gem.final_weight);
+
+  if (Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)) {
+    return finalWeight / baseWeight;
+  }
+
+  // Older or special inventory records may not have a usable base weight.
+  return Number(gem.rolled_weight_multiplier) || 0;
+}
+
 function applySavedFilter(value) {
   if (value === "valuable") {
     gemSearch.value = ""; gemFilter.value = "all"; gemRarity.value = "legendary"; gemSort.value = "rarity";
@@ -553,7 +565,7 @@ function gemCard(gem) {
         <div class="gem-card__row">
           <span class="gem-card__key">Multiplier</span>
           <span class="gem-card__val">${formatMultiplier(
-            gem.rolled_weight_multiplier
+            finalWeightMultiplier(gem)
           )}</span>
         </div>
 
