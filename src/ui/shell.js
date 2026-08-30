@@ -185,6 +185,7 @@ export function mountShell({ page, base = "./" }) {
           </button>
           <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
             <div class="menu__label">Quick links</div>
+            <a class="menu__item" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
             <button class="menu__item" type="button" data-more-action="howto">
               ${icons.book}<span>How to play</span>
             </button>

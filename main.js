@@ -16,6 +16,7 @@ import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
 import { loadExpeditionDashboard } from "./src/backend/cloudExpeditions.js";
 
 import { mountShell } from "./src/ui/shell.js";
+import { initReferral } from "./src/ui/referralBootstrap.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
@@ -45,6 +46,10 @@ import {
 
 
 const shell = mountShell({ page: "roll", base: "./" });
+
+// Capture an inbound ?ref=CODE, attribute a fresh account to it, and settle
+// any pending referral reward. Fire-and-forget so it never delays the page.
+initReferral();
 
 
 // =========================================================
