@@ -19,6 +19,7 @@ import { isRelic } from "../src/data/enchants.js";
 import { getGemMutation } from "../src/data/mutations.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { loadGemCatalog } from "../src/backend/gemCatalog.js";
+import { saleFeeRate, orderFeeRate, feeAmount } from "./market-fees.js";
 
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
@@ -86,35 +87,6 @@ const WATCHLIST_KEY = "gemIncremental.market.watchlist";
 function watches(){try{return JSON.parse(localStorage.getItem(WATCHLIST_KEY)||"[]");}catch{return [];}}
 function saveWatches(value){try{localStorage.setItem(WATCHLIST_KEY,JSON.stringify(value.slice(0,12)));}catch{}}
 function renderWatchlist(){if(!marketWatchlist)return;const list=watches();if(!list.length){marketWatchlist.innerHTML="<h2>Watchlist</h2><p>Watch a gem to see the best current buy order and the median live offer.</p>";return;}const rows=list.map(name=>{const prices=state.orders.filter(o=>o.status==="open"&&o.gem_name===name).map(o=>Number(o.price)).sort((a,b)=>a-b),median=prices.length?prices[Math.floor(prices.length/2)]:0,summary=prices.length?`Best ${formatMoney(prices.at(-1))} · Median ${formatMoney(median)}`:"No open orders";return `<div class="auction-line"><span>${escapeHtml(name)}</span><span>${summary}</span><button class="btn btn--sm" data-unwatch="${escapeHtml(name)}">Remove</button></div>`;}).join("");marketWatchlist.innerHTML=`<div><h2>Watchlist</h2><p>Live order-book benchmarks refresh with the market.</p></div>${rows}`;marketWatchlist.querySelectorAll("[data-unwatch]").forEach(button=>button.addEventListener("click",()=>{saveWatches(watches().filter(name=>name!==button.dataset.unwatch));renderWatchlist();}));}
-
-function priceSurcharge(price) {
-  if (price < 100000) return 0;
-  if (price < 1000000) return 0.0025;
-  if (price < 10000000) return 0.005;
-  if (price < 50000000) return 0.01;
-  if (price < 100000000) return 0.015;
-  if (price < 500000000) return 0.02;
-  return 0.03;
-}
-
-function saleFeeRate(price, hours) {
-  const durationSurcharge = hours <= 6 ? 0 : hours <= 12 ? 0.0025 : hours <= 24 ? 0.005 : hours <= 48 ? 0.01 : 0.015;
-  return Math.min(0.05, 0.005 + priceSurcharge(price) + durationSurcharge);
-}
-
-function orderFeeRate(price) {
-  if (price < 100000) return 0.01;
-  if (price < 1000000) return 0.0125;
-  if (price < 10000000) return 0.015;
-  if (price < 50000000) return 0.02;
-  if (price < 100000000) return 0.03;
-  if (price < 500000000) return 0.04;
-  return 0.05;
-}
-
-function feeAmount(price, rate) {
-  return Math.round(Math.max(0, price) * rate * 100) / 100;
-}
 
 function formatRate(rate) {
   return `${(rate * 100).toFixed(2).replace(/\.00$/, "")}%`;
