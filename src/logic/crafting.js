@@ -124,6 +124,13 @@ function specimenMatches(
   requirement,
   specimen
 ) {
+  const baseWeight = Number(specimen.gem?.baseWeight);
+  const finalWeight = Number(specimen.finalWeight);
+  const weightMultiplier =
+    Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)
+      ? finalWeight / baseWeight
+      : Number(specimen.weightMultiplier);
+
   if (
     requirement.gem &&
     specimen.gem.name !==
@@ -134,7 +141,7 @@ function specimenMatches(
 
   if (
     requirement.minimumWeightMultiplier != null &&
-    specimen.weightMultiplier <
+    weightMultiplier <
       requirement.minimumWeightMultiplier
   ) {
     return false;
@@ -142,7 +149,7 @@ function specimenMatches(
 
   if (
     requirement.maximumWeightMultiplier != null &&
-    specimen.weightMultiplier >
+    weightMultiplier >
       requirement.maximumWeightMultiplier
   ) {
     return false;
