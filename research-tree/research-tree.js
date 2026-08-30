@@ -62,7 +62,10 @@ async function refreshSources() {
 
 function nodeState(node, bought, profile) {
   const owned = bought.has(node.id);
-  const missing = (node.prerequisites || []).filter((id) => !bought.has(id) && !planned.has(id));
+  // Planned prerequisites only count as satisfied while actively planning a
+  // build. Outside planning mode a merely-planned prerequisite must still read
+  // as locked, otherwise a node looks researchable but the server rejects it.
+  const missing = (node.prerequisites || []).filter((id) => !bought.has(id) && !(planning && planned.has(id)));
   const apLocked = Number(state.achievementPoints || 0) < Number(node.required_ap || 0);
   const poor = Number(profile.points_available || 0) < Number(node.cost || 0);
   return { owned, missing, apLocked, poor, locked: missing.length > 0 || apLocked, selected: planned.has(node.id) };
@@ -158,7 +161,7 @@ function drawMapLines() {
   const connections = (state.nodes || [])
     .filter((node) => node.branch === active)
     .flatMap((node) => (node.prerequisites || []).map((parentId) => ({ node, parentId })));
-  svg.innerHTML = connections.map(({ node, parentId }, index) => {
+  svg.innerHTML = connections.map(({ node, parentId }) => {
       const from = document.getElementById(`research-map-node-${parentId}`);
       const to = document.getElementById(`research-map-node-${node.id}`);
       if (!from || !to) return "";
@@ -168,13 +171,15 @@ function drawMapLines() {
       const y1 = a.top + a.height / 2 - bounds.top;
       const x2 = b.left - bounds.left;
       const y2 = b.top + b.height / 2 - bounds.top;
-      // Each dependency gets a small, dedicated lane in the empty space between
-      // stages. Orthogonal routing is far easier to follow than overlapping
-      // bezier curves when a node has more than one prerequisite.
-      const lane = index % 4;
-      const laneX = x1 + Math.max(26, Math.min(x2 - x1 - 24, (x2 - x1) * .42 + lane * 9));
+      // Smooth cubic connector. The control points sit a fixed fraction of the
+      // horizontal gap away from each end, so every edge leaves its parent and
+      // meets its child on a horizontal tangent. Multiple dependencies then fan
+      // out and converge cleanly instead of crossing at hard right angles.
+      const curve = Math.max(28, (x2 - x1) * 0.5);
+      const cx1 = x1 + curve;
+      const cx2 = x2 - curve;
       const activeLine = bought.has(parentId) && bought.has(node.id) ? " owned" : planned.has(node.id) ? " planned" : "";
-      return `<path class="research-map__line${activeLine}" d="M ${x1} ${y1} H ${laneX} V ${y2} H ${x2}" />`;
+      return `<path class="research-map__line${activeLine}" d="M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}" />`;
     }).join("");
 }
 
@@ -213,6 +218,7 @@ $("confirmAction").addEventListener("click", async (event) => {
   event.target.disabled = true;
   try {
     state = await call("research-purchase", { nodeId: pendingNode.id });
+    planned.delete(pendingNode.id);
     writeCache(state);
     $("confirmDialog").close();
     render();
@@ -238,4 +244,11 @@ $("resetAction").addEventListener("click", async (event) => {
   } catch (error) { alert(error.message); } finally { event.target.disabled = false; }
 });
 window.addEventListener("resize", queueMapLines);
+// The connector lines are measured from live node geometry, so they must be
+// redrawn whenever that geometry changes after the first paint: the display
+// font finishing loading (Orbitron reflows the node labels) and any later
+// resize of the map host both shift node positions.
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueMapLines);
+const mapHost = $("treeMap");
+if (mapHost && "ResizeObserver" in window) new ResizeObserver(queueMapLines).observe(mapHost);
 load();

@@ -54,7 +54,10 @@ $("spinButton").onclick=async()=>{
    for(let i=0;i<index;i++) before+=Math.max(0,Number(rewards[i].chance)||0);
    const width=Math.max(0,Number(rewards[index]?.chance)||0);
    const centerPercent=(before+width/2)/total;
-   const targetDegrees=360-(centerPercent*360);
+   // The wheel gradient starts at -90deg (9 o'clock) while the pointer sits at
+   // the top (12 o'clock), so bringing a segment under the pointer needs a
+   // +90deg offset. Without it the wheel lands one quarter-turn off the prize.
+   const targetDegrees=90-(centerPercent*360);
    const turns=6+Math.floor(Math.random()*3);
    // Always advance the wheel FORWARD from its current angle to the target, so
    // the transition animates on every spin (and never lands on the same value).
