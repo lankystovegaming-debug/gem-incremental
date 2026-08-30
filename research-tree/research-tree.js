@@ -110,38 +110,169 @@ function renderPlanner(bought, profile) {
   $("clearPlan").addEventListener("click", () => { planned.clear(); render(); });
 }
 
+// Map geometry. NODE_HEIGHT/NODE_WIDTH must match the fixed size set on
+// `.research-map__node` in the CSS so the JS-computed layout and the rendered
+// cards line up exactly.
+const NODE_HEIGHT = 116;
+const NODE_WIDTH = 196;
+const ROOT_WIDTH = 132;
+const COL_GAP = 46;
+const ROW_GAP = 22;
+const ROW_PITCH = NODE_HEIGHT + ROW_GAP;
+const MAP_PAD = 26;
+const HEADER_BAND = 8;
+
+// The layout for the branch currently on screen. drawMapLines routes connectors
+// straight from this precomputed geometry (including invisible waypoints) rather
+// than re-measuring the DOM, so lines and cards can never disagree.
+let mapLayout = null;
+
 function treeMap(nodes, bought, profile) {
   const root = (state.nodes || []).find((node) => node.id === "research-fundamentals");
-  const byStage = orderedTreeLayers(nodes, root);
-  return `<div class="research-map__viewport"><section class="research-map" aria-label="${esc(labels[active])} two-dimensional research tree"><svg id="researchMapLines" class="research-map__lines" aria-hidden="true"></svg><div class="research-map__columns">${byStage.map((stageNodes, index) => `<section class="research-map__column" data-stage="${index}"><header><span>${index ? `STAGE ${["", "I", "II", "III", "IV"][index]}` : "ROOT"}</span>${index ? `<small>${index === 1 ? "Open" : `${index === 2 ? 100 : index === 3 ? 400 : 1000} AP`}</small>` : ""}</header><div class="research-map__nodes">${stageNodes.map((node) => mapNode(node, bought, profile)).join("")}</div></section>`).join("")}</div></section></div>`;
+  mapLayout = buildResearchLayout(nodes, root);
+  const cards = mapLayout.nodes.map((node) => mapNode(node, bought, profile, mapLayout)).join("");
+  return `<div class="research-map__viewport"><section class="research-map" style="width:${Math.round(mapLayout.width)}px;height:${Math.round(mapLayout.height)}px" aria-label="${esc(labels[active])} research dependency map — prerequisites flow left to right"><svg id="researchMapLines" class="research-map__lines" aria-hidden="true"></svg>${cards}</section></div>`;
 }
 
-function orderedTreeLayers(nodes, root) {
-  const positions = new Map(root ? [[root.id, 0]] : []);
-  const layers = [root ? [root] : []];
-  for (let stage = 1; stage <= 4; stage++) {
-    const layer = nodes.filter((node) => node.stage === stage).sort((left, right) => {
-      const center = (node) => {
-        const parents = node.prerequisites || [];
-        const known = parents.map((id) => positions.get(id)).filter(Number.isFinite);
-        return known.length ? known.reduce((sum, value) => sum + value, 0) / known.length : Number(node.sort_order || 0);
-      };
-      return center(left) - center(right) || Number(left.sort_order || 0) - Number(right.sort_order || 0);
+// Longest path from the root over prerequisites. Columns are keyed on this
+// dependency depth (not the AP "stage"), so every connector flows strictly
+// left-to-right — no chain ever doubles back inside a column.
+function nodeDepth(id, byId, cache) {
+  if (cache.has(id)) return cache.get(id);
+  cache.set(id, 0); // guard against accidental cycles in the catalogue
+  const parents = (byId.get(id)?.prerequisites || []).filter((parentId) => byId.has(parentId));
+  const depth = parents.length ? 1 + Math.max(...parents.map((parentId) => nodeDepth(parentId, byId, cache))) : 0;
+  cache.set(id, depth);
+  return depth;
+}
+
+// Full Sugiyama-style layered layout: assign columns by dependency depth, split
+// long edges across invisible waypoints, order each column to reduce crossings,
+// then solve absolute vertical positions. Single-parent chains come out as dead
+// straight, crossing-free lines; the only residual crossings are the genuine
+// multi-prerequisite merges, which are mathematically unavoidable in a layered
+// tree and are routed as clean curves rather than tangled diagonals.
+function buildResearchLayout(branchNodes, root) {
+  const nodes = root ? [root, ...branchNodes] : branchNodes.slice();
+  const byId = new Map((state.nodes || []).map((node) => [node.id, node]));
+  const depthCache = new Map();
+  const present = new Set(nodes.map((node) => node.id));
+  const column = new Map(nodes.map((node) => [node.id, nodeDepth(node.id, byId, depthCache)]));
+  const sortKey = new Map(nodes.map((node) => [node.id, Number(node.sort_order || 0)]));
+
+  // Build the vertex set (real nodes + waypoints) and the routed edge chains.
+  const routes = [];
+  let waypointSeq = 0;
+  nodes.forEach((node) => {
+    (node.prerequisites || []).filter((parentId) => present.has(parentId)).forEach((parentId) => {
+      const chain = [parentId];
+      for (let col = column.get(parentId) + 1; col < column.get(node.id); col++) {
+        const id = `__wp${waypointSeq++}`;
+        column.set(id, col);
+        sortKey.set(id, sortKey.get(parentId));
+        chain.push(id);
+      }
+      chain.push(node.id);
+      routes.push({ from: parentId, to: node.id, chain });
     });
-    layer.forEach((node, index) => positions.set(node.id, index));
-    layers.push(layer);
+  });
+
+  const lastColumn = Math.max(0, ...column.values());
+  const layers = Array.from({ length: lastColumn + 1 }, () => []);
+  column.forEach((col, id) => layers[col].push(id));
+
+  const parents = new Map([...column.keys()].map((id) => [id, []]));
+  const children = new Map([...column.keys()].map((id) => [id, []]));
+  routes.forEach(({ chain }) => {
+    for (let i = 0; i < chain.length - 1; i++) { children.get(chain[i]).push(chain[i + 1]); parents.get(chain[i + 1]).push(chain[i]); }
+  });
+
+  orderedTreeLayers(layers, parents, children, sortKey);
+
+  // Vertical coordinates: pull each vertex toward the mean height of its
+  // neighbours, then remove overlaps with isotonic regression (see below).
+  const top = new Map();
+  layers.forEach((layer) => layer.forEach((id, position) => top.set(id, position * ROW_PITCH)));
+  const meanTop = (ids) => ids.length ? ids.reduce((sum, id) => sum + top.get(id), 0) / ids.length : null;
+  const relax = (layer, adjacency) => {
+    const wants = layer.map((id) => meanTop(adjacency.get(id)) ?? top.get(id));
+    resolveSeparation(wants, ROW_PITCH).forEach((value, position) => top.set(layer[position], value));
+  };
+  for (let pass = 0; pass < 16; pass++) {
+    for (let col = 1; col < layers.length; col++) relax(layers[col], parents);
+    for (let col = layers.length - 2; col >= 0; col--) relax(layers[col], children);
+  }
+  const values = [...top.values()];
+  const min = values.length ? Math.min(...values) : 0;
+  top.forEach((value, id) => top.set(id, value - min + MAP_PAD + HEADER_BAND));
+
+  const columnX = (col) => MAP_PAD + (col === 0 ? 0 : ROOT_WIDTH + COL_GAP + (col - 1) * (NODE_WIDTH + COL_GAP));
+  const columnW = (col) => col === 0 ? ROOT_WIDTH : NODE_WIDTH;
+  const midY = (id) => top.get(id) + NODE_HEIGHT / 2;
+  const width = columnX(lastColumn) + columnW(lastColumn) + MAP_PAD;
+  const height = (values.length ? Math.max(...top.values()) : 0) + NODE_HEIGHT + MAP_PAD;
+
+  return {
+    nodes, column, top, width, height,
+    left: (id) => columnX(column.get(id)),
+    widthOf: (id) => columnW(column.get(id)),
+    rightPoint: (id) => ({ x: columnX(column.get(id)) + columnW(column.get(id)), y: midY(id) }),
+    leftPoint: (id) => ({ x: columnX(column.get(id)), y: midY(id) }),
+    midPoint: (id) => ({ x: columnX(column.get(id)) + columnW(column.get(id)) / 2, y: midY(id) }),
+    routes,
+  };
+}
+
+// Iterative barycentre ordering (down-sweep to align with parents, up-sweep to
+// align with children). Standard crossing-reduction heuristic; mutates `layers`.
+function orderedTreeLayers(layers, parents, children, sortKey) {
+  const index = new Map();
+  const reindex = () => layers.forEach((layer) => layer.forEach((id, position) => index.set(id, position)));
+  layers.forEach((layer) => layer.sort((left, right) => sortKey.get(left) - sortKey.get(right)));
+  reindex();
+  const barycentre = (ids) => ids.length ? ids.reduce((sum, id) => sum + index.get(id), 0) / ids.length : null;
+  const orderBy = (layer, adjacency) => layer.sort((left, right) => {
+    const key = (id) => barycentre(adjacency.get(id)) ?? index.get(id);
+    return key(left) - key(right) || sortKey.get(left) - sortKey.get(right);
+  });
+  for (let pass = 0; pass < 12; pass++) {
+    for (let col = 1; col < layers.length; col++) { orderBy(layers[col], parents); reindex(); }
+    for (let col = layers.length - 2; col >= 0; col--) { orderBy(layers[col], children); reindex(); }
   }
   return layers;
 }
 
-function mapNode(node, bought, profile) {
+// Isotonic regression via pool-adjacent-violators. Given desired positions in
+// visual order, returns positions that keep that order, sit at least `pitch`
+// apart, and minimise total squared displacement from the desired values.
+function resolveSeparation(wants, pitch) {
+  const shifted = wants.map((want, i) => want - i * pitch);
+  const blocks = [];
+  for (const value of shifted) {
+    let block = { sum: value, count: 1, mean: value };
+    while (blocks.length && blocks[blocks.length - 1].mean > block.mean) {
+      const previous = blocks.pop();
+      const sum = previous.sum + block.sum;
+      const count = previous.count + block.count;
+      block = { sum, count, mean: sum / count };
+    }
+    blocks.push(block);
+  }
+  const positions = [];
+  blocks.forEach((block) => { for (let i = 0; i < block.count; i++) positions.push(block.mean); });
+  return positions.map((value, i) => value + i * pitch);
+}
+
+function mapNode(node, bought, profile, layout) {
   const status = nodeState(node, bought, profile);
   const classes = ["research-map__node", status.owned ? "owned" : "", status.locked ? "locked" : "", status.selected ? "planned" : ""].filter(Boolean).join(" ");
   const isRoot = node.id === "research-fundamentals";
   const action = planning && !status.owned ? (status.apLocked ? "" : `data-map-plan="${esc(node.id)}"`) : (!status.owned && !status.locked && !status.poor ? `data-map-node="${esc(node.id)}"` : "");
   const disabled = !action ? "disabled" : "";
-  const detail = status.owned ? "Researched" : status.locked ? "Prerequisite required" : status.poor ? `Need ${node.cost} RP` : planning ? (status.selected ? "Remove from plan" : "Add to plan") : `Research for ${node.cost} RP`;
-  return `<button id="research-map-node-${esc(node.id)}" class="${classes}" type="button" ${action} ${disabled} title="${esc(node.name)} — ${esc(node.description)} — ${esc(detail)}" aria-label="${esc(node.name)}. Effect: ${esc(node.description)}. ${esc(detail)}"><span>${isRoot ? "START" : status.owned ? "✓" : `${node.cost} RP`}</span><strong>${esc(node.name)}</strong><small class="research-map__effect">${esc(node.description || "No effect specification available.")}</small></button>`;
+  const detail = status.owned ? "Researched" : status.apLocked ? `Requires ${node.required_ap} AP` : status.locked ? "Prerequisite required" : status.poor ? `Need ${node.cost} RP` : planning ? (status.selected ? "Remove from plan" : "Add to plan") : `Research for ${node.cost} RP`;
+  const stageBadge = isRoot ? "" : `<em class="research-map__stage" title="${node.required_ap ? `Stage ${node.stage} — needs ${node.required_ap} AP` : `Stage ${node.stage}`}">S${node.stage}</em>`;
+  const geometry = `left:${Math.round(layout.left(node.id))}px;top:${Math.round(layout.top.get(node.id))}px;width:${Math.round(layout.widthOf(node.id))}px`;
+  return `<button id="research-map-node-${esc(node.id)}" class="${classes}" type="button" style="${geometry}" ${action} ${disabled} title="${esc(node.name)} — ${esc(node.description)} — ${esc(detail)}" aria-label="${esc(node.name)}. Effect: ${esc(node.description)}. ${esc(detail)}">${stageBadge}<span>${isRoot ? "START" : status.owned ? "✓" : `${node.cost} RP`}</span><strong>${esc(node.name)}</strong><small class="research-map__effect">${esc(node.description || "No effect specification available.")}</small></button>`;
 }
 
 function queueMapLines() {
@@ -150,37 +281,33 @@ function queueMapLines() {
 }
 
 function drawMapLines() {
-  const map = document.querySelector(".research-map");
   const svg = $("researchMapLines");
-  if (!map || !svg || !state) return;
-  const bounds = map.getBoundingClientRect();
-  svg.setAttribute("viewBox", `0 0 ${bounds.width} ${bounds.height}`);
-  svg.setAttribute("width", bounds.width);
-  svg.setAttribute("height", bounds.height);
+  if (!svg || !mapLayout || !state) return;
+  const { width, height, routes } = mapLayout;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
   const bought = new Set(state.purchases || []);
-  const connections = (state.nodes || [])
-    .filter((node) => node.branch === active)
-    .flatMap((node) => (node.prerequisites || []).map((parentId) => ({ node, parentId })));
-  svg.innerHTML = connections.map(({ node, parentId }) => {
-      const from = document.getElementById(`research-map-node-${parentId}`);
-      const to = document.getElementById(`research-map-node-${node.id}`);
-      if (!from || !to) return "";
-      const a = from.getBoundingClientRect();
-      const b = to.getBoundingClientRect();
-      const x1 = a.right - bounds.left;
-      const y1 = a.top + a.height / 2 - bounds.top;
-      const x2 = b.left - bounds.left;
-      const y2 = b.top + b.height / 2 - bounds.top;
-      // Smooth cubic connector. The control points sit a fixed fraction of the
-      // horizontal gap away from each end, so every edge leaves its parent and
-      // meets its child on a horizontal tangent. Multiple dependencies then fan
-      // out and converge cleanly instead of crossing at hard right angles.
-      const curve = Math.max(28, (x2 - x1) * 0.5);
-      const cx1 = x1 + curve;
-      const cx2 = x2 - curve;
-      const activeLine = bought.has(parentId) && bought.has(node.id) ? " owned" : planned.has(node.id) ? " planned" : "";
-      return `<path class="research-map__line${activeLine}" d="M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}" />`;
+  svg.innerHTML = routes.map(({ from, to, chain }) => {
+      const points = chain.map((id, i) => i === 0 ? mapLayout.rightPoint(id) : i === chain.length - 1 ? mapLayout.leftPoint(id) : mapLayout.midPoint(id));
+      const activeLine = bought.has(from) && bought.has(to) ? " owned" : planned.has(to) ? " planned" : "";
+      return `<path class="research-map__line${activeLine}" d="${routePath(points)}" />`;
     }).join("");
+}
+
+// Smooth cubic path through the routed waypoints. Each segment's control points
+// sit a fixed fraction of the horizontal gap from its ends, so every edge leaves
+// and enters on a horizontal tangent — an aligned chain reads as one straight
+// line, and merges fan out and converge cleanly instead of kinking.
+function routePath(points) {
+  let d = "";
+  for (let i = 0; i < points.length - 1; i++) {
+    const x1 = points[i].x, y1 = points[i].y, x2 = points[i + 1].x, y2 = points[i + 1].y;
+    const curve = Math.max(24, (x2 - x1) * 0.5);
+    const cx1 = x1 + curve, cx2 = x2 - curve;
+    d += i === 0 ? `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}` : ` C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+  }
+  return d;
 }
 
 function nodeCard(node, bought, profile) {
