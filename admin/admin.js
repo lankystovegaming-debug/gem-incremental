@@ -34,7 +34,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1241,6 +1241,190 @@ function wireAnnouncements() {
 
 
 // =========================================================
+// UPDATE LOG PUBLISHER (admin only)
+// =========================================================
+
+function parseUpdateLogContent(value) {
+  const sections = [];
+  let current = null;
+
+  for (const rawLine of String(value ?? "").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (line.startsWith("## ")) {
+      const heading = line.slice(3).trim();
+      if (!heading) throw new Error("Every section needs a heading.");
+      current = { heading, bullets: [] };
+      sections.push(current);
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      if (!current) throw new Error("Add a ## section heading before its bullet points.");
+      const bullet = line.slice(2).trim();
+      if (!bullet) throw new Error("Bullet points cannot be empty.");
+      current.bullets.push(bullet);
+      continue;
+    }
+
+    throw new Error(`Unsupported line: ${line}`);
+  }
+
+  if (!sections.length || sections.some((section) => !section.bullets.length)) {
+    throw new Error("Add at least one section with at least one bullet point.");
+  }
+  return sections;
+}
+
+function updateSectionsToText(sections) {
+  return (Array.isArray(sections) ? sections : [])
+    .map((section) => `## ${section.heading}\n${(section.bullets ?? []).map((bullet) => `- ${bullet}`).join("\n")}`)
+    .join("\n\n");
+}
+
+function wireUpdateLogPublisher() {
+  const panel = document.getElementById("updatesPanel");
+  if (!panel) return;
+  panel.hidden = false;
+
+  const idInput = document.getElementById("updateLogId");
+  const versionInput = document.getElementById("updateLogVersion");
+  const dateInput = document.getElementById("updateLogDate");
+  const titleInput = document.getElementById("updateLogTitle");
+  const contentInput = document.getElementById("updateLogContent");
+  const statusLine = document.getElementById("updateLogStatus");
+  const list = document.getElementById("updateLogList");
+  const draftButton = document.getElementById("updateLogDraft");
+  const publishButton = document.getElementById("updateLogPublish");
+  const cancelButton = document.getElementById("updateLogCancel");
+  const refreshButton = document.getElementById("updateLogRefresh");
+  let entries = [];
+
+  const reset = () => {
+    idInput.value = "";
+    versionInput.value = "";
+    titleInput.value = "";
+    contentInput.value = "";
+    dateInput.value = new Date().toISOString().slice(0, 10);
+    cancelButton.hidden = true;
+    statusLine.textContent = "";
+  };
+
+  const render = () => {
+    list.innerHTML = entries.length ? entries.map((entry) => `
+      <div class="admin-update-row">
+        <div>
+          <strong>${escapeHtml(entry.version)} · ${escapeHtml(entry.title)}</strong>
+          <span>${escapeHtml(entry.published_on)} · ${entry.published ? "Published" : "Draft"}</span>
+        </div>
+        <div class="admin-button-row">
+          <button class="btn btn--small" type="button" data-update-edit="${entry.id}">Edit</button>
+          ${entry.published ? `<button class="btn btn--small" type="button" data-update-unpublish="${entry.id}">Unpublish</button>` : ""}
+          <button class="btn btn--danger btn--small" type="button" data-update-delete="${entry.id}">Delete</button>
+        </div>
+      </div>
+    `).join("") : '<p class="admin-note">No database-backed update logs yet.</p>';
+
+    for (const button of list.querySelectorAll("[data-update-edit]")) {
+      button.addEventListener("click", () => {
+        const entry = entries.find((item) => String(item.id) === button.dataset.updateEdit);
+        if (!entry) return;
+        idInput.value = entry.id;
+        versionInput.value = entry.version;
+        titleInput.value = entry.title;
+        dateInput.value = entry.published_on;
+        contentInput.value = updateSectionsToText(entry.sections);
+        cancelButton.hidden = false;
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    for (const button of list.querySelectorAll("[data-update-unpublish]")) {
+      button.addEventListener("click", () => save(false, button.dataset.updateUnpublish));
+    }
+
+    for (const button of list.querySelectorAll("[data-update-delete]")) {
+      button.addEventListener("click", async () => {
+        if (!window.confirm("Permanently delete this update log?")) return;
+        button.disabled = true;
+        const { error } = await adminRequest("update_log_delete", { id: Number(button.dataset.updateDelete) });
+        if (error) notify.error("Could not delete update", error.message);
+        else {
+          notify.success("Update deleted", "The entry was removed.");
+          await load();
+        }
+        button.disabled = false;
+      });
+    }
+  };
+
+  const load = async () => {
+    refreshButton.disabled = true;
+    const { data, error } = await adminRequest("update_logs_list");
+    refreshButton.disabled = false;
+    if (error) {
+      notify.error("Could not load updates", error.message);
+      return;
+    }
+    entries = data?.updates ?? [];
+    render();
+  };
+
+  const save = async (published, forcedId = null) => {
+    let sections;
+    try {
+      sections = forcedId
+        ? entries.find((entry) => String(entry.id) === String(forcedId))?.sections
+        : parseUpdateLogContent(contentInput.value);
+    } catch (error) {
+      notify.error("Invalid update log", error.message);
+      return;
+    }
+
+    const existing = forcedId
+      ? entries.find((entry) => String(entry.id) === String(forcedId))
+      : null;
+    const payload = existing ? {
+      id: existing.id,
+      version: existing.version,
+      title: existing.title,
+      publishedOn: existing.published_on,
+      sections: existing.sections,
+      published
+    } : {
+      id: idInput.value ? Number(idInput.value) : null,
+      version: versionInput.value.trim(),
+      title: titleInput.value.trim(),
+      publishedOn: dateInput.value,
+      sections,
+      published
+    };
+
+    draftButton.disabled = true;
+    publishButton.disabled = true;
+    const { error } = await adminRequest("update_log_save", payload);
+    draftButton.disabled = false;
+    publishButton.disabled = false;
+    if (error) {
+      notify.error("Could not save update", error.message);
+      return;
+    }
+    notify.success(published ? "Update published" : "Draft saved", published ? "It is now live on the Updates page." : "Only admins can see this draft.");
+    reset();
+    await load();
+  };
+
+  draftButton.addEventListener("click", () => save(false));
+  publishButton.addEventListener("click", () => save(true));
+  cancelButton.addEventListener("click", reset);
+  refreshButton.addEventListener("click", load);
+  reset();
+  load();
+}
+
+
+// =========================================================
 // SHAREHOLDERS — read-only Exchange holdings overview (admin only)
 // =========================================================
 
@@ -1461,6 +1645,7 @@ if (!user || !whoami?.isAdmin) {
   analyticsButton.disabled = false;
   if (featureLabButton) featureLabButton.disabled = false;
   wireAnnouncements();
+  wireUpdateLogPublisher();
   wireCodes();
   tryWireAdminEvents();
   await loadSectionControls();

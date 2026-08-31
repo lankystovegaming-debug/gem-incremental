@@ -16,7 +16,9 @@ export function confirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   tone = "default",
-  extraLabel = null
+  extraLabel = null,
+  defaultAction = "confirm",
+  preventEnter = false
 }) {
   return new Promise((resolve) => {
     const previouslyFocused = document.activeElement;
@@ -66,7 +68,7 @@ export function confirmDialog({
 
     const buttons = [...overlay.querySelectorAll("button")];
 
-    overlay.querySelector('[data-action="confirm"]').focus();
+    (overlay.querySelector(`[data-action="${defaultAction}"]`) ?? overlay.querySelector('[data-action="cancel"]')).focus();
 
     function close(result) {
       document.removeEventListener("keydown", onKeyDown, true);
@@ -86,6 +88,12 @@ export function confirmDialog({
 
         close("cancel");
 
+        return;
+      }
+
+      if (preventEnter && event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
         return;
       }
 

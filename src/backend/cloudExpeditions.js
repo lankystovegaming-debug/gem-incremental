@@ -20,6 +20,7 @@ export const extractHellMine=runId=>rpc("extract_abandoned_mine_hell",{p_run_id:
 export const settleHellMine=runId=>rpc("settle_abandoned_mine_hell",{p_run_id:runId});
 export const loadCrystalDashboard=()=>rpc("get_crystal_caverns_dashboard");
 export const startCrystalCaverns=()=>rpc("start_crystal_caverns");
+export const setCrystalIntensity=(runId,intensity)=>rpc("set_crystal_intensity",{p_run_id:runId,p_intensity:intensity});
 export const fundCrystalDepth=(runId,depth)=>rpc("fund_crystal_depth",{p_run_id:runId,p_depth:depth});
 export const resolveCrystalDecision=(runId,choice)=>rpc("resolve_crystal_decision",{p_run_id:runId,p_choice:choice});
 export const continueCrystalOverdepth=runId=>rpc("continue_crystal_overdepth",{p_run_id:runId});

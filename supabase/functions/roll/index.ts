@@ -2089,8 +2089,8 @@ export default {
       // =====================================================
       // LOAD PENDING ONE-ROLL BOOST (Legendary / Mythic potion)
       //
-      // A one-roll potion adds a big luck bonus to exactly ONE roll,
-      // then is consumed (deleted) once the roll is committed below.
+      // Each charge adds the potion's Luck to one successful roll. The row
+      // remains until its final charge is spent.
       // =====================================================
 
       const {
@@ -2104,7 +2104,7 @@ export default {
             "player_one_roll_boosts"
           )
           .select(
-            "effect_value, consumable_id"
+            "effect_value, consumable_id, charges"
           )
           .eq(
             "player_id",
@@ -2371,6 +2371,14 @@ export default {
       }
 
 
+      // Rare-roll chat should report the effective player Luck that actually
+      // contributed to the roll, including temporary and one-roll potions.
+      // Keep the admin-event portion separate so private event modifiers are
+      // not presented as part of the player's own build.
+      const luckBeforeAdminEvent = luck;
+      let adminLuckFactor = 1;
+
+
       if (activeAdminEvent) {
         const applyEventModifier = (
           currentValue: number,
@@ -2405,6 +2413,10 @@ export default {
             activeAdminEvent.luck_bonus,
             activeAdminEvent.luck_multiplier
           );
+
+        if (luckBeforeAdminEvent > 0 && Number.isFinite(luck)) {
+          adminLuckFactor = luck / luckBeforeAdminEvent;
+        }
 
         rollSpeed =
           applyEventModifier(
@@ -2700,6 +2712,9 @@ export default {
       const resonanceBeforeRoll = Math.min(100, Math.max(0, Number(player.rarity_resonance ?? 0)));
       const resonanceEmpowered = hasRarityResonance && resonanceBeforeRoll >= 100;
       if (resonanceEmpowered) luck *= 3;
+      const announcedLuck = Number.isFinite(adminLuckFactor) && adminLuckFactor > 0
+        ? luck / adminLuckFactor
+        : luck;
       const rollEquipmentGem = () =>
         geologistMultiplier !== 1 || extremeGemMultiplier !== 1 || legendaryGemMultiplier !== 1 || timeWindowMultiplier !== 1
           ? rollGemWithPickaxePassives(
@@ -3577,6 +3592,8 @@ export default {
         oneRollLuck > 0
       ) {
         const {
+          data:
+            remainingOneRollCharges,
           error:
             consumeError
         } =
@@ -3593,6 +3610,15 @@ export default {
           console.error(
             "Failed to consume one-roll boost:",
             consumeError
+          );
+        } else if (Number(remainingOneRollCharges ?? 0) > 0) {
+          console.log(
+            "One-roll potion charge spent:",
+            {
+              playerId,
+              remainingCharges:
+                Number(remainingOneRollCharges)
+            }
           );
         }
       }
@@ -3743,10 +3769,9 @@ export default {
           rarity: gem.rarity,
           effective_rarity: effectiveRarity,
           mutation_ids: mutationIds,
-          // Chat shows the player's own permanent/equipment Luck, not any
-          // temporary boost (potions, admin-granted maintenance luck), so
-          // an admin-granted 1,000,000x never appears in the feed.
-          luck_at_roll: baseLuck
+          // Include the effective player Luck (including charged potions),
+          // while excluding the active admin-event contribution.
+          luck_at_roll: announcedLuck
         };
 
         let mutationOnlyAnnouncementError = null;
@@ -3775,7 +3800,7 @@ export default {
                   gem_name: gem.name,
                   rarity: gem.rarity,
                   mutation_ids: mutationIds,
-                  luck_at_roll: baseLuck
+                  luck_at_roll: announcedLuck
                 });
 
               mutationOnlyAnnouncementError = fallbackResult.error;
@@ -3806,10 +3831,9 @@ export default {
             p_gem_name: gem.name,
             p_gem_rarity: gem.rarity,
             p_mutation_ids: mutationIds,
-            // Announce the player's own permanent/equipment Luck, not temporary
-            // or admin-granted boosts (the gem + Raw Rare Roll board keep the
-            // true rolled luck via best_roll_history.raw_luck).
-            p_luck_at_roll: baseLuck,
+            // Include legitimate temporary/charged boosts, while keeping the
+            // active admin-event contribution out of the public feed.
+            p_luck_at_roll: announcedLuck,
             p_effective_rarity: effectiveRarity
           });
 

@@ -1,6 +1,9 @@
 import {
   supabase
 } from "../src/backend/supabase.js";
+import {
+  accountPageUrlFromLocation
+} from "../src/backend/authUrls.js";
 
 
 const accountCard =
@@ -301,19 +304,9 @@ function attachProfilePictureListener(
 
 
 function accountPageUrl() {
-  // Resolve from the current document instead of the domain root. The game
-  // can be hosted below a path (for example /gem-incremental/ on GitHub
-  // Pages), where `${origin}/account/` points at the wrong application.
-  const url =
-    new URL(
-      "./",
-      window.location.href
-    );
-
-  url.search = "";
-  url.hash = "";
-
-  return url.href;
+  return accountPageUrlFromLocation(
+    window.location.href
+  );
 }
 
 

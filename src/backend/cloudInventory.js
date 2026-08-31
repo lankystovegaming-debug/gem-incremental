@@ -7,6 +7,28 @@ const DEFAULT_PLAYER_STATE = {
   next_roll_at: null
 };
 
+const INVENTORY_PAGE_SIZE = 500;
+const INVENTORY_GEM_COLUMNS = `
+  id,
+  serial_number,
+  gem_name,
+  rarity,
+  base_weight,
+  value_per_gram,
+  rolled_weight_multiplier,
+  rolled_weight,
+  final_weight,
+  value,
+  mutation_id,
+  mutation_multiplier,
+  mutation_ids,
+  mutation_multipliers,
+  roll_number,
+  luck_at_roll,
+  locked,
+  created_at
+`;
+
 
 export async function loadCloudGems() {
   const {
@@ -21,37 +43,31 @@ export async function loadCloudGems() {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("inventory_gems")
-    .select(`
-      id,
-      serial_number,
-      gem_name,
-      rarity,
-      base_weight,
-      value_per_gram,
-      rolled_weight_multiplier,
-      rolled_weight,
-      final_weight,
-      value,
-      mutation_id,
-      mutation_multiplier,
-      mutation_ids,
-      mutation_multipliers,
-      roll_number,
-      luck_at_roll,
-      locked,
-      created_at
-    `)
-    .eq("player_id", user.id)
-    .order("created_at", { ascending: true });
+  const gems = [];
 
-  if (error) {
-    console.error("Failed to load cloud gems:", error);
-    return null;
+  for (let offset = 0; ; offset += INVENTORY_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("inventory_gems")
+      .select(INVENTORY_GEM_COLUMNS)
+      .eq("player_id", user.id)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + INVENTORY_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Failed to load cloud gems:", error);
+      return null;
+    }
+
+    const page = data ?? [];
+    gems.push(...page);
+
+    if (page.length < INVENTORY_PAGE_SIZE) {
+      break;
+    }
   }
 
-  return data ?? [];
+  return gems;
 }
 
 // A player who has just signed in may not have a row yet, so a
