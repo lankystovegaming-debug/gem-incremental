@@ -73,7 +73,7 @@ redeemForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  notify.success("Code applied", "Reach 200 rolls and you both earn a reward.");
+  notify.success("Code applied", "Reach 200 rolls and both reward bundles are delivered.");
   codeInput.value = "";
   await refreshSummary();
 });
