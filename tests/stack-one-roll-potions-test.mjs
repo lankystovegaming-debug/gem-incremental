@@ -44,6 +44,8 @@ assert.match(migration, /revoke execute on function public\.spend_one_roll_charg
 // The roll edge function spends one charge (not a blanket delete) after commit.
 assert.match(roll, /"spend_one_roll_charge"/);
 assert.doesNotMatch(roll, /"player_one_roll_boosts"\s*\)\s*\.delete\(\)/);
+assert.match(roll, /"effect_value, consumable_id, charges"/);
+assert.match(roll, /remainingOneRollCharges/);
 
 // Client reads the charge count so the UI can show remaining charges.
 assert.match(cloud, /consumable_id, effect_value, charges, activated_at/);
