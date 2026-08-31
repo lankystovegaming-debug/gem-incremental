@@ -474,3 +474,20 @@
 .guild-role--owner { color: #ffd166; background: color-mix(in srgb, #ffd166 16%, transparent); }
 .guild-role--officer { color: #6ea8ff; background: color-mix(in srgb, #6ea8ff 16%, transparent); }
 .guild-role--member { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+
+/* Shared IP audit — alt-account detection report */
+.field--inline { flex-direction: row; align-items: center; gap: 8px; }
+.field--inline > span { color: var(--text-muted); font-size: .78rem; white-space: nowrap; }
+#ipAuditMin { width: 76px; }
+.ip-audit-content { margin-top: var(--space-3); display: grid; gap: var(--space-3); }
+.ip-audit-mono { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace); font-variant-numeric: tabular-nums; }
+.ip-audit-group { border: 1px solid var(--border); border-radius: var(--radius-md, 14px); background: var(--surface-sunken); overflow: hidden; }
+.ip-audit-group > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 12px 14px; cursor: pointer; list-style: none; flex-wrap: wrap; }
+.ip-audit-group > summary::-webkit-details-marker { display: none; }
+.ip-audit-group > summary:hover { background: var(--surface-raised); }
+.ip-audit-group__key { font-weight: 700; color: var(--text); }
+.ip-audit-table-wrap { overflow-x: auto; border-top: 1px solid var(--border); }
+.ip-audit-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 560px; }
+.ip-audit-table thead th { background: var(--surface-raised); color: var(--text-muted); font-weight: 600; text-align: left; padding: 9px 12px; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+.ip-audit-table tbody td { padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+.ip-audit-table td:first-child { font-weight: 600; color: var(--text); }
