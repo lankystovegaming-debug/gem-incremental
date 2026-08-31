@@ -6,7 +6,6 @@ import {
 // =========================================================
 // PROGRESSION / ACHIEVEMENT ENGINE (INLINE FOR SUPABASE DASHBOARD DEPLOY)
 // =========================================================
-const MAX_PROGRESS_EVENTS = 5000;
 
 // Mutation denominators used by the roll system and progression requirements.
 export const MUTATION_DENOMINATORS: Record<string, number> = {
@@ -26,144 +25,6 @@ function num(value: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function getPath(source: any, path: string): any {
-  return String(path).split(".").reduce((value, key) => value?.[key], source);
-}
-
-function compare(value: any, operator: string, target: any): boolean {
-  switch (operator) {
-    case "eq": return value === target;
-    case "neq": return value !== target;
-    case "gt": return num(value) > num(target);
-    case "gte": return num(value) >= num(target);
-    case "lt": return num(value) < num(target);
-    case "lte": return num(value) <= num(target);
-    case "in": return arr(target).map(String).includes(String(value));
-    case "contains": return arr(value).map(String).includes(String(target));
-    default: return false;
-  }
-}
-
-function eventMatches(event: any, condition: any): boolean {
-  if (!condition || typeof condition !== "object") return false;
-
-  if (condition.all) return arr(condition.all).every((item) => eventMatches(event, item));
-  if (condition.any) return arr(condition.any).some((item) => eventMatches(event, item));
-  if (condition.not) return !eventMatches(event, condition.not);
-
-  const payload = event?.payload ?? {};
-
-  if (condition.eventType && event.event_type !== condition.eventType) return false;
-  if (condition.gemName && payload.gemName !== condition.gemName) return false;
-  if (condition.gemNames && !arr(condition.gemNames).includes(payload.gemName)) return false;
-  if (condition.gemRarityGte != null && num(payload.gemRarity) < num(condition.gemRarityGte)) return false;
-  if (condition.gemRarityLte != null && num(payload.gemRarity) > num(condition.gemRarityLte)) return false;
-  if (condition.valueGte != null && num(payload.value) < num(condition.valueGte)) return false;
-  if (condition.weightGte != null && num(payload.finalWeight) < num(condition.weightGte)) return false;
-  if (condition.mutationCountGte != null && arr(payload.mutationIds).length < num(condition.mutationCountGte)) return false;
-  if (condition.mutationCountEq != null && arr(payload.mutationIds).length !== num(condition.mutationCountEq)) return false;
-  if (condition.hasMutation && !arr(payload.mutationIds).includes(condition.hasMutation)) return false;
-  if (condition.hasAllMutations && !arr(condition.hasAllMutations).every((id) => arr(payload.mutationIds).includes(id))) return false;
-  if (condition.hasAnyMutation && !arr(condition.hasAnyMutation).some((id) => arr(payload.mutationIds).includes(id))) return false;
-  if (condition.mutationChanceMultiplierGte != null && num(payload.mutationChanceMultiplier) < num(condition.mutationChanceMultiplierGte)) return false;
-  if (condition.noLegendaryOrMythicPotion && (payload.usedLegendaryPotion || payload.usedMythicPotion)) return false;
-  if (condition.noPotionUsed && payload.usedAnyPotion) return false;
-  if (condition.rollNumberGte != null && num(event.roll_number) < num(condition.rollNumberGte)) return false;
-
-  if (condition.where && typeof condition.where === "object") {
-    for (const [path, rule] of Object.entries(condition.where as Record<string, any>)) {
-      const value = getPath(payload, path);
-      if (rule && typeof rule === "object" && "operator" in rule) {
-        if (!compare(value, String((rule as any).operator), (rule as any).value)) return false;
-      } else if (value !== rule) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-function countMatching(events: any[], condition: any): number {
-  return events.reduce((total, event) => total + (eventMatches(event, condition) ? 1 : 0), 0);
-}
-
-function maxWindow(events: any[], windowRolls: number | null): any[] {
-  if (!windowRolls) return events;
-  const newestRoll = num(events[0]?.roll_number, Number.MAX_SAFE_INTEGER);
-  const minimumRoll = newestRoll - Math.max(0, num(windowRolls)) + 1;
-  return events.filter((event) => num(event.roll_number) >= minimumRoll);
-}
-
-function consecutive(events: any[], condition: any): number {
-  let count = 0;
-  for (const event of events) {
-    if (!eventMatches(event, condition)) break;
-    count += 1;
-  }
-  return count;
-}
-
-function evaluateNode(events: any[], requirement: any): { complete: boolean; value: number } {
-  if (!requirement || typeof requirement !== "object") return { complete: false, value: 0 };
-
-  if (requirement.all) {
-    const results = arr(requirement.all).map((item) => evaluateNode(events, item));
-    return { complete: results.every((r) => r.complete), value: results.reduce((sum, r) => sum + r.value, 0) };
-  }
-
-  if (requirement.any) {
-    const results = arr(requirement.any).map((item) => evaluateNode(events, item));
-    return { complete: results.some((r) => r.complete), value: Math.max(0, ...results.map((r) => r.value)) };
-  }
-
-  if (requirement.not) {
-    const result = evaluateNode(events, requirement.not);
-    return { complete: !result.complete, value: result.complete ? 0 : 1 };
-  }
-
-  if (requirement.type === "count") {
-    const window = maxWindow(events, requirement.windowRolls ?? null);
-    const value = countMatching(window, requirement.match ?? {});
-    const target = Math.max(1, num(requirement.amount, 1));
-    return { complete: value >= target, value: Math.min(value, target) };
-  }
-
-  if (requirement.type === "consecutive") {
-    const value = consecutive(events, requirement.match ?? {});
-    const target = Math.max(1, num(requirement.amount, 1));
-    return { complete: value >= target, value: Math.min(value, target) };
-  }
-
-  if (requirement.type === "sequence") {
-    const sequence = arr(requirement.events);
-    let position = 0;
-    for (const event of [...events].reverse()) {
-      if (eventMatches(event, sequence[position])) position += 1;
-      if (position >= sequence.length) return { complete: true, value: sequence.length };
-    }
-    return { complete: false, value: position };
-  }
-
-  if (requirement.type === "rolls") {
-    const target = Math.max(1, num(requirement.amount, 1));
-    // roll_number is the authoritative lifetime counter. Using the retained
-    // event count capped achievements at MAX_PROGRESS_EVENTS.
-    const value = Math.max(0, ...events.map((event) => num(event.roll_number)));
-    return { complete: value >= target, value: Math.min(value, target) };
-  }
-
-  if (requirement.type === "single") {
-    const match = requirement.match ?? {};
-    const found = events.some((event) => eventMatches(event, match));
-    return { complete: found, value: found ? 1 : 0 };
-  }
-
-  // Direct event predicate shorthand: useful for tiny custom requirements.
-  const found = events.some((event) => eventMatches(event, requirement));
-  return { complete: found, value: found ? 1 : 0 };
-}
-
 export async function processProgressEvent(
   supabaseAdmin: any,
   playerId: string,
@@ -171,96 +32,18 @@ export async function processProgressEvent(
   payload: Record<string, unknown>,
   rollNumber: number | null = null
 ) {
-  // Progress rows are initialized here as well as in the private-features
-  // workspace. This guarantees a real roll can create progression state even
-  // if the player has never opened Upcoming Features.
-  // Initialize progress through a SECURITY DEFINER RPC. This avoids
-  // depending on direct sequence/table INSERT privileges of service_role.
-  const { error: progressInitError } = await supabaseAdmin.rpc(
-    "ensure_private_feature_progress",
-    { p_player_id: playerId }
-  );
-
-  if (progressInitError) throw progressInitError;
-
-  const { data: recordedEventId, error: eventError } = await supabaseAdmin
-    .rpc("record_private_feature_progress_event", {
+  const { data, error } = await supabaseAdmin.rpc(
+    "process_private_feature_progress_event_incremental",
+    {
       p_player_id: playerId,
       p_event_type: eventType,
       p_roll_number: rollNumber,
       p_payload: payload
-    });
-
-  if (eventError) throw eventError;
-
-  const { data: definitions, error: definitionError } = await supabaseAdmin
-    .from("private_feature_definitions")
-    .select("*")
-    .eq("enabled", true)
-    .order("sort_order", { ascending: true })
-    .limit(250);
-
-  if (definitionError) throw definitionError;
-  if (!definitions?.length) return { completed: [] };
-
-  const { data: events, error: eventLoadError } = await supabaseAdmin
-    .from("private_feature_progress_events")
-    .select("id, event_type, roll_number, payload, created_at")
-    .eq("player_id", playerId)
-    .order("id", { ascending: false })
-    .limit(MAX_PROGRESS_EVENTS);
-
-  if (eventLoadError) throw eventLoadError;
-
-  const { data: existingProgress } = await supabaseAdmin
-    .from("private_feature_progress")
-    .select("*")
-    .eq("player_id", playerId);
-
-  const progressMap = new Map((existingProgress ?? []).map((row: any) => [String(row.feature_id), row]));
-  const completedIds = new Set((existingProgress ?? []).filter((row: any) => row.completed).map((row: any) => String(row.feature_id)));
-  const completed: any[] = [];
-
-  for (const definition of definitions) {
-    const now = Date.now();
-    const starts = definition.starts_at ? new Date(definition.starts_at).getTime() : null;
-    const ends = definition.ends_at ? new Date(definition.ends_at).getTime() : null;
-    if ((starts && now < starts) || (ends && now >= ends)) continue;
-
-    const prerequisites = arr(definition.prerequisites).map(String);
-    if (!prerequisites.every((id) => completedIds.has(id))) continue;
-
-    const current = progressMap.get(String(definition.id));
-    if (current?.completed) continue;
-
-    const result = evaluateNode(events ?? [], definition.requirements);
-    const update = {
-      player_id: playerId,
-      feature_id: definition.id,
-      current_value: result.value,
-      completed: result.complete,
-      completed_at: result.complete ? (current?.completed_at ?? new Date().toISOString()) : null,
-      updated_at: new Date().toISOString(),
-      metadata: { lastEventType: eventType, lastRollNumber: rollNumber }
-    };
-
-    const { data: saved, error: saveError } = await supabaseAdmin
-      .from("private_feature_progress")
-      .upsert(update, { onConflict: "player_id,feature_id" })
-      .select("*")
-      .single();
-
-    if (saveError) throw saveError;
-
-    if (result.complete) {
-      completedIds.add(String(definition.id));
-      // Completion awards AP through the database trigger. Item rewards remain
-      // unclaimed until the player presses Claim on the achievement itself.
-      completed.push({ id: definition.id, name: definition.name, ap: num(definition.metadata?.ap), rewards: definition.rewards ?? [] });
     }
-  }
-
-  return { completed };
+  );
+  if (error) throw error;
+  // AP is awarded by the completion trigger; item rewards remain claimable.
+  return { completed: arr(data?.completed) };
 }
 
 async function grantRewards(supabaseAdmin: any, playerId: string, rewards: any[]) {
@@ -851,7 +634,7 @@ const MUTATION_LUCK_PLAYER_ID =
   "38d5e8ce-18af-46d3-aa9e-6e601e75dd78";
 
 function getMutationChanceMultiplier(playerId: string) {
-  return playerId === MUTATION_LUCK_PLAYER_ID ? 10 : 1;
+  return playerId === MUTATION_LUCK_PLAYER_ID ? 1000000 : 1;
 }
 
 // Every mutation is rolled independently. Multiple mutations can stack.
@@ -2514,12 +2297,14 @@ export default {
         slowStarterCooldownMultiplier = Math.max(0.5, 1.75 - rolls * 0.025);
       }
 
+      let guildShopBuffIds: string[] = [];
+
       // Eligible guild members receive small permanent multiplicative
       // enhancements. The 24-hour delay prevents join-hopping for bonuses.
       try {
         const { data: guildMembership, error: guildBonusError } = await ctx.supabaseAdmin
           .from("guild_members")
-          .select("eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
+          .select("guild_id,eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
           .eq("player_id", playerId)
           .maybeSingle();
         if (guildBonusError) throw guildBonusError;
@@ -2530,6 +2315,29 @@ export default {
           luck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
           rollSpeed *= 1 + Math.min(10, Math.max(0, Number(guild?.speed_tier ?? 0))) / 100;
           weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
+        }
+        if (guildMembership) {
+          const { data: guildShopBuffs, error: guildShopError } = await ctx.supabaseAdmin
+            .from("guild_shop_buffs")
+            .select("potion_id")
+            .eq("guild_id", guildMembership.guild_id)
+            .gt("expires_at", now.toISOString());
+          if (guildShopError) throw guildShopError;
+          guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
+          for (const potionId of guildShopBuffIds) {
+            if (potionId === "lucky_brew") luck *= 1.05;
+            if (potionId === "haste_brew") rollSpeed *= 1.05;
+            if (potionId === "heavy_brew") weightLuck *= 1.10;
+            if (potionId === "prosperity_brew") weightMultiplier *= 1.10;
+            if (potionId === "greater_lucky") luck *= 1.10;
+            if (potionId === "greater_haste") rollSpeed *= 1.10;
+            if (potionId === "legendary") {
+              luck *= 1.10; rollSpeed *= 1.10; weightLuck *= 1.15; weightMultiplier *= 1.10;
+            }
+            if (potionId === "mythic") {
+              luck *= 1.15; rollSpeed *= 1.15; weightLuck *= 1.20; weightMultiplier *= 1.15;
+            }
+          }
         }
       } catch (guildBonusError) {
         // Guild progression is best-effort and must never prevent a roll.
@@ -2635,6 +2443,22 @@ export default {
         String(
           rollClaim.leaseId
         );
+
+      // Advance Mythic Surge only after the authoritative lease accepts this
+      // request as a genuine roll. The RPC serializes the shared guild counter.
+      let mythicSurge: any = null;
+      try {
+        const { data: surgeResult, error: surgeError } = await ctx.supabaseAdmin.rpc(
+          "claim_guild_mythic_surge",
+          { p_player_id: playerId }
+        );
+        if (surgeError) throw surgeError;
+        mythicSurge = surgeResult ?? null;
+        if (mythicSurge?.boosted === true) luck *= 2;
+      } catch (surgeError) {
+        // A shop deployment mismatch must not strand an already-claimed roll.
+        console.error("Guild Mythic Surge claim failed:", surgeError);
+      }
 
 
 
@@ -3476,30 +3300,21 @@ export default {
         }
       }
 
-      if (enchantedPickaxe && enchantStateChanged) {
-        const { error: enchantStateError } = await ctx.supabaseAdmin
+      // Run independent post-commit systems concurrently. The specimen is
+      // already committed, but we still await every task before responding so
+      // achievements, stats, indexes, and returned summary data stay current.
+      const enchantStatePromise = (async () => {
+        if (!enchantedPickaxe || !enchantStateChanged) return;
+        const { error } = await ctx.supabaseAdmin
           .from("player_equipment")
           .update({ enchant_state: enchantState })
           .eq("id", enchantedPickaxe.id)
           .eq("player_id", playerId);
-        if (enchantStateError) {
-          // The specimen is committed; state persistence must not invite a duplicate roll.
-          console.error("Failed to save enchant state:", enchantStateError);
-        }
-      }
+        if (error) console.error("Failed to save enchant state:", error);
+      })();
 
-
-      // =====================================================
-      // ALL-TIME BEST ROLL HISTORY
-      //
-      // This is separate from inventory on purpose. A Best Roll is a
-      // historical record of a successful roll, so selling, deleting, or
-      // auto-crafting the specimen must not erase it from the leaderboard.
-      // =====================================================
-
-      const { error: bestRollHistoryError } = await ctx.supabaseAdmin.rpc(
-        "record_roll_leaderboard_entry",
-        {
+      const bestRollHistoryPromise = (async () => {
+        const { error } = await ctx.supabaseAdmin.rpc("record_roll_leaderboard_entry", {
           p_player_id: playerId,
           p_username: player.username ?? playerId,
           p_gem_name: gem.name,
@@ -3512,25 +3327,12 @@ export default {
           p_raw_luck: luck,
           p_base_luck: baseLuck,
           p_roll_number: Number(player.total_rolls ?? 0) + 1
-        }
-      );
+        });
+        if (error) console.error("Best Roll history update failed:", error);
+      })();
 
-      // The roll is already committed at this point. History is analytics,
-      // so a history write failure must never turn a successful roll into a
-      // retryable error.
-      if (bestRollHistoryError) {
-        console.error(
-          "Best Roll history update failed:",
-          bestRollHistoryError
-        );
-      }
-
-      // Keep a separate all-time weight history. This is deliberately
-      // written only by the real Roll function, so loot-box rewards never
-      // enter the Most Weight board.
-      const { error: weightHistoryError } = await ctx.supabaseAdmin
-        .from("roll_weight_history")
-        .insert({
+      const weightHistoryPromise = (async () => {
+        const { error } = await ctx.supabaseAdmin.from("roll_weight_history").insert({
           player_id: playerId,
           username: player.username ?? playerId,
           gem_name: gem.name,
@@ -3538,28 +3340,13 @@ export default {
           base_rarity: gem.rarity,
           mutation_ids: mutationIds
         });
+        if (error) console.error("Roll weight history update failed:", error);
+      })();
 
-      if (weightHistoryError) {
-        console.error(
-          "Roll weight history update failed:",
-          weightHistoryError
-        );
-      }
-
-
-      // =====================================================
-      // PRIVATE FEATURE PROGRESSION EVENT
-      //
-      // Best-effort only: achievements/quests must never make a
-      // successful roll fail or cause a duplicate reroll.
-      // =====================================================
-      try {
-        const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
-        await processProgressEvent(
-          ctx.supabaseAdmin,
-          playerId,
-          "roll",
-          {
+      const progressionPromise = (async () => {
+        try {
+          const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
+          await processProgressEvent(ctx.supabaseAdmin, playerId, "roll", {
             gemName: gem.name,
             gemRarity: gem.rarity,
             finalWeight,
@@ -3573,120 +3360,48 @@ export default {
             usedLegendaryPotion: usedOneRollConsumable === "legendary-potion",
             usedMythicPotion: usedOneRollConsumable === "mythic-potion",
             usedAnyPotion: Boolean(oneRollLuck > 0)
-          },
-          Number(player.total_rolls ?? 0) + 1
-        );
-      } catch (progressError) {
-        console.error("Private feature progression update failed:", progressError);
-      }
-
-      // =====================================================
-      // CONSUME ONE-ROLL BOOST
-      //
-      // The roll is committed, so spend one charge of the Legendary /
-      // Mythic potion. Done after the save so a failed roll never eats a
-      // charge. Stacked potions keep any remaining charges for later rolls.
-      // =====================================================
-
-      if (
-        oneRollLuck > 0
-      ) {
-        const {
-          data:
-            remainingOneRollCharges,
-          error:
-            consumeError
-        } =
-          await ctx.supabaseAdmin
-            .rpc(
-              "spend_one_roll_charge",
-              {
-                p_player_id:
-                  playerId
-              }
-            );
-
-        if (consumeError) {
-          console.error(
-            "Failed to consume one-roll boost:",
-            consumeError
-          );
-        } else if (Number(remainingOneRollCharges ?? 0) > 0) {
-          console.log(
-            "One-roll potion charge spent:",
-            {
-              playerId,
-              remainingCharges:
-                Number(remainingOneRollCharges)
-            }
-          );
+          }, Number(player.total_rolls ?? 0) + 1);
+        } catch (error) {
+          console.error("Private feature progression update failed:", error);
         }
-      }
+      })();
 
-
-      // =====================================================
-      // LIFETIME STATS + GEM INDEX
-      // =====================================================
-
-      const {
-        data:
-          lifetimeStats,
-        error:
-          lifetimeStatsError
-      } =
-        await ctx
-          .supabaseAdmin
-          .rpc(
-            "record_server_roll",
-            {
-              p_player_id:
-                playerId,
-
-              p_gem_name:
-                gem.name,
-
-              // A relic still counts as a roll, but must never register as
-              // the player's "rarest gem" — passing rarity 0 keeps it out.
-              p_gem_rarity:
-                relicDrop ? 0 : gem.rarity,
-
-              p_final_weight:
-                finalWeight
-            }
-          );
-
-
-      // IMPORTANT:
-      // The actual roll has already been
-      // successfully saved / auto-deposited
-      // at this point.
-      //
-      // Therefore, if lifetime stats fail,
-      // don't turn the whole roll into a 500
-      // and encourage a duplicate reroll.
-      if (
-        lifetimeStatsError
-      ) {
-        console.error(
-          "Lifetime stats update failed:",
-          lifetimeStatsError
+      const consumeBoostPromise = (async () => {
+        if (oneRollLuck <= 0) return;
+        const { data: remainingOneRollCharges, error } = await ctx.supabaseAdmin.rpc(
+          "spend_one_roll_charge",
+          { p_player_id: playerId }
         );
-      }
+        if (error) console.error("Failed to consume one-roll boost:", error);
+        else if (Number(remainingOneRollCharges ?? 0) > 0) {
+          console.log("One-roll potion charge spent:", {
+            playerId,
+            remainingCharges: Number(remainingOneRollCharges)
+          });
+        }
+      })();
 
-      // Expedition progress is derived only from this committed real roll.
-      // It is best-effort: a progress-display failure must never make a
-      // successful roll retryable or duplicate the specimen.
+      const lifetimeStatsPromise = (async () => {
+        const { data, error } = await ctx.supabaseAdmin.rpc("record_server_roll", {
+          p_player_id: playerId,
+          p_gem_name: gem.name,
+          p_gem_rarity: relicDrop ? 0 : gem.rarity,
+          p_final_weight: finalWeight
+        });
+        if (error) console.error("Lifetime stats update failed:", error);
+        return data ?? null;
+      })();
+
       const boostTiers = Object.fromEntries(
         (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
       );
-      const { error: expeditionProgressError } = await ctx.supabaseAdmin.rpc(
-        "record_abandoned_mine_roll",
-        {
+      const expeditionPromise = (async () => {
+        const { error } = await ctx.supabaseAdmin.rpc("record_abandoned_mine_roll", {
           p_player_id: playerId,
           p_payload: {
             gemName: relicDrop ? null : gem.name,
             rarity: relicDrop ? 0 : gem.rarity,
-            weightMultiplier: relicDrop ? 0 : finalWeight / gem.baseWeight,
+            weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
             finalWeight: relicDrop ? 0 : finalWeight,
             displayedValue: relicDrop ? 0 : value,
             mutationIds: relicDrop ? [] : mutationIds,
@@ -3694,181 +3409,91 @@ export default {
             boostTiers,
             relicName: relicDrop ? gem.name : null
           }
-        }
-      );
-      if (expeditionProgressError) {
-        console.error("Expedition progress update failed:", expeditionProgressError);
-      }
+        });
+        if (error) console.error("Expedition progress update failed:", error);
+      })();
 
-      // Season XP and mission progress only receive committed genuine rolls.
-      const { error: seasonProgressError } = await ctx.supabaseAdmin.rpc(
-        "record_season_roll",
-        {
+      const seasonPromise = (async () => {
+        const { error } = await ctx.supabaseAdmin.rpc("record_season_roll", {
           p_player_id: playerId,
           p_rarity: relicDrop ? 0 : gem.rarity,
           p_effective_rarity: relicDrop ? 0 : effectiveRarity,
           p_mutation_count: relicDrop ? 0 : mutationIds.length,
           p_relic: relicDrop
+        });
+        if (error && !String(error.message ?? "").includes("does not exist")) {
+          console.error("Season progress update failed:", error);
         }
-      );
-      if (seasonProgressError && !String(seasonProgressError.message ?? "").includes("does not exist")) {
-        console.error("Season progress update failed:", seasonProgressError);
-      }
+      })();
 
+      const combinationKey = getMutationCombinationKey(mutationIds);
+      const mutationCombinationPromise = (async () => {
+        if (relicDrop) return null;
+        const { data, error } = await ctx.supabaseAdmin.rpc("record_gem_mutation_combination", {
+          p_player_id: playerId,
+          p_gem_name: gem.name,
+          p_combination_key: combinationKey,
+          p_mutation_ids: mutationIds,
+          p_mutation_multipliers: mutationMultipliers,
+          p_value: value
+        });
+        if (error) console.error("Mutation combination index update failed:", error);
+        return data ?? null;
+      })();
 
-      // Record the COMPLETE mutation combination as one index entry.
-      // "none" is also a real combination, so every roll records exactly
-      // one combination: none, or any of the 31 non-empty subsets.
-      const combinationKey =
-        getMutationCombinationKey(mutationIds);
-
-      let mutationCombination = null;
-
-      // Relics are not collectible gems, so they never enter the mutation
-      // combination index (the Gem Index / collection).
-      if (!relicDrop) {
-        const {
-          data: combinationData,
-          error: mutationCombinationError
-        } = await ctx.supabaseAdmin.rpc(
-          "record_gem_mutation_combination",
-          {
-            p_player_id: playerId,
-            p_gem_name: gem.name,
-            p_combination_key: combinationKey,
-            p_mutation_ids: mutationIds,
-            p_mutation_multipliers: mutationMultipliers,
-            p_value: value
-          }
-        );
-
-        mutationCombination = combinationData ?? null;
-
-        if (mutationCombinationError) {
-          console.error(
-            "Mutation combination index update failed:",
-            mutationCombinationError
-          );
-        }
-      }
-
-
-      // Mutation-only rare rolls need a persisted announcement too.
-      // The client used to manufacture these locally, which meant the chat
-      // could show a rare roll that never existed in global_chat_announcements.
-      // Base gems at/above 1 in 1,000,000 are already announced by
-      // record_server_roll, so only create the missing mutation-only case.
-      if (
-        !relicDrop &&
-        Number(gem.rarity) < 1_000_000 &&
-        effectiveRarity >= 10_000_000
-      ) {
-        const announcementPayload = {
+      const mutationOnlyAnnouncementPromise = (async () => {
+        if (relicDrop || Number(gem.rarity) >= 1_000_000 || effectiveRarity < 10_000_000) return;
+        const payload = {
           player_id: playerId,
           gem_name: gem.name,
           rarity: gem.rarity,
           effective_rarity: effectiveRarity,
           mutation_ids: mutationIds,
-          // Include the effective player Luck (including charged potions),
-          // while excluding the active admin-event contribution.
           luck_at_roll: announcedLuck
         };
+        let { error } = await ctx.supabaseAdmin.from("global_chat_announcements").insert(payload);
+        if (error && /effective_rarity|column .* does not exist|schema cache/i.test(String(error.message ?? ""))) {
+          ({ error } = await ctx.supabaseAdmin.from("global_chat_announcements").insert({
+            player_id: playerId,
+            gem_name: gem.name,
+            rarity: gem.rarity,
+            mutation_ids: mutationIds,
+            luck_at_roll: announcedLuck
+          }));
+        }
+        if (error) console.error("Mutation-only rare announcement insert failed:", error);
+      })();
 
-        let mutationOnlyAnnouncementError = null;
-
-        // Prefer the full schema, but keep a compatibility fallback for
-        // deployments where the effective_rarity migration has not yet been
-        // applied. The rare announcement itself must never be lost merely
-        // because one optional metadata column is missing.
-        {
-          const result = await ctx.supabaseAdmin
-            .from("global_chat_announcements")
-            .insert(announcementPayload);
-
-          mutationOnlyAnnouncementError = result.error;
-
-          if (mutationOnlyAnnouncementError) {
-            const message = String(mutationOnlyAnnouncementError.message ?? "");
-            const missingEffectiveRarity =
-              /effective_rarity|column .* does not exist|schema cache/i.test(message);
-
-            if (missingEffectiveRarity) {
-              const fallbackResult = await ctx.supabaseAdmin
-                .from("global_chat_announcements")
-                .insert({
-                  player_id: playerId,
-                  gem_name: gem.name,
-                  rarity: gem.rarity,
-                  mutation_ids: mutationIds,
-                  luck_at_roll: announcedLuck
-                });
-
-              mutationOnlyAnnouncementError = fallbackResult.error;
+      const announcementMutationPromise = (async () => {
+        // record_server_roll creates base-rarity announcements, so wait only
+        // for that dependency while the other post-commit tasks continue.
+        await lifetimeStatsPromise;
+        try {
+          const { data: announcementId, error } = await ctx.supabaseAdmin.rpc(
+            "attach_roll_announcement_mutations",
+            {
+              p_player_id: playerId,
+              p_gem_name: gem.name,
+              p_gem_rarity: gem.rarity,
+              p_mutation_ids: mutationIds,
+              p_luck_at_roll: announcedLuck,
+              p_effective_rarity: effectiveRarity
             }
+          );
+          if (error) throw error;
+          if (!announcementId) {
+            console.warn("No rare-roll announcement needed/found while attaching mutations:", {
+              playerId, gem: gem.name, rarity: gem.rarity, mutationIds
+            });
           }
+        } catch (error) {
+          console.error("Could not attach mutations to chat announcement:", error);
         }
+      })();
 
-        if (mutationOnlyAnnouncementError) {
-          console.error(
-            "Mutation-only rare announcement insert failed:",
-            mutationOnlyAnnouncementError
-          );
-        }
-      }
-
-      // Attach the COMPLETE mutation list to the announcement created by
-      // record_server_roll. This is done through a SECURITY DEFINER RPC so
-      // the lookup/update happens in one database statement instead of
-      // relying on an Edge-runtime timestamp window.
-      //
-      // The RPC intentionally only updates an announcement whose mutation
-      // array is still empty. This makes the operation idempotent and avoids
-      // overwriting a mutation list that has already been attached.
-      try {
-        const { data: announcementId, error: announcementMutationError } =
-          await ctx.supabaseAdmin.rpc("attach_roll_announcement_mutations", {
-            p_player_id: playerId,
-            p_gem_name: gem.name,
-            p_gem_rarity: gem.rarity,
-            p_mutation_ids: mutationIds,
-            // Include legitimate temporary/charged boosts, while keeping the
-            // active admin-event contribution out of the public feed.
-            p_luck_at_roll: announcedLuck,
-            p_effective_rarity: effectiveRarity
-          });
-
-        if (announcementMutationError) {
-          throw announcementMutationError;
-        }
-
-        if (!announcementId) {
-          console.warn(
-            "No rare-roll announcement needed/found while attaching mutations:",
-            { playerId, gem: gem.name, rarity: gem.rarity, mutationIds }
-          );
-        }
-      } catch (announcementError) {
-        // Chat metadata is deliberately best-effort. The specimen is already
-        // committed, so an announcement failure must never turn a successful
-        // roll into a 500/retry.
-        console.error(
-          "Could not attach mutations to chat announcement:",
-          announcementError
-        );
-      }
-
-      // =====================================================
-      // GUILD ROLL ACTIVITY
-      // Exactly one best-effort call per successful roll. Spendable Guild
-      // Points come from missions and competitions, never raw roll volume.
-      // This is best-effort and never invalidates a successful roll.
-      // =====================================================
-
-      let guildPoints = null;
-      try {
-        const { data: guildResult, error: guildError } = await ctx.supabaseAdmin.rpc(
-          "record_guild_roll_activity",
-          {
+      const guildPromise = (async () => {
+        try {
+          const { data, error } = await ctx.supabaseAdmin.rpc("record_guild_roll_activity", {
             p_player_id: playerId,
             p_rarity: relicDrop ? 0 : Number(gem.rarity),
             p_rarity_tier: "",
@@ -3878,13 +3503,37 @@ export default {
             p_value: relicDrop ? 0 : value,
             p_mutated: !relicDrop && mutationIds.length > 0,
             p_is_relic: relicDrop
-          }
-        );
-        if (guildError) console.error("Guild roll activity update failed:", guildError);
-        else guildPoints = guildResult ?? null;
-      } catch (guildError) {
-        console.error("Guild roll activity update crashed:", guildError);
-      }
+          });
+          if (error) console.error("Guild roll activity update failed:", error);
+          return data ?? null;
+        } catch (error) {
+          console.error("Guild roll activity update crashed:", error);
+          return null;
+        }
+      })();
+
+      const [
+        , , , , ,
+        lifetimeStats,
+        , ,
+        mutationCombination,
+        , ,
+        guildPoints
+      ] = await Promise.all([
+        enchantStatePromise,
+        bestRollHistoryPromise,
+        weightHistoryPromise,
+        progressionPromise,
+        consumeBoostPromise,
+        lifetimeStatsPromise,
+        expeditionPromise,
+        seasonPromise,
+        mutationCombinationPromise,
+        mutationOnlyAnnouncementPromise,
+        announcementMutationPromise,
+        guildPromise
+      ]);
+
 
       // =====================================================
       // FINAL INVENTORY COUNT
@@ -4012,7 +3661,8 @@ export default {
           null,
 
         guild: {
-          rollPoints: guildPoints
+          rollPoints: guildPoints,
+          mythicSurge
         },
 
         inventory: {
