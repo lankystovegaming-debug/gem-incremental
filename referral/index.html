@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Invite friends to Gem Incremental and earn rewards.">
+  <title>Invite Friends · Gem Incremental</title>
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./referral.css">
+  <script>
+    (function(){try{var m=localStorage.getItem("gemIncremental.theme.mode");var a=localStorage.getItem("gemIncremental.theme.accent");if(["light","dark","neon"].includes(m))document.documentElement.setAttribute("data-theme",m);document.documentElement.setAttribute("data-accent",a||"indigo")}catch(e){}})();
+  </script>
+</head>
+<body>
+  <main class="app-main referral-page">
+    <section class="referral-card card">
+      <div class="referral-icon" id="referralIcon"></div>
+      <p class="referral-eyebrow">Referral program</p>
+      <h1>Invite friends</h1>
+      <p class="referral-copy">
+        Share your link. When a friend starts fresh through it and reaches
+        <strong>200 lifetime rolls</strong>, you both get a cash reward.
+      </p>
+
+      <div class="referral-link">
+        <label class="field">
+          <span>Your referral link</span>
+          <input id="referralLinkInput" type="text" readonly autocomplete="off" spellcheck="false">
+        </label>
+        <button id="referralCopyButton" class="btn btn--primary" type="button">Copy link</button>
+      </div>
+
+      <dl class="referral-stats" id="referralStats" hidden>
+        <div class="referral-stat">
+          <dt>Invited</dt>
+          <dd id="referralTotal">0</dd>
+        </div>
+        <div class="referral-stat">
+          <dt>Qualified</dt>
+          <dd id="referralQualified">0</dd>
+        </div>
+        <div class="referral-stat">
+          <dt>Pending</dt>
+          <dd id="referralPending">0</dd>
+        </div>
+        <div class="referral-stat">
+          <dt>Cash earned</dt>
+          <dd id="referralEarned">$0</dd>
+        </div>
+      </dl>
+
+      <div class="referral-redeem" id="referralRedeem" hidden>
+        <p class="referral-redeem__label">Have a friend's code?</p>
+        <form id="referralRedeemForm" class="referral-redeem__form">
+          <label class="field">
+            <span>Referral code</span>
+            <input id="referralCodeInput" type="text" minlength="4" maxlength="16"
+              autocomplete="off" autocapitalize="characters" spellcheck="false"
+              placeholder="ENTER-CODE" required>
+          </label>
+          <button id="referralRedeemButton" class="btn btn--secondary" type="submit">Apply code</button>
+        </form>
+        <p class="referral-note">A code can only be applied to a brand-new account.</p>
+      </div>
+
+      <p class="referral-redeem__status" id="referralReferredStatus" hidden></p>
+    </section>
+  </main>
+  <script type="module" src="./referral.js"></script>
+</body>
+</html>

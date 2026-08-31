@@ -1390,6 +1390,17 @@ function renderConsumables() {
       .map(({ row, def }) => {
         const stat = POTION_STATS[def.family] ?? def.family;
         const active = def.oneRoll ? state.oneRollBoost : activeBoost(def.family);
+        // One-roll potions of the same kind stack into extra charges; a
+        // pending boost of a DIFFERENT one-roll potion must be spent first.
+        const sameTypePending = Boolean(
+          def.oneRoll && active && active.consumable_id === def.id
+        );
+        const otherTypePending = Boolean(
+          def.oneRoll && active && active.consumable_id !== def.id
+        );
+        const pendingCharges = sameTypePending
+          ? Number(state.oneRollBoost?.charges ?? 1)
+          : 0;
 
         return `
         <article class="potion-owned tier-badge-${def.tier}">
@@ -1409,14 +1420,20 @@ function renderConsumables() {
 
           <p class="potion-owned__note">
             ${
-              def.oneRoll && active
-                ? `${escapeHtml(getConsumableById(active.consumable_id)?.name ?? "One-roll potion")} is waiting for your next successful roll.`
+              sameTypePending
+                ? `Charged for your next ${formatCount(pendingCharges)} successful ${
+                    pendingCharges === 1 ? "roll" : "rolls"
+                  } — drink more to add charges.`
+                : otherTypePending
+                ? `Finish your pending ${escapeHtml(
+                    getConsumableById(active.consumable_id)?.name ?? "one-roll"
+                  )} boost first.`
                 : active
                 ? `${escapeHtml(stat)} boost active — ${escapeHtml(
                     formatRemaining(active.expires_at)
                   )} left.`
                 : def.oneRoll
-                ? "Applies to your next successful roll and does not expire."
+                ? "Applies to your next successful roll, stacks, and does not expire."
                 : def.tier < 3
                 ? `Craft with gems to reach ${escapeHtml(
                     `${def.name.split(" ").slice(0, -1).join(" ")} ${
@@ -1431,10 +1448,18 @@ function renderConsumables() {
             class="btn btn--primary btn--sm btn--block"
             type="button"
             data-use="${escapeHtml(def.id)}"
-            ${def.oneRoll && active ? "disabled" : ""}
+            ${otherTypePending ? "disabled" : ""}
           >
             ${icons.potion ?? icons.sparkle}
-            ${def.oneRoll && active ? "One-roll boost pending" : active ? "Extend boost" : "Use potion"}
+            ${
+              sameTypePending
+                ? "Charge another roll"
+                : otherTypePending
+                ? "One-roll boost pending"
+                : active
+                ? "Extend boost"
+                : "Use potion"
+            }
           </button>
         </article>
       `;
@@ -1480,6 +1505,7 @@ async function usePotion(button) {
     state.oneRollBoost = {
       consumable_id: def.id,
       effect_value: boost.effectValue,
+      charges: Number(boost.charges ?? 1),
       activated_at: boost.activatedAt
     };
   }
@@ -1504,7 +1530,9 @@ async function usePotion(button) {
   notify.success(
     "Potion used",
     def.oneRoll
-      ? `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% Luck is ready for your next successful roll.`
+      ? Number(boost?.charges ?? 1) > 1
+        ? `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% Luck charged for your next ${formatCount(Number(boost.charges))} successful rolls.`
+        : `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% Luck is ready for your next successful roll.`
       : `+${Math.round(Number(boost?.effectValue ?? def.effectValue) * 100)}% ${
           POTION_STATS[def.family] ?? def.family
         } for 60 seconds.`

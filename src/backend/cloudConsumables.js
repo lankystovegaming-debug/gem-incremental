@@ -95,7 +95,7 @@ export async function useCloudConsumable(consumableId) {
         code === "lifetime_rolls_required"
           ? `You need ${Number(rollRequirement).toLocaleString()} lifetime rolls to use this potion.`
           : code === "one_roll_boost_already_active"
-          ? "Use your pending Legendary or Mythic boost before drinking another."
+          ? "Finish your other pending one-roll boost before drinking this one."
           : code === "consumable_not_owned" || code === "none_owned"
           ? "You do not have that potion."
           : "The potion could not be used."
@@ -106,7 +106,7 @@ export async function useCloudConsumable(consumableId) {
 export async function loadPendingOneRollBoost() {
   const { data, error } = await supabase
     .from("player_one_roll_boosts")
-    .select("consumable_id, effect_value, activated_at")
+    .select("consumable_id, effect_value, charges, activated_at")
     .maybeSingle();
 
   if (error) {

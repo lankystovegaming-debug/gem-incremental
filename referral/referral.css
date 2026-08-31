@@ -1,0 +1,135 @@
+/* =========================================================
+   Referral / Invite Friends page
+   ========================================================= */
+
+.referral-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 150px);
+}
+
+.referral-card {
+  width: min(100%, 640px);
+  padding: clamp(28px, 6vw, 52px);
+  text-align: center;
+}
+
+.referral-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 20px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.referral-icon svg { width: 34px; height: 34px; }
+
+.referral-eyebrow {
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: .75rem;
+}
+
+.referral-card h1 { margin-top: 6px; font-size: clamp(2rem, 7vw, 3rem); }
+.referral-copy { max-width: 480px; margin: 12px auto 0; color: var(--text-muted); }
+
+/* Shareable link ---------------------------------------- */
+
+.referral-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 30px;
+  text-align: left;
+}
+
+.referral-link input {
+  width: 100%;
+  margin-top: 6px;
+  letter-spacing: .02em;
+}
+
+/* Stats grid -------------------------------------------- */
+
+.referral-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 26px 0 0;
+}
+
+.referral-stat {
+  padding: 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, color-mix(in srgb, var(--accent) 6%, transparent));
+}
+
+.referral-stat dt {
+  color: var(--text-muted);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.referral-stat dd {
+  margin: 6px 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Redeem a code ----------------------------------------- */
+
+.referral-redeem {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.referral-redeem__label {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.referral-redeem__form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.referral-redeem__form input {
+  width: 100%;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.referral-note { margin-top: 14px; color: var(--text-muted); font-size: .82rem; }
+
+.referral-redeem__status {
+  margin-top: 26px;
+  padding: 14px 16px;
+  border: 1px solid var(--positive);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--positive) 10%, transparent);
+  color: var(--text-muted);
+}
+
+@media (max-width: 620px) {
+  .referral-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .referral-link,
+  .referral-redeem__form { grid-template-columns: 1fr; }
+  .referral-link .btn,
+  .referral-redeem__form .btn { width: 100%; }
+}

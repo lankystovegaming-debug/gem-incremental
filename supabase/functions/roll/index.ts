@@ -3568,8 +3568,9 @@ export default {
       // =====================================================
       // CONSUME ONE-ROLL BOOST
       //
-      // The roll is committed, so spend the Legendary / Mythic potion.
-      // Done after the save so a failed roll never eats the potion.
+      // The roll is committed, so spend one charge of the Legendary /
+      // Mythic potion. Done after the save so a failed roll never eats a
+      // charge. Stacked potions keep any remaining charges for later rolls.
       // =====================================================
 
       if (
@@ -3580,13 +3581,12 @@ export default {
             consumeError
         } =
           await ctx.supabaseAdmin
-            .from(
-              "player_one_roll_boosts"
-            )
-            .delete()
-            .eq(
-              "player_id",
-              playerId
+            .rpc(
+              "spend_one_roll_charge",
+              {
+                p_player_id:
+                  playerId
+              }
             );
 
         if (consumeError) {
