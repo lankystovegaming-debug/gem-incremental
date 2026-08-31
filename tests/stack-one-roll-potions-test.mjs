@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const migration = await readFile(
-  new URL("../supabase/migrations/20260831000001_stack_one_roll_potions.sql", import.meta.url),
+  new URL("../supabase/migrations/20260831022012_repair_stack_one_roll_potion_charges.sql", import.meta.url),
   "utf8"
 );
 const roll = await readFile(
@@ -34,8 +34,12 @@ assert.match(migration, /'charges', v_charges/);
 // and only the service role (the roll edge function) may call it.
 assert.match(migration, /create or replace function public\.spend_one_roll_charge\(p_player_id uuid\)/);
 assert.match(migration, /set charges = charges - 1/);
-assert.match(migration, /if v_charges <= 0 then\s+delete from public\.player_one_roll_boosts/);
+assert.match(migration, /select charges\s+into v_charges\s+from public\.player_one_roll_boosts[\s\S]*for update/);
+assert.match(migration, /if v_charges <= 1 then\s+delete from public\.player_one_roll_boosts/);
+assert.doesNotMatch(migration, /update public\.player_one_roll_boosts\s+set charges = charges - 1[\s\S]*if v_charges <= 0/);
 assert.match(migration, /grant execute on function public\.spend_one_roll_charge\(uuid\) to service_role/);
+assert.match(migration, /revoke execute on function public\.activate_one_roll_potion\(text\) from public, anon/);
+assert.match(migration, /revoke execute on function public\.spend_one_roll_charge\(uuid\) from public, anon, authenticated/);
 
 // The roll edge function spends one charge (not a blanket delete) after commit.
 assert.match(roll, /"spend_one_roll_charge"/);
