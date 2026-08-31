@@ -58,13 +58,15 @@ assert.doesNotMatch(
   /grant execute on function public\.refresh_player_achievements_v013\(uuid\)\s+to authenticated/
 );
 
+assert.match(features, /ctx\.supabase\.rpc\("get_player_achievements_v013"/);
+assert.doesNotMatch(features, /ctx\.supabaseAdmin\.rpc\("get_player_achievements_v013"/);
+
 for (const rpc of [
-  "get_player_achievements_v013",
   "claim_achievement_reward_v013",
   "claim_achievement_milestone_v013"
 ]) {
-  assert.match(features, new RegExp(`ctx\\.supabase\\.rpc\\("${rpc}"`));
-  assert.doesNotMatch(features, new RegExp(`ctx\\.supabaseAdmin\\.rpc\\("${rpc}"`));
+  assert.match(features, new RegExp(`ctx\\.supabaseAdmin\\.rpc\\("${rpc}"`));
+  assert.doesNotMatch(features, new RegExp(`ctx\\.supabase\\.rpc\\("${rpc}"`));
 }
 
 console.log("Achievement catalog audit checks passed.");

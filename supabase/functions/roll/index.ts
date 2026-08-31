@@ -1100,6 +1100,13 @@ function specimenMatches(
   requirement: any,
   specimen: any
 ) {
+  const baseWeight = Number(specimen.base_weight);
+  const finalWeight = Number(specimen.final_weight);
+  const weightMultiplier =
+    Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)
+      ? finalWeight / baseWeight
+      : Number(specimen.rolled_weight_multiplier);
+
   if (
     requirement.gem &&
     specimen.gem_name !==
@@ -1112,7 +1119,7 @@ function specimenMatches(
   if (
     requirement.minimumWeightMultiplier !=
       null &&
-    specimen.rolled_weight_multiplier <
+    weightMultiplier <
       requirement.minimumWeightMultiplier
   ) {
     return false;
@@ -1122,7 +1129,7 @@ function specimenMatches(
   if (
     requirement.maximumWeightMultiplier !=
       null &&
-    specimen.rolled_weight_multiplier >
+    weightMultiplier >
       requirement.maximumWeightMultiplier
   ) {
     return false;
@@ -2534,56 +2541,35 @@ export default {
         1000;
 
 
-      const nextRollAt =
-        new Date(
-          now.getTime() +
-          cooldownMs
-        );
-
-
-      // The conditional UPDATE is the multi-tab lock: only the request
-      // whose database row is still available can claim the cooldown.
+      // Browser visibility is not a security boundary. Claim a database
+      // lease using the database clock so multiple tabs, direct requests,
+      // and userscripts all serialize through one authoritative gate.
       const {
         data:
-          claimedCooldown,
+          rollClaim,
         error:
-          cooldownError
+          rollClaimError
       } =
         await ctx.supabaseAdmin
-          .from(
-            "players"
-          )
-          .update({
-            next_roll_at:
-              nextRollAt
-                .toISOString()
-          })
-          .eq(
-            "id",
-            playerId
-          )
-          .or(
-            `next_roll_at.is.null,next_roll_at.lte.${now.toISOString()}`
-          )
-          .select(
-            "next_roll_at"
-          )
-          .maybeSingle();
+          .rpc("claim_server_roll", {
+            p_player_id: playerId,
+            p_cooldown_ms: cooldownMs
+          });
 
 
       if (
-        cooldownError
+        rollClaimError
       ) {
         console.error(
-          "Cooldown update failed:",
-          cooldownError
+          "Roll lease claim failed:",
+          rollClaimError
         );
 
 
         return jsonResponse(
           {
             error:
-              "Failed to update cooldown."
+              "Failed to claim roll lease."
           },
           {
             status: 500
@@ -2593,30 +2579,12 @@ export default {
 
 
       if (
-        !claimedCooldown?.next_roll_at
+        rollClaim?.status !== "claimed"
       ) {
-        const {
-          data:
-            currentCooldown
-        } =
-          await ctx.supabaseAdmin
-            .from(
-              "players"
-            )
-            .select(
-              "next_roll_at"
-            )
-            .eq(
-              "id",
-              playerId
-            )
-            .maybeSingle();
-
-
         const blockedUntil =
-          currentCooldown?.next_roll_at
+          rollClaim?.retryAt
             ? new Date(
-                currentCooldown.next_roll_at
+                rollClaim.retryAt
               )
             : new Date(
                 Date.now() +
@@ -2648,7 +2616,12 @@ export default {
 
       const claimedNextRollAt =
         new Date(
-          claimedCooldown.next_roll_at
+          rollClaim.nextRollAt
+        );
+
+      const rollLeaseId =
+        String(
+          rollClaim.leaseId
         );
 
 
@@ -2954,6 +2927,9 @@ export default {
       const specimen = {
         gem_name:
           gem.name,
+
+        base_weight:
+          gem.baseWeight,
 
         rarity:
           gem.rarity,
@@ -3897,6 +3873,20 @@ export default {
             1;
       const inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0);
 
+      // Release only the lease owned by this invocation. If this best-effort
+      // cleanup fails, the short database expiry safely unlocks the account;
+      // a stale request can never clear a newer request's lease token.
+      const { error: releaseRollLeaseError } = await ctx.supabaseAdmin.rpc(
+        "release_server_roll",
+        {
+          p_player_id: playerId,
+          p_lease_id: rollLeaseId
+        }
+      );
+      if (releaseRollLeaseError) {
+        console.error("Roll lease release failed:", releaseRollLeaseError);
+      }
+
 
       // =====================================================
       // RETURN SUCCESSFUL ROLL
@@ -4014,7 +4004,7 @@ export default {
             cooldownMs,
 
           nextRollAt:
-            nextRollAt
+            claimedNextRollAt
               .toISOString()
         }
       });

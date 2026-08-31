@@ -41,4 +41,15 @@ assert.deepEqual(
   "admin and game gem catalogs match"
 );
 
+assert.match(functionSource, /async function loadGemCatalog\(ctx: any\)/);
+assert.match(functionSource, /\.from\("private_feature_gems"\)/);
+assert.match(
+  functionSource,
+  /action === "grant_gem"[\s\S]*?await loadGemCatalog\(ctx\)[\s\S]*?invalid_gem/
+);
+assert.match(
+  functionSource,
+  /action === "grant_all_gems"[\s\S]*?await loadGemCatalog\(ctx\)/
+);
+
 console.log("Admin panel tests passed.");
