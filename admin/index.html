@@ -88,6 +88,35 @@
       <p class="account-status" id="announceStatus"></p>
     </section>
 
+    <section class="card admin-updates" id="updatesPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Update Log Publisher</h2>
+          <p class="page-head__sub">Publish structured release notes directly to the Updates page.</p>
+        </div>
+        <button class="btn" id="updateLogRefresh" type="button">Refresh</button>
+      </div>
+
+      <input id="updateLogId" type="hidden">
+      <div class="admin-update-form">
+        <label class="field"><span>Version</span><input id="updateLogVersion" maxlength="40" placeholder="v0.15.1"></label>
+        <label class="field"><span>Published date</span><input id="updateLogDate" type="date"></label>
+        <label class="field field--wide"><span>Title</span><input id="updateLogTitle" maxlength="120" placeholder="A Faster, Smoother Mine"></label>
+        <label class="field field--wide">
+          <span>Sections and bullet points</span>
+          <textarea id="updateLogContent" class="admin-textarea admin-update-content" rows="12" maxlength="20000" placeholder="## What's new&#10;- Added a new feature.&#10;- Improved roll performance.&#10;&#10;## Bug fixes&#10;- Fixed an inventory issue."></textarea>
+          <small>Use <strong>## Section heading</strong> and <strong>- Bullet point</strong>. Raw HTML is never rendered.</small>
+        </label>
+      </div>
+      <div class="admin-button-row admin-update-actions">
+        <button class="btn" id="updateLogDraft" type="button">Save draft</button>
+        <button class="btn btn--primary" id="updateLogPublish" type="button">Publish update</button>
+        <button class="btn" id="updateLogCancel" type="button" hidden>Cancel editing</button>
+      </div>
+      <p class="account-status" id="updateLogStatus"></p>
+      <div class="admin-update-list" id="updateLogList"></div>
+    </section>
+
     <section class="card admin-codes" id="codesPanel" hidden>
       <div class="admin-section-head">
         <div>

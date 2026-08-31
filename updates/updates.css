@@ -25,6 +25,8 @@
   gap: var(--space-5);
 }
 
+.updates-list--published:not([hidden]) { margin-bottom: var(--space-5); }
+
 .update-card {
   position: relative;
   overflow: hidden;
