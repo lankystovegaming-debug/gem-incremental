@@ -824,6 +824,8 @@ function showBanScreen(banUntil, reason) {
         background:color-mix(in srgb,var(--danger,#ef4444) 10%,transparent);
         border:1px solid color-mix(in srgb,var(--danger,#ef4444) 26%,transparent);border-radius:12px;padding:13px 16px}
       .ban-screen__foot{margin:20px 0 0;font-size:.82rem;color:var(--text-muted,#9aa4b2)}
+      .ban-screen__appeal{color:var(--accent,#8ab4ff);font-weight:700;text-decoration:underline}
+      .ban-screen__appeal:hover{text-decoration:none}
       @keyframes banIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
       @media (prefers-reduced-motion:reduce){.ban-screen__card{animation:none}}
     `;
@@ -852,7 +854,7 @@ function showBanScreen(banUntil, reason) {
              <div class="ban-screen__seg"><b data-m>00</b><span>min</span></div>
              <div class="ban-screen__seg"><b data-s>00</b><span>sec</span></div>
            </div>`}
-      <p class="ban-screen__foot">Think this is a mistake? Reach out through Support.</p>
+      <p class="ban-screen__foot">Think this is a mistake? <a class="ban-screen__appeal" href="https://forms.gle/1oeXJ8Rd6dvX3FGs5" target="_blank" rel="noopener noreferrer">Appeal your ban</a>.</p>
     </div>`;
 
   // Reason is set as text, never markup, so it can't inject anything.
