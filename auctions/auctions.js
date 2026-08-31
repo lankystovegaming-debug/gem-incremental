@@ -51,6 +51,7 @@ const state = {
   orders: [],
   myOrders: [],
   gems: [],
+  catalog: [],
   consumables: [],
   money: 0,
   userId: null,
@@ -80,6 +81,8 @@ const orderPrice = document.getElementById("orderPrice");
 const orderButton = document.getElementById("orderButton");
 const orderFeePreview = document.getElementById("orderFeePreview");
 const sellFeePreview = document.getElementById("sellFeePreview");
+const orderPriceRange = document.getElementById("orderPriceRange");
+const sellPriceMinimum = document.getElementById("sellPriceMinimum");
 const watchGemButton = document.getElementById("watchGemButton");
 const marketWatchlist = document.getElementById("marketWatchlist");
 const WATCHLIST_KEY = "gemIncremental.market.watchlist";
@@ -103,6 +106,32 @@ function renderFeePreviews() {
   const saleRate = saleFeeRate(sale, hours);
   const saleFee = feeAmount(sale, saleRate);
   sellFeePreview.textContent = `Fee when sold: ${formatMoney(saleFee)} (${formatRate(saleRate)}). You receive ${formatMoney(Math.max(0, sale - saleFee))}.`;
+
+  const range = selectedOrderPriceRange();
+  orderPriceRange.textContent = range
+    ? `Allowed offer: ${formatMoney(range.minimum)}–${formatMoney(range.maximum)} (25%–400% of base value).`
+    : "Choose a gem to see its allowed offer range.";
+
+  const minimum = selectedLotMinimumPrice();
+  sellPriceMinimum.textContent = `Minimum allowed: ${formatMoney(minimum)} (25% of this lot's reference value).`;
+}
+
+function selectedOrderPriceRange() {
+  const gem = state.catalog?.find((entry) => entry.name === orderGem.value);
+  if (!gem) return null;
+  const baseValue = Math.max(0, Number(gem.baseWeight) * Number(gem.valuePerGram));
+  return { minimum: Math.ceil(baseValue * 0.25), maximum: Math.floor(baseValue * 4) };
+}
+
+function selectedLotMinimumPrice() {
+  let referenceValue = 0;
+  for (const id of state.lot.gems) {
+    referenceValue += Math.max(0, Number(state.gems.find((gem) => gem.id === id)?.value) || 0);
+  }
+  for (const [cid, qty] of state.lot.potions) {
+    referenceValue += Math.max(0, Number(getConsumableById(cid)?.marketReferencePrice) || 0) * qty;
+  }
+  return Math.max(1, Math.ceil(referenceValue * 0.25));
 }
 
 
@@ -350,6 +379,7 @@ function populateOrderGemSelect() {
 function renderOrders() {
   if (state.loading) return;
   populateOrderGemSelect();
+  renderFeePreviews();
   renderWatchlist();
 
   const open = state.orders.filter((o) => o.status === "open");
@@ -447,6 +477,13 @@ orderButton.addEventListener("click", async () => {
   const price = Math.floor(Number(orderPrice.value));
   if (!gemName) { notify.error("Pick a gem", "Choose which gem to order."); return; }
   if (!Number.isFinite(price) || price < 1) { notify.error("Invalid price", "Enter at least $1."); return; }
+  const range = selectedOrderPriceRange();
+  if (!range || price < range.minimum || price > range.maximum) {
+    notify.error("Price outside allowed range", range
+      ? `Enter ${formatMoney(range.minimum)} to ${formatMoney(range.maximum)} for this gem.`
+      : "Choose a gem with current catalog pricing.");
+    return;
+  }
   const feeRate = orderFeeRate(price);
   const fee = feeAmount(price, feeRate);
   const total = price + fee;
@@ -564,10 +601,12 @@ function renderLotSummary() {
     ? `<p class="lot-picker__empty">Pick gems or potions above to build your lot.</p>`
     : gemChips + potionChips;
   listButton.disabled = count === 0;
+  renderFeePreviews();
 }
 
 sellGemSearch.addEventListener("input", renderGemChecklist);
 orderPrice.addEventListener("input", renderFeePreviews);
+orderGem.addEventListener("change", renderFeePreviews);
 sellPrice.addEventListener("input", renderFeePreviews);
 sellDuration.addEventListener("change", renderFeePreviews);
 sellGemList.addEventListener("change", (event) => {
@@ -600,6 +639,11 @@ listButton.addEventListener("click", async () => {
   const price = Math.floor(Number(sellPrice.value));
   const hours = Number(sellDuration.value);
   if (!Number.isFinite(price) || price < 1) { notify.error("Invalid price", "Enter at least $1."); return; }
+  const minimumPrice = selectedLotMinimumPrice();
+  if (price < minimumPrice) {
+    notify.error("Price below minimum", `This lot must be listed for at least ${formatMoney(minimumPrice)}.`);
+    return;
+  }
   const feeRate = saleFeeRate(price, hours);
   const fee = feeAmount(price, feeRate);
   const proceeds = price - fee;
@@ -767,6 +811,7 @@ async function refresh() {
   state.myOrders = myOrders;
   state.gems = Array.isArray(gems_) ? gems_ : [];
   state.consumables = Array.isArray(consumables) ? consumables : [];
+  state.catalog = Array.isArray(catalog) ? catalog : [];
   pruneLot();
 
   if (playerState) { state.money = Number(playerState.money); shell?.setWallet(state.money); }
