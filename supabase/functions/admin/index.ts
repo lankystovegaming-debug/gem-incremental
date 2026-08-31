@@ -204,6 +204,73 @@ export default {
         return response({ error: "admin_forbidden" }, 403);
       }
 
+      if (action === "update_logs_list") {
+        const { data, error } = await ctx.supabaseAdmin
+          .from("update_logs")
+          .select("id,version,title,published_on,sections,published,created_at,updated_at,published_at")
+          .order("published_on", { ascending: false })
+          .order("id", { ascending: false });
+        if (error) return response({ error: "update_logs_load_failed", message: error.message }, 500);
+        return response({ updates: data ?? [] });
+      }
+
+      if (action === "update_log_save") {
+        const id = body.id == null ? null : Math.trunc(Number(body.id));
+        const version = String(body.version ?? "").trim();
+        const title = String(body.title ?? "").trim();
+        const publishedOn = String(body.publishedOn ?? "");
+        const published = body.published === true;
+        const rawSections = Array.isArray(body.sections) ? body.sections : [];
+        const sections = rawSections.map((section: any) => ({
+          heading: String(section?.heading ?? "").trim(),
+          bullets: Array.isArray(section?.bullets)
+            ? section.bullets.map((bullet: unknown) => String(bullet).trim())
+            : []
+        }));
+
+        const invalidSections = sections.length < 1 || sections.length > 20 || sections.some((section: any) =>
+          section.heading.length < 1 || section.heading.length > 80 ||
+          section.bullets.length < 1 || section.bullets.length > 30 ||
+          section.bullets.some((bullet: string) => bullet.length < 1 || bullet.length > 500)
+        );
+        if (
+          (id !== null && (!Number.isSafeInteger(id) || id < 1)) ||
+          version.length < 1 || version.length > 40 ||
+          title.length < 1 || title.length > 120 ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(publishedOn) ||
+          invalidSections
+        ) {
+          return response({ error: "invalid_update_log" }, 400);
+        }
+
+        const now = new Date().toISOString();
+        const values = {
+          version,
+          title,
+          published_on: publishedOn,
+          sections,
+          published,
+          updated_at: now,
+          published_at: published ? now : null
+        };
+        const query = id === null
+          ? ctx.supabaseAdmin.from("update_logs").insert({ ...values, created_by: adminId })
+          : ctx.supabaseAdmin.from("update_logs").update(values).eq("id", id);
+        const { data, error } = await query.select("*").single();
+        if (error) return response({ error: "update_log_save_failed", message: error.message }, 500);
+        await audit(ctx, adminId, null, published ? "update_log_published" : "update_log_saved", { id: data.id, version });
+        return response({ update: data });
+      }
+
+      if (action === "update_log_delete") {
+        const id = Math.trunc(Number(body.id));
+        if (!Number.isSafeInteger(id) || id < 1) return response({ error: "invalid_update_log_id" }, 400);
+        const { error } = await ctx.supabaseAdmin.from("update_logs").delete().eq("id", id);
+        if (error) return response({ error: "update_log_delete_failed", message: error.message }, 500);
+        await audit(ctx, adminId, null, "update_log_deleted", { id });
+        return response({ deleted: true });
+      }
+
       if (action === "search") {
         const query = String(body.query ?? "").trim().toLowerCase();
         if (query.length < 2) return response({ error: "search_too_short" }, 400);
