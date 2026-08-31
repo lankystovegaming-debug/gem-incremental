@@ -95,10 +95,12 @@ assert.match(pageHtml, /id="referralLinkInput"/);
 assert.match(pageHtml, /id="referralCopyButton"/);
 assert.match(pageJs, /mountShell\(\{ page: "referral"/);
 assert.match(pageJs, /buildReferralLink/);
-assert.match(pageHtml, /\$500,000/);
-assert.match(pageHtml, /\$100,000/);
-assert.match(pageHtml, /Legendary Potion ×3/);
-assert.match(pageHtml, /Mythic Potion ×1/);
+// Launch promo overrides the standing bundle on the page (see the promo
+// migration 20260831040000 and referral-promo-rewards-test).
+assert.match(pageHtml, /\$2,000,000/);
+assert.match(pageHtml, /\$250,000/);
+assert.match(pageHtml, /Mythic Potion ×10/);
+assert.match(pageHtml, /Legendary Potion ×5/);
 assert.match(pageHtml, /1,000 lifetime rolls/);
 assert.match(pageHtml, /2,500 lifetime rolls/);
 

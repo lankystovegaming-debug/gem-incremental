@@ -73,7 +73,7 @@ redeemForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  notify.success("Code applied", "Reach 200 rolls and both reward bundles are delivered.");
+  notify.success("Code applied", "Reach 200 rolls before Sept 5 to unlock $250K + 5 Legendary Potions for you, and the reward for your friend.");
   codeInput.value = "";
   await refreshSummary();
 });
@@ -101,7 +101,7 @@ async function refreshSummary() {
     statusEl.textContent =
       summary.referredStatus === "qualified"
         ? "You joined through a friend's code — reward delivered. Thanks for playing!"
-        : "You joined through a friend's code. Keep rolling to unlock both rewards.";
+        : "You joined through a friend's code. Reach 200 rolls before Sept 5 to unlock your $250K + 5 Legendary Potions.";
     statusEl.hidden = false;
   } else {
     redeemBlock.hidden = false;

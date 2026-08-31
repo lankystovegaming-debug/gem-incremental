@@ -1,4 +1,6 @@
 import { icons } from "./icons.js";
+import { ensurePlayerAuth } from "../backend/auth.js";
+import { isGuest, onAccountChange } from "../backend/account.js";
 
 // =========================================================
 // GUIDED TOUR (first-run spotlight walkthrough)
@@ -8,14 +10,21 @@ import { icons } from "./icons.js";
 // each. Runs once for new players (remembered per-device) and is
 // reopenable any time from More -> How to play.
 //
+// First-run order for a brand-new guest: we first nudge them to create an
+// account (so their save can never be lost), and only once they have one do
+// we walk them through every function. A player who already signed in skips
+// straight to the function walkthrough.
+//
 // Steps whose target isn't on the current page are skipped, so the same
 // tour works on the Roll page (full) and elsewhere (shell parts only).
 // =========================================================
 
 const SEEN_KEY = "gemIncremental.seenTour";
+const ACCOUNT_PROMPT_KEY = "gemIncremental.seenAccountPrompt";
 
-// Each step points at a live element. `target` may be a CSS selector; the
-// first VISIBLE match wins (nav vs. mobile tab-bar render the same links).
+// The function walkthrough. Each step points at a live element. `target` may
+// be a CSS selector; the first VISIBLE match wins (nav vs. mobile tab-bar
+// render the same links).
 const STEPS = [
   {
     target: "#rollButton",
@@ -67,6 +76,18 @@ const STEPS = [
   }
 ];
 
+// The single coach-mark shown first to a brand-new guest.
+function accountStep(base) {
+  return {
+    target: "#shellAccountButton",
+    title: "First, create an account",
+    text: "You’re playing as a guest, so your gems only live in this browser. Make a free account first so your progress is saved and can’t be lost — then we’ll show you around.",
+    icon: icons.user || icons.shield,
+    primaryLabel: "Create account",
+    primaryHref: `${base}account/`
+  };
+}
+
 function pickVisible(selector) {
   const nodes = document.querySelectorAll(selector);
   for (const node of nodes) {
@@ -84,13 +105,26 @@ function isInViewport(el) {
          r.bottom <= window.innerHeight + 2 && r.right <= window.innerWidth + 2;
 }
 
-function markSeen() {
-  try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+function mark(key) {
+  try { localStorage.setItem(key, "1"); } catch { /* ignore */ }
 }
 
-export function startTour(base = "./") {
+function seen(key) {
+  try { return localStorage.getItem(key) === "1"; } catch { return false; }
+}
+
+// Generic coach-mark engine shared by the account prompt and the function
+// walkthrough. `opts.seenKey` is stamped when the run ends; `opts.skipLabel`
+// and `opts.finishLabel` customise the buttons.
+function runCoachmarks(rawSteps, opts = {}) {
+  const {
+    seenKey = SEEN_KEY,
+    skipLabel = "Skip",
+    finishLabel = "Finish"
+  } = opts;
+
   // Resolve targets now; drop steps whose element isn't present on this page.
-  const steps = STEPS
+  const steps = rawSteps
     .map((step) => ({ ...step, el: pickVisible(step.target) }))
     .filter((step) => step.el);
 
@@ -98,6 +132,8 @@ export function startTour(base = "./") {
 
   // Guard against a second overlay stacking on top of a running tour.
   if (document.querySelector(".tour-root")) return;
+
+  const single = steps.length === 1;
 
   const root = document.createElement("div");
   root.className = "tour-root";
@@ -113,7 +149,7 @@ export function startTour(base = "./") {
       <p class="tour-pop__text" id="tourText"></p>
       <div class="tour-pop__dots" id="tourDots"></div>
       <div class="tour-pop__actions">
-        <button class="tour-pop__skip" id="tourSkip" type="button">Skip</button>
+        <button class="tour-pop__skip" id="tourSkip" type="button">${skipLabel}</button>
         <div class="tour-pop__nav">
           <button class="btn btn--ghost tour-pop__back" id="tourBack" type="button">Back</button>
           <button class="btn btn--primary tour-pop__next" id="tourNext" type="button">Next</button>
@@ -134,7 +170,14 @@ export function startTour(base = "./") {
   const nextBtn = root.querySelector("#tourNext");
   const skipBtn = root.querySelector("#tourSkip");
 
-  dotsEl.innerHTML = steps.map(() => '<span class="tour-dot"></span>').join("");
+  // A single-step prompt (the account nudge) doesn't need a stepper or Back.
+  if (single) {
+    countEl.style.display = "none";
+    dotsEl.style.display = "none";
+    backBtn.style.display = "none";
+  } else {
+    dotsEl.innerHTML = steps.map(() => '<span class="tour-dot"></span>').join("");
+  }
   const dots = [...dotsEl.querySelectorAll(".tour-dot")];
 
   let idx = 0;
@@ -156,9 +199,6 @@ export function startTour(base = "./") {
     const gap = 14;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    // Prefer below the target, flip above if it won't fit, then hard-clamp into
-    // the viewport on both axes so the tooltip is never cut off (matters most on
-    // small screens and for top-bar targets).
     let top = (r.bottom + gap + popH <= vh - 8) ? r.bottom + gap : r.top - gap - popH;
     top = Math.max(8, Math.min(top, vh - popH - 8));
     let left = Math.max(8, Math.min(vw - popW - 8, r.left + r.width / 2 - popW / 2));
@@ -175,15 +215,11 @@ export function startTour(base = "./") {
     textEl.innerHTML = step.text;
     dots.forEach((d, n) => d.classList.toggle("is-active", n === idx));
     backBtn.disabled = idx === 0;
-    nextBtn.textContent = idx === steps.length - 1 ? "Finish" : "Next";
+    nextBtn.textContent =
+      step.primaryLabel || (idx === steps.length - 1 ? finishLabel : "Next");
 
     // Only scroll when the target isn't already on screen. Elements in the
-    // fixed top bar (wallet, Explore, More) are always visible, and calling
-    // scrollIntoView on them would scroll the document and yank the spotlight
-    // off-screen.
-    // Instant (not smooth) scroll so we can measure the final position right
-    // away — smooth scrolling left us measuring mid-animation. Only scroll when
-    // the target isn't already on screen (top-bar items always are).
+    // fixed top bar (wallet, Explore, More, account) are always visible.
     if (!isInViewport(step.el)) step.el.scrollIntoView({ block: "center", behavior: "auto" });
     place();
     requestAnimationFrame(place);
@@ -198,7 +234,7 @@ export function startTour(base = "./") {
     window.removeEventListener("scroll", place, true);
     document.removeEventListener("keydown", onKey, true);
     root.remove();
-    markSeen();
+    mark(seenKey);
   }
 
   function onKey(event) {
@@ -208,6 +244,9 @@ export function startTour(base = "./") {
   }
 
   nextBtn.addEventListener("click", () => {
+    const step = steps[idx];
+    // A step with a link acts as a call to action: end the run and navigate.
+    if (step.primaryHref) { end(); window.location.href = step.primaryHref; return; }
     if (idx === steps.length - 1) end();
     else show(idx + 1);
   });
@@ -222,8 +261,22 @@ export function startTour(base = "./") {
   nextBtn.focus();
 }
 
-// Wire the More-menu "How to play" action to the tour, and auto-start once
-// for brand-new players (only on the Roll page, where every step resolves).
+// The function walkthrough (also reopened from More -> How to play).
+export function startTour(base = "./") {
+  runCoachmarks(STEPS, { seenKey: SEEN_KEY, skipLabel: "Skip", finishLabel: "Finish" });
+}
+
+// The first-run nudge for guests: make an account before touring the game.
+export function startAccountPrompt(base = "./") {
+  runCoachmarks([accountStep(base)], {
+    seenKey: ACCOUNT_PROMPT_KEY,
+    skipLabel: "Maybe later"
+  });
+}
+
+// Wire the More-menu "How to play" action to the function tour, and drive the
+// first-run experience on the Roll page: account prompt for guests, then the
+// full walkthrough once they have an account.
 export function mountTour({ base = "./", page = "" } = {}) {
   const action = document.querySelector('[data-more-action="howto"]');
   if (action && !action.dataset.tourWired) {
@@ -231,9 +284,31 @@ export function mountTour({ base = "./", page = "" } = {}) {
     action.addEventListener("click", () => startTour(base));
   }
 
-  let seen = false;
-  try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch { seen = false; }
-  if (!seen && page === "roll") {
-    setTimeout(() => startTour(base), 700);
-  }
+  // Auto-onboarding only runs on the Roll page (where every step resolves)
+  // and only until the player has finished the walkthrough once.
+  if (page !== "roll" || seen(SEEN_KEY)) return;
+
+  ensurePlayerAuth().then((user) => {
+    if (seen(SEEN_KEY)) return;
+
+    // Already has a real account — walk them through the functions.
+    if (user && !isGuest(user)) {
+      setTimeout(() => startTour(base), 700);
+      return;
+    }
+
+    // Brand-new guest — nudge them to create an account first (once).
+    if (!seen(ACCOUNT_PROMPT_KEY)) {
+      setTimeout(() => startAccountPrompt(base), 700);
+    }
+
+    // If they link an account without leaving the page (e.g. Google sign-in),
+    // roll straight into the function walkthrough.
+    onAccountChange((event, changedUser) => {
+      if (changedUser && !isGuest(changedUser) && !seen(SEEN_KEY)) {
+        document.querySelector(".tour-root")?.remove();
+        setTimeout(() => startTour(base), 400);
+      }
+    });
+  });
 }
