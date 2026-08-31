@@ -14,9 +14,11 @@ assert.deepEqual(crystalRollGains({rarity:1000},"fracturing"),{baseProgress:5,pr
 assert.equal(crystalRollGains({rarity:50},"forceful").instability+crystalRollGains({rarity:50},"fracturing").instability,.28,"fractional Instability must survive intensity switching");
 assert.ok(Math.abs(crystalArtifactMultiplier(125)-(3-2/Math.E))<1e-12);const severity=crystalSeverityProbabilities(100);assert.ok(Math.abs(severity.minor+severity.major+severity.critical-1)<1e-12);
 for(const text of["Extraction Progress","Expedition Cargo","Artifact chance","Recent Expedition Log","AT RISK","Duplicate","nextOverdepthDanger","defaultAction:\"cancel\"","preventEnter:true"])assert.match(page,new RegExp(text));
+for(const text of["Voluntarily extract","voluntary-extract","Unfinished Extraction Progress is discarded","active\",\"decision\",\"awaiting_funding"])assert.match(page,new RegExp(text));
 for(const cost of[250000,500000,1000000,1750000,3500000,5500000])assert.match(page,new RegExp(String(cost)));
 assert.match(rework,/alter column progress type numeric/);assert.match(rework,/alter column instability type numeric/);assert.match(rework,/rarity'\)::numeric,0\)>=50/);assert.match(rework,/rarity'\)::numeric,0\)>=1000/);assert.match(rework,/rarity'\)::numeric,0\)>=10000/);assert.match(rework,/base_progress\*case r\.intensity/);assert.match(rework,/instability_gain:=base_progress\*case r\.intensity/);assert.match(rework,/nullif\(p_payload->>'gemName',''\)is null then return/);assert.match(rework,/final displayed weight \/ base weight/);
 assert.match(client,/set_crystal_intensity/);assert.match(dialog,/preventEnter/);assert.match(dialog,/defaultAction/);
+assert.match(rework,/r\.status not in\('active','decision','awaiting_funding','ready_to_extract','forced_extraction'\)/);assert.match(rework,/r\.depth<1/);assert.match(rework,/pending=null/);assert.match(rework,/Voluntary extraction secured all cargo and artifacts/);
 assert.equal((roll.match(/luck \*= researchNumber\("luck_multiplier"\)/g)||[]).length,1,"research Luck must be applied exactly once");
 assert.match(roll,/luck \+= crystalLuckBonus;[\s\S]*luck \+= expeditionArtifactLuckBonus;/);
 assert.match(roll,/mutationChanceMultiplier \*= crystalMutationMultiplier;[\s\S]*mutationChanceMultiplier \*= expeditionArtifactMutationMultiplier;/);
