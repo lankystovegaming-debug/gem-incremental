@@ -38,6 +38,31 @@
 .referral-card h1 { margin-top: 6px; font-size: clamp(2rem, 7vw, 3rem); }
 .referral-copy { max-width: 480px; margin: 12px auto 0; color: var(--text-muted); }
 
+.referral-rewards { margin-top: 28px; text-align: left; }
+.referral-rewards > h2,
+.referral-rewards > p { text-align: center; }
+.referral-rewards > h2 { margin: 0; font-size: 1.2rem; }
+.referral-rewards > p { margin: 7px 0 0; color: var(--text-muted); }
+
+.referral-rewards__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.referral-reward {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+}
+
+.referral-reward h3 { margin: 0; font-size: .95rem; }
+.referral-reward__cash { margin: 6px 0 10px; color: var(--accent); font-size: 1.25rem; font-weight: 800; }
+.referral-reward ul { margin: 0; padding-left: 18px; color: var(--text-muted); font-size: .86rem; line-height: 1.55; }
+.referral-rewards .referral-rewards__gate { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--surface); font-size: .82rem; }
+
 /* Shareable link ---------------------------------------- */
 
 .referral-link {
@@ -124,6 +149,7 @@
 }
 
 @media (max-width: 620px) {
+  .referral-rewards__grid { grid-template-columns: 1fr; }
   .referral-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
