@@ -2514,12 +2514,14 @@ export default {
         slowStarterCooldownMultiplier = Math.max(0.5, 1.75 - rolls * 0.025);
       }
 
+      let guildShopBuffIds: string[] = [];
+
       // Eligible guild members receive small permanent multiplicative
       // enhancements. The 24-hour delay prevents join-hopping for bonuses.
       try {
         const { data: guildMembership, error: guildBonusError } = await ctx.supabaseAdmin
           .from("guild_members")
-          .select("eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
+          .select("guild_id,eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
           .eq("player_id", playerId)
           .maybeSingle();
         if (guildBonusError) throw guildBonusError;
@@ -2530,6 +2532,29 @@ export default {
           luck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
           rollSpeed *= 1 + Math.min(10, Math.max(0, Number(guild?.speed_tier ?? 0))) / 100;
           weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
+        }
+        if (guildMembership) {
+          const { data: guildShopBuffs, error: guildShopError } = await ctx.supabaseAdmin
+            .from("guild_shop_buffs")
+            .select("potion_id")
+            .eq("guild_id", guildMembership.guild_id)
+            .gt("expires_at", now.toISOString());
+          if (guildShopError) throw guildShopError;
+          guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
+          for (const potionId of guildShopBuffIds) {
+            if (potionId === "lucky_brew") luck *= 1.05;
+            if (potionId === "haste_brew") rollSpeed *= 1.05;
+            if (potionId === "heavy_brew") weightLuck *= 1.10;
+            if (potionId === "prosperity_brew") weightMultiplier *= 1.10;
+            if (potionId === "greater_lucky") luck *= 1.10;
+            if (potionId === "greater_haste") rollSpeed *= 1.10;
+            if (potionId === "legendary") {
+              luck *= 1.10; rollSpeed *= 1.10; weightLuck *= 1.15; weightMultiplier *= 1.10;
+            }
+            if (potionId === "mythic") {
+              luck *= 1.15; rollSpeed *= 1.15; weightLuck *= 1.20; weightMultiplier *= 1.15;
+            }
+          }
         }
       } catch (guildBonusError) {
         // Guild progression is best-effort and must never prevent a roll.
@@ -2635,6 +2660,22 @@ export default {
         String(
           rollClaim.leaseId
         );
+
+      // Advance Mythic Surge only after the authoritative lease accepts this
+      // request as a genuine roll. The RPC serializes the shared guild counter.
+      let mythicSurge: any = null;
+      try {
+        const { data: surgeResult, error: surgeError } = await ctx.supabaseAdmin.rpc(
+          "claim_guild_mythic_surge",
+          { p_player_id: playerId }
+        );
+        if (surgeError) throw surgeError;
+        mythicSurge = surgeResult ?? null;
+        if (mythicSurge?.boosted === true) luck *= 2;
+      } catch (surgeError) {
+        // A shop deployment mismatch must not strand an already-claimed roll.
+        console.error("Guild Mythic Surge claim failed:", surgeError);
+      }
 
 
 
@@ -4012,7 +4053,8 @@ export default {
           null,
 
         guild: {
-          rollPoints: guildPoints
+          rollPoints: guildPoints,
+          mythicSurge
         },
 
         inventory: {

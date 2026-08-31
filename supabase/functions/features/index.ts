@@ -27,15 +27,25 @@ const GUILD_COMPETITION_REWARDS=[
   {placement:"Participation",items:"2 Tier II Potions · 1 Tier III Potion · $100,000",guildPoints:2250}
 ];
 const GUILD_POINT_CASH_COSTS=[1000000,1500000,2000000,3000000,5000000];
+const GUILD_SHOP_CATALOG=[
+  {id:"lucky_brew",name:"Lucky Brew",basePrice:750,unlockLevel:1,effects:{luck:1.05}},
+  {id:"haste_brew",name:"Haste Brew",basePrice:750,unlockLevel:1,effects:{rollSpeed:1.05}},
+  {id:"heavy_brew",name:"Heavy Brew",basePrice:1000,unlockLevel:1,effects:{weightLuck:1.10}},
+  {id:"prosperity_brew",name:"Prosperity Brew",basePrice:1250,unlockLevel:3,effects:{weightMultiplier:1.10}},
+  {id:"greater_lucky",name:"Greater Lucky",basePrice:1750,unlockLevel:5,effects:{luck:1.10}},
+  {id:"greater_haste",name:"Greater Haste",basePrice:1750,unlockLevel:5,effects:{rollSpeed:1.10}},
+  {id:"legendary",name:"Legendary",basePrice:4000,unlockLevel:7,effects:{luck:1.10,rollSpeed:1.10,weightLuck:1.15,weightMultiplier:1.10}},
+  {id:"mythic",name:"Mythic",basePrice:8000,unlockLevel:10,effects:{luck:1.15,rollSpeed:1.15,weightLuck:1.20,weightMultiplier:1.15},mythicSurge:true}
+];
 const GUILD_ERROR_STATUS:Record<string,number>={
-  unauthenticated:401,management_only:403,owner_only:403,not_in_guild:403,
+  unauthenticated:401,management_only:403,guild_management_only:403,owner_only:403,not_in_guild:403,
   owner_cannot_leave:409,invite_not_found:404,player_not_found:404,
   member_not_found:404,guild_not_found:404,already_in_guild:409,
   player_already_in_guild:409,guild_join_cooldown:409,guild_full:409,
   guild_not_open:409,guild_not_requestable:409,join_request_pending:409,
   join_request_not_found:404,
   guild_identity_taken:409,officer_limit:409,insufficient_guild_points:409,
-  guild_level_required:409,max_upgrade:409,insufficient_money:409,
+  guild_level_required:409,max_upgrade:409,insufficient_money:409,unknown_guild_potion:404,
   guild_point_purchase_limit:409,research_node_not_found:404,
   research_node_owned:409,research_ap_gate:409,research_prerequisite_missing:409,
   research_points_insufficient:409,research_reset_cooldown:409,
@@ -123,7 +133,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild"){
    const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id,role,eligible_at").eq("player_id",userId).maybeSingle();
    if(membershipError)throw membershipError;
-   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null,joinRequests:any[]=[];
+   let guild:any=null,members:any[]=[],missions:any[]=[],activity:any[]=[],competition:any=null,standings:any[]=[],competitionMembers:any[]=[],pointPurchases:any=null,joinRequests:any[]=[],shop:any=null;
    if(membership){
     const runtime=await ctx.supabaseAdmin.rpc("ensure_guild_runtime",{p_guild_id:membership.guild_id});
     if(runtime.error)throw runtime.error;
@@ -136,6 +146,10 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
     if(profileError)throw profileError;
     const names=new Map((profiles??[]).map((profile:any)=>[profile.id,profile.username]));
     members=(memberRows??[]).map((row:any)=>({...row,username:names.get(row.player_id)||"Unknown player"}));
+    const {data:buffRows,error:buffError}=await ctx.supabaseAdmin.from("guild_shop_buffs").select("potion_id,activated_by,activated_at,expires_at,mythic_surge_progress").eq("guild_id",guild.id).gt("expires_at",new Date().toISOString()).order("expires_at");
+    if(buffError)throw buffError;
+    const memberCount=members.length;
+    shop={memberCount,catalog:GUILD_SHOP_CATALOG.map((item)=>({...item,currentPrice:Math.round((item.basePrice*(1+0.25*(Math.max(1,memberCount)-1)))/50)*50})),activeBuffs:buffRows??[]};
     if(["owner","officer"].includes(membership.role)){
       const {data:requestRows,error:requestError}=await ctx.supabaseAdmin.from("guild_join_requests").select("id,player_id,requested_at").eq("guild_id",guild.id).eq("status","pending").order("requested_at");
       if(requestError&&!missingGuildJoinRequests(requestError))throw requestError;
@@ -172,7 +186,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
    }
    const {data:invites,error:inviteError}=await ctx.supabaseAdmin.from("guild_invites").select("id,guild_id,invited_by,status,created_at,guilds(name,tag)").eq("invited_player_id",userId).eq("status","pending").order("created_at",{ascending:false});
    if(inviteError)throw inviteError;
-   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,joinRequests,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
+   return json({guild,membership,members,missions,activity,competition,standings,competitionMembers,competitionRewards:GUILD_COMPETITION_REWARDS,pointPurchases,joinRequests,shop,invites:invites??[],currentPlayerId:userId,serverNow:new Date().toISOString()});
   }
   if(a==="guild-directory"){
     const {data:membership,error:membershipError}=await ctx.supabaseAdmin.from("guild_members").select("guild_id").eq("player_id",userId).maybeSingle();
@@ -224,6 +238,7 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{if(req.method=
   if(a==="guild-manage-member"){const r=await ctx.supabaseAdmin.rpc("guild_manage_member",{p_actor_id:userId,p_target_id:String(b.playerId??""),p_action:String(b.memberAction??"")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-leave"){const r=await ctx.supabaseAdmin.rpc("guild_leave_v2",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-upgrade"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_upgrade",{p_player_id:userId,p_track:String(b.track??"")});if(r.error)throw r.error;return json(r.data);}
+  if(a==="guild-shop-activate"){const r=await ctx.supabaseAdmin.rpc("guild_activate_shop_potion",{p_player_id:userId,p_potion_id:String(b.potionId??"")});if(r.error)return guildFailure(r.error);return json(r.data);}
   if(a==="guild-purchase-points"){const r=await ctx.supabaseAdmin.rpc("guild_purchase_points_with_cash",{p_player_id:userId});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-update-identity"){const r=await ctx.supabaseAdmin.rpc("guild_update_identity",{p_player_id:userId,p_name:String(b.name??""),p_tag:String(b.tag??""),p_description:String(b.description??""),p_join_mode:String(b.joinMode??"invite")});if(r.error)throw r.error;return json(r.data);}
   if(a==="guild-update-logo"){

@@ -421,6 +421,7 @@ export async function loadCloudDebugState() {
   luck *= positiveNumber(permanentModifiers.guild_luck_multiplier);
   rollSpeed *= positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
   weightLuck *= positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
+  weightMultiplier *= positiveNumber(permanentModifiers.guild_weight_multiplier);
 
 
   // -------------------------------------------------------

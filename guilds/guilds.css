@@ -319,6 +319,26 @@
 .bonus span { color: var(--text-faint); font-size: 0.78rem; }
 .bonus strong { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; margin-top: 2px; }
 
+/* ---------- guild shop ---------- */
+
+.shop-layout { display: grid; gap: var(--space-4); }
+.shop-summary { display: grid; gap: var(--space-3); }
+.shop-summary h2 { margin-bottom: 4px; }
+.shop-summary p { margin-top: 0; }
+.shop-metrics { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.active-buff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2); }
+.active-buff { display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-sunken); }
+.active-buff span { font-variant-numeric: tabular-nums; }
+.surge-panel { padding: var(--space-3); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: var(--radius); background: color-mix(in srgb, var(--accent) 7%, var(--surface-sunken)); }
+.surge-panel .panel-heading { margin-bottom: 0; }
+.surge-panel .muted { margin-bottom: 0; font-size: .82rem; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); gap: var(--space-3); }
+.shop-card { display: flex; flex-direction: column; gap: var(--space-2); min-height: 210px; }
+.shop-card > p { color: var(--text-muted); line-height: 1.5; }
+.shop-card.legendary,.shop-card.mythic { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.shop-card-footer { display: grid; gap: var(--space-2); margin-top: auto; }
+.shop-card-footer .btn { width: 100%; }
+
 .upgrade-card h3 { margin: 4px 0 2px; font-size: 0.98rem; }
 .upgrade-card strong { display: block; font-size: 1.4rem; color: var(--accent); font-variant-numeric: tabular-nums; }
 .upgrade-card button { width: 100%; margin-top: var(--space-2); }
