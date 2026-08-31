@@ -16,6 +16,7 @@ const status = document.getElementById("adminStatus");
 const searchInput = document.getElementById("playerSearch");
 const searchButton = document.getElementById("searchButton");
 const auditButton = document.getElementById("auditButton");
+const ipAuditButton = document.getElementById("ipAuditButton");
 const results = document.getElementById("searchResults");
 const playerPanel = document.getElementById("playerPanel");
 const auditPanel = document.getElementById("auditPanel");
@@ -34,7 +35,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1616,6 +1617,113 @@ async function loadGuildRoster() {
 guildRosterRefresh?.addEventListener("click", loadGuildRoster);
 guildRosterSearch?.addEventListener("input", renderGuildRoster);
 
+
+// =========================================================
+// SHARED IP AUDIT — flag accounts sharing the same/similar IP (alt detection).
+// Server-gated SECURITY DEFINER RPC; IP data is admin-only and never shown to
+// players. This is a read-only report — it changes nothing on its own.
+// =========================================================
+
+const ipAuditPanel = document.getElementById("ipAuditPanel");
+const ipAuditRefresh = document.getElementById("ipAuditRefresh");
+const ipAuditSummary = document.getElementById("ipAuditSummary");
+const ipAuditContent = document.getElementById("ipAuditContent");
+const ipAuditMin = document.getElementById("ipAuditMin");
+const ipAuditSubnet = document.getElementById("ipAuditSubnet");
+
+function ipAuditDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+}
+
+function ipAuditAccountRows(accounts) {
+  return (accounts ?? []).map((account) => `
+      <tr>
+        <td>${escapeHtml(account.username ?? "Unknown")}</td>
+        <td>${escapeHtml(account.email ?? "Anonymous")}</td>
+        <td class="ip-audit-mono">${escapeHtml(account.lastIp ?? "—")}</td>
+        <td>${escapeHtml(ipAuditDate(account.lastSeenAt))}</td>
+        <td><button class="btn btn--sm" type="button" data-ip-inspect="${escapeHtml(account.playerId)}">Inspect</button></td>
+      </tr>`).join("");
+}
+
+function ipAuditGroupCard(group) {
+  const accounts = Array.isArray(group.accounts) ? group.accounts : [];
+  return `
+    <details class="ip-audit-group" open>
+      <summary>
+        <span class="ip-audit-group__key ip-audit-mono">${escapeHtml(group.key ?? "—")}</span>
+        <span class="ip-audit-group__count badge badge--danger">${formatCount(Number(group.accountCount ?? accounts.length))} accounts</span>
+      </summary>
+      <div class="ip-audit-table-wrap">
+        <table class="ip-audit-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Email</th>
+              <th>IP</th>
+              <th>Last seen</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${ipAuditAccountRows(accounts)}</tbody>
+        </table>
+      </div>
+    </details>`;
+}
+
+async function loadIpAudit() {
+  if (!ipAuditPanel || !ipAuditContent) return;
+  ipAuditPanel.hidden = false;
+
+  const rawMin = Math.trunc(Number(ipAuditMin?.value ?? 2));
+  const minAccounts = Number.isFinite(rawMin) ? Math.min(100, Math.max(2, rawMin)) : 2;
+  const includeSubnet = Boolean(ipAuditSubnet?.checked);
+
+  if (ipAuditButton) ipAuditButton.disabled = true;
+  if (ipAuditRefresh) ipAuditRefresh.disabled = true;
+  ipAuditContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_find_shared_ips", {
+    p_min_accounts: minAccounts,
+    p_include_subnet: includeSubnet
+  });
+
+  if (ipAuditButton) ipAuditButton.disabled = false;
+  if (ipAuditRefresh) ipAuditRefresh.disabled = false;
+
+  if (error) {
+    ipAuditContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not run IP audit</p><p>${escapeHtml(error.message)}</p></div>`;
+    ipAuditSummary.textContent = "Failed to load.";
+    notify.error("IP audit failed", error.message);
+    return;
+  }
+
+  const groups = Array.isArray(data?.groups) ? data.groups : [];
+  const modeLabel = data?.mode === "subnet" ? "similar (subnet)" : "exact IP";
+  ipAuditSummary.innerHTML =
+    `<strong>${formatCount(Number(data?.groupCount ?? groups.length))}</strong> shared ${modeLabel} ` +
+    `${(data?.groupCount ?? groups.length) === 1 ? "group" : "groups"} · ` +
+    `<strong>${formatCount(Number(data?.accountsFlagged ?? 0))}</strong> accounts flagged · ` +
+    `min ${formatCount(Number(data?.minAccounts ?? minAccounts))} per group`;
+
+  ipAuditContent.innerHTML = groups.length
+    ? groups.map(ipAuditGroupCard).join("")
+    : '<div class="empty"><p class="empty__title">No accounts share an IP at this threshold.</p></div>';
+
+  for (const button of ipAuditContent.querySelectorAll("[data-ip-inspect]")) {
+    button.addEventListener("click", () => {
+      inspectPlayer(button.dataset.ipInspect);
+      playerPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+}
+
+ipAuditButton?.addEventListener("click", loadIpAudit);
+ipAuditRefresh?.addEventListener("click", loadIpAudit);
+
 searchButton.addEventListener("click", searchPlayers);
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchPlayers();
@@ -1642,6 +1750,7 @@ if (!user || !whoami?.isAdmin) {
   status.textContent = "Administrator access verified.";
   searchButton.disabled = false;
   auditButton.disabled = false;
+  if (ipAuditButton) ipAuditButton.disabled = false;
   analyticsButton.disabled = false;
   if (featureLabButton) featureLabButton.disabled = false;
   wireAnnouncements();

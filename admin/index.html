@@ -43,6 +43,15 @@
 
         <button
           class="btn"
+          id="ipAuditButton"
+          type="button"
+          disabled
+        >
+          IP Audit
+        </button>
+
+        <button
+          class="btn"
           id="auditButton"
           type="button"
           disabled
@@ -250,6 +259,27 @@
         </div>
       </div>
       <div id="guildRosterContent" class="guild-roster-content"></div>
+    </section>
+
+    <section class="card admin-ip-audit" id="ipAuditPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Shared IP Audit</h2>
+          <p class="page-head__sub" id="ipAuditSummary">Reports accounts that share the same — or a similar — last-seen IP address, to help spot alt accounts. IP data is admin-only.</p>
+        </div>
+        <div class="admin-section-head__tools">
+          <label class="field field--inline">
+            <span>Min accounts</span>
+            <input id="ipAuditMin" class="input" type="number" min="2" max="100" step="1" value="2">
+          </label>
+          <label class="checkbox-field">
+            <input id="ipAuditSubnet" type="checkbox">
+            <span>Group similar (subnet)</span>
+          </label>
+          <button class="btn btn--primary" id="ipAuditRefresh" type="button">Run audit</button>
+        </div>
+      </div>
+      <div id="ipAuditContent" class="ip-audit-content"></div>
     </section>
 
     <section id="searchResults" class="admin-results"></section>
