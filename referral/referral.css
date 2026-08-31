@@ -36,6 +36,20 @@
 }
 
 .referral-card h1 { margin-top: 6px; font-size: clamp(2rem, 7vw, 3rem); }
+
+.referral-promo {
+  display: inline-block;
+  margin: 12px auto 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: .8rem;
+  letter-spacing: .02em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 .referral-copy { max-width: 480px; margin: 12px auto 0; color: var(--text-muted); }
 
 /* Shareable link ---------------------------------------- */
