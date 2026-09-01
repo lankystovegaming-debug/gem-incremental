@@ -8,6 +8,7 @@ const migration = read("supabase/migrations/20260901053720_protect_leaderboards_
 
 assert.match(client, /functions\.invoke\("leaderboards"\)/);
 assert.doesNotMatch(client, /supabase\.rpc\("get_total_rolls_leaderboard"/);
+assert.doesNotMatch(client, /bestRollError/);
 assert.match(edge, /CACHE_TTL_MS = 30_000/);
 assert.match(edge, /MAX_REQUESTS_PER_WINDOW = 6/);
 assert.match(edge, /ctx\.userClaims/);

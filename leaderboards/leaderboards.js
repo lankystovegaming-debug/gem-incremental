@@ -1133,7 +1133,7 @@ async function loadLeaderboards() {
             .map((player, index) => ({ ...player, rank: index + 1 }))
         : [],
 
-    bestRollLoadFailed: Boolean(bestRollError),
+    bestRollLoadFailed: false,
 
     mostWeight:
       Array.isArray(mostWeightData)
