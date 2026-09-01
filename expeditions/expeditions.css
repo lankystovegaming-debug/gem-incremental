@@ -12,6 +12,47 @@
 @media(max-width:900px){.expedition-guide{grid-template-columns:1fr}.expedition-guide__notes{grid-column:auto}}
 @media(max-width:680px){.expedition-guide__steps,.expedition-guide__notes{grid-template-columns:1fr}}
 .expedition-eyebrow{margin:0;color:var(--accent);font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+
+/* Detailed manual / field guide — shared by the Mine and Crystal Caverns pages */
+.guide-manual{margin-top:1.5rem;padding:1.4rem}
+.guide-manual__head h2{margin:.45rem 0 .35rem}
+.guide-manual__head>p:last-child{max-width:70ch;color:var(--text-muted)}
+.guide-block{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)}
+.guide-block>h3{margin:0 0 .6rem;font-size:1.05rem}
+.guide-block>p{margin:.35rem 0;color:var(--text-muted)}
+.guide-block strong{color:var(--text)}
+.guide-note{font-size:.86rem}
+.guide-mini{margin-top:.4rem;font-size:.78rem;color:var(--text-muted)}
+.guide-table-wrap{overflow-x:auto;margin-top:.6rem;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-raised)}
+.guide-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:360px}
+.guide-table th,.guide-table td{padding:.55rem .8rem;text-align:left;border-top:1px solid var(--border)}
+.guide-table thead th{border-top:0;color:var(--text-muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.guide-table td:nth-child(2),.guide-table td:nth-child(4){font-variant-numeric:tabular-nums;color:var(--text)}
+.guide-list{margin:.4rem 0 0;padding-left:1.1rem;display:grid;gap:.45rem}
+.guide-list li{color:var(--text-muted);line-height:1.5}
+.guide-list--bonus{list-style:none;padding-left:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+.guide-list--bonus li{display:flex;align-items:center;gap:.6rem;color:var(--text)}
+.guide-list--bonus li>span{flex:0 0 auto;min-width:2.4rem;padding:.15rem .4rem;border-radius:6px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface))}
+.guide-severity{display:grid;gap:.5rem;margin-top:.7rem}
+.guide-severity .sev{padding:.55rem .7rem;border-radius:10px;font-size:.86rem;border:1px solid var(--border)}
+.sev--minor{background:#16a34a1f;border-color:#16a34a55;color:#86efac}
+.sev--major{background:#d977061f;border-color:#d9770655;color:#fcd34d}
+.sev--critical{background:#dc26261f;border-color:#dc262655;color:#fca5a5}
+.sev-chip{padding:.05rem .35rem;border-radius:5px;font-size:.8rem;font-weight:700}
+.guide-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:.6rem}
+.guide-cards article{padding:.85rem;border:1px solid var(--border);border-radius:12px;background:var(--surface-raised)}
+.guide-cards h4{margin:0 0 .35rem;font-size:.95rem}
+.guide-cards p{margin:.25rem 0 0;color:var(--text-muted);font-size:.86rem;line-height:1.5}
+.guide-cards__risk{border-color:#dc262655;background:#dc26260f}
+.guide-passives{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:.6rem}
+.guide-passives>div{padding:.6rem .7rem;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised)}
+.guide-passives strong{display:block;font-size:.88rem}
+.guide-passives span{color:var(--text-muted);font-size:.78rem}
+.guide-callout{margin-top:1.4rem;padding:1.1rem 1.2rem;border:1px solid var(--border);border-radius:var(--radius-md)}
+.guide-callout h3{margin:0 0 .4rem}
+.guide-callout p{margin:0;color:var(--text-muted);line-height:1.55}
+.guide-callout--hell{border-color:#dc262655;background:linear-gradient(120deg,#dc26260f,#f9731608)}
+@media(max-width:680px){.guide-list--bonus,.guide-cards{grid-template-columns:1fr}.guide-passives{grid-template-columns:1fr 1fr}}
 .destination-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem}
 .destination{display:flex;min-height:240px;flex-direction:column;gap:.75rem;padding:1.2rem}
 .destination h2{margin:.25rem 0 0}

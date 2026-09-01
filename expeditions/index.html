@@ -23,6 +23,122 @@
     </ol>
     <div class="expedition-guide__notes"><p><strong>Danger</strong> can trigger an incident when you fund the next stage, potentially destroying unsecured cargo or forcing extraction.</p><p><strong>After D10</strong> you can extract safely or buy an Overdepth stage for escalating rewards, cost, and Danger.</p></div>
   </section>
+
+  <section class="card guide-manual" aria-labelledby="mineManualTitle">
+    <div class="guide-manual__head">
+      <p class="expedition-eyebrow">Detailed manual</p>
+      <h2 id="mineManualTitle">Abandoned Mine — full mechanics</h2>
+      <p>Everything the crew console does not spell out: the exact costs, the Danger you face, how incidents resolve, the route forks, and the artifacts you are digging for.</p>
+    </div>
+
+    <div class="guide-block">
+      <h3>The depth ladder (D1–D10)</h3>
+      <p>Every depth must be funded before the crew advances, and funding is permanent — you keep the progress even if the run ends early. Progress comes only from <strong>genuine gem rolls</strong>; each depth's target is a roll count.</p>
+      <div class="guide-table-wrap">
+        <table class="guide-table">
+          <thead><tr><th>Depth</th><th>Funding cost</th><th>Rolls to clear</th><th>Base Danger</th></tr></thead>
+          <tbody>
+            <tr><td>D1</td><td>$100K</td><td>100</td><td>0%</td></tr>
+            <tr><td>D2</td><td>$150K</td><td>150</td><td>5%</td></tr>
+            <tr><td>D3 · Supply Camp</td><td>$250K</td><td>200</td><td>10%</td></tr>
+            <tr><td>D4 · Route fork</td><td>$400K</td><td>275</td><td>18%</td></tr>
+            <tr><td>D5</td><td>$650K</td><td>350</td><td>27%</td></tr>
+            <tr><td>D6 · Supply Camp</td><td>$1M</td><td>450</td><td>38%</td></tr>
+            <tr><td>D7 · Route fork</td><td>$1.6M</td><td>575</td><td>50%</td></tr>
+            <tr><td>D8</td><td>$2.5M</td><td>725</td><td>63%</td></tr>
+            <tr><td>D9 · Supply Camp</td><td>$4M</td><td>900</td><td>75%</td></tr>
+            <tr><td>D10 · Crew's end</td><td>$6.5M</td><td>1,100</td><td>85%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="guide-note">Base Danger is a starting point — routes, incidents and Supply Camps move it up or down before each funding check.</p>
+    </div>
+
+    <div class="guide-block">
+      <h3>How each roll counts</h3>
+      <p>A plain roll is worth <strong>1 progress</strong>. Notable finds stack bonuses on top of that single roll:</p>
+      <ul class="guide-list guide-list--bonus">
+        <li><span>+1</span> rarity 1 in 50 or rarer</li>
+        <li><span>+3</span> rarity 1 in 1,000 or rarer</li>
+        <li><span>+7</span> rarity 1 in 10,000 or rarer</li>
+        <li><span>+3</span> any mutated gem</li>
+        <li><span>+3</span> displayed weight at least 2× its base</li>
+      </ul>
+      <p class="guide-note">Bonuses stack: one mutated 1-in-10,000 heavyweight is worth up to <strong>18 progress</strong> on a single roll. Only real rolls count — automation still has to actually roll.</p>
+    </div>
+
+    <div class="guide-block">
+      <h3>Danger &amp; incidents</h3>
+      <p>Danger is checked <strong>only when you fund the next depth</strong> (and when you enter Overdepth). The console shows the exact percentage before you commit. If the check fires, severity is rolled:</p>
+      <div class="guide-severity">
+        <span class="sev sev--minor"><strong>Minor</strong> — a slice of unsecured value is lost</span>
+        <span class="sev sev--major"><strong>Major</strong> — a bigger value loss, and Danger climbs further</span>
+        <span class="sev sev--critical"><strong>Critical</strong> — forced extraction; every unsecured find is destroyed</span>
+      </div>
+      <p class="guide-note">Museum artifacts are <strong>protected discoveries</strong> — they always return, even from a Critical. Only loose cargo is ever at risk.</p>
+    </div>
+
+    <div class="guide-block">
+      <h3>Supply Camps — D3, D6, D9</h3>
+      <p>At these depths the descent pauses so you can spend to protect the haul. <strong>Secure Current Cargo</strong> banks everything found so far; <strong>Full Resupply</strong> banks it <em>and</em> lowers Danger.</p>
+      <div class="guide-table-wrap">
+        <table class="guide-table">
+          <thead><tr><th>Camp</th><th>Secure cargo</th><th>Full Resupply</th></tr></thead>
+          <tbody>
+            <tr><td>D3</td><td>$150K</td><td>$300K</td></tr>
+            <tr><td>D6</td><td>$750K</td><td>$1.25M</td></tr>
+            <tr><td>D9</td><td>$3M</td><td>$5M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="guide-block">
+      <h3>Route forks — D4 &amp; D7</h3>
+      <p>Twice per run you choose safety or greed. The greedy route boosts every cargo find for the rest of the descent but raises Danger sharply.</p>
+      <div class="guide-cards">
+        <article><h4>D4 · Reinforced Tunnel</h4><p>Danger −10 before D5. The safe line.</p></article>
+        <article class="guide-cards__risk"><h4>D4 · Rich Vein</h4><p>+25% cargo value, but Danger +12.</p></article>
+        <article><h4>D7 · Supply Line</h4><p>Danger −12 before D8. The safe line.</p></article>
+        <article class="guide-cards__risk"><h4>D7 · Unstable Descent</h4><p>+40% cargo value, but Danger +16.</p></article>
+      </div>
+    </div>
+
+    <div class="guide-block">
+      <h3>Cargo, extraction &amp; Overdepth</h3>
+      <ul class="guide-list">
+        <li><strong>Secured cargo</strong> is banked and survives a forced extraction. <strong>Unsecured cargo</strong> is everything not yet protected by a camp or route — it is what a Major or Critical incident eats.</li>
+        <li><strong>Extract voluntarily</strong> at any pause to bank all cargo and end the run cleanly.</li>
+        <li>Clearing <strong>D10</strong> lets you extract safely or push into <strong>Overdepth</strong>. Each Overdepth stage is a <strong>free descent</strong> that trades your safe exit for escalating rewards and Danger, with its own artifact pool.</li>
+      </ul>
+    </div>
+
+    <div class="guide-block">
+      <h3>Artifacts &amp; their passives</h3>
+      <p>Registering an artifact in the Museum grants a permanent account-wide passive. Duplicates pay out as cargo instead.</p>
+      <div class="guide-passives">
+        <div><strong>Miner's Lamp</strong><span>+2% Roll Speed</span></div>
+        <div><strong>Clockwork Drill</strong><span>+5% Roll Speed</span></div>
+        <div><strong>Vein Prism</strong><span>+5% Luck</span></div>
+        <div><strong>Surveyor's Compass</strong><span>+3% Weight Luck</span></div>
+        <div><strong>Silver Pick</strong><span>+5% Weight Multiplier</span></div>
+        <div><strong>Black Geode</strong><span>×1.05 mutation chance</span></div>
+        <div><strong>Deepcore Map</strong><span>+5% artifact chance</span></div>
+        <div><strong>Canary Charm</strong><span>−10% Critical incident chance</span></div>
+        <div><strong>Descent Chain</strong><span>−5% Danger from descending</span></div>
+        <div><strong>Foreman's Seal</strong><span>+3% normal gem sale value</span></div>
+        <div><strong>Bedrock Crown</strong><span>×1.05 final gem value</span></div>
+        <div><strong>Royal Claim</strong><span>−5% market transaction fees</span></div>
+      </div>
+      <p class="guide-note">Open <strong>View Loot Table</strong> in the console for the full pool, per-depth artifact odds and duplicate values.</p>
+    </div>
+
+    <div class="guide-callout guide-callout--hell">
+      <h3>Hell Mode</h3>
+      <p>A separate, harder descent chosen at the console. There are <strong>no Supply Camps</strong> — money only buys <em>information</em>, never safety. Each depth deals a hand of face-down cards; revealing one costs money, and every card you take applies a curse or lesser consequence and raises <strong>Danger</strong> and <strong>Doom</strong>. Hit the Doom threshold and a Doom Break punishes the run. Overdepth is free, and clearing D10 awards a <strong>Hell Cache</strong> — plus a guaranteed weekly Mythic Potion for up to five clears each week.</p>
+    </div>
+  </section>
+
   <section id="mineConsole" class="mine-console" aria-live="polite"></section>
   <section class="card artifact-panel"><div><p class="expedition-eyebrow">Museum archive</p><h2>Registered artifacts</h2></div><div id="artifactList"></div></section>
   <section class="card expedition-history"><h2>Abandoned Mine history</h2><div id="historyList"></div></section>
