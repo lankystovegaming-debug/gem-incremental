@@ -256,6 +256,31 @@ export async function loadCloudDebugState() {
   let weightMultiplier =
     1;
 
+  const statBreakdown = {
+    luck: [{ label: "Base", operation: "base", value: 1 }],
+    rollSpeed: [{ label: "Base", operation: "base", value: 1 }],
+    weightLuck: [{ label: "Base", operation: "base", value: 1 }],
+    weightMultiplier: [{ label: "Base", operation: "base", value: 1 }]
+  };
+
+  const recordAddition = (stat, label, value) => {
+    const amount = Number(value ?? 0);
+    if (Number.isFinite(amount) && Math.abs(amount) > 0.000001) {
+      statBreakdown[stat].push({ label, operation: "add", value: amount });
+    }
+  };
+
+  const recordMultiplier = (stat, label, value) => {
+    const multiplier = Number(value ?? 1);
+    if (Number.isFinite(multiplier) && Math.abs(multiplier - 1) > 0.000001) {
+      statBreakdown[stat].push({ label, operation: "multiply", value: multiplier });
+    }
+  };
+
+  const equipmentLabel = (item) => String(item.equipment_id ?? item.category ?? "Equipment")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
   const positiveNumber = (value, fallback = 1) => {
     const number = Number(value ?? fallback);
 
@@ -278,29 +303,28 @@ export async function loadCloudDebugState() {
 
     const masterworkFactor = 1 + Math.min(5, Math.max(0, Number(item.masterwork_level ?? 0))) / 100;
 
+    const itemLuck = Number(item.luck_bonus ?? 0) * masterworkFactor;
+    const itemRollSpeed = Number(item.roll_speed_bonus ?? 0) * masterworkFactor;
+    const itemWeightLuck = Number(item.weight_luck_bonus ?? 0) * masterworkFactor;
+    const itemWeightMultiplier = Number(item.weight_multiplier_bonus ?? 0) * masterworkFactor;
+    const label = equipmentLabel(item);
+
     luck +=
-      Number(
-        item.luck_bonus ??
-        0
-      ) * masterworkFactor;
+      itemLuck;
 
     rollSpeed +=
-      Number(
-        item.roll_speed_bonus ??
-        0
-      ) * masterworkFactor;
+      itemRollSpeed;
 
     weightLuck +=
-      Number(
-        item.weight_luck_bonus ??
-        0
-      ) * masterworkFactor;
+      itemWeightLuck;
 
     weightMultiplier +=
-      Number(
-        item.weight_multiplier_bonus ??
-        0
-      ) * masterworkFactor;
+      itemWeightMultiplier;
+
+    recordAddition("luck", label, itemLuck);
+    recordAddition("rollSpeed", label, itemRollSpeed);
+    recordAddition("weightLuck", label, itemWeightLuck);
+    recordAddition("weightMultiplier", label, itemWeightMultiplier);
   }
 
   // Permanent Museum artifacts are applied in the same phase as equipment
@@ -310,17 +334,30 @@ export async function loadCloudDebugState() {
   weightLuck += Number(permanentModifiers.artifact_weight_luck_bonus ?? 0);
   weightMultiplier += Number(permanentModifiers.artifact_weight_multiplier_bonus ?? 0);
 
+  recordAddition("luck", "Museum artifacts", permanentModifiers.artifact_luck_bonus);
+  recordAddition("rollSpeed", "Museum artifacts", permanentModifiers.artifact_roll_speed_bonus);
+  recordAddition("weightLuck", "Museum artifacts", permanentModifiers.artifact_weight_luck_bonus);
+  recordAddition("weightMultiplier", "Museum artifacts", permanentModifiers.artifact_weight_multiplier_bonus);
+
   const equippedLantern = (equipment ?? []).find(item => item.equipped && item.category === "lantern");
   const lanternPassiveRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
   if (equippedLantern?.masterwork_passive === "focused_beam") {
-    luck *= lanternPassiveRank >= 2 ? 1.05 : 1.03;
+    const focusedBeamMultiplier = lanternPassiveRank >= 2 ? 1.05 : 1.03;
+    luck *= focusedBeamMultiplier;
+    recordMultiplier("luck", "Focused Beam", focusedBeamMultiplier);
   }
 
   // Keep the displayed values in the same order as the authoritative roll
   // service: research scales permanent gear first, then scales potion power.
+  const researchLuckMultiplier = positiveNumber(researchEffects.luck_multiplier);
+  const researchRollSpeedMultiplier = positiveNumber(researchEffects.roll_speed_multiplier);
+  const researchWeightLuckMultiplier = positiveNumber(researchEffects.weight_luck_multiplier);
   luck *= positiveNumber(researchEffects.luck_multiplier);
-  rollSpeed *= positiveNumber(researchEffects.roll_speed_multiplier);
-  weightLuck *= positiveNumber(researchEffects.weight_luck_multiplier);
+  rollSpeed *= researchRollSpeedMultiplier;
+  weightLuck *= researchWeightLuckMultiplier;
+  recordMultiplier("luck", "Research", researchLuckMultiplier);
+  recordMultiplier("rollSpeed", "Research", researchRollSpeedMultiplier);
+  recordMultiplier("weightLuck", "Research", researchWeightLuckMultiplier);
 
   const researchPotionStrength = positiveNumber(
     researchEffects.potion_strength_multiplier
@@ -359,69 +396,110 @@ export async function loadCloudDebugState() {
     ) {
       case "luck":
         luck += effectValue;
+        recordAddition("luck", "Active potion", effectValue);
         break;
 
       case "rollSpeed":
         rollSpeed += effectValue;
+        recordAddition("rollSpeed", "Active potion", effectValue);
         break;
 
       case "weightLuck":
         weightLuck += effectValue;
+        recordAddition("weightLuck", "Active potion", effectValue);
         break;
 
       case "weightMultiplier":
         weightMultiplier += effectValue;
+        recordAddition("weightMultiplier", "Active potion", effectValue);
         break;
     }
   }
 
   if (equippedLantern?.masterwork_passive === "overclocked_flame") {
-    rollSpeed *= lanternPassiveRank >= 2 ? 1.08 : 1.05;
+    const overclockedMultiplier = lanternPassiveRank >= 2 ? 1.08 : 1.05;
+    rollSpeed *= overclockedMultiplier;
+    recordMultiplier("rollSpeed", "Overclocked Flame", overclockedMultiplier);
   }
 
   if (
     equippedLantern?.masterwork_passive === "flashpoint" &&
     (Number(player.total_rolls ?? 0) + 1) % 250 === 0
   ) {
-    rollSpeed *= lanternPassiveRank >= 2 ? 1.4 : 1.25;
+    const flashpointMultiplier = lanternPassiveRank >= 2 ? 1.4 : 1.25;
+    rollSpeed *= flashpointMultiplier;
+    recordMultiplier("rollSpeed", "Flashpoint (next roll)", flashpointMultiplier);
   }
 
   const equippedBoots = (equipment ?? []).find(item => item.equipped && item.category === "boots");
   const bootsPassiveRank = Number(equippedBoots?.masterwork_passive_rank ?? 0);
   if (equippedBoots?.masterwork_passive === "fortune_walker") {
-    weightLuck *= bootsPassiveRank >= 2 ? 1.08 : 1.05;
+    const fortuneWalkerMultiplier = bootsPassiveRank >= 2 ? 1.08 : 1.05;
+    weightLuck *= fortuneWalkerMultiplier;
+    recordMultiplier("weightLuck", "Fortune Walker", fortuneWalkerMultiplier);
   }
 
 
   if (oneRollBoost) {
-    luck += Number(oneRollBoost.effect_value ?? 0) * researchPotionStrength;
+    const oneRollLuck = Number(oneRollBoost.effect_value ?? 0) * researchPotionStrength;
+    luck += oneRollLuck;
+    recordAddition("luck", "Charged one-roll potion", oneRollLuck);
   }
 
 
   if (activeAdminEvent) {
+    const adminEventLabel = activeAdminEvent.name
+      ? `Admin Event: ${activeAdminEvent.name}`
+      : "Admin Event";
+    const adminLuckBonus = Number(activeAdminEvent.luck_bonus ?? 0);
+    const adminRollSpeedBonus = Number(activeAdminEvent.roll_speed_bonus ?? 0);
+    const adminWeightLuckBonus = Number(activeAdminEvent.weight_luck_bonus ?? 0);
+    const adminWeightMultiplierBonus = Number(activeAdminEvent.weight_multiplier_bonus ?? 0);
+    const adminLuckMultiplier = Number(activeAdminEvent.luck_multiplier ?? 1);
+    const adminRollSpeedMultiplier = Number(activeAdminEvent.roll_speed_multiplier ?? 1);
+    const adminWeightLuckMultiplier = Number(activeAdminEvent.weight_luck_multiplier ?? 1);
+    const adminWeightMultiplierMultiplier = Number(activeAdminEvent.weight_multiplier_multiplier ?? 1);
+
     luck =
-      (luck + Number(activeAdminEvent.luck_bonus ?? 0)) *
-      Number(activeAdminEvent.luck_multiplier ?? 1);
+      (luck + adminLuckBonus) *
+      adminLuckMultiplier;
 
     rollSpeed =
-      (rollSpeed + Number(activeAdminEvent.roll_speed_bonus ?? 0)) *
-      Number(activeAdminEvent.roll_speed_multiplier ?? 1);
+      (rollSpeed + adminRollSpeedBonus) *
+      adminRollSpeedMultiplier;
 
     weightLuck =
-      (weightLuck + Number(activeAdminEvent.weight_luck_bonus ?? 0)) *
-      Number(activeAdminEvent.weight_luck_multiplier ?? 1);
+      (weightLuck + adminWeightLuckBonus) *
+      adminWeightLuckMultiplier;
 
     weightMultiplier =
-      (weightMultiplier + Number(activeAdminEvent.weight_multiplier_bonus ?? 0)) *
-      Number(activeAdminEvent.weight_multiplier_multiplier ?? 1);
+      (weightMultiplier + adminWeightMultiplierBonus) *
+      adminWeightMultiplierMultiplier;
+
+    recordAddition("luck", adminEventLabel, adminLuckBonus);
+    recordMultiplier("luck", adminEventLabel, adminLuckMultiplier);
+    recordAddition("rollSpeed", adminEventLabel, adminRollSpeedBonus);
+    recordMultiplier("rollSpeed", adminEventLabel, adminRollSpeedMultiplier);
+    recordAddition("weightLuck", adminEventLabel, adminWeightLuckBonus);
+    recordMultiplier("weightLuck", adminEventLabel, adminWeightLuckMultiplier);
+    recordAddition("weightMultiplier", adminEventLabel, adminWeightMultiplierBonus);
+    recordMultiplier("weightMultiplier", adminEventLabel, adminWeightMultiplierMultiplier);
   }
 
 
   // The server applies guild bonuses last.
-  luck *= positiveNumber(permanentModifiers.guild_luck_multiplier);
-  rollSpeed *= positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
-  weightLuck *= positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
-  weightMultiplier *= positiveNumber(permanentModifiers.guild_weight_multiplier);
+  const guildLuckMultiplier = positiveNumber(permanentModifiers.guild_luck_multiplier);
+  const guildRollSpeedMultiplier = positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
+  const guildWeightLuckMultiplier = positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
+  const guildWeightMultiplier = positiveNumber(permanentModifiers.guild_weight_multiplier);
+  luck *= guildLuckMultiplier;
+  rollSpeed *= guildRollSpeedMultiplier;
+  weightLuck *= guildWeightLuckMultiplier;
+  weightMultiplier *= guildWeightMultiplier;
+  recordMultiplier("luck", "Guild upgrade", guildLuckMultiplier);
+  recordMultiplier("rollSpeed", "Guild upgrade", guildRollSpeedMultiplier);
+  recordMultiplier("weightLuck", "Guild upgrade", guildWeightLuckMultiplier);
+  recordMultiplier("weightMultiplier", "Guild upgrade", guildWeightMultiplier);
 
 
   // -------------------------------------------------------
@@ -460,7 +538,8 @@ export async function loadCloudDebugState() {
       luck,
       rollSpeed,
       weightLuck,
-      weightMultiplier
+      weightMultiplier,
+      breakdown: statBreakdown
     },
 
 

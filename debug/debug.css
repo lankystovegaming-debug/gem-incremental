@@ -116,3 +116,49 @@
 .bonus-row__val--boosted {
   color: var(--positive);
 }
+
+.bonus-breakdown {
+  margin-top: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.bonus-breakdown summary {
+  position: relative;
+  padding: 8px 30px 8px 10px;
+  color: var(--text-faint);
+  font-size: .76rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.bonus-breakdown summary::-webkit-details-marker { display: none; }
+.bonus-breakdown summary::after {
+  content: "+";
+  position: absolute;
+  right: 10px;
+  color: var(--accent);
+}
+.bonus-breakdown[open] summary::after { content: "−"; }
+
+.bonus-breakdown__list {
+  padding: 0 10px 8px;
+}
+
+.bonus-breakdown__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .76rem;
+}
+
+.bonus-breakdown__row strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
