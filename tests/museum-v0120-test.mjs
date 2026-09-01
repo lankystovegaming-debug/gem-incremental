@@ -40,7 +40,8 @@ const shell = read("src/ui/shell.js");
 assert.doesNotMatch(shell, /href:\s*"museum\//, "Museum should not add another topbar destination");
 
 const leaderboard = read("leaderboards/leaderboards.js");
-assert.match(leaderboard, /get_museum_prestige_leaderboard/);
+assert.match(leaderboard, /functions\.invoke\("leaderboards"\)/);
+assert.match(read("supabase/functions/leaderboards/index.ts"), /get_museum_prestige_leaderboard/);
 assert.match(leaderboard, /Total Prestige/);
 assert.match(leaderboard, /Active Exhibit Score/);
 assert.match(read("leaderboards/index.html"), /museumPrestigeTab/);

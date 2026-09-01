@@ -1,83 +1,83 @@
 import { withSupabase } from "npm:@supabase/server";
+
+const CACHE_TTL_MS = 30_000;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_WINDOW = 6;
+
+type CacheEntry = { expiresAt: number; payload: Record<string, unknown> };
+type RateLimitEntry = { count: number; resetAt: number };
+
+let leaderboardCache: CacheEntry | null = null;
+const requestCounts = new Map<string, RateLimitEntry>();
+
+function isRateLimited(playerId: string, now: number): boolean {
+  const current = requestCounts.get(playerId);
+  if (!current || current.resetAt <= now) {
+    requestCounts.set(playerId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  return current.count > MAX_REQUESTS_PER_WINDOW;
+}
+
+function json(payload: Record<string, unknown>, status = 200): Response {
+  return Response.json(payload, {
+    status,
+    headers: { "Cache-Control": "private, max-age=15, stale-while-revalidate=15" }
+  });
+}
+
 export default {
-  fetch: withSupabase({
-    auth: "user"
-  }, async (req, ctx)=>{
-    // =================================
-    // TOTAL ROLLS
-    // =================================
-    const { data: totalRollsData, error: totalRollsError } = await ctx.supabaseAdmin.from("players").select(`
-            username,
-            total_rolls
-          `).not("username", "is", null).eq("leaderboard_hidden", false).gt("total_rolls", 0).order("total_rolls", {
-      ascending: false
-    }).limit(100);
-    if (totalRollsError) {
-      console.error("Could not load Total Rolls leaderboard:", totalRollsError);
-      return Response.json({
-        error: "Could not load leaderboard."
-      }, {
-        status: 500
-      });
+  fetch: withSupabase({ auth: "user" }, async (_req, ctx) => {
+    const playerId = String(ctx.userClaims?.sub ?? ctx.userClaims?.id ?? "");
+    if (!playerId) return json({ error: "Authentication required." }, 401);
+
+    const now = Date.now();
+    if (isRateLimited(playerId, now)) {
+      return json({ error: "Leaderboard refresh limit reached. Try again shortly." }, 429);
     }
-    // =================================
-    // RAREST GEM
-    // =================================
-    const { data: rarestGemData, error: rarestGemError } = await ctx.supabaseAdmin.from("players").select(`
-            username,
-            rarest_gem_name,
-            rarest_gem_rarity
-          `).not("username", "is", null).eq("leaderboard_hidden", false).not("rarest_gem_rarity", "is", null).gt("rarest_gem_rarity", 0).order("rarest_gem_rarity", {
-      ascending: false
-    }).limit(100);
-    if (rarestGemError) {
-      console.error("Could not load Rarest Gem leaderboard:", rarestGemError);
-      return Response.json({
-        error: "Could not load leaderboard."
-      }, {
-        status: 500
-      });
+    if (leaderboardCache && leaderboardCache.expiresAt > now) {
+      return json(leaderboardCache.payload);
     }
-    // =================================
-    // LIFETIME EARNINGS
-    // =================================
-    const { data: lifetimeEarningsData, error: lifetimeEarningsError } = await ctx.supabaseAdmin.from("players").select(`
-            username,
-            lifetime_earnings
-          `).not("username", "is", null).eq("leaderboard_hidden", false).gt("lifetime_earnings", 0).order("lifetime_earnings", {
-      ascending: false
-    }).limit(100);
-    if (lifetimeEarningsError) {
-      console.error("Could not load Lifetime Earnings leaderboard:", lifetimeEarningsError);
-      return Response.json({
-        error: "Could not load leaderboard."
-      }, {
-        status: 500
-      });
+
+    const [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
+      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations] = await Promise.all([
+      ctx.supabaseAdmin.rpc("get_total_rolls_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_lifetime_earnings_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_gems_found_leaderboard"),
+      ctx.supabaseAdmin.rpc("get_best_roll_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_most_weight_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_raw_rare_roll_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_base_luck_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_museum_prestige_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.rpc("get_rarest_gem_leaderboard", { p_limit: 100 }),
+      ctx.supabaseAdmin.from("game_mutations")
+        .select("id,name,chance,multiplier,description,icon,color")
+        .eq("enabled", true).order("sort_order", { ascending: true })
+    ]);
+
+    const results = [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
+      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations];
+    const failed = results.find((result) => result.error);
+    if (failed?.error) {
+      console.error("Could not load leaderboard data:", failed.error);
+      return json({ error: "Could not load leaderboards." }, 500);
     }
-    // =================================
-    // SAFE PUBLIC RESPONSE
-    // =================================
-    const totalRolls = totalRollsData.map((player, index)=>({
-        rank: index + 1,
-        username: player.username,
-        totalRolls: Number(player.total_rolls ?? 0)
-      }));
-    const rarestGem = rarestGemData.map((player, index)=>({
-        rank: index + 1,
-        username: player.username,
-        gemName: player.rarest_gem_name,
-        rarity: Number(player.rarest_gem_rarity ?? 0)
-      }));
-    const lifetimeEarnings = lifetimeEarningsData.map((player, index)=>({
-        rank: index + 1,
-        username: player.username,
-        lifetimeEarnings: Number(player.lifetime_earnings ?? 0)
-      }));
-    return Response.json({
-      totalRolls,
-      rarestGem,
-      lifetimeEarnings
-    });
+
+    const payload = {
+      totalRolls: totalRolls.data ?? [], lifetimeEarnings: lifetimeEarnings.data ?? [],
+      gemsFound: gemsFound.data ?? [], bestRoll: bestRoll.data ?? [],
+      mostWeight: mostWeight.data ?? [], rawRareRoll: rawRareRoll.data ?? [],
+      baseLuck: baseLuck.data ?? [], museumPrestige: museumPrestige.data ?? [],
+      rarestGem: rarestGem.data ?? [], mutations: mutations.data ?? []
+    };
+    leaderboardCache = { payload, expiresAt: now + CACHE_TTL_MS };
+
+    if (requestCounts.size > 2_000) {
+      for (const [id, entry] of requestCounts) {
+        if (entry.resetAt <= now) requestCounts.delete(id);
+      }
+    }
+    return json(payload);
   })
 };

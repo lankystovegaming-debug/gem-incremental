@@ -993,34 +993,24 @@ async function loadLeaderboards() {
   );
 
 
-  // Use database RPCs for these simple boards instead of the legacy Edge
-  // Function. This removes the 400 failure path when an older function
-  // deployment is still live.
-  const [totalRollsResult, lifetimeEarningsResult, liveMutationResult] = await Promise.all([
-    supabase.rpc("get_total_rolls_leaderboard", { p_limit: 100 }),
-    supabase.rpc("get_lifetime_earnings_leaderboard", { p_limit: 100 }),
-    supabase
-      .from("game_mutations")
-      .select("id,name,chance,multiplier,description,icon,color")
-      .eq("enabled", true)
-      .order("sort_order", { ascending: true })
-  ]);
+  // The browser cannot execute the expensive leaderboard RPCs directly.
+  // One authenticated, cached Edge Function call serves every board.
+  const { data: response, error } = await supabase.functions.invoke("leaderboards");
 
   const data = {
-    totalRolls: (totalRollsResult.data ?? []).map((row) => ({
+    totalRolls: (response?.totalRolls ?? []).map((row) => ({
       rank: Number(row.rank ?? 0),
       username: row.username,
       totalRolls: Number(row.total_rolls ?? row.totalRolls ?? 0)
     })),
-    lifetimeEarnings: (lifetimeEarningsResult.data ?? []).map((row) => ({
+    lifetimeEarnings: (response?.lifetimeEarnings ?? []).map((row) => ({
       rank: Number(row.rank ?? 0),
       username: row.username,
       lifetimeEarnings: Number(row.lifetime_earnings ?? row.lifetimeEarnings ?? 0)
     }))
   };
-  const error = totalRollsResult.error || lifetimeEarningsResult.error;
-  const { data: liveMutations, error: liveMutationError } = liveMutationResult;
-  if (!liveMutationError && Array.isArray(liveMutations)) {
+  const liveMutations = response?.mutations;
+  if (Array.isArray(liveMutations)) {
     liveMutationCatalog = Object.fromEntries(
       liveMutations.map((mutation) => [
         String(mutation.id),
@@ -1062,78 +1052,18 @@ async function loadLeaderboards() {
   }
 
 
-  const {
-    data: gemsFoundData,
-    error: gemsFoundError
-  } = await supabase.rpc(
-    "get_gems_found_leaderboard"
-  );
-
-  const {
-    data: bestRollData,
-    error: bestRollError
-  } = await supabase.rpc(
-    "get_best_roll_leaderboard",
-    { p_limit: 100 }
-  );
-
-  const { data: mostWeightData, error: mostWeightError } = await supabase.rpc(
-    "get_most_weight_leaderboard",
-    { p_limit: 100 }
-  );
-
-  const { data: rawRareRollData, error: rawRareRollError } = await supabase.rpc(
-    "get_raw_rare_roll_leaderboard",
-    { p_limit: 100 }
-  );
-
-  const { data: baseLuckData, error: baseLuckError } = await supabase.rpc(
-    "get_base_luck_leaderboard",
-    { p_limit: 100 }
-  );
-
-  const { data: museumPrestigeData, error: museumPrestigeError } = await supabase.rpc(
-    "get_museum_prestige_leaderboard",
-    { p_limit: 100 }
-  );
+  const gemsFoundData = response?.gemsFound;
+  const bestRollData = response?.bestRoll;
+  const mostWeightData = response?.mostWeight;
+  const rawRareRollData = response?.rawRareRoll;
+  const baseLuckData = response?.baseLuck;
+  const museumPrestigeData = response?.museumPrestige;
 
   // Rarest Gem intentionally uses the exact same inventory-only effective
   // rarity logic as Best Roll: base gem denominator multiplied by every
   // mutation's denominator. This prevents the old base-rarity / sold-gem
   // leaderboard from disagreeing with Best Roll.
-  const {
-    data: rarestGemData,
-    error: rarestGemError
-  } = await supabase.rpc(
-    "get_rarest_gem_leaderboard",
-    { p_limit: 100 }
-  );
-
-
-  if (gemsFoundError) {
-    console.error(
-      "Gems Found leaderboard load failed:",
-      gemsFoundError
-    );
-  }
-
-  if (bestRollError) {
-    console.error(
-      "Best Roll leaderboard load failed:",
-      bestRollError
-    );
-  }
-
-  if (rarestGemError) {
-    console.error(
-      "Rarest Gem leaderboard load failed:",
-      rarestGemError
-    );
-  }
-  if (mostWeightError) console.error("Highest Weight leaderboard load failed:", mostWeightError);
-  if (rawRareRollError) console.error("Raw Rare Roll leaderboard load failed:", rawRareRollError);
-  if (baseLuckError) console.error("Base Luck leaderboard load failed:", baseLuckError);
-  if (museumPrestigeError) console.error("Museum Prestige leaderboard load failed:", museumPrestigeError);
+  const rarestGemData = response?.rarestGem;
 
 
   leaderboardData = {
