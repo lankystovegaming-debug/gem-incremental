@@ -2145,6 +2145,7 @@ export default {
       if (crystalEffectsError) console.warn("Crystal artifact passives unavailable:", crystalEffectsError);
       const crystalEffects = crystalEffectsData ?? {};
       const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
+      const crystalFinalLuckMultiplier = Math.max(1, Number(crystalEffects.finalLuckMultiplier ?? 1));
       const crystalWeightLuckMultiplier = Math.max(1, Number(crystalEffects.weightLuckMultiplier ?? 1));
       const crystalWeightMultiplierMultiplier = Math.max(1, Number(crystalEffects.weightMultiplierMultiplier ?? 1));
       const crystalMutationMultiplier = Math.max(1, Number(crystalEffects.mutationChanceMultiplier ?? 1));
@@ -2638,6 +2639,9 @@ export default {
       const resonanceBeforeRoll = Math.min(100, Math.max(0, Number(player.rarity_resonance ?? 0)));
       const resonanceEmpowered = hasRarityResonance && resonanceBeforeRoll >= 100;
       if (resonanceEmpowered) luck *= 3;
+      // Heart of Resonance is a true final multiplier: apply it after every
+      // additive bonus and every other Luck source assembled for this roll.
+      luck *= crystalFinalLuckMultiplier;
       const announcedLuck = Number.isFinite(adminLuckFactor) && adminLuckFactor > 0
         ? luck / adminLuckFactor
         : luck;
