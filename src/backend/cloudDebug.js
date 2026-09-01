@@ -440,10 +440,25 @@ export async function loadCloudDebugState() {
   }
 
 
+  // Guild bonuses affect ordinary Luck only, before special one-roll potions.
+  const guildLuckMultiplier = positiveNumber(permanentModifiers.guild_luck_multiplier);
+  const guildRollSpeedMultiplier = positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
+  const guildWeightLuckMultiplier = positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
+  const guildWeightMultiplier = positiveNumber(permanentModifiers.guild_weight_multiplier);
+  luck *= guildLuckMultiplier;
+  rollSpeed *= guildRollSpeedMultiplier;
+  weightLuck *= guildWeightLuckMultiplier;
+  weightMultiplier *= guildWeightMultiplier;
+  recordMultiplier("luck", "Guild upgrade", guildLuckMultiplier);
+  recordMultiplier("rollSpeed", "Guild upgrade", guildRollSpeedMultiplier);
+  recordMultiplier("weightLuck", "Guild upgrade", guildWeightLuckMultiplier);
+  recordMultiplier("weightMultiplier", "Guild upgrade", guildWeightMultiplier);
+
+
   if (oneRollBoost) {
-    const oneRollLuck = Number(oneRollBoost.effect_value ?? 0) * researchPotionStrength;
+    const oneRollLuck = Number(oneRollBoost.effect_value ?? 0);
     luck += oneRollLuck;
-    recordAddition("luck", "Special one-roll potion (after enchants)", oneRollLuck);
+    recordAddition("luck", "Special one-roll potion (after ordinary modifiers)", oneRollLuck);
   }
 
 
@@ -485,22 +500,6 @@ export async function loadCloudDebugState() {
     recordAddition("weightMultiplier", adminEventLabel, adminWeightMultiplierBonus);
     recordMultiplier("weightMultiplier", adminEventLabel, adminWeightMultiplierMultiplier);
   }
-
-
-  // The server applies guild bonuses last.
-  const guildLuckMultiplier = positiveNumber(permanentModifiers.guild_luck_multiplier);
-  const guildRollSpeedMultiplier = positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
-  const guildWeightLuckMultiplier = positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
-  const guildWeightMultiplier = positiveNumber(permanentModifiers.guild_weight_multiplier);
-  luck *= guildLuckMultiplier;
-  rollSpeed *= guildRollSpeedMultiplier;
-  weightLuck *= guildWeightLuckMultiplier;
-  weightMultiplier *= guildWeightMultiplier;
-  recordMultiplier("luck", "Guild upgrade", guildLuckMultiplier);
-  recordMultiplier("rollSpeed", "Guild upgrade", guildRollSpeedMultiplier);
-  recordMultiplier("weightLuck", "Guild upgrade", guildWeightLuckMultiplier);
-  recordMultiplier("weightMultiplier", "Guild upgrade", guildWeightMultiplier);
-
 
   // -------------------------------------------------------
   // COOLDOWN

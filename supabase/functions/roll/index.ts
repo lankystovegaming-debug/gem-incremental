@@ -2135,14 +2135,14 @@ export default {
 
 
       // A one-roll potion (Legendary / Mythic) is special Luck. Keep it
-      // separate until after enchant bonus-roll multipliers so those enchants
-      // cannot multiply it. The charge is consumed after the roll commits.
+      // separate until after enchant and guild multipliers so they cannot
+      // multiply it. The charge is consumed after the roll commits.
       const oneRollLuck =
         Number(
           oneRollBoost
             ?.effect_value ??
           0
-        ) * researchPotionStrength;
+        );
 
       // Enchants multiply ordinary Luck only. Only the equipped pickaxe owns
       // and advances its state.
@@ -2216,87 +2216,6 @@ export default {
       if (enchantId === "slow_starter" && enchantGrade === "ancient") {
         const rolls = Math.min(99, Math.max(0, Number(enchantState.rolls ?? 0)));
         slowStarterCooldownMultiplier = Math.max(0.5, 1.75 - rolls * 0.025);
-      }
-
-      if (
-        Number.isFinite(
-          oneRollLuck
-        ) &&
-        oneRollLuck > 0
-      ) {
-        luck +=
-          oneRollLuck;
-      }
-
-
-      // Rare-roll chat should report the effective player Luck that actually
-      // contributed to the roll, including temporary and one-roll potions.
-      // Keep the admin-event portion separate so private event modifiers are
-      // not presented as part of the player's own build. Admin events remain
-      // final/global modifiers and therefore still apply after special Luck.
-      const luckBeforeAdminEvent = luck;
-      let adminLuckFactor = 1;
-
-
-      if (activeAdminEvent) {
-        const applyEventModifier = (
-          currentValue: number,
-          rawBonus: unknown,
-          rawMultiplier: unknown
-        ) => {
-          const parsedBonus =
-            Number(rawBonus ?? 0);
-
-          const parsedMultiplier =
-            Number(rawMultiplier ?? 1);
-
-          const bonus =
-            Number.isFinite(parsedBonus)
-              ? parsedBonus
-              : 0;
-
-          const multiplier =
-            Number.isFinite(parsedMultiplier) &&
-            parsedMultiplier > 0
-              ? parsedMultiplier
-              : 1;
-
-          return (
-            currentValue + bonus
-          ) * multiplier;
-        };
-
-        luck =
-          applyEventModifier(
-            luck,
-            activeAdminEvent.luck_bonus,
-            activeAdminEvent.luck_multiplier
-          );
-
-        if (luckBeforeAdminEvent > 0 && Number.isFinite(luck)) {
-          adminLuckFactor = luck / luckBeforeAdminEvent;
-        }
-
-        rollSpeed =
-          applyEventModifier(
-            rollSpeed,
-            activeAdminEvent.roll_speed_bonus,
-            activeAdminEvent.roll_speed_multiplier
-          );
-
-        weightLuck =
-          applyEventModifier(
-            weightLuck,
-            activeAdminEvent.weight_luck_bonus,
-            activeAdminEvent.weight_luck_multiplier
-          );
-
-        weightMultiplier =
-          applyEventModifier(
-            weightMultiplier,
-            activeAdminEvent.weight_multiplier_bonus,
-            activeAdminEvent.weight_multiplier_multiplier
-          );
       }
 
       let guildShopBuffIds: string[] = [];
@@ -2460,6 +2379,89 @@ export default {
       } catch (surgeError) {
         // A shop deployment mismatch must not strand an already-claimed roll.
         console.error("Guild Mythic Surge claim failed:", surgeError);
+      }
+
+      // Legendary / Mythic potion Luck is added after every ordinary Luck
+      // multiplier, including enchant and guild effects. Only the admin-event
+      // phase below is allowed to affect this special Luck.
+      if (
+        Number.isFinite(
+          oneRollLuck
+        ) &&
+        oneRollLuck > 0
+      ) {
+        luck +=
+          oneRollLuck;
+      }
+
+
+      // Rare-roll chat should report the effective player Luck that actually
+      // contributed to the roll, including temporary and one-roll potions.
+      // Keep the admin-event portion separate so private event modifiers are
+      // not presented as part of the player's own build.
+      const luckBeforeAdminEvent = luck;
+      let adminLuckFactor = 1;
+
+
+      if (activeAdminEvent) {
+        const applyEventModifier = (
+          currentValue: number,
+          rawBonus: unknown,
+          rawMultiplier: unknown
+        ) => {
+          const parsedBonus =
+            Number(rawBonus ?? 0);
+
+          const parsedMultiplier =
+            Number(rawMultiplier ?? 1);
+
+          const bonus =
+            Number.isFinite(parsedBonus)
+              ? parsedBonus
+              : 0;
+
+          const multiplier =
+            Number.isFinite(parsedMultiplier) &&
+            parsedMultiplier > 0
+              ? parsedMultiplier
+              : 1;
+
+          return (
+            currentValue + bonus
+          ) * multiplier;
+        };
+
+        luck =
+          applyEventModifier(
+            luck,
+            activeAdminEvent.luck_bonus,
+            activeAdminEvent.luck_multiplier
+          );
+
+        if (luckBeforeAdminEvent > 0 && Number.isFinite(luck)) {
+          adminLuckFactor = luck / luckBeforeAdminEvent;
+        }
+
+        rollSpeed =
+          applyEventModifier(
+            rollSpeed,
+            activeAdminEvent.roll_speed_bonus,
+            activeAdminEvent.roll_speed_multiplier
+          );
+
+        weightLuck =
+          applyEventModifier(
+            weightLuck,
+            activeAdminEvent.weight_luck_bonus,
+            activeAdminEvent.weight_luck_multiplier
+          );
+
+        weightMultiplier =
+          applyEventModifier(
+            weightMultiplier,
+            activeAdminEvent.weight_multiplier_bonus,
+            activeAdminEvent.weight_multiplier_multiplier
+          );
       }
 
 
