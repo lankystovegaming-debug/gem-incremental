@@ -2310,12 +2310,6 @@ export default {
         console.error("Guild bonus lookup failed:", guildBonusError);
       }
 
-      // Natural events are final global multipliers. Gem-specific Luck and
-      // Heavy Favorites are applied after the winning base gem is known.
-      luck *= eventContext.luckMultiplier;
-      rollSpeed *= eventContext.rollSpeedMultiplier;
-
-
       // =====================================================
       // CALCULATE + CLAIM COOLDOWN
       // =====================================================
@@ -2432,8 +2426,8 @@ export default {
       }
 
       // Legendary / Mythic potion Luck is added after every ordinary Luck
-      // multiplier, including enchant and guild effects. Only the admin-event
-      // phase below is allowed to affect this special Luck.
+      // multiplier, including enchant and guild effects. Global natural and
+      // admin events below are allowed to affect this special Luck.
       if (
         Number.isFinite(
           oneRollLuck
@@ -2443,6 +2437,13 @@ export default {
         luck +=
           oneRollLuck;
       }
+
+      // Natural events are final global multipliers, so they affect the full
+      // effective player Luck (including a special one-roll potion) without
+      // letting enchants or guild bonuses amplify that potion. Gem-specific
+      // Luck and Heavy Favorites are applied after the base gem is known.
+      luck *= eventContext.luckMultiplier;
+      rollSpeed *= eventContext.rollSpeedMultiplier;
 
 
       // Rare-roll chat should report the effective player Luck that actually
