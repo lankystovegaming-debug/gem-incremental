@@ -1285,7 +1285,24 @@ async function renderActiveAdminEvent(header) {
 async function renderActiveGlobalEvent(header) {
   const user = await ensurePlayerAuth();
   if (!user) return;
-  let interval = null;
+  let refreshInterval = null;
+  let timerInterval = null;
+  let activeEndsAt = 0;
+  let serverClockOffsetMs = 0;
+
+  const updateTimer = () => {
+    const banner = document.querySelector(".global-event-banner");
+    const timer = banner?.querySelector(".admin-event-banner__timer");
+    if (!banner || !timer || !activeEndsAt) return;
+
+    const remaining = activeEndsAt - (Date.now() + serverClockOffsetMs);
+    if (remaining <= 0) {
+      banner.remove();
+      activeEndsAt = 0;
+      return;
+    }
+    timer.textContent = eventTime(remaining);
+  };
 
   const refresh = async () => {
     const { data, error } = await loadActiveGlobalEvent();
@@ -1293,13 +1310,17 @@ async function renderActiveGlobalEvent(header) {
     let banner = document.querySelector(".global-event-banner");
     if (error || !event?.id) {
       banner?.remove();
+      activeEndsAt = 0;
       return;
     }
 
     const config = event.config || {};
-    const now = Date.now();
+    const parsedServerNow = new Date(event.serverNow).getTime();
+    serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
+    const now = Date.now() + serverClockOffsetMs;
     const startsAt = new Date(event.startsAt).getTime();
     const endsAt = new Date(event.endsAt).getTime();
+    activeEndsAt = endsAt;
     const elapsedSeconds = Math.max(0, (now - startsAt) / 1000);
     const remainingSeconds = Math.max(0, (endsAt - now) / 1000);
     const details = [];
@@ -1334,11 +1355,16 @@ async function renderActiveGlobalEvent(header) {
         <span>${escapeHtml(details.length ? `${event.description} · ${details.join(" · ")}` : event.description)}</span>
       </span>
       <strong class="admin-event-banner__timer" aria-label="Time remaining">${eventTime(remainingSeconds * 1000)}</strong>`;
+    updateTimer();
   };
 
   await refresh();
-  interval = setInterval(refresh, 15_000);
-  window.addEventListener("pagehide", () => clearInterval(interval), { once: true });
+  refreshInterval = setInterval(refresh, 15_000);
+  timerInterval = setInterval(updateTimer, 1_000);
+  window.addEventListener("pagehide", () => {
+    clearInterval(refreshInterval);
+    clearInterval(timerInterval);
+  }, { once: true });
 }
 
 function eventPercent(value) {
