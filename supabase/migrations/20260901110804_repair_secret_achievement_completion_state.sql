@@ -16,7 +16,7 @@ where definition.feature_kind = 'achievement'
   and not progress.reward_granted;
 
 update public.private_feature_progress progress
-set current_progress = 0,
+set current_value = 0,
     completed = false,
     completed_at = null,
     achievement_points_awarded = 0,
