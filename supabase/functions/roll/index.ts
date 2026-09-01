@@ -131,6 +131,11 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
 
 let globalEventSnapshotCache: { data: any; expiresAt: number } | null = null;
 let globalEventSnapshotLoad: Promise<any> | null = null;
+const ROLL_CATALOG_CACHE_MS = 5_000;
+let mutationCatalogCache: { data: any[]; expiresAt: number } | null = null;
+let mutationCatalogLoad: Promise<any> | null = null;
+let gemCatalogCache: { data: any[]; expiresAt: number } | null = null;
+let gemCatalogLoad: Promise<any> | null = null;
 
 async function loadGlobalEventSnapshot(supabaseAdmin: any) {
   const now = Date.now();
@@ -146,6 +151,57 @@ async function loadGlobalEventSnapshot(supabaseAdmin: any) {
     })().finally(() => { globalEventSnapshotLoad = null; });
   }
   return globalEventSnapshotLoad;
+}
+
+async function loadMutationCatalog(supabaseAdmin: any) {
+  const now = Date.now();
+  if (mutationCatalogCache && mutationCatalogCache.expiresAt > now) {
+    return { data: mutationCatalogCache.data, error: null };
+  }
+  if (!mutationCatalogLoad) {
+    mutationCatalogLoad = (async () => {
+      const result = await supabaseAdmin
+        .from("game_mutations")
+        .select("id,name,chance,multiplier")
+        .eq("enabled", true)
+        .order("sort_order", { ascending: true });
+      if (!result.error && Array.isArray(result.data)) {
+        mutationCatalogCache = {
+          data: result.data,
+          expiresAt: Date.now() + ROLL_CATALOG_CACHE_MS
+        };
+      }
+      return result;
+    })().finally(() => { mutationCatalogLoad = null; });
+  }
+  return mutationCatalogLoad;
+}
+
+async function loadGemCatalog(supabaseAdmin: any, nowIso: string) {
+  const now = Date.now();
+  if (gemCatalogCache && gemCatalogCache.expiresAt > now) {
+    return { data: gemCatalogCache.data, error: null };
+  }
+  if (!gemCatalogLoad) {
+    gemCatalogLoad = (async () => {
+      const result = await supabaseAdmin
+        .from("private_feature_gems")
+        .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata")
+        .eq("enabled", true)
+        .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+        .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+        .order("sort_order")
+        .order("rarity", { ascending: false });
+      if (!result.error && Array.isArray(result.data)) {
+        gemCatalogCache = {
+          data: result.data,
+          expiresAt: Date.now() + ROLL_CATALOG_CACHE_MS
+        };
+      }
+      return result;
+    })().finally(() => { gemCatalogLoad = null; });
+  }
+  return gemCatalogLoad;
 }
 
 
@@ -1557,11 +1613,7 @@ export default {
       // newly-created mutations actually participate in rolls.
       try {
         const { data: liveMutations, error: liveMutationError } =
-          await ctx.supabaseAdmin
-            .from("game_mutations")
-            .select("id,name,chance,multiplier")
-            .eq("enabled", true)
-            .order("sort_order", { ascending: true });
+          await loadMutationCatalog(ctx.supabaseAdmin);
 
         if (!liveMutationError && Array.isArray(liveMutations) && liveMutations.length) {
           gemMutations = liveMutations
@@ -2526,14 +2578,7 @@ export default {
       // =====================================================
       try {
         const { data: configuredGems, error: configuredGemError } =
-          await ctx.supabaseAdmin
-            .from("private_feature_gems")
-            .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata")
-            .eq("enabled", true)
-            .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
-            .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
-            .order("sort_order")
-            .order("rarity", { ascending: false });
+          await loadGemCatalog(ctx.supabaseAdmin, now.toISOString());
 
         if (!configuredGemError && configuredGems) {
           // An installed-but-empty catalog means the admin deliberately
@@ -3618,26 +3663,35 @@ export default {
         return data ?? null;
       })();
 
-      const [
-        , , , , ,
-        lifetimeStats,
-        , ,
-        mutationCombination,
-        , ,
-        guildPoints,
-        globalEventProgress
-      ] = await Promise.all([
+      // These updates are deliberately best-effort and none of their results
+      // are needed to render the successful roll. Keep the worker alive for
+      // them, but do not add the slowest bookkeeping task to player-visible
+      // response latency.
+      const backgroundPostCommitPromise = Promise.all([
         enchantStatePromise,
         bestRollHistoryPromise,
         weightHistoryPromise,
         progressionPromise,
         consumeBoostPromise,
-        lifetimeStatsPromise,
         expeditionPromise,
         seasonPromise,
-        mutationCombinationPromise,
         mutationOnlyAnnouncementPromise,
-        announcementMutationPromise,
+        announcementMutationPromise
+      ]).then(() => undefined).catch((error) => {
+        console.error("Background roll bookkeeping crashed:", error);
+      });
+      EdgeRuntime.waitUntil(backgroundPostCommitPromise);
+
+      // These values are included in the response (or are prerequisites for
+      // response-visible state), so wait only for this smaller critical set.
+      const [
+        lifetimeStats,
+        mutationCombination,
+        guildPoints,
+        globalEventProgress
+      ] = await Promise.all([
+        lifetimeStatsPromise,
+        mutationCombinationPromise,
         guildPromise,
         globalEventRollPromise
       ]);
