@@ -114,6 +114,24 @@ function statsRow(key, value, modifier = "") {
 }
 
 
+function miscellaneousBuffsCard(buffs = []) {
+  if (!Array.isArray(buffs) || buffs.length === 0) {
+    return '<p class="misc-buffs__empty">No miscellaneous buffs are currently active.</p>';
+  }
+
+  return buffs.map((buff) => `
+    <div class="misc-buff">
+      <div class="misc-buff__head">
+        <span class="misc-buff__label">${escapeHtml(buff.label ?? "Buff")}</span>
+        <strong>${escapeHtml(buff.value ?? "Active")}</strong>
+      </div>
+      <span class="misc-buff__category">${escapeHtml(buff.category ?? "Other")}</span>
+      ${buff.description ? `<p>${escapeHtml(buff.description)}</p>` : ""}
+    </div>
+  `).join("");
+}
+
+
 function card(title, icon, body, note = "") {
   return `
     <section class="stats-card">
@@ -169,6 +187,13 @@ function render(cloudState) {
         )
       ).join(""),
       "Shows your effective next-roll bonuses, including equipment, research, potions, guild upgrades, artifacts, and Admin Events. Conditional enchant effects can vary by roll."
+    ),
+
+    card(
+      "Miscellaneous buffs",
+      icons.wand,
+      miscellaneousBuffsCard(cloudState.stats.miscellaneousBuffs),
+      "Shows active effects that do not fit cleanly into the four headline bonuses, including conditional equipment effects, enchants, research perks, discounts, and artifact passives."
     ),
 
     card(
@@ -246,7 +271,7 @@ function render(cloudState) {
 
 function renderSkeleton() {
   content.innerHTML = Array.from(
-    { length: 4 },
+    { length: 5 },
     () => '<div class="skeleton" style="height:220px"></div>'
   ).join("");
 }

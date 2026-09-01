@@ -162,3 +162,56 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------
+   MISCELLANEOUS BUFFS
+   --------------------------------------------------------- */
+
+.misc-buff {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.misc-buff:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.misc-buff__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.misc-buff__label {
+  color: var(--text);
+  font-size: .88rem;
+  font-weight: 650;
+}
+
+.misc-buff__head strong {
+  color: var(--positive);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.misc-buff__category {
+  display: inline-block;
+  margin-top: 3px;
+  color: var(--accent);
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.misc-buff p,
+.misc-buffs__empty {
+  margin: 5px 0 0;
+  color: var(--text-faint);
+  font-size: .76rem;
+  line-height: 1.45;
+}
