@@ -2,6 +2,37 @@ import {
   supabase
 } from "./supabase.js";
 import { loadActiveAdminEvent } from "./cloudAdminEvents.js";
+import { ENCHANTS, enchantDescription } from "../data/enchants.js";
+import { MASTERWORK_ATTUNEMENTS, MASTERWORK_PASSIVES } from "../data/masterwork.js";
+
+const EQUIPMENT_PASSIVES = {
+  "eclipse-pickaxe": "1.10× mutation activation chance.",
+  "singularity-pickaxe": "1.10× Luck toward 1/100,000+ base-rarity gems.",
+  "transcendent-pickaxe": "Equipped enchant effects are 10% stronger.",
+  "astral-pickaxe": "Vein Hunter duplicate-roll passive is active.",
+  "celestial-pickaxe": "Builds Rarity Resonance toward an empowered 3× Luck roll.",
+  "event-horizon-boots": "15% chance to add +1.00× to weight rolls of 2× or higher.",
+  "gravitational-boots": "Builds Gravitational Surge toward an improved weight roll.",
+  "singularity-vault": "Every 50th roll receives 1.25× final specimen weight."
+};
+
+const RESEARCH_MISC_BUFFS = [
+  ["legendary_luck_multiplier", "Legendary gem Luck", "multiplier"],
+  ["extreme_luck_multiplier", "Extreme gem Luck", "multiplier"],
+  ["window_luck_multiplier", "Time-window gem Luck", "multiplier"],
+  ["gem_value_multiplier", "Gem value", "multiplier"],
+  ["mutation_chance_multiplier", "Mutation chance", "multiplier"],
+  ["mutated_value_multiplier", "Mutated gem value", "multiplier"],
+  ["compound_value_per_mutation", "Value per additional mutation", "percent"],
+  ["potion_duration_multiplier", "Potion duration", "multiplier"],
+  ["potion_strength_multiplier", "Potion strength", "multiplier"],
+  ["potion_duplicate_chance", "Potion duplication chance", "percent"],
+  ["masterwork_discount", "Masterwork discount", "percent"],
+  ["masterwork_effect_multiplier", "Masterwork effect strength", "multiplier"],
+  ["inventory_bonus", "Inventory capacity", "integer"],
+  ["season_xp_multiplier", "Season XP", "multiplier"],
+  ["expedition_discount", "Expedition funding discount", "percent"]
+];
 
 
 // =========================================================
@@ -115,7 +146,10 @@ export async function loadCloudDebugState() {
         weight_multiplier_bonus,
         masterwork_level,
         masterwork_passive,
-        masterwork_passive_rank
+        masterwork_passive_rank,
+        masterwork_attunement,
+        enchant_id,
+        enchant_grade
       `);
 
 
@@ -168,6 +202,7 @@ export async function loadCloudDebugState() {
     oneRollResult,
     researchEffectsResult,
     permanentModifiersResult,
+    miscModifiersResult,
     adminEventResult
   ] = await Promise.all([
     supabase
@@ -179,13 +214,29 @@ export async function loadCloudDebugState() {
       .from("player_research_effects")
       .select(`
         luck_multiplier,
+        legendary_luck_multiplier,
+        extreme_luck_multiplier,
+        window_luck_multiplier,
         roll_speed_multiplier,
         weight_luck_multiplier,
-        potion_strength_multiplier
+        gem_value_multiplier,
+        mutation_chance_multiplier,
+        mutated_value_multiplier,
+        compound_value_per_mutation,
+        potion_duration_multiplier,
+        potion_strength_multiplier,
+        potion_duplicate_chance,
+        masterwork_discount,
+        masterwork_effect_multiplier,
+        inventory_bonus,
+        season_xp_multiplier,
+        expedition_discount,
+        statistical_breakthrough
       `)
       .eq("player_id", user.id)
       .maybeSingle(),
     supabase.rpc("get_current_roll_stat_modifiers"),
+    supabase.rpc("get_current_misc_buff_modifiers"),
     loadActiveAdminEvent()
   ]);
 
@@ -204,9 +255,14 @@ export async function loadCloudDebugState() {
     );
   }
 
+  if (miscModifiersResult.error) {
+    console.error("Failed to load miscellaneous artifact buffs:", miscModifiersResult.error);
+  }
+
   const oneRollBoost = oneRollResult.data ?? null;
   const researchEffects = researchEffectsResult.data ?? {};
   const permanentModifiers = permanentModifiersResult.data?.[0] ?? {};
+  const miscModifiers = miscModifiersResult.data ?? {};
   const activeAdminEvent = Array.isArray(adminEventResult.data)
     ? adminEventResult.data[0] ?? null
     : adminEventResult.data ?? null;
@@ -359,6 +415,19 @@ export async function loadCloudDebugState() {
   recordMultiplier("rollSpeed", "Research", researchRollSpeedMultiplier);
   recordMultiplier("weightLuck", "Research", researchWeightLuckMultiplier);
 
+  const crystalLuckBonus = Number(miscModifiers.crystalLuckBonus ?? 0);
+  const hellLuckBonus = Number(miscModifiers.hellLuckBonus ?? 0);
+  const crystalWeightLuckMultiplier = positiveNumber(miscModifiers.crystalWeightLuckMultiplier);
+  const crystalWeightMultiplierMultiplier = positiveNumber(miscModifiers.crystalWeightMultiplierMultiplier);
+  luck += crystalLuckBonus;
+  luck += hellLuckBonus;
+  weightLuck *= crystalWeightLuckMultiplier;
+  weightMultiplier *= crystalWeightMultiplierMultiplier;
+  recordAddition("luck", "Crystal artifacts", crystalLuckBonus);
+  recordAddition("luck", "Hell artifacts", hellLuckBonus);
+  recordMultiplier("weightLuck", "Crystal artifacts", crystalWeightLuckMultiplier);
+  recordMultiplier("weightMultiplier", "Crystal artifacts", crystalWeightMultiplierMultiplier);
+
   const researchPotionStrength = positiveNumber(
     researchEffects.potion_strength_multiplier
   );
@@ -501,6 +570,90 @@ export async function loadCloudDebugState() {
     recordMultiplier("weightMultiplier", adminEventLabel, adminWeightMultiplierMultiplier);
   }
 
+  // Non-core effects are kept separate from the four headline roll stats.
+  // Only active values are returned, so the card stays useful rather than
+  // becoming a list of neutral 1.00x modifiers.
+  const miscBuffs = [];
+  const addMiscBuff = (category, label, value, description = "") => {
+    miscBuffs.push({ category, label, value, description });
+  };
+  const formatMultiplier = (value) => `${Number(value).toFixed(2)}×`;
+  const formatPercent = (value) => `${(Number(value) * 100).toFixed(0)}%`;
+
+  for (const [key, label, format] of RESEARCH_MISC_BUFFS) {
+    const value = Number(researchEffects[key] ?? (format === "multiplier" ? 1 : 0));
+    const active = format === "multiplier" ? value > 1.000001 : value > 0.000001;
+    if (!Number.isFinite(value) || !active) continue;
+    addMiscBuff(
+      "Research",
+      label,
+      format === "multiplier"
+        ? formatMultiplier(value)
+        : format === "integer"
+          ? `+${Math.trunc(value)}`
+          : formatPercent(value)
+    );
+  }
+
+  if (researchEffects.statistical_breakthrough === true) {
+    addMiscBuff("Research", "Statistical Breakthrough", "1.20× Luck", "Applies every 250th roll.");
+  }
+
+  for (const item of equipment ?? []) {
+    if (!item.equipped) continue;
+    const itemName = equipmentLabel(item);
+    const intrinsic = EQUIPMENT_PASSIVES[item.equipment_id];
+    if (intrinsic) addMiscBuff("Equipment", itemName, "Active", intrinsic);
+
+    const passive = MASTERWORK_PASSIVES[item.category]?.[item.masterwork_passive];
+    if (passive) {
+      const rank = Number(item.masterwork_passive_rank ?? 0) >= 2 ? "Rank II" : "Rank I";
+      addMiscBuff("Masterwork", passive.name, rank, passive.description);
+    }
+
+    const attunement = MASTERWORK_ATTUNEMENTS[item.masterwork_attunement];
+    if (attunement) addMiscBuff("Attunement", attunement.name, "Active", attunement.description);
+
+    const enchant = ENCHANTS[item.enchant_id];
+    if (enchant) {
+      const grade = item.enchant_grade === "ancient" ? "Ancient" : "Normal";
+      addMiscBuff("Enchant", enchant.name, grade, enchantDescription(item.enchant_id, item.enchant_grade));
+    }
+  }
+
+  const artifactBuffs = [
+    ["normalMutationChanceMultiplier", "Mutation chance", "Abandoned Mine artifacts"],
+    ["normalGemValueMultiplier", "Gem value", "Abandoned Mine artifacts"],
+    ["crystalArtifactChanceMultiplier", "Crystal artifact chance", "Crystal artifacts"],
+    ["crystalGemValueMultiplier", "Gem value", "Crystal artifacts"],
+    ["crystalMutationChanceMultiplier", "Mutation chance", "Crystal artifacts"],
+    ["crystalProgressMultiplier", "Crystal Caverns progress", "Crystal artifacts"],
+    ["crystalHeavyGemValueMultiplier", "Heavy gem value", "Crystal artifacts"],
+    ["hellProgressMultiplier", "Hell expedition progress", "Hell artifacts"],
+    ["hellMutationChanceMultiplier", "Mutation chance", "Hell artifacts"],
+    ["hellArtifactChanceMultiplier", "Hell artifact chance", "Hell artifacts"],
+    ["hellGemValueMultiplier", "Gem value", "Hell artifacts"]
+  ];
+  for (const [key, label, category] of artifactBuffs) {
+    const value = Number(miscModifiers[key] ?? 1);
+    if (Number.isFinite(value) && value > 1.000001) {
+      addMiscBuff(category, label, formatMultiplier(value));
+    }
+  }
+  const doomMultiplier = Number(miscModifiers.hellDoomGainMultiplier ?? 1);
+  if (Number.isFinite(doomMultiplier) && doomMultiplier < 0.999999) {
+    addMiscBuff("Hell artifacts", "Doom gained", formatMultiplier(doomMultiplier));
+  }
+
+  const adminMutationBonus = Number(activeAdminEvent?.mutation_luck_bonus ?? 0);
+  const adminMutationMultiplier = Number(activeAdminEvent?.mutation_luck_multiplier ?? 1);
+  if (adminMutationBonus > 0) {
+    addMiscBuff("Admin Event", "Mutation chance", `+${adminMutationBonus.toFixed(2)}×`);
+  }
+  if (adminMutationMultiplier > 1.000001) {
+    addMiscBuff("Admin Event", "Mutation chance", formatMultiplier(adminMutationMultiplier));
+  }
+
   // -------------------------------------------------------
   // COOLDOWN
   // -------------------------------------------------------
@@ -538,7 +691,8 @@ export async function loadCloudDebugState() {
       rollSpeed,
       weightLuck,
       weightMultiplier,
-      breakdown: statBreakdown
+      breakdown: statBreakdown,
+      miscellaneousBuffs: miscBuffs
     },
 
 
