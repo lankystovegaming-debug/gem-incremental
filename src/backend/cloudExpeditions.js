@@ -23,6 +23,7 @@ export const startCrystalCaverns=()=>rpc("start_crystal_caverns");
 export const setCrystalIntensity=(runId,intensity)=>rpc("set_crystal_intensity",{p_run_id:runId,p_intensity:intensity});
 export const fundCrystalDepth=(runId,depth)=>rpc("fund_crystal_depth",{p_run_id:runId,p_depth:depth});
 export const resolveCrystalDecision=(runId,choice)=>rpc("resolve_crystal_decision",{p_run_id:runId,p_choice:choice});
+export const skipCrystalOutpost=runId=>rpc("skip_crystal_outpost",{p_run_id:runId});
 export const continueCrystalOverdepth=runId=>rpc("continue_crystal_overdepth",{p_run_id:runId});
 export const extractCrystalCaverns=runId=>rpc("extract_crystal_caverns",{p_run_id:runId});
 export const settleCrystalCaverns=runId=>rpc("settle_crystal_caverns",{p_run_id:runId});
