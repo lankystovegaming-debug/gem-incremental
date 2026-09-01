@@ -14,7 +14,7 @@ for (const stat of ["luck", "rollSpeed", "weightLuck", "weightMultiplier"]) {
 assert.match(statsBackend, /recordAddition\("luck", label, itemLuck\)/);
 assert.match(statsBackend, /recordMultiplier\("luck", "Research", researchLuckMultiplier\)/);
 assert.match(statsBackend, /recordAddition\("luck", "Active potion", effectValue\)/);
-assert.match(statsBackend, /recordAddition\("luck", "Charged one-roll potion", oneRollLuck\)/);
+assert.match(statsBackend, /recordAddition\("luck", "Special one-roll potion \(after enchants\)", oneRollLuck\)/);
 assert.match(statsBackend, /recordMultiplier\("luck", adminEventLabel, adminLuckMultiplier\)/);
 assert.match(statsBackend, /recordMultiplier\("luck", "Guild upgrade", guildLuckMultiplier\)/);
 assert.match(statsBackend, /breakdown: statBreakdown/);
