@@ -49,7 +49,32 @@ const BONUS_ROWS = [
 ];
 
 
-function bonusRow(value, label) {
+function breakdownValue(entry) {
+  const value = Number(entry?.value ?? (entry?.operation === "multiply" ? 1 : 0));
+  if (entry?.operation === "multiply") return `×${value.toFixed(2)}`;
+  if (entry?.operation === "add") return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}x`;
+  return `${value.toFixed(2)}x`;
+}
+
+
+function bonusBreakdown(entries = []) {
+  const rows = (Array.isArray(entries) ? entries : []).map((entry) => `
+    <div class="bonus-breakdown__row">
+      <span>${escapeHtml(entry.label ?? "Unknown source")}</span>
+      <strong>${escapeHtml(breakdownValue(entry))}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <details class="bonus-breakdown">
+      <summary>View breakdown</summary>
+      <div class="bonus-breakdown__list">${rows}</div>
+    </details>
+  `;
+}
+
+
+function bonusRow(value, label, breakdown = []) {
   const amount = Number(value ?? 1);
 
   const boosted = amount > 1.0001;
@@ -72,6 +97,8 @@ function bonusRow(value, label) {
           style="width:${filled}%"
         ></div>
       </div>
+
+      ${bonusBreakdown(breakdown)}
     </div>
   `;
 }
@@ -135,7 +162,11 @@ function render(cloudState) {
       "Bonuses",
       icons.sparkle,
       BONUS_ROWS.map(([key, label]) =>
-        bonusRow(cloudState.stats[key], label)
+        bonusRow(
+          cloudState.stats[key],
+          label,
+          cloudState.stats.breakdown?.[key]
+        )
       ).join(""),
       "Shows your effective next-roll bonuses, including equipment, research, potions, guild upgrades, artifacts, and Admin Events. Conditional enchant effects can vary by roll."
     ),
