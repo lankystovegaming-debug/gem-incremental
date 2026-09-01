@@ -16,6 +16,7 @@ import { ensurePlayerAuth } from "../backend/auth.js";
 import { loadCloudPlayerState } from "../backend/cloudInventory.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
 import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
+import { loadActiveGlobalEvent } from "../backend/cloudGlobalEvents.js";
 import {
   describeAccount,
   isGuest,
@@ -327,6 +328,7 @@ export function mountShell({ page, base = "./" }) {
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
   renderActiveAdminEvent(header);
+  renderActiveGlobalEvent(header);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -1278,6 +1280,65 @@ async function renderActiveAdminEvent(header) {
 
   const interval = setInterval(update, 1000);
   update();
+}
+
+async function renderActiveGlobalEvent(header) {
+  const user = await ensurePlayerAuth();
+  if (!user) return;
+  let interval = null;
+
+  const refresh = async () => {
+    const { data, error } = await loadActiveGlobalEvent();
+    const event = data && typeof data === "object" ? data : null;
+    let banner = document.querySelector(".global-event-banner");
+    if (error || !event?.id) {
+      banner?.remove();
+      return;
+    }
+
+    const config = event.config || {};
+    const now = Date.now();
+    const startsAt = new Date(event.startsAt).getTime();
+    const endsAt = new Date(event.endsAt).getTime();
+    const elapsedSeconds = Math.max(0, (now - startsAt) / 1000);
+    const remainingSeconds = Math.max(0, (endsAt - now) / 1000);
+    const details = [];
+    if (event.eventKey === "unstable_luck") {
+      const phase = Math.floor(elapsedSeconds / Number(config.phaseSeconds || 30));
+      const value = config.phaseValues?.[phase];
+      if (value) details.push(`Current Luck ×${Number(value).toFixed(2)}`);
+    }
+    if (event.eventKey === "singularity" && event.massTarget) {
+      details.push(`Mass ${Math.min(100, event.mass / event.massTarget * 100).toFixed(1)}%`);
+      if (event.collapsedAt) details.push("Collapsed");
+    }
+    if (event.eventKey === "falling_stars") {
+      const active = (config.windows || []).some(window => elapsedSeconds >= Number(window.offsetSeconds)
+        && elapsedSeconds < Number(window.offsetSeconds) + Number(window.durationSeconds));
+      if (active) details.push("Starfall active");
+    }
+
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.className = `admin-event-banner global-event-banner global-event-banner--${escapeHtml(event.tier)}`;
+      const adminBanner = document.querySelector(".admin-event-banner:not(.global-event-banner)");
+      const announcements = document.querySelector(".announce-bar");
+      if (adminBanner) adminBanner.after(banner);
+      else if (announcements) announcements.after(banner);
+      else header.after(banner);
+    }
+    banner.innerHTML = `
+      <span class="admin-event-banner__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
+      <span class="admin-event-banner__content">
+        <strong>${escapeHtml(event.name)}</strong>
+        <span>${escapeHtml(details.length ? `${event.description} · ${details.join(" · ")}` : event.description)}</span>
+      </span>
+      <strong class="admin-event-banner__timer" aria-label="Time remaining">${eventTime(remainingSeconds * 1000)}</strong>`;
+  };
+
+  await refresh();
+  interval = setInterval(refresh, 15_000);
+  window.addEventListener("pagehide", () => clearInterval(interval), { once: true });
 }
 
 function eventPercent(value) {

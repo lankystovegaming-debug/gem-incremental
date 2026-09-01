@@ -1,0 +1,37 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { buildEventRollContext, eventGemIsEligible, eventGemLuckFactor, eventMutationFactor, normalizeGlobalEvent } from "../supabase/functions/roll/eventRules.ts";
+
+const schema = readFileSync(new URL("../supabase/migrations/20260901011651_global_random_events_schema.sql", import.meta.url), "utf8");
+const scheduler = readFileSync(new URL("../supabase/migrations/20260901011652_global_random_events_scheduler.sql", import.meta.url), "utf8");
+const roll = readFileSync(new URL("../supabase/functions/roll/index.ts", import.meta.url), "utf8");
+const eventKeys = [...schema.matchAll(/^\s*\('([a-z_]+)'\s*,/gm)].map(match => match[1]);
+assert.equal(new Set(eventKeys.slice(0, 25)).size, 25);
+assert.match(schema, /global_event_one_active_idx/);
+assert.match(schema, /required_event_key text/);
+assert.match(schema, /source_event_occurrence_id uuid/);
+assert.match(schema, /revoke all on function public\.record_global_event_roll\(uuid\)/);
+assert.match(scheduler, /for update/);
+assert.match(scheduler, /recent_event_keys=.*\[1:5\]/);
+assert.match(scheduler, /advance-global-random-events/);
+assert.match(roll, /\.rpc\("get_active_global_event"\)/);
+assert.match(roll, /eventGemIsEligible\(eventContext, entry\)/);
+assert.match(roll, /record_global_event_roll/);
+
+const at = Date.parse("2026-09-01T00:05:30Z");
+const event = normalizeGlobalEvent({ id:"event-id",eventKey:"singularity",name:"Singularity",icon:"x",tier:"legendary",description:"",startsAt:"2026-08-31T23:59:00Z",endsAt:"2026-09-01T00:06:00Z",serverNow:new Date(at).toISOString(),config:{},mass:100,massTarget:100,collapsedAt:new Date(at).toISOString() }, at);
+const singularity = buildEventRollContext(event, () => 0.5, at);
+assert.equal(singularity.state, "final");
+assert.equal(singularity.luckMultiplier, 3);
+assert.equal(singularity.weightLuckMultiplier, 2);
+assert.equal(singularity.rollSpeedMultiplier, 1.15);
+assert.equal(eventGemIsEligible(singularity, { name:"Event Horizon",requiredEventKey:"singularity",metadata:{requiresCollapse:true,finalSeconds:30} }), true);
+
+const fracture = buildEventRollContext(normalizeGlobalEvent({ ...event,eventKey:"reality_fracture",collapsedAt:null,config:{rarityFactors:[[1_000_000_000,4],[100_000_000,3],[10_000_000,2]]} }, at), () => 0.5, at);
+assert.equal(eventGemLuckFactor(fracture, { rarity:1_000_000_000 }), 4);
+assert.equal(eventGemLuckFactor(fracture, { rarity:35_000_000,metadata:{ignoreEventRarityFactor:true} }), 1);
+const storm = buildEventRollContext(normalizeGlobalEvent({ ...event,eventKey:"mutation_storm",collapsedAt:null,config:{mutationMultiplier:2} }, at), () => 0.5, at);
+assert.equal(eventMutationFactor(storm, { id:"gilded",multiplier:2.5 }), 2);
+assert.equal(eventMutationFactor(storm, { id:"charged",multiplier:2.5 }), 2);
+assert.equal(eventMutationFactor(buildEventRollContext(null, () => 0.5, at), { id:"charged",multiplier:2.5 }), 0);
+console.log("Global random event checks passed.");

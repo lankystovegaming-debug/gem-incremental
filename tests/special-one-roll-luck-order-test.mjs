@@ -10,6 +10,7 @@ const enchantStart = roll.indexOf('if (enchantId === "deep_strike")');
 const guildModifiers = roll.indexOf("let guildShopBuffIds", enchantStart);
 const mythicSurge = roll.indexOf('if (mythicSurge?.boosted === true) luck *= 2', guildModifiers);
 const specialLuckAddition = roll.indexOf("luck +=\n          oneRollLuck;", mythicSurge);
+const naturalEventMultiplier = roll.indexOf("luck *= eventContext.luckMultiplier;", specialLuckAddition);
 const finalAdminEvent = roll.indexOf("if (activeAdminEvent) {", specialLuckAddition);
 
 assert.ok(enchantStart >= 0, "expected the ordinary-Luck enchant phase");
@@ -17,7 +18,8 @@ assert.ok(guildModifiers > enchantStart, "guild multipliers must follow enchant 
 assert.ok(mythicSurge > guildModifiers, "Mythic Surge must remain an ordinary-Luck guild multiplier");
 assert.ok(specialLuckAddition > enchantStart, "special potion Luck must be added after enchant multipliers");
 assert.ok(specialLuckAddition > mythicSurge, "special potion Luck must be added after all guild multipliers");
-assert.ok(finalAdminEvent > specialLuckAddition, "admin events must be the only multipliers after special Luck");
+assert.ok(naturalEventMultiplier > specialLuckAddition, "natural global events must affect the complete effective Luck");
+assert.ok(finalAdminEvent > naturalEventMultiplier, "admin events must remain the final global multiplier");
 assert.doesNotMatch(
   roll,
   /oneRollBoost[\s\S]{0,100}effect_value[\s\S]{0,100}\* researchPotionStrength/,

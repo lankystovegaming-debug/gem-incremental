@@ -2326,6 +2326,9 @@ a.btn--icon[aria-current="page"] {
 .admin-event-banner__content strong, .admin-event-banner__content span { display: block; }
 .admin-event-banner__content span { margin-top: 2px; color: var(--text-muted); font-size: .8rem; }
 .admin-event-banner__timer { color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.global-event-banner { border-color: color-mix(in srgb, var(--accent) 52%, var(--border)); }
+.global-event-banner--rare { border-color: color-mix(in srgb, #b276ff 65%, var(--border)); }
+.global-event-banner--legendary { border-color: #ffd166; box-shadow: 0 8px 35px rgb(255 209 102 / .16); }
 
 @media (max-width: 600px) {
   .admin-event-banner { align-items: flex-start; flex-wrap: wrap; }

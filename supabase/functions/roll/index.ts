@@ -1,6 +1,14 @@
 import {
   withSupabase
 } from "npm:@supabase/server";
+import {
+  buildEventRollContext,
+  eventGemIsEligible,
+  eventGemLuckFactor,
+  eventMutationFactor,
+  eventWeightLuckFactor,
+  normalizeGlobalEvent
+} from "./eventRules.ts";
 
 
 // =========================================================
@@ -119,6 +127,25 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
       ...(init.headers ?? {})
     }
   });
+}
+
+let globalEventSnapshotCache: { data: any; expiresAt: number } | null = null;
+let globalEventSnapshotLoad: Promise<any> | null = null;
+
+async function loadGlobalEventSnapshot(supabaseAdmin: any) {
+  const now = Date.now();
+  if (globalEventSnapshotCache && globalEventSnapshotCache.expiresAt > now) {
+    return globalEventSnapshotCache.data;
+  }
+  if (!globalEventSnapshotLoad) {
+    globalEventSnapshotLoad = (async () => {
+      const { data, error } = await supabaseAdmin.rpc("get_active_global_event");
+      if (error) throw error;
+      globalEventSnapshotCache = { data, expiresAt: Date.now() + 1_000 };
+      return data;
+    })().finally(() => { globalEventSnapshotLoad = null; });
+  }
+  return globalEventSnapshotLoad;
 }
 
 
@@ -590,13 +617,15 @@ function rollGemWithPickaxePassives(
   geologistMultiplier = 1,
   extremeGemMultiplier = 1,
   legendaryGemMultiplier = 1,
-  timeWindowMultiplier = 1
+  timeWindowMultiplier = 1,
+  eventContext: any = null
 ) {
   const safeLuck = Math.max(1, luck);
   const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
   const rarityFloor = Math.min(safeLuck, maximumRarity);
   const rollable = gems
     .filter((gem) => gem.affectedByLuck === false || gem.rarity >= rarityFloor)
+    .filter((gem) => !eventContext || eventGemIsEligible(eventContext, gem))
     .sort((a, b) => b.rarity - a.rarity);
 
   for (const gem of rollable) {
@@ -609,6 +638,7 @@ function rollGemWithPickaxePassives(
     if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
+    if (eventContext) gemLuck *= eventGemLuckFactor(eventContext, gem);
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
   const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
@@ -638,12 +668,14 @@ function getMutationChanceMultiplier(playerId: string) {
 }
 
 // Every mutation is rolled independently. Multiple mutations can stack.
-function rollGemMutations(chanceMultiplier = 1) {
+function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
   const safeMultiplier = Math.max(1, Number(chanceMultiplier) || 1);
 
-  return gemMutations.filter((mutation) => {
-    const chance = Math.min(mutation.chance * safeMultiplier, 1);
-    return random01() < chance;
+  return gemMutations.flatMap((mutation) => {
+    const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
+    if (eventFactor <= 0) return [];
+    const chance = Math.min(mutation.chance * safeMultiplier * eventFactor, 1);
+    return random01() < chance ? [{ ...mutation, rolledChance: chance }] : [];
   });
 }
 
@@ -670,7 +702,8 @@ function getMutationCombinationKey(mutationIds: string[]) {
 export function rollWeightMultiplier(
   weightLuck = 1,
   continuationChance = 1 / 3,
-  maximumMultiplier: number | null = null
+  maximumMultiplier: number | null = null,
+  tailEntryChance = 1 / 4
 ) {
   const safeWeightLuck =
     Math.max(
@@ -749,7 +782,7 @@ export function rollWeightMultiplier(
 
 
   if (
-    highRoll < 0.75
+    highRoll < Math.max(0.6, 1 - Math.max(0, Math.min(0.95, tailEntryChance)))
   ) {
     return randomBetween(
       1.5,
@@ -1960,6 +1993,18 @@ export default {
         );
       }
 
+      // One compact authoritative snapshot covers every natural-event rule.
+      // Definitions, phases and selected targets are materialized when the
+      // occurrence starts, so the hot roll path never performs event joins.
+      let globalEventData = null;
+      try {
+        globalEventData = await loadGlobalEventSnapshot(ctx.supabaseAdmin);
+      } catch (globalEventError) {
+        console.warn("Global event snapshot unavailable; rolling normally:", globalEventError);
+      }
+      const activeGlobalEvent = normalizeGlobalEvent(globalEventData, now.getTime());
+      const eventContext = buildEventRollContext(activeGlobalEvent, random01, now.getTime());
+
 
       // =====================================================
       // CALCULATE PLAYER STATS
@@ -2265,7 +2310,6 @@ export default {
         console.error("Guild bonus lookup failed:", guildBonusError);
       }
 
-
       // =====================================================
       // CALCULATE + CLAIM COOLDOWN
       // =====================================================
@@ -2382,8 +2426,8 @@ export default {
       }
 
       // Legendary / Mythic potion Luck is added after every ordinary Luck
-      // multiplier, including enchant and guild effects. Only the admin-event
-      // phase below is allowed to affect this special Luck.
+      // multiplier, including enchant and guild effects. Global natural and
+      // admin events below are allowed to affect this special Luck.
       if (
         Number.isFinite(
           oneRollLuck
@@ -2393,6 +2437,13 @@ export default {
         luck +=
           oneRollLuck;
       }
+
+      // Natural events are final global multipliers, so they affect the full
+      // effective player Luck (including a special one-roll potion) without
+      // letting enchants or guild bonuses amplify that potion. Gem-specific
+      // Luck and Heavy Favorites are applied after the base gem is known.
+      luck *= eventContext.luckMultiplier;
+      rollSpeed *= eventContext.rollSpeedMultiplier;
 
 
       // Rare-roll chat should report the effective player Luck that actually
@@ -2477,7 +2528,7 @@ export default {
         const { data: configuredGems, error: configuredGemError } =
           await ctx.supabaseAdmin
             .from("private_feature_gems")
-            .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone")
+            .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata")
             .eq("enabled", true)
             .or(`starts_at.is.null,starts_at.lte.${now.toISOString()}`)
             .or(`ends_at.is.null,ends_at.gt.${now.toISOString()}`)
@@ -2513,8 +2564,10 @@ export default {
             baseWeight: Number(entry.base_weight),
             valuePerGram: Number(entry.value_per_gram),
             affectedByLuck: entry.affected_by_luck !== false,
-            timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode))
-          }));
+            timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode)),
+            requiredEventKey: entry.required_event_key ? String(entry.required_event_key) : null,
+            metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}
+          })).filter((entry: any) => eventGemIsEligible(eventContext, entry));
         } else if (configuredGemError && configuredGemError.code !== "42P01") {
           console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
         }
@@ -2543,17 +2596,15 @@ export default {
       const announcedLuck = Number.isFinite(adminLuckFactor) && adminLuckFactor > 0
         ? luck / adminLuckFactor
         : luck;
-      const rollEquipmentGem = () =>
-        geologistMultiplier !== 1 || extremeGemMultiplier !== 1 || legendaryGemMultiplier !== 1 || timeWindowMultiplier !== 1
-          ? rollGemWithPickaxePassives(
-              luck,
-              discoveredGemNames,
-              geologistMultiplier,
-              extremeGemMultiplier,
-              legendaryGemMultiplier,
-              timeWindowMultiplier
-            )
-          : rollGem(luck);
+      const rollEquipmentGem = () => rollGemWithPickaxePassives(
+        luck,
+        discoveredGemNames,
+        geologistMultiplier,
+        extremeGemMultiplier,
+        legendaryGemMultiplier,
+        timeWindowMultiplier,
+        eventContext
+      );
 
       let gem = rollRelic() ?? rollEquipmentGem();
       const relicDrop = isRelic(gem);
@@ -2564,6 +2615,13 @@ export default {
         !relicDrop && enchantId === "lucky_break" &&
         random01() < (enchantGrade === "ancient" ? 0.10 : 0.05)
       ) {
+        const candidate = rollEquipmentGem();
+        if (candidate.rarity > gem.rarity) gem = candidate;
+      }
+
+      // Second Chance compares only base rarity; weight and mutations are
+      // generated exactly once for the winner.
+      if (!relicDrop && eventContext.secondChance) {
         const candidate = rollEquipmentGem();
         if (candidate.rarity > gem.rarity) gem = candidate;
       }
@@ -2615,11 +2673,23 @@ export default {
         }
       }
 
+      const eventWeightLuck = weightLuck * eventWeightLuckFactor(eventContext, gem);
+      const eventTailChance = eventContext.tailContinuationChance ??
+        (surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3);
       let rolledWeightMultiplier = rollWeightMultiplier(
-        weightLuck,
-        surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3,
-        surgeReady && hasGravitationalSurge ? 10 : null
+        eventWeightLuck,
+        eventTailChance,
+        surgeReady && hasGravitationalSurge ? 10 : null,
+        eventContext.tailEntryChance ?? 1 / 4
       );
+      if (rolledWeightMultiplier < 1 && random01() < eventContext.poorWeightRerollChance) {
+        rolledWeightMultiplier = rollWeightMultiplier(
+          eventWeightLuck,
+          eventTailChance,
+          surgeReady && hasGravitationalSurge ? 10 : null,
+          eventContext.tailEntryChance ?? 1 / 4
+        );
+      }
       if (hasGravitationalSurge && surgeReady && rolledWeightMultiplier >= 2) {
         surgeReady = false;
       }
@@ -2720,7 +2790,7 @@ export default {
 
       const mutations = relicDrop
         ? []
-        : rollGemMutations(mutationChanceMultiplier);
+        : rollGemMutations(mutationChanceMultiplier, eventContext);
 
       const mutationMultiplier =
         mutations.reduce(
@@ -2732,7 +2802,7 @@ export default {
       // Effective rarity uses mutation odds, not their specimen-value boosts.
       // Every mutation is independent, so their chance denominators multiply.
       const mutationChanceProduct = mutations.reduce(
-        (total, mutation) => total * Math.max(1, 1 / Number(mutation.chance || 1)),
+        (total, mutation) => total * Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1)),
         1
       );
       const effectiveRarity = Math.max(1, Number(gem.rarity) * mutationChanceProduct);
@@ -2764,7 +2834,8 @@ export default {
         crystalGemValueMultiplier *
         expeditionArtifactGemValueMultiplier *
         (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
-        (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
+        (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) *
+        eventContext.valueMultiplier;
 
 
       const specimen = {
@@ -3146,7 +3217,23 @@ export default {
                 1,
 
               luck_at_roll:
-                luck
+                luck,
+
+              source_event_occurrence_id:
+                eventContext.occurrenceId,
+
+              source_event_key:
+                eventContext.eventKey,
+
+              event_properties: {
+                state: eventContext.state,
+                luckyRoll: eventContext.luckyRoll,
+                secondChance: eventContext.secondChance,
+                starfallActive: eventContext.starfallActive
+              },
+
+              value_multiplier_at_roll:
+                eventContext.valueMultiplier
             })
             .select()
             .single();
@@ -3192,9 +3279,10 @@ export default {
         hasDuplicateCapacity
       ) {
         let duplicateWeightMultiplier = rollWeightMultiplier(
-          weightLuck,
-          surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3,
-          surgeReady && hasGravitationalSurge ? 10 : null
+          eventWeightLuck,
+          eventTailChance,
+          surgeReady && hasGravitationalSurge ? 10 : null,
+          eventContext.tailEntryChance ?? 1 / 4
         );
         if (hasGravitationalSurge && surgeReady && duplicateWeightMultiplier >= 2) {
           surgeReady = false;
@@ -3210,7 +3298,7 @@ export default {
           compressionRoll
         );
         const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * masterworkWeightFactor * duplicateBagPassiveFactor;
-        const duplicateMutations = rollGemMutations(mutationChanceMultiplier);
+        const duplicateMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
         const duplicateMutationMultiplier = duplicateMutations.reduce(
           (total, mutation) => total * mutation.multiplier,
           1
@@ -3224,7 +3312,7 @@ export default {
           : 1;
         const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
           researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
-          (mineArtifacts.has("bedrock-crown") ? 1.05 : 1);
+          (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) * eventContext.valueMultiplier;
 
         const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
           .from("inventory_gems")
@@ -3246,6 +3334,10 @@ export default {
             locked: false,
             roll_number: Number(player.total_rolls ?? 0) + 1,
             luck_at_roll: luck
+            ,source_event_occurrence_id: eventContext.occurrenceId
+            ,source_event_key: eventContext.eventKey
+            ,event_properties: { state: eventContext.state, duplicate: true }
+            ,value_multiplier_at_roll: eventContext.valueMultiplier
           })
           .select()
           .single();
@@ -3446,7 +3538,7 @@ export default {
       })();
 
       const mutationOnlyAnnouncementPromise = (async () => {
-        if (relicDrop || Number(gem.rarity) >= 1_000_000 || effectiveRarity < 10_000_000) return;
+        if (relicDrop || Number(gem.rarity) >= 1_000_000 || !(effectiveRarity >= 10_000_000)) return;
         const payload = {
           player_id: playerId,
           gem_name: gem.name,
@@ -3516,13 +3608,24 @@ export default {
         }
       })();
 
+      const globalEventRollPromise = (async () => {
+        const { data, error } = await ctx.supabaseAdmin.rpc("record_global_event_roll", {
+          p_occurrence_id: eventContext.occurrenceId
+        });
+        if (error && !String(error.message ?? "").includes("does not exist")) {
+          console.error("Global event roll activity update failed:", error);
+        }
+        return data ?? null;
+      })();
+
       const [
         , , , , ,
         lifetimeStats,
         , ,
         mutationCombination,
         , ,
-        guildPoints
+        guildPoints,
+        globalEventProgress
       ] = await Promise.all([
         enchantStatePromise,
         bestRollHistoryPromise,
@@ -3535,7 +3638,8 @@ export default {
         mutationCombinationPromise,
         mutationOnlyAnnouncementPromise,
         announcementMutationPromise,
-        guildPromise
+        guildPromise,
+        globalEventRollPromise
       ]);
 
 
@@ -3620,7 +3724,8 @@ export default {
             id: mutation.id,
             name: mutation.name,
             multiplier: mutation.multiplier,
-            chance: Math.max(1, 1 / Number(mutation.chance || 1))
+            chance: Math.max(1, 1 / Number(mutation.chance || 1)),
+            effectiveChance: Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1))
           })),
 
         mutationIds,
@@ -3638,6 +3743,22 @@ export default {
         },
 
         value,
+
+        globalEvent: activeGlobalEvent ? {
+          occurrenceId: eventContext.occurrenceId,
+          eventKey: eventContext.eventKey,
+          name: activeGlobalEvent.name,
+          tier: activeGlobalEvent.tier,
+          startsAt: activeGlobalEvent.startsAt,
+          endsAt: activeGlobalEvent.endsAt,
+          state: eventContext.state,
+          luckyRoll: eventContext.luckyRoll,
+          secondChance: eventContext.secondChance,
+          starfallActive: eventContext.starfallActive,
+          mass: globalEventProgress?.mass ?? activeGlobalEvent.mass,
+          massTarget: globalEventProgress?.massTarget ?? activeGlobalEvent.massTarget,
+          collapsedAt: globalEventProgress?.collapsedAt ?? activeGlobalEvent.collapsedAt
+        } : null,
 
         equipmentPassives: {
           veinHunterDuplicate,
