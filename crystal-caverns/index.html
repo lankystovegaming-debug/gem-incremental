@@ -1,1 +1,97 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crystal Caverns · Gem Incremental</title><link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="../expeditions/expeditions.css"><link rel="stylesheet" href="crystal-caverns.css"></head><body><main class="app-main expedition-page"><header class="page-head"><div class="page-head__title"><p class="expedition-eyebrow">Expeditions</p><h1>Crystal Caverns</h1><p class="page-head__sub">How much will you disturb?</p></div><a class="btn" href="../expeditions/">Back to destinations</a></header><section id="status" class="card"></section><section class="crystal-grid"><article class="card"><h2>Run console</h2><div id="console"></div></article><article class="card"><h2>Museum collection</h2><div id="artifacts"></div></article></section></main><script type="module" src="crystal-caverns.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crystal Caverns · Gem Incremental</title><link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="../expeditions/expeditions.css"><link rel="stylesheet" href="crystal-caverns.css"></head><body><main class="app-main expedition-page"><header class="page-head"><div class="page-head__title"><p class="expedition-eyebrow">Expeditions</p><h1>Crystal Caverns</h1><p class="page-head__sub">How much will you disturb?</p></div><a class="btn" href="../expeditions/">Back to destinations</a></header>
+
+<section class="card guide-manual cavern-guide" aria-labelledby="cavernGuideTitle">
+  <div class="guide-manual__head">
+    <p class="expedition-eyebrow">Field guide</p>
+    <h2 id="cavernGuideTitle">How the Crystal Caverns work</h2>
+    <p>The Caverns run alongside normal rolling like any expedition, but they split risk into two dials. <strong>Danger</strong> decides <em>whether</em> an incident happens; <strong>Instability</strong> — permanent and uncapped — decides how <em>severe</em> it is and how good your artifacts get. You choose how hard to dig.</p>
+  </div>
+
+  <div class="guide-block">
+    <h3>Earning Extraction Progress</h3>
+    <p>Each genuine gem roll adds base progress, exactly like the Abandoned Mine:</p>
+    <ul class="guide-list guide-list--bonus">
+      <li><span>+1</span> every roll</li>
+      <li><span>+1</span> rarity 1 in 50 or rarer</li>
+      <li><span>+3</span> rarity 1 in 1,000 or rarer</li>
+      <li><span>+7</span> rarity 1 in 10,000 or rarer</li>
+      <li><span>+3</span> any mutated gem</li>
+      <li><span>+3</span> displayed weight at least 2× its base</li>
+    </ul>
+  </div>
+
+  <div class="guide-block">
+    <h3>Extraction Intensity</h3>
+    <p>Switch intensity freely between rolls. Faster digging clears depths sooner but permanently adds Instability (measured per 50 base progress).</p>
+    <div class="guide-table-wrap">
+      <table class="guide-table">
+        <thead><tr><th>Intensity</th><th>Progress</th><th>Instability added</th></tr></thead>
+        <tbody>
+          <tr><td>Careful</td><td>×1.00</td><td>none</td></tr>
+          <tr><td>Forceful</td><td>×1.25</td><td>+2 per 50 base progress</td></tr>
+          <tr><td>Fracturing</td><td>×1.60</td><td>+5 per 50 base progress</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <h3>What Instability does</h3>
+    <ul class="guide-list">
+      <li><strong>Better artifacts.</strong> Your artifact-find chance is multiplied by up to <strong>×3</strong> — it climbs from ×1 and approaches ×3 as Instability rises (≈×2.6 around 200). The final chance is still capped at 100%.</li>
+      <li><strong>Worse incidents.</strong> Instability reshapes severity if an incident occurs: low Instability skews <span class="sev-chip sev--minor">Minor</span>, high Instability pushes toward <span class="sev-chip sev--critical">Critical</span>. Danger alone never makes an incident worse — it only sets how often one happens.</li>
+      <li><strong>It never goes down.</strong> Instability is permanent for the run and has no ceiling. Danger, by contrast, can be reduced (see Outposts).</li>
+    </ul>
+  </div>
+
+  <div class="guide-block">
+    <h3>Funding the descent (D1–D10)</h3>
+    <p>Fund each depth to advance; every funding step shows its Danger and asks for confirmation. Depth funding costs money — Overdepth descents are free.</p>
+    <div class="guide-table-wrap">
+      <table class="guide-table">
+        <thead><tr><th>Depth</th><th>Cost</th><th>Depth</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>D1</td><td>$200K</td><td>D6</td><td>$1.3M</td></tr>
+          <tr><td>D2</td><td>$300K</td><td>D7</td><td>$2M</td></tr>
+          <tr><td>D3 · Outpost</td><td>$450K</td><td>D8</td><td>$3M</td></tr>
+          <tr><td>D4</td><td>$650K</td><td>D9 · Outpost</td><td>$4.5M</td></tr>
+          <tr><td>D5</td><td>$900K</td><td>D10 · Heart</td><td>$7M</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <h3>Decisions you will face</h3>
+    <div class="guide-cards">
+      <article>
+        <h4>Crystal events</h4>
+        <p>Small finds — a pocket, a resonance, a deposit. <strong>Leave</strong> them for nothing, or disturb them for a reward at the cost of Instability: <strong>+3</strong> (Break Open), <strong>+5</strong> (Excavate) or <strong>+8</strong> (Trigger Resonance).</p>
+      </article>
+      <article>
+        <h4>Crystal formations</h4>
+        <p><strong>Leave</strong>, pay for a <strong>Careful extraction</strong> (a higher-quality artifact search), or <strong>Shatter</strong> it. Instability from the formation applies before the artifact roll.</p>
+      </article>
+      <article>
+        <h4>Stabilisation Outposts · D3 / D6 / D9</h4>
+        <p><strong>Secure</strong> banks all cargo and artifacts; <strong>Reinforce</strong> does that and drops Danger by 15. Both leave Instability untouched.</p>
+        <p class="guide-mini">D3 $250K / $500K · D6 $1M / $1.75M · D9 $3.5M / $5.5M</p>
+      </article>
+      <article class="guide-cards__risk">
+        <h4>The Crystal Heart · D10</h4>
+        <p><strong>Extract</strong> to end safely, or <strong>Fracture the Heart</strong> for the best rewards — this adds <strong>+30 Instability</strong> after the independent D10 artifact checks, then opens Overdepth.</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <h3>Cargo, extraction &amp; Overdepth</h3>
+    <ul class="guide-list">
+      <li><strong>Unsecured artifacts show “AT RISK”.</strong> A new Museum discovery is only registered once you secure it (an Outpost) or <strong>extract safely</strong> — a forced extraction loses everything unsecured.</li>
+      <li><strong>Extract safely</strong> whenever you are at a stopping point to keep the whole haul and register discoveries.</li>
+      <li><strong>Overdepth</strong> descents are free but abandon your safe exit, pushing Danger and rewards higher. Settle the run to add its value to your account.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="status" class="card"></section><section class="crystal-grid"><article class="card"><h2>Run console</h2><div id="console"></div></article><article class="card"><h2>Museum collection</h2><div id="artifacts"></div></article></section></main><script type="module" src="crystal-caverns.js"></script></body></html>
