@@ -15,7 +15,7 @@ const rpc = migration.match(
 
 assert.match(rpc, /h\.effective_rarity/);
 assert.doesNotMatch(rpc, /get_mutation_chance_product/);
-assert.match(leaderboard, /bestRollLoadFailed: Boolean\(bestRollError\)/);
+assert.match(leaderboard, /bestRollLoadFailed: false/);
 assert.match(leaderboard, /Best Roll is temporarily unavailable/);
 
 console.log("Best Roll timeout regression checks passed.");
