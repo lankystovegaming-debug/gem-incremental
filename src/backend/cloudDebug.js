@@ -443,7 +443,7 @@ export async function loadCloudDebugState() {
   if (oneRollBoost) {
     const oneRollLuck = Number(oneRollBoost.effect_value ?? 0) * researchPotionStrength;
     luck += oneRollLuck;
-    recordAddition("luck", "Charged one-roll potion", oneRollLuck);
+    recordAddition("luck", "Special one-roll potion (after enchants)", oneRollLuck);
   }
 
 
