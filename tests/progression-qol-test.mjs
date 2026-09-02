@@ -30,6 +30,6 @@ assert.match(market, /Median/);
 assert.match(guilds, /activityFeed/);
 assert.match(guilds, /missionPreview/);
 assert.match(expeditions, /artifactOpportunities/);
-assert.match(expeditions, /historyList/);
+assert.doesNotMatch(expeditions, /historyList/);
 
 console.log("Progression quality-of-life checks passed");
