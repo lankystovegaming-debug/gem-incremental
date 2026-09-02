@@ -127,6 +127,7 @@
   --rarity-legendary: #fbbf24;
   --rarity-mythic: #fb7185;
   --rarity-exotic: #22d3ee;
+  --rarity-exalted: #fb923c;
   --rarity-cosmic: #f472b6;
   --rarity-transcendent: #fff1fb;
 
@@ -209,6 +210,7 @@
   --rarity-legendary: #b47209;
   --rarity-mythic: #d4356b;
   --rarity-exotic: #0891b2;
+  --rarity-exalted: #c2410c;
   --rarity-cosmic: #be185d;
   --rarity-transcendent: #a855f7;
 }
@@ -251,6 +253,7 @@
     --rarity-legendary: #b47209;
     --rarity-mythic: #d4356b;
     --rarity-exotic: #0891b2;
+    --rarity-exalted: #c2410c;
     --rarity-cosmic: #be185d;
     --rarity-transcendent: #a855f7;
   }
@@ -299,6 +302,7 @@
   --rarity-legendary: #ffc93c;
   --rarity-mythic: #ff5f9e;
   --rarity-exotic: #22e7ff;
+  --rarity-exalted: #ff9f43;
   --rarity-cosmic: #ff71ce;
   --rarity-transcendent: #fff1fb;
 
@@ -1215,6 +1219,7 @@ a.btn--icon[aria-current="page"] {
 .tier-legendary  { --tier: var(--rarity-legendary); }
 .tier-mythic     { --tier: var(--rarity-mythic); }
 .tier-exotic     { --tier: var(--rarity-exotic); }
+.tier-exalted    { --tier: var(--rarity-exalted); }
 .tier-cosmic     { --tier: var(--rarity-cosmic); }
 .tier-transcendent { --tier: var(--rarity-transcendent); }
 .tier-unknown    { --tier: var(--text-faint); }
