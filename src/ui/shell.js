@@ -52,6 +52,7 @@ const PAGES = [
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
   { id: "boosts", label: "Shop", short: "Shop", href: "boosts/", icon: icons.potion },
   { id: "auctions", label: "Market", short: "Market", href: "auctions/", icon: icons.gavel },
+  { id: "expeditions", label: "Expeditions", short: "Exped.", href: "expeditions/", icon: icons.map },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
@@ -83,7 +84,7 @@ const PAGES = [
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
-const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions"]);
+const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions"]);
 const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
 const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
 
