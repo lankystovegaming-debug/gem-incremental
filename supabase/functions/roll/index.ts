@@ -2162,13 +2162,26 @@ export default {
       const expeditionArtifactMutationMultiplier = Math.max(1, Number(expeditionArtifactEffects.mutationChanceMultiplier ?? 1));
       const expeditionArtifactGemValueMultiplier = Math.max(1, Number(expeditionArtifactEffects.gemValueMultiplier ?? 1));
 
+      const volcanicEffects = expeditionArtifactEffects;
+      const volcanicLuckBonus = Math.max(0, Number(volcanicEffects.luckBonus ?? 0));
+      const volcanicRollSpeedBonus = Math.max(0, Number(volcanicEffects.rollSpeedBonus ?? 0));
+      const volcanicRollSpeedMultiplier = Math.max(1, Number(volcanicEffects.rollSpeedMultiplier ?? 1));
+      const volcanicWeightLuckMultiplier = Math.max(1, Number(volcanicEffects.weightLuckMultiplier ?? 1));
+      const volcanicWeightMultiplierMultiplier = Math.max(1, Number(volcanicEffects.weightMultiplierMultiplier ?? 1));
+      const volcanicMutationMultiplier = Math.max(1, Number(volcanicEffects.mutationChanceMultiplier ?? 1));
+      const volcanicGemValueMultiplier = Math.max(1, Number(volcanicEffects.gemValueMultiplier ?? 1));
+
       luck *= researchNumber("luck_multiplier");
       luck += crystalLuckBonus;
       luck += expeditionArtifactLuckBonus;
+      luck += volcanicLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
+      rollSpeed += volcanicRollSpeedBonus;
       weightLuck *= researchNumber("weight_luck_multiplier");
       weightLuck *= crystalWeightLuckMultiplier;
+      weightLuck *= volcanicWeightLuckMultiplier;
       weightMultiplier *= crystalWeightMultiplierMultiplier;
+      weightMultiplier *= volcanicWeightMultiplierMultiplier;
       const researchPotionStrength = researchNumber("potion_strength_multiplier");
 
 
@@ -2568,6 +2581,9 @@ export default {
           );
       }
 
+      // Heart of the Volcano is a final Roll Speed multiplier.
+      rollSpeed *= volcanicRollSpeedMultiplier;
+
 
 
       // =====================================================
@@ -2825,6 +2841,7 @@ export default {
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
+      mutationChanceMultiplier *= volcanicMutationMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
@@ -2882,6 +2899,7 @@ export default {
         researchMutationValue *
         crystalGemValueMultiplier *
         expeditionArtifactGemValueMultiplier *
+        volcanicGemValueMultiplier *
         (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
         (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) *
         eventContext.valueMultiplier;
