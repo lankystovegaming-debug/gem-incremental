@@ -66,4 +66,5 @@ assert.match(improvements,/unique index abandoned_mine_funding_overdepth_once/);
 assert.match(mineHtml,/Detailed manual/);assert.match(mineHtml,/id="mineConsole"/);assert.match(page,/Choose a descent/);assert.match(mineHtml,/Back to destinations/);assert.doesNotMatch(mineHtml,/Abandoned Mine history|historyList/);assert.doesNotMatch(page,/historyList/);assert.doesNotMatch(html,/mineManualTitle|mineConsole|lootTableDialog/);
 assert.match(page,/normalArtifactKeys=new Set\(\(dashboard\?\.lootCatalog\|\|\[\]\)\.filter\(item=>item\.kind==="artifact"\)/);assert.match(page,/normalArtifacts=\(dashboard\?\.artifacts\|\|\[\]\)\.filter\(artifact=>normalArtifactKeys\.has\(artifact\.artifact_key\)\)/);
 await import("./free-overdepth-economy-test.mjs");
+await import("./all-active-expedition-progress-test.mjs");
 console.log("Abandoned Mine expedition redesign tests passed.");
