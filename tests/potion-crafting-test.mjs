@@ -14,6 +14,7 @@ assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
 
 const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
 const manualDeposit = readFileSync(new URL("../supabase/functions/manual-deposit/index.ts", import.meta.url), "utf8");
+const backendMigration = readFileSync(new URL("../supabase/migrations/20260904140000_tier4_potion_backend_catalog.sql", import.meta.url), "utf8");
 
 for (const [id, previousId] of [
   ["lucky-potion-4", "lucky-potion-3"],
@@ -29,7 +30,11 @@ for (const [id, previousId] of [
   assert.equal(recipe.requirements[0].amount, 2);
   assert.match(admin, new RegExp(`"${id}"`));
   assert.match(manualDeposit, new RegExp(`"${id}"`));
+  assert.match(backendMigration, new RegExp(`'${id}'`));
 }
+
+assert.match(backendMigration, /player_boosts_tier_check check \(tier between 1 and 4\)/);
+assert.match(backendMigration, /duration_seconds/);
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
 const fortuneState = createCraftingState();
