@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import recipes from "../src/data/recipes.js";
 import {
   createCraftingState,
@@ -8,8 +9,27 @@ import {
 } from "../src/logic/crafting.js";
 
 const potionRecipes = recipes.filter((recipe) => recipe.category === "potion");
-assert.equal(potionRecipes.length, 10);
+assert.equal(potionRecipes.length, 14);
 assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
+
+const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
+const manualDeposit = readFileSync(new URL("../supabase/functions/manual-deposit/index.ts", import.meta.url), "utf8");
+
+for (const [id, previousId] of [
+  ["lucky-potion-4", "lucky-potion-3"],
+  ["speed-potion-4", "speed-potion-3"],
+  ["fortune-potion-4", "fortune-potion-3"],
+  ["mass-potion-4", "mass-potion-3"]
+]) {
+  const recipe = recipes.find((entry) => entry.id === id);
+  assert.ok(recipe);
+  assert.equal(recipe.reward.id, id);
+  assert.equal(recipe.reward.tier, 4);
+  assert.equal(recipe.requirements[0].consumableId, previousId);
+  assert.equal(recipe.requirements[0].amount, 2);
+  assert.match(admin, new RegExp(`"${id}"`));
+  assert.match(manualDeposit, new RegExp(`"${id}"`));
+}
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
 const fortuneState = createCraftingState();
