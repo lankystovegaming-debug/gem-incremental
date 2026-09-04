@@ -9,7 +9,7 @@ mountShell({ page: "bank", base: "../" });
 const $ = (id) => document.getElementById(id);
 const money = (value) => formatMoney(Number(value || 0));
 const percent = (rate) => `${(Number(rate || 0) * 100).toFixed(2)}%`;
-// The daily savings rate is tiny (0.012%), so it needs finer precision than APR.
+// The daily savings rate needs finer precision than the annual percentage yield.
 const rateFine = (rate) => `${(Number(rate || 0) * 100).toFixed(3)}%`;
 const round = (value) => Math.max(0, Math.floor(Number(value) || 0));
 

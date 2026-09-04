@@ -10,6 +10,7 @@ const html = read("bank/index.html");
 const css = read("bank/bank.css");
 const shell = read("src/ui/shell.js");
 const history = read("supabase/migrations/20260904130000_bank_total_cash_history.sql");
+const savingsRate = read("supabase/migrations/20260904160000_bank_savings_rate_6_5_apy.sql");
 const graph = read("global-cash-graph/graph.js");
 const graphHtml = read("global-cash-graph/index.html");
 
@@ -42,6 +43,12 @@ assert.equal((sql.match(/set search_path = ''/g) || []).length >= 6, true, "defi
 // ── Economy is server-enforced ────────────────────────────────────────
 // Savings 0.012%/day compounding.
 assert.match(sql, /power\(1 \+ 0\.00012, v_days\)/);
+// The follow-up rate migration settles existing accrued interest at the
+// outgoing rate, then makes future daily compounding equal a 6.5% APY.
+assert.match(savingsRate, /power\(1 \+ 0\.00012, v_days\)/);
+assert.match(savingsRate, /power\(1\.065::numeric, 1::numeric \/ 365\) - 1/);
+assert.match(savingsRate, /v_savings_daily_rate/);
+assert.equal(Math.abs((1 + (Math.pow(1.065, 1 / 365) - 1)) ** 365 - 1 - 0.065) < 1e-12, true);
 // Loan APR 24%->6% by credit, borrow limit base + 2x savings collateral.
 assert.match(sql, /0\.24 - public\.bank_credit_factor\(p_score\) \* 0\.18/);
 assert.match(sql, /100000 \+ public\.bank_credit_factor\(p_score\) \* 9900000 \+ 2 \* greatest\(0, p_balance\)/);
