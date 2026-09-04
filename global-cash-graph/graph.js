@@ -1,6 +1,7 @@
 import { supabase } from "../src/backend/supabase.js";
 import { burnMoney, loadFurnaceState } from "../src/backend/cloudFurnace.js";
 import { confirmDialog } from "../src/ui/dialog.js";
+import { chartBounds, niceTicks, largeMoney } from "./chartMath.js";
 
 // =========================================================
 // CASH MARKET
@@ -59,6 +60,7 @@ function compact(value) {
   const n = Number(value) || 0;
   const abs = Math.abs(n);
   const sign = n < 0 ? "-" : "";
+  if (abs >= 1e15) return sign + largeMoney(abs, 2);
   if (abs >= 1e12) return sign + "$" + (abs / 1e12).toFixed(2) + "T";
   if (abs >= 1e9) return sign + "$" + (abs / 1e9).toFixed(2) + "B";
   if (abs >= 1e6) return sign + "$" + (abs / 1e6).toFixed(2) + "M";
@@ -134,6 +136,7 @@ async function requestBurn({ amount = null, burnAll = false }) {
 function axisMoney(value) {
   const n = Number(value) || 0;
   const abs = Math.abs(n);
+  if (abs >= 1e15) return largeMoney(n);
   if (abs >= 1e12) return "$" + (n / 1e12).toFixed(1) + "T";
   if (abs >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
   if (abs >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
@@ -207,18 +210,6 @@ function paintTicker() {
 // CHART
 // ---------------------------------------------------------
 
-function niceTicks(min, max, count) {
-  const span = max - min || 1;
-  const step0 = span / count;
-  const mag = Math.pow(10, Math.floor(Math.log10(step0)));
-  const norm = step0 / mag;
-  const step = (norm >= 5 ? 5 : norm >= 2 ? 2 : 1) * mag;
-  const start = Math.ceil(min / step) * step;
-  const ticks = [];
-  for (let v = start; v <= max + step * 0.001; v += step) ticks.push(v);
-  return ticks;
-}
-
 function draw() {
   chart.textContent = "";
   const w = wrap.clientWidth || 640;
@@ -238,11 +229,7 @@ function draw() {
   const plotH = h - PAD.top - PAD.bottom;
 
   const values = rows.map((r) => r[metric]);
-  let vMin = Math.min(...values);
-  let vMax = Math.max(...values);
-  if (vMin === vMax) { vMin -= 1; vMax += 1; }        // flat line -> give it room
-  const headroom = (vMax - vMin) * 0.08;
-  vMin -= headroom; vMax += headroom;
+  const [vMin, vMax] = chartBounds(values);
 
   const tMin = rows[0].t;
   const tMax = rows[rows.length - 1].t;
