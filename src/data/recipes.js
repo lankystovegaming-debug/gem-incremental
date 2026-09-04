@@ -1382,6 +1382,18 @@ const recipes = [
     reward: { type: "consumable", id: "lucky-potion-3", name: "Lucky Potion III", family: "luck", tier: 3, amount: 1, effectValue: 0.50 }
   },
   {
+    id: "lucky-potion-4", name: "Lucky Potion IV", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-3", amount: 2 },
+      { type: "gem-count", gem: "Ruby", amount: 2 },
+      { type: "gem-count", gem: "Emerald", amount: 1 },
+      { type: "gem-count", gem: "Diamond", amount: 1 },
+      { type: "gem-count", gem: "Black Diamond", amount: 1 }
+    ],
+    moneyCost: 150000,
+    reward: { type: "consumable", id: "lucky-potion-4", name: "Lucky Potion IV", family: "luck", tier: 4, amount: 1, effectValue: 0.75 }
+  },
+  {
     id: "legendary-potion", name: "Legendary Potion", category: "potion",
     requirements: [
       { type: "consumable", consumableId: "lucky-potion-3", amount: 2 },
@@ -1423,6 +1435,18 @@ const recipes = [
     reward: { type: "consumable", id: "speed-potion-3", name: "Speed Potion III", family: "rollSpeed", tier: 3, amount: 1, effectValue: 0.50 }
   },
   {
+    id: "speed-potion-4", name: "Speed Potion IV", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "speed-potion-3", amount: 2 },
+      { type: "gem-count", gem: "Sapphire", amount: 2 },
+      { type: "gem-count", gem: "Tanzanite", amount: 1 },
+      { type: "gem-count", gem: "Alexandrite", amount: 1 },
+      { type: "gem-count", gem: "Aether Quartz", amount: 1 }
+    ],
+    moneyCost: 150000,
+    reward: { type: "consumable", id: "speed-potion-4", name: "Speed Potion IV", family: "rollSpeed", tier: 4, amount: 1, effectValue: 0.75 }
+  },
+  {
     id: "fortune-potion-2", name: "Fortune Potion II", category: "potion",
     requirements: [
       { type: "consumable", consumableId: "fortune-potion-1", amount: 2 },
@@ -1443,6 +1467,19 @@ const recipes = [
     reward: { type: "consumable", id: "fortune-potion-3", name: "Fortune Potion III", family: "weightLuck", tier: 3, amount: 1, effectValue: 0.50 }
   },
   {
+    id: "fortune-potion-4", name: "Fortune Potion IV", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "fortune-potion-3", amount: 2 },
+      { type: "gem-count", gem: "Alexandrite", amount: 2 },
+      { type: "gem-count", gem: "Emerald", amount: 2 },
+      { type: "gem-count", gem: "Ruby", amount: 1 },
+      { id: "fortune-potion-4-heavy", type: "specimen-condition", label: "Any gem at 4.0x weight or more", minimumWeightMultiplier: 4, amount: 1 },
+      { type: "gem-count", gem: "Void Opal", amount: 1 }
+    ],
+    moneyCost: 150000,
+    reward: { type: "consumable", id: "fortune-potion-4", name: "Fortune Potion IV", family: "weightLuck", tier: 4, amount: 1, effectValue: 0.75 }
+  },
+  {
     id: "mass-potion-2", name: "Mass Potion II", category: "potion",
     requirements: [
       { type: "consumable", consumableId: "mass-potion-1", amount: 2 },
@@ -1461,6 +1498,19 @@ const recipes = [
     ],
     moneyCost: 1000,
     reward: { type: "consumable", id: "mass-potion-3", name: "Mass Potion III", family: "weightMultiplier", tier: 3, amount: 1, effectValue: 0.25 }
+  },
+  {
+    id: "mass-potion-4", name: "Mass Potion IV", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "mass-potion-3", amount: 2 },
+      { type: "gem-count", gem: "Grandidierite", amount: 2 },
+      { type: "gem-count", gem: "Taaffeite", amount: 2 },
+      { type: "gem-count", gem: "Musgravite", amount: 1 },
+      { id: "mass-potion-4-weight", type: "gem-total-weight", label: "Additional sacrificed gem weight", totalWeight: 50000 },
+      { type: "gem-count", gem: "Chronite", amount: 1 }
+    ],
+    moneyCost: 200000,
+    reward: { type: "consumable", id: "mass-potion-4", name: "Mass Potion IV", family: "weightMultiplier", tier: 4, amount: 1, effectValue: 0.50 }
   }
 ];
 

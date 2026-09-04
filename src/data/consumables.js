@@ -12,18 +12,22 @@ const MARKET_REFERENCE_PRICES = {
   "lucky-potion-3": 175000,
   "speed-potion-3": 125000,
   "fortune-potion-3": 175000,
-  "mass-potion-3": 250000
+  "mass-potion-3": 250000,
+  "lucky-potion-4": 500000,
+  "speed-potion-4": 400000,
+  "fortune-potion-4": 500000,
+  "mass-potion-4": 750000
 };
 
 const consumables = [
-  ["lucky", "Lucky", "luck", [0.10, 0.25, 0.50], 200],
-  ["speed", "Speed", "rollSpeed", [0.10, 0.25, 0.50], 150],
-  ["fortune", "Fortune", "weightLuck", [0.10, 0.25, 0.50], 200],
-  ["mass", "Mass", "weightMultiplier", [0.05, 0.15, 0.25], 300]
+  ["lucky", "Lucky", "luck", [0.10, 0.25, 0.50, 0.75], 200],
+  ["speed", "Speed", "rollSpeed", [0.10, 0.25, 0.50, 0.75], 150],
+  ["fortune", "Fortune", "weightLuck", [0.10, 0.25, 0.50, 0.75], 200],
+  ["mass", "Mass", "weightMultiplier", [0.05, 0.15, 0.25, 0.50], 300]
 ].flatMap(([slug, name, family, effects, price]) =>
   effects.map((effectValue, index) => ({
     id: `${slug}-potion-${index + 1}`,
-    name: `${name} Potion ${["I", "II", "III"][index]}`,
+    name: `${name} Potion ${["I", "II", "III", "IV"][index]}`,
     family,
     tier: index + 1,
     durationMs: POTION_DURATION_MS,

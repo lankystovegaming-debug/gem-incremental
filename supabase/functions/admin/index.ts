@@ -84,10 +84,10 @@ async function loadGemCatalog(ctx: any) {
 }
 
 const CONSUMABLE_IDS = new Set([
-  "lucky-potion-1", "lucky-potion-2", "lucky-potion-3",
-  "speed-potion-1", "speed-potion-2", "speed-potion-3",
-  "fortune-potion-1", "fortune-potion-2", "fortune-potion-3",
-  "mass-potion-1", "mass-potion-2", "mass-potion-3",
+  "lucky-potion-1", "lucky-potion-2", "lucky-potion-3", "lucky-potion-4",
+  "speed-potion-1", "speed-potion-2", "speed-potion-3", "speed-potion-4",
+  "fortune-potion-1", "fortune-potion-2", "fortune-potion-3", "fortune-potion-4",
+  "mass-potion-1", "mass-potion-2", "mass-potion-3", "mass-potion-4",
   "legendary-potion", "mythic-potion"
 ]);
 
