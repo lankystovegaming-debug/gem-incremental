@@ -1,5 +1,5 @@
 import { mountShell } from "../src/ui/shell.js";
-import { loadBankDashboard, bankDeposit, bankWithdraw, bankBorrow, bankRepay } from "../src/backend/cloudBank.js";
+import { loadBankDashboard, bankDeposit, bankWithdraw, bankBorrow, bankRepay, bankDeclareBankruptcy } from "../src/backend/cloudBank.js";
 import { formatMoney, escapeHtml, formatRelativeTime } from "../src/ui/format.js";
 import { confirmDialog } from "../src/ui/dialog.js";
 import { notify } from "../src/ui/toast.js";
@@ -18,10 +18,14 @@ let busy = false;
 
 const KIND_LABEL = {
   deposit: "Deposit", withdraw: "Withdrawal", borrow: "Loan drawn", repay: "Repayment",
-  interest: "Savings interest", loan_interest: "Loan interest", penalty: "Late penalty"
+  interest: "Savings interest", loan_interest: "Loan interest", penalty: "Late penalty",
+  seizure: "Savings seized", bankruptcy: "Bankruptcy"
 };
-// Money leaving the wallet toward the bank reads as negative for the player.
-const KIND_SIGN = { deposit: -1, withdraw: 1, borrow: 1, repay: -1, interest: 1, loan_interest: 0, penalty: 0 };
+// Money leaving the wallet/savings reads as negative for the player.
+const KIND_SIGN = {
+  deposit: -1, withdraw: 1, borrow: 1, repay: -1,
+  interest: 1, loan_interest: 0, penalty: 0, seizure: -1, bankruptcy: 0
+};
 
 function render() {
   if (!data) return;
@@ -52,13 +56,22 @@ function render() {
     <ul class="bank-stats">
       <li><span>On-time payoffs</span><strong>${data.on_time_repayments}</strong></li>
       <li><span>Missed payments</span><strong>${data.missed_marks}</strong></li>
+      ${data.bankruptcies > 0 ? `<li><span>Bankruptcies</span><strong>${data.bankruptcies}</strong></li>` : ""}
       <li><span>Your loan APR</span><strong>${percent(data.loan_apr)}</strong></li>
     </ul>`;
 
   const due = data.loan_due_at
     ? `<strong>${new Date(data.loan_due_at).toLocaleDateString()}</strong> (${escapeHtml(formatRelativeTime(data.loan_due_at))})`
     : "—";
+  const canBorrow = !data.in_default && !data.borrow_frozen;
+  let banner = "";
+  if (data.in_default) {
+    banner = `<p class="bank-banner bank-banner--danger"><strong>Loan in default.</strong> Your savings are being seized to cover it, and late fees keep accruing. Repay what you can — or, if you truly can't, declare bankruptcy to discharge the rest.</p>`;
+  } else if (data.borrow_frozen) {
+    banner = `<p class="bank-banner"><strong>Borrowing frozen</strong> after bankruptcy until ${new Date(data.borrow_frozen_until).toLocaleDateString()} (${escapeHtml(formatRelativeTime(data.borrow_frozen_until))}). Keep saving to rebuild your credit.</p>`;
+  }
   $("loan").innerHTML = `
+    ${banner}
     <div class="bank-loan-grid">
       <div><span>Outstanding principal</span><strong>${money(data.loan_principal)}</strong></div>
       <div><span>Accrued interest</span><strong>${money(data.loan_interest)}</strong></div>
@@ -67,14 +80,15 @@ function render() {
       <div><span>Borrow limit</span><strong>${money(data.borrow_limit)}</strong></div>
       <div><span>Available credit</span><strong>${money(data.available_credit)}</strong></div>
     </div>
-    <p class="bank-note">Loans draw on a 7-day term at <strong>${percent(data.loan_apr)}</strong> APR. Interest is paid before principal; savings count as collateral toward your limit.</p>
+    <p class="bank-note">Loans draw on a 7-day term at <strong>${percent(data.loan_apr)}</strong> APR. Interest is paid before principal; savings count as collateral toward your limit and are seized first if you default.</p>
     <div class="bank-field">
       <label for="loanAmount">Amount</label>
       <input id="loanAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="0">
     </div>
     <div class="bank-actions">
-      <button class="btn btn--primary" data-action="borrow" data-input="loanAmount" ${busy ? "disabled" : ""}>Borrow</button>
+      <button class="btn btn--primary" data-action="borrow" data-input="loanAmount" ${busy || !canBorrow ? "disabled" : ""}>Borrow</button>
       <button class="btn" data-action="repay" data-input="loanAmount" ${busy || owed <= 0 ? "disabled" : ""}>Repay</button>
+      ${data.in_default ? `<button class="btn btn--danger" data-action="bankruptcy" ${busy ? "disabled" : ""}>Declare bankruptcy</button>` : ""}
     </div>`;
 
   const rows = data.transactions || [];
@@ -99,6 +113,19 @@ function readAmount(inputId) {
 }
 
 async function act(action, amount) {
+  if (action === "bankruptcy") {
+    const ok = await confirmDialog({
+      title: "Declare bankruptcy?",
+      body: `<p>This discharges your remaining ${money(data.loan_total)} of debt.</p>
+             <p><strong>Your credit score resets to 300</strong> and borrowing is frozen for 14 days. Your savings have already gone toward the loan. This cannot be undone.</p>`,
+      confirmLabel: "Declare bankruptcy",
+      defaultAction: "cancel",
+      preventEnter: true
+    });
+    if (ok !== "confirm") return;
+    return bankDeclareBankruptcy();
+  }
+
   if (amount <= 0) {
     notify.error("Enter an amount", "Type a whole number greater than zero.");
     return;
@@ -163,8 +190,12 @@ document.addEventListener("click", async (event) => {
       notify.error("Bank", outcome.error.message);
     } else {
       data = outcome.data;
-      const done = { deposit: "Deposited", withdraw: "Withdrew", borrow: "Borrowed", repay: "Repaid" }[action];
-      notify.success("Bank", `${done} ${money(amount)}`);
+      if (action === "bankruptcy") {
+        notify.success("Bank", "Debt discharged. Credit reset to 300; borrowing frozen 14 days.");
+      } else {
+        const done = { deposit: "Deposited", withdraw: "Withdrew", borrow: "Borrowed", repay: "Repaid" }[action];
+        notify.success("Bank", `${done} ${money(amount)}`);
+      }
     }
   } finally {
     busy = false;

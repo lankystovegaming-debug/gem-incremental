@@ -9,6 +9,9 @@ const page = read("bank/bank.js");
 const html = read("bank/index.html");
 const css = read("bank/bank.css");
 const shell = read("src/ui/shell.js");
+const history = read("supabase/migrations/20260904130000_bank_total_cash_history.sql");
+const graph = read("global-cash-graph/graph.js");
+const graphHtml = read("global-cash-graph/index.html");
 
 // ── Schema & security ─────────────────────────────────────────────────
 assert.match(sql, /create table if not exists public\.bank_accounts/);
@@ -54,6 +57,25 @@ assert.match(sql, /if v_amount > v_available then raise exception 'bank_over_lim
 assert.match(sql, /v_to_interest := least\(v_pay, v_acct\.loan_interest_accrued\)/);
 assert.match(sql, /credit_score = least\(850, credit_score \+ v_credit_gain\)/);
 
+// ── Default handling: offset, bankruptcy, borrow blocks ───────────────
+// New account columns for the bankruptcy lockout.
+assert.match(sql, /bankruptcies integer not null default 0/);
+assert.match(sql, /borrow_frozen_until timestamptz/);
+// Right of offset: overdue seizes savings toward the debt before penalties.
+assert.match(sql, /v_seize := least\(v_acct\.balance, v_owed\)/);
+assert.match(sql, /kind[\s\S]*'seizure'/);
+// Borrowing is blocked while frozen (post-bankruptcy) or in default.
+assert.match(sql, /raise exception 'bank_borrow_frozen'/);
+assert.match(sql, /raise exception 'bank_in_default'/);
+// Bankruptcy discharges the debt, resets credit to 300, freezes borrowing.
+assert.match(sql, /create or replace function public\.bank_declare_bankruptcy\(\)/);
+assert.match(sql, /grant execute on function public\.bank_declare_bankruptcy\(\) to authenticated/);
+assert.match(sql, /raise exception 'bank_not_in_default'/);
+assert.match(sql, /credit_score = 300,[\s\S]*borrow_frozen_until = now\(\) \+ interval '14 days'/);
+// Dashboard surfaces the default/frozen state and zeroes available credit.
+assert.match(sql, /'in_default', v_in_default/);
+assert.match(sql, /when v_frozen or v_in_default then 0/);
+
 // ── Feature flag ships OFF ────────────────────────────────────────────
 assert.match(sql, /insert into public\.game_section_settings[\s\S]*'bank'[\s\S]*false, 320/);
 
@@ -63,6 +85,7 @@ assert.match(client, /bankDeposit = \(amount\) => rpc\("bank_deposit", \{ p_amou
 assert.match(client, /bankWithdraw = \(amount\) => rpc\("bank_withdraw", \{ p_amount: amount \}\)/);
 assert.match(client, /bankBorrow = \(amount\) => rpc\("bank_borrow", \{ p_amount: amount \}\)/);
 assert.match(client, /bankRepay = \(amount\) => rpc\("bank_repay", \{ p_amount: amount \}\)/);
+assert.match(client, /bankDeclareBankruptcy = \(\) => rpc\("bank_declare_bankruptcy"\)/);
 
 // ── Page wiring ───────────────────────────────────────────────────────
 for (const action of ["deposit", "withdraw", "borrow", "repay"]) {
@@ -71,7 +94,11 @@ for (const action of ["deposit", "withdraw", "borrow", "repay"]) {
 // Borrowing and repaying confirm the terms first (real-bank interaction).
 assert.match(page, /title: "Take out a loan\?"/);
 assert.match(page, /title: "Repay your loan\?"/);
-assert.equal((page.match(/await confirmDialog\(/g) || []).length, 2, "borrow and repay must each confirm");
+// Bankruptcy is offered (with confirmation) only when the loan is in default.
+assert.match(page, /data-action="bankruptcy"/);
+assert.match(page, /title: "Declare bankruptcy\?"/);
+assert.match(page, /data\.in_default \? `<button/);
+assert.equal((page.match(/await confirmDialog\(/g) || []).length, 3, "borrow, repay and bankruptcy must each confirm");
 assert.match(html, /<link rel="stylesheet" href="\.\/bank\.css">/);
 assert.match(html, /id="savings"[\s\S]*id="credit"[\s\S]*id="loan"[\s\S]*id="ledger"/);
 
@@ -82,5 +109,16 @@ assert.match(shell, /id: "bank", label: "Bank",[^\n]*sectionId: "bank"/);
 assert.match(css, /\.bank-grid\b/);
 assert.match(css, /\.credit-meter\s*>\s*i/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+
+// ── Total bank money graph series ─────────────────────────────────────
+// A new migration (never editing the applied one) extends the economy
+// snapshot with a bank-deposits total rather than adding a second cron.
+assert.match(history, /alter table public\.global_cash_history\s*\n\s*add column if not exists bank double precision/);
+assert.match(history, /coalesce\(\(select sum\(balance\) from public\.bank_accounts\), 0\)/);
+assert.match(history, /select at, lifetime, money, bank/);
+// The Cash Market graph gets a third metric tab wired to that series.
+assert.match(graph, /METRIC_LABELS = \{[^}]*bank: "Bank deposits"/);
+assert.match(graph, /bank: Number\(r\.bank\) \|\| 0/);
+assert.match(graphHtml, /data-metric="bank"/);
 
 console.log("bank-system-v1-test passed");

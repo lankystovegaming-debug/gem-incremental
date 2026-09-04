@@ -143,6 +143,25 @@
 .bank-stats span { color: var(--text-muted); font-size: 0.86rem; }
 .bank-stats strong { font-variant-numeric: tabular-nums; }
 
+/* ── Default / frozen banner ────────────────────────────── */
+.bank-banner {
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--text-faint);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.bank-banner strong { color: var(--text); }
+.bank-banner--danger {
+  border-color: color-mix(in srgb, #ef4444 45%, var(--border));
+  border-left-color: #ef4444;
+  background: color-mix(in srgb, #ef4444 10%, var(--surface-sunken));
+}
+
 /* ── Loans ──────────────────────────────────────────────── */
 .bank-loan-grid {
   display: grid;

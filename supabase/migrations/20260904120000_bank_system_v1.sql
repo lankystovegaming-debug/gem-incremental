@@ -18,6 +18,10 @@
 --   Loan APR  6% (excellent credit) .. 24% (poor), accrued daily
 --   Limit     $100K..$10M by credit score, plus 2x savings collateral
 --   Term      7 days; overdue => 2% late fee + credit drop, due +3 days
+--   Default   overdue seizes savings (right of offset) toward the debt;
+--             if still owed, penalties continue; the player may declare
+--             bankruptcy to discharge the rest (credit -> 300, borrowing
+--             frozen 14 days). New borrowing is blocked while in default.
 -- =========================================================
 
 -- The base game schema (public.players, etc.) is not tracked in this
@@ -38,6 +42,8 @@ create table if not exists public.bank_accounts (
   loan_due_at timestamptz,
   on_time_repayments integer not null default 0,
   missed_marks integer not null default 0,
+  bankruptcies integer not null default 0,
+  borrow_frozen_until timestamptz,
   last_interest_at timestamptz not null default now(),
   last_loan_accrual_at timestamptz not null default now(),
   opened_at timestamptz not null default now(),
@@ -113,6 +119,10 @@ declare
   v_interest double precision;
   v_loan_interest double precision;
   v_late_fee double precision;
+  v_owed double precision;
+  v_seize double precision;
+  v_seize_interest double precision;
+  v_seize_principal double precision;
 begin
   insert into public.bank_accounts (player_id)
   values (p_uid)
@@ -162,22 +172,52 @@ begin
     update public.bank_accounts set last_loan_accrual_at = now() where player_id = p_uid;
   end if;
 
-  -- Overdue: one 2% late fee + credit hit per lapse, and push the due date.
+  -- Default handling. Read fresh values first (interest may have moved them).
+  select * into v_acct from public.bank_accounts where player_id = p_uid for update;
   if (v_acct.loan_principal + v_acct.loan_interest_accrued) > 0
      and v_acct.loan_due_at is not null
      and now() > v_acct.loan_due_at then
-    v_late_fee := v_acct.loan_principal * 0.02;
-    update public.bank_accounts
-       set loan_interest_accrued = loan_interest_accrued + v_late_fee,
-           credit_score = greatest(300, credit_score - 40),
-           missed_marks = missed_marks + 1,
-           loan_due_at = now() + interval '3 days',
-           updated_at = now()
-     where player_id = p_uid;
-    insert into public.bank_transactions (player_id, kind, amount, balance_after, loan_after, credit_after, memo)
-    values (p_uid, 'penalty', v_late_fee, v_acct.balance,
-            v_acct.loan_principal + v_acct.loan_interest_accrued + v_late_fee,
-            greatest(300, v_acct.credit_score - 40), 'Missed payment: 2% late fee and credit penalty');
+
+    -- (1) Right of offset: seize savings to service the defaulted loan,
+    --     interest first then principal, capped at what is owed.
+    v_owed := v_acct.loan_principal + v_acct.loan_interest_accrued;
+    v_seize := least(v_acct.balance, v_owed);
+    if v_seize > 0 then
+      v_seize_interest := least(v_seize, v_acct.loan_interest_accrued);
+      v_seize_principal := v_seize - v_seize_interest;
+      update public.bank_accounts
+         set balance = balance - v_seize,
+             loan_interest_accrued = greatest(0, loan_interest_accrued - v_seize_interest),
+             loan_principal = greatest(0, loan_principal - v_seize_principal),
+             updated_at = now()
+       where player_id = p_uid
+       returning * into v_acct;
+      insert into public.bank_transactions (player_id, kind, amount, balance_after, loan_after, credit_after, memo)
+      values (p_uid, 'seizure', v_seize, v_acct.balance,
+              v_acct.loan_principal + v_acct.loan_interest_accrued, v_acct.credit_score,
+              'Savings seized to cover overdue loan');
+    end if;
+
+    v_owed := v_acct.loan_principal + v_acct.loan_interest_accrued;
+    if v_owed <= 0.0001 then
+      -- Offset cleared the debt outright; the loan is settled.
+      update public.bank_accounts set loan_due_at = null, updated_at = now()
+       where player_id = p_uid;
+    else
+      -- (2) Still in default: one 2% late fee + credit hit, push the due date.
+      v_late_fee := v_acct.loan_principal * 0.02;
+      update public.bank_accounts
+         set loan_interest_accrued = loan_interest_accrued + v_late_fee,
+             credit_score = greatest(300, credit_score - 40),
+             missed_marks = missed_marks + 1,
+             loan_due_at = now() + interval '3 days',
+             updated_at = now()
+       where player_id = p_uid;
+      insert into public.bank_transactions (player_id, kind, amount, balance_after, loan_after, credit_after, memo)
+      values (p_uid, 'penalty', v_late_fee, v_acct.balance,
+              v_acct.loan_principal + v_acct.loan_interest_accrued + v_late_fee,
+              greatest(300, v_acct.credit_score - 40), 'Missed payment: 2% late fee and credit penalty');
+    end if;
   end if;
 end;
 $$;
@@ -195,11 +235,15 @@ declare
   v_money double precision;
   v_limit double precision;
   v_owed double precision;
+  v_frozen boolean;
+  v_in_default boolean;
 begin
   select * into v_acct from public.bank_accounts where player_id = p_uid;
   select money into v_money from public.players where id = p_uid;
   v_limit := public.bank_borrow_limit(v_acct.credit_score, v_acct.balance);
   v_owed := v_acct.loan_principal + v_acct.loan_interest_accrued;
+  v_frozen := v_acct.borrow_frozen_until is not null and v_acct.borrow_frozen_until > now();
+  v_in_default := v_owed > 0 and v_acct.loan_due_at is not null and now() > v_acct.loan_due_at;
   return jsonb_build_object(
     'money', coalesce(v_money, 0),
     'balance', v_acct.balance,
@@ -210,7 +254,12 @@ begin
     'loan_total', v_owed,
     'loan_due_at', v_acct.loan_due_at,
     'borrow_limit', v_limit,
-    'available_credit', greatest(0, v_limit - v_owed),
+    -- No new credit while frozen after bankruptcy or already in default.
+    'available_credit', case when v_frozen or v_in_default then 0 else greatest(0, v_limit - v_owed) end,
+    'in_default', v_in_default,
+    'borrow_frozen', v_frozen,
+    'borrow_frozen_until', v_acct.borrow_frozen_until,
+    'bankruptcies', v_acct.bankruptcies,
     'savings_daily_rate', 0.00012,
     'savings_apy', power(1 + 0.00012, 365) - 1,
     'loan_apr', public.bank_loan_daily_rate(v_acct.credit_score) * 365,
@@ -333,6 +382,14 @@ begin
   perform public.bank_touch(v_uid);
 
   select * into v_acct from public.bank_accounts where player_id = v_uid for update;
+  -- Banks do not extend new credit to a frozen (post-bankruptcy) or defaulted account.
+  if v_acct.borrow_frozen_until is not null and now() < v_acct.borrow_frozen_until then
+    raise exception 'bank_borrow_frozen';
+  end if;
+  if (v_acct.loan_principal + v_acct.loan_interest_accrued) > 0
+     and v_acct.loan_due_at is not null and now() > v_acct.loan_due_at then
+    raise exception 'bank_in_default';
+  end if;
   v_limit := public.bank_borrow_limit(v_acct.credit_score, v_acct.balance);
   v_available := v_limit - (v_acct.loan_principal + v_acct.loan_interest_accrued);
   if v_amount > v_available then raise exception 'bank_over_limit'; end if;
@@ -421,6 +478,49 @@ end;
 $$;
 
 
+create or replace function public.bank_declare_bankruptcy()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_acct public.bank_accounts%rowtype;
+  v_owed double precision;
+begin
+  if v_uid is null then raise exception 'unauthenticated'; end if;
+  perform public.bank_touch(v_uid);
+
+  select * into v_acct from public.bank_accounts where player_id = v_uid for update;
+  v_owed := v_acct.loan_principal + v_acct.loan_interest_accrued;
+  if v_owed <= 0 then raise exception 'bank_no_loan'; end if;
+  -- Only a genuinely defaulted loan can be discharged. Requiring the due date
+  -- to have passed (after offset already took any savings) stops a player from
+  -- borrowing and instantly discharging to pocket the cash with no downside.
+  if v_acct.loan_due_at is null or now() <= v_acct.loan_due_at then
+    raise exception 'bank_not_in_default';
+  end if;
+
+  update public.bank_accounts
+     set loan_principal = 0,
+         loan_interest_accrued = 0,
+         loan_due_at = null,
+         credit_score = 300,
+         bankruptcies = bankruptcies + 1,
+         borrow_frozen_until = now() + interval '14 days',
+         updated_at = now()
+   where player_id = v_uid
+   returning * into v_acct;
+
+  insert into public.bank_transactions (player_id, kind, amount, balance_after, loan_after, credit_after, memo)
+  values (v_uid, 'bankruptcy', v_owed, v_acct.balance, 0, v_acct.credit_score,
+          'Bankruptcy: remaining debt discharged, credit reset, borrowing frozen 14 days');
+  return public.bank_dashboard_json(v_uid);
+end;
+$$;
+
+
 -- ── Grants: per-user actions are safe for the browser role ─
 -- (Unlike the leaderboard board RPCs, these are cheap single-row
 --  operations gated to auth.uid(), so authenticated execute is correct.)
@@ -429,6 +529,7 @@ grant execute on function public.bank_deposit(double precision) to authenticated
 grant execute on function public.bank_withdraw(double precision) to authenticated;
 grant execute on function public.bank_borrow(double precision) to authenticated;
 grant execute on function public.bank_repay(double precision) to authenticated;
+grant execute on function public.bank_declare_bankruptcy() to authenticated;
 
 
 -- ── Feature flag: ships OFF, enabled from the Admin Feature Lab ─

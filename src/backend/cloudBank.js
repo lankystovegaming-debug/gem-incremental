@@ -8,7 +8,10 @@ const MESSAGES = {
   bank_insufficient_wallet: "You do not have enough money in your wallet.",
   bank_insufficient_balance: "You do not have that much in savings.",
   bank_over_limit: "That exceeds your available credit.",
-  bank_no_loan: "You have no outstanding loan to repay."
+  bank_no_loan: "You have no outstanding loan to repay.",
+  bank_in_default: "Your loan is in default — clear it before borrowing again.",
+  bank_borrow_frozen: "Borrowing is frozen after your bankruptcy.",
+  bank_not_in_default: "You can only declare bankruptcy once a loan is past due."
 };
 
 function normalise(error) {
@@ -27,3 +30,4 @@ export const bankDeposit = (amount) => rpc("bank_deposit", { p_amount: amount })
 export const bankWithdraw = (amount) => rpc("bank_withdraw", { p_amount: amount });
 export const bankBorrow = (amount) => rpc("bank_borrow", { p_amount: amount });
 export const bankRepay = (amount) => rpc("bank_repay", { p_amount: amount });
+export const bankDeclareBankruptcy = () => rpc("bank_declare_bankruptcy");
