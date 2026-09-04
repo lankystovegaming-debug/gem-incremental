@@ -11,6 +11,7 @@ const css = read("bank/bank.css");
 const shell = read("src/ui/shell.js");
 const history = read("supabase/migrations/20260904130000_bank_total_cash_history.sql");
 const savingsRate = read("supabase/migrations/20260904160000_bank_savings_rate_6_5_apy.sql");
+const accruedBankHistory = read("supabase/migrations/20260904170000_bank_history_accrued_interest.sql");
 const graph = read("global-cash-graph/graph.js");
 const graphHtml = read("global-cash-graph/index.html");
 
@@ -48,6 +49,7 @@ assert.match(sql, /power\(1 \+ 0\.00012, v_days\)/);
 assert.match(savingsRate, /power\(1 \+ 0\.00012, v_days\)/);
 assert.match(savingsRate, /power\(1\.065::numeric, 1::numeric \/ 365\) - 1/);
 assert.match(savingsRate, /v_savings_daily_rate/);
+assert.match(savingsRate, /values \(p_uid, 'interest'/);
 assert.equal(Math.abs((1 + (Math.pow(1.065, 1 / 365) - 1)) ** 365 - 1 - 0.065) < 1e-12, true);
 // Loan APR 24%->6% by credit, borrow limit base + 2x savings collateral.
 assert.match(sql, /0\.24 - public\.bank_credit_factor\(p_score\) \* 0\.18/);
@@ -135,6 +137,12 @@ assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(history, /alter table public\.global_cash_history\s*\n\s*add column if not exists bank double precision/);
 assert.match(history, /coalesce\(\(select sum\(balance\) from public\.bank_accounts\), 0\)/);
 assert.match(history, /select at, lifetime, money, bank/);
+// The bank total includes interest accrued since an account was last
+// settled, so the graph reflects interest without a separate write cron.
+assert.match(accruedBankHistory, /power\(1\.065::numeric, 1::numeric \/ 365\) - 1/);
+assert.match(accruedBankHistory, /b\.balance \* power\(/);
+assert.match(accruedBankHistory, /now\(\) - b\.last_interest_at/);
+assert.match(accruedBankHistory, /exclude_from_economy/);
 // The Cash Market graph gets a third metric tab wired to that series.
 assert.match(graph, /METRIC_LABELS = \{[^}]*bank: "Bank deposits"/);
 assert.match(graph, /bank: Number\(r\.bank\) \|\| 0/);

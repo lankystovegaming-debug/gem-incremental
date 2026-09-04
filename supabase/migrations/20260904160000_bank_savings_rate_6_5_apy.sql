@@ -91,7 +91,7 @@ begin
              updated_at = now()
        where player_id = p_uid;
       insert into public.bank_transactions (player_id, kind, amount, balance_after, loan_after, credit_after, memo)
-      values (v_uid, 'interest', v_interest, v_acct.balance + v_interest,
+      values (p_uid, 'interest', v_interest, v_acct.balance + v_interest,
               v_acct.loan_principal + v_acct.loan_interest_accrued, v_acct.credit_score, 'Savings interest');
       select * into v_acct from public.bank_accounts where player_id = p_uid for update;
     else
