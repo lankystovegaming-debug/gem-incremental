@@ -1,0 +1,48 @@
+// Run with GEMDLE_PGLITE_MODULE pointing to an installed @electric-sql/pglite entry.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const { PGlite } = await import(process.env.GEMDLE_PGLITE_MODULE || '@electric-sql/pglite');
+const db = new PGlite();
+await db.exec(`
+create role anon; create role authenticated; create role service_role bypassrls;
+create schema auth;
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+grant usage on schema auth to authenticated;
+grant execute on function auth.uid() to authenticated;
+create table public.players(id uuid primary key, username text, leaderboard_hidden boolean default false);
+create table public.user_roll_luck_rarity_mult(player_id uuid,active_until timestamptz);
+grant select on public.players,public.user_roll_luck_rarity_mult to service_role;
+insert into public.players values ('00000000-0000-0000-0000-000000000001','One',false),('00000000-0000-0000-0000-000000000002','Two',false);
+`);
+await db.exec(await fs.readFile(new URL('../supabase/migrations/20260904145142_gemdle_daily_results.sql',import.meta.url),'utf8'));
+const one='00000000-0000-0000-0000-000000000001', two='00000000-0000-0000-0000-000000000002';
+await db.exec('set role service_role');
+const save=async(id,score,date='2026-09-04T15:59:59Z')=>(await db.query('select * from public.save_gemdle_result($1,$2,$3)',[id,date,JSON.stringify({gem_name:'Quartz',overall_rarity:score})])).rows[0];
+const first=await save(one,100);
+const repeated=await Promise.all(Array.from({length:10},(_,i)=>save(one,200+i)));
+assert.ok(repeated.every(row=>row.id===first.id&&row.overall_rarity===100));
+assert.equal(first.gemdle_date.toISOString().slice(0,10),'2026-09-04');
+const tomorrow=await save(one,300,'2026-09-04T16:00:00Z');assert.equal(tomorrow.gemdle_date.toISOString().slice(0,10),'2026-09-05');
+await save(two,100);
+let board=(await db.query('select public.gemdle_daily_board($1,$2) as board',['2026-09-04',one])).rows[0].board;
+assert.equal(board.entries.length,2);assert.equal(board.own_rank,1);assert.ok(board.entries.every(r=>r.rank===1));
+assert.ok(board.entries.every(r=>!('player_id' in r)));
+await assert.rejects(db.exec('update public.gemdle_results set overall_rarity=999'),/permission denied/);
+await assert.rejects(db.exec('delete from public.gemdle_results'),/permission denied/);
+await db.exec(`reset role; set role authenticated; set request.jwt.claim.sub='${one}';`);
+assert.equal((await db.query('select * from public.gemdle_results')).rows.length,2);
+await assert.rejects(db.exec(`insert into public.gemdle_results(player_id,gemdle_date,rolled_at,specimen,overall_rarity) values('${one}','2099-01-01',now(),'{}',1)`),/permission denied/);
+await assert.rejects(db.exec('update public.gemdle_results set overall_rarity=999'),/permission denied/);
+await assert.rejects(save(one,900),/permission denied/);
+await assert.rejects(db.query('select public.gemdle_daily_board($1,$2)',['2026-09-04',one]),/permission denied/);
+await db.exec('reset role; set role anon;');
+await assert.rejects(db.exec('select * from public.gemdle_results'),/permission denied/);
+await db.exec(`reset role; update players set leaderboard_hidden=true where id='${two}'; set role service_role;`);
+board=(await db.query('select public.gemdle_daily_board($1,$2) as board',['2026-09-04',two])).rows[0].board;
+assert.equal(board.entries.length,1);assert.equal(board.own_rank,null);
+// Own position remains available outside the visible 50.
+await db.exec(`reset role; insert into players(id,username) select ('00000000-0000-0000-0001-'||lpad(i::text,12,'0'))::uuid,'Other' from generate_series(1,60) i; set role service_role;`);
+for(let i=1;i<=60;i++) await save(`00000000-0000-0000-0001-${String(i).padStart(12,'0')}`,1000+i);
+board=(await db.query('select public.gemdle_daily_board($1,$2) as board',['2026-09-04',one])).rows[0].board;
+assert.equal(board.entries.length,50);assert.equal(board.own_rank,61);
+await db.close();console.log('PASS: migration, RLS, service permissions, immutable duplicate result, SGT rollover, ties, visibility, own rank outside top 50');
