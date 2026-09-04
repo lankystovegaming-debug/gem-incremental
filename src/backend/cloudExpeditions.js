@@ -5,6 +5,7 @@ function normalise(error){if(!error)return null;const code=Object.keys(MESSAGES)
 async function rpc(name,args){const{data,error}=await supabase.rpc(name,args);return{data,error:normalise(error)};}
 export const loadExpeditionDashboard=()=>rpc("get_abandoned_mine_dashboard");
 export const loadHellDashboard=()=>rpc("get_abandoned_mine_hell_dashboard");
+export const loadHellArtifactFinds=runId=>rpc("get_mine_hell_artifact_finds",{p_run_id:runId});
 export const fundMineDepth=depth=>rpc("fund_abandoned_mine",{p_depth:depth});
 export const chooseMineRoute=(runId,route)=>rpc("choose_abandoned_mine_route",{p_run_id:runId,p_route:route});
 export const chooseSupplyCampService=(runId,service)=>rpc("choose_abandoned_mine_camp_service",{p_run_id:runId,p_service:service});

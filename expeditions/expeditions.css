@@ -1,3 +1,4 @@
+@import url("../src/styles/expedition-console.css");
 .expedition-page{max-width:1400px}
 .expedition-guide{display:grid;grid-template-columns:minmax(220px,.75fr) minmax(0,2fr);gap:1.5rem;margin-top:1.5rem;padding:1.4rem}
 .expedition-guide__intro h2{margin:.45rem 0}
