@@ -73,4 +73,5 @@ const receipt=completionSummary("Abandoned Mine",result,run,hellFindsAvailable?h
 if(result?.error)notify.error("Expedition action failed",result.error.message);else notify.success("Mine updated",action.includes("settle")||action.includes("extract")?"Cargo has been settled.":"The crew's orders were accepted.");await refresh();if(receipt)showExpeditionComplete(receipt);}
 document.addEventListener("click",async event=>{const button=event.target.closest("[data-mine-action]");if(!button||busy)return;busy=true;button.disabled=true;try{await perform(button.dataset.mineAction);}finally{busy=false;if(dashboard)render();}});
 document.getElementById("viewLootTable").addEventListener("click",()=>lootDialog.showModal());lootDialog.addEventListener("click",event=>{if(event.target.closest("[data-close-loot]"))lootDialog.close();});
-if(await ensurePlayerAuth()){await refresh();setInterval(()=>!busy&&(dashboard?.run||hellDashboard?.run)&&refresh(),30000);}
+if(await ensurePlayerAuth()){startExpeditionRefresh(refresh,()=>busy);await refresh();}
+import { startExpeditionRefresh } from "../src/ui/expeditionRefresh.js";
