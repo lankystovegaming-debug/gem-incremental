@@ -18,6 +18,8 @@
 --   Loan APR  6% (excellent credit) .. 24% (poor), accrued daily
 --   Limit     $100K..$10M by credit score, plus 2x savings collateral
 --   Term      7 days; overdue => 2% late fee + credit drop, due +3 days
+--   Credit    built only by fully repaying a real loan (>= $50K, held >= 1
+--             day) — churn (borrow $1 / repay) and deposits earn nothing
 --   Default   overdue seizes savings (right of offset) toward the debt;
 --             if still owed, penalties continue; the player may declare
 --             bankruptcy to discharge the rest (credit -> 300, borrowing
@@ -40,6 +42,7 @@ create table if not exists public.bank_accounts (
   loan_principal double precision not null default 0,
   loan_interest_accrued double precision not null default 0,
   loan_due_at timestamptz,
+  loan_opened_at timestamptz,
   on_time_repayments integer not null default 0,
   missed_marks integer not null default 0,
   bankruptcies integer not null default 0,
@@ -306,7 +309,6 @@ declare
   v_amount double precision := floor(coalesce(p_amount, 0));
   v_money double precision;
   v_acct public.bank_accounts%rowtype;
-  v_credit_gain integer;
 begin
   if v_uid is null then raise exception 'unauthenticated'; end if;
   if v_amount <= 0 then raise exception 'bank_invalid_amount'; end if;
@@ -317,11 +319,10 @@ begin
    returning money into v_money;
   if v_money is null then raise exception 'bank_insufficient_wallet'; end if;
 
-  -- Regular saving gently builds credit history (capped by the 850 ceiling).
-  v_credit_gain := case when v_amount >= 25000 then 2 else 1 end;
+  -- Deposits do NOT change credit: crediting per deposit invites $1-deposit
+  -- spam. Credit is built by responsibly repaying real loans (see bank_repay).
   update public.bank_accounts
      set balance = balance + v_amount,
-         credit_score = least(850, credit_score + v_credit_gain),
          updated_at = now()
    where player_id = v_uid
    returning * into v_acct;
@@ -396,8 +397,9 @@ begin
 
   update public.bank_accounts
      set loan_principal = loan_principal + v_amount,
-         -- A fresh draw (from no debt) starts a new 7-day term.
+         -- A fresh draw (from no debt) starts a new 7-day term and clock.
          loan_due_at = case when loan_principal <= 0 then now() + interval '7 days' else loan_due_at end,
+         loan_opened_at = case when loan_principal <= 0 then now() else loan_opened_at end,
          updated_at = now()
    where player_id = v_uid
    returning * into v_acct;
@@ -429,6 +431,7 @@ declare
   v_on_time boolean;
   v_credit_gain integer;
   v_cleared boolean;
+  v_held interval;
 begin
   if v_uid is null then raise exception 'unauthenticated'; end if;
   if v_amount <= 0 then raise exception 'bank_invalid_amount'; end if;
@@ -451,20 +454,27 @@ begin
   v_cleared := (v_acct.loan_principal - v_to_principal) <= 0.0001
                and (v_acct.loan_interest_accrued - v_to_interest) <= 0.0001;
   v_on_time := v_acct.loan_due_at is null or now() <= v_acct.loan_due_at;
+  v_held := now() - coalesce(v_acct.loan_opened_at, now());
 
-  -- On-time full payoff rebuilds credit strongly; any repayment helps a little.
-  if v_cleared then
+  -- Credit is earned ONLY by fully paying off a genuine loan — one that was a
+  -- meaningful size (>= $50K) and was actually carried for at least a day.
+  -- This kills the "borrow $1, repay, +credit" churn and partial-repay farming:
+  -- trivial or instant loans, and partial repayments, grant nothing.
+  if v_cleared
+     and v_acct.loan_principal >= 50000
+     and v_held >= interval '24 hours' then
     v_credit_gain := case when v_on_time then 15 else 8 end;
   else
-    v_credit_gain := 3;
+    v_credit_gain := 0;
   end if;
 
   update public.bank_accounts
      set loan_interest_accrued = greatest(0, loan_interest_accrued - v_to_interest),
          loan_principal = greatest(0, loan_principal - v_to_principal),
          credit_score = least(850, credit_score + v_credit_gain),
-         on_time_repayments = on_time_repayments + case when v_cleared and v_on_time then 1 else 0 end,
+         on_time_repayments = on_time_repayments + case when v_credit_gain > 0 and v_on_time then 1 else 0 end,
          loan_due_at = case when v_cleared then null else loan_due_at end,
+         loan_opened_at = case when v_cleared then null else loan_opened_at end,
          updated_at = now()
    where player_id = v_uid
    returning * into v_acct;

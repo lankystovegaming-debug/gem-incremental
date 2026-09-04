@@ -57,6 +57,18 @@ assert.match(sql, /if v_amount > v_available then raise exception 'bank_over_lim
 assert.match(sql, /v_to_interest := least\(v_pay, v_acct\.loan_interest_accrued\)/);
 assert.match(sql, /credit_score = least\(850, credit_score \+ v_credit_gain\)/);
 
+// ── Anti-exploit: no cheap credit farming ─────────────────────────────
+// Credit is earned only by fully repaying a real loan (>= $50K, held >= 1
+// day); a fresh draw stamps loan_opened_at so the age can be checked.
+assert.match(sql, /loan_opened_at timestamptz/);
+assert.match(sql, /loan_opened_at = case when loan_principal <= 0 then now\(\)/);
+assert.match(sql, /v_held := now\(\) - coalesce\(v_acct\.loan_opened_at, now\(\)\)/);
+assert.match(sql, /v_acct\.loan_principal >= 50000[\s\S]*v_held >= interval '24 hours'/);
+// Deposits must not grant credit (would allow $1-deposit spam to farm score).
+const depositFn = sql.match(/create or replace function public\.bank_deposit[\s\S]*?\n\$\$;/)?.[0] ?? "";
+assert.ok(depositFn, "bank_deposit function must be present");
+assert.doesNotMatch(depositFn, /credit_score\s*=/, "deposits must not change credit score");
+
 // ── Default handling: offset, bankruptcy, borrow blocks ───────────────
 // New account columns for the bankruptcy lockout.
 assert.match(sql, /bankruptcies integer not null default 0/);
