@@ -325,6 +325,14 @@ export function mountShell({ page, base = "./" }) {
     });
   }
 
+  // Achievement unlock popups are page-independent: a Minecraft-style toast
+  // slides in from any page when the player completes a new achievement.
+  import("../../src/ui/achievementPopup.js")
+    .then((module) => module.mountAchievementPopups())
+    .catch((error) => {
+      console.error("[ACHIEVEMENTS] Failed to load unlock popups:", error);
+    });
+
 
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);

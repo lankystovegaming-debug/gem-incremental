@@ -1,1 +1,221 @@
-.volcanic-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(18rem,1fr);gap:1rem}.volcanic-overview{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;padding:1rem;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:14px;background:linear-gradient(135deg,rgba(255,93,35,.12),rgba(17,20,29,.7))}.volcanic-overview>div:first-child{display:grid}.volcanic-overview strong{font-size:1.4rem}.volcanic-state{padding:.9rem;border-radius:12px;background:rgba(255,255,255,.04);margin:1rem 0}.volcanic-state--critical{box-shadow:inset 3px 0 #ff4d3d}.volcanic-state--unstable{box-shadow:inset 3px 0 #ff8c32}.volcanic-state--heating{box-shadow:inset 3px 0 #ffd24a}.volcanic-state--stable{box-shadow:inset 3px 0 #41d17d}.action-grid{display:flex;gap:.65rem;flex-wrap:wrap;margin:.8rem 0}.cargo-meter{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1rem 0}.cargo-meter>div{padding:.8rem;border-radius:10px;background:rgba(255,255,255,.04)}.artifact-row{padding:.65rem;border-bottom:1px solid rgba(255,255,255,.08);display:grid}.artifact-row.is-owned{opacity:.75}.expedition-log{max-height:18rem;overflow:auto}.warning{color:#ff9b69}@media(max-width:850px){.volcanic-grid{grid-template-columns:1fr}.volcanic-overview{grid-template-columns:1fr}.cargo-meter{grid-template-columns:1fr}}
+/* =========================================================
+   VOLCANIC DEPTHS
+   Console styling for the Volcanic Depths expedition. Builds a
+   molten identity on top of the shared design tokens, and stays
+   theme-aware: every surface/border derives from tokens or a
+   color-mix, never a hard-coded white/black alpha, so the page
+   reads correctly in both light and dark themes.
+
+   Local palette — molten accents mixed against theme tokens so
+   they stay legible on either background.
+   ========================================================= */
+.expedition-page {
+  --lava: #ff5d23;
+  --lava-hot: #ff8c32;
+  --lava-core: #ffd24a;
+  --ash: color-mix(in srgb, var(--text) 6%, transparent);
+  --ash-line: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.volcanic-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 1fr);
+  gap: 1rem;
+}
+
+/* ── Overview header (depth + progress) ─────────────────── */
+.volcanic-overview {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.25rem;
+  align-items: center;
+
+  padding: 1rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--lava) 40%, var(--border));
+  border-radius: 14px;
+
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--lava) 18%, transparent), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--lava) 12%, var(--surface-raised)), var(--surface-solid));
+}
+.volcanic-overview > div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+.volcanic-overview span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.volcanic-overview strong {
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+/* Progress bar. The markup is `.progress-track > i`; previously the
+   bar had no styling at all, so the fill was invisible — give the
+   track a groove and the fill a molten gradient. */
+.progress-track {
+  height: 0.6rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--ash);
+}
+.progress-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lava-core), var(--lava-hot) 55%, var(--lava));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--lava) 55%, transparent);
+  transition: width 0.4s ease;
+}
+
+/* ── Action rows ────────────────────────────────────────── */
+.action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0.9rem 0;
+}
+
+/* ── Eruption-state panel ───────────────────────────────── */
+.volcanic-state {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+
+  /* State colour is set per-modifier below and drives both the left
+     rail and a faint wash so the reading is glanceable. */
+  --state: var(--text-muted);
+  border-left: 3px solid var(--state);
+  background: color-mix(in srgb, var(--state) 10%, var(--ash));
+}
+.volcanic-state h3 {
+  margin: 0 0 0.3rem;
+}
+.volcanic-state p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.volcanic-state p strong {
+  color: var(--text);
+}
+
+.volcanic-state--stable   { --state: var(--positive); }
+.volcanic-state--heating  { --state: var(--lava-core); }
+.volcanic-state--unstable { --state: var(--lava-hot); }
+.volcanic-state--critical { --state: #ff4d3d; }
+.volcanic-state--unknown  { --state: var(--text-faint); }
+
+/* Active eruption — the most dangerous state gets a hotter wash and a
+   slow pulsing glow so it draws the eye. */
+.volcanic-state--eruption {
+  --state: #ff3b19;
+  border-color: color-mix(in srgb, var(--state) 60%, var(--border));
+  background:
+    radial-gradient(120% 160% at 100% 0%, color-mix(in srgb, var(--state) 22%, transparent), transparent 60%),
+    color-mix(in srgb, var(--state) 12%, var(--ash));
+  animation: volcanic-pulse 2.8s ease-in-out infinite;
+}
+@keyframes volcanic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--state) 40%, transparent); }
+  50%      { box-shadow: 0 0 18px -2px color-mix(in srgb, var(--state) 55%, transparent); }
+}
+
+/* ── Equipment panel (was unstyled) ─────────────────────── */
+.console-panel {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ash-line);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
+.console-panel h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.98rem;
+}
+.console-panel .action-grid {
+  margin: 0.4rem 0 0;
+}
+
+/* ── Cargo meters ───────────────────────────────────────── */
+.cargo-meter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.cargo-meter > div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem;
+  border: 1px solid var(--ash-line);
+  border-radius: 10px;
+  background: var(--ash);
+}
+.cargo-meter span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.cargo-meter strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Event log ──────────────────────────────────────────── */
+.expedition-log {
+  max-height: 18rem;
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  overflow: auto;
+}
+.expedition-log li {
+  margin: 0.2rem 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* ── Museum artifact list ───────────────────────────────── */
+.artifact-row {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.15rem;
+  border-bottom: 1px solid var(--ash-line);
+}
+.artifact-row:last-child {
+  border-bottom: 0;
+}
+.artifact-row small {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.artifact-row.is-owned {
+  opacity: 0.7;
+}
+.artifact-row.is-owned strong {
+  color: var(--positive);
+}
+
+/* ── Misc ───────────────────────────────────────────────── */
+.warning {
+  color: #ff7a45;
+  font-weight: 600;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 850px) {
+  .volcanic-grid { grid-template-columns: 1fr; }
+  .volcanic-overview { grid-template-columns: 1fr; }
+  .cargo-meter { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volcanic-state--eruption { animation: none; }
+  .progress-track > i { transition: none; }
+}

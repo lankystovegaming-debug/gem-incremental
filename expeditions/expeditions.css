@@ -57,6 +57,10 @@
 .destination{display:flex;min-height:240px;flex-direction:column;gap:.75rem;padding:1.2rem}
 .destination h2{margin:.25rem 0 0}
 .destination p{color:var(--text-muted)}
+/* Buttons live inside .destination__actions, so push that wrapper (the real
+   flex child) to the bottom to keep CTAs aligned across cards of differing
+   text height; .destination .btn alone no longer sits directly in the column. */
+.destination__actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:auto}
 .destination .btn{margin-top:auto}
 .destination--active{grid-column:span 2;border-color:color-mix(in srgb,var(--accent) 55%,var(--border));background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 12%,var(--surface-solid)),var(--surface-solid))}
 .destination--wip{cursor:not-allowed;filter:saturate(.3);opacity:.6}
