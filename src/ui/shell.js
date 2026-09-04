@@ -62,6 +62,7 @@ const PAGES = [
   { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.island, sectionId: "islands" },
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.castle, sectionId: "dungeons" },
+  { id: "gemdle", label: "Gemdle", short: "Gemdle", href: "gemdle/", icon: icons.dice },
   { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.wheel, sectionId: "daily-spin" },
   { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords, sectionId: "wars" },
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords, sectionId: "pvp" },
