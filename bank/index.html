@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0e14">
+<meta name="description" content="Save, earn interest, build credit, and borrow at the Gem Incremental bank.">
+<title>Bank · Gem Incremental</title>
+<link rel="icon" href="../src/assets/favicon.ico">
+<link rel="stylesheet" href="../src/styles/app.css">
+<link rel="stylesheet" href="./bank.css">
+<script>(function(){try{var m=localStorage.getItem("gemIncremental.theme.mode"),a=localStorage.getItem("gemIncremental.theme.accent");if(m)document.documentElement.dataset.theme=m;document.documentElement.dataset.accent=a||"indigo"}catch(e){}})()</script>
+</head><body><main class="app-main bank-page">
+  <header class="page-head">
+    <div class="page-head__title">
+      <p class="bank-eyebrow">Central Bank</p>
+      <h1>Bank</h1>
+      <p class="page-head__sub">Earn compounding interest on savings, build your credit score, and borrow against it.</p>
+    </div>
+    <a class="btn" href="../">Back to Roll</a>
+  </header>
+
+  <section id="status" class="card bank-status" aria-live="polite">Loading your accounts…</section>
+
+  <section class="bank-grid">
+    <article class="card bank-card"><h2>Savings</h2><div id="savings"></div></article>
+    <article class="card bank-card"><h2>Credit score</h2><div id="credit"></div></article>
+    <article class="card bank-card bank-card--wide"><h2>Loans</h2><div id="loan"></div></article>
+    <article class="card bank-card bank-card--wide"><h2>Recent activity</h2><div id="ledger"></div></article>
+  </section>
+</main>
+<script type="module" src="./bank.js"></script>
+</body></html>

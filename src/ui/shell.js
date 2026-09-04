@@ -67,6 +67,7 @@ const PAGES = [
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords, sectionId: "pvp" },
   { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.skull, sectionId: "world-bosses" },
   { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.vault, sectionId: "relic-vault" },
+  { id: "bank", label: "Bank", short: "Bank", href: "bank/", icon: icons.coins, sectionId: "bank" },
   { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.calendar, sectionId: "seasons" },
   { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.quest, sectionId: "bounties" },
   { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.map, sectionId: "treasure-expeditions" },
