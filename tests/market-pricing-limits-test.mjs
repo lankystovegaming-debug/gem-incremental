@@ -4,7 +4,7 @@ import consumables, { getConsumableById } from "../src/data/consumables.js";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const migration = read("supabase/migrations/20260831140308_enforce_market_pricing_limits.sql");
-const tier4Migration = read("supabase/migrations/20260904130000_tier4_potion_market_values.sql");
+const tier4Migration = read("supabase/migrations/20260904150000_tier4_potion_market_values.sql");
 const market = read("auctions/auctions.js");
 const page = read("auctions/index.html");
 

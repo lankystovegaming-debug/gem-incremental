@@ -1,4 +1,4 @@
--- Add auction reference values for the timed Tier IV potions.
+-- auction reference values for the Tier IV potions
 
 create or replace function public._market_consumable_shop_value(p_consumable_id text)
 returns numeric
