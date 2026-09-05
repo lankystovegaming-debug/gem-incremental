@@ -37,6 +37,12 @@ export function patchCells(board, cells) {
       const contentChanged = prevHtml !== undefined && prevHtml !== nextHtml;
       if (justOpened || contentChanged) replay(node, "mg-cell--pop");
     }
+    // Minesweeper flags: mark the cell and give a small pop when one is placed.
+    const flagged = nextHtml === "⚑";
+    if (node.classList.contains("mg-cell--flag") !== flagged) {
+      node.classList.toggle("mg-cell--flag", flagged);
+      if (flagged) replay(node, "mg-cell--pop");
+    }
     if (cell.tile !== undefined && node.dataset.tile !== String(cell.tile)) {
       node.dataset.tile = cell.tile;
       node.classList.toggle("filled", !!cell.tile);
@@ -63,6 +69,72 @@ function collect(node) {
   node.style.transform = `${base} scale(1.85)`;
   node.style.opacity = "0";
   setTimeout(() => node.remove(), 240);
+}
+
+// A Fruit-Ninja-style blade trail for Ore Slicer: a glowing, tapering streak
+// that follows the swipe and fades. Drawn on a canvas layered above the gems,
+// fed normalized (0..1) points from the arena's pointer handler.
+export function createBladeTrail(arena) {
+  if (reduceMotion) {
+    return { add() {}, draw() {}, destroy() {} };
+  }
+  const canvas = document.createElement("canvas");
+  canvas.className = "mg-trail";
+  arena.append(canvas);
+  const ctx = canvas.getContext("2d");
+  const accent =
+    getComputedStyle(arena).getPropertyValue("--accent").trim() || "#8ab4ff";
+  let w = 0,
+    h = 0;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const fit = () => {
+    w = arena.clientWidth;
+    h = arena.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  fit();
+  const resize = new ResizeObserver(fit);
+  resize.observe(arena);
+
+  const LIFE = 230; // ms a point stays visible
+  let points = [];
+  const add = (nx, ny) => {
+    points.push({ x: nx * w, y: ny * h, t: performance.now() });
+  };
+  const draw = () => {
+    const now = performance.now();
+    while (points.length && now - points[0].t > LIFE) points.shift();
+    ctx.clearRect(0, 0, w, h);
+    if (points.length < 2) return;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = accent;
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1],
+        b = points[i];
+      const life = Math.max(0, 1 - (now - b.t) / LIFE);
+      ctx.globalAlpha = life;
+      ctx.lineWidth = 2 + 14 * life; // thick near the tip, thin as it fades
+      ctx.shadowBlur = 14 * life;
+      ctx.strokeStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  };
+  return {
+    add,
+    draw,
+    destroy() {
+      resize.disconnect();
+      canvas.remove();
+    },
+  };
 }
 
 export function createArcadeRenderer(arena, icon) {

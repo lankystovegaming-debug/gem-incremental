@@ -276,6 +276,23 @@
   60%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+/* Minesweeper: classic adjacent-count colours + flag feedback. */
+.mg-mine-n {
+  font-weight: 800;
+}
+.mg-mine-n-1 { color: #4c8bf5; }
+.mg-mine-n-2 { color: #3fb950; }
+.mg-mine-n-3 { color: #e5534b; }
+.mg-mine-n-4 { color: #a371f7; }
+.mg-mine-n-5 { color: #d29922; }
+.mg-mine-n-6 { color: #39c5cf; }
+.mg-mine-n-7 { color: #f778ba; }
+.mg-mine-n-8 { color: #8b949e; }
+.mg-cell--flag {
+  background: color-mix(in srgb, var(--negative, #e5534b) 14%, var(--surface-sunken));
+  border-color: color-mix(in srgb, var(--negative, #e5534b) 42%, var(--border));
+  color: var(--negative, #e5534b);
+}
 
 /* 2048 tiles */
 .mg-2048 .mg-cell {
@@ -379,6 +396,13 @@
   pointer-events: none;
   filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.5));
   will-change: transform;
+}
+/* Ore Slicer blade trail — canvas layered above the gems, never blocks input. */
+.mg-trail {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
 }
 .mg-cart {
   position: absolute;

@@ -7,6 +7,7 @@ import {
   setHtml,
   patchCells,
   createArcadeRenderer,
+  createBladeTrail,
 } from "./rendering.js";
 import { getSettings } from "../src/ui/settings.js";
 import { pieceCells } from "./stack.js";
@@ -38,9 +39,18 @@ function icon(name) {
   }
   return iconCache.get(key);
 }
+// Minesweeper cell face: colour the adjacent-deposit counts the classic way
+// (1 blue, 2 green, 3 red…) so the board reads at a glance.
+function mineText(v) {
+  return typeof v === "number" && v > 0
+    ? `<span class="mg-mine-n mg-mine-n-${Math.min(8, v)}">${v}</span>`
+    : (v ?? "");
+}
+
 let frameTimer = 0,
   arcadeRenderer = null,
-  arcadeArena = null;
+  arcadeArena = null,
+  bladeTrail = null;
 const animatedGames = new Set(["gem-catcher", "ore-slicer", "perfect-strike"]);
 const timedGames = new Set(["mine-sweeper", "price-is-right", "gem-stack"]);
 function stopFrames() {
@@ -257,8 +267,10 @@ function renderWallet() {
 }
 function route() {
   arcadeRenderer?.destroy();
+  bladeTrail?.destroy();
   arcadeRenderer = null;
   arcadeArena = null;
+  bladeTrail = null;
   stopFrames();
   inputs = [];
   run = null;
@@ -386,7 +398,7 @@ function updateBoard(s) {
   if (s.game === "mine-sweeper") {
     const flags = new Set(s.flags);
     cells = s.cells.map((v, i) => ({
-      text: flags.has(i) ? "⚑" : (v ?? ""),
+      text: flags.has(i) ? "⚑" : mineText(v),
       open: v !== null,
     }));
     summary = `${s.mines - s.lost}/${s.mines} MT preserved · ${s.flags.length} flags`;
@@ -450,8 +462,10 @@ function render() {
   const s = run.state;
   if (s.done) {
     arcadeRenderer?.destroy();
+    bladeTrail?.destroy();
     arcadeRenderer = null;
     arcadeArena = null;
+    bladeTrail = null;
   }
   if (!s.done && updateBoard(s)) return;
   $("start").hidden = !s.done;
@@ -465,7 +479,7 @@ function render() {
       grid(
         s.n,
         s.cells.map((v, i) => ({
-          text: s.flags.includes(i) ? "⚑" : (v ?? ""),
+          text: s.flags.includes(i) ? "⚑" : mineText(v),
           open: v !== null,
         })),
       );
@@ -645,16 +659,20 @@ function bind() {
     const sample = (e) => {
       const r = arena.getBoundingClientRect();
       cursor = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      if (game.id === "ore-slicer" && drag)
+      if (game.id === "ore-slicer" && drag) {
+        const y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
         inputs.push({
           t: Math.min(
             run.state.duration,
             Date.now() + offset - run.state.started,
           ),
           x: cursor,
-          y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)),
+          y,
           swipe,
         });
+        // Feed the blade trail so it traces the swipe.
+        bladeTrail?.add(cursor, y);
+      }
     };
     arena.onpointerdown = (e) => {
       arena.setPointerCapture(e.pointerId);
@@ -752,10 +770,16 @@ function frame() {
       lastDraw = now;
       if (arcadeArena !== arena) {
         arcadeRenderer?.destroy();
+        bladeTrail?.destroy();
         arcadeArena = arena;
         arcadeRenderer = createArcadeRenderer(arena, icon);
+        bladeTrail =
+          s.game === "ore-slicer" ? createBladeTrail(arena) : null;
       }
-      if (!document.hidden) arcadeRenderer(s, t);
+      if (!document.hidden) {
+        arcadeRenderer(s, t);
+        bladeTrail?.draw();
+      }
     }
 
     if (s.game === "gem-catcher") {
@@ -812,8 +836,10 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pagehide", () => {
   stopFrames();
   arcadeRenderer?.destroy();
+  bladeTrail?.destroy();
   arcadeRenderer = null;
   arcadeArena = null;
+  bladeTrail = null;
 });
 window.addEventListener("pageshow", scheduleFrame);
 window.addEventListener("keyup", (e) => keys.delete(e.key));
@@ -827,8 +853,10 @@ supabase.auth.onAuthStateChange((event) => {
     delete $("wallet")._minigameHtml;
     $("wallet").textContent = "Sign in to load tickets and MT.";
     arcadeRenderer?.destroy();
+    bladeTrail?.destroy();
     arcadeRenderer = null;
     arcadeArena = null;
+    bladeTrail = null;
     if ($("play")) $("play").replaceChildren();
     if ($("start")) $("start").hidden = false;
     stopFrames();
