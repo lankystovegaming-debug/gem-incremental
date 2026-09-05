@@ -15,7 +15,7 @@ import { confirmDialog } from "../src/ui/dialog.js";
 // =========================================================
 
 const SVGNS = "http://www.w3.org/2000/svg";
-const POLL_MS = 30000;
+const POLL_MS = 60000;
 
 const chart = document.querySelector("[data-chart]");
 const wrap = chart.parentElement;
