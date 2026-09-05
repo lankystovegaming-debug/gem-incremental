@@ -10,6 +10,7 @@
     "test:gemdle": "node --test tests/gemdle-test.mjs",
     "test:minigames": "node --test tests/minigames-test.mjs tests/minigames-handler-test.mjs",
     "test:minigames-db": "node tests/minigames-database-test.mjs",
-    "test:minigames-ui": "node tests/minigames-ui-test.mjs"
+    "test:minigames-ui": "node tests/minigames-ui-test.mjs",
+    "test:minigames-render": "node tests/minigames-render-test.mjs"
   }
 }

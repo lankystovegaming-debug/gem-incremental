@@ -297,3 +297,11 @@ button:disabled {
   width: 28px;
   height: 28px;
 }
+
+/* Keep moving gem layout local and let transforms move existing sprites. */
+.mg-arena {
+  contain: layout paint;
+}
+.mg-object {
+  will-change: transform;
+}
