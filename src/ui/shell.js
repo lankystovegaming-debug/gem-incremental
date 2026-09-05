@@ -52,6 +52,7 @@ const PAGES = [
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
   { id: "boosts", label: "Shop", short: "Shop", href: "boosts/", icon: icons.potion },
   { id: "auctions", label: "Market", short: "Market", href: "auctions/", icon: icons.gavel },
+  { id: "expeditions", label: "Expeditions", short: "Exped.", href: "expeditions/", icon: icons.map },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
@@ -61,10 +62,13 @@ const PAGES = [
   { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.island, sectionId: "islands" },
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.castle, sectionId: "dungeons" },
+  { id: "minigames", label: "Minigames", short: "Games", href: "minigames/", icon: icons.dice },
+  { id: "gemdle", label: "Gemdle", short: "Gemdle", href: "gemdle/", icon: icons.dice },
   { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords, sectionId: "wars" },
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords, sectionId: "pvp" },
   { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.skull, sectionId: "world-bosses" },
   { id: "relic-vault", label: "Relic Vault", short: "Relics", href: "relic-vault/", icon: icons.vault, sectionId: "relic-vault" },
+  { id: "bank", label: "Bank", short: "Bank", href: "bank/", icon: icons.coins, sectionId: "bank" },
   { id: "seasons", label: "Seasons", short: "Season", href: "seasons/", icon: icons.calendar, sectionId: "seasons" },
   { id: "bounties", label: "Bounty Board", short: "Bounties", href: "bounties/", icon: icons.quest, sectionId: "bounties" },
   { id: "treasure-expeditions", label: "Treasure Expeditions", short: "Expeditions", href: "treasure-expeditions/", icon: icons.map, sectionId: "treasure-expeditions" },
@@ -82,7 +86,7 @@ const PAGES = [
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
-const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions"]);
+const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
 const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
 const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
 

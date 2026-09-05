@@ -1,9 +1,11 @@
 import { supabase } from "./supabase.js";
 const MESSAGES={insufficient_funds:"You do not have enough money for that operation.",mine_run_already_open:"Finish the current Mine run before starting another.",mine_depth_out_of_sequence:"That depth is not ready for funding.",hell_depth_out_of_sequence:"That Hell depth is not ready.",hell_event_unavailable:"That Hell event has already moved on.",invalid_hell_event_option:"That event option is unavailable.",hell_paid_support_disabled:"Severed Funding has disabled paid support.",hell_safeguards_disabled:"Broken Safeguards prevents securing new cargo.",hell_cards_unavailable:"The Hell hand is not ready.",hell_card_invalid:"That card cannot be used.",hell_reveals_disabled:"A Doom Break has disabled card reveals.",hell_overdepth_unavailable:"Hell Overdepth is not available yet.",hell_extraction_unavailable:"Extraction is not available during this phase.",hell_not_extracted:"Extract safely before settling this Hell run.",mine_route_unavailable:"This route decision is no longer available.",invalid_mine_route:"That route is not valid here.",supply_camp_unavailable:"That checkpoint service is no longer available.",invalid_camp_service:"That Supply Camp service is not valid.",mine_overdepth_unavailable:"Mine Overdepth is not available yet.",mine_not_active:"That expedition is no longer active.",mine_not_extracted:"Extract before settling the expedition."};
+Object.assign(MESSAGES,{volcanic_run_already_open:"Finish the current Volcanic run before starting another.",volcanic_depth_unavailable:"That Volcanic depth is not ready for funding.",volcanic_monitoring_unavailable:"That Monitoring upgrade is not available here.",volcanic_cooling_unavailable:"That Cooling charge is not available here.",volcanic_lift_unavailable:"This Evacuation Lift is unavailable or already used.",volcanic_sampling_unavailable:"Magma Sampling is unavailable in the current state.",volcanic_overdepth_unavailable:"Volcanic Overdepth is not available yet.",volcanic_extraction_unavailable:"Extraction is unavailable during the current phase.",volcanic_not_extracted:"Extract before settling the Volcanic expedition."});
 function normalise(error){if(!error)return null;const code=Object.keys(MESSAGES).find(value=>error.message?.includes(value))??error.code;return{code,message:MESSAGES[code]??"The expedition request could not be completed."};}
 async function rpc(name,args){const{data,error}=await supabase.rpc(name,args);return{data,error:normalise(error)};}
 export const loadExpeditionDashboard=()=>rpc("get_abandoned_mine_dashboard");
 export const loadHellDashboard=()=>rpc("get_abandoned_mine_hell_dashboard");
+export const loadHellArtifactFinds=runId=>rpc("get_mine_hell_artifact_finds",{p_run_id:runId});
 export const fundMineDepth=depth=>rpc("fund_abandoned_mine",{p_depth:depth});
 export const chooseMineRoute=(runId,route)=>rpc("choose_abandoned_mine_route",{p_run_id:runId,p_route:route});
 export const chooseSupplyCampService=(runId,service)=>rpc("choose_abandoned_mine_camp_service",{p_run_id:runId,p_service:service});
@@ -20,10 +22,25 @@ export const extractHellMine=runId=>rpc("extract_abandoned_mine_hell",{p_run_id:
 export const settleHellMine=runId=>rpc("settle_abandoned_mine_hell",{p_run_id:runId});
 export const loadCrystalDashboard=()=>rpc("get_crystal_caverns_dashboard");
 export const startCrystalCaverns=()=>rpc("start_crystal_caverns");
+export const startCrystalCavernsHell=()=>rpc("start_crystal_caverns_hell");
 export const setCrystalIntensity=(runId,intensity)=>rpc("set_crystal_intensity",{p_run_id:runId,p_intensity:intensity});
 export const fundCrystalDepth=(runId,depth)=>rpc("fund_crystal_depth",{p_run_id:runId,p_depth:depth});
+export const fundCrystalHellDepth=(runId,depth)=>rpc("fund_crystal_hell_depth",{p_run_id:runId,p_depth:depth});
 export const resolveCrystalDecision=(runId,choice)=>rpc("resolve_crystal_decision",{p_run_id:runId,p_choice:choice});
+export const resolveCrystalHellDecision=(runId,choice)=>rpc("resolve_crystal_hell_decision",{p_run_id:runId,p_choice:choice});
 export const skipCrystalOutpost=runId=>rpc("skip_crystal_outpost",{p_run_id:runId});
+export const skipCrystalHellOutpost=runId=>rpc("skip_crystal_hell_outpost",{p_run_id:runId});
 export const continueCrystalOverdepth=runId=>rpc("continue_crystal_overdepth",{p_run_id:runId});
+export const continueCrystalHellOverdepth=runId=>rpc("continue_crystal_hell_overdepth",{p_run_id:runId});
 export const extractCrystalCaverns=runId=>rpc("extract_crystal_caverns",{p_run_id:runId});
 export const settleCrystalCaverns=runId=>rpc("settle_crystal_caverns",{p_run_id:runId});
+export const loadVolcanicDashboard=()=>rpc("get_volcanic_depths_dashboard");
+export const startVolcanicDepths=()=>rpc("start_volcanic_depths");
+export const fundVolcanicDepth=(runId,depth)=>rpc("fund_volcanic_depth",{p_run_id:runId,p_depth:depth});
+export const buyVolcanicMonitoring=(runId,tier)=>rpc("buy_volcanic_monitoring",{p_run_id:runId,p_tier:tier});
+export const buyVolcanicCooling=(runId,tier)=>rpc("buy_volcanic_cooling",{p_run_id:runId,p_tier:tier});
+export const useVolcanicLift=runId=>rpc("use_volcanic_lift",{p_run_id:runId});
+export const sampleVolcanicMagma=runId=>rpc("sample_volcanic_magma",{p_run_id:runId});
+export const continueVolcanicOverdepth=runId=>rpc("continue_volcanic_overdepth",{p_run_id:runId});
+export const extractVolcanicDepths=runId=>rpc("extract_volcanic_depths",{p_run_id:runId});
+export const settleVolcanicDepths=runId=>rpc("settle_volcanic_depths",{p_run_id:runId});

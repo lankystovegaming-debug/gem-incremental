@@ -13,7 +13,6 @@ import {
   sellCloudGem
 } from "./src/backend/cloudInventory.js";
 import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
-import { loadExpeditionDashboard } from "./src/backend/cloudExpeditions.js";
 
 import { mountShell } from "./src/ui/shell.js";
 import { initReferral } from "./src/ui/referralBootstrap.js";
@@ -85,7 +84,6 @@ const sessionNotable = document.getElementById("sessionNotable");
 
 const historyList = document.getElementById("historyList");
 const clearHistory = document.getElementById("clearHistory");
-const expeditionPreview = document.getElementById("expeditionPreview");
 
 async function applyMainSectionSettings() {
   try {
@@ -215,26 +213,6 @@ function renderAutomationPulse() {
   const minutes = Math.max(1 / 60, (Date.now() - automationStats.startedAt) / 60000);
   automationPulse.innerHTML = `<strong>${getSettings().autoRoll ? "Auto roll active" : automationStats.status}</strong><span>${(automationStats.rolls / minutes).toFixed(1)} rolls/min</span><span>${formatMoney(automationStats.earned, { compact: true })} earned</span><span>${automationStats.kept} kept · ${automationStats.sold} sold</span>`;
 }
-
-function previewValue(quest) {
-  const p=quest?.progress||{},t=quest?.target||{};
-  if ("count" in t) return [p.count||0,t.count];
-  if ("score" in t) return [p.score||0,t.score];
-  if ("points" in t) return [p.points||0,t.points];
-  if ("names" in t) return [Array.isArray(p.names)?p.names.length:0,t.names];
-  if ("tiers" in t) return [Array.isArray(p.tiers)?p.tiers.length:0,t.tiers];
-  if ("days" in t) return [Object.values(p.days||{}).filter(v=>v>=t.daily).length,t.days];
-  return [0,1];
-}
-
-async function refreshExpeditionPreview() {
-  const { data,error }=await loadExpeditionDashboard();
-  if(error||!data){expeditionPreview.innerHTML='<p class="history__empty">Expedition status is temporarily unavailable.</p>';return;}
-  const active=[data.daily?.active,data.weekly?.active].filter(Boolean);
-  if(!active.length){expeditionPreview.innerHTML=`<div class="expedition-preview__empty"><div><strong>New routes are waiting</strong><p>Two Daily entries and one Weekly path are available.</p></div><a href="./expeditions/">Choose a route →</a></div>`;return;}
-  expeditionPreview.innerHTML=active.map(e=>{const complete=e.quests.filter(q=>q.completed_at).length,q=e.quests.find(q=>!q.completed_at)||e.quests.at(-1),[now,target]=previewValue(q),pct=q?.completed_at?100:Math.min(100,now/target*100);return `<div class="expedition-preview__row"><div><span class="badge">${escapeHtml(e.cadence)}</span><strong>${escapeHtml(e.difficulty)} · ${escapeHtml(q?.title||"Complete")}</strong><small>${complete}/${e.quests.length} quests secured · ${Number(now).toLocaleString()}/${Number(target).toLocaleString()}</small></div><div class="expedition-preview__bar"><span style="width:${pct}%"></span></div></div>`}).join("");
-}
-
 
 async function refreshPlayerState() {
   const [playerState, inventoryResult] = await Promise.all([
@@ -826,7 +804,6 @@ async function performRoll() {
   // immediately, including mutation-only rare combinations. The server-side
   // announcement remains authoritative for persisted/global messages.
   window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
-  refreshExpeditionPreview();
 
   if (data.cooldown?.nextRollAt) {
     startCooldown(
@@ -1264,7 +1241,6 @@ async function startGame() {
   }
 
   refreshEffects();
-  refreshExpeditionPreview();
 
   await restoreCooldown(playerState.next_roll_at);
 }

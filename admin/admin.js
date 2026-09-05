@@ -35,7 +35,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1613,6 +1613,91 @@ shareholdersRefresh?.addEventListener("click", loadShareholders);
 
 
 // =========================================================
+// BANK ACCOUNTS (admin only)
+// =========================================================
+
+const bankPanel = document.getElementById("bankPanel");
+const bankRefresh = document.getElementById("bankRefresh");
+const bankSummary = document.getElementById("bankSummary");
+const bankContent = document.getElementById("bankContent");
+const bankFilter = document.getElementById("bankFilter");
+
+let bankAccounts = [];
+
+function bankStatusCell(account) {
+  if (account.inDefault) return '<td><span class="bank-chip bank-chip--default">In default</span></td>';
+  if (account.borrowFrozen) return '<td><span class="bank-chip bank-chip--frozen">Frozen</span></td>';
+  if (Number(account.loanTotal) > 0) return '<td><span class="bank-chip bank-chip--loan">Loan</span></td>';
+  return '<td><span class="bank-chip">—</span></td>';
+}
+
+function renderBankAccounts() {
+  const query = (bankFilter?.value ?? "").trim().toLowerCase();
+  const rows = bankAccounts
+    .filter((account) => !query || String(account.username ?? "").toLowerCase().includes(query))
+    .map((account) => `
+      <tr>
+        <td>${escapeHtml(account.username ?? "Unknown")}</td>
+        <td class="num">${formatMoney(Number(account.balance ?? 0))}</td>
+        <td class="num ${Number(account.loanTotal) > 0 ? "is-down" : ""}">${formatMoney(Number(account.loanTotal ?? 0))}</td>
+        <td class="num">${Number(account.creditScore ?? 0)}</td>
+        <td>${escapeHtml(account.creditBand ?? "")}</td>
+        ${bankStatusCell(account)}
+      </tr>`).join("");
+
+  bankContent.innerHTML = rows
+    ? `<div class="shareholders-table-wrap">
+        <table class="shareholders-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th class="num">Savings</th>
+              <th class="num">Loan owed</th>
+              <th class="num">Credit</th>
+              <th>Band</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`
+    : '<div class="empty"><p class="empty__title">No matching accounts.</p></div>';
+}
+
+async function loadBankAccounts() {
+  if (!bankPanel) return;
+  bankPanel.hidden = false;
+  bankContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_get_bank_overview");
+  if (error) {
+    bankContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load bank accounts</p><p>${escapeHtml(error.message)}</p></div>`;
+    bankSummary.textContent = "Failed to load.";
+    return;
+  }
+
+  bankAccounts = Array.isArray(data?.accounts) ? data.accounts : [];
+  bankSummary.innerHTML =
+    `<strong>${data?.accountCount ?? bankAccounts.length}</strong> account(s) · ` +
+    `deposits <strong>${formatMoney(Number(data?.totalDeposits ?? 0))}</strong> · ` +
+    `owed <span class="is-down">${formatMoney(Number(data?.totalOwed ?? 0))}</span> · ` +
+    `${data?.activeLoans ?? 0} active loan(s) · ` +
+    `<span class="${Number(data?.inDefaultCount) > 0 ? "is-down" : ""}">${data?.inDefaultCount ?? 0} in default</span> · ` +
+    `avg credit <strong>${data?.avgCredit ?? 0}</strong>`;
+
+  if (!bankAccounts.length) {
+    bankContent.innerHTML = '<div class="empty"><p class="empty__title">No bank accounts yet.</p></div>';
+    return;
+  }
+  renderBankAccounts();
+}
+
+bankRefresh?.addEventListener("click", loadBankAccounts);
+bankFilter?.addEventListener("input", renderBankAccounts);
+
+
+// =========================================================
 // GUILD ROSTER — read-only "who is in which guild" overview (admin only)
 // =========================================================
 
@@ -1993,6 +2078,113 @@ if (!user || !whoami?.isAdmin) {
   await wireMutationEvents();
   await loadMutationCatalog();
   await loadShareholders();
+  await loadBankAccounts();
   await loadGuildRoster();
   searchInput.focus();
 }
+
+
+// =========================================================
+// ADMIN TAB NAVIGATION
+//
+// Groups the admin panels into top-level tabs so the page is a set of
+// focused sections instead of one long scroll. Player search + the player
+// panel live in their own "Search" tab (separate from Feature Lab). This
+// is a thin presentational layer: it moves the existing panels into tab
+// pages and reuses their existing loaders, so their behaviour is unchanged.
+// =========================================================
+(function initAdminTabs() {
+  const tabBar = document.getElementById("adminTabs");
+  const mainEl = document.querySelector("main.app-main");
+  const featureLabShell = document.getElementById("adminFeatureLab");
+  if (!tabBar || !mainEl) return;
+
+  // These header buttons are replaced by the Economy / Community tabs (their
+  // panels load lazily on tab open). The `.btn` styles override the `hidden`
+  // attribute, so hide them explicitly; keep them in the DOM for their loaders.
+  ["analyticsButton", "ipAuditButton"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.style.display = "none";
+  });
+
+  const GROUPS = {
+    search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
+    economy: ["#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
+    content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel"],
+    community: ["#guildRosterPanel", "#ipAuditPanel"]
+  };
+
+  // Build one page wrapper per tab and move the matching panels into it.
+  const pages = {};
+  for (const [name, selectors] of Object.entries(GROUPS)) {
+    const page = document.createElement("div");
+    page.className = "admin-tab-page";
+    page.dataset.adminTabPage = name;
+    page.hidden = true;
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (el) page.appendChild(el);
+    }
+    mainEl.insertBefore(page, featureLabShell || null);
+    pages[name] = page;
+  }
+
+  // Heavier panels are only loaded when their tab is first opened.
+  const LAZY = {
+    economy: () => (typeof loadAnalytics === "function" ? loadAnalytics() : null),
+    community: () => (typeof loadIpAudit === "function" ? loadIpAudit() : null)
+  };
+  const loaded = new Set();
+  let active = "search";
+
+  function showAdminTab(name) {
+    if (!pages[name]) return;
+    active = name;
+    for (const [tab, page] of Object.entries(pages)) page.hidden = tab !== name;
+    tabBar.querySelectorAll("[data-admin-tab]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.adminTab === name);
+    });
+    if (!loaded.has(name) && LAZY[name]) {
+      loaded.add(name);
+      try { LAZY[name](); } catch (error) { console.error("[ADMIN] tab load failed:", error); }
+    }
+  }
+
+  tabBar.querySelectorAll("[data-admin-tab]").forEach((button) => {
+    button.addEventListener("click", () => showAdminTab(button.dataset.adminTab));
+  });
+
+  // The audit-log button lives in the header; jump to the Search tab (where
+  // the audit panel now lives) when it is used.
+  document.getElementById("auditButton")?.addEventListener("click", () => showAdminTab("search"));
+
+  function reveal() {
+    tabBar.hidden = false;
+    showAdminTab(active);
+  }
+
+  // Reveal the tabs only once admin access is verified — the same moment the
+  // Feature Lab button becomes enabled.
+  const flButton = document.getElementById("featureLabButton");
+  if (flButton && !flButton.disabled) {
+    reveal();
+  } else if (flButton) {
+    const observer = new MutationObserver(() => {
+      if (!flButton.disabled) { observer.disconnect(); reveal(); }
+    });
+    observer.observe(flButton, { attributes: true, attributeFilter: ["disabled"] });
+  } else {
+    reveal();
+  }
+
+  // Feature Lab is a separate full-page overlay: hide the tabbed area while it
+  // is open, and restore the active tab when returning.
+  flButton?.addEventListener("click", () => {
+    tabBar.hidden = true;
+    Object.values(pages).forEach((page) => { page.hidden = true; });
+  });
+  document.getElementById("featureLabBack")?.addEventListener("click", reveal);
+  document.getElementById("adminPanelBack")?.addEventListener("click", reveal);
+
+  window.showAdminTab = showAdminTab;
+})();

@@ -1249,7 +1249,7 @@ const POTION_STATS = {
   weightMultiplier: "Weight multiplier"
 };
 
-const POTION_NUMERALS = ["", "I", "II", "III"];
+const POTION_NUMERALS = ["", "I", "II", "III", "IV"];
 
 let boostTicker = null;
 
@@ -1434,7 +1434,7 @@ function renderConsumables() {
                   )} left.`
                 : def.oneRoll
                 ? "Applies to your next successful roll, stacks, and does not expire."
-                : def.tier < 3
+                : def.tier < 4
                 ? `Craft with gems to reach ${escapeHtml(
                     `${def.name.split(" ").slice(0, -1).join(" ")} ${
                       POTION_NUMERALS[def.tier + 1]

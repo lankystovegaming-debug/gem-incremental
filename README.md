@@ -4,7 +4,7 @@ Gem Incremental is a browser-based incremental game about rolling gems, building
 
 Play at [gemincremental.com](https://gemincremental.com).
 
-The website is a static front end backed by Supabase. Progress-changing actions—including rolls, sales, crafting, rewards, and upgrades—are validated by the server through database functions and Edge Functions.
+The website is a static front end backed by Supabase. Progress-changing actions—including rolls, sales, crafting, rewards, and upgrades—are validated by the server through database and Edge Functions.
 
 ## Game systems
 

@@ -4,6 +4,7 @@ import consumables, { getConsumableById } from "../src/data/consumables.js";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const migration = read("supabase/migrations/20260831140308_enforce_market_pricing_limits.sql");
+const tier4Migration = read("supabase/migrations/20260904150000_tier4_potion_market_values.sql");
 const market = read("auctions/auctions.js");
 const page = read("auctions/index.html");
 
@@ -15,6 +16,10 @@ assert.match(migration, /coalesce\(g\.base_weight, 0\) \* coalesce\(g\.value_per
 assert.match(migration, /v_minimum_price := ceil\(v_base_value \* 0\.25\)/);
 assert.match(migration, /v_maximum_price := floor\(v_base_value \* 4\)/);
 assert.match(migration, /public\.player_market_fee_rate\(v_uid, public\._market_order_fee_rate\(p_price\)\)/);
+assert.match(tier4Migration, /when 'lucky-potion-4' then 500000/);
+assert.match(tier4Migration, /when 'speed-potion-4' then 400000/);
+assert.match(tier4Migration, /when 'fortune-potion-4' then 500000/);
+assert.match(tier4Migration, /when 'mass-potion-4' then 750000/);
 
 assert.equal(getConsumableById("lucky-potion-1").marketReferencePrice, 200);
 assert.equal(getConsumableById("mass-potion-3").marketReferencePrice, 250000);

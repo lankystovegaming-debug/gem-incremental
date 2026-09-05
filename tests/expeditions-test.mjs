@@ -31,7 +31,8 @@ assert.match(migration,/depth not in \(3,6,9\)/);assert.match(migration,/secured
 assert.match(migration,/create or replace function public\.extract_abandoned_mine/);assert.match(migration,/case when status='forced_extraction' then secured_cargo else secured_cargo\|\|unsecured_cargo end/);assert.match(migration,/status=case when status='forced_extraction' then 'forced_extraction' else 'extracted' end/);assert.match(migration,/create or replace function public\.settle_abandoned_mine/);assert.match(migration,/on conflict\(player_id,artifact_key\) do nothing/);assert.match(migration,/v_duplicate_value:=v_duplicate_value\+/);assert.match(migration,/lifetime_earnings=lifetime_earnings\+v_cargo_value\+v_duplicate_value/);assert.match(migration,/create or replace function public\.continue_mine_overdepth/);assert.match(migration,/overdepth=overdepth\+1/);
 assert.match(html,/destination--active[^>]*>[\s\S]*?<h2>Crystal Caverns<\/h2>[\s\S]*?crystal-caverns/);
 assert.match(html,/destination--active[^>]*>[\s\S]*?<h2>Abandoned Mine<\/h2>[\s\S]*?abandoned-mine/);
-for(const name of ["Volcanic Depths","Ancient Ruins","Lost Jungle"]){assert.match(html,new RegExp(name));const card=html.match(new RegExp(`<article class="card destination destination--wip"[^>]*>[\\s\\S]*?<h2>${name}<\\/h2>[\\s\\S]*?<\\/article>`))?.[0];assert.ok(card,`${name} WIP card missing`);assert.doesNotMatch(card,/<button|<a /,`${name} must be completely inaccessible`);}
+assert.match(html,/destination--active[^>]*>[\s\S]*?<h2>Volcanic Depths<\/h2>[\s\S]*?volcanic-depths/);
+for(const name of ["Ancient Ruins","Lost Jungle"]){assert.match(html,new RegExp(name));const card=html.match(new RegExp(`<article class="card destination destination--wip"[^>]*>[\\s\\S]*?<h2>${name}<\\/h2>[\\s\\S]*?<\\/article>`))?.[0];assert.ok(card,`${name} WIP card missing`);assert.doesNotMatch(card,/<button|<a /,`${name} must be completely inaccessible`);}
 assert.match(checkpoint,/add constraint abandoned_mine_runs_status_check[\s\S]*'checkpoint_decision'/);
 assert.match(checkpoint,/depth in \(3,6,9\)[\s\S]*not \(v_run\.camps[\s\S]*then 'checkpoint_decision'/);
 assert.match(checkpoint,/p_service not in \('secure','resupply'\)/);
@@ -47,7 +48,7 @@ for(const [depth,secure,resupply] of [[3,150000,300000],[6,750000,1250000],[9,30
 }
 assert.match(checkpoint,/where depth in \(3,6,9\) and progress>=target and status='awaiting_funding'/);
 assert.match(checkpoint,/where depth between 1 and 10 and progress<target and status='awaiting_funding'/);
-assert.equal((html.match(/destination--active/g)||[]).length,2);for(const rpc of ["get_abandoned_mine_dashboard","fund_abandoned_mine","choose_abandoned_mine_route","choose_abandoned_mine_camp_service","continue_mine_overdepth","extract_abandoned_mine","settle_abandoned_mine"])assert.match(client,new RegExp(rpc));assert.doesNotMatch(client,/daily|weekly|reroll|enter_expedition|build_abandoned_mine_camp/i);
+assert.equal((html.match(/destination--active/g)||[]).length,3);for(const rpc of ["get_abandoned_mine_dashboard","fund_abandoned_mine","choose_abandoned_mine_route","choose_abandoned_mine_camp_service","continue_mine_overdepth","extract_abandoned_mine","settle_abandoned_mine"])assert.match(client,new RegExp(rpc));assert.doesNotMatch(client,/daily|weekly|reroll|enter_expedition|build_abandoned_mine_camp/i);
 assert.match(page,/Secure Current Cargo/);assert.match(page,/Full Resupply/);assert.doesNotMatch(page,/Build Supply Camp|run\.depth\*100000/);assert.match(page,/dashboard\.checkpointServices/);assert.match(page,/run\.status==="checkpoint_decision"/);assert.match(page,/Descend to OD/);assert.match(page,/Extract voluntarily/);
 // Regression: an actively progressing D6 (86/450) renders only voluntary extraction.
 assert.doesNotMatch(page,/\[3,6,9\]\.includes\(run\.depth\)/);
@@ -65,4 +66,5 @@ assert.match(improvements,/unique index abandoned_mine_funding_overdepth_once/);
 assert.match(mineHtml,/Detailed manual/);assert.match(mineHtml,/id="mineConsole"/);assert.match(page,/Choose a descent/);assert.match(mineHtml,/Back to destinations/);assert.doesNotMatch(mineHtml,/Abandoned Mine history|historyList/);assert.doesNotMatch(page,/historyList/);assert.doesNotMatch(html,/mineManualTitle|mineConsole|lootTableDialog/);
 assert.match(page,/normalArtifactKeys=new Set\(\(dashboard\?\.lootCatalog\|\|\[\]\)\.filter\(item=>item\.kind==="artifact"\)/);assert.match(page,/normalArtifacts=\(dashboard\?\.artifacts\|\|\[\]\)\.filter\(artifact=>normalArtifactKeys\.has\(artifact\.artifact_key\)\)/);
 await import("./free-overdepth-economy-test.mjs");
+await import("./all-active-expedition-progress-test.mjs");
 console.log("Abandoned Mine expedition redesign tests passed.");

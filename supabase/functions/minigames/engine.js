@@ -1,0 +1,752 @@
+import gemCatalog from "../../../src/data/gems.js";
+import {
+  catalog,
+  bagTable,
+  points,
+  strikeRating,
+} from "../../../minigames/catalog.js";
+export const check = (ok, message = "Invalid action") => {
+  if (!ok) throw new Error(message);
+};
+export function random(s) {
+  let t = (s.seed += 0x6d2b79f5);
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  s.seed >>>= 0;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const gemForPoints = (s, value) => {
+  const pool = gemCatalog.filter((g) => points(g.rarity) === value);
+  return pool[Math.floor(random(s) * pool.length)].name;
+};
+const pick = (s, n) => Math.floor(random(s) * n);
+const shuffle = (s, a) => {
+  for (let i = a.length - 1; i > 0; i--) {
+    let j = pick(s, i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const coord = (a, n) => {
+  check(
+    Number.isInteger(a.x) &&
+      Number.isInteger(a.y) &&
+      a.x >= 0 &&
+      a.y >= 0 &&
+      a.x < n &&
+      a.y < n,
+  );
+  return a.y * n + a.x;
+};
+const near = (i, j, n) =>
+  Math.max(
+    Math.abs((i % n) - (j % n)),
+    Math.abs(Math.floor(i / n) - Math.floor(j / n)),
+  );
+const finish = (s) => {
+  s.done = true;
+  return s;
+};
+const spawn2048 = (s) => {
+  let free = s.board.flatMap((v, i) => (v ? [] : [i]));
+  if (free.length)
+    s.board[free[pick(s, free.length)]] = random(s) < 0.9 ? 2 : 4;
+};
+export function move2048(board, dir) {
+  check(["left", "right", "up", "down"].includes(dir));
+  let out = [...board],
+    score = 0;
+  for (let lane = 0; lane < 4; lane++) {
+    let ids = Array.from({ length: 4 }, (_, i) =>
+      dir === "left"
+        ? lane * 4 + i
+        : dir === "right"
+          ? lane * 4 + 3 - i
+          : dir === "up"
+            ? i * 4 + lane
+            : (3 - i) * 4 + lane,
+    );
+    let vals = ids.map((i) => board[i]).filter(Boolean),
+      row = [];
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i] === vals[i + 1]) {
+        row.push(vals[i] * 2);
+        score += vals[i] * 2;
+        i++;
+      } else row.push(vals[i]);
+    }
+    ids.forEach((id, i) => (out[id] = row[i] || 0));
+  }
+  return { board: out, score, changed: out.some((v, i) => v !== board[i]) };
+}
+import { shapes, pieceCells as cells } from "../../../minigames/stack.js";
+export { pieceCells } from "../../../minigames/stack.js";
+const fits = (s, p) =>
+  cells(p).every(
+    ([x, y]) => x >= 0 && x < 10 && y >= 0 && y < 20 && !s.board[y * 10 + x],
+  );
+const refill = (s) => {
+  while (s.queue.length < 7) s.queue.push(...shuffle(s, [0, 1, 2, 3, 4, 5, 6]));
+};
+const spawnStack = (s, type) => {
+  refill(s);
+  s.piece = { type: type ?? s.queue.shift(), x: 3, y: 0, r: 0 };
+  refill(s);
+  if (!fits(s, s.piece)) finish(s);
+};
+function lock(s) {
+  for (const [x, y] of cells(s.piece)) s.board[y * 10 + x] = s.piece.type + 1;
+  let rows = [];
+  for (let y = 0; y < 20; y++)
+    if (s.board.slice(y * 10, y * 10 + 10).every(Boolean)) rows.push(y);
+  let count = rows.length,
+    level = 1 + Math.floor(s.lines / 10);
+  if (count) {
+    s.combo++;
+    s.score += ([0, 100, 300, 500, 800][count] + 50 * (s.combo - 1)) * level;
+    s.lines += count;
+    s.board = s.board.filter((_, i) => !rows.includes(Math.floor(i / 10)));
+    while (s.board.length < 200) s.board.unshift(0);
+  } else s.combo = 0;
+  s.canHold = true;
+  spawnStack(s);
+}
+function offers(s) {
+  s.offers = shuffle(
+    s,
+    Object.keys({ Safe: 1, Balanced: 1, Risky: 1, Jackpot: 1, Chaos: 1 }),
+  ).slice(0, 3);
+}
+export function create(
+  game,
+  mode,
+  options = {},
+  seed = 1,
+  now = 0,
+  gems = [],
+  mutations = [],
+) {
+  check(catalog.some((g) => g.id === game && !g.daily));
+  check(["practice", "rewarded"].includes(mode));
+  check(mode !== "rewarded" || catalog.find((g) => g.id === game).mt);
+  let s = {
+    game,
+    mode,
+    seed,
+    score: 0,
+    done: false,
+    started: now,
+    last: now,
+    actions: 0,
+  };
+  if (game === "mine-sweeper") {
+    let d = options.difficulty || "medium";
+    check(["easy", "medium", "hard", "expert"].includes(d));
+    check(!(d === "easy" && mode === "rewarded"));
+    Object.assign(s, {
+      difficulty: d,
+      n: { easy: 9, medium: 12, hard: 16, expert: 20 }[d],
+      mines: { easy: 5, medium: 12, hard: 25, expert: 40 }[d],
+      revealed: [],
+      flags: [],
+      board: null,
+      lost: 0,
+    });
+  }
+  if (game === "gem-tower")
+    Object.assign(s, { floor: 0, pending: 0, choosing: true });
+  if (game === "crystal-bags") {
+    Object.assign(s, { round: 0, pending: 0, choices: [], largest: 0 });
+    offers(s);
+  }
+  if (game === "gem-2048") {
+    s.board = Array(16).fill(0);
+    spawn2048(s);
+    spawn2048(s);
+  }
+  if (game === "prospector") {
+    Object.assign(s, {
+      digs: 20,
+      found: [],
+      clues: {},
+      deposits: shuffle(
+        s,
+        Array.from({ length: 100 }, (_, i) => i),
+      ).slice(0, 6),
+      values: [100, 200, 400, 750, 1250, 2000],
+      names: [
+        "Quartz",
+        "Malachite",
+        "Opal",
+        "Moonstone",
+        "Mythril",
+        "Sapphire",
+      ],
+    });
+  }
+  if (game === "explosive-mining") {
+    s.board = Array.from({ length: 144 }, () => ({
+      type:
+        random(s) < 0.2 ? "reinforced" : random(s) < 0.15 ? "crate" : "rock",
+      hp: 2,
+    }));
+    let slots = shuffle(
+      s,
+      Array.from({ length: 144 }, (_, i) => i),
+    );
+    let budget = 0;
+    for (let i = 0; budget < 3900; i++) {
+      let value = [20, 40, 75, 125, 200, 350][pick(s, 6)];
+      s.board[slots[i]] = { type: "gem", value, name: gemForPoints(s, value) };
+      budget += value;
+    }
+    Object.assign(s, { total: budget, bombs: 5, gems: 0, largest: 0 });
+  }
+  if (game === "gem-stack") {
+    Object.assign(s, {
+      board: Array(200).fill(0),
+      queue: [],
+      hold: null,
+      canHold: true,
+      lines: 0,
+      combo: 0,
+      gravity: now,
+    });
+    spawnStack(s);
+  }
+  if (game === "perfect-strike")
+    Object.assign(s, {
+      strike: 0,
+      streak: 0,
+      longest: 0,
+      perfects: 0,
+      ready: now + 2500,
+    });
+  if (game === "price-is-right") {
+    check(gems.length > 0, "Gem catalog unavailable");
+    s.questions = Array.from({ length: 10 }, (_, i) => {
+      let pool = gems.filter(
+        (g) => Number(g.value_per_gram) > 0 && Number(g.base_weight) > 0,
+      );
+      check(pool.length);
+      pool.sort((a, b) => Number(a.rarity) - Number(b.rarity));
+      let g =
+          pool[
+            Math.min(
+              pool.length - 1,
+              Math.floor(((i + random(s)) / 10) * pool.length),
+            )
+          ],
+        ms = shuffle(
+          s,
+          mutations.filter((m) => Number(m.multiplier) > 0),
+        ).slice(0, i % 3),
+        weight =
+          Math.round(Number(g.base_weight) * (0.5 + random(s) * 3) * 1000) /
+          1000;
+      return {
+        name: g.name,
+        weight,
+        mutations: ms.map((m) => m.name),
+        actual:
+          weight *
+          Number(g.value_per_gram) *
+          ms.reduce((v, m) => v * Number(m.multiplier), 1),
+      };
+    });
+    Object.assign(s, { question: 0, ready: now, answeringMs: 0, answers: [] });
+  }
+  if (["gem-catcher", "ore-slicer"].includes(game)) {
+    Object.assign(s, {
+      duration: game === "gem-catcher" ? 90000 : 60000,
+      lives: 3,
+      combo: 0,
+      hit: [],
+      sliced: 0,
+      events: [],
+      inputs: [],
+      cursor: 0.5,
+    });
+    for (let t = 500; t < s.duration; ) {
+      let progress = t / s.duration;
+      let kind =
+        random(s) < 0.06 + progress * 0.035
+          ? "hazard"
+          : game === "ore-slicer" && random(s) < 0.12
+            ? "stone"
+            : "gem";
+      let rarity = [2, 12, 100, 1000, 10000, 100000, 1000000][pick(s, 7)];
+      s.events.push({
+        id: s.events.length,
+        t,
+        x: 0.05 + random(s) * 0.9,
+        fall: 2600 - progress * 1500,
+        kind,
+        value: points(rarity),
+        name: gemForPoints(s, points(rarity)),
+      });
+      t += Math.max(130, 550 - progress * 360);
+    }
+  }
+  return s;
+}
+export function step(input, a, now) {
+  let s = structuredClone(input);
+  check(!s.done, "Run finished");
+  check(a && typeof a === "object");
+  check(now >= s.last);
+  s.last = now;
+  s.actions++;
+  if (a.type === "abandon") {
+    s.pending = 0;
+    finish(s);
+    s.abandoned = true;
+    return s;
+  }
+  switch (s.game) {
+    case "mine-sweeper": {
+      let i = coord(a, s.n);
+      if (a.type === "flag") {
+        check(!s.revealed.includes(i));
+        s.flags = s.flags.includes(i)
+          ? s.flags.filter((x) => x !== i)
+          : [...s.flags, i];
+        break;
+      }
+      check(
+        a.type === "reveal" && !s.revealed.includes(i) && !s.flags.includes(i),
+      );
+      if (!s.board) {
+        let slots = shuffle(
+          s,
+          Array.from({ length: s.n * s.n }, (_, j) => j).filter(
+            (j) => near(i, j, s.n) > 1,
+          ),
+        );
+        s.board = slots.slice(0, s.mines);
+        s.first = now;
+      }
+      let todo = [i];
+      while (todo.length) {
+        let j = todo.pop();
+        if (s.revealed.includes(j)) continue;
+        s.revealed.push(j);
+        s.flags = s.flags.filter((x) => x !== j);
+        if (s.board.includes(j)) {
+          s.lost++;
+          continue;
+        }
+        let count = s.board.filter((m) => near(j, m, s.n) <= 1).length;
+        if (!count)
+          for (let k = 0; k < s.n * s.n; k++)
+            if (
+              near(j, k, s.n) <= 1 &&
+              !s.revealed.includes(k) &&
+              !s.flags.includes(k)
+            )
+              todo.push(k);
+      }
+      if (
+        s.revealed.filter((j) => !s.board.includes(j)).length ===
+        s.n * s.n - s.mines
+      ) {
+        s.pending = s.mines - s.lost;
+        s.elapsedMs = now - s.first;
+        s.perfect = s.lost === 0;
+        s.score = s.pending;
+        finish(s);
+      }
+      break;
+    }
+    case "gem-tower": {
+      if (a.type === "collect") {
+        check(s.floor > 0);
+        s.score = s.floor;
+        finish(s);
+        break;
+      }
+      check(a.type === "door");
+      let floor = s.floor + 1;
+      check(
+        floor % 5 === 0 ||
+          (Number.isInteger(a.door) && a.door >= 0 && a.door < 4),
+      );
+      if (floor % 5 !== 0 && pick(s, 4) === a.door) {
+        s.pending = 0;
+        s.collapsed = true;
+        finish(s);
+      } else {
+        s.floor = floor;
+        s.floorAt = now;
+        s.pending += floor;
+        check(Number.isSafeInteger(s.pending));
+      }
+      s.score = s.floor;
+      break;
+    }
+    case "crystal-bags": {
+      check(a.type === "bag" && s.offers.includes(a.bag));
+      let table = bagTable(a.bag, s.round),
+        roll = random(s) * 100,
+        outcome = 0;
+      for (let [chance, value] of table) {
+        roll -= chance;
+        if (roll < 0) {
+          outcome = value;
+          break;
+        }
+      }
+      s.pending += outcome;
+      s.largest = Math.max(s.largest, outcome);
+      s.choices.push({ round: s.round + 1, bag: a.bag, outcome });
+      s.round++;
+      s.score = s.pending;
+      if (s.round === 5) finish(s);
+      else offers(s);
+      break;
+    }
+    case "gem-2048": {
+      check(a.type === "move");
+      let result = move2048(s.board, a.direction);
+      check(result.changed, "No tile moved");
+      s.board = result.board;
+      s.score += result.score;
+      spawn2048(s);
+      s.highest = Math.max(...s.board);
+      if (
+        ["left", "right", "up", "down"].every(
+          (d) => !move2048(s.board, d).changed,
+        )
+      )
+        finish(s);
+      break;
+    }
+    case "prospector": {
+      check(a.type === "dig");
+      let i = coord(a, 10);
+      check(!(i in s.clues) && !s.found.includes(i));
+      s.digs--;
+      if (s.deposits.includes(i)) {
+        s.found.push(i);
+        s.score += s.values[s.deposits.indexOf(i)];
+        s.digs = Math.min(20, s.digs + 1);
+      } else {
+        let d = Math.min(
+          ...s.deposits
+            .filter((j) => !s.found.includes(j))
+            .map((j) => near(i, j, 10)),
+        );
+        s.clues[i] =
+          d <= 1 ? "HOT" : d === 2 ? "WARM" : d === 3 ? "FAINT" : "NOTHING";
+      }
+      if (s.found.length === 6 || s.digs === 0) {
+        s.score += s.digs * 100;
+        finish(s);
+      }
+      break;
+    }
+    case "explosive-mining": {
+      check(a.type === "bomb");
+      let i = coord(a, 12);
+      s.bombs--;
+      let todo = [i],
+        detonated = new Set(),
+        chain = 0;
+      while (todo.length) {
+        let center = todo.shift();
+        for (let j = 0; j < 144; j++) {
+          if (near(center, j, 12) > 1) continue;
+          let cell = s.board[j];
+          if (cell.type === "gem") {
+            s.score += cell.value;
+            s.gems++;
+          }
+          if (cell.type === "crate" && !detonated.has(j)) {
+            detonated.add(j);
+            todo.push(j);
+            chain++;
+          }
+          if (cell.type === "reinforced" && --cell.hp > 0) continue;
+          s.board[j] = { type: "empty" };
+        }
+      }
+      s.largest = Math.max(s.largest, chain);
+      s.extraction = s.score / s.total;
+      if (!s.bombs || s.score === s.total) finish(s);
+      break;
+    }
+    case "perfect-strike": {
+      check(a.type === "strike");
+      let elapsed = a.elapsed;
+      check(
+        Number.isFinite(elapsed) && Math.abs(elapsed - (now - s.ready)) <= 350,
+        "Timing out of sync; reload to resume",
+      );
+      check(elapsed >= 200, "Strike too early");
+      let rating = elapsed > 15000 ? "MISS" : strikeRating(s.strike, elapsed);
+      s.rating = rating;
+      s.streak = rating === "PERFECT" ? s.streak + 1 : 0;
+      s.perfects += rating === "PERFECT" ? 1 : 0;
+      s.longest = Math.max(s.longest, s.streak);
+      s.score +=
+        { MISS: 0, WEAK: 100, GOOD: 300, GREAT: 600, PERFECT: 1000 }[rating] *
+          (s.strike === 9 ? 2 : 1) +
+        Math.max(0, s.streak - 1) * 100;
+      s.strike++;
+      s.ready = now + 2500;
+      if (s.strike === 10) finish(s);
+      break;
+    }
+    case "price-is-right": {
+      if (a.type === "next") {
+        check(s.awaitingNext);
+        s.awaitingNext = false;
+        s.ready = now;
+        break;
+      }
+      check(a.type === "guess" && !s.awaitingNext);
+      check(Number.isFinite(a.value) && a.value >= 0);
+      let elapsed = now - s.ready;
+      let q = s.questions[s.question];
+      let accuracy =
+        elapsed > 15000
+          ? 0
+          : Math.max(0, 1 - Math.abs(a.value - q.actual) / q.actual);
+      s.answers.push({
+        actual: q.actual,
+        accuracy,
+        ms: Math.min(elapsed, 15000),
+      });
+      s.score += 1000 * accuracy ** 2;
+      s.answeringMs += Math.min(elapsed, 15000);
+      s.question++;
+      s.awaitingNext = true;
+      s.ready = null;
+      if (s.question === 10) finish(s);
+      break;
+    }
+    case "gem-stack": {
+      check(
+        ["left", "right", "rotate", "soft", "hard", "hold", "tick"].includes(
+          a.type,
+        ),
+      );
+      let period = Math.max(
+        80,
+        1000 * Math.pow(0.82, Math.floor(s.lines / 10)),
+      );
+      let drops = Math.min(250, Math.floor((now - s.gravity) / period));
+      for (let i = 0; i < drops && !s.done; i++) {
+        let p = { ...s.piece, y: s.piece.y + 1 };
+        if (fits(s, p)) s.piece = p;
+        else lock(s);
+      }
+      s.gravity += drops * period;
+      if (s.done) break;
+      if (a.type === "hold") {
+        check(s.canHold);
+        let prev = s.hold;
+        s.hold = s.piece.type;
+        spawnStack(s, prev ?? undefined);
+        s.canHold = false;
+      } else if (a.type === "hard") {
+        while (fits(s, { ...s.piece, y: s.piece.y + 1 })) {
+          s.piece.y++;
+          s.score += 2;
+        }
+        lock(s);
+        s.gravity = now;
+      } else if (a.type !== "tick") {
+        let p = { ...s.piece };
+        if (a.type === "rotate") p.r = (p.r + 1) % 4;
+        else if (a.type === "left") p.x--;
+        else if (a.type === "right") p.x++;
+        else p.y++;
+        if (fits(s, p)) {
+          s.piece = p;
+          if (a.type === "soft") s.score++;
+        }
+      }
+      break;
+    }
+    case "gem-catcher":
+    case "ore-slicer": {
+      check(
+        a.type === "inputs" &&
+          Array.isArray(a.inputs) &&
+          a.inputs.length <= 120,
+      );
+      let elapsed = Math.min(now - s.started, s.duration);
+      for (let p of a.inputs) {
+        check(
+          Number.isFinite(p.t) &&
+            p.t >= (s.inputs.at(-1)?.t ?? 0) &&
+            p.t <= elapsed + 100 &&
+            p.t >= Math.max(0, elapsed - 2500) &&
+            Number.isFinite(p.x) &&
+            p.x >= 0 &&
+            p.x <= 1,
+        );
+        if (s.game === "ore-slicer")
+          check(Number.isFinite(p.y) && p.y >= 0 && p.y <= 1);
+        s.inputs.push(p);
+      }
+      check(s.inputs.length <= 20000);
+      if (s.game === "gem-catcher") {
+        for (let e of s.events) {
+          let t = e.t + e.fall;
+          if (t > elapsed || s.hit.includes(e.id)) continue;
+          s.hit.push(e.id);
+          let p = s.inputs.findLast((p) => p.t <= t);
+          if (!p || Math.abs(p.x - e.x) > 0.09) continue;
+          if (e.kind === "hazard") {
+            s.lives--;
+            s.combo = 0;
+          } else {
+            s.combo++;
+            let c = s.combo;
+            s.score +=
+              e.value *
+              (c >= 100 ? 3 : c >= 50 ? 2 : c >= 25 ? 1.5 : c >= 10 ? 1.25 : 1);
+          }
+          if (s.lives <= 0) break;
+        }
+      } else {
+        const endSwipe = () => {
+          if (!s.openSwipe) return;
+          if (!s.openSwipe.tnt) {
+            let n = s.openSwipe.gems.length;
+            s.score +=
+              s.openSwipe.gems.reduce(
+                (sum, id) => sum + s.events[id].value,
+                0,
+              ) * ([1, 1, 1.25, 1.5, 2][n] ?? 3);
+          }
+          s.openSwipe = null;
+        };
+        for (let p of a.inputs) {
+          check(Number.isInteger(p.swipe) && p.swipe >= 0);
+          if (s.openSwipe?.id !== p.swipe) {
+            endSwipe();
+            check(p.swipe > (s.swipeSerial ?? -1), "Swipe already submitted");
+            s.swipeSerial = p.swipe;
+            s.openSwipe = { id: p.swipe, gems: [], tnt: false, last: null };
+          }
+          let prev = s.openSwipe.last || p;
+          let hits = s.events.filter((e) => {
+            if (s.hit.includes(e.id)) return false;
+            let dt = p.t - prev.t,
+              steps = Math.max(
+                1,
+                Math.min(
+                  100,
+                  Math.ceil(Math.hypot(p.x - prev.x, p.y - prev.y) / 0.025),
+                ),
+              );
+            for (let k = 0; k <= steps; k++) {
+              let f = k / steps,
+                t = prev.t + dt * f;
+              if (t < e.t || t > e.t + e.fall) continue;
+              let x = prev.x + (p.x - prev.x) * f,
+                y = prev.y + (p.y - prev.y) * f;
+              if (Math.hypot(x - e.x, y - (t - e.t) / e.fall) < 0.065)
+                return true;
+            }
+            return false;
+          });
+          for (let e of hits) {
+            s.hit.push(e.id);
+            if (e.kind === "gem") {
+              s.sliced++;
+              s.openSwipe.gems.push(e.id);
+            }
+            if (e.kind === "hazard" && !s.openSwipe.tnt) {
+              s.lives--;
+              s.openSwipe.tnt = true;
+            }
+          }
+          s.openSwipe.last = p;
+          if (s.lives <= 0) break;
+        }
+        if (a.end === true || elapsed >= s.duration || s.lives <= 0) endSwipe();
+      }
+      if (elapsed >= s.duration || s.lives <= 0) {
+        if (s.game === "ore-slicer") {
+          s.accuracy =
+            s.sliced /
+            s.events.filter((e) => e.kind === "gem" && e.t <= elapsed).length;
+          s.score *=
+            s.accuracy < 0.5
+              ? 0.8
+              : s.accuracy < 0.7
+                ? 1
+                : s.accuracy < 0.85
+                  ? 1.1
+                  : s.accuracy < 0.95
+                    ? 1.25
+                    : 1.5;
+        }
+        finish(s);
+      }
+      break;
+    }
+    default:
+      throw new Error("Unknown game");
+  }
+  return s;
+}
+export function visible(s) {
+  let o = structuredClone(s);
+  delete o.seed;
+  delete o.inputs;
+  delete o.finishedSwipes;
+  delete o.openSwipe;
+  if (s.game === "mine-sweeper") {
+    o.cells = Array.from({ length: s.n * s.n }, (_, i) =>
+      !s.revealed.includes(i)
+        ? null
+        : s.board.includes(i)
+          ? "MT"
+          : s.board.filter((j) => near(i, j, s.n) <= 1).length,
+    );
+    delete o.board;
+  }
+  if (s.game === "prospector") {
+    o.discoveries = s.deposits.map((p, i) => ({
+      name: s.names[i],
+      value: s.values[i],
+      position: s.done || s.found.includes(p) ? p : null,
+    }));
+    delete o.deposits;
+  }
+  if (s.game === "price-is-right") {
+    let q = s.awaitingNext ? null : s.questions[s.question];
+    o.specimen = q
+      ? { name: q.name, weight: q.weight, mutations: q.mutations }
+      : null;
+    delete o.questions;
+  }
+  if (s.game === "gem-stack") o.queue = o.queue.slice(0, 3);
+  return o;
+}
+export function ranking(s) {
+  if (s.abandoned || !s.done || s.game === "crystal-bags") return null;
+  if (s.game === "mine-sweeper")
+    return s.difficulty === "expert" && s.perfect ? [-s.elapsedMs, 0, 0] : null;
+  if (s.game === "gem-2048")
+    return [s.highest || Math.max(...s.board), s.score, 0];
+  if (s.game === "perfect-strike") return [s.score, s.perfects, s.longest];
+  return [
+    s.score,
+    s.game === "gem-stack"
+      ? s.lines
+      : s.game === "prospector"
+        ? s.digs
+        : s.game === "explosive-mining"
+          ? s.extraction
+          : s.game === "price-is-right"
+            ? -s.answeringMs
+            : 0,
+    0,
+  ];
+}

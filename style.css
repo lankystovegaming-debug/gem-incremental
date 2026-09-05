@@ -612,7 +612,6 @@ kbd {
   font-size: 0.88rem;
 }
 
-.expedition-preview{margin-top:1rem}.expedition-preview .automation__head>div{display:flex;align-items:center;gap:.7rem}.expedition-preview .automation__head h2{margin:0}.expedition-preview__empty{display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--text-muted)}.expedition-preview__empty strong{display:block;color:var(--text);font-size:1.05rem}.expedition-preview__empty p{margin:.25rem 0}.expedition-preview__empty a{color:var(--accent);font-weight:800}.expedition-preview__row{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,35%);gap:1rem;align-items:center;padding:.8rem 0;border-top:1px solid var(--border)}.expedition-preview__row:first-child{border-top:0}.expedition-preview__row strong,.expedition-preview__row small{display:block;margin-top:.25rem;text-transform:capitalize}.expedition-preview__row small{color:var(--text-muted)}.expedition-preview__bar{height:.6rem;background:var(--surface-raised);border-radius:999px;overflow:hidden}.expedition-preview__bar span{display:block;height:100%;background:var(--accent);border-radius:inherit}@media(max-width:650px){.expedition-preview__empty,.expedition-preview__row{display:flex;flex-direction:column;align-items:stretch}.expedition-preview__bar{width:100%}}
 
 
 @media (max-width: 520px) {
@@ -2592,4 +2591,25 @@ html.is-cinematic-active body {
   .stage__idle-text {
     max-width: 290px;
   }
+}
+
+/* A direct daily-game entry below the main roll stage. */
+.gemdle-entry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+  text-decoration: none;
+}
+.gemdle-entry:hover { border-color: var(--accent); }
+.gemdle-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.gemdle-entry__icon { font-size: 36px; color: var(--accent); }
+.gemdle-entry__copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.gemdle-entry__copy > span { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.gemdle-entry__action { color: var(--accent); font-weight: 700; white-space: nowrap; }
+@media (max-width: 520px) {
+  .gemdle-entry { flex-wrap: wrap; padding: 16px; }
+  .gemdle-entry__action { width: 100%; padding-left: 40px; }
 }

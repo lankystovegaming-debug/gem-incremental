@@ -1,0 +1,307 @@
+.mg-page {
+  max-width: 1200px;
+  margin: auto;
+  padding: 30px 20px 100px;
+}
+.mg-hero {
+  padding: 30px 0;
+}
+.mg-hero h1 {
+  font-size: clamp(32px, 5vw, 54px);
+  margin: 8px 0;
+}
+.mg-hero p,
+.mg-note {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.mg-wallet,
+.mg-tags,
+.mg-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.mg-wallet {
+  margin-top: 20px;
+}
+.mg-wallet span,
+.mg-tag {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.mg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.mg-card,
+.mg-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 22px;
+}
+.mg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s;
+}
+.mg-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.mg-card h2,
+.mg-card p {
+  margin: 0;
+}
+.mg-card p {
+  line-height: 1.6;
+  color: var(--muted);
+}
+.mg-card .mg-art {
+  font-size: 38px;
+  min-height: 55px;
+}
+.mg-tags {
+  margin-top: auto;
+}
+.mg-tag--mt {
+  color: #68dcb0;
+}
+.mg-tag--daily {
+  color: #ddbbff;
+}
+.mg-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 20px;
+}
+.mg-panel h2 {
+  margin-top: 0;
+}
+.mg-controls {
+  margin: 15px 0;
+}
+.mg-note {
+  margin: 24px 0;
+}
+.mg-board {
+  display: grid;
+  gap: 3px;
+  max-width: 620px;
+  margin: 18px auto;
+  touch-action: manipulation;
+}
+.mg-cell {
+  min-width: 0;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: inherit;
+  padding: 1px;
+  overflow: hidden;
+  font-size: clamp(9px, 1.4vw, 16px);
+  cursor: pointer;
+}
+.mg-cell:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.mg-cell[data-open="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.mg-cell .gem-icon {
+  width: 24px;
+  height: 24px;
+}
+.mg-2048 .mg-cell {
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+.mg-2048 .mg-cell small {
+  font-size: 10px;
+}
+.mg-stack {
+  max-width: 260px;
+  gap: 1px;
+}
+.mg-stack .mg-cell {
+  border-radius: 2px;
+  aspect-ratio: 1;
+  background: #14232e;
+}
+.mg-stack .filled {
+  background: hsl(calc(var(--tile) * 43) 70% 58%);
+}
+.mg-bags {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.mg-bag {
+  padding: 15px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+}
+.mg-bag span {
+  display: block;
+  padding: 6px 0;
+}
+.mg-arena {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background: linear-gradient(180deg, #0b1526, #162c33);
+  border-radius: 15px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+.mg-object {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  pointer-events: none;
+}
+.mg-cart {
+  position: absolute;
+  bottom: 2%;
+  width: 18%;
+  height: 20px;
+  border-radius: 4px;
+  background: #e4bd78;
+  transform: translateX(-50%);
+}
+.mg-strike {
+  height: 65px;
+  background: linear-gradient(
+    90deg,
+    #55333a 0% 12%,
+    #895b33 12% 30%,
+    #497a70 30% 40%,
+    #56ad91 40% 47%,
+    #ffe6a2 47% 53%,
+    #56ad91 53% 60%,
+    #497a70 60% 70%,
+    #895b33 70% 88%,
+    #55333a 88%
+  );
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+.mg-needle {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  background: white;
+  box-shadow: 0 0 9px white;
+}
+.mg-board-entry {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mg-stat {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 15px 0;
+}
+.mg-result {
+  padding: 20px;
+  border: 1px solid #68dcb0;
+  border-radius: 12px;
+}
+.mg-controls button,
+.mg-controls select,
+.mg-controls input {
+  min-height: 42px;
+}
+.mg-rules {
+  line-height: 1.8;
+  margin: 16px 0;
+}
+.mg-tower {
+  font-size: 60px;
+  text-align: center;
+  padding: 24px;
+}
+.mg-error {
+  color: #ffb1b1;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+@media (max-width: 800px) {
+  .mg-layout {
+    grid-template-columns: 1fr;
+  }
+  .mg-page {
+    padding: 16px 12px 100px;
+  }
+  .mg-panel {
+    padding: 15px;
+  }
+  .mg-arena {
+    height: 390px;
+  }
+  .mg-bags {
+    gap: 6px;
+  }
+  .mg-cell {
+    font-size: 9px;
+  }
+  .mg-2048 .mg-cell {
+    font-size: 13px;
+  }
+  .mg-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+.mg-page [hidden] {
+  display: none !important;
+}
+.mg-tag--mt {
+  color: #177857;
+}
+.mg-tag--daily {
+  color: #8050bb;
+}
+.mg-stack .mg-cell .gem-icon {
+  width: 100%;
+  height: 100%;
+}
+.mg-2048 .mg-cell .gem-icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Keep moving gem layout local and let transforms move existing sprites. */
+.mg-arena {
+  contain: layout paint;
+}
+.mg-object {
+  will-change: transform;
+}

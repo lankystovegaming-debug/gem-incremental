@@ -5,7 +5,8 @@ const shell = fs.readFileSync(new URL("../src/ui/shell.js", import.meta.url), "u
 const styles = fs.readFileSync(new URL("../src/styles/app.css", import.meta.url), "utf8");
 const updates = fs.readFileSync(new URL("../updates/index.html", import.meta.url), "utf8");
 
-assert.match(shell, /CORE_PAGE_IDS[^\n]+roll[^\n]+inventory[^\n]+crafting[^\n]+boosts[^\n]+auctions/);
+assert.match(shell, /CORE_PAGE_IDS[^\n]+roll[^\n]+inventory[^\n]+crafting[^\n]+boosts[^\n]+auctions[^\n]+expeditions/);
+assert.match(shell, /id: "expeditions", label: "Expeditions", short: "Exped\.", href: "expeditions\/", icon: icons\.map/);
 assert.match(shell, /shellExploreButton/);
 assert.match(shell, /shellExploreMenu/);
 assert.match(shell, /menuNavLink\(configured/);

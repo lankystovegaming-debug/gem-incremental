@@ -2,11 +2,11 @@
 <html lang="en"><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0e14">
   <meta name="description" content="Fund a descent into the server-authoritative Abandoned Mine."><title>Abandoned Mine · Gem Incremental</title>
-  <link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="../expeditions/expeditions.css"><link rel="stylesheet" href="../expeditions/loot-table.css">
+  <link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css"><link rel="stylesheet" href="../expeditions/expeditions.css"><link rel="stylesheet" href="../expeditions/loot-table.css"><link rel="stylesheet" href="mine-console.css">
   <script>(function(){try{var m=localStorage.getItem("gemIncremental.theme.mode"),a=localStorage.getItem("gemIncremental.theme.accent");if(m)document.documentElement.dataset.theme=m;document.documentElement.dataset.accent=a||"indigo"}catch(e){}})()</script>
 </head><body><main class="app-main expedition-page">
   <div class="page-head"><div class="page-head__title"><p class="expedition-eyebrow">Expedition destination</p><h1>Abandoned Mine</h1><p class="page-head__sub">Choose a descent, manage Danger, and decide how much cargo you are willing to risk.</p></div><a class="btn" href="../expeditions/">Back to destinations</a></div>
-  <section class="card guide-manual" aria-labelledby="mineManualTitle">
+  <details class="card guide-manual mine-manual"><summary>Detailed manual <span>Costs, routes, camps &amp; Hell mechanics</span></summary>
     <div class="guide-manual__head">
       <p class="expedition-eyebrow">Detailed manual</p>
       <h2 id="mineManualTitle">Abandoned Mine — full mechanics</h2>
@@ -119,7 +119,7 @@
       <h3>Hell Mode</h3>
       <p>A separate, harder descent chosen at the console. There are <strong>no Supply Camps</strong> — money only buys <em>information</em>, never safety. Each depth deals a hand of face-down cards; revealing one costs money, and every card you take applies a curse or lesser consequence and raises <strong>Danger</strong> and <strong>Doom</strong>. Hit the Doom threshold and a Doom Break punishes the run. Overdepth is free, and clearing D10 awards a <strong>Hell Cache</strong> — plus a guaranteed weekly Mythic Potion for up to five clears each week.</p>
     </div>
-  </section>
+  </details>
 
   <section id="mineConsole" class="mine-console" aria-live="polite"></section>
   <div class="destination__actions"><button class="btn" id="viewLootTable" type="button">View Loot Table</button></div>
