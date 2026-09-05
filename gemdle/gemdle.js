@@ -2,7 +2,10 @@ import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
 import { number, odds, mutationNames, shareText, escapeHtml as esc } from "./format.js";
-mountShell({ page: "gemdle", base: "../" });
+mountShell({
+  page: location.pathname.includes("/minigames/gemdle") ? "minigames" : "gemdle",
+  base: new URL("../", import.meta.url).pathname
+});
 const $ = id => document.getElementById(id);
 let today = null, past = null, nextCursor = null, busy = false, historyBusy = false;
 let resetAt = 0, serverOffset = 0, accountGeneration = 0, refreshAfter = 0;

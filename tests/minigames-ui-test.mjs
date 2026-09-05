@@ -105,7 +105,7 @@ for (let game of [
   "price-is-right",
   "perfect-strike",
 ]) {
-  await page.goto(base + "?game=" + game);
+  await page.goto(base + game + "/");
   await page.locator('[data-start="practice"]').click();
   await page.locator(".mg-stat").waitFor();
   if (game === "prospector") await page.locator('[data-cell="0"]').click();
@@ -122,6 +122,16 @@ for (let game of [
     await page.getByText(/Actual final value/).waitFor();
   }
 }
+// No trailing slash, refresh, back link and old bookmarks all remain usable.
+await page.goto(base + "gem-catcher");
+assert.equal(new URL(page.url()).pathname, "/minigames/gem-catcher/");
+await page.locator("#arena").waitFor();
+await page.reload();
+await page.locator("#arena").waitFor();
+await page.getByRole("link", { name: "← All minigames" }).click();
+await page.locator(".mg-card").first().waitFor();
+await page.goto(base + "?game=gem-catcher");
+await page.locator("#arena").waitFor();
 await page.setViewportSize({ width: 390, height: 844 });
 await page.goto(base);
 await page.screenshot({
@@ -131,7 +141,7 @@ await page.screenshot({
 assert.ok(
   await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
 );
-await page.goto(base + "?game=mine-sweeper");
+await page.goto(base + "mine-sweeper/");
 await page.locator("#play .mg-stat").waitFor();
 await page.screenshot({
   path: "/tmp/minigames-mine-mobile.png",

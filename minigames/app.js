@@ -3,7 +3,12 @@ import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
 import { catalog, tileNames, bagTable, strikeConfig } from "./catalog.js";
 import { pieceCells } from "./stack.js";
-mountShell({ page: "minigames", base: "../" });
+const hubPath = new URL("./", import.meta.url).pathname;
+const gamePath = (id) => `${hubPath}${id}/`;
+mountShell({
+  page: "minigames",
+  base: new URL("../", import.meta.url).pathname,
+});
 const $ = (id) => document.getElementById(id),
   esc = (v) =>
     String(v ?? "").replace(
@@ -91,15 +96,19 @@ function route() {
   cancelAnimationFrame(raf);
   inputs = [];
   run = null;
-  const id = new URLSearchParams(location.search).get("game");
+  const pathId = location.pathname.startsWith(hubPath)
+    ? location.pathname.slice(hubPath.length).split("/")[0]
+    : null;
+  const id = (pathId === "index.html" ? null : pathId) || new URLSearchParams(location.search).get("game");
   game = catalog.find((g) => g.id === id && !g.daily);
   if (!game) {
     $("content").innerHTML =
-      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${g.daily ? "../gemdle/" : `?game=${g.id}`}"><div class="mg-art">${gemIconHtml(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
+      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${gamePath(g.id)}"><div class="mg-art">${gemIconHtml(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
     return;
   }
+  document.title = `${game.name} · Minigames · Gem Incremental`;
   $("content").innerHTML =
-    `<p><a href="./">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2><p class="mg-rules">${rules[game.id]}</p><div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
+    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2><p class="mg-rules">${rules[game.id]}</p><div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
   $("start")
     .querySelectorAll("[data-start]")
     .forEach((b) => (b.onclick = () => start(b.dataset.start)));
@@ -160,7 +169,7 @@ async function start(mode) {
     if (d.run.game !== game.id) {
       status("Resume your active rewarded run before starting another.");
       $("play").innerHTML =
-        `<a class="btn" href="?game=${esc(d.run.game)}">Resume ${esc(d.run.game)}</a>`;
+        `<a class="btn" href="${gamePath(d.run.game)}">Resume ${esc(d.run.game)}</a>`;
       return;
     }
     inputs = [];
