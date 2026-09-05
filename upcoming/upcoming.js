@@ -17,7 +17,6 @@ let definitions = [];
 let gems = [];
 let questFilter = "all";
 let rarities = [];
-let dailySpin = null;
 let pvpWeapons = [];
 let editingRarity = null;
 let editingPvpWeapon = null;
@@ -107,7 +106,6 @@ async function renderSectionControls(){
       islands:["🗺 Islands","Island travel + boosts + top bar"],
       forge:["⚒ Workbench [BETA]","Three-stage forging + top bar"],
       dungeons:["⚔ Dungeons","Combat dungeons + top bar"],
-      "daily-spin":["◉ Daily Spin","Daily reward wheel + top bar"],
       pvp:["⚔ PvP","Player-versus-player combat + top bar"],
       "world-bosses":["☄ World Bosses","Phased bosses, contribution races and custom loot."],
       "relic-vault":["◈ Relic Vault","Passive relics, sockets, sets and salvage."],
@@ -403,7 +401,7 @@ async function loadAll(){
   try{
     const [f,g]=await Promise.all([call("list"),call("gem-list")]);
     definitions=f.definitions||[];gems=g.gems||[];
-    await Promise.all([renderRarities(),renderDailySpin(),renderPvpWeapons()]);
+    await Promise.all([renderRarities(),renderPvpWeapons()]);
     renderFeatures();renderGems();
     await renderWorldLab();
     await renderSectionControls();
@@ -491,51 +489,6 @@ async function openDungeon(d){
 $("newDungeon").onclick=()=>openDungeon();$("addEnemy").onclick=()=>enemyRow();$("dungeonCancel").onclick=()=>{$("dungeonEditor").hidden=true;editingDungeon=null};
 $("dungeonSave").onclick=async()=>{try{const d={id:editingDungeon||undefined,name:$("dungeonName").value.trim(),description:$("dungeonDescription").value.trim(),max_enemies:Number($("dungeonMaxEnemies").value)||5,sort_order:Number($("dungeonSort").value)||0,enabled:$("dungeonEnabled").checked,entry_requirements:{minRolls:Number($("dungeonReqRolls").value)||0,minAllEquipmentTier:Number($("dungeonReqEquip").value)||0,minIslandNumber:Number($("dungeonReqIsland").value)||1},rewards:{money:Number($("dungeonRewardMoney").value)||0},loot:$("dungeonLoot").value.split("\n").map(x=>x.trim()).filter(Boolean)};const saved=await call("dungeon-save",{dungeon:d});for(const row of document.querySelectorAll(".enemy-builder")){const e={id:row.dataset.saved||undefined,dungeon_id:saved.dungeon.id,name:row.querySelector(".enemy-name").value,max_health:Number(row.querySelector(".enemy-hp").value),attack:Number(row.querySelector(".enemy-atk").value),defense:Number(row.querySelector(".enemy-defense").value),speed:Number(row.querySelector(".enemy-speed").value),crit_chance:Number(row.querySelector(".enemy-crit").value),sort_order:Number(row.querySelector(".enemy-sort").value),stats:{note:row.querySelector(".enemy-note").value},loot:[],enabled:true};await call("enemy-save",{enemy:e})}$("dungeonEditor").hidden=true;renderWorldLab();status("Dungeon saved.")}catch(e){status(e.message,true)}};
 
-
-function renderDailySpin(){
-  return call("daily-spin-config").then(d=>{
-    dailySpin=d.dailySpin;
-    $("spinState").textContent=d.dailySpin?.enabled?"ON":"OFF";
-    const rewards=Array.isArray(d.dailySpin?.rewards)?d.dailySpin.rewards:[];
-    $("dailySpinPanel").innerHTML=`<div class="form-grid">
-      <label class="toggle-field"><input id="spinEnabled" type="checkbox" ${d.dailySpin?.enabled?"checked":""}><span>Daily Spin enabled</span><small>The page and top-bar link stay hidden while OFF.</small></label>
-      <label>Title<input id="spinTitle" value="${esc(d.dailySpin?.title||"Daily Spin")}"></label>
-      <label>Symbol<input id="spinIcon" maxlength="8" value="${esc(d.dailySpin?.icon||"◉")}"></label>
-      <label class="wide">Subtitle<input id="spinSubtitle" value="${esc(d.dailySpin?.subtitle||"One free spin every day.")}"></label>
-    </div>
-    <div class="editor-section"><div class="builder-head"><div><h3>Prize wheel</h3><p>Chance values are weights. The server selects the prize, then the client animates to that exact segment.</p></div><button id="addSpinReward" class="btn btn--sm">＋ Add reward</button></div><div id="spinRewardRows" class="builder-list"></div></div>
-    <button id="spinSave" class="btn btn--primary">Save Daily Spin</button>`;
-    rewards.forEach(spinRewardRow);
-    $("addSpinReward").onclick=()=>spinRewardRow({chance:1,reward:{type:"coins",amount:1},label:"New reward"});
-    $("spinSave").onclick=saveDailySpin;
-  }).catch(e=>status(e.message,true));
-}
-function spinRewardRow(existing={}){
-  const row=document.createElement("div");row.className="builder-row spin-reward-row";
-  row.innerHTML=`<div class="builder-row-top"><input class="spin-label" placeholder="Reward name" value="${esc(existing.label||"Reward")}"><input class="spin-chance" type="number" min="0" step=".01" value="${Number(existing.chance??1)}"><select class="spin-type"><option value="money">Money</option><option value="coins">Coins</option><option value="potion">Potion</option><option value="gem">Gem</option><option value="capacity">Inventory capacity</option><option value="boost">Temporary boost</option><option value="custom">Custom</option></select><button class="icon-button remove-spin">×</button></div><div class="condition-grid spin-extra"></div>`;
-  const type=row.querySelector(".spin-type"),extra=row.querySelector(".spin-extra");
-  const reward=existing.reward||{};
-  type.value=reward.type||"coins";
-  const redraw=()=>{
-    if(type.value==="potion") extra.innerHTML=`<label>Potion<select class="spin-potion">${potionOptions(reward.consumableId)}</select></label><label>Amount<input class="spin-amount" type="number" min="1" value="${Number(reward.amount||1)}"></label>`;
-    else if(type.value==="gem") extra.innerHTML=`<label>Gem<select class="spin-gem"><option value="">Select gem</option>${gems.map(g=>`<option value="${esc(g.name)}" ${reward.gemName===g.name?"selected":""}>${esc(g.name)}</option>`).join("")}</select></label>`;
-    else if(type.value==="boost") extra.innerHTML=`<label>Boost family<select class="spin-family"><option value="luck">Luck</option><option value="rollSpeed">Roll Speed</option><option value="weightLuck">Weight Luck</option><option value="weightMultiplier">Weight Multiplier</option></select></label><label>Effect<input class="spin-effect" type="number" step=".01" value="${Number(reward.effectValue||1)}"></label><label>Seconds<input class="spin-seconds" type="number" value="${Number(reward.seconds||300)}"></label>`;
-    else if(type.value==="custom") extra.innerHTML=`<label class="wide">Custom reward payload<textarea class="spin-custom" rows="2" placeholder='{"type":"custom","label":"..."}'>${esc(JSON.stringify(reward))}</textarea></label>`;
-    else extra.innerHTML=`<label>Amount<input class="spin-amount" type="number" step="any" value="${Number(reward.amount||1)}"></label>`;
-  };
-  type.onchange=redraw;row.querySelector(".remove-spin").onclick=()=>row.remove();$("spinRewardRows").appendChild(row);redraw();
-}
-function collectSpinRewards(){return [...document.querySelectorAll(".spin-reward-row")].map((row,i)=>{
-  const type=row.querySelector(".spin-type").value,label=row.querySelector(".spin-label").value.trim()||`Reward ${i+1}`,chance=Number(row.querySelector(".spin-chance").value)||0;
-  let reward={type};
-  if(type==="potion")reward={type,consumableId:row.querySelector(".spin-potion")?.value,amount:Number(row.querySelector(".spin-amount")?.value||1)};
-  else if(type==="gem")reward={type,gemName:row.querySelector(".spin-gem")?.value};
-  else if(type==="boost")reward={type,family:row.querySelector(".spin-family")?.value,effectValue:Number(row.querySelector(".spin-effect")?.value||1),seconds:Number(row.querySelector(".spin-seconds")?.value||300)};
-  else if(type==="custom"){try{reward=JSON.parse(row.querySelector(".spin-custom")?.value||"{}");}catch{reward={type:"custom",label:"Invalid custom payload"};}}
-  else reward={type,amount:Number(row.querySelector(".spin-amount")?.value||1)};
-  return {id:`reward-${i+1}-${Date.now()}`,label,chance,reward};
-});}
-async function saveDailySpin(){try{await call("daily-spin-config",{save:true,config:{enabled:$("spinEnabled").checked,title:$("spinTitle").value.trim(),subtitle:$("spinSubtitle").value.trim(),icon:$("spinIcon").value.trim(),rewards:collectSpinRewards()}});await renderDailySpin();status("Daily Spin settings saved.");}catch(e){status(e.message,true);}}
 
 function renderRarities(){
   return call("rarity-list").then(d=>{

@@ -709,6 +709,19 @@ async function loadAnalytics() {
   const row = (label, value) =>
     `<div class="admin-list-row"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
 
+  // Presence series arrive oldest-first from the RPC, so they read left-to-right
+  // in chronological order without reversing.
+  const hourlyPoints = (data.hourlyOnline ?? []).slice();
+  const dailyPoints = (data.dailyOnlineSeries ?? []).slice();
+  const hourlyPeak = Math.max(0, ...hourlyPoints.map((point) => Number(point.users || 0)));
+  const dailyPeak = Math.max(0, ...dailyPoints.map((point) => Number(point.users || 0)));
+  const hourLabel = (point) => new Date(point.hour).toLocaleTimeString([], { hour: "2-digit" });
+  const hourTooltip = (point, users) =>
+    `${new Date(point.hour).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · ${formatCount(users)} users`;
+  const dayLabel = (point) => new Date(point.day).toLocaleDateString([], { weekday: "short", day: "numeric" });
+  const dayTooltip = (point, users) =>
+    `${new Date(point.day).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })} · ${formatCount(users)} users`;
+
   analyticsContent.innerHTML = `
     <div class="analytics-cards">
       ${cards.map(([label, value]) =>
@@ -748,22 +761,119 @@ async function loadAnalytics() {
       </section>
     </div>
 
-    <section class="admin-section analytics-hourly">
+    <section class="admin-section analytics-charts">
       <div class="admin-section-head">
         <div>
-          <h3>Hourly Online Users</h3>
-          <p class="page-head__sub">Distinct users seen in each hour over the last 24 hours.</p>
+          <h3>Online Users</h3>
+          <p class="page-head__sub" data-presence-sub>Distinct users seen in each hour over the last 24 hours.</p>
+        </div>
+        <div class="analytics-toggle" role="tablist" aria-label="Online-users range">
+          <button type="button" class="analytics-toggle__btn is-active" data-presence-view="hourly" role="tab" aria-selected="true">Hourly</button>
+          <button type="button" class="analytics-toggle__btn" data-presence-view="daily" role="tab" aria-selected="false">Daily</button>
         </div>
       </div>
-      <div class="analytics-bars">
-        ${(data.hourlyOnline ?? []).slice().reverse().map((point) => {
-          const max = Math.max(1, ...(data.hourlyOnline ?? []).map((item) => Number(item.users || 0)));
-          const height = Math.max(4, Math.round(Number(point.users || 0) / max * 100));
-          const hour = new Date(point.hour).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-          return `<div class="analytics-bar-wrap" title="${escapeHtml(hour)} · ${formatCount(point.users)} users"><div class="analytics-bar" style="height:${height}%"></div><span>${escapeHtml(hour)}</span></div>`;
-        }).join("") || '<p class="page-head__sub">Presence data will appear after players visit the site.</p>'}
+
+      <div class="analytics-chart-block" data-presence-block="hourly">
+        <div class="analytics-chart-block__head">
+          <span class="analytics-peak">Peak ${escapeHtml(formatCount(hourlyPeak))}</span>
+        </div>
+        ${hourlyPoints.length
+          ? renderPresenceChart({ chartId: "analyticsHourlyChart", points: hourlyPoints, labelFor: hourLabel, tooltipFor: hourTooltip })
+          : '<p class="page-head__sub">Presence data will appear after players visit the site.</p>'}
+      </div>
+
+      <div class="analytics-chart-block" data-presence-block="daily" hidden>
+        <div class="analytics-chart-block__head">
+          <span class="analytics-peak">Peak ${escapeHtml(formatCount(dailyPeak))}</span>
+        </div>
+        ${dailyPoints.length
+          ? renderPresenceChart({ chartId: "analyticsDailyChart", points: dailyPoints, labelFor: dayLabel, tooltipFor: dayTooltip })
+          : '<p class="page-head__sub">Daily presence data will appear after a few days of visits.</p>'}
       </div>
     </section>`;
+
+  wirePresenceTooltips(analyticsContent);
+  wirePresenceToggle(analyticsContent);
+}
+
+// The Online Users panel shows one chart at a time; the Hourly/Daily segmented
+// control swaps which block is visible (and the caption above it) without a
+// server round-trip, since both series were already rendered.
+const PRESENCE_VIEW_CAPTIONS = {
+  hourly: "Distinct users seen in each hour over the last 24 hours.",
+  daily: "Distinct users seen on each of the last 14 days."
+};
+
+function wirePresenceToggle(root) {
+  if (!root) return;
+  const buttons = root.querySelectorAll("[data-presence-view]");
+  const caption = root.querySelector("[data-presence-sub]");
+  const showView = (view) => {
+    for (const button of buttons) {
+      const isActive = button.dataset.presenceView === view;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", String(isActive));
+    }
+    for (const block of root.querySelectorAll("[data-presence-block]")) {
+      block.hidden = block.dataset.presenceBlock !== view;
+    }
+    if (caption && PRESENCE_VIEW_CAPTIONS[view]) {
+      caption.textContent = PRESENCE_VIEW_CAPTIONS[view];
+    }
+  };
+  for (const button of buttons) {
+    button.addEventListener("click", () => showView(button.dataset.presenceView));
+  }
+}
+
+// Presence charts (hourly + daily online users) share one renderer so they
+// stay visually consistent. Each bar carries data-* hooks read by the hover
+// tooltip; the tallest bar is flagged so the peak stands out.
+function renderPresenceChart({ chartId, points, labelFor, tooltipFor }) {
+  const values = points.map((point) => Number(point.users || 0));
+  const max = Math.max(1, ...values);
+  const peak = Math.max(0, ...values);
+  const bars = points.map((point) => {
+    const users = Number(point.users || 0);
+    const height = Math.max(3, Math.round(users / max * 100));
+    const label = labelFor(point);
+    const isPeak = peak > 0 && users === peak;
+    return `
+      <div class="analytics-bar-wrap${isPeak ? " is-peak" : ""}" data-tooltip="${escapeHtml(tooltipFor(point, users))}">
+        <span class="analytics-bar-value">${escapeHtml(formatCount(users))}</span>
+        <div class="analytics-bar" style="height:${height}%"></div>
+        <span class="analytics-bar-label">${escapeHtml(label)}</span>
+      </div>`;
+  }).join("");
+  return `<div class="analytics-chart" id="${chartId}">${bars}</div>`;
+}
+
+// A single shared tooltip element follows the cursor across every bar. Using
+// one floating node (rather than the native title attribute) lets the tooltip
+// be styled and appear instantly on hover.
+function wirePresenceTooltips(root) {
+  if (!root) return;
+  let tip = document.getElementById("analyticsTooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "analyticsTooltip";
+    tip.className = "analytics-tooltip";
+    tip.hidden = true;
+    document.body.appendChild(tip);
+  }
+  const position = (event) => {
+    tip.style.left = `${event.clientX}px`;
+    tip.style.top = `${event.clientY}px`;
+  };
+  root.querySelectorAll(".analytics-bar-wrap").forEach((wrap) => {
+    wrap.addEventListener("mouseenter", (event) => {
+      tip.textContent = wrap.dataset.tooltip || "";
+      tip.hidden = false;
+      position(event);
+    });
+    wrap.addEventListener("mousemove", position);
+    wrap.addEventListener("mouseleave", () => { tip.hidden = true; });
+  });
 }
 async function loadAudit() {
   auditButton.disabled = true;
@@ -1630,6 +1740,11 @@ const ipAuditSummary = document.getElementById("ipAuditSummary");
 const ipAuditContent = document.getElementById("ipAuditContent");
 const ipAuditMin = document.getElementById("ipAuditMin");
 const ipAuditSubnet = document.getElementById("ipAuditSubnet");
+const ipWhitelistInput = document.getElementById("ipWhitelistInput");
+const ipWhitelistNote = document.getElementById("ipWhitelistNote");
+const ipWhitelistAdd = document.getElementById("ipWhitelistAdd");
+const ipWhitelistList = document.getElementById("ipWhitelistList");
+const ipWhitelistCount = document.getElementById("ipWhitelistCount");
 
 function ipAuditDate(value) {
   if (!value) return "—";
@@ -1638,14 +1753,57 @@ function ipAuditDate(value) {
 }
 
 function ipAuditAccountRows(accounts) {
-  return (accounts ?? []).map((account) => `
+  return (accounts ?? []).map((account) => {
+    const bannedTag = account.banned
+      ? `<span class="badge badge--danger ip-audit-banned" title="${escapeHtml(account.banUntil ? "Banned until " + ipAuditDate(account.banUntil) : "Currently banned")}">Banned</span>`
+      : "";
+    const ip = account.lastIp ?? "";
+    const whitelistButton = ip
+      ? `<button class="btn btn--sm" type="button" data-ip-whitelist="${escapeHtml(ip)}" title="Never flag this IP again">Whitelist IP</button>`
+      : "";
+    // Already-banned accounts show the tag instead of a redundant ban button.
+    const banButton = account.banned
+      ? ""
+      : `<button class="btn btn--sm btn--danger" type="button" data-ip-ban="${escapeHtml(account.playerId)}" title="Permanently ban this account as an alt">Ban Now</button>`;
+    return `
       <tr>
         <td>${escapeHtml(account.username ?? "Unknown")}</td>
         <td>${escapeHtml(account.email ?? "Anonymous")}</td>
-        <td class="ip-audit-mono">${escapeHtml(account.lastIp ?? "—")}</td>
+        <td class="ip-audit-mono">${escapeHtml(ip || "—")}</td>
         <td>${escapeHtml(ipAuditDate(account.lastSeenAt))}</td>
-        <td><button class="btn btn--sm" type="button" data-ip-inspect="${escapeHtml(account.playerId)}">Inspect</button></td>
-      </tr>`).join("");
+        <td class="ip-audit-actions">
+          ${bannedTag}
+          <button class="btn btn--sm" type="button" data-ip-inspect="${escapeHtml(account.playerId)}">Inspect</button>
+          ${banButton}
+          ${whitelistButton}
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// The canned reason used by the IP-audit "Ban Now" shortcut. The ban screen
+// renders the [text](url) appeal link as a real link (see showBanScreen).
+const ALT_ACCOUNT_BAN_REASON =
+  "alt account. If you think this is wrong, please appeal [here](https://forms.gle/hkQVWTfCNpLZxLyRA).";
+
+async function banAltAccountFromAudit(playerId, button) {
+  if (!playerId) return;
+  if (!window.confirm("Permanently ban this account as an alt? They'll see a ban screen every time they open the game.")) {
+    return;
+  }
+  if (button) button.disabled = true;
+  const { error } = await supabase.rpc("admin_ban_player", {
+    p_target: playerId,
+    p_hours: 0,
+    p_reason: ALT_ACCOUNT_BAN_REASON
+  });
+  if (error) {
+    notify.error("Ban failed", error.message);
+    if (button) button.disabled = false;
+    return;
+  }
+  notify.success("Account banned", "Permanently banned as an alt account.");
+  loadIpAudit();
 }
 
 function ipAuditGroupCard(group) {
@@ -1673,9 +1831,75 @@ function ipAuditGroupCard(group) {
     </details>`;
 }
 
+// ── IP whitelist management ───────────────────────────────────────────────
+function renderWhitelist(entries) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (ipWhitelistCount) ipWhitelistCount.textContent = formatCount(list.length);
+  if (!ipWhitelistList) return;
+  ipWhitelistList.innerHTML = list.length
+    ? list.map((entry) => `
+        <div class="ip-whitelist__row">
+          <span class="ip-audit-mono">${escapeHtml(entry.ip ?? "—")}</span>
+          <span class="ip-whitelist__note">${escapeHtml(entry.note ?? "")}</span>
+          <button class="btn btn--sm btn--danger" type="button" data-ip-unwhitelist="${escapeHtml(entry.ip ?? "")}">Remove</button>
+        </div>`).join("")
+    : '<p class="page-head__sub">No whitelisted IPs yet.</p>';
+
+  for (const button of ipWhitelistList.querySelectorAll("[data-ip-unwhitelist]")) {
+    button.addEventListener("click", () => removeWhitelist(button.dataset.ipUnwhitelist));
+  }
+}
+
+async function loadWhitelist() {
+  const { data, error } = await supabase.rpc("admin_list_ip_whitelist");
+  if (error) {
+    notify.error("Whitelist failed", error.message);
+    return;
+  }
+  renderWhitelist(data?.entries);
+}
+
+async function addWhitelist(ip, note) {
+  const cleanIp = String(ip ?? "").trim();
+  if (!cleanIp) {
+    notify.error("IP required", "Enter an IP address to whitelist.");
+    return;
+  }
+  const { data, error } = await supabase.rpc("admin_add_ip_whitelist", {
+    p_ip: cleanIp,
+    p_note: note ?? null
+  });
+  if (error) {
+    notify.error("Could not whitelist IP", error.message);
+    return;
+  }
+  renderWhitelist(data?.entries);
+  notify.success("IP whitelisted", `${cleanIp} will no longer be flagged.`);
+  if (ipWhitelistInput) ipWhitelistInput.value = "";
+  if (ipWhitelistNote) ipWhitelistNote.value = "";
+  loadIpAudit();
+}
+
+async function removeWhitelist(ip) {
+  const { data, error } = await supabase.rpc("admin_remove_ip_whitelist", { p_ip: ip });
+  if (error) {
+    notify.error("Could not remove IP", error.message);
+    return;
+  }
+  renderWhitelist(data?.entries);
+  notify.success("Removed from whitelist", `${ip} can be flagged again.`);
+  loadIpAudit();
+}
+
+ipWhitelistAdd?.addEventListener("click", () => addWhitelist(ipWhitelistInput?.value, ipWhitelistNote?.value));
+ipWhitelistInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") addWhitelist(ipWhitelistInput.value, ipWhitelistNote?.value);
+});
+
 async function loadIpAudit() {
   if (!ipAuditPanel || !ipAuditContent) return;
   ipAuditPanel.hidden = false;
+  loadWhitelist();
 
   const rawMin = Math.trunc(Number(ipAuditMin?.value ?? 2));
   const minAccounts = Number.isFinite(rawMin) ? Math.min(100, Math.max(2, rawMin)) : 2;
@@ -1718,6 +1942,14 @@ async function loadIpAudit() {
       inspectPlayer(button.dataset.ipInspect);
       playerPanel.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  for (const button of ipAuditContent.querySelectorAll("[data-ip-whitelist]")) {
+    button.addEventListener("click", () => addWhitelist(button.dataset.ipWhitelist));
+  }
+
+  for (const button of ipAuditContent.querySelectorAll("[data-ip-ban]")) {
+    button.addEventListener("click", () => banAltAccountFromAudit(button.dataset.ipBan, button));
   }
 }
 
