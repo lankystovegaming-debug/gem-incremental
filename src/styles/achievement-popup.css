@@ -1,0 +1,136 @@
+/* =========================================================
+   ACHIEVEMENT UNLOCK POPUP
+   Minecraft-style "toast" that slides in when the achievement
+   watcher (src/ui/achievementPopup.js) detects a newly completed
+   achievement. Stacks in a fixed region; one card animates at a time.
+   ========================================================= */
+
+.mc-achv-region {
+  position: fixed;
+  top: 74px;
+  right: 16px;
+  z-index: 1500;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  width: min(340px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.mc-achv {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, #f5b23f 55%, var(--border-strong));
+  border-radius: var(--radius);
+
+  color: var(--text);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #f5b23f 12%, var(--surface-solid)), var(--surface-solid));
+  box-shadow:
+    0 10px 30px -12px #00000066,
+    inset 0 1px 0 color-mix(in srgb, #ffd98a 40%, transparent);
+
+  /* Enter/leave are driven by the .is-in / .is-out classes below so a
+     reduced-motion query can neutralise them without touching layout. */
+  transform: translateX(120%);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.mc-achv.is-in {
+  animation: mc-achv-in 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mc-achv.is-out {
+  animation: mc-achv-out 380ms ease-in forwards;
+}
+
+.mc-achv__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #ffcf7a;
+  background: color-mix(in srgb, #f5b23f 22%, var(--surface-sunken));
+  border: 1px solid color-mix(in srgb, #f5b23f 40%, var(--border));
+}
+
+.mc-achv__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mc-achv__head {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #f5c15f;
+}
+
+.mc-achv__name {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+  text-overflow: ellipsis;
+}
+
+.mc-achv__ap {
+  flex: 0 0 auto;
+  align-self: flex-start;
+
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@keyframes mc-achv-in {
+  from { transform: translateX(120%); opacity: 0; }
+  60%  { transform: translateX(-6%);  opacity: 1; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes mc-achv-out {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+
+@media (max-width: 560px) {
+  .mc-achv-region {
+    top: auto;
+    bottom: 16px;
+    right: 50%;
+    transform: translateX(50%);
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-achv,
+  .mc-achv.is-in,
+  .mc-achv.is-out {
+    animation: none;
+    transition: opacity 200ms linear;
+    transform: none;
+  }
+  .mc-achv { opacity: 0; }
+  .mc-achv.is-in { opacity: 1; }
+  .mc-achv.is-out { opacity: 0; }
+}

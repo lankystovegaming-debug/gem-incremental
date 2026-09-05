@@ -26,7 +26,7 @@ input,select,textarea{border:1px solid var(--border);background:var(--input-bg,v
 @media(max-width:800px){.upcoming-hero{padding-top:20px}.workspace-toolbar,.panel-heading,.editor-head,.builder-head{align-items:flex-start;flex-direction:column}.toolbar-actions{width:100%}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.builder-row-top{grid-template-columns:1fr 1fr 1fr 38px}.condition-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gate-row{flex-direction:column}.feature-grid,.gem-grid{grid-template-columns:1fr}}
 @media(max-width:500px){.builder-row-top{grid-template-columns:1fr 1fr}.builder-row-top .remove-rule,.builder-row-top .remove-reward{grid-column:2}.condition-grid{grid-template-columns:1fr}.upcoming-card{padding:17px}.hero-orbit{width:50px;height:50px}}
 
-.compact-section-editor{margin:14px 0}.compact-section-editor label{min-width:0}.spin-reward-row .builder-row-top,.pvp-attack-row .builder-row-top{grid-template-columns:2fr 1fr 1.2fr auto}.pvp-attack-desc{width:100%;margin-top:8px}.rarity-section{margin-top:24px}.nav__custom-icon{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em}.lab-tabs{overflow-x:auto;scrollbar-width:thin}.lab-tab{white-space:nowrap}
+.compact-section-editor{margin:14px 0}.compact-section-editor label{min-width:0}.pvp-attack-row .builder-row-top{grid-template-columns:2fr 1fr 1.2fr auto}.pvp-attack-desc{width:100%;margin-top:8px}.rarity-section{margin-top:24px}.nav__custom-icon{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em}.lab-tabs{overflow-x:auto;scrollbar-width:thin}.lab-tab{white-space:nowrap}
 
 /* Expansion Lab */
 .expansion-row-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:9px}
@@ -48,4 +48,100 @@ input,select,textarea{border:1px solid var(--border);background:var(--input-bg,v
   margin: .6rem 0;
   color: #9bb8c8;
   line-height: 1.45;
+}
+
+/* ========================================================================
+   Gem maker + Achievement/Quest maker — improved spacing & polish.
+   Scoped to #gemEditor and #editor so other builders are unaffected.
+   ======================================================================== */
+#gemEditor,
+#editor {
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 28px 30px;
+}
+/* Give the header a clearer, more separated identity. */
+#gemEditor .editor-head,
+#editor .editor-head {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+#gemEditor .editor-head h2,
+#editor .editor-head h2 {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+}
+/* More air between sections and a lighter divider. */
+#gemEditor .editor-section,
+#editor .editor-section {
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+#gemEditor .editor-section > h3,
+#editor .editor-section > h3,
+#gemEditor .builder-head h3,
+#editor .builder-head h3 {
+  margin: 0 0 4px;
+  font-size: 1.02rem;
+  letter-spacing: .01em;
+}
+/* Roomier field grid: more gap between rows than columns reads calmer. */
+#gemEditor .form-grid,
+#editor .form-grid {
+  gap: 16px 18px;
+}
+#gemEditor .form-grid label,
+#editor .form-grid label {
+  gap: 7px;
+}
+/* Inputs: consistent height, clearer focus ring. */
+#gemEditor input,
+#gemEditor select,
+#gemEditor textarea,
+#editor input,
+#editor select,
+#editor textarea {
+  padding: 11px 13px;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+#gemEditor input:focus,
+#gemEditor select:focus,
+#gemEditor textarea:focus,
+#editor input:focus,
+#editor select:focus,
+#editor textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+/* Toggle rows sit in a subtle card so they don't crowd text inputs. */
+#gemEditor .toggle-field,
+#editor .toggle-field {
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+/* Actions become a proper footer: separated, right-aligned, breathing room. */
+#gemEditor .editor-actions,
+#editor .editor-actions {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+#gemEditor .editor-actions .btn,
+#editor .editor-actions .btn {
+  padding: 10px 20px;
+}
+@media (max-width: 640px) {
+  #gemEditor,
+  #editor { padding: 20px 18px; }
+  #gemEditor .editor-actions,
+  #editor .editor-actions { flex-direction: column-reverse; }
+  #gemEditor .editor-actions .btn,
+  #editor .editor-actions .btn { width: 100%; }
 }

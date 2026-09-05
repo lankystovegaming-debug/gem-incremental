@@ -302,6 +302,21 @@
           <button class="btn btn--primary" id="ipAuditRefresh" type="button">Run audit</button>
         </div>
       </div>
+
+      <details class="ip-whitelist" id="ipWhitelist">
+        <summary>
+          <span>Whitelisted IPs</span>
+          <span class="ip-whitelist__count badge" id="ipWhitelistCount">0</span>
+        </summary>
+        <p class="page-head__sub">Addresses listed here are never flagged by the audit — use it for your own IP or a known shared network.</p>
+        <div class="ip-whitelist__add">
+          <input id="ipWhitelistInput" class="input" type="text" placeholder="e.g. 203.0.113.9" autocomplete="off">
+          <input id="ipWhitelistNote" class="input" type="text" placeholder="Note (optional)" autocomplete="off">
+          <button class="btn btn--primary" id="ipWhitelistAdd" type="button">Add</button>
+        </div>
+        <div id="ipWhitelistList" class="ip-whitelist__list"></div>
+      </details>
+
       <div id="ipAuditContent" class="ip-audit-content"></div>
     </section>
 
@@ -315,7 +330,7 @@
         <div>
           <div class="eyebrow">PRIVATE FEATURE LAB</div>
           <h2>Upcoming Features</h2>
-          <p>Achievements, quests, gems, islands, Workbench, dungeons, Daily Spin, PvP and the expandable feature systems — all managed from the Admin Panel.</p>
+          <p>Achievements, quests, gems, islands, Workbench, dungeons, PvP and the expandable feature systems — all managed from the Admin Panel.</p>
         </div>
         <button class="btn btn--primary" id="featureLabBack" type="button">← Admin Panel</button>
       </div>
@@ -363,7 +378,6 @@
       <button class="lab-tab" data-tab="worlds" type="button">🗺 Islands <span id="islandCount">0</span></button>
       <button class="lab-tab" data-tab="workbench" type="button">⚒ Workbench <span id="workbenchState">OFF</span></button>
       <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
-      <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
       <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button> 
       <button class="lab-tab" data-tab="expansion" type="button">✦ More Systems <span id="expansionCount">7</span></button>
     </div>
@@ -445,11 +459,6 @@
         <div class="editor-section"><h3>Enemies</h3><div id="enemyRows" class="builder-list"></div><button id="addEnemy" class="btn btn--sm">＋ Add enemy</button></div>
         <div class="editor-actions"><button id="dungeonCancel" class="btn">Cancel</button><button id="dungeonSave" class="btn btn--primary">Save Dungeon</button></div>
       </section>
-    </section>
-
-    <section class="tab-panel" data-panel="daily-spin">
-      <div class="panel-heading"><div><h2>Daily Spin</h2><p>Configure the actual prize wheel, chances and any supported reward type. Keep it OFF while testing.</p></div></div>
-      <div id="dailySpinPanel" class="upcoming-card"></div>
     </section>
 
     <section class="tab-panel" data-panel="pvp">

@@ -64,7 +64,6 @@ const PAGES = [
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.castle, sectionId: "dungeons" },
   { id: "minigames", label: "Minigames", short: "Games", href: "minigames/", icon: icons.dice },
   { id: "gemdle", label: "Gemdle", short: "Gemdle", href: "gemdle/", icon: icons.dice },
-  { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.wheel, sectionId: "daily-spin" },
   { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords, sectionId: "wars" },
   { id: "pvp", label: "PvP", short: "PvP", href: "pvp/", icon: icons.swords, sectionId: "pvp" },
   { id: "world-bosses", label: "World Bosses", short: "Bosses", href: "world-bosses/", icon: icons.skull, sectionId: "world-bosses" },
@@ -787,6 +786,18 @@ export function mountShell({ page, base = "./" }) {
 // A full-screen block shown on every page while the player is banned. The
 // server rejects banned players independently, so bypassing this overlay in
 // devtools only leaves an unplayable game behind it.
+// Escape the reason text, then upgrade a single `[label](https://url)` markdown
+// link into a real anchor. Only http/https URLs are allowed, so a crafted
+// reason can never smuggle a javascript: URI or any other markup through.
+function renderBanReason(reason) {
+  const escaped = escapeHtml(String(reason));
+  return escaped.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/,
+    (_match, label, url) =>
+      `<a class="ban-screen__appeal" href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
+  );
+}
+
 function showBanScreen(banUntil, reason) {
   if (document.getElementById("banScreen")) return;
 
@@ -863,9 +874,12 @@ function showBanScreen(banUntil, reason) {
       <p class="ban-screen__foot">Think this is a mistake? <a class="ban-screen__appeal" href="https://forms.gle/1oeXJ8Rd6dvX3FGs5" target="_blank" rel="noopener noreferrer">Appeal your ban</a>.</p>
     </div>`;
 
-  // Reason is set as text, never markup, so it can't inject anything.
-  overlay.querySelector(".ban-screen__reason").textContent =
-    reason || "No reason was provided.";
+  // The reason may carry a single markdown-style appeal link, e.g.
+  // "…please appeal [here](https://forms.gle/…)". Everything is HTML-escaped
+  // first (so the reason still can't inject markup), then that one safe
+  // http(s) link is turned into a real anchor.
+  overlay.querySelector(".ban-screen__reason").innerHTML =
+    renderBanReason(reason || "No reason was provided.");
 
   document.body.appendChild(overlay);
   document.documentElement.style.overflow = "hidden";
