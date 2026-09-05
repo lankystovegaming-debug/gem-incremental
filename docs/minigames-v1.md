@@ -73,3 +73,19 @@ MINIGAMES_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs npm run test:
 ```
 
 Database tests run the actual migration locally, including RLS, RPC grants, regeneration, duplicate starts and credit idempotency. PGlite serializes queries; this checks retry behavior and database constraints but is not a multi-connection production load test. Browser tests use the real engine behind a mocked transport, not the undeployed live endpoint. Run the post-deployment smoke test above on the real backend.
+
+## Rendering optimization
+
+The frontend retains arcade sprites until they leave the board or the server reports a hit, moves them with transforms, and tracks only active events. Board updates preserve existing cells in Gem Stack, Mine Sweeper, Gem 2048, Prospector, and Explosive Mining. Only changed cell content and summaries are patched. Gem markup is cached with a bounded, appearance-aware cache; unchanged wallets, leaderboards, and timer labels are not rebuilt.
+
+Untimed games have no idle animation loop. Board timers use a low-frequency timer; moving games retain their animation loop, with reduced background polling. Server clocks, validation, rewards, and input submission remain authoritative and unchanged. Resize observers and animation work are cleaned up when a run finishes, the account changes, or the page is left.
+
+A local Chrome test with the real engine behind a mocked transport measured 78 sprite additions plus 76 removals before optimization versus two additions and zero removals afterward over a 1.2-second sample. The same test confirmed retained Gem Stack cells and zero idle Tower animation callbacks (previously 73). These measure DOM churn and scheduling, not a guaranteed FPS improvement on every device.
+
+Run the rendering regression alongside the browser smoke test:
+
+```sh
+MINIGAMES_PREVIEW_URL=http://127.0.0.1:5540/minigames/ MINIGAMES_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs npm run test:minigames-render
+```
+
+This optimization is frontend-only. Include `minigames/rendering.js` in the normal static website release; no Supabase migration or Edge Function deployment is required.

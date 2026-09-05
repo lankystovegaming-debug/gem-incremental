@@ -2,6 +2,13 @@ import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
 import { catalog, tileNames, bagTable, strikeConfig } from "./catalog.js";
+import {
+  setText,
+  setHtml,
+  patchCells,
+  createArcadeRenderer,
+} from "./rendering.js";
+import { getSettings } from "../src/ui/settings.js";
 import { pieceCells } from "./stack.js";
 const hubPath = new URL("./", import.meta.url).pathname;
 const gamePath = (id) => `${hubPath}${id}/`;
@@ -22,6 +29,36 @@ const $ = (id) => document.getElementById(id),
           "'": "&#39;",
         })[c],
     );
+const iconCache = new Map();
+function icon(name) {
+  const key = `${getSettings().gemRealism}:${name}`;
+  if (!iconCache.has(key)) {
+    if (iconCache.size >= 256) iconCache.clear();
+    iconCache.set(key, gemIconHtml(name));
+  }
+  return iconCache.get(key);
+}
+let frameTimer = 0,
+  arcadeRenderer = null,
+  arcadeArena = null;
+const animatedGames = new Set(["gem-catcher", "ore-slicer", "perfect-strike"]);
+const timedGames = new Set(["mine-sweeper", "price-is-right", "gem-stack"]);
+function stopFrames() {
+  cancelAnimationFrame(raf);
+  clearTimeout(frameTimer);
+  raf = 0;
+  frameTimer = 0;
+}
+function scheduleFrame() {
+  stopFrames();
+  if (!run || run.state.done) return;
+  if (run.game === "mine-sweeper" && !run.state.first) return;
+  if (run.game === "price-is-right" && run.state.awaitingNext) return;
+  if (animatedGames.has(run.game) && !document.hidden)
+    raf = requestAnimationFrame(frame);
+  else if (animatedGames.has(run.game) || timedGames.has(run.game))
+    frameTimer = setTimeout(frame, document.hidden ? 250 : 100);
+}
 let flagMode = false,
   lastDraw = 0;
 let authGeneration = 0,
@@ -89,21 +126,28 @@ async function api(action, extra = {}) {
 }
 function renderWallet() {
   if (wallet)
-    $("wallet").innerHTML =
-      `<span>${esc(wallet.mt)} MT</span><span>${wallet.tickets}/5 tickets</span><span>${wallet.tickets === 5 ? "Tickets full" : `Next ticket ${new Date(Date.parse(wallet.regen_at) + 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}</span>`;
+    setHtml(
+      $("wallet"),
+      `<span>${esc(wallet.mt)} MT</span><span>${wallet.tickets}/5 tickets</span><span>${wallet.tickets === 5 ? "Tickets full" : `Next ticket ${new Date(Date.parse(wallet.regen_at) + 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}</span>`,
+    );
 }
 function route() {
-  cancelAnimationFrame(raf);
+  arcadeRenderer?.destroy();
+  arcadeRenderer = null;
+  arcadeArena = null;
+  stopFrames();
   inputs = [];
   run = null;
   const pathId = location.pathname.startsWith(hubPath)
     ? location.pathname.slice(hubPath.length).split("/")[0]
     : null;
-  const id = (pathId === "index.html" ? null : pathId) || new URLSearchParams(location.search).get("game");
+  const id =
+    (pathId === "index.html" ? null : pathId) ||
+    new URLSearchParams(location.search).get("game");
   game = catalog.find((g) => g.id === id && !g.daily);
   if (!game) {
     $("content").innerHTML =
-      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${gamePath(g.id)}"><div class="mg-art">${gemIconHtml(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
+      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${gamePath(g.id)}"><div class="mg-art">${icon(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
     return;
   }
   document.title = `${game.name} · Minigames · Gem Incremental`;
@@ -143,11 +187,11 @@ function status(message) {
 function board(d) {
   if (!$("board")) return;
   if (game.id === "crystal-bags") {
-    $("board").innerHTML =
-      `<p>${d.stats?.games || 0} completed games</p><p>Largest outcome: ${d.stats?.largest || 0} MT</p><p>Lifetime rewarded MT: ${esc(d.stats?.lifetime_mt || 0)}</p>`;
+    const html = `<p>${d.stats?.games || 0} completed games</p><p>Largest outcome: ${d.stats?.largest || 0} MT</p><p>Lifetime rewarded MT: ${esc(d.stats?.lifetime_mt || 0)}</p>`;
+    setHtml($("board"), html);
     return;
   }
-  $("board").innerHTML =
+  const html =
     `<p>${d.board?.own_rank ? `Your rank: #${d.board.own_rank}` : "Finish a run to set your record."}</p>` +
     (d.board?.entries || [])
       .map(
@@ -155,6 +199,7 @@ function board(d) {
           `<div class="mg-board-entry"><span>#${e.rank} ${esc(e.username)}${e.is_you ? " (you)" : ""}</span><strong>${game.id === "mine-sweeper" ? `${(-e.score / 1000).toFixed(3)}s` : Number(e.score).toLocaleString(undefined, { maximumFractionDigits: 1 })}</strong></div>`,
       )
       .join("");
+  setHtml($("board"), html);
 }
 async function start(mode) {
   if (busy) return;
@@ -210,9 +255,81 @@ async function act(input) {
 }
 const button = (text, type, extra = "") =>
   `<button class="btn" data-action="${type}" ${extra}>${text}</button>`;
+function updateBoard(s) {
+  const boardNode = $("play")?.querySelector(".mg-board");
+  if (!boardNode || boardNode.dataset.run !== run.id) return false;
+  let cells, summary;
+  if (s.game === "mine-sweeper") {
+    const flags = new Set(s.flags);
+    cells = s.cells.map((v, i) => ({
+      text: flags.has(i) ? "⚑" : (v ?? ""),
+      open: v !== null,
+    }));
+    summary = `${s.mines - s.lost}/${s.mines} MT preserved · ${s.flags.length} flags`;
+  } else if (s.game === "gem-2048") {
+    cells = s.board.map((v) => ({
+      text: v
+        ? `${icon(tileNames[Math.min(19, Math.log2(v) - 1)])}${v}<small>${esc(tileNames[Math.log2(v) - 1] || `Glitched Gem +${Math.log2(v) - 20}`)}</small>`
+        : "",
+      open: !!v,
+    }));
+  } else if (s.game === "prospector") {
+    const found = new Map(
+      s.discoveries
+        .filter((d) => d.position !== null)
+        .map((d) => [d.position, d]),
+    );
+    cells = Array.from({ length: 100 }, (_, i) => ({
+      text: found.has(i) ? icon(found.get(i).name) : (s.clues[i] ?? ""),
+      open: found.has(i) || i in s.clues,
+    }));
+    summary = `${s.digs} digs left · ${s.found.length}/6 deposits`;
+  } else if (s.game === "explosive-mining") {
+    cells = s.board.map((c) => ({
+      text:
+        c.type === "gem"
+          ? icon(c.name)
+          : c.type === "reinforced"
+            ? c.hp === 2
+              ? "▣"
+              : "▧"
+            : c.type === "crate"
+              ? "🧨"
+              : c.type === "rock"
+                ? "▪"
+                : "",
+      open: c.type === "empty",
+    }));
+    summary = `${s.bombs} bombs · ${s.score}/${s.total} extracted · Largest chain ${s.largest}`;
+  } else if (s.game === "gem-stack") {
+    const values = [...s.board];
+    for (const [x, y] of pieceCells(s.piece))
+      if (x >= 0 && x < 10 && y >= 0 && y < 20)
+        values[y * 10 + x] = s.piece.type + 1;
+    const art = icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]);
+    cells = values.map((v) => ({ text: v ? art : "", tile: v }));
+    summary = `Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}`;
+  } else return false;
+  patchCells(boardNode, cells);
+  setText(
+    $("play").querySelector(".mg-stat"),
+    `Score ${Math.round(s.score).toLocaleString()}`,
+  );
+  if (summary)
+    setText($("play").querySelector("[data-board-summary]"), summary);
+  if (!raf && !frameTimer) scheduleFrame();
+  return true;
+}
+
 function render() {
   if (!run) return;
   const s = run.state;
+  if (s.done) {
+    arcadeRenderer?.destroy();
+    arcadeRenderer = null;
+    arcadeArena = null;
+  }
+  if (!s.done && updateBoard(s)) return;
   $("start").hidden = !s.done;
   let html = `<div class="mg-tags"><span class="mg-tag">${run.mode === "practice" ? "Practice · 0 MT" : "Rewarded · ticket used"}</span></div><p class="mg-stat">${game.id === "gem-tower" ? `Floor ${s.floor} · Pending ${s.pending} MT` : game.id === "crystal-bags" ? `Round ${Math.min(5, s.round + 1)}/5 · ${s.pending} MT` : `Score ${Math.round(s.score).toLocaleString()}`}</p>`;
   if (s.done) {
@@ -220,7 +337,7 @@ function render() {
   }
   if (s.game === "mine-sweeper") {
     html +=
-      `<p id="mine-timer"></p><p>${s.mines - s.lost}/${s.mines} MT preserved · ${s.flags.length} flags</p><label><input id="flag-mode" type="checkbox" ${flagMode ? "checked" : ""}> Flag mode (or right-click)</label>` +
+      `<p id="mine-timer"></p><p data-board-summary>${s.mines - s.lost}/${s.mines} MT preserved · ${s.flags.length} flags</p><label><input id="flag-mode" type="checkbox" ${flagMode ? "checked" : ""}> Flag mode (or right-click)</label>` +
       grid(
         s.n,
         s.cells.map((v, i) => ({
@@ -235,7 +352,7 @@ function render() {
         4,
         s.board.map((v) => ({
           text: v
-            ? `${gemIconHtml(tileNames[Math.min(19, Math.log2(v) - 1)])}${v}<small>${esc(tileNames[Math.log2(v) - 1] || `Glitched Gem +${Math.log2(v) - 20}`)}</small>`
+            ? `${icon(tileNames[Math.min(19, Math.log2(v) - 1)])}${v}<small>${esc(tileNames[Math.log2(v) - 1] || `Glitched Gem +${Math.log2(v) - 20}`)}</small>`
             : "",
           open: !!v,
         })),
@@ -244,13 +361,13 @@ function render() {
       `<div class="mg-controls">${["left", "up", "down", "right"].map((d) => button({ left: "←", up: "↑", down: "↓", right: "→" }[d], "move", `data-direction="${d}"`)).join("")}</div>`;
   if (s.game === "prospector") {
     html +=
-      `<p>${s.digs} digs left · ${s.found.length}/6 deposits</p><div class="mg-tags">${s.discoveries.map((d) => `<span class="mg-tag">${gemIconHtml(d.name)} ${d.name} · ${d.value}</span>`).join("")}</div>` +
+      `<p data-board-summary>${s.digs} digs left · ${s.found.length}/6 deposits</p><div class="mg-tags">${s.discoveries.map((d) => `<span class="mg-tag">${icon(d.name)} ${d.name} · ${d.value}</span>`).join("")}</div>` +
       grid(
         10,
         Array.from({ length: 100 }, (_, i) => {
           let d = s.discoveries.find((d) => d.position === i);
           return {
-            text: d ? gemIconHtml(d.name) : (s.clues[i] ?? ""),
+            text: d ? icon(d.name) : (s.clues[i] ?? ""),
             open: !!d || i in s.clues,
           };
         }),
@@ -258,13 +375,13 @@ function render() {
   }
   if (s.game === "explosive-mining")
     html +=
-      `<p>${s.bombs} bombs · ${s.score}/${s.total} extracted · Largest chain ${s.largest}</p>` +
+      `<p data-board-summary>${s.bombs} bombs · ${s.score}/${s.total} extracted · Largest chain ${s.largest}</p>` +
       grid(
         12,
         s.board.map((c) => ({
           text:
             c.type === "gem"
-              ? gemIconHtml(c.name)
+              ? icon(c.name)
               : c.type === "reinforced"
                 ? c.hp === 2
                   ? "▣"
@@ -305,7 +422,7 @@ function render() {
     if (!s.done && s.awaitingNext)
       html += `<div class="mg-controls">${button("Next question", "next")}</div>`;
     if (!s.done && !s.awaitingNext)
-      html += `<h3>Question ${s.question + 1}/10</h3><div class="mg-tower">${gemIconHtml(s.specimen.name)}</div><h3>${esc(s.specimen.name)}</h3><p>${s.specimen.weight.toLocaleString()} g · ${esc(s.specimen.mutations.join(" + ") || "No Mutation")}</p><p id="question-time"></p><form id="guess-form" class="mg-controls"><label>Your guess $ <input id="guess" type="number" min="0" step="any" required inputmode="decimal"></label><button class="btn btn--primary">Submit guess</button></form>`;
+      html += `<h3>Question ${s.question + 1}/10</h3><div class="mg-tower">${icon(s.specimen.name)}</div><h3>${esc(s.specimen.name)}</h3><p>${s.specimen.weight.toLocaleString()} g · ${esc(s.specimen.mutations.join(" + ") || "No Mutation")}</p><p id="question-time"></p><form id="guess-form" class="mg-controls"><label>Your guess $ <input id="guess" type="number" min="0" step="any" required inputmode="decimal"></label><button class="btn btn--primary">Submit guess</button></form>`;
   }
   if (s.game === "gem-stack") {
     let board = [...s.board];
@@ -313,7 +430,7 @@ function render() {
       for (let [x, y] of pieceCells(s.piece))
         if (x >= 0 && x < 10 && y >= 0 && y < 20)
           board[y * 10 + x] = s.piece.type + 1;
-    html += `<p>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? gemIconHtml(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls">${[
+    html += `<p data-board-summary>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls">${[
       ["←", "left"],
       ["↻", "rotate"],
       ["→", "right"],
@@ -332,9 +449,18 @@ function render() {
   const oldArena = $("arena");
   $("play").innerHTML = html;
   if (oldArena && $("arena")) $("arena").replaceWith(oldArena);
+  const boardNode = $("play").querySelector(".mg-board");
+  if (boardNode) {
+    boardNode.dataset.run = run.id;
+    for (const cell of boardNode.children) cell._minigameHtml = cell.innerHTML;
+  }
   bind();
-  cancelAnimationFrame(raf);
-  if (!s.done) raf = requestAnimationFrame(frame);
+  if (s.game === "perfect-strike" && !s.done) {
+    const w = strikeConfig(s.strike).width * 100;
+    $("strike-bar").style.background =
+      `linear-gradient(90deg,#55333a 12%,#895b33 12% ${50 - w * 4}%,#497a70 ${50 - w * 4}% ${50 - w * 2}%,#56ad91 ${50 - w * 2}% ${50 - w}%,#ffe6a2 ${50 - w}% ${50 + w}%,#56ad91 ${50 + w}% ${50 + w * 2}%,#497a70 ${50 + w * 2}% ${50 + w * 4}%,#895b33 ${50 + w * 4}% 88%,#55333a 88%)`;
+  }
+  scheduleFrame();
 }
 function grid(n, cells, cls = "") {
   return `<div class="mg-board ${cls}" style="grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<button class="mg-cell" data-cell="${i}" data-open="${c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}${c.text ? " revealed" : ""}">${c.text}</button>`).join("")}</div>`;
@@ -454,63 +580,60 @@ function flush() {
   act({ type: "inputs", inputs: batch, end: !drag && inputs.length === 0 });
 }
 function frame() {
+  raf = 0;
+  frameTimer = 0;
   if (!run || run.state.done) return;
   let s = run.state,
     now = Date.now() + offset;
   if (s.game === "mine-sweeper" && $("mine-timer"))
-    $("mine-timer").textContent = s.first
-      ? `${((now - s.first) / 1000).toFixed(1)} seconds`
-      : "Timer starts on your first reveal";
-  if (s.game === "perfect-strike" && $("needle")) {
+    setText(
+      $("mine-timer"),
+      s.first
+        ? `${((now - s.first) / 1000).toFixed(1)} seconds`
+        : "Timer starts on your first reveal",
+    );
+  if (!document.hidden && s.game === "perfect-strike" && $("needle")) {
     const strikeButton = document.querySelector('[data-action="strike"]');
     strikeButton.disabled = now < s.ready + 200;
-    strikeButton.textContent =
+    setText(
+      strikeButton,
       now < s.ready
         ? `Get ready · ${Math.ceil((s.ready - now) / 1000)}`
-        : "Strike!";
+        : "Strike!",
+    );
     let c = strikeConfig(s.strike),
       x = Math.abs((((now - s.ready) / c.period) % 2) - 1);
     $("needle").style.left = `${x * 100}%`;
-    let w = c.width * 100;
-    $("strike-bar").style.background =
-      `linear-gradient(90deg,#55333a 12%,#895b33 12% ${50 - w * 4}%,#497a70 ${50 - w * 4}% ${50 - w * 2}%,#56ad91 ${50 - w * 2}% ${50 - w}%,#ffe6a2 ${50 - w}% ${50 + w}%,#56ad91 ${50 + w}% ${50 + w * 2}%,#497a70 ${50 + w * 2}% ${50 + w * 4}%,#895b33 ${50 + w * 4}% 88%,#55333a 88%)`;
   }
   if (s.game === "price-is-right" && $("question-time")) {
     let left = Math.max(0, 15000 - (now - s.ready));
-    $("question-time").textContent = `${Math.ceil(left / 1000)} seconds`;
+    setText($("question-time"), `${Math.ceil(left / 1000)} seconds`);
     if (!left && !busy) act({ type: "guess", value: 0 });
   }
   if (s.game === "gem-stack" && now - s.last > 500 && !busy)
     act({ type: "tick" });
   if (["gem-catcher", "ore-slicer"].includes(s.game) && $("arena")) {
     if ($("arcade-lives"))
-      $("arcade-lives").textContent =
-        `${s.lives} lives · ${s.game === "gem-catcher" ? `Combo ${s.combo}` : `${s.sliced} gems sliced`}`;
+      setText(
+        $("arcade-lives"),
+        `${s.lives} lives · ${s.game === "gem-catcher" ? `Combo ${s.combo}` : `${s.sliced} gems sliced`}`,
+      );
     let t = Math.min(s.duration, now - s.started);
-    $("arcade-time").textContent =
-      `${Math.ceil((s.duration - t) / 1000)} seconds ${t > s.duration - (s.game === "ore-slicer" ? 5000 : 15000) ? (s.game === "ore-slicer" ? "· ORE RUSH" : "· CHAOS") : ""}`;
+    setText(
+      $("arcade-time"),
+      `${Math.ceil((s.duration - t) / 1000)} seconds ${t > s.duration - (s.game === "ore-slicer" ? 5000 : 15000) ? (s.game === "ore-slicer" ? "· ORE RUSH" : "· CHAOS") : ""}`,
+    );
     const arena = $("arena");
     if (now - lastDraw > 32) {
       lastDraw = now;
-      arena.querySelectorAll(".mg-object").forEach((e) => e.remove());
-      for (let e of s.events) {
-        let y = (t - e.t) / e.fall;
-        if (y < 0 || y > 1 || s.hit.includes(e.id)) continue;
-        const el = document.createElement("div");
-        el.className = "mg-object";
-        el.style.left = `${e.x * 100}%`;
-        el.style.top = `${y * (s.game === "ore-slicer" ? 100 : 92)}%`;
-        el.innerHTML =
-          e.kind === "hazard"
-            ? s.game === "ore-slicer"
-              ? "🧨"
-              : "🪨"
-            : e.kind === "stone"
-              ? "🪨"
-              : gemIconHtml(e.name);
-        arena.append(el);
+      if (arcadeArena !== arena) {
+        arcadeRenderer?.destroy();
+        arcadeArena = arena;
+        arcadeRenderer = createArcadeRenderer(arena, icon);
       }
+      if (!document.hidden) arcadeRenderer(s, t);
     }
+
     if (s.game === "gem-catcher") {
       if (keys.has("ArrowLeft") || keys.has("a"))
         cursor = Math.max(0, cursor - 0.012);
@@ -524,8 +647,7 @@ function frame() {
     }
     if (!busy && Date.now() - lastFlush > 700) flush();
   }
-  cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(frame);
+  scheduleFrame();
 }
 window.addEventListener("keydown", (e) => {
   if (
@@ -558,6 +680,18 @@ window.addEventListener("keydown", (e) => {
   if (game.id === "perfect-strike" && e.code === "Space")
     act({ type: "strike", elapsed: Date.now() + offset - run.state.ready });
 });
+window.addEventListener("blur", () => keys.clear());
+document.addEventListener("visibilitychange", () => {
+  keys.clear();
+  scheduleFrame();
+});
+window.addEventListener("pagehide", () => {
+  stopFrames();
+  arcadeRenderer?.destroy();
+  arcadeRenderer = null;
+  arcadeArena = null;
+});
+window.addEventListener("pageshow", scheduleFrame);
 window.addEventListener("keyup", (e) => keys.delete(e.key));
 supabase.auth.onAuthStateChange((event) => {
   if (["SIGNED_OUT", "SIGNED_IN"].includes(event)) {
@@ -566,10 +700,14 @@ supabase.auth.onAuthStateChange((event) => {
     run = null;
     wallet = null;
     active = [];
+    delete $("wallet")._minigameHtml;
     $("wallet").textContent = "Sign in to load tickets and MT.";
+    arcadeRenderer?.destroy();
+    arcadeRenderer = null;
+    arcadeArena = null;
     if ($("play")) $("play").replaceChildren();
     if ($("start")) $("start").hidden = false;
-    cancelAnimationFrame(raf);
+    stopFrames();
     setTimeout(load, 0);
   }
 });
