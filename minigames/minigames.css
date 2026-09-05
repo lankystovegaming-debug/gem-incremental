@@ -1,20 +1,41 @@
+/* =========================================================
+   MINIGAMES
+   Chrome (hero, cards, panels, controls) leans on the shared
+   design tokens so it tracks every theme; the play surfaces
+   (arena, boards, strike bar) keep their own game palette.
+   ========================================================= */
+
 .mg-page {
   max-width: 1200px;
   margin: auto;
   padding: 30px 20px 100px;
 }
+
+/* ── Hero ──────────────────────────────────────────────── */
 .mg-hero {
-  padding: 30px 0;
+  padding: 30px 0 24px;
+}
+.mg-hero .eyebrow {
+  color: var(--accent);
+  letter-spacing: 0.18em;
 }
 .mg-hero h1 {
+  font-family: var(--font-display, inherit);
   font-size: clamp(32px, 5vw, 54px);
+  line-height: 1.05;
   margin: 8px 0;
+  background: linear-gradient(120deg, var(--text), color-mix(in srgb, var(--accent) 65%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .mg-hero p,
 .mg-note {
-  color: var(--muted);
+  color: var(--text-muted);
   line-height: 1.7;
 }
+
+/* ── Wallet / tag pills ────────────────────────────────── */
 .mg-wallet,
 .mg-tags,
 .mg-controls {
@@ -29,10 +50,15 @@
 .mg-wallet span,
 .mg-tag {
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-pill, 20px);
   padding: 6px 12px;
   font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
 }
+
+/* ── Catalog grid ──────────────────────────────────────── */
 .mg-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -40,9 +66,12 @@
 }
 .mg-card,
 .mg-panel {
+  position: relative;
   border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
+  border-radius: var(--radius-lg, 18px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 60%, transparent), transparent),
+    var(--surface);
   padding: 22px;
 }
 .mg-card {
@@ -51,37 +80,80 @@
   gap: 12px;
   color: inherit;
   text-decoration: none;
-  transition: transform 0.15s;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm, 0 2px 8px -4px rgb(0 0 0 / 0.4));
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
-.mg-card:hover {
-  transform: translateY(-3px);
+/* Accent sheen that wipes across on hover */
+.mg-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.mg-card:hover,
+.mg-card:focus-visible {
+  transform: translateY(-4px);
   border-color: var(--accent);
+  box-shadow: var(--shadow-lg, 0 24px 48px -20px rgb(0 0 0 / 0.6));
+  outline: none;
+}
+.mg-card:hover::before,
+.mg-card:focus-visible::before {
+  opacity: 1;
+}
+.mg-card:active {
+  transform: translateY(-1px);
 }
 .mg-card h2,
 .mg-card p {
   margin: 0;
 }
+.mg-card h2 {
+  font-size: 1.15rem;
+}
 .mg-card p {
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--text-muted);
+}
+.mg-card small {
+  color: var(--text-faint, var(--text-muted));
+  font-variant-numeric: tabular-nums;
 }
 .mg-card .mg-art {
-  font-size: 38px;
+  font-size: 40px;
   min-height: 55px;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent) 30%, transparent));
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mg-card:hover .mg-art {
+  transform: scale(1.12) rotate(-4deg);
 }
 .mg-tags {
   margin-top: auto;
 }
 .mg-tag--mt {
-  color: #68dcb0;
+  color: var(--positive, #177857);
+  border-color: color-mix(in srgb, var(--positive, #177857) 40%, var(--border));
 }
 .mg-tag--daily {
-  color: #ddbbff;
+  color: #8050bb;
+  border-color: color-mix(in srgb, #8050bb 40%, var(--border));
 }
+
+/* ── Game layout / panels ──────────────────────────────── */
 .mg-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
   gap: 20px;
+}
+.mg-panel {
+  box-shadow: var(--shadow-sm, 0 2px 8px -4px rgb(0 0 0 / 0.4));
 }
 .mg-panel h2 {
   margin-top: 0;
@@ -92,6 +164,13 @@
 .mg-note {
   margin: 24px 0;
 }
+.mg-rules {
+  line-height: 1.8;
+  margin: 16px 0;
+  color: var(--text-muted);
+}
+
+/* ── Grid boards (minesweeper, prospector, 2048, stack) ── */
 .mg-board {
   display: grid;
   gap: 3px;
@@ -103,24 +182,37 @@
   min-width: 0;
   aspect-ratio: 1;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface);
+  border-radius: 6px;
+  background: var(--surface-sunken);
   color: inherit;
   padding: 1px;
   overflow: hidden;
   font-size: clamp(9px, 1.4vw, 16px);
   cursor: pointer;
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.mg-cell:hover {
+  border-color: var(--accent);
+  background: var(--surface-hover, color-mix(in srgb, var(--accent) 8%, var(--surface-sunken)));
+  transform: translateY(-1px);
+}
+.mg-cell:active {
+  transform: scale(0.94);
 }
 .mg-cell:focus-visible {
   outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .mg-cell[data-open="true"] {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
 }
 .mg-cell .gem-icon {
   width: 24px;
   height: 24px;
 }
+
+/* 2048 tiles */
 .mg-2048 .mg-cell {
   font-size: 15px;
   display: flex;
@@ -128,22 +220,42 @@
   justify-content: center;
   align-items: center;
   gap: 3px;
+  font-weight: 700;
 }
 .mg-2048 .mg-cell small {
   font-size: 10px;
+  color: var(--text-muted);
 }
+.mg-2048 .mg-cell .gem-icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Gem Stack (Tetris-like) */
 .mg-stack {
   max-width: 260px;
   gap: 1px;
 }
 .mg-stack .mg-cell {
-  border-radius: 2px;
+  border-radius: 3px;
   aspect-ratio: 1;
   background: #14232e;
+  border-color: color-mix(in srgb, #ffffff 6%, transparent);
+}
+.mg-stack .mg-cell:hover {
+  transform: none;
 }
 .mg-stack .filled {
   background: hsl(calc(var(--tile) * 43) 70% 58%);
+  box-shadow: inset 0 2px 4px color-mix(in srgb, #ffffff 30%, transparent),
+              inset 0 -3px 6px color-mix(in srgb, #000000 30%, transparent);
 }
+.mg-stack .mg-cell .gem-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Crystal Bags ──────────────────────────────────────── */
 .mg-bags {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -152,24 +264,44 @@
 .mg-bag {
   padding: 15px 8px;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+  border-radius: var(--radius, 12px);
+  background: var(--surface-sunken);
   color: inherit;
   cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.mg-bag:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md, 0 6px 20px -6px rgb(0 0 0 / 0.55));
+}
+.mg-bag:active {
+  transform: translateY(0) scale(0.97);
+}
+.mg-bag strong {
+  color: var(--accent);
 }
 .mg-bag span {
   display: block;
   padding: 6px 0;
+  color: var(--text-muted);
 }
+
+/* ── Arcade arena (catcher / slicer) ───────────────────── */
 .mg-arena {
   position: relative;
   width: 100%;
   height: 480px;
-  background: linear-gradient(180deg, #0b1526, #162c33);
-  border-radius: 15px;
+  background:
+    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #0b1526, #162c33);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-radius: var(--radius-lg, 15px);
   overflow: hidden;
   touch-action: none;
   user-select: none;
+  box-shadow: inset 0 0 60px rgb(0 0 0 / 0.45);
+  contain: layout paint;
 }
 .mg-object {
   position: absolute;
@@ -180,16 +312,22 @@
   place-items: center;
   font-size: 30px;
   pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.5));
+  will-change: transform;
 }
 .mg-cart {
   position: absolute;
   bottom: 2%;
   width: 18%;
-  height: 20px;
-  border-radius: 4px;
-  background: #e4bd78;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f4d59a, #cf9a4e);
+  border: 1px solid #a9772f;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.4), inset 0 2px 2px rgb(255 255 255 / 0.4);
   transform: translateX(-50%);
 }
+
+/* ── Perfect Strike bar ────────────────────────────────── */
 .mg-strike {
   height: 65px;
   background: linear-gradient(
@@ -205,55 +343,111 @@
     #55333a 88%
   );
   position: relative;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   margin: 20px 0;
+  box-shadow: inset 0 0 18px rgb(0 0 0 / 0.4);
 }
 .mg-needle {
   position: absolute;
   width: 4px;
   height: 100%;
   background: white;
-  box-shadow: 0 0 9px white;
+  box-shadow: 0 0 12px 2px white;
 }
+
+/* ── Leaderboard / stats / results ─────────────────────── */
 .mg-board-entry {
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  transition: background 0.12s ease;
+}
+.mg-board-entry:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.mg-board-entry strong {
+  font-variant-numeric: tabular-nums;
 }
 .mg-stat {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   margin: 15px 0;
+  letter-spacing: -0.01em;
 }
 .mg-result {
   padding: 20px;
-  border: 1px solid #68dcb0;
-  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--positive, #68dcb0) 55%, var(--border));
+  border-radius: var(--radius, 12px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--positive, #68dcb0) 10%, transparent), transparent);
+  animation: mg-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+.mg-result h3 {
+  margin-top: 0;
+}
+.mg-tower {
+  font-size: 62px;
+  text-align: center;
+  padding: 24px;
+  animation: mg-float 3s ease-in-out infinite;
+}
+.mg-error {
+  color: var(--negative, #ffb1b1);
+}
+
+/* ── Controls / buttons ────────────────────────────────── */
 .mg-controls button,
 .mg-controls select,
 .mg-controls input {
   min-height: 42px;
 }
-.mg-rules {
-  line-height: 1.8;
-  margin: 16px 0;
+.mg-controls .btn {
+  transition: transform 0.1s ease, filter 0.12s ease;
 }
-.mg-tower {
-  font-size: 60px;
-  text-align: center;
-  padding: 24px;
+.mg-controls .btn:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
-.mg-error {
-  color: #ffb1b1;
+.mg-controls .btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
 }
 button:disabled {
   opacity: 0.55;
   cursor: wait;
 }
+
+/* ── Motion keyframes ──────────────────────────────────── */
+@keyframes mg-pop {
+  from { transform: scale(0.72); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes mg-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-card,
+  .mg-card .mg-art,
+  .mg-cell,
+  .mg-bag,
+  .mg-controls .btn {
+    transition: none;
+  }
+  .mg-result,
+  .mg-tower {
+    animation: none;
+  }
+  .mg-card:hover,
+  .mg-card:hover .mg-art,
+  .mg-bag:hover {
+    transform: none;
+  }
+}
+
+/* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 800px) {
   .mg-layout {
     grid-template-columns: 1fr;
@@ -280,28 +474,7 @@ button:disabled {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
 }
+
 .mg-page [hidden] {
   display: none !important;
-}
-.mg-tag--mt {
-  color: #177857;
-}
-.mg-tag--daily {
-  color: #8050bb;
-}
-.mg-stack .mg-cell .gem-icon {
-  width: 100%;
-  height: 100%;
-}
-.mg-2048 .mg-cell .gem-icon {
-  width: 28px;
-  height: 28px;
-}
-
-/* Keep moving gem layout local and let transforms move existing sprites. */
-.mg-arena {
-  contain: layout paint;
-}
-.mg-object {
-  will-change: transform;
 }
