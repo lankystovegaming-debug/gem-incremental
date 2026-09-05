@@ -14,6 +14,7 @@ No migration or Edge Function has been deployed by this implementation.
    ```
 
    Keep JWT verification enabled. The handler additionally verifies the bearer token with Auth and checks the existing profile and suspension convention. It uses the automatically supplied `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; no service key belongs in the frontend. The bundle imports the shared `minigames/catalog.js`, `minigames/stack.js`, and `src/data/gems.js` files, so run from the full checkout.
+
 3. Publish the static frontend with the existing website workflow after the backend is ready. Include the entire `minigames/` directory and `src/ui/shell.js`. Do not deploy the normal roll function or redeploy Gemdle for this change.
 4. Smoke test a rewarded run, reload halfway, complete it, and confirm the wallet credits once. Repeat in Practice and confirm no MT change. Verify a second account cannot read private runs or mutate wallets.
 

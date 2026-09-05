@@ -77,7 +77,7 @@ begin
   if reward<0 then raise exception 'Invalid reward';end if;
   update public.minigame_wallets set mt=mt+reward,lifetime_mt=lifetime_mt+reward where player_id=p_player;
   if p_rank is not null and jsonb_typeof(p_rank)='array' then
-   insert into public.minigame_scores(run_id,player_id,game,score,tie1,tie2) values(p_run,p_player,r.game,(p_rank->>0)::double precision,(p_rank->>1)::double precision,(p_rank->>2)::double precision);
+   insert into public.minigame_scores(run_id,player_id,game,score,tie1,tie2,achieved_at) values(p_run,p_player,r.game,(p_rank->>0)::double precision,(p_rank->>1)::double precision,(p_rank->>2)::double precision,case when r.game='gem-tower' and p_state ? 'floorAt' then to_timestamp((p_state->>'floorAt')::double precision/1000) else now() end);
   end if;
  end if;
  return r;
