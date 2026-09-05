@@ -170,6 +170,59 @@
   color: var(--text-muted);
 }
 
+/* How to Play (collapsible, one per game) */
+.mg-howto {
+  margin: 4px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 12px);
+  background: var(--surface-sunken);
+  padding: 2px 16px;
+}
+.mg-howto > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--text);
+}
+.mg-howto > summary::-webkit-details-marker {
+  display: none;
+}
+.mg-howto > summary::after {
+  content: "＋";
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.mg-howto[open] > summary::after {
+  content: "－";
+}
+.mg-howto__goal {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.mg-howto__meta {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.mg-howto__steps {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+.mg-howto__steps li {
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 /* ── Grid boards (minesweeper, prospector, 2048, stack) ── */
 .mg-board {
   display: grid;
