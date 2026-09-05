@@ -50,7 +50,16 @@ function mineText(v) {
 let frameTimer = 0,
   arcadeRenderer = null,
   arcadeArena = null,
-  bladeTrail = null;
+  bladeTrail = null,
+  // Perfect Strike: where to hold the marker after a strike, and until when.
+  strikeFreeze = null;
+
+// The marker position that corresponds to a strike pressed `elapsed` ms into
+// the current sweep — used to freeze the needle exactly where you stopped it.
+function strikeNeedleX(strikeIndex, elapsed) {
+  const period = strikeConfig(strikeIndex).period;
+  return Math.abs(((elapsed / period) % 2) - 1);
+}
 const animatedGames = new Set(["gem-catcher", "ore-slicer", "perfect-strike"]);
 const timedGames = new Set(["mine-sweeper", "price-is-right", "gem-stack"]);
 function stopFrames() {
@@ -271,6 +280,7 @@ function route() {
   arcadeRenderer = null;
   arcadeArena = null;
   bladeTrail = null;
+  strikeFreeze = null;
   stopFrames();
   inputs = [];
   run = null;
@@ -613,8 +623,13 @@ function bind() {
         for (let k of ["direction", "bag"])
           if (b.dataset[k]) input[k] = b.dataset[k];
         if (b.dataset.door) input.door = Number(b.dataset.door);
-        if (input.type === "strike")
+        if (input.type === "strike") {
           input.elapsed = Date.now() + offset - run.state.ready;
+          strikeFreeze = {
+            x: strikeNeedleX(run.state.strike, input.elapsed),
+            until: Date.now() + offset + 800,
+          };
+        }
         act(input);
       }),
   );
@@ -743,8 +758,17 @@ function frame() {
         ? `Get ready · ${Math.ceil((s.ready - now) / 1000)}`
         : "Strike!",
     );
-    let c = strikeConfig(s.strike),
+    // The marker only sweeps while a strike is live. Once you strike (or during
+    // the between-strikes "get ready"), it holds still at the spot you stopped
+    // it — that's the whole point of the game.
+    let x;
+    if (strikeFreeze && (now < strikeFreeze.until || now < s.ready)) {
+      x = strikeFreeze.x;
+    } else {
+      strikeFreeze = null;
+      let c = strikeConfig(s.strike);
       x = Math.abs((((now - s.ready) / c.period) % 2) - 1);
+    }
     $("needle").style.left = `${x * 100}%`;
   }
   if (s.game === "price-is-right" && $("question-time")) {
@@ -825,8 +849,14 @@ window.addEventListener("keydown", (e) => {
     }[e.key];
     if (type) act({ type });
   }
-  if (game.id === "perfect-strike" && e.code === "Space")
-    act({ type: "strike", elapsed: Date.now() + offset - run.state.ready });
+  if (game.id === "perfect-strike" && e.code === "Space") {
+    const elapsed = Date.now() + offset - run.state.ready;
+    strikeFreeze = {
+      x: strikeNeedleX(run.state.strike, elapsed),
+      until: Date.now() + offset + 800,
+    };
+    act({ type: "strike", elapsed });
+  }
 });
 window.addEventListener("blur", () => keys.clear());
 document.addEventListener("visibilitychange", () => {
