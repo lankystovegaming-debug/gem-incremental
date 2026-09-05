@@ -2097,11 +2097,42 @@ const referralsRefresh = document.getElementById("referralsRefresh");
 const referralsSearch = document.getElementById("referralsSearch");
 
 let referralRows = [];
+let referralFlagged = [];
 
 function referralDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+}
+
+// Referrals whose referred account shares an IP with the referrer — a likely
+// self-referral through an alt. Shown up front so they can't be missed.
+function renderReferralFlagged() {
+  if (!referralFlagged.length) return "";
+  return `
+    <div class="referrals-flagged">
+      <p class="referrals-flagged__head">⚠ ${formatCount(referralFlagged.length)} referral${referralFlagged.length === 1 ? "" : "s"} share an IP with the referrer — possible self-referral via an alt.</p>
+      <div class="referrals-table-wrap">
+        <table class="referrals-table">
+          <thead>
+            <tr><th>Referrer</th><th>Referred account</th><th>Email</th><th>Shared IP</th><th>Status</th><th>When</th></tr>
+          </thead>
+          <tbody>${referralFlagged
+            .map(
+              (f) => `
+            <tr>
+              <td>${escapeHtml(f.referrer ?? "Unknown")}</td>
+              <td>${escapeHtml(f.referred ?? "Unknown")}</td>
+              <td>${escapeHtml(f.referredEmail ?? "Anonymous")}</td>
+              <td class="referrals-mono">${escapeHtml(f.ip ?? "—")}</td>
+              <td>${escapeHtml(f.status ?? "")}</td>
+              <td>${escapeHtml(referralDate(f.createdAt))}</td>
+            </tr>`
+            )
+            .join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function renderReferralRows() {
@@ -2113,11 +2144,11 @@ function renderReferralRows() {
       String(row.username ?? "").toLowerCase().includes(query) ||
       String(row.email ?? "").toLowerCase().includes(query)
   );
-  referralsContent.innerHTML = rows.length
+  const table = rows.length
     ? `<div class="referrals-table-wrap">
         <table class="referrals-table">
           <thead>
-            <tr><th>Referrer</th><th>Email</th><th>Referrals</th><th>Qualified</th><th>Reward paid</th><th>Last referral</th></tr>
+            <tr><th>Referrer</th><th>Email</th><th>Referrals</th><th>Qualified</th><th>Same IP</th><th>Reward paid</th><th>Last referral</th></tr>
           </thead>
           <tbody>${rows
             .map(
@@ -2127,6 +2158,11 @@ function renderReferralRows() {
               <td>${escapeHtml(row.email ?? "Anonymous")}</td>
               <td class="referrals-num">${formatCount(Number(row.total ?? 0))}</td>
               <td class="referrals-num">${formatCount(Number(row.qualified ?? 0))}</td>
+              <td class="referrals-num">${
+                Number(row.sameIp ?? 0) > 0
+                  ? `<span class="badge badge--danger">${formatCount(Number(row.sameIp))}</span>`
+                  : "0"
+              }</td>
               <td class="referrals-num">${formatMoney(Number(row.reward ?? 0))}</td>
               <td>${escapeHtml(referralDate(row.lastReferredAt))}</td>
             </tr>`
@@ -2135,6 +2171,7 @@ function renderReferralRows() {
         </table>
       </div>`
     : '<div class="empty"><p class="empty__title">No referrers match this filter.</p></div>';
+  referralsContent.innerHTML = renderReferralFlagged() + table;
 }
 
 async function loadReferrals() {
@@ -2155,12 +2192,17 @@ async function loadReferrals() {
   }
 
   referralRows = Array.isArray(data?.referrers) ? data.referrers : [];
+  referralFlagged = Array.isArray(data?.flagged) ? data.flagged : [];
   if (referralsSummary) {
+    const sameIp = Number(data?.sameIpCount ?? referralFlagged.length);
     referralsSummary.innerHTML =
       `<strong>${formatCount(Number(data?.total ?? 0))}</strong> total referrals · ` +
       `<strong>${formatCount(Number(data?.qualified ?? 0))}</strong> qualified · ` +
       `<strong>${formatCount(Number(data?.referrerCount ?? referralRows.length))}</strong> referrers · ` +
-      `<strong>${formatMoney(Number(data?.totalReward ?? 0))}</strong> rewards paid`;
+      `<strong>${formatMoney(Number(data?.totalReward ?? 0))}</strong> rewards paid` +
+      (sameIp > 0
+        ? ` · <strong class="referrals-warn">${formatCount(sameIp)} same-IP</strong>`
+        : "");
   }
   renderReferralRows();
 }

@@ -673,6 +673,11 @@
 .referrals-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .referrals-table td:first-child { font-weight: 600; color: var(--text); }
 .referrals-num { font-variant-numeric: tabular-nums; text-align: right; }
+.referrals-mono { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace); font-variant-numeric: tabular-nums; }
+.referrals-warn { color: var(--negative, #e5534b); }
+.referrals-flagged { margin-bottom: var(--space-4); }
+.referrals-flagged__head { margin: 0 0 8px; color: var(--negative, #e5534b); font-weight: 700; font-size: .85rem; }
+.referrals-flagged .referrals-table-wrap { border-color: color-mix(in srgb, var(--negative, #e5534b) 40%, var(--border)); }
 
 /* Bank accounts admin panel */
 .admin-bank-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
