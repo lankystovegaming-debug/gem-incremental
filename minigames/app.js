@@ -790,7 +790,10 @@ function frame() {
       `${Math.ceil((s.duration - t) / 1000)} seconds ${t > s.duration - (s.game === "ore-slicer" ? 5000 : 15000) ? (s.game === "ore-slicer" ? "· ORE RUSH" : "· CHAOS") : ""}`,
     );
     const arena = $("arena");
-    if (now - lastDraw > 32) {
+    // Draw the arena every animation frame (~60fps). The loop already runs on
+    // requestAnimationFrame for these games; the old 32ms gate halved it and
+    // made the falling gems and blade trail look choppy.
+    if (now - lastDraw > 15) {
       lastDraw = now;
       if (arcadeArena !== arena) {
         arcadeRenderer?.destroy();
@@ -817,7 +820,12 @@ function frame() {
         lastSample = now;
       }
     }
-    if (!busy && Date.now() - lastFlush > 700) flush();
+    // Sliced/caught gems only vanish once the server confirms the hit, so the
+    // flush cadence is the feedback latency. Flush quickly while actively
+    // slicing, moderately while catching (there are always cart inputs), and
+    // slowly when idle — an empty flush there just lets the run finalize.
+    const flushDue = drag ? 150 : inputs.length ? 250 : 600;
+    if (!busy && Date.now() - lastFlush > flushDue) flush();
   }
   scheduleFrame();
 }
