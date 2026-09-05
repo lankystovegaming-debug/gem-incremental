@@ -1850,3 +1850,109 @@ if (!user || !whoami?.isAdmin) {
   await loadGuildRoster();
   searchInput.focus();
 }
+
+
+// =========================================================
+// ADMIN TAB NAVIGATION
+//
+// Groups the admin panels into top-level tabs so the page is a set of
+// focused sections instead of one long scroll. Player search + the player
+// panel live in their own "Search" tab (separate from Feature Lab). This
+// is a thin presentational layer: it moves the existing panels into tab
+// pages and reuses their existing loaders, so their behaviour is unchanged.
+// =========================================================
+(function initAdminTabs() {
+  const tabBar = document.getElementById("adminTabs");
+  const mainEl = document.querySelector("main.app-main");
+  const featureLabShell = document.getElementById("adminFeatureLab");
+  if (!tabBar || !mainEl) return;
+
+  // These header buttons are replaced by the Economy / Community tabs (their
+  // panels load lazily on tab open). The `.btn` styles override the `hidden`
+  // attribute, so hide them explicitly; keep them in the DOM for their loaders.
+  ["analyticsButton", "ipAuditButton"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.style.display = "none";
+  });
+
+  const GROUPS = {
+    search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
+    economy: ["#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
+    content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel"],
+    community: ["#guildRosterPanel", "#ipAuditPanel"]
+  };
+
+  // Build one page wrapper per tab and move the matching panels into it.
+  const pages = {};
+  for (const [name, selectors] of Object.entries(GROUPS)) {
+    const page = document.createElement("div");
+    page.className = "admin-tab-page";
+    page.dataset.adminTabPage = name;
+    page.hidden = true;
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (el) page.appendChild(el);
+    }
+    mainEl.insertBefore(page, featureLabShell || null);
+    pages[name] = page;
+  }
+
+  // Heavier panels are only loaded when their tab is first opened.
+  const LAZY = {
+    economy: () => (typeof loadAnalytics === "function" ? loadAnalytics() : null),
+    community: () => (typeof loadIpAudit === "function" ? loadIpAudit() : null)
+  };
+  const loaded = new Set();
+  let active = "search";
+
+  function showAdminTab(name) {
+    if (!pages[name]) return;
+    active = name;
+    for (const [tab, page] of Object.entries(pages)) page.hidden = tab !== name;
+    tabBar.querySelectorAll("[data-admin-tab]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.adminTab === name);
+    });
+    if (!loaded.has(name) && LAZY[name]) {
+      loaded.add(name);
+      try { LAZY[name](); } catch (error) { console.error("[ADMIN] tab load failed:", error); }
+    }
+  }
+
+  tabBar.querySelectorAll("[data-admin-tab]").forEach((button) => {
+    button.addEventListener("click", () => showAdminTab(button.dataset.adminTab));
+  });
+
+  // The audit-log button lives in the header; jump to the Search tab (where
+  // the audit panel now lives) when it is used.
+  document.getElementById("auditButton")?.addEventListener("click", () => showAdminTab("search"));
+
+  function reveal() {
+    tabBar.hidden = false;
+    showAdminTab(active);
+  }
+
+  // Reveal the tabs only once admin access is verified — the same moment the
+  // Feature Lab button becomes enabled.
+  const flButton = document.getElementById("featureLabButton");
+  if (flButton && !flButton.disabled) {
+    reveal();
+  } else if (flButton) {
+    const observer = new MutationObserver(() => {
+      if (!flButton.disabled) { observer.disconnect(); reveal(); }
+    });
+    observer.observe(flButton, { attributes: true, attributeFilter: ["disabled"] });
+  } else {
+    reveal();
+  }
+
+  // Feature Lab is a separate full-page overlay: hide the tabbed area while it
+  // is open, and restore the active tab when returning.
+  flButton?.addEventListener("click", () => {
+    tabBar.hidden = true;
+    Object.values(pages).forEach((page) => { page.hidden = true; });
+  });
+  document.getElementById("featureLabBack")?.addEventListener("click", reveal);
+  document.getElementById("adminPanelBack")?.addEventListener("click", reveal);
+
+  window.showAdminTab = showAdminTab;
+})();
