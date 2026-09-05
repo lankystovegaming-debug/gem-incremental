@@ -101,6 +101,130 @@ const rules = {
   "perfect-strike":
     "Ten strikes. Stop the marker in the center. MISS 0 · WEAK 100 · GOOD 300 · GREAT 600 · PERFECT 1,000. Consecutive Perfects add 100, 200, 300… Strike ten doubles base points. No randomness or boosts.",
 };
+
+// Step-by-step "How to Play" for each game. Rendered as a collapsible panel
+// on the game page; `rules` above stays as the one-line fallback.
+const howTo = {
+  "gem-catcher": {
+    goal: "Catch falling gems for points before your three lives run out.",
+    meta: "90 seconds · 3 lives",
+    steps: [
+      "Move the cart with A/D, the arrow keys, or by dragging it.",
+      "Catch gems to score 10–350 points each. Missing a gem is harmless.",
+      "Avoid rocks — each one costs a life and resets your combo.",
+      "Chain catches to build a combo: ×1.25 at 10, ×1.5 at 25, ×2 at 50, ×3 at 100.",
+    ],
+  },
+  "ore-slicer": {
+    goal: "Swipe through gems to slice them, keeping clear of the TNT.",
+    meta: "60 seconds · 3 lives",
+    steps: [
+      "Drag or swipe across the arena to cut through gems.",
+      "Stone is harmless, but TNT costs a life and cancels that whole swipe.",
+      "Slice several gems in one swipe for a multiplier: ×1.25 / ×1.5 / ×2 / ×3 for 2 / 3 / 4 / 5+ gems.",
+      "Your accuracy adjusts the final score.",
+    ],
+  },
+  "gem-2048": {
+    goal: "Merge matching gems to climb from Quartz to the Glitched Gem.",
+    steps: [
+      "Use the arrow keys or swipe to slide every tile one direction.",
+      "Two equal gems that collide merge into the next gem up.",
+      "After each move a new tile appears: 90% Quartz, 10% Malachite.",
+      "Keep merging as high as you can — it ends when no move is left. Highest tile wins; score breaks ties.",
+    ],
+  },
+  "mine-sweeper": {
+    goal: "Reveal every safe tile without disturbing the hidden MT deposits.",
+    meta: "9×9 to 20×20 by difficulty · Easy is practice only",
+    steps: [
+      "A number counts the MT deposits in the eight surrounding cells.",
+      "Your first reveal and its neighbours are always safe.",
+      "Revealing an MT deposit loses that token, but play continues.",
+      "Clear every non-MT tile to finish. Flags are only deduction aids.",
+    ],
+  },
+  "gem-stack": {
+    goal: "Stack the seven shapes, clear lines, and climb the levels.",
+    steps: [
+      "Arrows move, Up rotates, Down soft-drops, Space hard-drops, C holds a piece.",
+      "Pieces come from a shuffled seven-bag; the next three and one Hold are shown.",
+      "Every ten lines raises the level and your score multiplier.",
+      "Single 100, Double 300, Triple 500, Quad 800 × level; back-to-back clears add combo points.",
+    ],
+  },
+  prospector: {
+    goal: "Find all six buried deposits within twenty digs using temperature clues.",
+    meta: "20 digs · 6 deposits",
+    steps: [
+      "Dig a cell to get a clue about the nearest still-hidden deposit.",
+      "HOT = within 1 tile, WARM = 2, FAINT = 3, NOTHING = 4 or more.",
+      "Each find refunds one dig.",
+      "Every unused dig is worth 100 points, so finish efficiently.",
+    ],
+  },
+  "explosive-mining": {
+    goal: "Detonate five bombs to extract as much of the visible gem value as you can.",
+    meta: "12×12 field · 5 bombs",
+    steps: [
+      "Click a cell to drop a bomb there — it blasts the 3×3 area around it.",
+      "Gems caught in a blast are extracted and added to your score.",
+      "Plain rock ▪ clears in one hit; reinforced rock ▣ takes two (▧ means one hit left).",
+      "Crates 🧨 caught in a blast detonate too, chaining their own 3×3 blast — line crates up for big chains.",
+      "Spend all five bombs to hit gem clusters and set off crate chains. Extraction % breaks ties on the leaderboard.",
+    ],
+  },
+  "gem-tower": {
+    goal: "Climb as high as you can, banking MT before the tower collapses.",
+    steps: [
+      "Each dangerous floor has three safe doors and one collapse — a 75% chance to survive.",
+      "Every fifth floor is guaranteed safe.",
+      "Clearing floor X adds X MT to your pending pile.",
+      "Collect after any safe floor to bank the MT, or push on and risk it all. Closing the page does not collect.",
+    ],
+  },
+  "crystal-bags": {
+    goal: "Open one bag per round for five rounds; every outcome and its odds are shown up front.",
+    meta: "5 rounds · one ticket covers all five · no rerolls",
+    steps: [
+      "Each round offers three distinct bags with fully transparent payouts and probabilities.",
+      "Pick the bag whose risk profile you prefer.",
+      "Winnings you have already banked can never be lost.",
+      "This game tracks lifetime statistics rather than a high-score leaderboard.",
+    ],
+  },
+  "price-is-right": {
+    goal: "Guess the value of ten fictional specimens as closely as you can.",
+    meta: "10 specimens · 15 seconds each",
+    steps: [
+      "You are shown a gem, its weight, and its mutations — no inventory gems are used.",
+      "Type your best estimate of its final value and submit before time runs out.",
+      "Each question scores accuracy² × 1,000 points; answering time breaks ties.",
+    ],
+  },
+  "perfect-strike": {
+    goal: "Stop the moving marker in the centre, ten strikes in a row.",
+    meta: "10 strikes",
+    steps: [
+      "Press Strike to stop the marker; the closer to the centre, the better.",
+      "MISS 0 · WEAK 100 · GOOD 300 · GREAT 600 · PERFECT 1,000.",
+      "Consecutive Perfects add a growing bonus: 100, 200, 300…",
+      "The tenth strike doubles its base points. No randomness or boosts.",
+    ],
+  },
+};
+
+function howToHtml(id) {
+  const h = howTo[id];
+  if (!h) return `<p class="mg-rules">${rules[id] || ""}</p>`;
+  return (
+    `<details class="mg-howto" open><summary>How to Play</summary>` +
+    `<p class="mg-howto__goal">${h.goal}</p>` +
+    (h.meta ? `<p class="mg-howto__meta">${h.meta}</p>` : "") +
+    `<ol class="mg-howto__steps">${h.steps.map((s) => `<li>${s}</li>`).join("")}</ol>` +
+    `</details>`
+  );
+}
 async function api(action, extra = {}) {
   const account = authGeneration;
   const { data, error } = await supabase.functions.invoke("minigames", {
@@ -152,7 +276,7 @@ function route() {
   }
   document.title = `${game.name} · Minigames · Gem Incremental`;
   $("content").innerHTML =
-    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2><p class="mg-rules">${rules[game.id]}</p><div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
+    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2>${howToHtml(game.id)}<div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
   $("start")
     .querySelectorAll("[data-start]")
     .forEach((b) => (b.onclick = () => start(b.dataset.start)));
