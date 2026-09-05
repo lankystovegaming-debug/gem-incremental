@@ -664,6 +664,16 @@
 }
 .ip-whitelist__note { flex: 1; color: var(--text-muted); font-size: .82rem; }
 
+/* Referral tracking */
+.referrals-content { margin-top: var(--space-3); }
+.referrals-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md, 14px); }
+.referrals-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 560px; }
+.referrals-table thead th { background: var(--surface-raised); color: var(--text-muted); font-weight: 600; text-align: left; padding: 9px 12px; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+.referrals-table tbody td { padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+.referrals-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.referrals-table td:first-child { font-weight: 600; color: var(--text); }
+.referrals-num { font-variant-numeric: tabular-nums; text-align: right; }
+
 /* Bank accounts admin panel */
 .admin-bank-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 .admin-bank-actions .input{min-width:180px}

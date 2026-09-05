@@ -2085,6 +2085,91 @@ if (!user || !whoami?.isAdmin) {
 
 
 // =========================================================
+// REFERRAL TRACKING
+//
+// Total referrals and a per-referrer breakdown ("who referred how many"),
+// from the admin-only admin_referral_stats RPC over public.player_referrals.
+// =========================================================
+const referralsPanel = document.getElementById("referralsPanel");
+const referralsSummary = document.getElementById("referralsSummary");
+const referralsContent = document.getElementById("referralsContent");
+const referralsRefresh = document.getElementById("referralsRefresh");
+const referralsSearch = document.getElementById("referralsSearch");
+
+let referralRows = [];
+
+function referralDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+}
+
+function renderReferralRows() {
+  if (!referralsContent) return;
+  const query = (referralsSearch?.value || "").trim().toLowerCase();
+  const rows = referralRows.filter(
+    (row) =>
+      !query ||
+      String(row.username ?? "").toLowerCase().includes(query) ||
+      String(row.email ?? "").toLowerCase().includes(query)
+  );
+  referralsContent.innerHTML = rows.length
+    ? `<div class="referrals-table-wrap">
+        <table class="referrals-table">
+          <thead>
+            <tr><th>Referrer</th><th>Email</th><th>Referrals</th><th>Qualified</th><th>Reward paid</th><th>Last referral</th></tr>
+          </thead>
+          <tbody>${rows
+            .map(
+              (row) => `
+            <tr>
+              <td>${escapeHtml(row.username ?? "Unknown")}</td>
+              <td>${escapeHtml(row.email ?? "Anonymous")}</td>
+              <td class="referrals-num">${formatCount(Number(row.total ?? 0))}</td>
+              <td class="referrals-num">${formatCount(Number(row.qualified ?? 0))}</td>
+              <td class="referrals-num">${formatMoney(Number(row.reward ?? 0))}</td>
+              <td>${escapeHtml(referralDate(row.lastReferredAt))}</td>
+            </tr>`
+            )
+            .join("")}</tbody>
+        </table>
+      </div>`
+    : '<div class="empty"><p class="empty__title">No referrers match this filter.</p></div>';
+}
+
+async function loadReferrals() {
+  if (!referralsPanel || !referralsContent) return;
+  referralsPanel.hidden = false;
+  if (referralsRefresh) referralsRefresh.disabled = true;
+  referralsContent.innerHTML = '<div class="skeleton" style="height:160px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_referral_stats", { p_limit: 200 });
+
+  if (referralsRefresh) referralsRefresh.disabled = false;
+  if (error) {
+    referralsContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load referrals</p><p>${escapeHtml(error.message)}</p></div>`;
+    if (referralsSummary) referralsSummary.textContent = "Failed to load.";
+    notify.error("Referrals failed", error.message);
+    return;
+  }
+
+  referralRows = Array.isArray(data?.referrers) ? data.referrers : [];
+  if (referralsSummary) {
+    referralsSummary.innerHTML =
+      `<strong>${formatCount(Number(data?.total ?? 0))}</strong> total referrals · ` +
+      `<strong>${formatCount(Number(data?.qualified ?? 0))}</strong> qualified · ` +
+      `<strong>${formatCount(Number(data?.referrerCount ?? referralRows.length))}</strong> referrers · ` +
+      `<strong>${formatMoney(Number(data?.totalReward ?? 0))}</strong> rewards paid`;
+  }
+  renderReferralRows();
+}
+
+referralsRefresh?.addEventListener("click", loadReferrals);
+referralsSearch?.addEventListener("input", renderReferralRows);
+
+
+// =========================================================
 // ADMIN TAB NAVIGATION
 //
 // Groups the admin panels into top-level tabs so the page is a set of
@@ -2111,7 +2196,7 @@ if (!user || !whoami?.isAdmin) {
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
     economy: ["#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel"],
-    community: ["#guildRosterPanel", "#ipAuditPanel"]
+    community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"]
   };
 
   // Build one page wrapper per tab and move the matching panels into it.
@@ -2132,7 +2217,10 @@ if (!user || !whoami?.isAdmin) {
   // Heavier panels are only loaded when their tab is first opened.
   const LAZY = {
     economy: () => (typeof loadAnalytics === "function" ? loadAnalytics() : null),
-    community: () => (typeof loadIpAudit === "function" ? loadIpAudit() : null)
+    community: () => {
+      if (typeof loadIpAudit === "function") loadIpAudit();
+      if (typeof loadReferrals === "function") loadReferrals();
+    }
   };
   const loaded = new Set();
   let active = "search";
