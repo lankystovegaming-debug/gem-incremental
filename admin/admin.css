@@ -499,3 +499,11 @@
 .bank-chip--loan{color:#3b82f6;background:color-mix(in srgb,#3b82f6 15%,transparent)}
 .bank-chip--frozen{color:#e0921f;background:color-mix(in srgb,#f5b23f 16%,transparent)}
 .bank-chip--default{color:#ef4444;background:color-mix(in srgb,#ef4444 16%,transparent)}
+
+/* Admin top-level tab navigation */
+.admin-tabs{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 1.2rem;padding:.35rem;border:1px solid var(--border);border-radius:var(--radius,12px);background:var(--surface-sunken)}
+.admin-tab-btn{appearance:none;border:0;background:transparent;color:var(--text-muted);font:inherit;font-weight:700;padding:.5rem .95rem;border-radius:9px;cursor:pointer;transition:background .12s,color .12s}
+.admin-tab-btn:hover{color:var(--text);background:color-mix(in srgb,var(--text) 7%,transparent)}
+.admin-tab-btn.is-active{color:var(--accent-text,#0b0e14);background:var(--accent)}
+.admin-tab-page{display:grid;gap:1rem}
+.admin-tab-page[hidden]{display:none}

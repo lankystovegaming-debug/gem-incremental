@@ -37,6 +37,7 @@
           id="analyticsButton"
           type="button"
           disabled
+          hidden
         >
           Analytics
         </button>
@@ -46,6 +47,7 @@
           id="ipAuditButton"
           type="button"
           disabled
+          hidden
         >
           IP Audit
         </button>
@@ -61,7 +63,14 @@
       </div>
     </div>
 
-    <section class="card admin-search">
+    <nav class="admin-tabs" id="adminTabs" aria-label="Admin sections" hidden>
+      <button class="admin-tab-btn is-active" type="button" data-admin-tab="search">Search</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="economy">Economy</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="content">Content &amp; events</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
+    </nav>
+
+    <section class="card admin-search" id="adminSearchCard">
       <label class="field">
         <span>Find a player</span>
         <input id="playerSearch" type="search" autocomplete="off"
