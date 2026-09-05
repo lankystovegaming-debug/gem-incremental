@@ -67,13 +67,17 @@ function normaliseShopError(error) {
 
 // Drinks one potion. Legendary and Mythic potions create a pending boost for
 // exactly one successful roll; other potions create timed boosts.
-export async function useCloudConsumable(consumableId) {
+export async function useCloudConsumable(consumableId, quantity = 1) {
   const oneRoll = ["legendary-potion", "mythic-potion"].includes(consumableId);
   const { data, error } = await supabase.rpc(
-    oneRoll ? "activate_one_roll_potion" : "use_consumable",
-    {
-      p_consumable_id: consumableId
-    }
+    quantity > 1 && !oneRoll
+      ? "use_consumable_bulk"
+      : oneRoll
+      ? "activate_one_roll_potion"
+      : "use_consumable",
+    quantity > 1 && !oneRoll
+      ? { p_consumable_id: consumableId, p_quantity: quantity }
+      : { p_consumable_id: consumableId }
   );
 
   if (!error) {

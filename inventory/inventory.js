@@ -1253,6 +1253,7 @@ const POTION_STATS = {
 const POTION_NUMERALS = ["", "I", "II", "III", "IV"];
 
 let boostTicker = null;
+const potionUseQuantities = new Map();
 
 
 function totalPotions() {
@@ -1299,16 +1300,26 @@ function startBoostTicker() {
       (boost) => new Date(boost.expires_at).getTime() > Date.now()
     );
 
-    if (!potionsSection.classList.contains("hidden")) {
-      renderConsumables();
-    }
+    updateBoostCountdowns();
 
     if (!live) {
+      if (!potionsSection.classList.contains("hidden")) {
+        renderConsumables();
+      }
       clearInterval(boostTicker);
 
       boostTicker = null;
     }
   }, 1000);
+}
+
+function updateBoostCountdowns() {
+  for (const element of consumableList.querySelectorAll("[data-boost-time]")) {
+    const boost = activeBoost(element.dataset.boostTime);
+    if (boost) {
+      element.textContent = formatRemaining(boost.expires_at);
+    }
+  }
 }
 
 
@@ -1335,7 +1346,7 @@ function renderActiveBoosts() {
                 )}% ${escapeHtml(
               POTION_STATS[boost.family] ?? boost.family
             )}</strong>
-                <span class="active-boost__time">${formatRemaining(
+                <span class="active-boost__time" data-boost-time="${escapeHtml(boost.family)}">${formatRemaining(
                   boost.expires_at
                 )}</span>
               </span>
@@ -1351,6 +1362,10 @@ function renderActiveBoosts() {
 function renderConsumables() {
   if (!consumableList) {
     return;
+  }
+
+  for (const select of consumableList.querySelectorAll("[data-use-quantity]")) {
+    potionUseQuantities.set(select.dataset.useQuantity, select.value);
   }
 
   if (state.loading) {
@@ -1430,9 +1445,7 @@ function renderConsumables() {
                     getConsumableById(active.consumable_id)?.name ?? "one-roll"
                   )} boost first.`
                 : active
-                ? `${escapeHtml(stat)} boost active — ${escapeHtml(
-                    formatRemaining(active.expires_at)
-                  )} left.`
+                ? `${escapeHtml(stat)} boost active — <span data-boost-time="${escapeHtml(def.family)}">${formatRemaining(active.expires_at)}</span> left.`
                 : def.oneRoll
                 ? "Applies to your next successful roll, stacks, and does not expire."
                 : def.tier < 4
@@ -1477,6 +1490,16 @@ function renderConsumables() {
   for (const button of consumableList.querySelectorAll("[data-use]")) {
     button.addEventListener("click", () => usePotion(button));
   }
+
+  for (const select of consumableList.querySelectorAll("[data-use-quantity]")) {
+    const savedValue = potionUseQuantities.get(select.dataset.useQuantity);
+    if (savedValue && select.querySelector(`option[value="${savedValue}"]`)) {
+      select.value = savedValue;
+    }
+    select.addEventListener("change", () => {
+      potionUseQuantities.set(select.dataset.useQuantity, select.value);
+    });
+  }
 }
 
 function selectedUseQuantity(select, available) {
@@ -1502,15 +1525,26 @@ async function usePotion(button) {
   button.disabled = true;
   let used = 0;
   let data = null;
-  for (; used < quantity; used += 1) {
-    const result = await useCloudConsumable(def.id);
+  if (!def.oneRoll && quantity > 1) {
+    const result = await useCloudConsumable(def.id, quantity);
     if (result.error) {
-      notify.error("Could not use potion", used ? `Used ${used} before stopping: ${result.error.message}` : result.error.message);
+      notify.error("Could not use potion", result.error.message);
       button.disabled = false;
-      renderConsumables();
       return;
     }
     data = result.data;
+    used = Number(data?.used ?? quantity);
+  } else {
+    for (; used < quantity; used += 1) {
+      const result = await useCloudConsumable(def.id);
+      if (result.error) {
+        notify.error("Could not use potion", used ? `Used ${used} before stopping: ${result.error.message}` : result.error.message);
+        button.disabled = false;
+        renderConsumables();
+        return;
+      }
+      data = result.data;
+    }
   }
 
   if (row) {

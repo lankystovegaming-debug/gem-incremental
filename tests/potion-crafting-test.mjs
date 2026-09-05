@@ -16,6 +16,7 @@ const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", impor
 const manualDeposit = readFileSync(new URL("../supabase/functions/manual-deposit/index.ts", import.meta.url), "utf8");
 const backendMigration = readFileSync(new URL("../supabase/migrations/20260904140000_tier4_potion_backend_catalog.sql", import.meta.url), "utf8");
 const moneyUpMigration = readFileSync(new URL("../supabase/migrations/20260905150000_money_up_potions_auto_sell.sql", import.meta.url), "utf8");
+const bulkUseMigration = readFileSync(new URL("../supabase/migrations/20260905160000_bulk_use_consumables.sql", import.meta.url), "utf8");
 const sellFunction = readFileSync(new URL("../supabase/functions/sell-gem/index.ts", import.meta.url), "utf8");
 
 for (const [id, previousId] of [
@@ -64,6 +65,9 @@ assert.match(moneyUpMigration, /family = 'moneyUp'/);
 assert.match(moneyUpMigration, /p_auto_sell boolean/);
 assert.match(sellFunction, /autoSell = body\.autoSell === true/);
 assert.match(sellFunction, /p_auto_sell: autoSell/);
+assert.match(bulkUseMigration, /create or replace function public\.use_consumable_bulk/);
+assert.match(bulkUseMigration, /for v_used in 1\.\.p_quantity loop/);
+assert.match(bulkUseMigration, /p_quantity integer/);
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
 const fortuneState = createCraftingState();
