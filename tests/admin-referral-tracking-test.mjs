@@ -31,6 +31,24 @@ assert.match(adminJs, /total referrals/, "admin.js must surface the total referr
 assert.match(adminJs, /#referralsPanel/, "referrals panel must be in an admin tab group");
 assert.match(adminJs, /loadReferrals\(\)/, "the community tab must load referrals");
 
+// ── Same-IP referral abuse flagging ───────────────────────────────────────
+const sameIpMigration = read("supabase/migrations/20260905020000_referral_same_ip_flagging.sql");
+assert.match(sameIpMigration, /create or replace function public\.admin_referral_stats\(/,
+  "same-IP migration must redefine admin_referral_stats");
+assert.match(sameIpMigration, /join public\.player_presence pr on pr\.player_id = r\.referrer_id/,
+  "must join the referrer's last-seen IP");
+assert.match(sameIpMigration, /join public\.player_presence pd on pd\.player_id = r\.referred_id/,
+  "must join the referred account's last-seen IP");
+assert.match(sameIpMigration, /pr\.last_ip = pd\.last_ip/,
+  "must flag referrals where referrer and referred share an IP");
+assert.match(sameIpMigration, /'flagged'/, "must return the flagged same-IP referrals");
+assert.match(sameIpMigration, /'sameIpCount'/, "must return a same-IP count");
+
+assert.match(adminJs, /function renderReferralFlagged\(/, "admin.js must render the flagged same-IP referrals");
+assert.match(adminJs, /data\?\.flagged/, "admin.js must read the flagged same-IP list");
+assert.match(adminJs, /Same IP/, "the referrer table must show a same-IP column");
+assert.match(adminJs, /Shared IP/, "the flagged section must show the shared IP");
+
 // ── HTML + CSS hooks ──────────────────────────────────────────────────────
 assert.match(adminHtml, /id="referralsPanel"/, "index.html must have the referrals panel");
 assert.match(adminHtml, /id="referralsContent"/, "index.html must have the referrals content container");
