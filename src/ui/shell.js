@@ -62,6 +62,7 @@ const PAGES = [
   { id: "islands", label: "Islands", short: "Islands", href: "islands/", icon: icons.island, sectionId: "islands" },
   { id: "workbench", label: "Workbench [BETA]", short: "Workbench", href: "workbench/", icon: icons.anvil, sectionId: "workbench" },
   { id: "dungeons", label: "Dungeons", short: "Dungeons", href: "dungeons/", icon: icons.castle, sectionId: "dungeons" },
+  { id: "minigames", label: "Minigames", short: "Games", href: "minigames/", icon: icons.dice },
   { id: "gemdle", label: "Gemdle", short: "Gemdle", href: "gemdle/", icon: icons.dice },
   { id: "daily-spin", label: "Daily Spin", short: "Spin", href: "daily-spin/", icon: icons.wheel, sectionId: "daily-spin" },
   { id: "wars", label: "Player Wars", short: "Wars", href: "wars/", icon: icons.swords, sectionId: "wars" },
@@ -86,7 +87,7 @@ const PAGES = [
 ];
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
-const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions"]);
+const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
 const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
 const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
 
