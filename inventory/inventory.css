@@ -369,6 +369,18 @@
   font-size: 0.82rem;
 }
 
+.potion-quantity {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+}
+
 
 /* ---------------------------------------------------------
    ACTIVE POTION EFFECTS

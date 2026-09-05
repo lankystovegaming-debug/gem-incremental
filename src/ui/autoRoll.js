@@ -49,7 +49,7 @@ export function startGlobalAutoRoll(page) {
           .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
 
         if (candidate?.id != null) {
-          const { error: sellError } = await sellCloudGem(candidate.id);
+          const { error: sellError } = await sellCloudGem(candidate.id, { autoSell: true });
           if (!sellError) {
             schedule(120);
             return;
@@ -100,7 +100,7 @@ export function startGlobalAutoRoll(page) {
         shouldAutoSell(rarityTier(data.gem?.rarity).id) &&
         data.specimenId != null
       ) {
-        const { error: sellError } = await sellCloudGem(data.specimenId);
+        const { error: sellError } = await sellCloudGem(data.specimenId, { autoSell: true });
         if (sellError) {
           console.error("[AUTO ROLL] Background auto-sell failed:", sellError);
         }

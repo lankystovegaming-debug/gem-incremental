@@ -102,7 +102,7 @@ async function processRoll(data) {
   } else if (getSettings().autoSell && data.specimenId != null) {
     const tier = rarityTier(Number(data.gem?.rarity ?? 0));
     if (shouldAutoSell(tier.id)) {
-      const { data: sale, error } = await sellCloudGem(data.specimenId);
+      const { data: sale, error } = await sellCloudGem(data.specimenId, { autoSell: true });
       if (!error && sale) {
         const soldValue = Number(sale.soldValue ?? data.value);
         outcome = `Auto sold for ${formatMoney(soldValue)}`;
@@ -160,7 +160,7 @@ async function run() {
             .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
 
           if (candidate?.id != null) {
-            const { error: sellError } = await sellCloudGem(candidate.id);
+            const { error: sellError } = await sellCloudGem(candidate.id, { autoSell: true });
             if (!sellError) {
               schedule(120);
               return;

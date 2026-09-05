@@ -8,8 +8,8 @@ insert into public.game_consumables (
   duration_seconds
 )
 values
-  ('mutation-chance-potion-1', 'Mutation Chance Potion I', 'mutationChance', 1, 0.50, 60),
-  ('mutation-chance-potion-2', 'Mutation Chance Potion II', 'mutationChance', 2, 1.00, 60)
+  ('mutation-chance-potion-1', 'Mutation Chance Up Potion I', 'mutationChance', 1, 0.50, 60),
+  ('mutation-chance-potion-2', 'Mutation Chance Up Potion II', 'mutationChance', 2, 1.00, 60)
 on conflict (id) do update
 set name = excluded.name,
     family = excluded.family,
@@ -22,7 +22,7 @@ values (
   'mutation-chance-potion-2',
   '{
     "id": "mutation-chance-potion-2",
-    "name": "Mutation Chance Potion II",
+    "name": "Mutation Chance Up Potion II",
     "category": "potion",
     "requirements": [
       {"type": "consumable", "consumableId": "mutation-chance-potion-1", "amount": 2},
@@ -30,7 +30,7 @@ values (
       {"type": "gem-count", "gem": "Chronite", "amount": 1}
     ],
     "moneyCost": 50000,
-    "reward": {"type": "consumable", "id": "mutation-chance-potion-2", "name": "Mutation Chance Potion II", "family": "mutationChance", "tier": 2, "amount": 1, "effectValue": 1.00}
+    "reward": {"type": "consumable", "id": "mutation-chance-potion-2", "name": "Mutation Chance Up Potion II", "family": "mutationChance", "tier": 2, "amount": 1, "effectValue": 1.00}
   }'::jsonb
 )
 on conflict (id) do update

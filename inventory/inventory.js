@@ -1445,6 +1445,13 @@ function renderConsumables() {
             }
           </p>
 
+          <select class="potion-quantity" data-use-quantity="${escapeHtml(def.id)}" aria-label="Use quantity for ${escapeHtml(def.name)}">
+            <option value="1">Use 1</option>
+            <option value="10">Use 10</option>
+            <option value="100">Use 100</option>
+            <option value="1000">Use 1000</option>
+            <option value="custom">Custom</option>
+          </select>
           <button
             class="btn btn--primary btn--sm btn--block"
             type="button"
@@ -1472,6 +1479,14 @@ function renderConsumables() {
   }
 }
 
+function selectedUseQuantity(select, available) {
+  const requested = select.value === "custom"
+    ? Number.parseInt(window.prompt("How many potions?", String(available)), 10)
+    : Number.parseInt(select.value, 10);
+  return Number.isInteger(requested) && requested > 0
+    ? Math.min(requested, available, 1000)
+    : 0;
+}
 
 async function usePotion(button) {
   const def = getConsumableById(button.dataset.use);
@@ -1480,24 +1495,26 @@ async function usePotion(button) {
     return;
   }
 
+  const row = state.consumables.find((entry) => entry.consumable_id === def.id);
+  const quantitySelect = button.parentElement.querySelector(`[data-use-quantity="${def.id}"]`);
+  const quantity = selectedUseQuantity(quantitySelect, Number(row?.quantity ?? 0));
+  if (!quantity) return;
   button.disabled = true;
-
-  const { data, error } = await useCloudConsumable(def.id);
-
-  if (error) {
-    notify.error("Could not use potion", error.message);
-
-    button.disabled = false;
-
-    return;
+  let used = 0;
+  let data = null;
+  for (; used < quantity; used += 1) {
+    const result = await useCloudConsumable(def.id);
+    if (result.error) {
+      notify.error("Could not use potion", used ? `Used ${used} before stopping: ${result.error.message}` : result.error.message);
+      button.disabled = false;
+      renderConsumables();
+      return;
+    }
+    data = result.data;
   }
 
-  const row = state.consumables.find(
-    (entry) => entry.consumable_id === def.id
-  );
-
   if (row) {
-    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - 1));
+    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - used));
   }
 
   const boost = data?.boost;

@@ -852,7 +852,7 @@ async function resolveOutcome(data) {
   }
 
   if (shouldAutoSell(tier.id) && data.specimenId != null) {
-    const { data: sale, error } = await sellCloudGem(data.specimenId);
+    const { data: sale, error } = await sellCloudGem(data.specimenId, { autoSell: true });
 
     if (!error && sale) {
       view.money = Number(sale.money ?? view.money);

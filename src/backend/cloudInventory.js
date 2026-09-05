@@ -149,8 +149,8 @@ export function toggleCloudGemLock(specimenId) {
 }
 
 
-export function sellCloudGem(specimenId) {
-  return invokeFunction("sell-gem", { specimenId });
+export function sellCloudGem(specimenId, { autoSell = false } = {}) {
+  return invokeFunction("sell-gem", { specimenId, autoSell });
 }
 
 export function deleteCloudGem(specimenId) {

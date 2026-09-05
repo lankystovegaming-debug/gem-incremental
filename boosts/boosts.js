@@ -20,6 +20,10 @@ const potionList = document.getElementById("potionList");
 const subtitle = document.getElementById("shopSubtitle");
 const refreshButton = document.getElementById("refreshButton");
 const dailyShopList = document.getElementById("dailyShopList");
+const otherPotionList = document.getElementById("otherPotionList");
+const standardPotionPanel = document.getElementById("standardPotionPanel");
+const otherPotionPanel = document.getElementById("otherPotionPanel");
+const potionTabButtons = document.querySelectorAll("[data-potion-tab]");
 const dailyCountdown = document.getElementById("dailyCountdown");
 const refreshDailyButton = document.getElementById("refreshDailyButton");
 const viewChancesButton = document.getElementById("viewChancesButton");
@@ -37,13 +41,20 @@ const state = {
 };
 
 const POTIONS = consumables.filter((item) => item.shop.purchasable);
+const STANDARD_POTIONS = POTIONS.filter(
+  (potion) => !["mutationChance", "moneyUp"].includes(potion.family)
+);
+const OTHER_POTIONS = POTIONS.filter(
+  (potion) => ["mutationChance", "moneyUp"].includes(potion.family)
+);
 
 const STAT_NAMES = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
   weightMultiplier: "Weight multiplier",
-  mutationChance: "Mutation chance"
+  mutationChance: "Mutation Chance Up",
+  moneyUp: "Money Up"
 };
 
 function ownedQuantity(consumableId) {
@@ -61,6 +72,7 @@ function render() {
       { length: 4 },
       () => '<div class="skeleton" style="height:300px"></div>'
     ).join("");
+    otherPotionList.innerHTML = '<div class="skeleton" style="height:300px"></div>';
     dailyShopList.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" style="height:260px"></div>').join("");
     return;
   }
@@ -71,12 +83,23 @@ function render() {
   renderDailyShop();
   updateCountdown();
 
-  potionList.innerHTML = POTIONS.map((potion) => {
+  renderPotionList(STANDARD_POTIONS, potionList);
+  renderPotionList(OTHER_POTIONS, otherPotionList);
+}
+
+function renderPotionList(potions, target) {
+  target.innerHTML = potions.map((potion) => {
     const price = potion.shop.price;
     const affordable = state.money >= price;
     const stat = STAT_NAMES[potion.family] ?? potion.family;
     const effect = Math.round(potion.effectValue * 100);
     const owned = ownedQuantity(potion.id);
+    const effectLabel = potion.family === "moneyUp" ? "Auto Sell value" : stat;
+    const craftingNote = potion.family === "mutationChance"
+      ? "Craft with gems to reach Tier II."
+      : potion.family === "moneyUp"
+      ? "Craft with gems to reach Tier II."
+      : "Craft with gems to reach Tier II and III.";
 
     return `
       <article class="potion-card potion-card--${escapeHtml(potion.family)}">
@@ -92,18 +115,26 @@ function render() {
         <div>
           <h2 class="potion-card__name">${escapeHtml(potion.name)}</h2>
           <p class="potion-card__description">
-            Temporarily increases ${escapeHtml(stat)} by ${effect}%.
+            Temporarily increases ${escapeHtml(effectLabel)} by ${effect}%.
           </p>
         </div>
 
         <div class="potion-card__details">
-          <span class="badge badge--positive">+${effect}% ${escapeHtml(stat)}</span>
+          <span class="badge badge--positive">+${effect}% ${escapeHtml(effectLabel)}</span>
           <span class="badge badge--muted">60 seconds</span>
         </div>
 
         <p class="potion-card__chain">
-          Craft with gems to reach Tier II and III.
+          ${craftingNote}
         </p>
+
+        <select class="potion-quantity" data-buy-quantity="${escapeHtml(potion.id)}" aria-label="Buy quantity for ${escapeHtml(potion.name)}">
+          <option value="1">Buy 1</option>
+          <option value="10">Buy 10</option>
+          <option value="100">Buy 100</option>
+          <option value="1000">Buy 1000</option>
+          <option value="custom">Custom</option>
+        </select>
 
         <div class="potion-card__purchase">
           <span class="potion-card__price">${formatMoney(price)}</span>
@@ -118,9 +149,30 @@ function render() {
     `;
   }).join("");
 
-  for (const button of potionList.querySelectorAll("[data-buy]")) {
+  for (const button of target.querySelectorAll("[data-buy]")) {
     button.addEventListener("click", () => buyPotion(button));
   }
+}
+
+function selectedQuantity(select) {
+  if (select.value === "custom") {
+    const value = Number.parseInt(window.prompt("How many potions?", "1"), 10);
+    return Number.isInteger(value) && value > 0 ? Math.min(value, 1000) : 0;
+  }
+  return Number.parseInt(select.value, 10);
+}
+
+for (const button of potionTabButtons) {
+  button.addEventListener("click", () => {
+    const isOther = button.dataset.potionTab === "other";
+    for (const tab of potionTabButtons) {
+      const selected = tab === button;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-selected", String(selected));
+    }
+    standardPotionPanel.hidden = isOther;
+    otherPotionPanel.hidden = !isOther;
+  });
 }
 
 function renderDailyShop() {
@@ -156,29 +208,37 @@ async function buyPotion(button) {
   const potion = POTIONS.find((item) => item.id === button.dataset.buy);
   if (!potion) return;
 
+  const quantitySelect = button.parentElement.querySelector(`[data-buy-quantity="${potion.id}"]`);
+  const quantity = selectedQuantity(quantitySelect);
+  if (!quantity) return;
   button.disabled = true;
-  button.textContent = "Buying…";
+  button.textContent = `Buying 0/${quantity}…`;
 
-  const { data, error } = await buyCloudConsumable(potion.id);
-
-  if (error) {
-    notify.error("Could not buy potion", error.message);
-    await refresh();
-    return;
+  let purchased = 0;
+  let lastData = null;
+  for (; purchased < quantity; purchased += 1) {
+    const result = await buyCloudConsumable(potion.id);
+    if (result.error) {
+      notify.error("Could not buy potion", purchased ? `Bought ${purchased} before stopping: ${result.error.message}` : result.error.message);
+      await refresh();
+      return;
+    }
+    lastData = result.data;
+    button.textContent = `Buying ${purchased + 1}/${quantity}…`;
   }
 
-  notify.success("Potion purchased", `${potion.name} was added to your inventory.`);
-  state.money = Number(data.money ?? state.money - potion.shop.price);
+  notify.success("Potions purchased", `${potion.name} ×${formatCount(purchased)} was added to your inventory.`);
+  state.money = Number(lastData?.money ?? state.money - potion.shop.price * purchased);
 
   const existing = state.consumables.find(
     (item) => item.consumable_id === potion.id
   );
   if (existing) {
-    existing.quantity = Number(data.quantity ?? existing.quantity + 1);
+    existing.quantity = Number(lastData?.quantity ?? existing.quantity + purchased);
   } else {
     state.consumables.push({
       consumable_id: potion.id,
-      quantity: Number(data.quantity ?? 1)
+      quantity: Number(lastData?.quantity ?? purchased)
     });
   }
 

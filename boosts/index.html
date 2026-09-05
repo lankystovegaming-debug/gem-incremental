@@ -87,7 +87,17 @@
       </div>
     </section>
 
-    <div id="potionList" class="potion-grid" aria-live="polite"></div>
+    <div class="segmented potion-tabs" role="tablist" aria-label="Potion categories">
+      <button id="standardPotionTab" class="segmented__item active" type="button" role="tab" aria-selected="true" aria-controls="standardPotionPanel" data-potion-tab="standard">Standard Potions</button>
+      <button id="otherPotionTab" class="segmented__item" type="button" role="tab" aria-selected="false" aria-controls="otherPotionPanel" data-potion-tab="other">Other Potions</button>
+    </div>
+
+    <div id="standardPotionPanel" role="tabpanel" aria-labelledby="standardPotionTab">
+      <div id="potionList" class="potion-grid" aria-live="polite"></div>
+    </div>
+    <div id="otherPotionPanel" role="tabpanel" aria-labelledby="otherPotionTab" hidden>
+      <div id="otherPotionList" class="potion-grid" aria-live="polite"></div>
+    </div>
   </main>
 
   <script type="module" src="./boosts.js"></script>

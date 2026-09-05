@@ -69,6 +69,7 @@ export default {
       });
     }
     const specimenId = Number(body.specimenId);
+    const autoSell = body.autoSell === true;
     if (!Number.isInteger(specimenId) || specimenId <= 0) {
       return Response.json({
         error: "Invalid specimen ID."
@@ -105,9 +106,10 @@ export default {
     // =================================
     // SELL AT DATABASE LEVEL
     // =================================
-    const { data: newMoney, error: sellError } = await ctx.supabaseAdmin.rpc("sell_inventory_gem", {
+    const { data: sale, error: sellError } = await ctx.supabaseAdmin.rpc("sell_inventory_gem", {
       p_player_id: playerId,
-      p_specimen_id: specimenId
+      p_specimen_id: specimenId,
+      p_auto_sell: autoSell
     });
     if (sellError) {
       console.error("Sell failed:", sellError);
@@ -128,8 +130,8 @@ export default {
     // =================================
     return Response.json({
       specimenId,
-      soldValue: gem.value,
-      money: newMoney
+      soldValue: Number(sale?.sold_value ?? gem.value),
+      money: Number(sale?.money ?? sale)
     });
   })
 };
