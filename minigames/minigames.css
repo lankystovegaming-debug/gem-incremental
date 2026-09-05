@@ -244,12 +244,14 @@
   cursor: pointer;
   transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
-.mg-cell:hover {
+/* Hover/press feedback only on the boards whose cells you actually click
+   (minesweeper, prospector, explosive) and only while still unopened. */
+.mg-board:not(.mg-2048):not(.mg-stack) .mg-cell:not([data-open="true"]):hover {
   border-color: var(--accent);
-  background: var(--surface-hover, color-mix(in srgb, var(--accent) 8%, var(--surface-sunken)));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-sunken));
   transform: translateY(-1px);
 }
-.mg-cell:active {
+.mg-board:not(.mg-2048):not(.mg-stack) .mg-cell:not([data-open="true"]):active {
   transform: scale(0.94);
 }
 .mg-cell:focus-visible {
@@ -259,10 +261,20 @@
 .mg-cell[data-open="true"] {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  cursor: default;
 }
 .mg-cell .gem-icon {
   width: 24px;
   height: 24px;
+}
+/* Reveal / merge pop — applied by patchCells only to cells that changed. */
+.mg-cell--pop {
+  animation: mg-cell-pop 0.22s ease;
+}
+@keyframes mg-cell-pop {
+  0%   { transform: scale(0.7); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 
 /* 2048 tiles */
@@ -428,8 +440,19 @@
   font-size: 26px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  margin: 15px 0;
+  margin: 14px 0 6px;
   letter-spacing: -0.01em;
+}
+/* Secondary status lines under the score: board summary, timers, lives. */
+[data-board-summary],
+#mine-timer,
+#arcade-time,
+#arcade-lives,
+#question-time {
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 .mg-result {
   padding: 20px;
@@ -490,7 +513,8 @@ button:disabled {
     transition: none;
   }
   .mg-result,
-  .mg-tower {
+  .mg-tower,
+  .mg-cell--pop {
     animation: none;
   }
   .mg-card:hover,
