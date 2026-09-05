@@ -1,0 +1,9 @@
+insert into public.daily_shop_catalog(id,category,name,description,price,stock_min,stock_max,weight,contents) values
+('rare-lucky-4','rare','Lucky Potion IV','+75% Luck for 60 seconds.',1000000,1,1,3,'[{"type":"consumable","id":"lucky-potion-4","quantity":1}]'),
+('rare-speed-4','rare','Speed Potion IV','+75% Roll Speed for 60 seconds.',800000,1,1,3,'[{"type":"consumable","id":"speed-potion-4","quantity":1}]'),
+('rare-fortune-4','rare','Fortune Potion IV','+75% Weight Luck for 60 seconds.',1000000,1,1,3,'[{"type":"consumable","id":"fortune-potion-4","quantity":1}]'),
+('rare-mass-4','rare','Mass Potion IV','+50% Weight Multiplier for 60 seconds.',1500000,1,1,3,'[{"type":"consumable","id":"mass-potion-4","quantity":1}]'),
+('rare-elite-pack','rare','Elite Pack','1 of every Tier III potion.',700000,1,1,1,'[{"type":"consumable","id":"lucky-potion-3","quantity":1},{"type":"consumable","id":"speed-potion-3","quantity":1},{"type":"consumable","id":"fortune-potion-3","quantity":1},{"type":"consumable","id":"mass-potion-3","quantity":1}]'),
+('rare-supreme-pack','rare','Supreme Pack','1 of every Tier IV potion.',3000000,1,1,1,'[{"type":"consumable","id":"lucky-potion-4","quantity":1},{"type":"consumable","id":"speed-potion-4","quantity":1},{"type":"consumable","id":"fortune-potion-4","quantity":1},{"type":"consumable","id":"mass-potion-4","quantity":1}]'),
+('rare-turbo-pack','rare','Turbo Pack','1 Speed Potion IV and 1 Speed Potion III.',1000000,1,1,1,'[{"type":"consumable","id":"speed-potion-4","quantity":1},{"type":"consumable","id":"speed-potion-3","quantity":1}]')
+on conflict (id) do update set category=excluded.category,name=excluded.name,description=excluded.description,price=excluded.price,stock_min=excluded.stock_min,stock_max=excluded.stock_max,weight=excluded.weight,contents=excluded.contents;

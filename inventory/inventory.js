@@ -1246,7 +1246,8 @@ const POTION_STATS = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
-  weightMultiplier: "Weight multiplier"
+  weightMultiplier: "Weight multiplier",
+  mutationChance: "Mutation chance"
 };
 
 const POTION_NUMERALS = ["", "I", "II", "III", "IV"];

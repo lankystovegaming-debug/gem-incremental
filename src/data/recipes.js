@@ -1511,6 +1511,16 @@ const recipes = [
     ],
     moneyCost: 200000,
     reward: { type: "consumable", id: "mass-potion-4", name: "Mass Potion IV", family: "weightMultiplier", tier: 4, amount: 1, effectValue: 0.50 }
+  },
+  {
+    id: "mutation-chance-potion-2", name: "Mutation Chance Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "mutation-chance-potion-1", amount: 2 },
+      { type: "gem-count", gem: "Amethyst", amount: 3 },
+      { type: "gem-count", gem: "Chronite", amount: 1 }
+    ],
+    moneyCost: 50000,
+    reward: { type: "consumable", id: "mutation-chance-potion-2", name: "Mutation Chance Potion II", family: "mutationChance", tier: 2, amount: 1, effectValue: 1.00 }
   }
 ];
 

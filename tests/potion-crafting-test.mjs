@@ -9,7 +9,7 @@ import {
 } from "../src/logic/crafting.js";
 
 const potionRecipes = recipes.filter((recipe) => recipe.category === "potion");
-assert.equal(potionRecipes.length, 14);
+assert.equal(potionRecipes.length, 15);
 assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
 
 const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
@@ -35,6 +35,16 @@ for (const [id, previousId] of [
 
 assert.match(backendMigration, /player_boosts_tier_check check \(tier between 1 and 4\)/);
 assert.match(backendMigration, /duration_seconds/);
+
+const mutation = recipes.find((recipe) => recipe.id === "mutation-chance-potion-2");
+assert.ok(mutation);
+assert.equal(mutation.reward.family, "mutationChance");
+assert.equal(mutation.reward.effectValue, 1);
+assert.equal(mutation.requirements[0].consumableId, "mutation-chance-potion-1");
+assert.deepEqual(mutation.requirements.slice(1), [
+  { type: "gem-count", gem: "Amethyst", amount: 3 },
+  { type: "gem-count", gem: "Chronite", amount: 1 }
+]);
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
 const fortuneState = createCraftingState();

@@ -42,7 +42,8 @@ const STAT_NAMES = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
-  weightMultiplier: "Weight multiplier"
+  weightMultiplier: "Weight multiplier",
+  mutationChance: "Mutation chance"
 };
 
 function ownedQuantity(consumableId) {

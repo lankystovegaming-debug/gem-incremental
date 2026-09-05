@@ -16,14 +16,17 @@ const MARKET_REFERENCE_PRICES = {
   "lucky-potion-4": 500000,
   "speed-potion-4": 400000,
   "fortune-potion-4": 500000,
-  "mass-potion-4": 750000
+  "mass-potion-4": 750000,
+  "mutation-chance-potion-1": 2500,
+  "mutation-chance-potion-2": 50000
 };
 
 const consumables = [
   ["lucky", "Lucky", "luck", [0.10, 0.25, 0.50, 0.75], 200],
   ["speed", "Speed", "rollSpeed", [0.10, 0.25, 0.50, 0.75], 150],
   ["fortune", "Fortune", "weightLuck", [0.10, 0.25, 0.50, 0.75], 200],
-  ["mass", "Mass", "weightMultiplier", [0.05, 0.15, 0.25, 0.50], 300]
+  ["mass", "Mass", "weightMultiplier", [0.05, 0.15, 0.25, 0.50], 300],
+  ["mutation-chance", "Mutation Chance", "mutationChance", [0.50, 1.00], 2500]
 ].flatMap(([slug, name, family, effects, price]) =>
   effects.map((effectValue, index) => ({
     id: `${slug}-potion-${index + 1}`,
