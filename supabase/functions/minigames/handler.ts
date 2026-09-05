@@ -22,6 +22,12 @@ export function createHandler(admin: any, clock = () => Date.now()) {
     if (req.method === "OPTIONS") return new Response("ok", { headers });
     if (req.method !== "POST")
       return response({ error: "Method not allowed" }, 405);
+    // Timestamp the request on arrival, before any auth/DB work. Timing-based
+    // games (Perfect Strike especially) validate the client's reported elapsed
+    // against the server clock; capturing `now` here — rather than after the
+    // auth + ban + run-load round trips — keeps that comparison to real network
+    // latency, so legitimate strikes are not rejected as "out of sync".
+    const now = clock();
     try {
       const token = req.headers
         .get("Authorization")
@@ -71,7 +77,7 @@ export function createHandler(admin: any, clock = () => Date.now()) {
           b.mode,
           b.options,
           seed,
-          clock(),
+          now,
           gems,
           mutations,
         );
@@ -94,7 +100,7 @@ export function createHandler(admin: any, clock = () => Date.now()) {
             .single(),
         );
         if (run.version === b.version && run.status === "active") {
-          const next = step(run.state, b.input, clock());
+          const next = step(run.state, b.input, now);
           run = row(
             await admin.rpc("minigame_commit", {
               p_player: user,
