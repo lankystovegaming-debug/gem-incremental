@@ -491,3 +491,11 @@
 .ip-audit-table thead th { background: var(--surface-raised); color: var(--text-muted); font-weight: 600; text-align: left; padding: 9px 12px; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
 .ip-audit-table tbody td { padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
 .ip-audit-table td:first-child { font-weight: 600; color: var(--text); }
+
+/* Bank accounts admin panel */
+.admin-bank-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.admin-bank-actions .input{min-width:180px}
+.bank-chip{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.72rem;font-weight:700;color:var(--text-muted);background:var(--surface-sunken)}
+.bank-chip--loan{color:#3b82f6;background:color-mix(in srgb,#3b82f6 15%,transparent)}
+.bank-chip--frozen{color:#e0921f;background:color-mix(in srgb,#f5b23f 16%,transparent)}
+.bank-chip--default{color:#ef4444;background:color-mix(in srgb,#ef4444 16%,transparent)}
