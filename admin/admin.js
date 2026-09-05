@@ -35,7 +35,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1503,6 +1503,91 @@ shareholdersRefresh?.addEventListener("click", loadShareholders);
 
 
 // =========================================================
+// BANK ACCOUNTS (admin only)
+// =========================================================
+
+const bankPanel = document.getElementById("bankPanel");
+const bankRefresh = document.getElementById("bankRefresh");
+const bankSummary = document.getElementById("bankSummary");
+const bankContent = document.getElementById("bankContent");
+const bankFilter = document.getElementById("bankFilter");
+
+let bankAccounts = [];
+
+function bankStatusCell(account) {
+  if (account.inDefault) return '<td><span class="bank-chip bank-chip--default">In default</span></td>';
+  if (account.borrowFrozen) return '<td><span class="bank-chip bank-chip--frozen">Frozen</span></td>';
+  if (Number(account.loanTotal) > 0) return '<td><span class="bank-chip bank-chip--loan">Loan</span></td>';
+  return '<td><span class="bank-chip">—</span></td>';
+}
+
+function renderBankAccounts() {
+  const query = (bankFilter?.value ?? "").trim().toLowerCase();
+  const rows = bankAccounts
+    .filter((account) => !query || String(account.username ?? "").toLowerCase().includes(query))
+    .map((account) => `
+      <tr>
+        <td>${escapeHtml(account.username ?? "Unknown")}</td>
+        <td class="num">${formatMoney(Number(account.balance ?? 0))}</td>
+        <td class="num ${Number(account.loanTotal) > 0 ? "is-down" : ""}">${formatMoney(Number(account.loanTotal ?? 0))}</td>
+        <td class="num">${Number(account.creditScore ?? 0)}</td>
+        <td>${escapeHtml(account.creditBand ?? "")}</td>
+        ${bankStatusCell(account)}
+      </tr>`).join("");
+
+  bankContent.innerHTML = rows
+    ? `<div class="shareholders-table-wrap">
+        <table class="shareholders-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th class="num">Savings</th>
+              <th class="num">Loan owed</th>
+              <th class="num">Credit</th>
+              <th>Band</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`
+    : '<div class="empty"><p class="empty__title">No matching accounts.</p></div>';
+}
+
+async function loadBankAccounts() {
+  if (!bankPanel) return;
+  bankPanel.hidden = false;
+  bankContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const { data, error } = await supabase.rpc("admin_get_bank_overview");
+  if (error) {
+    bankContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load bank accounts</p><p>${escapeHtml(error.message)}</p></div>`;
+    bankSummary.textContent = "Failed to load.";
+    return;
+  }
+
+  bankAccounts = Array.isArray(data?.accounts) ? data.accounts : [];
+  bankSummary.innerHTML =
+    `<strong>${data?.accountCount ?? bankAccounts.length}</strong> account(s) · ` +
+    `deposits <strong>${formatMoney(Number(data?.totalDeposits ?? 0))}</strong> · ` +
+    `owed <span class="is-down">${formatMoney(Number(data?.totalOwed ?? 0))}</span> · ` +
+    `${data?.activeLoans ?? 0} active loan(s) · ` +
+    `<span class="${Number(data?.inDefaultCount) > 0 ? "is-down" : ""}">${data?.inDefaultCount ?? 0} in default</span> · ` +
+    `avg credit <strong>${data?.avgCredit ?? 0}</strong>`;
+
+  if (!bankAccounts.length) {
+    bankContent.innerHTML = '<div class="empty"><p class="empty__title">No bank accounts yet.</p></div>';
+    return;
+  }
+  renderBankAccounts();
+}
+
+bankRefresh?.addEventListener("click", loadBankAccounts);
+bankFilter?.addEventListener("input", renderBankAccounts);
+
+
+// =========================================================
 // GUILD ROSTER — read-only "who is in which guild" overview (admin only)
 // =========================================================
 
@@ -1761,6 +1846,7 @@ if (!user || !whoami?.isAdmin) {
   await wireMutationEvents();
   await loadMutationCatalog();
   await loadShareholders();
+  await loadBankAccounts();
   await loadGuildRoster();
   searchInput.focus();
 }
