@@ -12,14 +12,10 @@ const inventory = readFileSync(
 
 assert.match(
   rollFunction,
-  /const luckBeforeAdminEvent = luck;[\s\S]*?adminLuckFactor = luck \/ luckBeforeAdminEvent;/,
-  "roll should isolate the active admin-event Luck contribution"
+  /const announcedLuck = luck;/,
+  "chat should use the same final effective Luck as the roll and debug page"
 );
-assert.match(
-  rollFunction,
-  /const announcedLuck =[\s\S]*?luck \/ adminLuckFactor/,
-  "chat Luck should retain player boosts while removing the admin-event factor"
-);
+assert.doesNotMatch(rollFunction, /luck \/ adminLuckFactor/);
 assert.equal(
   (rollFunction.match(/luck_at_roll: announcedLuck/g) ?? []).length,
   3,
@@ -34,6 +30,21 @@ assert.doesNotMatch(
   rollFunction,
   /luck_at_roll: baseLuck|p_luck_at_roll: baseLuck/,
   "rare-roll chat must not discard legitimate potion Luck"
+);
+assert.match(
+  rollFunction,
+  /const effectiveRollSpeed =[\s\S]*?rollSpeed \* eventContext\.rollSpeedMultiplier[\s\S]*?adminRollSpeedBonus[\s\S]*?adminRollSpeedMultiplier[\s\S]*?volcanicRollSpeedMultiplier;/,
+  "the server roll lease must include event Roll Speed"
+);
+assert.match(
+  rollFunction,
+  /rollWeightMultiplier\(\s*eventWeightLuck/,
+  "admin-modified Weight Luck must feed the authoritative weight RNG"
+);
+assert.match(
+  rollFunction,
+  /const finalWeight =[\s\S]*?rolledWeight \*[\s\S]*?weightMultiplier \*/,
+  "admin-modified Weight Multiplier must feed final specimen weight"
 );
 assert.match(
   inventory,
