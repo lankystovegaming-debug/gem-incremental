@@ -1,7 +1,7 @@
 import { supabase } from "../src/backend/supabase.js";
 import { burnMoney, loadFurnaceState } from "../src/backend/cloudFurnace.js";
 import { confirmDialog } from "../src/ui/dialog.js";
-import { chartBounds, niceTicks, largeMoney } from "./chartMath.js";
+import { chartBounds, niceTicks, largeMoney, historyWindow } from "./chartMath.js";
 
 // =========================================================
 // CASH MARKET
@@ -51,6 +51,8 @@ let layout = null;   // last-drawn geometry, for hover mapping
 let pollTimer = null;
 let furnaceMoney = 0;
 let furnaceBusy = false;
+let requestId = 0;
+let loadedAt = Date.now();
 
 // ---------------------------------------------------------
 // FORMATTING
@@ -162,8 +164,8 @@ function el(name, attrs = {}) {
 // DATA
 // ---------------------------------------------------------
 
-async function fetchHistory() {
-  const { data, error } = await supabase.rpc("get_global_cash_history", { p_hours: hours });
+async function fetchHistory(requestedHours) {
+  const { data, error } = await supabase.rpc("get_global_cash_history", { p_hours: requestedHours });
   if (error) throw error;
   const list = Array.isArray(data) ? data : [];
   return list
@@ -201,7 +203,14 @@ function paintTicker() {
   priceEl.textContent = fullMoney(last);
   changeAbsEl.textContent = (up ? "+" : "−") + compact(Math.abs(diff)).replace("-", "");
   changePctEl.textContent = (up ? "▲ " : "▼ ") + Math.abs(pct).toFixed(2) + "%";
-  changeRangeEl.textContent = RANGE_LABELS[hours] || "";
+  const partial = historyWindow(rows, hours, loadedAt).partial;
+  changeRangeEl.textContent = hours === 100000 || partial
+    ? "since first available sample" : RANGE_LABELS[hours] || "";
+  if (rows.length === 1) {
+    changeAbsEl.textContent = "—";
+    changePctEl.textContent = "";
+    changeRangeEl.textContent = "Collecting history — waiting for the next sample";
+  }
   changeEl.classList.toggle("market__change--up", up);
   changeEl.classList.toggle("market__change--down", !up);
 }
@@ -231,8 +240,7 @@ function draw() {
   const values = rows.map((r) => r[metric]);
   const [vMin, vMax] = chartBounds(values);
 
-  const tMin = rows[0].t;
-  const tMax = rows[rows.length - 1].t;
+  const { start: tMin, end: tMax } = historyWindow(rows, hours, loadedAt);
   const tSpan = tMax - tMin || 1;
 
   const xOf = (t) => PAD.left + ((t - tMin) / tSpan) * plotW;
@@ -356,15 +364,22 @@ function onLeave() {
 // ---------------------------------------------------------
 
 async function refresh(showLoading = false) {
+  const id = ++requestId;
+  const requestedHours = hours;
   if (showLoading) {
     statusEl.hidden = false;
     statusEl.textContent = "Loading market data…";
   }
   try {
-    rows = await fetchHistory();
+    const nextRows = await fetchHistory(requestedHours);
+    if (id !== requestId) return;
+    rows = nextRows;
+    loadedAt = Date.now();
+    onLeave();
     paintTicker();
     draw();
   } catch (error) {
+    if (id !== requestId) return;
     console.error("[CASH MARKET] load failed:", error);
     statusEl.hidden = false;
     statusEl.textContent = "Couldn't load market data. Retrying shortly…";
@@ -381,6 +396,10 @@ metricButtons.forEach((btn) => btn.addEventListener("click", () => {
 
 rangeButtons.forEach((btn) => btn.addEventListener("click", () => {
   hours = Number(btn.dataset.range);
+  rows = [];
+  onLeave();
+  paintTicker();
+  draw();
   rangeButtons.forEach((b) => b.classList.toggle("active", b === btn));
   rangeButtons.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
   refresh(true);

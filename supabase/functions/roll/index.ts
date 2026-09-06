@@ -2384,10 +2384,25 @@ export default {
         2.5;
 
 
+      // The lease is claimed before the remainder of the roll is generated,
+      // so assemble every final Roll Speed modifier here as well. Previously
+      // natural/admin events were only applied later, after the cooldown had
+      // already been persisted by claim_server_roll.
+      const adminRollSpeedBonus = Number(activeAdminEvent?.roll_speed_bonus ?? 0);
+      const adminRollSpeedMultiplier = Number(activeAdminEvent?.roll_speed_multiplier ?? 1);
+      const effectiveRollSpeed = (
+        rollSpeed * eventContext.rollSpeedMultiplier +
+        (Number.isFinite(adminRollSpeedBonus) ? adminRollSpeedBonus : 0)
+      ) * (
+        Number.isFinite(adminRollSpeedMultiplier) && adminRollSpeedMultiplier > 0
+          ? adminRollSpeedMultiplier
+          : 1
+      ) * volcanicRollSpeedMultiplier;
+
       const cooldownMs =
         (
           baseCooldownSeconds /
-          rollSpeed
+          Math.max(0.000001, effectiveRollSpeed)
         ) * slowStarterCooldownMultiplier *
         1000;
 
@@ -2512,12 +2527,8 @@ export default {
       rollSpeed *= eventContext.rollSpeedMultiplier;
 
 
-      // Rare-roll chat should report the effective player Luck that actually
-      // contributed to the roll, including temporary and one-roll potions.
-      // Keep the admin-event portion separate so private event modifiers are
-      // not presented as part of the player's own build.
-      const luckBeforeAdminEvent = luck;
-      let adminLuckFactor = 1;
+      // Rare-roll chat reports the exact effective Luck used for this roll,
+      // including the active admin event (matching Luck at Roll in debug).
 
 
       if (activeAdminEvent) {
@@ -2554,10 +2565,6 @@ export default {
             activeAdminEvent.luck_bonus,
             activeAdminEvent.luck_multiplier
           );
-
-        if (luckBeforeAdminEvent > 0 && Number.isFinite(luck)) {
-          adminLuckFactor = luck / luckBeforeAdminEvent;
-        }
 
         rollSpeed =
           applyEventModifier(
@@ -2658,9 +2665,7 @@ export default {
       // Heart of Resonance is a true final multiplier: apply it after every
       // additive bonus and every other Luck source assembled for this roll.
       luck *= crystalFinalLuckMultiplier;
-      const announcedLuck = Number.isFinite(adminLuckFactor) && adminLuckFactor > 0
-        ? luck / adminLuckFactor
-        : luck;
+      const announcedLuck = luck;
       const rollEquipmentGem = () => rollGemWithPickaxePassives(
         luck,
         discoveredGemNames,

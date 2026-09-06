@@ -30,3 +30,10 @@ export function largeMoney(value, digits = 1) {
   if (Math.abs(n) >= 1e15) return "$" + (n / 1e15).toFixed(digits) + "Qa";
   return null;
 }
+// Keep missing history blank instead of stretching fresh samples across a range.
+export function historyWindow(rows, hours, now = Date.now()) {
+  const first = rows[0]?.t ?? now;
+  const end = Math.max(now, rows.at(-1)?.t ?? now);
+  const start = hours === 100000 ? Math.min(first, end - 600000) : end - hours * 3600000;
+  return { start, end, partial: first > start + 600000 };
+}

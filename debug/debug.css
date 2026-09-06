@@ -167,17 +167,18 @@
    MISCELLANEOUS BUFFS
    --------------------------------------------------------- */
 
-.misc-buff {
+.misc-buff-group {
   padding: 10px 0;
   border-top: 1px solid var(--border);
 }
 
-.misc-buff:first-child {
+.misc-buff-group:first-child {
   padding-top: 0;
   border-top: 0;
 }
 
-.misc-buff__head {
+.misc-buff-group__head,
+.misc-buff-source__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -190,7 +191,8 @@
   font-weight: 650;
 }
 
-.misc-buff__head strong {
+.misc-buff-group__head strong,
+.misc-buff-source__head strong {
   color: var(--positive);
   font-size: .82rem;
   font-variant-numeric: tabular-nums;
@@ -198,17 +200,33 @@
   white-space: nowrap;
 }
 
-.misc-buff__category {
-  display: inline-block;
-  margin-top: 3px;
-  color: var(--accent);
-  font-size: .7rem;
-  font-weight: 750;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+.misc-buff-breakdown {
+  margin-top: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(10, 15, 27, .32);
 }
 
-.misc-buff p,
+.misc-buff-breakdown summary {
+  position: relative;
+  padding: 7px 30px 7px 10px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: .72rem;
+  font-weight: 700;
+  list-style: none;
+}
+.misc-buff-breakdown summary::-webkit-details-marker { display: none; }
+.misc-buff-breakdown summary::after { content: "+"; position: absolute; right: 10px; }
+.misc-buff-breakdown[open] summary::after { content: "−"; }
+.misc-buff-breakdown__list { padding: 0 10px 8px; }
+.misc-buff-source { padding: 7px 0; border-top: 1px solid var(--border); }
+.misc-buff-source__head span {
+  color: var(--text-muted);
+  font-size: .74rem;
+  font-weight: 700;
+}
+.misc-buff-source p,
 .misc-buffs__empty {
   margin: 5px 0 0;
   color: var(--text-faint);
