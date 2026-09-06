@@ -1,3 +1,4 @@
+import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import recipes from "../src/data/recipes.js";
 import { getConsumableById } from "../src/data/consumables.js";
 
@@ -185,7 +186,7 @@ function describeRequirement(requirement, value) {
 
     case "gem-count":
       return {
-        label: requirement.gem,
+        label: requirement.label ?? requirement.gem,
         text: `${formatCount(value ?? 0)} / ${formatCount(requirement.amount)}`,
         fraction: ratio(value, requirement.amount)
       };
@@ -684,6 +685,8 @@ function recipeCard(recipe) {
 
       <button class="btn btn--sm recipe-card__pin" data-action="pin" type="button">${pinned ? "★ Pinned" : "☆ Pin"}</button>
 
+      ${recipe.description ? `<p>${escapeHtml(recipe.description)}</p>` : ""}
+      ${getEquipmentPassive(recipe.id) ? `<p><strong>${escapeHtml(getEquipmentPassive(recipe.id).name)}:</strong> ${escapeHtml(getEquipmentPassive(recipe.id).description)}</p>` : ""}
       <div class="recipe-card__bonuses">
         ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
       </div>
@@ -700,7 +703,7 @@ function recipeCard(recipe) {
               <span class="recipe-cost__value ${
                 affordable ? "recipe-cost__value--ok" : "recipe-cost__value--short"
               }">
-                ${formatMoney(recipe.moneyCost)}
+                ${recipe.id === "plastic-shopping-bag" ? "$500,000,000.10" : formatMoney(recipe.moneyCost)}
               </span>
             </div>
 

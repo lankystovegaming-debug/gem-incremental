@@ -670,6 +670,16 @@ const depositHandler = withSupabase(
       }
 
 
+      if ((recipe.includedSpecimens && requirement.type === "specimen-condition") || requirement.type === "gem-count") {
+        const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
+          p_player_id: playerId, p_recipe_id: recipeId, p_requirement_index: requirementIndex
+        });
+        if (error) return Response.json({ error: error.message }, { status: 409 });
+        if (!data?.deposited) return Response.json({ error: "no_eligible_specimen" }, { status: 409 });
+        return Response.json({ recipeId, requirementIndex, progress: data.progress,
+          consumedSpecimen: data.consumedSpecimen, preserved: data.preserved });
+      }
+
       if (
         requirement.type ===
         "equipment"
