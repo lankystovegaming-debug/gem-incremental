@@ -579,3 +579,14 @@ button:disabled {
 .mg-page [hidden] {
   display: none !important;
 }
+
+.mg-reels-row { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:18px 0; }
+.mg-reel { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; min-height:165px; padding:12px 4px; border:2px solid var(--border, #34445d); border-radius:12px; background:var(--surface-raised); color:var(--text); font:inherit; cursor:pointer; overflow-wrap:anywhere; }
+.mg-reel .gem-icon { width:44px; height:44px; }
+.mg-reel[aria-pressed="true"] { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 15%,var(--surface-raised)); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 20%,transparent); }
+.mg-reel:disabled { cursor:default; opacity:1; }
+.mg-reel:focus-visible { outline:3px solid #ffe6a2; outline-offset:3px; }
+.mg-reel-wild { font-size:36px; color:#c3a6ff; }
+.mg-reel small, .mg-reel [data-hold-label] { font-size:11px; }
+.mg-reels li { margin:10px 0; }
+@media(max-width:600px) { .mg-reels-row { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; } .mg-reel { min-height:130px; font-size:12px; } .mg-reel .gem-icon { width:28px; height:28px; } }
