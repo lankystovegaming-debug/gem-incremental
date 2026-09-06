@@ -1246,12 +1246,14 @@ const POTION_STATS = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
-  weightMultiplier: "Weight multiplier"
+  weightMultiplier: "Weight multiplier",
+  mutationChance: "Mutation chance"
 };
 
 const POTION_NUMERALS = ["", "I", "II", "III", "IV"];
 
 let boostTicker = null;
+const potionUseQuantities = new Map();
 
 
 function totalPotions() {
@@ -1298,16 +1300,26 @@ function startBoostTicker() {
       (boost) => new Date(boost.expires_at).getTime() > Date.now()
     );
 
-    if (!potionsSection.classList.contains("hidden")) {
-      renderConsumables();
-    }
+    updateBoostCountdowns();
 
     if (!live) {
+      if (!potionsSection.classList.contains("hidden")) {
+        renderConsumables();
+      }
       clearInterval(boostTicker);
 
       boostTicker = null;
     }
   }, 1000);
+}
+
+function updateBoostCountdowns() {
+  for (const element of consumableList.querySelectorAll("[data-boost-time]")) {
+    const boost = activeBoost(element.dataset.boostTime);
+    if (boost) {
+      element.textContent = formatRemaining(boost.expires_at);
+    }
+  }
 }
 
 
@@ -1334,7 +1346,7 @@ function renderActiveBoosts() {
                 )}% ${escapeHtml(
               POTION_STATS[boost.family] ?? boost.family
             )}</strong>
-                <span class="active-boost__time">${formatRemaining(
+                <span class="active-boost__time" data-boost-time="${escapeHtml(boost.family)}">${formatRemaining(
                   boost.expires_at
                 )}</span>
               </span>
@@ -1350,6 +1362,10 @@ function renderActiveBoosts() {
 function renderConsumables() {
   if (!consumableList) {
     return;
+  }
+
+  for (const select of consumableList.querySelectorAll("[data-use-quantity]")) {
+    potionUseQuantities.set(select.dataset.useQuantity, select.value);
   }
 
   if (state.loading) {
@@ -1429,9 +1445,7 @@ function renderConsumables() {
                     getConsumableById(active.consumable_id)?.name ?? "one-roll"
                   )} boost first.`
                 : active
-                ? `${escapeHtml(stat)} boost active — ${escapeHtml(
-                    formatRemaining(active.expires_at)
-                  )} left.`
+                ? `${escapeHtml(stat)} boost active — <span data-boost-time="${escapeHtml(def.family)}">${formatRemaining(active.expires_at)}</span> left.`
                 : def.oneRoll
                 ? "Applies to your next successful roll, stacks, and does not expire."
                 : def.tier < 4
@@ -1444,6 +1458,13 @@ function renderConsumables() {
             }
           </p>
 
+          <select class="potion-quantity" data-use-quantity="${escapeHtml(def.id)}" aria-label="Use quantity for ${escapeHtml(def.name)}">
+            <option value="1">Use 1</option>
+            <option value="10">Use 10</option>
+            <option value="100">Use 100</option>
+            <option value="1000">Use 1000</option>
+            <option value="custom">Custom</option>
+          </select>
           <button
             class="btn btn--primary btn--sm btn--block"
             type="button"
@@ -1469,8 +1490,26 @@ function renderConsumables() {
   for (const button of consumableList.querySelectorAll("[data-use]")) {
     button.addEventListener("click", () => usePotion(button));
   }
+
+  for (const select of consumableList.querySelectorAll("[data-use-quantity]")) {
+    const savedValue = potionUseQuantities.get(select.dataset.useQuantity);
+    if (savedValue && select.querySelector(`option[value="${savedValue}"]`)) {
+      select.value = savedValue;
+    }
+    select.addEventListener("change", () => {
+      potionUseQuantities.set(select.dataset.useQuantity, select.value);
+    });
+  }
 }
 
+function selectedUseQuantity(select, available) {
+  const requested = select.value === "custom"
+    ? Number.parseInt(window.prompt("How many potions?", String(available)), 10)
+    : Number.parseInt(select.value, 10);
+  return Number.isInteger(requested) && requested > 0
+    ? Math.min(requested, available, 1000)
+    : 0;
+}
 
 async function usePotion(button) {
   const def = getConsumableById(button.dataset.use);
@@ -1479,24 +1518,37 @@ async function usePotion(button) {
     return;
   }
 
+  const row = state.consumables.find((entry) => entry.consumable_id === def.id);
+  const quantitySelect = button.parentElement.querySelector(`[data-use-quantity="${def.id}"]`);
+  const quantity = selectedUseQuantity(quantitySelect, Number(row?.quantity ?? 0));
+  if (!quantity) return;
   button.disabled = true;
-
-  const { data, error } = await useCloudConsumable(def.id);
-
-  if (error) {
-    notify.error("Could not use potion", error.message);
-
-    button.disabled = false;
-
-    return;
+  let used = 0;
+  let data = null;
+  if (!def.oneRoll && quantity > 1) {
+    const result = await useCloudConsumable(def.id, quantity);
+    if (result.error) {
+      notify.error("Could not use potion", result.error.message);
+      button.disabled = false;
+      return;
+    }
+    data = result.data;
+    used = Number(data?.used ?? quantity);
+  } else {
+    for (; used < quantity; used += 1) {
+      const result = await useCloudConsumable(def.id);
+      if (result.error) {
+        notify.error("Could not use potion", used ? `Used ${used} before stopping: ${result.error.message}` : result.error.message);
+        button.disabled = false;
+        renderConsumables();
+        return;
+      }
+      data = result.data;
+    }
   }
 
-  const row = state.consumables.find(
-    (entry) => entry.consumable_id === def.id
-  );
-
   if (row) {
-    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - 1));
+    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - used));
   }
 
   const boost = data?.boost;

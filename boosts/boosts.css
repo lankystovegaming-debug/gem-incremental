@@ -58,6 +58,14 @@
 .potion-card--rollSpeed { --potion-color: #60a5fa; }
 .potion-card--weightLuck { --potion-color: #34d399; }
 .potion-card--weightMultiplier { --potion-color: #f59e0b; }
+.potion-card--mutationChance {
+  --potion-color: #ef4444;
+  border-color: var(--potion-color);
+}
+.potion-card--moneyUp {
+  --potion-color: #f59e0b;
+  border-color: var(--potion-color);
+}
 
 .potion-card__head {
   display: flex;
@@ -117,6 +125,18 @@
   border-top: 1px solid var(--border);
 }
 
+.potion-quantity {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+}
+
 .potion-card__price {
   color: var(--positive);
   font-size: 1.12rem;
@@ -132,6 +152,7 @@
 .shop-chances__head { display:flex; align-items:center; justify-content:space-between; }
 .shop-chances__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-4); margin-top:var(--space-3); }
 .shop-section-title { margin:var(--space-6) 0 var(--space-3); }
+.potion-tabs { width:fit-content; margin-bottom:var(--space-4); }
 .daily-shop-grid { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
 .daily-offer { min-height:260px; }
 .daily-offer--slot-6 { border-color:var(--accent); box-shadow:0 0 24px color-mix(in srgb,var(--accent) 12%,transparent); }

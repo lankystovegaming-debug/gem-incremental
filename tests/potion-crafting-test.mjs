@@ -9,12 +9,15 @@ import {
 } from "../src/logic/crafting.js";
 
 const potionRecipes = recipes.filter((recipe) => recipe.category === "potion");
-assert.equal(potionRecipes.length, 14);
+assert.equal(potionRecipes.length, 16);
 assert.ok(potionRecipes.every((recipe) => recipe.reward.type === "consumable"));
 
 const admin = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
 const manualDeposit = readFileSync(new URL("../supabase/functions/manual-deposit/index.ts", import.meta.url), "utf8");
 const backendMigration = readFileSync(new URL("../supabase/migrations/20260904140000_tier4_potion_backend_catalog.sql", import.meta.url), "utf8");
+const moneyUpMigration = readFileSync(new URL("../supabase/migrations/20260905150000_money_up_potions_auto_sell.sql", import.meta.url), "utf8");
+const bulkUseMigration = readFileSync(new URL("../supabase/migrations/20260905160000_bulk_use_consumables.sql", import.meta.url), "utf8");
+const sellFunction = readFileSync(new URL("../supabase/functions/sell-gem/index.ts", import.meta.url), "utf8");
 
 for (const [id, previousId] of [
   ["lucky-potion-4", "lucky-potion-3"],
@@ -35,6 +38,36 @@ for (const [id, previousId] of [
 
 assert.match(backendMigration, /player_boosts_tier_check check \(tier between 1 and 4\)/);
 assert.match(backendMigration, /duration_seconds/);
+
+const mutation = recipes.find((recipe) => recipe.id === "mutation-chance-potion-2");
+assert.ok(mutation);
+assert.equal(mutation.reward.family, "mutationChance");
+assert.equal(mutation.reward.effectValue, 1);
+assert.equal(mutation.requirements[0].consumableId, "mutation-chance-potion-1");
+assert.deepEqual(mutation.requirements.slice(1), [
+  { type: "gem-count", gem: "Amethyst", amount: 3 },
+  { type: "gem-count", gem: "Chronite", amount: 1 }
+]);
+
+const moneyUp = recipes.find((recipe) => recipe.id === "money-up-potion-2");
+assert.ok(moneyUp);
+assert.equal(moneyUp.reward.family, "moneyUp");
+assert.equal(moneyUp.reward.effectValue, 0.5);
+assert.equal(moneyUp.requirements[0].consumableId, "money-up-potion-1");
+assert.deepEqual(moneyUp.requirements.slice(1), [
+  { type: "gem-count", gem: "Pyrite", amount: 3 },
+  { type: "gem-count", gem: "random rock i found outside", amount: 3 },
+  { type: "gem-count", gem: "focus.", amount: 1 }
+]);
+assert.match(moneyUpMigration, /'money-up-potion-1'.*'moneyUp'.*0\.25/s);
+assert.match(moneyUpMigration, /'money-up-potion-2'.*'moneyUp'.*0\.50/s);
+assert.match(moneyUpMigration, /family = 'moneyUp'/);
+assert.match(moneyUpMigration, /p_auto_sell boolean/);
+assert.match(sellFunction, /autoSell = body\.autoSell === true/);
+assert.match(sellFunction, /p_auto_sell: autoSell/);
+assert.match(bulkUseMigration, /create or replace function public\.use_consumable_bulk/);
+assert.match(bulkUseMigration, /for v_used in 1\.\.p_quantity loop/);
+assert.match(bulkUseMigration, /p_quantity integer/);
 
 const fortune = recipes.find((recipe) => recipe.id === "fortune-potion-2");
 const fortuneState = createCraftingState();

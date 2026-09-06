@@ -2188,6 +2188,7 @@ export default {
       baseLuck =
         luck;
 
+      let mutationChancePotionMultiplier = 1;
       for (
         const boost
         of activeBoosts ??
@@ -2236,6 +2237,11 @@ export default {
           case "weightMultiplier":
             weightMultiplier +=
               effectValue;
+            break;
+
+          case "mutationChance":
+            mutationChancePotionMultiplier *=
+              1 + effectValue;
             break;
         }
       }
@@ -2842,6 +2848,7 @@ export default {
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
+      mutationChanceMultiplier *= mutationChancePotionMultiplier;
 
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
