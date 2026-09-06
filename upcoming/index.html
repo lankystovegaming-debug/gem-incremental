@@ -60,7 +60,6 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
       <button class="lab-tab" data-tab="worlds" type="button">🗺 Islands <span id="islandCount">0</span></button>
       <button class="lab-tab" data-tab="workbench" type="button">⚒ Workbench <span id="workbenchState">OFF</span></button>
       <button class="lab-tab" data-tab="dungeons" type="button">⚔ Dungeons <span id="dungeonCount">0</span></button>
-      <button class="lab-tab" data-tab="daily-spin" type="button">◉ Daily Spin <span id="spinState">OFF</span></button>
       <button class="lab-tab" data-tab="pvp" type="button">⚔ PvP <span id="pvpCount">0</span></button> 
       <button class="lab-tab" data-tab="expansion" type="button">✦ More Systems <span id="expansionCount">7</span></button>
     </div>
@@ -142,11 +141,6 @@ if(["indigo","emerald","amber","rose","cyan"].includes(a))document.documentEleme
         <div class="editor-section"><h3>Enemies</h3><div id="enemyRows" class="builder-list"></div><button id="addEnemy" class="btn btn--sm">＋ Add enemy</button></div>
         <div class="editor-actions"><button id="dungeonCancel" class="btn">Cancel</button><button id="dungeonSave" class="btn btn--primary">Save Dungeon</button></div>
       </section>
-    </section>
-
-    <section class="tab-panel" data-panel="daily-spin">
-      <div class="panel-heading"><div><h2>Daily Spin</h2><p>Configure the actual prize wheel, chances and any supported reward type. Keep it OFF while testing.</p></div></div>
-      <div id="dailySpinPanel" class="upcoming-card"></div>
     </section>
 
     <section class="tab-panel" data-panel="pvp">

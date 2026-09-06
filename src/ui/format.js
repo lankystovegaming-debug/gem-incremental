@@ -40,8 +40,54 @@ export function rarityLabel(rarity) {
 // NUMBERS
 // ---------------------------------------------------------
 
+// Extended incremental-game suffixes. The sequence follows the standard
+// short-scale naming convention from thousand through centillion, using
+// compact game-friendly abbreviations for very large inventory/roll counts.
+// Canonical suffixes requested for the game's 10^3 groups, from K through Ce.
+const GAME_SUFFIXES = [
+  "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No",
+  "Dc", "UDc", "DDc", "TDc", "QtDc", "QnDc", "SxDc", "SpDc", "OcDc", "NoDc",
+  "Vg", "UVg", "DVg", "TVg", "QtVg", "QnVg", "SxVg", "SpVg", "OcVg", "NoVg",
+  "Tg", "UTg", "DTg", "TTg", "QtTg", "QnTg", "SxTg", "SpTg", "OcTg", "NoTg",
+  "Qdg", "UQdg", "DQdg", "TQdg", "QtQdg", "QnQdg", "SxQdg", "SpQdg", "OcQdg", "NoQdg",
+  "Qqg", "UQqg", "DQqg", "TQqg", "QtQqg", "QnQqg", "SxQqg", "SpQqg", "OcQqg", "NoQqg",
+  "Sxg", "USxg", "DSxg", "TSxg", "QtSxg", "QnSxg", "SxSxg", "SpSxg", "OcSxg", "NoSxg",
+  "Spg", "USpg", "DSpg", "TSpg", "QtSpg", "QnSpg", "SxSpg", "SpSpg", "OcSpg", "NoSpg",
+  "Ocg", "UOcg", "DOcg", "TOcg", "QtOcg", "QnOcg", "SxOcg", "SpOcg", "OcOcg", "NoOcg",
+  "Nog", "UNog", "DNog", "TNog", "QtNog", "QnNog", "SxNog", "SpNog", "OcNog", "NoNog",
+  "Ce"
+];
+
+function gameSuffixForExponent(exponent) {
+  if (exponent < 3) return "";
+  const group = Math.floor(exponent / 3);
+  return GAME_SUFFIXES[group - 1] ?? null;
+}
+
+function formatAbbreviatedNumber(value) {
+  const amount = Number(value ?? 0);
+  const abs = Math.abs(amount);
+
+  if (!Number.isFinite(amount)) return String(amount);
+  if (abs < 1000) {
+    return Math.round(amount).toLocaleString("en-US");
+  }
+
+  const exponent = Math.floor(Math.log10(abs));
+  const suffix = gameSuffixForExponent(exponent);
+
+  if (!suffix) return Math.round(amount).toLocaleString("en-US");
+
+  const power = 10 ** (Math.floor(exponent / 3) * 3);
+  const scaled = amount / power;
+  const fixed = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+  const text = scaled.toFixed(fixed).replace(/\.?0+$/, "");
+
+  return text + suffix;
+}
+
 export function formatCount(value) {
-  return Math.round(Number(value ?? 0)).toLocaleString("en-US");
+  return formatAbbreviatedNumber(Math.round(Number(value ?? 0)));
 }
 
 

@@ -16,7 +16,7 @@ import { chartBounds, niceTicks, largeMoney, historyWindow } from "./chartMath.j
 // =========================================================
 
 const SVGNS = "http://www.w3.org/2000/svg";
-const POLL_MS = 30000;
+const POLL_MS = 60000;
 
 const chart = document.querySelector("[data-chart]");
 const wrap = chart.parentElement;
@@ -38,7 +38,7 @@ const furnaceLeaderboard = document.querySelector("[data-furnace-leaderboard]");
 
 const PAD = { left: 62, right: 14, top: 16, bottom: 26 };
 
-const METRIC_LABELS = { lifetime: "Global cash", money: "Player cash" };
+const METRIC_LABELS = { lifetime: "Global cash", money: "Player cash", bank: "Bank deposits" };
 const RANGE_LABELS = {
   1: "past hour", 6: "past 6 hours", 24: "past 24 hours",
   168: "past 7 days", 100000: "all time"
@@ -172,7 +172,8 @@ async function fetchHistory(requestedHours) {
     .map((r) => ({
       t: new Date(r.at).getTime(),
       lifetime: Number(r.lifetime) || 0,
-      money: Number(r.money) || 0
+      money: Number(r.money) || 0,
+      bank: Number(r.bank) || 0
     }))
     .filter((r) => Number.isFinite(r.t))
     .sort((a, b) => a.t - b.t);

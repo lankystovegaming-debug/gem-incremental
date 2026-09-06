@@ -49,7 +49,7 @@ export async function processProgressEvent(
       p_payload: payload
     }
   );
-  if (error) throw error;
+  if (error) console.error("Equipment material deposit failed:", error);
   // AP is awarded by the completion trigger; item rewards remain claimable.
   return { completed: arr(data?.completed) };
 }
@@ -145,7 +145,7 @@ async function loadGlobalEventSnapshot(supabaseAdmin: any) {
   if (!globalEventSnapshotLoad) {
     globalEventSnapshotLoad = (async () => {
       const { data, error } = await supabaseAdmin.rpc("get_active_global_event");
-      if (error) throw error;
+      if (error) console.error("Equipment material deposit failed:", error);
       globalEventSnapshotCache = { data, expiresAt: Date.now() + 1_000 };
       return data;
     })().finally(() => { globalEventSnapshotLoad = null; });
@@ -759,7 +759,9 @@ export function rollWeightMultiplier(
   weightLuck = 1,
   continuationChance = 1 / 3,
   maximumMultiplier: number | null = null,
-  tailEntryChance = 1 / 4
+  tailEntryChance = 1 / 4,
+  tailEntryBonus = 0,
+  forceTail = false
 ) {
   const safeWeightLuck =
     Math.max(
@@ -782,6 +784,15 @@ export function rollWeightMultiplier(
           )
         )
       );
+
+  // Add percentage points to the unconditional tail chance, after Weight Luck.
+  // The existing high-region sampler dedicates at most 40% to its tail.
+  const naturalTailChance = highChance * Math.min(0.4, Math.max(0, Math.min(0.95, tailEntryChance)));
+  if (forceTail || (tailEntryBonus > 0 && random01() < Math.min(1, tailEntryBonus / (1 - naturalTailChance)))) {
+    let whole = 2;
+    while ((maximumMultiplier == null || whole < maximumMultiplier) && random01() < continuationChance) whole++;
+    return maximumMultiplier != null && whole >= maximumMultiplier ? maximumMultiplier : randomBetween(whole, whole + 1);
+  }
 
   const lowChance =
     1 - highChance;
@@ -884,7 +895,7 @@ export function getLateGameFinalWeightFactor(
     case "vault-of-plenty": return baseRarity >= 100000 ? 1.125 : 1;
     case "dimensional-vault": return naturalWeight >= 0.90 && naturalWeight <= 1.10 ? 1.20 : 1;
     case "singularity-vault": return compressionRoll ? 1.25 : 1;
-    case "bottomless-singularity": return naturalWeight >= 5 ? 1.25 : 1;
+    case "bottomless-singularity": return 1; // Event Horizon now modifies final sell value.
     default: return 1;
   }
 }
@@ -2480,6 +2491,17 @@ export default {
       }
 
 
+      // Returned from the serialized lease claim; rejected attempts and extra
+      // copies never advance this persisted, account-wide genuine-roll counter.
+      const genuineRoll = Number(rollClaim.genuineRoll);
+      if (!Number.isSafeInteger(genuineRoll) || genuineRoll < 1) throw new Error("equipment_counter_migration_required");
+      const alignmentRoll = equippedPickaxe?.equipment_id === "empyrean-pickaxe" && genuineRoll % 100 === 0;
+      const eternityRoll = equippedPickaxe?.equipment_id === "eternity-pickaxe" && genuineRoll % 250 === 0;
+      const heavyStepRoll = equippedBoots?.equipment_id === "spacetime-walkers" && genuineRoll % 50 === 0;
+      const collapseRoll = equippedBoots?.equipment_id === "reality-breakers" && genuineRoll % 100 === 0;
+      const storageRoll = equippedBag?.equipment_id === "event-horizon-vault" && genuineRoll % 100 === 0;
+      const bagged = equippedBag?.equipment_id === "plastic-shopping-bag" && genuineRoll % 67 === 0 && random01() < 1 / 67;
+
       const claimedNextRollAt =
         new Date(
           rollClaim.nextRollAt
@@ -2665,6 +2687,7 @@ export default {
       // Heart of Resonance is a true final multiplier: apply it after every
       // additive bonus and every other Luck source assembled for this roll.
       luck *= crystalFinalLuckMultiplier;
+      luck *= eternityRoll ? 2 : alignmentRoll ? 1.5 : 1;
       const announcedLuck = luck;
       const rollEquipmentGem = () => rollGemWithPickaxePassives(
         luck,
@@ -2744,20 +2767,27 @@ export default {
       }
 
       const eventWeightLuck = weightLuck * eventWeightLuckFactor(eventContext, gem);
-      const eventTailChance = eventContext.tailContinuationChance ??
+      const backendTailChance = eventContext.tailContinuationChance ??
         (surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3);
+      const ordinaryTailChance = equippedBoots?.equipment_id === "neutron-boots"
+        ? Math.max(0.36, backendTailChance) : backendTailChance;
+      const eventTailChance = collapseRoll ? 0.40 : ordinaryTailChance;
       let rolledWeightMultiplier = rollWeightMultiplier(
         eventWeightLuck,
         eventTailChance,
         surgeReady && hasGravitationalSurge ? 10 : null,
-        eventContext.tailEntryChance ?? 1 / 4
+        eventContext.tailEntryChance ?? 1 / 4,
+        heavyStepRoll ? 0.10 : 0,
+        collapseRoll
       );
       if (rolledWeightMultiplier < 1 && random01() < eventContext.poorWeightRerollChance) {
         rolledWeightMultiplier = rollWeightMultiplier(
           eventWeightLuck,
           eventTailChance,
           surgeReady && hasGravitationalSurge ? 10 : null,
-          eventContext.tailEntryChance ?? 1 / 4
+          eventContext.tailEntryChance ?? 1 / 4,
+          heavyStepRoll ? 0.10 : 0,
+          collapseRoll
         );
       }
       if (hasGravitationalSurge && surgeReady && rolledWeightMultiplier >= 2) {
@@ -2801,7 +2831,7 @@ export default {
         rolledWeight *
         weightMultiplier *
         masterworkWeightFactor *
-        bagPassiveWeightFactor;
+        bagPassiveWeightFactor * (storageRoll ? 1.25 : 1);
 
 
       // Load the admin-managed mutation catalog when available. The bundled
@@ -2859,6 +2889,7 @@ export default {
         }
       }
 
+      if (eternityRoll) mutationChanceMultiplier *= 1.5;
       const mutations = relicDrop
         ? []
         : rollGemMutations(mutationChanceMultiplier, eventContext);
@@ -2906,6 +2937,7 @@ export default {
         expeditionArtifactGemValueMultiplier *
         volcanicGemValueMultiplier *
         (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
+        (equippedBag?.equipment_id === "bottomless-singularity" && finalWeight / gem.baseWeight >= 5 ? 1.10 : 1) *
         (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) *
         eventContext.valueMultiplier;
 
@@ -2946,6 +2978,7 @@ export default {
       // TRY SERVER AUTO CRAFT
       // =====================================================
 
+      let autoConserved = false;
       let autoDeposited =
         false;
 
@@ -3074,6 +3107,19 @@ export default {
               );
 
 
+            if (recipe.includedSpecimens) {
+              const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
+                p_player_id: playerId, p_recipe_id: activeRecipeId, p_specimen: specimen
+              });
+              if (error) console.error("Equipment material deposit failed:", error);
+              if (data?.deposited) {
+                autoDeposited = true;
+                autoConserved = data.preserved === true;
+                autoCraftRecipeId = activeRecipeId;
+                autoCraftRequirementIndex = data.requirementIndex;
+              }
+            }
+
             for (
               let index = 0;
               index <
@@ -3082,6 +3128,7 @@ export default {
                   .length;
               index++
             ) {
+              if (recipe.includedSpecimens) break;
               const requirement =
                 recipe
                   .requirements[
@@ -3159,6 +3206,20 @@ export default {
               }
 
 
+              if (requirement.type === "gem-count") {
+                const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
+                  p_player_id: playerId, p_recipe_id: activeRecipeId, p_specimen: specimen, p_requirement_index: index
+                });
+                if (error) console.error("Equipment material deposit failed:", error);
+                if (data?.deposited) {
+                  autoDeposited = true;
+                  autoConserved = data.preserved === true;
+                  autoCraftRecipeId = activeRecipeId;
+                  autoCraftRequirementIndex = index;
+                }
+                break;
+              }
+
               const {
                 error:
                   autoDepositError
@@ -3223,7 +3284,7 @@ export default {
 
 
       if (
-        !autoDeposited
+        !autoDeposited || autoConserved
       ) {
         const {
           data:
@@ -3298,6 +3359,7 @@ export default {
                 eventContext.eventKey,
 
               event_properties: {
+                bagged,
                 state: eventContext.state,
                 luckyRoll: eventContext.luckyRoll,
                 secondChance: eventContext.secondChance,
@@ -3340,7 +3402,7 @@ export default {
       // Vein Hunter creates a true second specimen: only the base gem is
       // copied. Weight and every mutation are rolled again independently.
       // The bonus specimen does not count as another lifetime roll.
-      const primaryOccupiesSlot = !autoDeposited && !relicDrop;
+      const primaryOccupiesSlot = (!autoDeposited || autoConserved) && !relicDrop;
       const hasDuplicateCapacity = currentInventoryCount + (primaryOccupiesSlot ? 1 : 0) < effectiveInventoryCapacity;
       if (
         hasVeinHunter &&
@@ -3352,7 +3414,7 @@ export default {
       ) {
         let duplicateWeightMultiplier = rollWeightMultiplier(
           eventWeightLuck,
-          eventTailChance,
+          ordinaryTailChance,
           surgeReady && hasGravitationalSurge ? 10 : null,
           eventContext.tailEntryChance ?? 1 / 4
         );
@@ -3383,6 +3445,7 @@ export default {
           ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
           : 1;
         const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
+          (equippedBag?.equipment_id === "bottomless-singularity" && duplicateFinalWeight / gem.baseWeight >= 5 ? 1.10 : 1) *
           researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
           (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) * eventContext.valueMultiplier;
 
@@ -3648,7 +3711,7 @@ export default {
               p_effective_rarity: effectiveRarity
             }
           );
-          if (error) throw error;
+          if (error) console.error("Equipment material deposit failed:", error);
           if (!announcementId) {
             console.warn("No rare-roll announcement needed/found while attaching mutations:", {
               playerId, gem: gem.name, rarity: gem.rarity, mutationIds
@@ -3729,7 +3792,7 @@ export default {
       // =====================================================
 
       const finalInventoryCount =
-        autoDeposited || relicDrop
+        (autoDeposited && !autoConserved) || relicDrop
           ? currentInventoryCount
           : currentInventoryCount +
             1;
@@ -3842,6 +3905,9 @@ export default {
         } : null,
 
         equipmentPassives: {
+          bagged,
+          genuineRoll,
+          alignmentRoll, eternityRoll, heavyStepRoll, collapseRoll, storageRoll,
           veinHunterDuplicate,
           rarityResonance: hasRarityResonance ? {
             before: resonanceBeforeRoll,
@@ -3854,6 +3920,7 @@ export default {
         autoCraft: {
           deposited:
             autoDeposited,
+          preserved: autoConserved,
 
           recipeId:
             autoCraftRecipeId,

@@ -47,20 +47,24 @@ const VALID_CONSUMABLE_IDS = new Set([
   "lucky-potion-1",
   "lucky-potion-2",
   "lucky-potion-3",
+  "lucky-potion-4",
   "legendary-potion",
   "mythic-potion",
 
   "speed-potion-1",
   "speed-potion-2",
   "speed-potion-3",
+  "speed-potion-4",
 
   "fortune-potion-1",
   "fortune-potion-2",
   "fortune-potion-3",
+  "fortune-potion-4",
 
   "mass-potion-1",
   "mass-potion-2",
-  "mass-potion-3"
+  "mass-potion-3",
+  "mass-potion-4"
 ]);
 
 
@@ -665,6 +669,16 @@ const depositHandler = withSupabase(
         );
       }
 
+
+      if ((recipe.includedSpecimens && requirement.type === "specimen-condition") || requirement.type === "gem-count") {
+        const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
+          p_player_id: playerId, p_recipe_id: recipeId, p_requirement_index: requirementIndex
+        });
+        if (error) return Response.json({ error: error.message }, { status: 409 });
+        if (!data?.deposited) return Response.json({ error: "no_eligible_specimen" }, { status: 409 });
+        return Response.json({ recipeId, requirementIndex, progress: data.progress,
+          consumedSpecimen: data.consumedSpecimen, preserved: data.preserved });
+      }
 
       if (
         requirement.type ===

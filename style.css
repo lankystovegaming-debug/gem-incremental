@@ -2592,3 +2592,24 @@ html.is-cinematic-active body {
     max-width: 290px;
   }
 }
+
+/* A direct daily-game entry below the main roll stage. */
+.gemdle-entry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-bottom: var(--space-4);
+  color: var(--text);
+  text-decoration: none;
+}
+.gemdle-entry:hover { border-color: var(--accent); }
+.gemdle-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.gemdle-entry__icon { font-size: 36px; color: var(--accent); }
+.gemdle-entry__copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.gemdle-entry__copy > span { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.gemdle-entry__action { color: var(--accent); font-weight: 700; white-space: nowrap; }
+@media (max-width: 520px) {
+  .gemdle-entry { flex-wrap: wrap; padding: 16px; }
+  .gemdle-entry__action { width: 100%; padding-left: 40px; }
+}

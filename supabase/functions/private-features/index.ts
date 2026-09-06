@@ -749,12 +749,6 @@ export default {
               .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
             if (forgeToggleError) console.error("Workbench config sync failed:", forgeToggleError.message);
           }
-          if (id === "daily-spin") {
-            const { error: spinToggleError } = await ctx.supabaseAdmin
-              .from("daily_spin_config")
-              .upsert({ id:true, enabled, updated_at:new Date().toISOString() });
-            if (spinToggleError) console.error("Daily Spin config sync failed:", spinToggleError.message);
-          }
           await auditPrivateAction(ctx, userId, "site_section_toggled", { id, enabled });
           return json({ section: data });
         }
@@ -808,41 +802,6 @@ export default {
 
           await auditPrivateAction(ctx, userId, "site_section_customized", { id, label, short_label: shortLabel, icon });
           return json({ section: data });
-        }
-
-        if (action === "daily-spin-config") {
-          if (body.save) {
-            const c = body.config ?? {};
-            const rewards = Array.isArray(c.rewards) ? c.rewards : [];
-            const normalizedRewards = rewards.map((r:any, index:number) => ({
-              id: String(r.id ?? `reward-${index + 1}`).slice(0, 80),
-              label: String(r.label ?? `Reward ${index + 1}`).slice(0, 120),
-              chance: Math.max(0, Number(r.chance ?? 0)),
-              reward: r.reward && typeof r.reward === "object" ? r.reward : { type: "custom", label: "Custom reward" }
-            }));
-            if (!normalizedRewards.some((r:any) => r.chance > 0)) {
-              return json({ error: "daily_spin_no_positive_chances", message: "At least one reward needs a chance above 0." }, 400);
-            }
-            const { data, error } = await ctx.supabaseAdmin
-              .from("daily_spin_config")
-              .upsert({
-                id: true,
-                enabled: c.enabled === true,
-                title: String(c.title ?? "Daily Spin").slice(0, 80),
-                subtitle: String(c.subtitle ?? "One free spin every day.").slice(0, 180),
-                icon: String(c.icon ?? "◉").slice(0, 8),
-                rewards: normalizedRewards,
-                updated_at: new Date().toISOString()
-              })
-              .select("*")
-              .single();
-            if (error) return json({ error: "daily_spin_save_failed", message: error.message }, 500);
-            await auditPrivateAction(ctx, userId, "daily_spin_config_saved", { enabled: data.enabled, rewardCount: normalizedRewards.length });
-            return json({ dailySpin: data });
-          }
-          const { data, error } = await ctx.supabaseAdmin.from("daily_spin_config").select("*").eq("id", true).single();
-          if (error) return json({ error: "daily_spin_load_failed", message: error.message }, 500);
-          return json({ dailySpin: data });
         }
 
         if (action === "rarity-list") {

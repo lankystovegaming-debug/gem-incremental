@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gemdle · Gem Incremental</title>
+    <link rel="stylesheet" href="../../src/styles/app.css" />
+    <link rel="stylesheet" href="../../gemdle/gemdle.css" />
+  </head>
+  <body>
+    <main class="app-main gemdle-page">
+      <p><a href="../">← All minigames</a></p>
+      <header class="gemdle-hero">
+        <div class="eyebrow">ONE DAY. ONE SPECIMEN.</div>
+        <h1>Gemdle</h1>
+        <p>A little luck. A daily discovery. Yours to keep.</p>
+        <p id="countdown">Resets at midnight Singapore time</p>
+      </header>
+      <section class="gemdle-card daily-card" aria-labelledby="daily-title">
+        <div class="eyebrow" id="daily-title">Today's Gemdle</div>
+        <div id="unrolled">
+          <div class="mystery" aria-hidden="true">◇</div>
+          <h2>What will today bring?</h2>
+          <p>
+            One roll per account. Your boosts don't affect Gemdle.<br />Specimens
+            stay here in your collection, separate from inventory.
+          </p>
+        </div>
+        <button id="roll" class="btn btn--primary" disabled>Loading…</button>
+        <p id="status" role="status" aria-live="polite"></p>
+        <button id="refresh" class="btn" hidden>Try loading again</button>
+        <div id="result" hidden></div>
+        <p id="result-rank" hidden></p>
+        <button id="share" class="btn" hidden>Share Result</button>
+        <textarea
+          id="share-text"
+          aria-label="Share text — copy this result"
+          readonly
+          hidden
+        ></textarea>
+      </section>
+      <div class="gemdle-columns">
+        <section class="gemdle-card">
+          <div class="section-heading">
+            <h2>Today's Gemdle</h2>
+            <button id="refresh-board" class="btn">Refresh</button>
+          </div>
+          <p id="own-rank"></p>
+          <div id="leaderboard">Loading leaderboard…</div>
+        </section>
+        <section class="gemdle-card">
+          <h2>Your collection</h2>
+          <p>Every daily discovery, kept in your history.</p>
+          <div id="history">Loading history…</div>
+          <button id="more" class="btn" hidden>Load older results</button>
+        </section>
+      </div>
+      <details class="gemdle-card">
+        <summary>How Overall Rarity works</summary>
+        <p>
+          Overall Rarity considers your gem, successful mutations, and
+          exceptionally heavy weights. Ordinary weights and no mutation do not
+          increase it. It measures impressiveness, not the odds of an exact
+          specimen.
+        </p>
+        <p>
+          Gem chances use square-root rarity compression. Weight uses the
+          original weight distribution at 1× stats. Mutations after the first
+          success have 35% of their compressed chance. Time and event
+          requirements still apply.
+        </p>
+      </details>
+      <dialog id="past">
+        <button id="close-past" class="btn">Close</button>
+        <div id="past-result"></div>
+        <button id="share-past" class="btn">Share Result</button>
+      </dialog>
+    </main>
+    <script type="module" src="../../gemdle/gemdle.js"></script>
+  </body>
+</html>
