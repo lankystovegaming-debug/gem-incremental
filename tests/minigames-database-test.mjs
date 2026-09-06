@@ -19,6 +19,7 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(await fs.readFile(new URL('../supabase/migrations/20260906141753_gem_reels_v1.sql', import.meta.url), 'utf8'));
 const one = "00000000-0000-0000-0000-000000000001",
   two = "00000000-0000-0000-0000-000000000002";
 await db.exec("set role service_role");
@@ -106,6 +107,36 @@ await assert.rejects(
   db.query("select * from minigame_wallets"),
   /permission denied/,
 );
+await db.exec("reset role;set role service_role");
+const {create,step,ranking}=await import('../supabase/functions/minigames/engine.js');
+await db.exec(`update minigame_wallets set tickets=5,regen_at=now() where player_id='${one}'`);
+const mtBefore=Number((await wallet()).mt);
+for(const mode of ['rewarded','practice']) {
+  let state=create('gem-reels',mode);
+  let reel=(await db.query('select * from minigame_start($1,$2,$3,$4)',[one,'gem-reels',mode,JSON.stringify(state)])).rows[0];
+  const same=await start('gem-reels',mode);
+  assert.equal(same.id,reel.id);
+  assert.equal((await wallet()).tickets,4);
+  for(let i=0;i<16;i++) {
+    const action=i%2 ? {type:'respin',holds:[0,1,2,3,4]} : {type:'spin'};
+    state=step(state,action,i+1,()=>0);
+    const args=[one,reel.id,reel.version,JSON.stringify(action),JSON.stringify(state),JSON.stringify(ranking(state))];
+    const retries=await Promise.all(Array.from({length:3},()=>db.query('select * from minigame_commit($1,$2,$3,$4,$5,$6)',args)));
+    reel=retries[0].rows[0];
+    assert.ok(retries.every(r=>r.rows[0].version===i+1));
+    if(i<15) assert.equal(Number((await wallet()).mt),mtBefore+(mode==='practice'?50:0));
+  }
+  assert.equal(Number((await wallet()).mt),mtBefore+50);
+  assert.equal(reel.state.score,24000);
+  assert.equal(reel.state.history.length,8);
+  assert.equal((await db.query('select count(*)::int n from minigame_actions where run_id=$1',[reel.id])).rows[0].n,16);
+  assert.equal((await db.query('select score from minigame_scores where run_id=$1',[reel.id])).rows[0].score,24000);
+  await assert.rejects(db.query('select * from minigame_commit($1,$2,$3,$4,$5,$6)',[two,reel.id,16,'{}','{}','null']),/Run not found/);
+}
+const reelsBoard=(await db.query("select minigame_board('gem-reels',$1) b",[one])).rows[0].b;
+assert.equal(reelsBoard.own_rank,1);assert.equal(reelsBoard.entries[0].score,24000);
+await db.exec("reset role;set role authenticated");
+await assert.rejects(start('gem-reels'),/permission denied/);
 await db.close();
 console.log(
   "PASS: tickets, retries, credit once, practice isolation, leaderboard, private states and RLS",
