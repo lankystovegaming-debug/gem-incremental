@@ -1816,6 +1816,7 @@ export default {
             roll_speed_bonus,
             weight_luck_bonus,
             weight_multiplier_bonus,
+            mutation_luck_bonus,
             enchant_id,
             enchant_grade,
             enchant_state,
@@ -2094,6 +2095,11 @@ export default {
       let weightMultiplier =
         1;
 
+      // Mutation luck from equipment (lanterns) — summed here, applied to the
+      // mutation-chance multiplier below. 0 = no bonus.
+      let mutationLuckBonus =
+        0;
+
 
       for (
         const equipment
@@ -2129,6 +2135,13 @@ export default {
           Number(
             equipment
               .weight_multiplier_bonus ??
+            0
+          ) * masterworkFactor;
+
+        mutationLuckBonus +=
+          Number(
+            equipment
+              .mutation_luck_bonus ??
             0
           ) * masterworkFactor;
       }
@@ -2876,6 +2889,8 @@ export default {
           Number(player.mutation_luck ?? 1) || 1
         );
 
+      // Equipment mutation luck (lanterns): +X% mutation chance.
+      if (mutationLuckBonus > 0) mutationChanceMultiplier *= 1 + mutationLuckBonus;
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;

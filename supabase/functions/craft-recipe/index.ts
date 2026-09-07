@@ -176,6 +176,18 @@ export default {
         });
       }
     }
+    // Minimum-tier gate (e.g. lanterns require a tier-5+ pickaxe first).
+    const tierRequirement = recipe.requirements.find((requirement)=>requirement.type === "equipment-min-tier");
+    if (tierRequirement) {
+      const hasTier = ownedEquipment.some((item)=>item.category === tierRequirement.category && Number(item.tier) >= Number(tierRequirement.tier));
+      if (!hasTier) {
+        return Response.json({
+          error: "missing_required_equipment"
+        }, {
+          status: 409
+        });
+      }
+    }
     // =================================
     // LOAD CRAFTING PROGRESS
     // =================================
@@ -194,7 +206,8 @@ export default {
     }
     const progress = progressRow?.progress ?? {};
     const requirementsComplete = recipe.requirements.every((requirement, index)=>{
-      if (requirement.type === "equipment") {
+      // Equipment and minimum-tier gates are checked above against owned gear.
+      if (requirement.type === "equipment" || requirement.type === "equipment-min-tier") {
         return true;
       }
       return requirementComplete(progress, requirement, index, player);
@@ -225,6 +238,7 @@ export default {
       p_roll_speed_bonus: Number(bonus.rollSpeed ?? 0),
       p_weight_luck_bonus: Number(bonus.weightLuck ?? 0),
       p_weight_multiplier_bonus: Number(bonus.weightMultiplier ?? 0),
+      p_mutation_luck_bonus: Number(bonus.mutationLuck ?? 0),
       p_required_equipment_id: equipmentRequirement?.equipmentId ?? null
     });
     if (craftError) {

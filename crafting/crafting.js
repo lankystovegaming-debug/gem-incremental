@@ -198,6 +198,17 @@ function describeRequirement(requirement, value) {
         fraction: ratio(state.totalRolls, requirement.rolls)
       };
 
+    case "equipment-min-tier": {
+      const category = String(requirement.category ?? "equipment");
+      const met = ownsTierOrHigher(category, Number(requirement.tier));
+      const label = `${category.charAt(0).toUpperCase()}${category.slice(1)} tier ${requirement.tier}+`;
+      return {
+        label,
+        text: met ? "Complete" : `Craft a tier ${requirement.tier}+ ${category} first`,
+        fraction: met ? 1 : 0
+      };
+    }
+
     case "roll-history-condition": {
       const have = Number(requirement.minimumRarity >= 1000000
         ? state.bestRareNaturalWeight1m
@@ -335,6 +346,10 @@ function isRecipeReady(recipe) {
       return ownsEquipment(requirement.equipmentId);
     }
 
+    if (requirement.type === "equipment-min-tier") {
+      return ownsTierOrHigher(requirement.category, Number(requirement.tier));
+    }
+
     return isRequirementComplete(
       state.crafting,
       recipe,
@@ -357,7 +372,8 @@ function formatBonuses(bonus = {}) {
     ["luck", "Luck"],
     ["rollSpeed", "Roll speed"],
     ["weightLuck", "Weight luck"],
-    ["weightMultiplier", "Weight multiplier"]
+    ["weightMultiplier", "Weight multiplier"],
+    ["mutationLuck", "Mutation luck"]
   ];
 
   return labels
