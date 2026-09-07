@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111324">
+  <meta name="description" content="One month of gems, questionable balancing decisions, and an alarming amount of rolling. Explore the community recap and your own Month One.">
+  <title>Month One · Gem RNG</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="../../src/styles/app.css">
+  <link rel="stylesheet" href="./recap.css">
+</head>
+<body>
+  <main class="app-main recap">
+    <header class="recap-hero">
+      <p class="eyebrow">A LITTLE PIECE OF GEM RNG HISTORY</p>
+      <h1>MONTH <span>ONE.</span></h1>
+      <p>August 7 — September 7, 2026</p>
+      <p class="intro">One month of gems, questionable balancing decisions,<br>and an alarming amount of rolling.</p>
+      <p id="recap-status" role="status" aria-live="polite">Loading Month One…</p>
+    </header>
+    <nav class="recap-tabs" aria-label="Month One experiences">
+      <button id="global-tab" type="button" aria-pressed="true">🌎 Global Month One</button>
+      <button id="personal-tab" type="button" aria-pressed="false">💎 Your Month One</button>
+    </nav>
+    <p id="recap-error" role="alert" hidden></p>
+    <button id="retry" type="button" hidden>Try again</button>
+    <div id="recap-content" aria-busy="true"></div>
+    <footer class="recap-footer">
+      <h2>AND THAT WAS JUST MONTH ONE.</h2>
+      <p>Thank you for playing. 💎</p>
+      <a href="../../">Keep rolling →</a>
+    </footer>
+  </main>
+  <script type="module" src="./recap.js"></script>
+</body>
+</html>
