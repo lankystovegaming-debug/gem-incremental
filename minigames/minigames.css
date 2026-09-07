@@ -61,7 +61,7 @@
 /* ── Catalog grid ──────────────────────────────────────── */
 .mg-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 16px;
 }
 .mg-card,
@@ -70,7 +70,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg, 18px);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 60%, transparent), transparent),
     var(--surface);
   padding: 22px;
 }
@@ -96,7 +95,7 @@
 }
 .mg-card:hover,
 .mg-card:focus-visible {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--accent);
   box-shadow: var(--shadow-lg, 0 24px 48px -20px rgb(0 0 0 / 0.6));
   outline: none;
@@ -515,7 +514,7 @@
 }
 button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 /* ── Motion keyframes ──────────────────────────────────── */
@@ -572,10 +571,88 @@ button:disabled {
     font-size: 13px;
   }
   .mg-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   }
 }
 
 .mg-page [hidden] {
   display: none !important;
+}
+
+/* Compact catalog discovery */
+.mg-browser {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin: 0 0 22px;
+}
+.mg-search {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 220px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mg-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+.mg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mg-filters .btn {
+  min-height: 44px;
+}
+.mg-filters [aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+}
+#game-count {
+  min-width: 60px;
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.mg-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mg-category {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mg-card-play {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+.mg-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.mg-search input:focus-visible,
+.mg-filters .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
