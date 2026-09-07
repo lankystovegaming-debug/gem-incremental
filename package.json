@@ -10,7 +10,7 @@
     "test:gemdle": "node --test tests/gemdle-test.mjs",
     "test:minigames": "node --test tests/minigames-test.mjs tests/minigames-handler-test.mjs tests/gem-reels-test.mjs tests/minigames-movement-test.mjs",
     "test:minigames-db": "node tests/minigames-database-test.mjs",
-    "test:minigames-ui": "node tests/minigames-ui-test.mjs",
+    "test:minigames-ui": "node tests/minigames-ui-test.mjs && node tests/minigames-controls-test.mjs",
     "test:minigames-render": "node tests/minigames-render-test.mjs",
     "test:late-game": "node tests/late-game-expansion-test.mjs && node tests/late-game-expansion-database-test.mjs",
     "test:month-one": "node tests/month-one-recap-test.mjs && node tests/month-one-client-test.mjs"

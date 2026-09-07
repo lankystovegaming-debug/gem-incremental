@@ -6,6 +6,7 @@ import { catalog, tileNames, bagTable, strikeConfig } from "./catalog.js";
 import {
   setText,
   catcherMovement,
+  labelCell,
   setHtml,
   patchCells,
   createArcadeRenderer,
@@ -46,7 +47,7 @@ function icon(name) {
 function mineText(v) {
   return typeof v === "number" && v > 0
     ? `<span class="mg-mine-n mg-mine-n-${Math.min(8, v)}">${v}</span>`
-    : (v ?? "");
+    : (v === 0 ? "" : (v ?? ""));
 }
 
 let frameTimer = 0,
@@ -72,7 +73,7 @@ function stopFrames() {
 }
 function scheduleFrame() {
   stopFrames();
-  if (!run || run.state.done) return;
+  if (!run || run.state.done || connectionFailed) return;
   if (run.game === "mine-sweeper" && !run.state.first) return;
   if (run.game === "price-is-right" && run.state.awaitingNext) return;
   if (animatedGames.has(run.game) && !document.hidden)
@@ -87,6 +88,8 @@ let authGeneration = 0,
   game = null,
   run = null,
   busy = false,
+  loading = false,
+  connectionFailed = false,
   generation = 0,
   offset = 0,
   active = [],
@@ -355,38 +358,90 @@ function route() {
     return;
   }
   document.title = `${game.name} · Minigames · Gem Incremental`;
+  document.querySelector(".mg-page").classList.add("mg-page--game");
+  document.querySelector(".mg-hero h1").textContent = game.name;
+  document.querySelector(".mg-hero > p").textContent = game.description;
+  document.querySelector(".mg-hero .eyebrow").textContent = `MINIGAMES / ${gameCategories[game.id].toUpperCase()}`;
   $("content").innerHTML =
-    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2>${howToHtml(game.id)}<div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
+    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel mg-game-panel" aria-label="${game.name} game">${howToHtml(game.id)}<div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play" tabindex="-1"></div></section><aside class="mg-panel mg-leaderboard"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
   $("start")
     .querySelectorAll("[data-start]")
     .forEach((b) => (b.onclick = () => start(b.dataset.start)));
   $("resume").onclick = load;
+  $("difficulty")?.addEventListener("change", syncControls);
   load();
 }
+function syncControls() {
+  const pending = busy || loading;
+  $("play")?.setAttribute("aria-busy", String(pending));
+  document.querySelectorAll("[data-start]").forEach((button) => {
+    const unavailable = button.dataset.start === "rewarded"
+      && (wallet?.tickets === 0 || $("difficulty")?.value === "easy");
+    button.disabled = pending || connectionFailed || unavailable;
+    button.title = unavailable ? "Use practice, choose a higher difficulty, or wait for a ticket." : "";
+  });
+  if ($("resume")) $("resume").disabled = pending;
+  document.querySelectorAll("#play [data-action], #guess-form button").forEach((button) => {
+    const waitingForStrike = button.dataset.action === "strike"
+      && Date.now() + offset < run.state.ready + 200;
+    button.disabled = pending || connectionFailed || !!run?.state.done || waitingForStrike;
+  });
+}
 async function load() {
-  let g = ++generation;
+  if (loading || busy) return;
+  loading = true;
+  const g = ++generation;
+  syncControls();
+  status("Loading saved runs…");
   try {
     const d = await api("state");
     if (g !== generation) return;
+    connectionFailed = false;
+    inputs = [];
+    lastMovement = 0;
     active = d.runs;
-    run =
-      active.find((r) => r.game === game?.id && r.mode === "rewarded") ||
-      active.find((r) => r.game === game?.id) ||
-      null;
+    run = active.find((r) => r.game === game?.id && r.mode === "rewarded")
+      || active.find((r) => r.game === game?.id) || null;
     if (run) {
+      const instructions = document.querySelector(".mg-game-panel > .mg-howto");
+      if (instructions) instructions.open = false;
       swipe = run.state.swipeSerial || 0;
       render();
+    } else if ($("play")) {
+      $("play").replaceChildren();
+      $("start").hidden = false;
     }
     if (game) {
       const b = await api("board", { game: game.id });
-      if (g === generation) board(b);
+      if (g !== generation) return;
+      board(b);
     }
+    status("");
   } catch (e) {
-    status(e.message);
+    if (g === generation) {
+      connectionFailed = true;
+      stopFrames();
+      status(e.message, true);
+    }
+  } finally {
+    if (g === generation) {
+      loading = false;
+      syncControls();
+    }
   }
 }
-function status(message) {
+function status(message, retry = false) {
   $("status").textContent = message;
+  let retryButton = $("retry-connection");
+  if (!retryButton) {
+    retryButton = document.createElement("button");
+    retryButton.id = "retry-connection";
+    retryButton.className = "btn";
+    retryButton.textContent = "Retry connection";
+    retryButton.onclick = load;
+    $("status").after(retryButton);
+  }
+  retryButton.hidden = !retry;
 }
 function board(d) {
   if (!$("board")) return;
@@ -406,8 +461,10 @@ function board(d) {
   setHtml($("board"), html);
 }
 async function start(mode) {
-  if (busy) return;
+  if (busy || loading || connectionFailed) return;
+  const account = authGeneration;
   busy = true;
+  syncControls();
   status("Starting…");
   try {
     const d = await api("start", {
@@ -426,17 +483,35 @@ async function start(mode) {
     keys.clear();
     swipe = 0;
     run = d.run;
+    const instructions = document.querySelector(".mg-game-panel > .mg-howto");
+    if (instructions) instructions.open = false;
     render();
     status("");
+    $("play").focus({ preventScroll: true });
+    if (matchMedia("(max-width: 800px)").matches) {
+      $("play").scrollIntoView({ block: "start", behavior: "instant" });
+    }
   } catch (e) {
-    status(e.message);
+    if (account === authGeneration) {
+      connectionFailed = true;
+      status(e.message, true);
+    }
   } finally {
-    busy = false;
+    if (account === authGeneration) {
+      busy = false;
+      syncControls();
+    }
   }
 }
 async function act(input) {
-  if (busy || !run || run.state.done) return;
+  if (busy || loading || connectionFailed || !run || run.state.done) return;
+  const account = authGeneration;
+  const focused = document.activeElement;
+  const focusedAction = focused?.dataset.action;
+  const hadPlayFocus = $("play")?.contains(focused);
+  let updated = false;
   busy = true;
+  syncControls();
   const old = run;
   try {
     const d = await api("act", {
@@ -447,6 +522,7 @@ async function act(input) {
     });
     if (old.id !== run?.id) return;
     run = d.run;
+    updated = true;
     board(d);
     if (["gem-catcher", "ore-slicer"].includes(game.id) && !run.state.done) {
       document.querySelector(".mg-stat").textContent =
@@ -454,13 +530,40 @@ async function act(input) {
     } else render();
     status("");
   } catch (e) {
-    status(e.message);
+    if (account === authGeneration) {
+      connectionFailed = true;
+      stopFrames();
+      status(e.message, true);
+    }
   } finally {
-    busy = false;
+    if (account === authGeneration) {
+      busy = false;
+      syncControls();
+      if (updated && hadPlayFocus && document.activeElement === document.body) {
+        const next = run.state.done ? document.querySelector('[data-start="practice"]')
+          : focusedAction ? $("play").querySelector(`[data-action="${CSS.escape(focusedAction)}"]`) : null;
+        (next && !next.disabled ? next : $("play")).focus({ preventScroll: true });
+      }
+    }
   }
 }
+const actionLabels = {
+  left: "Move left", right: "Move right", rotate: "Rotate piece",
+  soft: "Soft drop", hard: "Hard drop", hold: "Hold piece",
+};
+const primaryActions = new Set(["strike", "collect", "next"]);
 const button = (text, type, extra = "") =>
-  `<button class="btn" data-action="${type}" ${extra}>${text}</button>`;
+  `<button type="button" class="btn ${primaryActions.has(type) ? "btn--primary" : ""} ${type === "abandon" ? "mg-danger" : ""}" data-action="${type}" ${actionLabels[type] ? `aria-label="${actionLabels[type]}"` : ""} ${extra}>${text}</button>`;
+function strike() {
+  if (busy || loading || connectionFailed || !run || run.state.done) return;
+  const elapsed = Date.now() + offset - run.state.ready;
+  if (elapsed < 200) return;
+  strikeFreeze = {
+    x: strikeNeedleX(run.state.strike, elapsed),
+    until: Date.now() + offset + 800,
+  };
+  act({ type: "strike", elapsed });
+}
 function updateBoard(s) {
   const boardNode = $("play")?.querySelector(".mg-board");
   if (!boardNode || boardNode.dataset.run !== run.id) return false;
@@ -566,7 +669,7 @@ function render() {
         })),
         "mg-2048",
       ) +
-      `<div class="mg-controls">${["left", "up", "down", "right"].map((d) => button({ left: "←", up: "↑", down: "↓", right: "→" }[d], "move", `data-direction="${d}"`)).join("")}</div>`;
+      `<div class="mg-controls mg-direction-controls" role="group" aria-label="Move tiles">${["left", "up", "down", "right"].map((d) => button({ left: "←", up: "↑", down: "↓", right: "→" }[d], "move", `data-direction="${d}" aria-label="Move ${d}"`)).join("")}</div>`;
   if (s.game === "prospector") {
     html +=
       `<p data-board-summary>${s.digs} digs left · ${s.found.length}/6 deposits</p><div class="mg-tags">${s.discoveries.map((d) => `<span class="mg-tag">${icon(d.name)} ${d.name} · ${d.value}</span>`).join("")}</div>` +
@@ -639,7 +742,7 @@ function render() {
       for (let [x, y] of pieceCells(s.piece))
         if (x >= 0 && x < 10 && y >= 0 && y < 20)
           board[y * 10 + x] = s.piece.type + 1;
-    html += `<p data-board-summary>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls">${[
+    html += `<p data-board-summary>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls mg-stack-controls" role="group" aria-label="Control falling piece">${[
       ["←", "left"],
       ["↻", "rotate"],
       ["→", "right"],
@@ -664,6 +767,7 @@ function render() {
     for (const cell of boardNode.children) cell._minigameHtml = cell.innerHTML;
   }
   bind();
+  syncControls();
   if (s.game === "perfect-strike" && !s.done) {
     const w = strikeConfig(s.strike).width * 100;
     $("strike-bar").style.background =
@@ -672,7 +776,8 @@ function render() {
   scheduleFrame();
 }
 function grid(n, cells, cls = "") {
-  return `<div class="mg-board ${cls}" style="grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<button class="mg-cell" data-cell="${i}" data-open="${c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}${c.text ? " revealed" : ""}">${c.text}</button>`).join("")}</div>`;
+  const tag = cls === "mg-2048" ? "div" : "button";
+  return `${n >= 12 ? '<p class="mg-scroll-hint">Swipe sideways to see the whole board.</p>' : ""}<div class="mg-board-scroll"><div class="mg-board ${cls}" data-columns="${n}" style="--columns:${n};grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<${tag} class="mg-cell" data-cell="${i}" data-open="${!!c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}" ${tag === "button" ? `type="button" tabindex="${i === 0 ? 0 : -1}"` : 'role="img"'}>${c.text}</${tag}>`).join("")}</div></div>`;
 }
 function bind() {
   bindReelHolds($("play"), () => busy);
@@ -687,18 +792,34 @@ function bind() {
           if (b.dataset[k]) input[k] = b.dataset[k];
         if (b.dataset.door) input.door = Number(b.dataset.door);
         if (input.type === "strike") {
-          input.elapsed = Date.now() + offset - run.state.ready;
-          strikeFreeze = {
-            x: strikeNeedleX(run.state.strike, input.elapsed),
-            until: Date.now() + offset + 800,
-          };
+          strike();
+          return;
         }
         act(input);
       }),
   );
   document.querySelectorAll("[data-cell]").forEach((b) => {
+    labelCell(b);
+    if (b.tagName === "BUTTON") {
+      b.onfocus = () => {
+        b.parentElement.querySelector('[tabindex="0"]')?.setAttribute("tabindex", "-1");
+        b.tabIndex = 0;
+      };
+      b.onkeydown = (event) => {
+        const n = Number(b.parentElement.dataset.columns);
+        const index = Number(b.dataset.cell);
+        const next = { ArrowLeft: index % n ? index - 1 : index,
+          ArrowRight: index % n < n - 1 ? index + 1 : index,
+          ArrowUp: index - n, ArrowDown: index + n,
+          Home: index - index % n, End: index - index % n + n - 1 }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        event.stopPropagation();
+        b.parentElement.children[next]?.focus();
+      };
+    }
     let click = (flag) => {
-      if (run.state.done) return;
+      if (busy || loading || connectionFailed || run.state.done) return;
       let n =
           run.state.n ||
           (game.id === "explosive-mining"
@@ -753,6 +874,7 @@ function bind() {
       }
     };
     arena.onpointerdown = (e) => {
+      if (!e.isPrimary || e.button !== 0 || connectionFailed) return;
       arena.setPointerCapture(e.pointerId);
       drag = true;
       swipe++;
@@ -772,7 +894,12 @@ function bind() {
   const b = document.querySelector(".mg-2048");
   if (b) {
     let p = null;
-    b.onpointerdown = (e) => (p = [e.clientX, e.clientY]);
+    b.onpointerdown = (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      b.setPointerCapture(e.pointerId);
+      p = [e.clientX, e.clientY];
+    };
+    b.onpointercancel = b.onlostpointercapture = () => { p = null; };
     b.onpointerup = (e) => {
       if (!p) return;
       let dx = e.clientX - p[0],
@@ -814,7 +941,7 @@ function frame() {
     );
   if (!document.hidden && s.game === "perfect-strike" && $("needle")) {
     const strikeButton = document.querySelector('[data-action="strike"]');
-    strikeButton.disabled = now < s.ready + 200;
+    strikeButton.disabled = busy || loading || connectionFailed || now < s.ready + 200;
     setText(
       strikeButton,
       now < s.ready
@@ -900,17 +1027,18 @@ window.addEventListener("keydown", (e) => {
     !game ||
     !run ||
     run.state.done ||
-    e.target.matches("input,select,textarea")
+    e.target.closest("input,select,textarea,button,summary,a,[contenteditable=true]")
   )
     return;
-  keys.add(e.key);
+  keys.add(e.key.length === 1 ? e.key.toLowerCase() : e.key);
   let dir = {
     ArrowLeft: "left",
     ArrowRight: "right",
     ArrowUp: "up",
     ArrowDown: "down",
   }[e.key];
-  if (dir || e.code === "Space") e.preventDefault();
+  if ((dir && ["gem-2048", "gem-stack", "gem-catcher"].includes(game.id))
+      || (e.code === "Space" && ["gem-stack", "perfect-strike"].includes(game.id))) e.preventDefault();
   if (game.id === "gem-2048" && dir) act({ type: "move", direction: dir });
   if (game.id === "gem-stack") {
     let type = {
@@ -920,17 +1048,10 @@ window.addEventListener("keydown", (e) => {
       ArrowDown: "soft",
       " ": "hard",
       c: "hold",
-    }[e.key];
-    if (type) act({ type });
+    }[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (type && !(e.repeat && ["hard", "hold"].includes(type))) act({ type });
   }
-  if (game.id === "perfect-strike" && e.code === "Space") {
-    const elapsed = Date.now() + offset - run.state.ready;
-    strikeFreeze = {
-      x: strikeNeedleX(run.state.strike, elapsed),
-      until: Date.now() + offset + 800,
-    };
-    act({ type: "strike", elapsed });
-  }
+  if (game.id === "perfect-strike" && e.code === "Space" && !e.repeat) strike();
 });
 window.addEventListener("blur", () => {
   keys.clear();
@@ -952,11 +1073,14 @@ window.addEventListener("pagehide", () => {
   bladeTrail = null;
 });
 window.addEventListener("pageshow", scheduleFrame);
-window.addEventListener("keyup", (e) => keys.delete(e.key));
+window.addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 supabase.auth.onAuthStateChange((event) => {
   if (["SIGNED_OUT", "SIGNED_IN"].includes(event)) {
     authGeneration++;
     generation++;
+    busy = false;
+    loading = false;
+    connectionFailed = false;
     run = null;
     wallet = null;
     active = [];
