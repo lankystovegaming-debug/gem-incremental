@@ -2142,6 +2142,10 @@ export default {
 
       if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
 
+      const { data: playtimeUpgradeData } = await ctx.supabaseAdmin.rpc("get_playtime_upgrades");
+      const playtimeLevels = (playtimeUpgradeData as any)?.levels ?? {};
+      const playtimeMultiplier = (key: string) => { const n = Number(playtimeLevels[key] ?? 0); return [1,1.05,1.1,1.2,1.35,1.5,1.75,2,2.5,3,4][Math.max(0,Math.min(10,n))] ?? 1; };
+
       const researchEffectsRaw = (player as any).player_research_effects;
       const researchEffects = Array.isArray(researchEffectsRaw)
         ? researchEffectsRaw[0] ?? {}
@@ -2183,10 +2187,12 @@ export default {
       const volcanicGemValueMultiplier = Math.max(1, Number(volcanicEffects.gemValueMultiplier ?? 1));
 
       luck *= researchNumber("luck_multiplier");
+      luck *= playtimeMultiplier("luck");
       luck += crystalLuckBonus;
       luck += expeditionArtifactLuckBonus;
       luck += volcanicLuckBonus;
       rollSpeed *= researchNumber("roll_speed_multiplier");
+      rollSpeed *= playtimeMultiplier("rollSpeed");
       rollSpeed += volcanicRollSpeedBonus;
       weightLuck *= researchNumber("weight_luck_multiplier");
       weightLuck *= crystalWeightLuckMultiplier;
@@ -2874,6 +2880,7 @@ export default {
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= playtimeMultiplier("mutation");
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
