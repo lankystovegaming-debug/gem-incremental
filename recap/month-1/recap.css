@@ -1,0 +1,165 @@
+.recap {
+  max-width: 1120px;
+  margin: auto;
+  padding: 32px 22px 80px;
+}
+.recap-hero {
+  text-align: center;
+  padding: 58px 12px 40px;
+  background: radial-gradient(ellipse at 50% 30%, #8476ff24, transparent 70%);
+}
+.eyebrow {
+  color: #a99cff;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+}
+.recap h1 {
+  font-size: clamp(3.5rem, 11vw, 8rem);
+  line-height: 1;
+  letter-spacing: -.065em;
+  margin: 18px 0;
+}
+.recap h1 span {
+  color: #a99cff;
+}
+.intro {
+  line-height: 1.65;
+  opacity: .75;
+  margin: 24px 0;
+}
+#recap-status {
+  font-size: .8rem;
+  color: #b4a9ff;
+}
+.recap-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0 35px;
+}
+.recap button, .recap a {
+  touch-action: manipulation;
+}
+.recap button {
+  border: 1px solid #9387d85c;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.recap button[aria-pressed="true"] {
+  background: #8e7bff26;
+  border-color: #a99cff;
+}
+.recap button:focus-visible, .recap a:focus-visible {
+  outline: 3px solid #b9b0ff;
+  outline-offset: 4px;
+}
+.recap-section {
+  margin: 42px 0;
+}
+.recap-section h2 {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  margin-bottom: 8px;
+}
+.section-note, .recap small {
+  opacity: .7;
+  line-height: 1.6;
+}
+.stat-grid, .record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+.recap-card {
+  padding: 24px;
+  border: 1px solid #9e90cc36;
+  border-radius: 18px;
+  background: #8b7bac09;
+  overflow-wrap: anywhere;
+}
+.recap-card h3 {
+  font-size: .95rem;
+  margin: 0 0 16px;
+  color: #b9aaff;
+}
+.recap-card strong {
+  display: block;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.2;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.recap-card p {
+  margin: 9px 0;
+}
+.recap-card .gem-name {
+  font-size: 1.5rem;
+}
+.record-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.recap-callout {
+  margin: 24px 0;
+  padding: 22px 25px;
+  border-left: 3px solid #a99cff;
+  background: #8b7bac0c;
+  line-height: 1.7;
+}
+.recap-table-wrap {
+  overflow-x: auto;
+}
+.recap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  text-align: left;
+}
+.recap th, .recap td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #9e90cc26;
+}
+.share-card {
+  border: 1px solid #b9aaff;
+  border-radius: 20px;
+  padding: 30px;
+  background: #8e7bff14;
+  max-width: 580px;
+}
+.share-card pre {
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.8;
+}
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.recap-footer {
+  text-align: center;
+  margin-top: 80px;
+  padding: 40px 0;
+  border-top: 1px solid #9e90cc36;
+}
+.recap-footer a {
+  color: #b9aaff;
+}
+#recap-error {
+  padding: 18px;
+  border: 1px solid #ce8585;
+  border-radius: 12px;
+}
+@media (max-width: 520px) {
+  .recap { padding: 18px 14px 50px; }
+  .recap-hero { padding-top: 30px; }
+  .recap-tabs button { padding: 12px; font-size: .85rem; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .recap-card { padding: 18px; }
+  .record-grid { grid-template-columns: minmax(0, 1fr); }
+}
