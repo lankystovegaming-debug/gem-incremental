@@ -91,7 +91,7 @@ const base =
   process.env.MINIGAMES_PREVIEW_URL || "http://127.0.0.1:5539/minigames/";
 await page.goto(base);
 await page.locator(".mg-card").first().waitFor();
-assert.equal(await page.locator(".mg-card").count(), 12);
+assert.equal(await page.locator(".mg-card").count(), 13);
 await page.getByRole("button", { name: "Arcade", exact: true }).click();
 assert.equal(await page.locator(".mg-card:visible").count(), 4);
 assert.equal(await page.getByRole("button", { name: "Arcade", exact: true }).getAttribute("aria-pressed"), "true");
@@ -102,12 +102,13 @@ assert.equal(await page.locator(".mg-card:visible").count(), 0);
 assert.equal(await page.locator("#game-empty").isVisible(), true);
 await page.getByRole("searchbox").fill("");
 await page.getByRole("button", { name: "All", exact: true }).click();
-assert.equal(await page.locator(".mg-card:visible").count(), 12);
+assert.equal(await page.locator(".mg-card:visible").count(), 13);
 await page.screenshot({
   path: fileURLToPath(new URL("minigames-hub-desktop.png", artifacts)),
   fullPage: true,
 });
 for (let game of [
+  "gem-reels",
   "gem-catcher",
   "ore-slicer",
   "gem-2048",
@@ -137,6 +138,27 @@ for (let game of [
     await page.getByText(/Actual final value/).waitFor();
   }
 }
+// Gem Reels: holds toggle, refresh resumes server state, all 8 hands complete.
+await page.goto(base+'gem-reels/');
+await page.locator('[data-action="spin"]').click();
+await page.locator('[data-action="respin"]').waitFor();
+await page.locator('[data-reel="0"]').click();
+assert.equal(await page.locator('[data-reel="0"]').getAttribute('aria-pressed'),'true');
+await page.setViewportSize({width:390,height:844});
+await page.screenshot({path:'/tmp/gem-reels-mobile.png',fullPage:true});
+assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await page.reload();
+await page.locator('[data-action="respin"]').waitFor();
+for(let hand=0;hand<8;hand++) {
+  if(hand) {await page.locator('[data-action="spin"]').click();await page.locator('[data-action="respin"]').waitFor();}
+  await page.locator('[data-reel="0"]').click();
+  await page.locator('[data-action="respin"]').click();
+  if(hand<7) await page.locator('[data-action="spin"]').waitFor();
+}
+await page.getByRole('heading',{name:'Run complete',exact:true}).waitFor();
+assert.equal(await page.locator('.mg-reels li').count(),8);
+await page.screenshot({path:'/tmp/gem-reels-complete.png',fullPage:true});
+await page.setViewportSize({width:1280,height:1000});
 // No trailing slash, refresh, back link and old bookmarks all remain usable.
 await page.goto(base + "gem-catcher");
 assert.equal(new URL(page.url()).pathname, "/minigames/gem-catcher/");
@@ -168,5 +190,5 @@ assert.ok(
 assert.deepEqual(errors, []);
 await browser.close();
 console.log(
-  "PASS: eleven game screens, interactions, catalog, mobile sizing, no browser errors",
+  "PASS: twelve game screens, interactions, catalog, mobile sizing, no browser errors",
 );

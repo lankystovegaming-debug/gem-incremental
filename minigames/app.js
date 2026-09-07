@@ -1,3 +1,4 @@
+import { reelsHtml, bindReelHolds } from "./reels-ui.js";
 import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
@@ -99,6 +100,7 @@ let authGeneration = 0,
   lastFlush = 0,
   keys = new Set();
 const rules = {
+  "gem-reels": "Eight hands: spin five, hold any, respin once, score. One ticket per rewarded run; unlimited Practice earns 0 MT. Both modes count for the leaderboard. Closing saves your run.",
   "gem-catcher":
     "90 seconds · 3 lives. Move with A/D, arrows, or drag. Catch gems for 10–350 points. Rocks cost a life and reset your combo. Missing gems is harmless. Combos: 10 ×1.25, 25 ×1.5, 50 ×2, 100 ×3.",
   "ore-slicer":
@@ -288,6 +290,7 @@ const gameCategories = {
   "price-is-right": "Puzzles",
   "gem-tower": "Chance",
   "crystal-bags": "Chance",
+  "gem-reels": "Chance",
   gemdle: "Daily",
 };
 function renderHub() {
@@ -397,7 +400,7 @@ function board(d) {
     (d.board?.entries || [])
       .map(
         (e) =>
-          `<div class="mg-board-entry"><span>#${e.rank} ${esc(e.username)}${e.is_you ? " (you)" : ""}</span><strong>${game.id === "mine-sweeper" ? `${(-e.score / 1000).toFixed(3)}s` : Number(e.score).toLocaleString(undefined, { maximumFractionDigits: 1 })}</strong></div>`,
+          `<div class="mg-board-entry"><span>#${e.rank} ${esc(e.username)}${e.is_you ? " (you)" : ""}</span><strong>${game.id === "mine-sweeper" ? `${(-e.score / 1000).toFixed(3)}s` : Number(e.score).toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>`,
       )
       .join("");
   setHtml($("board"), html);
@@ -516,7 +519,7 @@ function updateBoard(s) {
   patchCells(boardNode, cells);
   setText(
     $("play").querySelector(".mg-stat"),
-    `Score ${Math.round(s.score).toLocaleString()}`,
+    `Score ${s.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
   );
   if (summary)
     setText($("play").querySelector("[data-board-summary]"), summary);
@@ -536,7 +539,7 @@ function render() {
   }
   if (!s.done && updateBoard(s)) return;
   $("start").hidden = !s.done;
-  let html = `<div class="mg-tags"><span class="mg-tag">${run.mode === "practice" ? "Practice · 0 MT" : "Rewarded · ticket used"}</span></div><p class="mg-stat">${game.id === "gem-tower" ? `Floor ${s.floor} · Pending ${s.pending} MT` : game.id === "crystal-bags" ? `Round ${Math.min(5, s.round + 1)}/5 · ${s.pending} MT` : `Score ${Math.round(s.score).toLocaleString()}`}</p>`;
+  let html = `<div class="mg-tags"><span class="mg-tag">${run.mode === "practice" ? "Practice · 0 MT" : "Rewarded · ticket used"}</span></div><p class="mg-stat">${game.id === "gem-tower" ? `Floor ${s.floor} · Pending ${s.pending} MT` : game.id === "crystal-bags" ? `Round ${Math.min(5, s.round + 1)}/5 · ${s.pending} MT` : `Score ${s.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</p>`;
   if (s.done) {
     html += `<div class="mg-result"><h3>${s.abandoned ? "Run ended" : s.collapsed ? "The tower collapsed" : "Run complete"}</h3><p>${s.mode === "rewarded" ? `${s.pending || 0} MT credited.` : "Practice awards 0 MT."}</p>${s.extraction != null ? `<p>Extraction ${(s.extraction * 100).toFixed(1)}% · ${s.gems} gems · Largest chain ${s.largest}</p>` : ""}${s.accuracy != null ? `<p>Accuracy ${(s.accuracy * 100).toFixed(1)}%</p>` : ""}${s.elapsedMs != null ? `<p>${(s.elapsedMs / 1000).toFixed(3)} seconds · ${s.pending}/${s.mines} MT preserved</p>` : ""}${s.game === "gem-tower" ? `<p>Highest floor cleared: ${s.floor}</p>` : ""}</div>`;
   }
@@ -603,6 +606,7 @@ function render() {
     let next = s.floor + 1;
     html += `<div class="mg-tower">${next % 5 === 0 ? "✦" : "♜"}</div><p>Next: Floor ${next} · +${next} MT · ${next % 5 === 0 ? "Guaranteed safe" : "75% safe"}</p><div class="mg-controls">${next % 5 === 0 ? button("Clear safe floor", "door") : [0, 1, 2, 3].map((i) => button(`Door ${i + 1}`, "door", `data-door="${i}"`)).join("")}${s.floor ? button(`Collect ${s.pending} MT & Leave`, "collect") : ""}</div>`;
   }
+  if (s.game === "gem-reels") html += reelsHtml(s, icon);
   if (s.game === "crystal-bags") {
     html += `<p>${s.choices.map((c) => `R${c.round}: ${esc(c.bag)} +${c.outcome}`).join(" · ")}</p>`;
     if (!s.done)
@@ -671,12 +675,14 @@ function grid(n, cells, cls = "") {
   return `<div class="mg-board ${cls}" style="grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<button class="mg-cell" data-cell="${i}" data-open="${c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}${c.text ? " revealed" : ""}">${c.text}</button>`).join("")}</div>`;
 }
 function bind() {
+  bindReelHolds($("play"), () => busy);
   if ($("flag-mode"))
     $("flag-mode").onchange = (e) => (flagMode = e.target.checked);
   document.querySelectorAll("[data-action]").forEach(
     (b) =>
       (b.onclick = () => {
         let input = { type: b.dataset.action };
+        if (input.type === "respin") input.holds = [...$("play").querySelectorAll('[data-reel][aria-pressed="true"]')].map(b => Number(b.dataset.reel));
         for (let k of ["direction", "bag"])
           if (b.dataset[k]) input[k] = b.dataset[k];
         if (b.dataset.door) input.door = Number(b.dataset.door);

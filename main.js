@@ -546,7 +546,7 @@ function renderRoll(data, outcome) {
     <div class="gem-reveal">
       <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll", mutationIds)}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
-      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
+      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}${data.equipmentPassives?.bagged ? " 🛍️" : ""}</h2>
       ${mutationNamesHtml(data?.mutations)}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
@@ -835,7 +835,7 @@ async function resolveOutcome(data) {
     return {
       type: "auto-crafted",
       icon: icons.anvil,
-      text: `Deposited into ${recipe?.name ?? "your Auto Craft target"}`,
+      text: `Deposited into ${recipe?.name ?? "your Auto Craft target"}${data.autoCraft.preserved ? " — Conservation kept the gem" : ""}`,
       note: "deposited"
     };
   }

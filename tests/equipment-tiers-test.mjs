@@ -18,7 +18,7 @@ const expected = {
   ,"vault-of-plenty": ["bag", 10, "weightMultiplier", 0.85, 35000000]
   ,"dimensional-vault": ["bag", 11, "weightMultiplier", 0.95, 90000000]
   ,"singularity-vault": ["bag", 12, "weightMultiplier", 1.05, 200000000]
-  ,"bottomless-singularity": ["bag", 13, "weightMultiplier", 2, 750000000]
+  ,"bottomless-singularity": ["bag", 13, "weightMultiplier", 1.2, 200000000]
 };
 
 for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)) {
@@ -33,7 +33,7 @@ for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)
 assert.equal(recipes.some((recipe) => recipe.category === "lantern"), false);
 assert.deepEqual(
   recipes.filter((recipe) => recipe.category === "pickaxe").map((recipe) => recipe.reward.bonus.rollSpeed),
-  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80]
+  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2]
 );
 
 assert.deepEqual(recipes.find((recipe) => recipe.id === "astral-pickaxe").requirements, [
@@ -57,6 +57,7 @@ assert.deepEqual(recipes.find((recipe) => recipe.id === "celestial-pickaxe").req
 assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), [
   "astral-pickaxe",
   "bottomless-singularity",
+  "empyrean-pickaxe", "eternity-pickaxe", "event-horizon-vault", "neutron-boots", "omnidimensional-vault", "plastic-shopping-bag", "reality-breakers", "spacetime-walkers",
   "celestial-pickaxe",
   "dimensional-vault",
   "eclipse-pickaxe",
@@ -67,7 +68,7 @@ assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), [
   "singularity-vault",
   "transcendent-pickaxe",
   "vault-of-plenty"
-]);
+].sort());
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
@@ -116,34 +117,15 @@ assert.match(lateGameMigration, /original_t13_legacy boolean not null default fa
 assert.match(lateGameMigration, /new\.original_t13_legacy := true/);
 
 const t13 = recipes.find((recipe) => recipe.id === "bottomless-singularity");
-assert.equal(t13.description, "At some point, calling this a bag stopped making sense.");
-assert.deepEqual(t13.requirements.slice(-3), [
-  { type: "gem-count", gem: "Unlucky Gem", amount: 10 },
-  { type: "lifetime-rolls", rolls: 400000 },
-  { id: "bottomless-singularity-heavy-rare", type: "roll-history-condition", label: "Rolled a 1/1,000,000+ base-rarity specimen at ≥8× natural weight", minimumRarity: 1000000, minimumWeightMultiplier: 8 }
-]);
-
+assert.equal(t13.includedSpecimens, true);
+assert.equal(t13.requirements.some(r => r.type === "roll-history-condition"), false);
 const t13State = createCraftingState();
 const t13Progress = ensureRecipeProgress(t13State, t13);
 for (const requirement of t13.requirements) {
-  if (requirement.type === "gem-count") t13Progress[requirement.gem] = requirement.amount;
+  if (requirement.id) t13Progress[requirement.id] = requirement.amount;
 }
-const t13Inventory = {
-  equipment: [{ id: "singularity-vault" }],
-  totalRolls: 400000,
-  bestRareNaturalWeight1m: 8
-};
-assert.equal(
-  t13.requirements.every((requirement, index) =>
-    isRequirementComplete(t13State, t13, requirement, index, t13Inventory)
-  ),
-  true,
-  "the original T13 remains technically craftable when every gate is met"
-);
-const historyGate = t13.requirements.at(-1);
-assert.equal(isRequirementComplete(t13State, t13, historyGate, t13.requirements.length - 1, {
-  ...t13Inventory,
-  bestRareNaturalWeight1m: 7.999
-}), false);
-
+const t13Inventory = { equipment: [{ id: "singularity-vault" }], totalRolls: 200000 };
+assert.equal(t13.requirements.every((r,i)=>isRequirementComplete(t13State,t13,r,i,t13Inventory)),true);
+const gate=t13.requirements.findIndex(r=>r.type==='lifetime-rolls');
+assert.equal(isRequirementComplete(t13State,t13,t13.requirements[gate],gate,{...t13Inventory,totalRolls:199999}),false);
 console.log("Equipment tier tests passed.");

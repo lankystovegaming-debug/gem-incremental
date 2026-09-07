@@ -1,6 +1,7 @@
 import { supabase } from "../src/backend/supabase.js";
 import { burnMoney, loadFurnaceState } from "../src/backend/cloudFurnace.js";
 import { confirmDialog } from "../src/ui/dialog.js";
+import { chartBounds, niceTicks, largeMoney, historyWindow } from "./chartMath.js";
 
 // =========================================================
 // CASH MARKET
@@ -50,6 +51,8 @@ let layout = null;   // last-drawn geometry, for hover mapping
 let pollTimer = null;
 let furnaceMoney = 0;
 let furnaceBusy = false;
+let requestId = 0;
+let loadedAt = Date.now();
 
 // ---------------------------------------------------------
 // FORMATTING
@@ -59,6 +62,7 @@ function compact(value) {
   const n = Number(value) || 0;
   const abs = Math.abs(n);
   const sign = n < 0 ? "-" : "";
+  if (abs >= 1e15) return sign + largeMoney(abs, 2);
   if (abs >= 1e12) return sign + "$" + (abs / 1e12).toFixed(2) + "T";
   if (abs >= 1e9) return sign + "$" + (abs / 1e9).toFixed(2) + "B";
   if (abs >= 1e6) return sign + "$" + (abs / 1e6).toFixed(2) + "M";
@@ -134,6 +138,7 @@ async function requestBurn({ amount = null, burnAll = false }) {
 function axisMoney(value) {
   const n = Number(value) || 0;
   const abs = Math.abs(n);
+  if (abs >= 1e15) return largeMoney(n);
   if (abs >= 1e12) return "$" + (n / 1e12).toFixed(1) + "T";
   if (abs >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
   if (abs >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
@@ -159,8 +164,8 @@ function el(name, attrs = {}) {
 // DATA
 // ---------------------------------------------------------
 
-async function fetchHistory() {
-  const { data, error } = await supabase.rpc("get_global_cash_history", { p_hours: hours });
+async function fetchHistory(requestedHours) {
+  const { data, error } = await supabase.rpc("get_global_cash_history", { p_hours: requestedHours });
   if (error) throw error;
   const list = Array.isArray(data) ? data : [];
   return list
@@ -199,7 +204,14 @@ function paintTicker() {
   priceEl.textContent = fullMoney(last);
   changeAbsEl.textContent = (up ? "+" : "−") + compact(Math.abs(diff)).replace("-", "");
   changePctEl.textContent = (up ? "▲ " : "▼ ") + Math.abs(pct).toFixed(2) + "%";
-  changeRangeEl.textContent = RANGE_LABELS[hours] || "";
+  const partial = historyWindow(rows, hours, loadedAt).partial;
+  changeRangeEl.textContent = hours === 100000 || partial
+    ? "since first available sample" : RANGE_LABELS[hours] || "";
+  if (rows.length === 1) {
+    changeAbsEl.textContent = "—";
+    changePctEl.textContent = "";
+    changeRangeEl.textContent = "Collecting history — waiting for the next sample";
+  }
   changeEl.classList.toggle("market__change--up", up);
   changeEl.classList.toggle("market__change--down", !up);
 }
@@ -207,18 +219,6 @@ function paintTicker() {
 // ---------------------------------------------------------
 // CHART
 // ---------------------------------------------------------
-
-function niceTicks(min, max, count) {
-  const span = max - min || 1;
-  const step0 = span / count;
-  const mag = Math.pow(10, Math.floor(Math.log10(step0)));
-  const norm = step0 / mag;
-  const step = (norm >= 5 ? 5 : norm >= 2 ? 2 : 1) * mag;
-  const start = Math.ceil(min / step) * step;
-  const ticks = [];
-  for (let v = start; v <= max + step * 0.001; v += step) ticks.push(v);
-  return ticks;
-}
 
 function draw() {
   chart.textContent = "";
@@ -239,14 +239,9 @@ function draw() {
   const plotH = h - PAD.top - PAD.bottom;
 
   const values = rows.map((r) => r[metric]);
-  let vMin = Math.min(...values);
-  let vMax = Math.max(...values);
-  if (vMin === vMax) { vMin -= 1; vMax += 1; }        // flat line -> give it room
-  const headroom = (vMax - vMin) * 0.08;
-  vMin -= headroom; vMax += headroom;
+  const [vMin, vMax] = chartBounds(values);
 
-  const tMin = rows[0].t;
-  const tMax = rows[rows.length - 1].t;
+  const { start: tMin, end: tMax } = historyWindow(rows, hours, loadedAt);
   const tSpan = tMax - tMin || 1;
 
   const xOf = (t) => PAD.left + ((t - tMin) / tSpan) * plotW;
@@ -370,15 +365,22 @@ function onLeave() {
 // ---------------------------------------------------------
 
 async function refresh(showLoading = false) {
+  const id = ++requestId;
+  const requestedHours = hours;
   if (showLoading) {
     statusEl.hidden = false;
     statusEl.textContent = "Loading market data…";
   }
   try {
-    rows = await fetchHistory();
+    const nextRows = await fetchHistory(requestedHours);
+    if (id !== requestId) return;
+    rows = nextRows;
+    loadedAt = Date.now();
+    onLeave();
     paintTicker();
     draw();
   } catch (error) {
+    if (id !== requestId) return;
     console.error("[CASH MARKET] load failed:", error);
     statusEl.hidden = false;
     statusEl.textContent = "Couldn't load market data. Retrying shortly…";
@@ -395,6 +397,10 @@ metricButtons.forEach((btn) => btn.addEventListener("click", () => {
 
 rangeButtons.forEach((btn) => btn.addEventListener("click", () => {
   hours = Number(btn.dataset.range);
+  rows = [];
+  onLeave();
+  paintTicker();
+  draw();
   rangeButtons.forEach((b) => b.classList.toggle("active", b === btn));
   rangeButtons.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
   refresh(true);

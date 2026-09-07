@@ -35,6 +35,10 @@ const LEVEL_COSTS = [
 ];
 
 export function masterworkTierMultipliers(tier) {
+  if (tier >= 17) return { money: 3, enchant: 2.25, ancient: 2 };
+  if (tier === 16) return { money: 2.5, enchant: 2, ancient: 1.85 };
+  if (tier === 15) return { money: 2.2, enchant: 1.8, ancient: 1.7 };
+  if (tier === 14) return { money: 1.9, enchant: 1.65, ancient: 1.55 };
   if (tier >= 13) return { money: 1.65, enchant: 1.5, ancient: 1.4 };
   if (tier === 12) return { money: 1.4, enchant: 1.3, ancient: 1.2 };
   if (tier === 11) return { money: 1.2, enchant: 1.15, ancient: 1 };
@@ -46,7 +50,7 @@ export function masterworkLevelCost(tier, nextLevel) {
   if (!base) return null;
   const scale = masterworkTierMultipliers(tier);
   return {
-    money: Math.ceil(base.money * scale.money),
+    money: Math.round(base.money * scale.money),
     enchant: Math.ceil(base.enchant * scale.enchant),
     ancient: Math.ceil(base.ancient * scale.ancient)
   };
@@ -57,7 +61,7 @@ export function masterworkRerollCost(tier, rerolls = 0, mode = "reroll") {
   const enchant = [2, 3, 4, 5, 6][Math.min(Math.max(0, rerolls), 4)];
   const scale = masterworkTierMultipliers(tier);
   return {
-    money: Math.ceil(money * scale.money * (mode === "imprint" ? 5 : 1)),
+    money: Math.round(money * Math.min(2, scale.money) * (mode === "imprint" ? 5 : 1)),
     enchant: Math.ceil(enchant * scale.enchant),
     ancient: mode === "insight" ? 1 : mode === "imprint" ? 3 : 0
   };
@@ -65,7 +69,7 @@ export function masterworkRerollCost(tier, rerolls = 0, mode = "reroll") {
 
 export function masterworkAttunementCost(tier) {
   const scale = masterworkTierMultipliers(tier);
-  return { money: Math.ceil(10_000_000 * scale.money), enchant: Math.ceil(5 * scale.enchant), ancient: Math.ceil(scale.ancient) };
+  return { money: Math.round(10_000_000 * scale.money), enchant: Math.ceil(5 * scale.enchant), ancient: Math.ceil(scale.ancient) };
 }
 
 export function masterworkPassive(category, id) {

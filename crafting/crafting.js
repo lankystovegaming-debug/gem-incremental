@@ -1,3 +1,4 @@
+import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import recipes from "../src/data/recipes.js";
 import { getConsumableById } from "../src/data/consumables.js";
 
@@ -185,7 +186,7 @@ function describeRequirement(requirement, value) {
 
     case "gem-count":
       return {
-        label: requirement.gem,
+        label: requirement.label ?? requirement.gem,
         text: `${formatCount(value ?? 0)} / ${formatCount(requirement.amount)}`,
         fraction: ratio(value, requirement.amount)
       };
@@ -554,6 +555,7 @@ function recipeCard(recipe) {
 
   const bonuses = formatReward(recipe);
   const pinned = pinnedRecipeIds().has(recipe.id);
+  const passive = getEquipmentPassive(recipe.id);
 
   const requirementsHtml = recipe.requirements
     .map((requirement, index) => {
@@ -668,25 +670,37 @@ function recipeCard(recipe) {
       data-recipe="${escapeHtml(recipe.id)}"
     >
       <div class="recipe-card__head">
-        <div>
+        <div class="recipe-card__identity">
           <div class="recipe-card__name">${escapeHtml(recipe.name)}</div>
           <div class="recipe-card__tier">Tier ${recipe.reward.tier}${isConsumableRecipe(recipe) ? " · Repeatable" : ""}</div>
         </div>
 
-        ${
-          ready
+        <div class="recipe-card__tools">
+          ${ready
             ? '<span class="badge badge--positive">Ready</span>'
             : isAutoTarget
             ? '<span class="badge badge--accent">Auto Craft</span>'
-            : ""
-        }
+            : ""}
+          <button class="btn btn--sm recipe-card__pin" data-action="pin" type="button" aria-label="${pinned ? "Unpin" : "Pin"} ${escapeHtml(recipe.name)}">${pinned ? "★ Pinned" : "☆ Pin"}</button>
+        </div>
       </div>
-
-      <button class="btn btn--sm recipe-card__pin" data-action="pin" type="button">${pinned ? "★ Pinned" : "☆ Pin"}</button>
 
       <div class="recipe-card__bonuses">
         ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
       </div>
+
+      ${(recipe.description || passive) ? `
+        <div class="recipe-card__details">
+          ${recipe.description ? `<p class="recipe-card__description">${escapeHtml(recipe.description)}</p>` : ""}
+          ${passive ? `
+            <div class="recipe-card__passive">
+              <span class="recipe-card__passive-label">Equipment passive</span>
+              <strong>${escapeHtml(passive.name)}</strong>
+              <p>${escapeHtml(passive.description)}</p>
+            </div>
+          ` : ""}
+        </div>
+      ` : ""}
 
       ${
         owned
@@ -700,7 +714,7 @@ function recipeCard(recipe) {
               <span class="recipe-cost__value ${
                 affordable ? "recipe-cost__value--ok" : "recipe-cost__value--short"
               }">
-                ${formatMoney(recipe.moneyCost)}
+                ${recipe.id === "plastic-shopping-bag" ? "$500,000,000.10" : formatMoney(recipe.moneyCost)}
               </span>
             </div>
 
