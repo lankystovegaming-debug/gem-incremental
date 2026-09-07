@@ -189,7 +189,9 @@ function renderSummary() {
     view.capacity
   )}`;
 
-  statRolls.textContent = formatCount(view.totalRolls);
+  statRolls.textContent = Math.round(Number(view.totalRolls ?? 0)).toLocaleString(
+    "en-US"
+  );
 
   shell.setWallet(view.money);
 
