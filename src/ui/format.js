@@ -81,7 +81,10 @@ function formatAbbreviatedNumber(value) {
   const power = 10 ** (Math.floor(exponent / 3) * 3);
   const scaled = amount / power;
   const fixed = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-  const text = scaled.toFixed(fixed).replace(/\.?0+$/, "");
+  const formatted = scaled.toFixed(fixed);
+  const text = formatted.includes(".")
+    ? formatted.replace(/0+$/, "").replace(/\.$/, "")
+    : formatted;
 
   return text + suffix;
 }
