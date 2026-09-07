@@ -6,9 +6,9 @@ import {
   manuallyDepositRequirement
 } from "../src/logic/crafting.js";
 
-const recipe = recipes.find((entry) => entry.id === "singularity-striders");
+const recipe = {id:"final-weight-regression",equipmentOverhaul:true,requirements:[{id:"final-heavy",type:"specimen-condition",minimumWeightMultiplier:4,amount:1}]};
 const requirementIndex = recipe.requirements.findIndex(
-  (requirement) => requirement.id === "singularity-heavy-rare"
+  (requirement) => requirement.id === "final-heavy"
 );
 const inventory = {
   equipment: [],

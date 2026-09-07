@@ -616,16 +616,8 @@ const depositHandler = withSupabase(
       // LOAD CANONICAL RECIPE
       // =====================================================
 
-      const {
-        data: recipeRow,
-        error: recipeError
-      } =
-        await ctx.supabaseAdmin
-          .from("game_recipes")
-          .select("recipe")
-          .eq("id", recipeId)
-          .single();
-
+      const {data: resolvedRecipe,error: recipeError}=await ctx.supabase.rpc('get_my_equipment_recipe',{p_recipe_id:recipeId});
+      const recipeRow=resolvedRecipe?{recipe:resolvedRecipe}:null;
 
       if (
         recipeError ||
@@ -670,7 +662,7 @@ const depositHandler = withSupabase(
       }
 
 
-      if ((recipe.includedSpecimens && requirement.type === "specimen-condition") || requirement.type === "gem-count") {
+      if (((recipe.includedSpecimens || recipe.equipmentOverhaul) && requirement.type === "specimen-condition") || requirement.type === "gem-count") {
         const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
           p_player_id: playerId, p_recipe_id: recipeId, p_requirement_index: requirementIndex
         });

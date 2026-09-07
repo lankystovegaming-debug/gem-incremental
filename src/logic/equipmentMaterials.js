@@ -10,12 +10,23 @@ export function planIncludedMaterial(recipe, progress, specimen, requestedIndex 
     && weight >= (r.minimumWeightMultiplier ?? 0) && weight <= (r.maximumWeightMultiplier ?? Infinity);
   const reqs = recipe.requirements.map((r, i) => ({ ...r, index: i }));
   if (requestedIndex != null && !matches(reqs[requestedIndex])) return null;
+  if (recipe.equipmentOverhaul && !recipe.includedSpecimens) {
+    const eligible=reqs.filter(r=>['gem-count','specimen-condition'].includes(r.type)
+      && (requestedIndex == null || requestedIndex === r.index) && matches(r)
+      && Number(progress[r.id ?? r.gem] ?? 0)<r.amount)
+      .sort((a,b)=>(a.type==='specimen-condition'?0:1)-(b.type==='specimen-condition'?0:1)
+        || (b.minimumWeightMultiplier??0)-(a.minimumWeightMultiplier??0)
+        || (a.maximumWeightMultiplier??Infinity)-(b.maximumWeightMultiplier??Infinity) || a.index-b.index);
+    const r=eligible[0];if(!r)return null;const key=r.id??r.gem;
+    return {progress:{...progress,[key]:Number(progress[key]??0)+1},requirementIndex:r.index,
+      conservationEligible:r.type==='gem-count' && r.minimumWeightMultiplier==null && r.maximumWeightMultiplier==null};
+  }
   const bulk = reqs.find(r => r.type === 'gem-count' && matches(r) && Number(progress[r.id] ?? 0) < r.amount);
   if (!bulk) return null;
   const next = { ...progress, [bulk.id]: Number(progress[bulk.id] ?? 0) + 1 };
   const slots = reqs.filter(r => r.includedInBulk)
-    .sort((a, b) => b.minimumRarity - a.minimumRarity || b.minimumWeightMultiplier - a.minimumWeightMultiplier);
-  const slot = slots.find(r => matches(r) && Number(next[r.id] ?? 0) < r.amount);
+    .sort((a, b) => recipe.equipmentOverhaul ? b.minimumWeightMultiplier - a.minimumWeightMultiplier || b.minimumRarity - a.minimumRarity : b.minimumRarity - a.minimumRarity || b.minimumWeightMultiplier - a.minimumWeightMultiplier);
+  const slot = slots.find(r => matches(r) && Number(next[r.id] ?? 0) < r.amount && (!recipe.equipmentOverhaul || requestedIndex == null || !reqs[requestedIndex].includedInBulk || r.index === requestedIndex));
   if (slot) next[slot.id] = Number(next[slot.id] ?? 0) + 1;
   if (requestedIndex != null && reqs[requestedIndex].includedInBulk && slot?.index !== requestedIndex) return null;
   for (const threshold of slots) {

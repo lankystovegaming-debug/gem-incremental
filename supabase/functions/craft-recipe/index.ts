@@ -90,7 +90,7 @@ export default {
       });
     }
     const recipe = recipeRow.recipe;
-    if (recipe.includedSpecimens) {
+    if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
       const { data, error } = await ctx.supabase.rpc("craft_equipment_recipe", { p_recipe_id: recipeId });
       if (error) return Response.json({ error: error.message }, { status: 409 });
       return Response.json(data);

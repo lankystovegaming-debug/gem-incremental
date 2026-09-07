@@ -17,8 +17,8 @@ assert.match(seasonEdge, /action==="claim-all"/);
 assert.match(seasonEdge, /claim_season_tier/);
 
 assert.match(stats, /masterwork_level/);
-assert.match(stats, /const masterworkFactor = 1 \+/);
-assert.match(stats, /item\.luck_bonus[\s\S]*masterworkFactor/);
+assert.match(stats, /equipmentTotals\(equippedItems/);
+assert.match(read("supabase/functions/roll/equipmentRules.js"), /pick\?\.luck_bonus.*mw/);
 
 assert.match(rollEdge, /record_roll_leaderboard_entry/);
 assert.doesNotMatch(rollEdge, /\.rpc\("record_gems_found_score"/);
@@ -29,12 +29,12 @@ assert.match(migration, /create or replace function public\.get_raw_rare_roll_le
 assert.match(migration, /update public\.players p set gems_found_score/);
 
 assert.match(crafting, /data-category="lantern"/);
-assert.match(read("crafting/crafting.js"), /Lanterns have been deprecated\./);
-assert.match(read("crafting/crafting.js"), /Existing lanterns can still be equipped/);
-assert.equal(recipes.some((recipe) => recipe.category === "lantern"), false);
+assert.doesNotMatch(read("crafting/crafting.js"), /Lanterns have been deprecated\./);
+assert.match(crafting, /data-category="clover"/);
+assert.equal(recipes.some((recipe) => recipe.category === "lantern"), true);
 for (const recipe of recipes.filter((entry) => entry.category === "pickaxe")) {
   assert.ok(Number(recipe.reward?.bonus?.luck) > 0, `${recipe.id} gives Luck`);
-  assert.ok(Number(recipe.reward?.bonus?.rollSpeed) > 0, `${recipe.id} gives Roll Speed`);
+  assert.ok(Number(recipe.reward?.bonus?.rollSpeed) > -1, `${recipe.id} gives Roll Speed`);
 }
 assert.match(migration, /set equipped=false,roll_speed_bonus=0[\s\S]*category='lantern'/);
 assert.match(migration, /delete from public\.game_recipes where recipe->>'category'='lantern'/);

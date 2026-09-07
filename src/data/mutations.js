@@ -1,4 +1,8 @@
 export const GEM_MUTATIONS = Object.freeze({
+  'ascended': Object.freeze({id:'ascended',name:'Ascended',chance:400,multiplier:2,exclusive:true}),
+  'silly-small': Object.freeze({id:'silly-small',name:'Silly',chance:2,multiplier:.5,exclusive:true}),
+  'silly-large': Object.freeze({id:'silly-large',name:'Silly',chance:10,multiplier:10,exclusive:true}),
+  'happy': Object.freeze({id:'happy',name:'Happy',chance:200,multiplier:50,exclusive:true}),
   polished: Object.freeze({ id: "polished", name: "Polished", chance: 100, multiplier: 1.5, description: "A clean, reflective finish that makes the gem more desirable." }),
   gilded: Object.freeze({ id: "gilded", name: "Gilded", chance: 500, multiplier: 2.5, description: "Fine golden veins run naturally across the gem's surface." }),
   prismatic: Object.freeze({ id: "prismatic", name: "Prismatic", chance: 2500, multiplier: 5, description: "Its colour shifts continuously across the visible spectrum." }),

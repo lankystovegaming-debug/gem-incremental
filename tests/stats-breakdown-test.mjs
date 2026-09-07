@@ -11,12 +11,12 @@ for (const stat of ["luck", "rollSpeed", "weightLuck", "weightMultiplier"]) {
   assert.match(statsBackend, new RegExp(`${stat}: \\[\\{ label: "Base"`));
 }
 
-assert.match(statsBackend, /recordAddition\("luck", label, itemLuck\)/);
-assert.match(statsBackend, /recordMultiplier\("luck", "Research", researchLuckMultiplier\)/);
+assert.match(statsBackend, /equipmentTotals\(equippedItems/);
+assert.match(statsBackend, /research:researchLuckMultiplier/);
 assert.match(statsBackend, /recordAddition\("luck", "Active potion", effectValue\)/);
-assert.match(statsBackend, /recordAddition\("luck", "Special one-roll potion \(after ordinary modifiers\)", oneRollLuck\)/);
+assert.match(statsBackend, /label:'One-roll potion'/);
 assert.match(statsBackend, /recordMultiplier\("luck", adminEventLabel, adminLuckMultiplier\)/);
-assert.match(statsBackend, /recordMultiplier\("luck", "Guild upgrade", guildLuckMultiplier\)/);
+assert.match(statsBackend, /guild:guildLuckMultiplier/);
 assert.match(statsBackend, /breakdown: statBreakdown/);
 assert.match(statsUi, /function bonusBreakdown/);
 assert.match(statsUi, /cloudState\.stats\.breakdown\?\.\[key\]/);
