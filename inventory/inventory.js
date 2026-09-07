@@ -528,7 +528,7 @@ function gemCard(gem) {
     >
       <div class="gem-card__head">
         <div>
-          <div class="gem-card__name">${mutations.length ? mutations.map(m => `<span class="mutation-inline mutation-inline--${escapeHtml(m.id)}">${escapeHtml(m.name)}</span>`).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</div>
+          <div class="gem-card__name">${mutations.length ? mutations.map(m => `<span class="mutation-inline mutation-inline--${escapeHtml(m.id)}">${escapeHtml(m.name)}</span>`).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}${gem.event_properties?.bagged ? ' <span title="Bagged — cosmetic only">🛍️</span>' : ""}</div>
           ${mutations.length ? `
             <div class="gem-mutation-line" aria-label="Mutations">
               ${mutations.map(m => `
@@ -1388,6 +1388,7 @@ function renderConsumables() {
     renderActiveBoosts() +
     owned
       .map(({ row, def }) => {
+        if (def.material) return `<article class="potion-card"><h3>🛍️ Plastic Bag</h3><p>Owned: ${formatCount(row.quantity)}</p><p>Worthless on its own. Collect 67 for the Plastic Shopping Bag recipe.</p></article>`;
         const stat = POTION_STATS[def.family] ?? def.family;
         const active = def.oneRoll ? state.oneRollBoost : activeBoost(def.family);
         // One-roll potions of the same kind stack into extra charges; a

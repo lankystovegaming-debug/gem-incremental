@@ -124,6 +124,11 @@
   touch-action: pan-y;
 }
 
+.market__status[hidden],
+.market__tooltip[hidden] {
+  display: none;
+}
+
 .market__status {
   position: absolute;
   inset: 0;

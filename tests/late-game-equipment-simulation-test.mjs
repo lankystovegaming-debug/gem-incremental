@@ -20,7 +20,7 @@ const factor = (id, natural, rarity, compression = false) => ({
   "vault-of-plenty": rarity >= 100000 ? 1.125 : 1,
   "dimensional-vault": natural >= 0.90 && natural <= 1.10 ? 1.20 : 1,
   "singularity-vault": compression ? 1.25 : 1,
-  "bottomless-singularity": natural >= 5 ? 1.25 : 1
+  "bottomless-singularity": 1
 }[id] ?? 1);
 
 assert.deepEqual([
@@ -29,6 +29,6 @@ assert.deepEqual([
   factor("dimensional-vault", 0.90, 1), factor("dimensional-vault", 1.10, 1), factor("dimensional-vault", 1.100001, 1),
   factor("singularity-vault", 1, 1, false), factor("singularity-vault", 1, 1, true),
   factor("bottomless-singularity", 4.999, 1), factor("bottomless-singularity", 5, 1)
-], [1, 1.10, 1, 1.125, 1.20, 1.20, 1, 1, 1.25, 1, 1.25]);
+], [1, 1.10, 1, 1.125, 1.20, 1.20, 1, 1, 1.25, 1, 1]);
 
 console.log("Late-game equipment simulations passed.");

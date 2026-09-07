@@ -65,6 +65,9 @@ consumables.push(
   }
 );
 
+consumables.push({ id: "plastic-bag", name: "Plastic Bag", family: "material", tier: 0,
+  material: true, effectValue: 0, marketReferencePrice: 0.10, shop: { purchasable: false, price: null } });
+
 export function getConsumableById(id) {
   return consumables.find((item) => item.id === id) ?? null;
 }

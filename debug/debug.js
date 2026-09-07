@@ -119,14 +119,43 @@ function miscellaneousBuffsCard(buffs = []) {
     return '<p class="misc-buffs__empty">No miscellaneous buffs are currently active.</p>';
   }
 
-  return buffs.map((buff) => `
-    <div class="misc-buff">
-      <div class="misc-buff__head">
-        <span class="misc-buff__label">${escapeHtml(buff.label ?? "Buff")}</span>
-        <strong>${escapeHtml(buff.value ?? "Active")}</strong>
+  const groups = new Map();
+  for (const buff of buffs) {
+    const label = String(buff.label ?? "Other buff");
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(buff);
+  }
+
+  const groupValue = (entries) => {
+    const calculable = entries.every((entry) =>
+      ["add", "multiply"].includes(entry.operation) && Number.isFinite(Number(entry.amount))
+    );
+    if (!calculable) return entries.length === 1 ? entries[0].value ?? "Active" : `${entries.length} active`;
+    const total = entries.reduce((value, entry) =>
+      entry.operation === "add" ? value + Number(entry.amount) : value * Number(entry.amount), 1);
+    return `${total.toFixed(2)}×`;
+  };
+
+  return [...groups].map(([label, entries]) => `
+    <div class="misc-buff-group">
+      <div class="misc-buff-group__head">
+        <span class="misc-buff__label">${escapeHtml(label)}</span>
+        <strong>${escapeHtml(groupValue(entries))}</strong>
       </div>
-      <span class="misc-buff__category">${escapeHtml(buff.category ?? "Other")}</span>
-      ${buff.description ? `<p>${escapeHtml(buff.description)}</p>` : ""}
+      <details class="misc-buff-breakdown">
+        <summary>View breakdown</summary>
+        <div class="misc-buff-breakdown__list">
+          ${entries.map((buff) => `
+            <div class="misc-buff-source">
+              <div class="misc-buff-source__head">
+                <span>${escapeHtml(buff.category ?? "Other")}</span>
+                <strong>${escapeHtml(buff.value ?? "Active")}</strong>
+              </div>
+              ${buff.description ? `<p>${escapeHtml(buff.description)}</p>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      </details>
     </div>
   `).join("");
 }

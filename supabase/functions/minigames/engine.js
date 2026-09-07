@@ -1,3 +1,4 @@
+import { stepReels } from "./reels.js";
 import gemCatalog from "../../../src/data/gems.js";
 import {
   catalog,
@@ -139,6 +140,10 @@ export function create(
     last: now,
     actions: 0,
   };
+  if (game === "gem-reels") {
+    delete s.seed;
+    Object.assign(s, { hand: 0, phase: "spin", symbols: [], history: [], pending: 0 });
+  }
   if (game === "mine-sweeper") {
     let d = options.difficulty || "medium";
     check(["easy", "medium", "hard", "expert"].includes(d));
@@ -290,7 +295,7 @@ export function create(
   }
   return s;
 }
-export function step(input, a, now) {
+export function step(input, a, now, reelDraw) {
   let s = structuredClone(input);
   check(!s.done, "Run finished");
   check(a && typeof a === "object");
@@ -304,6 +309,10 @@ export function step(input, a, now) {
     return s;
   }
   switch (s.game) {
+    case "gem-reels": {
+      stepReels(s, a, now, reelDraw);
+      break;
+    }
     case "mine-sweeper": {
       let i = coord(a, s.n);
       if (a.type === "flag") {

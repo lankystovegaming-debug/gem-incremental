@@ -1,3 +1,4 @@
+import { planIncludedMaterial } from './equipmentMaterials.js';
 export function createCraftingState() {
   return {
     activeAutoCraftRecipeId: null,
@@ -325,6 +326,13 @@ function depositSpecimen(
       recipe
     );
 
+  if (recipe.includedSpecimens) {
+    const plan = planIncludedMaterial(recipe, progress, specimen, index);
+    if (!plan) return false;
+    craftingState.progress[recipe.id] = plan.progress;
+    return true;
+  }
+
   const key =
     getRequirementKey(
       requirement,
@@ -443,6 +451,13 @@ export function tryAutoDeposit(
       craftingState,
       recipe
     );
+
+  if (recipe.includedSpecimens) {
+    const plan = planIncludedMaterial(recipe, progress, specimen);
+    if (!plan) return false;
+    craftingState.progress[recipe.id] = plan.progress;
+    return true;
+  }
 
   for (
     let index = 0;

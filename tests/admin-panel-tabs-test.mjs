@@ -20,7 +20,7 @@ assert.match(js, /function initAdminTabs\(\)/);
 // Player search + player panel live in the Search tab (not Feature Lab).
 assert.match(js, /search: \["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"\]/);
 assert.match(js, /economy: \["#analyticsPanel", "#shareholdersPanel", "#bankPanel"\]/);
-assert.match(js, /community: \["#guildRosterPanel", "#ipAuditPanel"\]/);
+assert.match(js, /community: \["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"\]/);
 // Builds a page wrapper per tab and switches between them.
 assert.match(js, /data\.adminTabPage = name|dataset\.adminTabPage = name/);
 assert.match(js, /function showAdminTab\(name\)/);

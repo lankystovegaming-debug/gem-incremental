@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const migration = read("supabase/migrations/20260901063529_current_expedition_research_and_season_progress.sql");
+const refreshRepair = read("supabase/migrations/20260905162052_restore_current_expedition_achievement_refresh.sql");
 const roll = read("supabase/functions/roll/index.ts");
 
 // Retired daily/weekly expedition effects are replaced with a bonus consumed
@@ -27,6 +28,8 @@ assert.match(migration, /sync_current_expedition_achievements_v013/);
 assert.match(migration, /from public\.abandoned_mine_runs r where r\.player_id=p_uid and r\.status='settled'/);
 assert.match(migration, /from public\.crystal_cavern_runs r where r\.player_id=p_uid and r\.status='settled'/);
 assert.doesNotMatch(migration, /player_expeditions/);
+assert.match(refreshRepair, /refresh_player_achievements_v013_pre_secret_rework\(p_uid\);[\s\S]*sync_current_expedition_achievements_v013\(p_uid\);/);
+assert.doesNotMatch(refreshRepair, /from public\.player_expeditions/i);
 for (const [name, target] of [
   ["First Expedition", 1], ["Expedition Regular", 5], ["Expedition Veteran", 15],
   ["Expedition Master", 25], ["Depth Explorer", 10], ["Voidwalker", 1],

@@ -11,6 +11,7 @@ const INVENTORY_PAGE_SIZE = 500;
 const INVENTORY_GEM_COLUMNS = `
   id,
   serial_number,
+  event_properties,
   gem_name,
   rarity,
   base_weight,

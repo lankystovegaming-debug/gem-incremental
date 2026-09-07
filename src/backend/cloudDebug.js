@@ -574,8 +574,8 @@ export async function loadCloudDebugState() {
   // Only active values are returned, so the card stays useful rather than
   // becoming a list of neutral 1.00x modifiers.
   const miscBuffs = [];
-  const addMiscBuff = (category, label, value, description = "") => {
-    miscBuffs.push({ category, label, value, description });
+  const addMiscBuff = (category, label, value, description = "", operation = null, amount = null) => {
+    miscBuffs.push({ category, label, value, description, operation, amount });
   };
   const formatMultiplier = (value) => `${Number(value).toFixed(2)}×`;
   const formatPercent = (value) => `${(Number(value) * 100).toFixed(0)}%`;
@@ -591,7 +591,10 @@ export async function loadCloudDebugState() {
         ? formatMultiplier(value)
         : format === "integer"
           ? `+${Math.trunc(value)}`
-          : formatPercent(value)
+          : formatPercent(value),
+      "",
+      format === "multiplier" ? "multiply" : null,
+      format === "multiplier" ? value : null
     );
   }
 
@@ -637,7 +640,7 @@ export async function loadCloudDebugState() {
   for (const [key, label, category] of artifactBuffs) {
     const value = Number(miscModifiers[key] ?? 1);
     if (Number.isFinite(value) && value > 1.000001) {
-      addMiscBuff(category, label, formatMultiplier(value));
+      addMiscBuff(category, label, formatMultiplier(value), "", "multiply", value);
     }
   }
   const doomMultiplier = Number(miscModifiers.hellDoomGainMultiplier ?? 1);
@@ -648,10 +651,10 @@ export async function loadCloudDebugState() {
   const adminMutationBonus = Number(activeAdminEvent?.mutation_luck_bonus ?? 0);
   const adminMutationMultiplier = Number(activeAdminEvent?.mutation_luck_multiplier ?? 1);
   if (adminMutationBonus > 0) {
-    addMiscBuff("Admin Event", "Mutation chance", `+${adminMutationBonus.toFixed(2)}×`);
+    addMiscBuff("Admin Event", "Mutation chance", `+${adminMutationBonus.toFixed(2)}×`, "", "add", adminMutationBonus);
   }
   if (adminMutationMultiplier > 1.000001) {
-    addMiscBuff("Admin Event", "Mutation chance", formatMultiplier(adminMutationMultiplier));
+    addMiscBuff("Admin Event", "Mutation chance", formatMultiplier(adminMutationMultiplier), "", "multiply", adminMutationMultiplier);
   }
 
   // -------------------------------------------------------

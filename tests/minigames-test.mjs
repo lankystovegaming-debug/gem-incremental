@@ -10,10 +10,10 @@ import {
 } from "../supabase/functions/minigames/engine.js";
 import { catalog, bagTable, strikeRating } from "../minigames/catalog.js";
 test("catalog launch modes and no rewarded bypass", () => {
-  assert.equal(catalog.length, 12);
+  assert.equal(catalog.length, 13);
   assert.deepEqual(
     catalog.filter((g) => g.mt).map((g) => g.id),
-    ["mine-sweeper", "gem-tower", "crystal-bags"],
+    ["gem-reels", "mine-sweeper", "gem-tower", "crystal-bags"],
   );
   assert.throws(() => create("gem-2048", "rewarded"));
   assert.throws(() =>

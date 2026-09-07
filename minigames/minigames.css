@@ -8,7 +8,7 @@
 .mg-page {
   max-width: 1200px;
   margin: auto;
-  padding: 30px 20px 100px;
+  padding: 24px 24px 80px;
 }
 
 /* ── Hero ──────────────────────────────────────────────── */
@@ -21,7 +21,7 @@
 }
 .mg-hero h1 {
   font-family: var(--font-display, inherit);
-  font-size: clamp(32px, 5vw, 54px);
+  font-size: clamp(30px, 4vw, 44px);
   line-height: 1.05;
   margin: 8px 0;
   background: linear-gradient(120deg, var(--text), color-mix(in srgb, var(--accent) 65%, var(--text)));
@@ -61,7 +61,7 @@
 /* ── Catalog grid ──────────────────────────────────────── */
 .mg-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 16px;
 }
 .mg-card,
@@ -69,9 +69,7 @@
   position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg, 18px);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 60%, transparent), transparent),
-    var(--surface);
+  background: var(--surface);
   padding: 22px;
 }
 .mg-card {
@@ -81,29 +79,17 @@
   color: inherit;
   text-decoration: none;
   overflow: hidden;
-  box-shadow: var(--shadow-sm, 0 2px 8px -4px rgb(0 0 0 / 0.4));
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-}
-/* Accent sheen that wipes across on hover */
-.mg-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0;
-  transition: opacity 0.18s ease;
+  box-shadow: none;
+  transition: border-color 0.16s ease, background 0.16s ease;
 }
 .mg-card:hover,
 .mg-card:focus-visible {
-  transform: translateY(-4px);
   border-color: var(--accent);
-  box-shadow: var(--shadow-lg, 0 24px 48px -20px rgb(0 0 0 / 0.6));
-  outline: none;
+  outline: 2px solid transparent;
 }
-.mg-card:hover::before,
-.mg-card:focus-visible::before {
-  opacity: 1;
+.mg-card:focus-visible {
+  outline-color: var(--accent);
+  outline-offset: 3px;
 }
 .mg-card:active {
   transform: translateY(-1px);
@@ -113,7 +99,9 @@
   margin: 0;
 }
 .mg-card h2 {
-  font-size: 1.15rem;
+  font-family: var(--font-body, inherit);
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
 }
 .mg-card p {
   line-height: 1.6;
@@ -128,11 +116,11 @@
   min-height: 55px;
   display: flex;
   align-items: center;
-  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent) 30%, transparent));
+  filter: none;
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mg-card:hover .mg-art {
-  transform: scale(1.12) rotate(-4deg);
+  transform: none;
 }
 .mg-tags {
   margin-top: auto;
@@ -149,11 +137,12 @@
 /* ── Game layout / panels ──────────────────────────────── */
 .mg-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: start;
   gap: 20px;
 }
 .mg-panel {
-  box-shadow: var(--shadow-sm, 0 2px 8px -4px rgb(0 0 0 / 0.4));
+  box-shadow: none;
 }
 .mg-panel h2 {
   margin-top: 0;
@@ -315,7 +304,7 @@
 
 /* Gem Stack (Tetris-like) */
 .mg-stack {
-  max-width: 260px;
+  max-width: min(260px, max(140px, calc((100svh - 340px) / 2)));
   gap: 1px;
 }
 .mg-stack .mg-cell {
@@ -373,7 +362,7 @@
 .mg-arena {
   position: relative;
   width: 100%;
-  height: 480px;
+  height: clamp(240px, 48svh, 480px);
   background:
     radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
     linear-gradient(180deg, #0b1526, #162c33);
@@ -513,9 +502,9 @@
 .mg-controls .btn:active:not(:disabled) {
   transform: translateY(1px) scale(0.98);
 }
-button:disabled {
+.mg-page button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 /* ── Motion keyframes ──────────────────────────────────── */
@@ -560,7 +549,7 @@ button:disabled {
     padding: 15px;
   }
   .mg-arena {
-    height: 390px;
+    height: clamp(240px, 48svh, 390px);
   }
   .mg-bags {
     gap: 6px;
@@ -572,10 +561,417 @@ button:disabled {
     font-size: 13px;
   }
   .mg-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   }
 }
 
 .mg-page [hidden] {
   display: none !important;
+}
+
+/* Compact catalog discovery */
+.mg-browser {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin: 0 0 22px;
+}
+.mg-search {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 220px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mg-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 12px);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+.mg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mg-filters .btn {
+  min-height: 44px;
+}
+.mg-filters [aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+}
+#game-count {
+  min-width: 60px;
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.mg-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mg-category {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.mg-card-play {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+.mg-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.mg-search input:focus-visible,
+.mg-filters .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Reels keep a stable five-gem row, with readable controls on small screens. */
+.mg-reels-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0;
+}
+.mg-reel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 160px;
+  padding: 12px 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.mg-reel .gem-icon {
+  width: 36px;
+  height: 36px;
+}
+.mg-reel[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.mg-page .mg-reel:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.mg-reel-wild {
+  font-size: 32px;
+  color: var(--accent);
+}
+.mg-reel small,
+.mg-reel [data-hold-label] {
+  font-size: 11px;
+}
+.mg-reels li {
+  margin: 10px 0;
+}
+
+/* Consistent controls, scoped to minigames. */
+.mg-page .btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  box-shadow: none;
+  touch-action: manipulation;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.mg-page .btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.mg-page .btn.mg-danger {
+  color: var(--negative, #d44444);
+}
+.mg-page .btn:focus-visible,
+.mg-bag:focus-visible,
+.mg-reel:focus-visible,
+.mg-arena:focus-visible,
+.mg-page summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .mg-page .btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--surface-raised);
+    filter: none;
+  }
+  .mg-page .btn--primary:hover:not(:disabled) {
+    background: var(--accent-strong);
+    color: var(--accent-text);
+  }
+}
+.mg-page .mg-filters [aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.mg-page .mg-controls input,
+.mg-page .mg-controls select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+.mg-controls label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+#start > label {
+  flex-basis: 100%;
+  max-width: 320px;
+}
+#resume {
+  color: var(--text-muted);
+}
+#status:empty {
+  display: none;
+}
+#status:not(:empty) {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  line-height: 1.5;
+}
+#retry-connection {
+  margin-bottom: 16px;
+}
+#play {
+  scroll-margin-top: 12px;
+}
+#play:focus {
+  outline: none;
+}
+.mg-page--game .mg-hero {
+  padding: 12px 0;
+}
+.mg-page--game .mg-hero h1 {
+  font-family: inherit;
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -0.035em;
+  background: none;
+  color: var(--text);
+}
+.mg-page--game .mg-wallet {
+  margin-top: 12px;
+}
+.mg-game-panel {
+  min-width: 0;
+}
+.mg-game-panel > .mg-howto {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.mg-leaderboard h2 {
+  font-family: inherit;
+  font-size: 16px;
+}
+.mg-leaderboard small {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.mg-board-entry > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.mg-board-entry > strong {
+  flex-shrink: 0;
+}
+.mg-board-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 3px;
+}
+.mg-board[data-columns] {
+  min-width: calc(var(--columns) * 27px - 3px);
+}
+.mg-2048 {
+  max-width: 360px;
+  touch-action: none;
+  user-select: none;
+}
+.mg-2048 .mg-cell {
+  cursor: default;
+}
+.mg-direction-controls {
+  justify-content: center;
+}
+.mg-direction-controls .btn {
+  min-width: 52px;
+  font-size: 20px;
+}
+.mg-stack-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 300px;
+  margin-inline: auto;
+}
+.mg-scroll-hint {
+  display: none;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.mg-page--game > .mg-note {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .mg-page {
+    padding: 12px 12px 72px;
+  }
+  .mg-hero {
+    padding: 16px 0;
+  }
+  .mg-hero .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+  .mg-grid {
+    gap: 10px;
+  }
+  .mg-card {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 8px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .mg-card-top {
+    grid-row: 1 / span 3;
+    flex-direction: column;
+    justify-content: start;
+  }
+  .mg-card .mg-art {
+    min-height: 40px;
+    font-size: 32px;
+  }
+  .mg-card .mg-art .gem-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .mg-card .mg-category,
+  .mg-card > small {
+    display: none;
+  }
+  .mg-card h2,
+  .mg-card p,
+  .mg-card .mg-tags {
+    grid-column: 2;
+  }
+  .mg-card p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .mg-card .mg-tag {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .mg-card-play {
+    grid-column: 1 / -1;
+    padding-top: 10px;
+    font-size: 12px;
+  }
+  .mg-browser {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .mg-filters {
+    gap: 4px;
+  }
+  .mg-page .mg-filters .btn {
+    min-width: 0;
+    padding: 10px;
+    font-size: 12px;
+  }
+  #game-count {
+    margin: 0;
+  }
+  #start > .btn,
+  #guess-form > * {
+    flex: 1 1 140px;
+  }
+  #start > label {
+    max-width: none;
+  }
+  .mg-scroll-hint {
+    display: block;
+  }
+  .mg-reels-row {
+    gap: 4px;
+  }
+  .mg-reel {
+    min-height: 132px;
+    gap: 8px;
+    font-size: 10px;
+    padding: 10px 3px;
+  }
+  .mg-reel .gem-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .mg-reel small,
+  .mg-reel [data-hold-label] {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-page .btn {
+    transition: none;
+  }
 }

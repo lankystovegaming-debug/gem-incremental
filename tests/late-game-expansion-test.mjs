@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import recipes from '../src/data/recipes.js';
+import { lateGameEquipment } from '../src/data/lateGameEquipment.js';
+import { masterworkRerollCost, masterworkLevelCost } from '../src/data/masterwork.js';
+const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
+const source=read('../supabase/functions/roll/index.ts');
+const js=source;
+const start=js.indexOf('export function rollWeightMultiplier(');
+const end=js.indexOf('// AUTO CRAFT HELPERS',start);
+let seed=67100;
+const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/2**32);
+const {rollWeightMultiplier, getLateGameFinalWeightFactor}=new Function('random01','randomBetween',js.slice(start,end).replace(/:\s*(?:number|string)(?:\s*\|\s*null)?/g,'').replaceAll('export function','function')+'\nreturn {rollWeightMultiplier,getLateGameFinalWeightFactor};')(random,(a,b)=>a+(b-a)*random());
+const sample=(...args)=>{
+ const counts=[0,0,0,0,0,0,0];
+ for(let i=0;i<200000;i++){
+  const weight=rollWeightMultiplier(...args);
+  for(let n=2;n<=8;n++)if(weight>=n)counts[n-2]++;
+ }
+ return counts.map(n=>n/200000);
+};
+const baseline=sample(8.75);
+const heavyStep=sample(8.75,1/3,null,1/4,0.10);
+assert.ok(Math.abs(heavyStep[0]-baseline[0]-0.10)<0.004,'Heavy Step adds ten unconditional percentage points');
+const neutron=sample(8,0.36);
+assert.ok(Math.abs(neutron[1]/neutron[0]-0.36)<0.008);
+const collapse=sample(9.5,0.4,null,1/4,0,true);
+for(let n=0;n<collapse.length;n++)assert.ok(Math.abs(collapse[n]-0.4**n)<0.0035,'Collapse tail at '+(n+2));
+assert.equal(getLateGameFinalWeightFactor('bottomless-singularity',8,1000000),1,'T13 no longer adds weight');
+assert.deepEqual([0,1,2,3,4,5,100].map(n=>masterworkRerollCost(17,n).money),[4e6,7e6,12e6,20e6,30e6,30e6,30e6]);
+assert.equal([1,2,3,4,5].reduce((sum,n)=>sum+masterworkLevelCost(17,n).money,0),148500000);
+assert.equal(recipes.filter(r=>r.id==='bottomless-singularity').length,1);
+assert.equal(lateGameEquipment.find(r=>r.id==='plastic-shopping-bag').moneyCost,500000000.10);
+const normal=lateGameEquipment.filter(r=>r.id!=='plastic-shopping-bag');
+assert.deepEqual(['Legendary','Mythic','Exotic','Exalted','Cosmic'].map(tier=>normal.reduce((n,r)=>n+(r.requirements.find(q=>q.label===tier)?.amount??0),0)),[18350,7225,495,12,5]);
+assert.match(source,/rollClaim\.genuineRoll/);
+assert.match(source,/genuineRoll % 250 === 0/);
+assert.match(source,/genuineRoll % 67 === 0 && random01\(\) < 1 \/ 67/);
+assert.match(source,/luck \*= eternityRoll \? 2 : alignmentRoll \? 1\.5 : 1/);
+assert.match(source,/eternityRoll\) mutationChanceMultiplier \*= 1\.5/);
+assert.match(source,/finalWeight \/ gem\.baseWeight >= 5 \? 1\.10 : 1/);
+assert.match(source,/bagPassiveWeightFactor \* \(storageRoll \? 1\.25 : 1\)/);
+assert.match(source,/!autoDeposited \|\| autoConserved/);
+assert.match(source,/EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\)/,'optimized response path retained');
+assert.match(read('../crafting/crafting.js'),/\$500,000,000\.10/);
+assert.match(read('../inventory/inventory.js'),/event_properties\?\.bagged/);
+console.log('Live weight sampler simulations, equipment recipes, passives, and price checks passed.');

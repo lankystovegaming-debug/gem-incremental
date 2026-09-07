@@ -1,3 +1,4 @@
+import { lateGameEquipment } from './lateGameEquipment.js';
 const recipes = [
   // =========================================================
   // PICKAXES — LUCK
@@ -1334,30 +1335,6 @@ const recipes = [
     moneyCost: 200000000,
     reward: { id: "singularity-vault", name: "Singularity Vault", category: "bag", tier: 12, bonus: { weightMultiplier: 1.05 } }
   },
-  {
-    id: "bottomless-singularity", name: "Bottomless Singularity", category: "bag",
-    description: "At some point, calling this a bag stopped making sense.",
-    requirements: [
-      { type: "equipment", equipmentId: "singularity-vault" },
-      { type: "gem-count", gem: "Sapphire", amount: 10000 },
-      { type: "gem-count", gem: "Diamond", amount: 5000 },
-      { type: "gem-count", gem: "Alexandrite", amount: 2500 },
-      { type: "gem-count", gem: "Black Opal", amount: 1000 },
-      { type: "gem-count", gem: "Grandidierite", amount: 750 },
-      { type: "gem-count", gem: "Taaffeite", amount: 500 },
-      { type: "gem-count", gem: "Musgravite", amount: 350 },
-      { type: "gem-count", gem: "Painite", amount: 250 },
-      { type: "gem-count", gem: "Ringwoodite", amount: 10 },
-      { type: "gem-count", gem: "Pallasite Crystal", amount: 7 },
-      { type: "gem-count", gem: "Antimatter Crystal", amount: 5 },
-      { type: "gem-count", gem: "Unlucky Gem", amount: 10 },
-      { type: "lifetime-rolls", rolls: 400000 },
-      { id: "bottomless-singularity-heavy-rare", type: "roll-history-condition", label: "Rolled a 1/1,000,000+ base-rarity specimen at ≥8× natural weight", minimumRarity: 1000000, minimumWeightMultiplier: 8 }
-    ],
-    moneyCost: 750000000,
-    reward: { id: "bottomless-singularity", name: "Bottomless Singularity", category: "bag", tier: 13, bonus: { weightMultiplier: 2.00 } }
-  },
-
   // =========================================================
   // POTIONS — REPEATABLE CONSUMABLE RECIPES
   // =========================================================
@@ -1514,4 +1491,4 @@ const recipes = [
   }
 ];
 
-export default recipes.filter((recipe) => recipe.category !== "lantern");
+export default [...recipes.filter((recipe) => recipe.category !== "lantern" && !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment];

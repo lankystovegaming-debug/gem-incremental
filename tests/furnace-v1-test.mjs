@@ -24,3 +24,4 @@ assert.match(client, /tone: "danger"/);
 assert.match(client, /data\.leaderboard\.map/);
 assert.doesNotMatch(client, /data\.leaderboard\.(?:filter|sort)\(/);
 console.log("Furnace V1 tests passed.");
+await import("./cash-chart-display-test.mjs");

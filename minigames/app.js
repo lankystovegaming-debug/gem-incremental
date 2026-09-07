@@ -1,9 +1,12 @@
+import { reelsHtml, bindReelHolds } from "./reels-ui.js";
 import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
 import { catalog, tileNames, bagTable, strikeConfig } from "./catalog.js";
 import {
   setText,
+  catcherMovement,
+  labelCell,
   setHtml,
   patchCells,
   createArcadeRenderer,
@@ -44,7 +47,7 @@ function icon(name) {
 function mineText(v) {
   return typeof v === "number" && v > 0
     ? `<span class="mg-mine-n mg-mine-n-${Math.min(8, v)}">${v}</span>`
-    : (v ?? "");
+    : (v === 0 ? "" : (v ?? ""));
 }
 
 let frameTimer = 0,
@@ -70,7 +73,7 @@ function stopFrames() {
 }
 function scheduleFrame() {
   stopFrames();
-  if (!run || run.state.done) return;
+  if (!run || run.state.done || connectionFailed) return;
   if (run.game === "mine-sweeper" && !run.state.first) return;
   if (run.game === "price-is-right" && run.state.awaitingNext) return;
   if (animatedGames.has(run.game) && !document.hidden)
@@ -79,11 +82,14 @@ function scheduleFrame() {
     frameTimer = setTimeout(frame, document.hidden ? 250 : 100);
 }
 let flagMode = false,
-  lastDraw = 0;
+  lastDraw = 0,
+  lastMovement = 0;
 let authGeneration = 0,
   game = null,
   run = null,
   busy = false,
+  loading = false,
+  connectionFailed = false,
   generation = 0,
   offset = 0,
   active = [],
@@ -97,6 +103,7 @@ let authGeneration = 0,
   lastFlush = 0,
   keys = new Set();
 const rules = {
+  "gem-reels": "Eight hands: spin five, hold any, respin once, score. One ticket per rewarded run; unlimited Practice earns 0 MT. Both modes count for the leaderboard. Closing saves your run.",
   "gem-catcher":
     "90 seconds · 3 lives. Move with A/D, arrows, or drag. Catch gems for 10–350 points. Rocks cost a life and reset your combo. Missing gems is harmless. Combos: 10 ×1.25, 25 ×1.5, 50 ×2, 100 ×3.",
   "ore-slicer":
@@ -274,6 +281,59 @@ function renderWallet() {
       `<span>${esc(wallet.mt)} MT</span><span>${wallet.tickets}/5 tickets</span><span>${wallet.tickets === 5 ? "Tickets full" : `Next ticket ${new Date(Date.parse(wallet.regen_at) + 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}</span>`,
     );
 }
+const gameCategories = {
+  "gem-catcher": "Arcade",
+  "ore-slicer": "Arcade",
+  "gem-stack": "Arcade",
+  "perfect-strike": "Arcade",
+  "gem-2048": "Puzzles",
+  "mine-sweeper": "Puzzles",
+  prospector: "Puzzles",
+  "explosive-mining": "Puzzles",
+  "price-is-right": "Puzzles",
+  "gem-tower": "Chance",
+  "crystal-bags": "Chance",
+  "gem-reels": "Chance",
+  gemdle: "Daily",
+};
+function renderHub() {
+  $("content").innerHTML = `
+    <div class="mg-browser">
+      <label class="mg-search">Find a game<input id="game-search" type="search" placeholder="Search minigames…" autocomplete="off"></label>
+      <div class="mg-filters" role="group" aria-label="Game category">
+        ${["All", "Arcade", "Puzzles", "Chance", "Daily"].map((name) => `<button class="btn" data-filter="${name}" aria-pressed="${name === "All"}">${name}</button>`).join("")}
+      </div>
+      <p id="game-count" role="status" aria-live="polite"></p>
+    </div>
+    <div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" data-game="${g.id}" href="${gamePath(g.id)}"><div class="mg-card-top"><div class="mg-art" aria-hidden="true">${icon(tileNames[i])}</div><span class="mg-category">${gameCategories[g.id]}</span></div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily specimen" : g.mt ? "Practice free · 1 ticket for MT" : "Free to play"}</span></div><small>${g.leaderboard}</small><span class="mg-card-play">Play ${g.name} <span aria-hidden="true">↗</span></span></a>`).join("")}</div>
+    <p id="game-empty" class="mg-empty" hidden>No games found. Try another name or category.</p>`;
+  let category = "All";
+  const cards = [...$("content").querySelectorAll("[data-game]")];
+  function filterGames() {
+    const query = $("game-search").value.trim().toLowerCase();
+    let count = 0;
+    cards.forEach((card, index) => {
+      const entry = catalog[index];
+      const matches = (category === "All" || gameCategories[entry.id] === category)
+        && `${entry.name} ${entry.description}`.toLowerCase().includes(query);
+      card.hidden = !matches;
+      if (matches) count++;
+    });
+    setText($("game-count"), `${count} ${count === 1 ? "game" : "games"}`);
+    $("game-empty").hidden = count > 0;
+  }
+  $("game-search").addEventListener("input", filterGames);
+  $("content").querySelectorAll("[data-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      category = button.dataset.filter;
+      $("content").querySelectorAll("[data-filter]").forEach((item) => {
+        item.setAttribute("aria-pressed", String(item === button));
+      });
+      filterGames();
+    });
+  });
+  filterGames();
+}
 function route() {
   arcadeRenderer?.destroy();
   bladeTrail?.destroy();
@@ -283,6 +343,8 @@ function route() {
   strikeFreeze = null;
   stopFrames();
   inputs = [];
+  lastMovement = 0;
+  keys.clear();
   run = null;
   const pathId = location.pathname.startsWith(hubPath)
     ? location.pathname.slice(hubPath.length).split("/")[0]
@@ -292,43 +354,94 @@ function route() {
     new URLSearchParams(location.search).get("game");
   game = catalog.find((g) => g.id === id && !g.daily);
   if (!game) {
-    $("content").innerHTML =
-      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${gamePath(g.id)}"><div class="mg-art">${icon(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
+    renderHub();
     return;
   }
   document.title = `${game.name} · Minigames · Gem Incremental`;
+  document.querySelector(".mg-page").classList.add("mg-page--game");
+  document.querySelector(".mg-hero h1").textContent = game.name;
+  document.querySelector(".mg-hero > p").textContent = game.description;
+  document.querySelector(".mg-hero .eyebrow").textContent = `MINIGAMES / ${gameCategories[game.id].toUpperCase()}`;
   $("content").innerHTML =
-    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel"><h2>${game.name}</h2>${howToHtml(game.id)}<div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play"></div></section><aside class="mg-panel"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
+    `<p><a href="${hubPath}">← All minigames</a></p><div class="mg-layout"><section class="mg-panel mg-game-panel" aria-label="${game.name} game">${howToHtml(game.id)}<div id="start" class="mg-controls">${game.id === "mine-sweeper" ? '<label>Difficulty <select id="difficulty"><option value="easy">Easy · 9×9 · 5 MT · Practice</option><option value="medium" selected>Medium · 12×12 · 12 MT</option><option value="hard">Hard · 16×16 · 25 MT</option><option value="expert">Expert · 20×20 · 40 MT</option></select></label>' : ""}<button class="btn btn--primary" data-start="practice">${game.mt ? "Play Practice · 0 MT" : "Play"}</button>${game.mt ? '<button class="btn" data-start="rewarded">Play Rewarded · 1 ticket</button>' : ""}<button class="btn" id="resume">Check saved runs</button></div><div id="play" tabindex="-1"></div></section><aside class="mg-panel mg-leaderboard"><h2>${game.id === "crystal-bags" ? "Your statistics" : "Leaderboard"}</h2><small>${game.leaderboard}</small><div id="board">Loading…</div></aside></div>`;
   $("start")
     .querySelectorAll("[data-start]")
     .forEach((b) => (b.onclick = () => start(b.dataset.start)));
   $("resume").onclick = load;
+  $("difficulty")?.addEventListener("change", syncControls);
   load();
 }
+function syncControls() {
+  const pending = busy || loading;
+  $("play")?.setAttribute("aria-busy", String(pending));
+  document.querySelectorAll("[data-start]").forEach((button) => {
+    const unavailable = button.dataset.start === "rewarded"
+      && (wallet?.tickets === 0 || $("difficulty")?.value === "easy");
+    button.disabled = pending || connectionFailed || unavailable;
+    button.title = unavailable ? "Use practice, choose a higher difficulty, or wait for a ticket." : "";
+  });
+  if ($("resume")) $("resume").disabled = pending;
+  document.querySelectorAll("#play [data-action], #guess-form button").forEach((button) => {
+    const waitingForStrike = button.dataset.action === "strike"
+      && Date.now() + offset < run.state.ready + 200;
+    button.disabled = pending || connectionFailed || !!run?.state.done || waitingForStrike;
+  });
+}
 async function load() {
-  let g = ++generation;
+  if (loading || busy) return;
+  loading = true;
+  const g = ++generation;
+  syncControls();
+  status("Loading saved runs…");
   try {
     const d = await api("state");
     if (g !== generation) return;
+    connectionFailed = false;
+    inputs = [];
+    lastMovement = 0;
     active = d.runs;
-    run =
-      active.find((r) => r.game === game?.id && r.mode === "rewarded") ||
-      active.find((r) => r.game === game?.id) ||
-      null;
+    run = active.find((r) => r.game === game?.id && r.mode === "rewarded")
+      || active.find((r) => r.game === game?.id) || null;
     if (run) {
+      const instructions = document.querySelector(".mg-game-panel > .mg-howto");
+      if (instructions) instructions.open = false;
       swipe = run.state.swipeSerial || 0;
       render();
+    } else if ($("play")) {
+      $("play").replaceChildren();
+      $("start").hidden = false;
     }
     if (game) {
       const b = await api("board", { game: game.id });
-      if (g === generation) board(b);
+      if (g !== generation) return;
+      board(b);
     }
+    status("");
   } catch (e) {
-    status(e.message);
+    if (g === generation) {
+      connectionFailed = true;
+      stopFrames();
+      status(e.message, true);
+    }
+  } finally {
+    if (g === generation) {
+      loading = false;
+      syncControls();
+    }
   }
 }
-function status(message) {
+function status(message, retry = false) {
   $("status").textContent = message;
+  let retryButton = $("retry-connection");
+  if (!retryButton) {
+    retryButton = document.createElement("button");
+    retryButton.id = "retry-connection";
+    retryButton.className = "btn";
+    retryButton.textContent = "Retry connection";
+    retryButton.onclick = load;
+    $("status").after(retryButton);
+  }
+  retryButton.hidden = !retry;
 }
 function board(d) {
   if (!$("board")) return;
@@ -342,14 +455,16 @@ function board(d) {
     (d.board?.entries || [])
       .map(
         (e) =>
-          `<div class="mg-board-entry"><span>#${e.rank} ${esc(e.username)}${e.is_you ? " (you)" : ""}</span><strong>${game.id === "mine-sweeper" ? `${(-e.score / 1000).toFixed(3)}s` : Number(e.score).toLocaleString(undefined, { maximumFractionDigits: 1 })}</strong></div>`,
+          `<div class="mg-board-entry"><span>#${e.rank} ${esc(e.username)}${e.is_you ? " (you)" : ""}</span><strong>${game.id === "mine-sweeper" ? `${(-e.score / 1000).toFixed(3)}s` : Number(e.score).toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>`,
       )
       .join("");
   setHtml($("board"), html);
 }
 async function start(mode) {
-  if (busy) return;
+  if (busy || loading || connectionFailed) return;
+  const account = authGeneration;
   busy = true;
+  syncControls();
   status("Starting…");
   try {
     const d = await api("start", {
@@ -364,19 +479,39 @@ async function start(mode) {
       return;
     }
     inputs = [];
+    lastMovement = 0;
+    keys.clear();
     swipe = 0;
     run = d.run;
+    const instructions = document.querySelector(".mg-game-panel > .mg-howto");
+    if (instructions) instructions.open = false;
     render();
     status("");
+    $("play").focus({ preventScroll: true });
+    if (matchMedia("(max-width: 800px)").matches) {
+      $("play").scrollIntoView({ block: "start", behavior: "instant" });
+    }
   } catch (e) {
-    status(e.message);
+    if (account === authGeneration) {
+      connectionFailed = true;
+      status(e.message, true);
+    }
   } finally {
-    busy = false;
+    if (account === authGeneration) {
+      busy = false;
+      syncControls();
+    }
   }
 }
 async function act(input) {
-  if (busy || !run || run.state.done) return;
+  if (busy || loading || connectionFailed || !run || run.state.done) return;
+  const account = authGeneration;
+  const focused = document.activeElement;
+  const focusedAction = focused?.dataset.action;
+  const hadPlayFocus = $("play")?.contains(focused);
+  let updated = false;
   busy = true;
+  syncControls();
   const old = run;
   try {
     const d = await api("act", {
@@ -387,6 +522,7 @@ async function act(input) {
     });
     if (old.id !== run?.id) return;
     run = d.run;
+    updated = true;
     board(d);
     if (["gem-catcher", "ore-slicer"].includes(game.id) && !run.state.done) {
       document.querySelector(".mg-stat").textContent =
@@ -394,13 +530,40 @@ async function act(input) {
     } else render();
     status("");
   } catch (e) {
-    status(e.message);
+    if (account === authGeneration) {
+      connectionFailed = true;
+      stopFrames();
+      status(e.message, true);
+    }
   } finally {
-    busy = false;
+    if (account === authGeneration) {
+      busy = false;
+      syncControls();
+      if (updated && hadPlayFocus && document.activeElement === document.body) {
+        const next = run.state.done ? document.querySelector('[data-start="practice"]')
+          : focusedAction ? $("play").querySelector(`[data-action="${CSS.escape(focusedAction)}"]`) : null;
+        (next && !next.disabled ? next : $("play")).focus({ preventScroll: true });
+      }
+    }
   }
 }
+const actionLabels = {
+  left: "Move left", right: "Move right", rotate: "Rotate piece",
+  soft: "Soft drop", hard: "Hard drop", hold: "Hold piece",
+};
+const primaryActions = new Set(["strike", "collect", "next"]);
 const button = (text, type, extra = "") =>
-  `<button class="btn" data-action="${type}" ${extra}>${text}</button>`;
+  `<button type="button" class="btn ${primaryActions.has(type) ? "btn--primary" : ""} ${type === "abandon" ? "mg-danger" : ""}" data-action="${type}" ${actionLabels[type] ? `aria-label="${actionLabels[type]}"` : ""} ${extra}>${text}</button>`;
+function strike() {
+  if (busy || loading || connectionFailed || !run || run.state.done) return;
+  const elapsed = Date.now() + offset - run.state.ready;
+  if (elapsed < 200) return;
+  strikeFreeze = {
+    x: strikeNeedleX(run.state.strike, elapsed),
+    until: Date.now() + offset + 800,
+  };
+  act({ type: "strike", elapsed });
+}
 function updateBoard(s) {
   const boardNode = $("play")?.querySelector(".mg-board");
   if (!boardNode || boardNode.dataset.run !== run.id) return false;
@@ -459,7 +622,7 @@ function updateBoard(s) {
   patchCells(boardNode, cells);
   setText(
     $("play").querySelector(".mg-stat"),
-    `Score ${Math.round(s.score).toLocaleString()}`,
+    `Score ${s.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
   );
   if (summary)
     setText($("play").querySelector("[data-board-summary]"), summary);
@@ -479,7 +642,7 @@ function render() {
   }
   if (!s.done && updateBoard(s)) return;
   $("start").hidden = !s.done;
-  let html = `<div class="mg-tags"><span class="mg-tag">${run.mode === "practice" ? "Practice · 0 MT" : "Rewarded · ticket used"}</span></div><p class="mg-stat">${game.id === "gem-tower" ? `Floor ${s.floor} · Pending ${s.pending} MT` : game.id === "crystal-bags" ? `Round ${Math.min(5, s.round + 1)}/5 · ${s.pending} MT` : `Score ${Math.round(s.score).toLocaleString()}`}</p>`;
+  let html = `<div class="mg-tags"><span class="mg-tag">${run.mode === "practice" ? "Practice · 0 MT" : "Rewarded · ticket used"}</span></div><p class="mg-stat">${game.id === "gem-tower" ? `Floor ${s.floor} · Pending ${s.pending} MT` : game.id === "crystal-bags" ? `Round ${Math.min(5, s.round + 1)}/5 · ${s.pending} MT` : `Score ${s.score.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</p>`;
   if (s.done) {
     html += `<div class="mg-result"><h3>${s.abandoned ? "Run ended" : s.collapsed ? "The tower collapsed" : "Run complete"}</h3><p>${s.mode === "rewarded" ? `${s.pending || 0} MT credited.` : "Practice awards 0 MT."}</p>${s.extraction != null ? `<p>Extraction ${(s.extraction * 100).toFixed(1)}% · ${s.gems} gems · Largest chain ${s.largest}</p>` : ""}${s.accuracy != null ? `<p>Accuracy ${(s.accuracy * 100).toFixed(1)}%</p>` : ""}${s.elapsedMs != null ? `<p>${(s.elapsedMs / 1000).toFixed(3)} seconds · ${s.pending}/${s.mines} MT preserved</p>` : ""}${s.game === "gem-tower" ? `<p>Highest floor cleared: ${s.floor}</p>` : ""}</div>`;
   }
@@ -506,7 +669,7 @@ function render() {
         })),
         "mg-2048",
       ) +
-      `<div class="mg-controls">${["left", "up", "down", "right"].map((d) => button({ left: "←", up: "↑", down: "↓", right: "→" }[d], "move", `data-direction="${d}"`)).join("")}</div>`;
+      `<div class="mg-controls mg-direction-controls" role="group" aria-label="Move tiles">${["left", "up", "down", "right"].map((d) => button({ left: "←", up: "↑", down: "↓", right: "→" }[d], "move", `data-direction="${d}" aria-label="Move ${d}"`)).join("")}</div>`;
   if (s.game === "prospector") {
     html +=
       `<p data-board-summary>${s.digs} digs left · ${s.found.length}/6 deposits</p><div class="mg-tags">${s.discoveries.map((d) => `<span class="mg-tag">${icon(d.name)} ${d.name} · ${d.value}</span>`).join("")}</div>` +
@@ -546,6 +709,7 @@ function render() {
     let next = s.floor + 1;
     html += `<div class="mg-tower">${next % 5 === 0 ? "✦" : "♜"}</div><p>Next: Floor ${next} · +${next} MT · ${next % 5 === 0 ? "Guaranteed safe" : "75% safe"}</p><div class="mg-controls">${next % 5 === 0 ? button("Clear safe floor", "door") : [0, 1, 2, 3].map((i) => button(`Door ${i + 1}`, "door", `data-door="${i}"`)).join("")}${s.floor ? button(`Collect ${s.pending} MT & Leave`, "collect") : ""}</div>`;
   }
+  if (s.game === "gem-reels") html += reelsHtml(s, icon);
   if (s.game === "crystal-bags") {
     html += `<p>${s.choices.map((c) => `R${c.round}: ${esc(c.bag)} +${c.outcome}`).join(" · ")}</p>`;
     if (!s.done)
@@ -578,7 +742,7 @@ function render() {
       for (let [x, y] of pieceCells(s.piece))
         if (x >= 0 && x < 10 && y >= 0 && y < 20)
           board[y * 10 + x] = s.piece.type + 1;
-    html += `<p data-board-summary>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls">${[
+    html += `<p data-board-summary>Level ${1 + Math.floor(s.lines / 10)} · ${s.lines} lines · Hold ${s.hold === null ? "—" : ["I", "O", "T", "S", "Z", "J", "L"][s.hold]} · Next ${s.queue.map((i) => ["I", "O", "T", "S", "Z", "J", "L"][i]).join(" ")}</p><div class="mg-board mg-stack" style="grid-template-columns:repeat(10,1fr)">${board.map((v) => `<div class="mg-cell ${v ? "filled" : ""}" style="--tile:${v}">${v ? icon(tileNames[Math.min(19, Math.floor(s.lines / 10))]) : ""}</div>`).join("")}</div><div class="mg-controls mg-stack-controls" role="group" aria-label="Control falling piece">${[
       ["←", "left"],
       ["↻", "rotate"],
       ["→", "right"],
@@ -603,6 +767,7 @@ function render() {
     for (const cell of boardNode.children) cell._minigameHtml = cell.innerHTML;
   }
   bind();
+  syncControls();
   if (s.game === "perfect-strike" && !s.done) {
     const w = strikeConfig(s.strike).width * 100;
     $("strike-bar").style.background =
@@ -611,31 +776,50 @@ function render() {
   scheduleFrame();
 }
 function grid(n, cells, cls = "") {
-  return `<div class="mg-board ${cls}" style="grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<button class="mg-cell" data-cell="${i}" data-open="${c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}${c.text ? " revealed" : ""}">${c.text}</button>`).join("")}</div>`;
+  const tag = cls === "mg-2048" ? "div" : "button";
+  return `${n >= 12 ? '<p class="mg-scroll-hint">Swipe sideways to see the whole board.</p>' : ""}<div class="mg-board-scroll"><div class="mg-board ${cls}" data-columns="${n}" style="--columns:${n};grid-template-columns:repeat(${n},1fr)">${cells.map((c, i) => `<${tag} class="mg-cell" data-cell="${i}" data-open="${!!c.open}" aria-label="Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}" ${tag === "button" ? `type="button" tabindex="${i === 0 ? 0 : -1}"` : 'role="img"'}>${c.text}</${tag}>`).join("")}</div></div>`;
 }
 function bind() {
+  bindReelHolds($("play"), () => busy);
   if ($("flag-mode"))
     $("flag-mode").onchange = (e) => (flagMode = e.target.checked);
   document.querySelectorAll("[data-action]").forEach(
     (b) =>
       (b.onclick = () => {
         let input = { type: b.dataset.action };
+        if (input.type === "respin") input.holds = [...$("play").querySelectorAll('[data-reel][aria-pressed="true"]')].map(b => Number(b.dataset.reel));
         for (let k of ["direction", "bag"])
           if (b.dataset[k]) input[k] = b.dataset[k];
         if (b.dataset.door) input.door = Number(b.dataset.door);
         if (input.type === "strike") {
-          input.elapsed = Date.now() + offset - run.state.ready;
-          strikeFreeze = {
-            x: strikeNeedleX(run.state.strike, input.elapsed),
-            until: Date.now() + offset + 800,
-          };
+          strike();
+          return;
         }
         act(input);
       }),
   );
   document.querySelectorAll("[data-cell]").forEach((b) => {
+    labelCell(b);
+    if (b.tagName === "BUTTON") {
+      b.onfocus = () => {
+        b.parentElement.querySelector('[tabindex="0"]')?.setAttribute("tabindex", "-1");
+        b.tabIndex = 0;
+      };
+      b.onkeydown = (event) => {
+        const n = Number(b.parentElement.dataset.columns);
+        const index = Number(b.dataset.cell);
+        const next = { ArrowLeft: index % n ? index - 1 : index,
+          ArrowRight: index % n < n - 1 ? index + 1 : index,
+          ArrowUp: index - n, ArrowDown: index + n,
+          Home: index - index % n, End: index - index % n + n - 1 }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        event.stopPropagation();
+        b.parentElement.children[next]?.focus();
+      };
+    }
     let click = (flag) => {
-      if (run.state.done) return;
+      if (busy || loading || connectionFailed || run.state.done) return;
       let n =
           run.state.n ||
           (game.id === "explosive-mining"
@@ -690,6 +874,7 @@ function bind() {
       }
     };
     arena.onpointerdown = (e) => {
+      if (!e.isPrimary || e.button !== 0 || connectionFailed) return;
       arena.setPointerCapture(e.pointerId);
       drag = true;
       swipe++;
@@ -709,7 +894,12 @@ function bind() {
   const b = document.querySelector(".mg-2048");
   if (b) {
     let p = null;
-    b.onpointerdown = (e) => (p = [e.clientX, e.clientY]);
+    b.onpointerdown = (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      b.setPointerCapture(e.pointerId);
+      p = [e.clientX, e.clientY];
+    };
+    b.onpointercancel = b.onlostpointercapture = () => { p = null; };
     b.onpointerup = (e) => {
       if (!p) return;
       let dx = e.clientX - p[0],
@@ -751,7 +941,7 @@ function frame() {
     );
   if (!document.hidden && s.game === "perfect-strike" && $("needle")) {
     const strikeButton = document.querySelector('[data-action="strike"]');
-    strikeButton.disabled = now < s.ready + 200;
+    strikeButton.disabled = busy || loading || connectionFailed || now < s.ready + 200;
     setText(
       strikeButton,
       now < s.ready
@@ -810,10 +1000,13 @@ function frame() {
     }
 
     if (s.game === "gem-catcher") {
+      const movementNow = performance.now();
+      const movement = lastMovement ? catcherMovement(movementNow - lastMovement) : 0;
+      lastMovement = movementNow;
       if (keys.has("ArrowLeft") || keys.has("a"))
-        cursor = Math.max(0, cursor - 0.012);
+        cursor = Math.max(0, cursor - movement);
       if (keys.has("ArrowRight") || keys.has("d"))
-        cursor = Math.min(1, cursor + 0.012);
+        cursor = Math.min(1, cursor + movement);
       $("cart").style.left = `${cursor * 100}%`;
       if (now - lastSample > 50) {
         inputs.push({ t, x: cursor });
@@ -834,17 +1027,18 @@ window.addEventListener("keydown", (e) => {
     !game ||
     !run ||
     run.state.done ||
-    e.target.matches("input,select,textarea")
+    e.target.closest("input,select,textarea,button,summary,a,[contenteditable=true]")
   )
     return;
-  keys.add(e.key);
+  keys.add(e.key.length === 1 ? e.key.toLowerCase() : e.key);
   let dir = {
     ArrowLeft: "left",
     ArrowRight: "right",
     ArrowUp: "up",
     ArrowDown: "down",
   }[e.key];
-  if (dir || e.code === "Space") e.preventDefault();
+  if ((dir && ["gem-2048", "gem-stack", "gem-catcher"].includes(game.id))
+      || (e.code === "Space" && ["gem-stack", "perfect-strike"].includes(game.id))) e.preventDefault();
   if (game.id === "gem-2048" && dir) act({ type: "move", direction: dir });
   if (game.id === "gem-stack") {
     let type = {
@@ -854,21 +1048,20 @@ window.addEventListener("keydown", (e) => {
       ArrowDown: "soft",
       " ": "hard",
       c: "hold",
-    }[e.key];
-    if (type) act({ type });
+    }[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (type && !(e.repeat && ["hard", "hold"].includes(type))) act({ type });
   }
-  if (game.id === "perfect-strike" && e.code === "Space") {
-    const elapsed = Date.now() + offset - run.state.ready;
-    strikeFreeze = {
-      x: strikeNeedleX(run.state.strike, elapsed),
-      until: Date.now() + offset + 800,
-    };
-    act({ type: "strike", elapsed });
-  }
+  if (game.id === "perfect-strike" && e.code === "Space" && !e.repeat) strike();
 });
-window.addEventListener("blur", () => keys.clear());
+window.addEventListener("blur", () => {
+  keys.clear();
+  lastMovement = 0;
+  drag = false;
+});
 document.addEventListener("visibilitychange", () => {
   keys.clear();
+  lastMovement = 0;
+  drag = false;
   scheduleFrame();
 });
 window.addEventListener("pagehide", () => {
@@ -880,11 +1073,14 @@ window.addEventListener("pagehide", () => {
   bladeTrail = null;
 });
 window.addEventListener("pageshow", scheduleFrame);
-window.addEventListener("keyup", (e) => keys.delete(e.key));
+window.addEventListener("keyup", (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 supabase.auth.onAuthStateChange((event) => {
   if (["SIGNED_OUT", "SIGNED_IN"].includes(event)) {
     authGeneration++;
     generation++;
+    busy = false;
+    loading = false;
+    connectionFailed = false;
     run = null;
     wallet = null;
     active = [];
