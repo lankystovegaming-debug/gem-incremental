@@ -46,5 +46,8 @@ for (const [input, expected] of cases) {
 assert.equal(formatCount(1_234), "1.23K");
 assert.equal(formatCount(12_345), "12.3K");
 assert.equal(formatCount(123_456), "123K");
+assert.equal(formatCount(300_000), "300K");
+assert.equal(formatCount(350_000), "350K");
+assert.equal(formatCount(2_500_000), "2.5M");
 
 console.log("large-number-suffix-test: ok");
