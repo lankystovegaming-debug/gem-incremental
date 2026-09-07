@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+const artifacts = new URL("../artifacts/", import.meta.url);
+mkdirSync(artifacts, { recursive: true });
 import {
   create,
   step,
@@ -88,8 +92,19 @@ const base =
 await page.goto(base);
 await page.locator(".mg-card").first().waitFor();
 assert.equal(await page.locator(".mg-card").count(), 13);
+await page.getByRole("button", { name: "Arcade", exact: true }).click();
+assert.equal(await page.locator(".mg-card:visible").count(), 4);
+assert.equal(await page.getByRole("button", { name: "Arcade", exact: true }).getAttribute("aria-pressed"), "true");
+await page.getByRole("searchbox").fill("strike");
+assert.equal(await page.locator(".mg-card:visible").count(), 1);
+await page.getByRole("searchbox").fill("no matching game");
+assert.equal(await page.locator(".mg-card:visible").count(), 0);
+assert.equal(await page.locator("#game-empty").isVisible(), true);
+await page.getByRole("searchbox").fill("");
+await page.getByRole("button", { name: "All", exact: true }).click();
+assert.equal(await page.locator(".mg-card:visible").count(), 13);
 await page.screenshot({
-  path: "/tmp/minigames-hub-desktop.png",
+  path: fileURLToPath(new URL("minigames-hub-desktop.png", artifacts)),
   fullPage: true,
 });
 for (let game of [
@@ -157,7 +172,7 @@ await page.locator("#arena").waitFor();
 await page.setViewportSize({ width: 390, height: 844 });
 await page.goto(base);
 await page.screenshot({
-  path: "/tmp/minigames-hub-mobile.png",
+  path: fileURLToPath(new URL("minigames-hub-mobile.png", artifacts)),
   fullPage: true,
 });
 assert.ok(
@@ -166,7 +181,7 @@ assert.ok(
 await page.goto(base + "mine-sweeper/");
 await page.locator("#play .mg-stat").waitFor();
 await page.screenshot({
-  path: "/tmp/minigames-mine-mobile.png",
+  path: fileURLToPath(new URL("minigames-mine-mobile.png", artifacts)),
   fullPage: true,
 });
 assert.ok(

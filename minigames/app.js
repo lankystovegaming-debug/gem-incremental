@@ -5,6 +5,7 @@ import { gemIconHtml } from "../src/ui/gemStyle.js";
 import { catalog, tileNames, bagTable, strikeConfig } from "./catalog.js";
 import {
   setText,
+  catcherMovement,
   setHtml,
   patchCells,
   createArcadeRenderer,
@@ -80,7 +81,8 @@ function scheduleFrame() {
     frameTimer = setTimeout(frame, document.hidden ? 250 : 100);
 }
 let flagMode = false,
-  lastDraw = 0;
+  lastDraw = 0,
+  lastMovement = 0;
 let authGeneration = 0,
   game = null,
   run = null,
@@ -276,6 +278,59 @@ function renderWallet() {
       `<span>${esc(wallet.mt)} MT</span><span>${wallet.tickets}/5 tickets</span><span>${wallet.tickets === 5 ? "Tickets full" : `Next ticket ${new Date(Date.parse(wallet.regen_at) + 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}</span>`,
     );
 }
+const gameCategories = {
+  "gem-catcher": "Arcade",
+  "ore-slicer": "Arcade",
+  "gem-stack": "Arcade",
+  "perfect-strike": "Arcade",
+  "gem-2048": "Puzzles",
+  "mine-sweeper": "Puzzles",
+  prospector: "Puzzles",
+  "explosive-mining": "Puzzles",
+  "price-is-right": "Puzzles",
+  "gem-tower": "Chance",
+  "crystal-bags": "Chance",
+  "gem-reels": "Chance",
+  gemdle: "Daily",
+};
+function renderHub() {
+  $("content").innerHTML = `
+    <div class="mg-browser">
+      <label class="mg-search">Find a game<input id="game-search" type="search" placeholder="Search minigames…" autocomplete="off"></label>
+      <div class="mg-filters" role="group" aria-label="Game category">
+        ${["All", "Arcade", "Puzzles", "Chance", "Daily"].map((name) => `<button class="btn" data-filter="${name}" aria-pressed="${name === "All"}">${name}</button>`).join("")}
+      </div>
+      <p id="game-count" role="status" aria-live="polite"></p>
+    </div>
+    <div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" data-game="${g.id}" href="${gamePath(g.id)}"><div class="mg-card-top"><div class="mg-art" aria-hidden="true">${icon(tileNames[i])}</div><span class="mg-category">${gameCategories[g.id]}</span></div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily specimen" : g.mt ? "Practice free · 1 ticket for MT" : "Free to play"}</span></div><small>${g.leaderboard}</small><span class="mg-card-play">Play ${g.name} <span aria-hidden="true">↗</span></span></a>`).join("")}</div>
+    <p id="game-empty" class="mg-empty" hidden>No games found. Try another name or category.</p>`;
+  let category = "All";
+  const cards = [...$("content").querySelectorAll("[data-game]")];
+  function filterGames() {
+    const query = $("game-search").value.trim().toLowerCase();
+    let count = 0;
+    cards.forEach((card, index) => {
+      const entry = catalog[index];
+      const matches = (category === "All" || gameCategories[entry.id] === category)
+        && `${entry.name} ${entry.description}`.toLowerCase().includes(query);
+      card.hidden = !matches;
+      if (matches) count++;
+    });
+    setText($("game-count"), `${count} ${count === 1 ? "game" : "games"}`);
+    $("game-empty").hidden = count > 0;
+  }
+  $("game-search").addEventListener("input", filterGames);
+  $("content").querySelectorAll("[data-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      category = button.dataset.filter;
+      $("content").querySelectorAll("[data-filter]").forEach((item) => {
+        item.setAttribute("aria-pressed", String(item === button));
+      });
+      filterGames();
+    });
+  });
+  filterGames();
+}
 function route() {
   arcadeRenderer?.destroy();
   bladeTrail?.destroy();
@@ -285,6 +340,8 @@ function route() {
   strikeFreeze = null;
   stopFrames();
   inputs = [];
+  lastMovement = 0;
+  keys.clear();
   run = null;
   const pathId = location.pathname.startsWith(hubPath)
     ? location.pathname.slice(hubPath.length).split("/")[0]
@@ -294,8 +351,7 @@ function route() {
     new URLSearchParams(location.search).get("game");
   game = catalog.find((g) => g.id === id && !g.daily);
   if (!game) {
-    $("content").innerHTML =
-      `<div class="mg-grid">${catalog.map((g, i) => `<a class="mg-card" href="${gamePath(g.id)}"><div class="mg-art">${icon(tileNames[i])}</div><h2>${g.name}</h2><p>${g.description}</p><div class="mg-tags"><span class="mg-tag ${g.daily ? "mg-tag--daily" : g.mt ? "mg-tag--mt" : ""}">${g.daily ? "Daily" : g.mt ? "MT ON · 1 ticket rewarded" : "MT OFF · Unlimited"}</span><span class="mg-tag">Available</span></div><small>${g.leaderboard}</small></a>`).join("")}</div>`;
+    renderHub();
     return;
   }
   document.title = `${game.name} · Minigames · Gem Incremental`;
@@ -366,6 +422,8 @@ async function start(mode) {
       return;
     }
     inputs = [];
+    lastMovement = 0;
+    keys.clear();
     swipe = 0;
     run = d.run;
     render();
@@ -815,10 +873,13 @@ function frame() {
     }
 
     if (s.game === "gem-catcher") {
+      const movementNow = performance.now();
+      const movement = lastMovement ? catcherMovement(movementNow - lastMovement) : 0;
+      lastMovement = movementNow;
       if (keys.has("ArrowLeft") || keys.has("a"))
-        cursor = Math.max(0, cursor - 0.012);
+        cursor = Math.max(0, cursor - movement);
       if (keys.has("ArrowRight") || keys.has("d"))
-        cursor = Math.min(1, cursor + 0.012);
+        cursor = Math.min(1, cursor + movement);
       $("cart").style.left = `${cursor * 100}%`;
       if (now - lastSample > 50) {
         inputs.push({ t, x: cursor });
@@ -871,9 +932,15 @@ window.addEventListener("keydown", (e) => {
     act({ type: "strike", elapsed });
   }
 });
-window.addEventListener("blur", () => keys.clear());
+window.addEventListener("blur", () => {
+  keys.clear();
+  lastMovement = 0;
+  drag = false;
+});
 document.addEventListener("visibilitychange", () => {
   keys.clear();
+  lastMovement = 0;
+  drag = false;
   scheduleFrame();
 });
 window.addEventListener("pagehide", () => {

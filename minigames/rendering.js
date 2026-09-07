@@ -1,3 +1,8 @@
+// Match the original 60 Hz movement speed, independent of display refresh rate.
+export function catcherMovement(elapsedMs) {
+  return Math.max(0, Math.min(50, elapsedMs)) * 0.00072;
+}
+
 // Presentation helpers only: authoritative state and hit detection remain on the server.
 export function setText(node, value) {
   if (node && node.textContent !== value) node.textContent = value;
@@ -12,15 +17,8 @@ const reduceMotion =
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Restart a one-shot animation class on a node (remove, reflow, re-add).
-function replay(node, className) {
-  if (reduceMotion) return;
-  node.classList.remove(className);
-  void node.offsetWidth;
-  node.classList.add(className);
-}
-
 export function patchCells(board, cells) {
+  const animated = new Set();
   cells.forEach((cell, i) => {
     const node = board.children[i];
     const prevHtml = node._minigameHtml;
@@ -35,13 +33,13 @@ export function patchCells(board, cells) {
     if (cell.open !== undefined && cell.open) {
       const justOpened = wasOpen !== "true";
       const contentChanged = prevHtml !== undefined && prevHtml !== nextHtml;
-      if (justOpened || contentChanged) replay(node, "mg-cell--pop");
+      if (justOpened || contentChanged) animated.add(node);
     }
     // Minesweeper flags: mark the cell and give a small pop when one is placed.
     const flagged = nextHtml === "⚑";
     if (node.classList.contains("mg-cell--flag") !== flagged) {
       node.classList.toggle("mg-cell--flag", flagged);
-      if (flagged) replay(node, "mg-cell--pop");
+      if (flagged) animated.add(node);
     }
     if (cell.tile !== undefined && node.dataset.tile !== String(cell.tile)) {
       node.dataset.tile = cell.tile;
@@ -56,6 +54,12 @@ export function patchCells(board, cells) {
         node.setAttribute("aria-label", label);
     }
   });
+  // Batch animation restarts: one layout read for the whole reveal, not each cell.
+  if (!reduceMotion && animated.size) {
+    for (const node of animated) node.classList.remove("mg-cell--pop");
+    void board.offsetWidth;
+    for (const node of animated) node.classList.add("mg-cell--pop");
+  }
 }
 // Pop a caught sprite from wherever it currently sits (its inline transform
 // holds the fall position, so we grow + fade from there) then drop it.
