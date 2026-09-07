@@ -1,3 +1,5 @@
+import { loadBundleSummary } from '../src/backend/cloudBundles.js';
+import { ensurePlayerAuth } from '../src/backend/auth.js';
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { gemNameHtml, gemIconHtml } from "../src/ui/gemStyle.js";
@@ -299,6 +301,17 @@ async function loadProfile() {
   renderStats(data);
   renderShowcase(data);
   renderBestRoll(data);
+  await ensurePlayerAuth();
+  const {data:bundles,error:bundleError}=await loadBundleSummary(profileId);
+  if(!bundleError&&bundles){
+    const section=document.getElementById("bundleProfileSection");
+    const crown=bundles.crown;
+    document.getElementById("bundleProfileContent").innerHTML=`
+      <p><strong>${bundles.completed.length} / 7 Bundles completed</strong></p>
+      ${bundles.completed.map(b=>`<p>${escapeHtml(b.icon)} ${escapeHtml(b.name)} ✓</p>`).join("")}
+      ${crown?`<h3>👑 Crown Jewel · ${escapeHtml(crown.gem_name)}</h3><p>Base rarity: 1 in ${formatNumber(crown.rarity)} · ${formatNumber(crown.final_weight_multiplier)}× final weight</p><p>Mutations: ${escapeHtml((crown.mutation_ids??[]).join(", "))}</p>`:""}`;
+    section.hidden=false;
+  }
 }
 
 

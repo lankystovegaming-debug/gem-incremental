@@ -693,7 +693,7 @@ function sessionRollName(item){const mutations=Array.isArray(item?.mutationNames
 function renderSessionInsights(){
   if(!sessionInsightsPanel)return;
   const state=getSessionInsights(),elapsed=Math.max(0,Date.now()-new Date(state.startedAt).getTime()),hours=Math.floor(elapsed/3600000),minutes=Math.floor(elapsed%3600000/60000);
-  sessionInsightStats.innerHTML=[["Duration",`${hours}h ${minutes}m`],["Rolls",formatCount(state.rolls)],["Kept",formatCount(state.kept)],["Auto kept",formatCount(state.autoKept)],["Auto sold",formatCount(state.autoSold)],["Auto-sell income",formatMoney(state.autoSoldValue)],["Relics",formatCount(state.relics)],["Auto crafted",formatCount(state.autoCrafted)]].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  sessionInsightStats.innerHTML=[["Duration",`${hours}h ${minutes}m`],["Rolls",formatCount(state.rolls)],["Kept",formatCount(state.kept)],["Auto kept",formatCount(state.autoKept)],["Auto sold",formatCount(state.autoSold)],["Auto-sell income",formatMoney(state.autoSoldValue)],["Relics",formatCount(state.relics)],["Auto crafted",formatCount(state.autoCrafted)],["Bundle contributions",formatCount(state.bundleContributed)]].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   sessionHighlights.innerHTML=sessionHighlight("Rarest effective",state.bestEffective,item=>`1/${Math.round(item.effectiveRarity).toLocaleString()}`)+sessionHighlight("Rarest base",state.bestBase,item=>`1/${Math.round(item.baseRarity).toLocaleString()}`)+sessionHighlight("Heaviest",state.heaviest,item=>formatWeight(item.weight))+sessionHighlight("Most valuable",state.mostValuable,item=>formatMoney(item.value));
   sessionBreakdown.innerHTML=Object.entries(state.rarities).sort((a,b)=>b[1]-a[1]).map(([tier,count])=>`<span class="badge">${escapeHtml(tier)} · ${formatCount(count)}</span>`).join("")||"<small>No rolls yet.</small>";
   sessionNotable.innerHTML=state.notable.slice(0,6).map(item=>`<div><strong>${escapeHtml(sessionRollName(item))}</strong><span>1/${Math.round(item.effectiveRarity).toLocaleString()} · ${escapeHtml(item.decision.replaceAll("-"," "))}</span></div>`).join("")||"<small>Mutation and 1/100,000+ rolls will appear here.</small>";
@@ -825,10 +825,20 @@ async function performRoll() {
 }
 
 
-// Decides what happened to the gem: Auto Craft always wins first because
-// the server deposits matching rolls before the client can auto-sell them.
+// Server Bundle routing and Auto Craft resolve before client Auto Sell.
+// Ambiguous Bundle matches and Crown candidates remain in inventory.
 // Only gems that remain in inventory can reach the Auto Sell rule.
 async function resolveOutcome(data) {
+  if (data.bundle?.status === "deposited") {
+    return { type: "bundle-contributed", icon: icons.book,
+      text: "Contributed to your Collection", note: "bundle contributed" };
+  }
+  if (data.bundle?.keepInInventory) {
+    return { type: "auto-kept", icon: icons.shield,
+      text: data.bundle.status === "protected" ? "Kept — Crown Jewel candidate (manual submission only)"
+        : "Kept — more than one enabled Collection requirement matches",
+      note: "collection protected" };
+  }
   if (data.autoCraft?.deposited) {
     const recipe = recipes.find(
       (entry) => entry.id === data.autoCraft.recipeId

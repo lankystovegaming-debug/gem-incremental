@@ -93,7 +93,14 @@ async function processRoll(data) {
 
   let outcome = "Stored in inventory";
   let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0)).id };
-  if (data.autoCraft?.deposited) {
+  if (data.bundle?.status === "deposited") {
+    outcome = "Contributed to your Collection";
+    sessionOutcome.type = "bundle-contributed";
+  } else if (data.bundle?.keepInInventory) {
+    outcome = data.bundle.status === "protected" ? "Crown Jewel candidate — kept for manual submission"
+      : "Multiple Collection requirements match — kept in inventory";
+    sessionOutcome.type = "auto-kept";
+  } else if (data.autoCraft?.deposited) {
     outcome = "Auto deposited";
     sessionOutcome.type = "auto-crafted";
   } else if (shouldAutoKeep(data)) {
