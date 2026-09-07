@@ -3,7 +3,9 @@ export function getPlayerStats(inventory) {
     luck: 1,
     rollSpeed: 1,
     weightLuck: 1,
-    weightMultiplier: 1
+    weightMultiplier: 1,
+    // Mutation luck multiplies mutation chance (lanterns grant it). 1 = no bonus.
+    mutationLuck: 1
   };
 
   for (const equipment of inventory.equipment) {
@@ -26,6 +28,10 @@ export function getPlayerStats(inventory) {
     if (equipment.bonus?.weightMultiplier) {
       stats.weightMultiplier +=
         equipment.bonus.weightMultiplier;
+    }
+
+    if (equipment.bonus?.mutationLuck) {
+      stats.mutationLuck += equipment.bonus.mutationLuck;
     }
   }
 
