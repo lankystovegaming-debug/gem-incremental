@@ -54,6 +54,7 @@ const PAGES = [
   { id: "auctions", label: "Market", short: "Market", href: "auctions/", icon: icons.gavel },
   { id: "expeditions", label: "Expeditions", short: "Exped.", href: "expeditions/", icon: icons.map },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
+  { id: "month-one", label: "Month One", short: "Month 1", href: "recap/month-1/", icon: icons.trophy },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
