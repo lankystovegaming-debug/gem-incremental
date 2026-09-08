@@ -783,6 +783,10 @@ async function performRoll() {
   // APPLY RESULT
   // -------------------------------------------------------
 
+  activeMutationEffects = Array.isArray(data.activeMutationEffects) ? data.activeMutationEffects : activeMutationEffects;
+  renderEffects();
+  if (activeMutationEffects.some((e)=>Number(e.rollsRemaining)>0)) startEffectTicker();
+
   view.inventoryCount = data.inventory?.count ?? view.inventoryCount;
   view.capacity = data.inventory?.capacity ?? view.capacity;
   view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
@@ -1012,7 +1016,7 @@ function startEffectTicker() {
   effectTicker = setInterval(() => {
     renderEffects();
 
-    if (liveBoosts().length === 0) {
+    if (liveBoosts().length === 0 && (!Array.isArray(activeMutationEffects) || activeMutationEffects.every((e)=>Number(e.rollsRemaining)<=0))) {
       clearInterval(effectTicker);
 
       effectTicker = null;
@@ -1024,15 +1028,13 @@ function startEffectTicker() {
 async function refreshEffects() {
   const boosts = await loadActiveBoosts();
 
-  if (boosts) {
-    activeBoosts = boosts;
-  }
-
+  if (boosts) { activeBoosts = boosts; }
+  try {
+    const { data: mutationEffects } = await supabase.rpc("get_active_mutation_effects");
+    activeMutationEffects = Array.isArray(mutationEffects) ? mutationEffects : [];
+  } catch { activeMutationEffects = []; }
   renderEffects();
-
-  if (liveBoosts().length > 0) {
-    startEffectTicker();
-  }
+  if (liveBoosts().length > 0 || activeMutationEffects.some((e)=>Number(e.rollsRemaining)>0)) startEffectTicker();
 }
 
 

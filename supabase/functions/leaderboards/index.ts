@@ -54,9 +54,7 @@ export default {
       ctx.supabaseAdmin.from("game_mutations")
         .select("id,name,chance,multiplier,description,icon,color")
         .eq("enabled", true).order("multiplier", { ascending: true }).order("name", { ascending: true }),
-      ctx.supabaseAdmin.from("player_achievement_profiles")
-        .select("player_id,achievement_points,players!inner(username,leaderboard_hidden)")
-        .order("achievement_points", { ascending: false }).limit(100)
+      ctx.supabaseAdmin.rpc("get_achievement_points_leaderboard", { p_limit: 100 })
     ]);
 
     const results = [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
@@ -73,7 +71,7 @@ export default {
       mostWeight: mostWeight.data ?? [], rawRareRoll: rawRareRoll.data ?? [],
       baseLuck: baseLuck.data ?? [], museumPrestige: museumPrestige.data ?? [],
       rarestGem: rarestGem.data ?? [], mutations: mutations.data ?? [],
-      achievementPoints: (achievementPoints.data ?? []).filter((row:any)=>row.players?.leaderboard_hidden !== true).map((row:any)=>({ username: row.players?.username ?? "Unknown", achievement_points: row.achievement_points ?? 0 }))
+      achievementPoints: achievementPoints.data ?? []
     };
     leaderboardCache = { payload, expiresAt: now + CACHE_TTL_MS };
 

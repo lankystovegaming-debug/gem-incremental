@@ -336,7 +336,6 @@ export function mountShell({ page, base = "./" }) {
   renderAnnouncements(header);
   renderActiveAdminEvent(header);
   renderActiveGlobalEvent(header);
-  renderActiveMutationEffects(header);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.

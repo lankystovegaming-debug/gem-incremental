@@ -922,8 +922,11 @@ function renderMuseumPrestige() {
 function renderAchievementPoints() {
   const entries = leaderboardData.achievementPoints || [];
   if (!entries.length) { leaderboardCard.innerHTML = `<h2>Achievement Points</h2><p class="empty-message">No achievement points yet.</p>`; return; }
-  const rows = entries.map((player, index) => `<div class="leaderboard-row"><div class="rank">${rankDisplay(index+1)}</div><div class="player-name"><span class="lb-name-text">${escapeHtml(player.username || "Unknown")}</span></div><div class="score">${formatNumber(player.achievement_points || 0)} AP</div></div>`).join("");
-  leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Achievement Points</h2><p class="leaderboard-description">Players ranked by permanent AP.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Player</div><div class="score">AP</div></div><div class="leaderboard-list">${rows}</div>`;
+  const rows = entries.map((player, index) => {
+    const gem = player.gem_name ? `<span class="lb-best-gem">${gemNameHtml(player.gem_name, player.mutation_ids || [], liveMutationCatalog)}</span>` : `<span class="lb-best-gem">No displayed gem yet</span>`;
+    return `<div class="leaderboard-row"><div class="rank">${rankDisplay(player.rank || index+1)}</div><div class="player-name" data-profile-username="${escapeHtml(player.username || "Unknown")}">${avatarHtml(player.username)}<span class="lb-name-block"><span class="lb-name-text">${roleTag(player.username)}${escapeHtml(player.username || "Unknown")}</span>${gem}</span></div><div class="score">${formatNumber(player.achievement_points || 0)} AP</div></div>`;
+  }).join("");
+  leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Achievement Points</h2><p class="leaderboard-description">Players ranked by permanent AP. Click a player to view their profile.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Player & displayed gem</div><div class="score">AP</div></div><div class="leaderboard-list">${rows}</div>`;
 }
 
 // =========================================================

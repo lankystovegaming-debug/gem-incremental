@@ -2637,3 +2637,6 @@ html.is-cinematic-active body {
 #ultra-cutscene-overlay .mutation-scene-layer{z-index:12!important;pointer-events:none!important;overflow:hidden!important;}
 #ultra-cutscene-overlay .scene__reveal{z-index:60!important;position:relative!important;}
 #ultra-cutscene-overlay .scene__gem svg,#ultra-cutscene-overlay .scene__gem img{max-width:78%!important;max-height:78%!important;object-fit:contain!important;}
+
+.effect-chip--mutation{border-left-color:#a78bfa;background:color-mix(in srgb,#2a2145 72%,var(--surface-solid));}
+.effect-chip--mutation .effect-chip__icon{color:#c4b5fd}.effect-chip--mutation .effect-chip__bar>span{background:#a78bfa}

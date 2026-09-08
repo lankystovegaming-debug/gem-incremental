@@ -38,6 +38,24 @@ export async function buyCloudConsumable(consumableId) {
   };
 }
 
+
+export async function buyCloudConsumablesBulk(consumableId, quantity = 1) {
+  const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+  const { data, error } = await supabase.rpc("buy_consumables_bulk", {
+    p_consumable_id: consumableId,
+    p_quantity: qty
+  });
+  if (!error) return { data, error: null };
+  const code = error.message?.match(/(insufficient_funds|invalid_quantity|consumable_[a-z_]+)/)?.[1];
+  return {
+    data: null,
+    error: {
+      code: code ?? error.code,
+      message: code === "insufficient_funds" ? "You cannot afford that quantity." : "The potions could not be purchased."
+    }
+  };
+}
+
 export async function loadDailyShop() {
   const { data, error } = await supabase.rpc("get_daily_shop");
   return { data: data ?? [], error };
