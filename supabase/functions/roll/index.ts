@@ -3624,7 +3624,7 @@ export default {
       })();
 
       const mutationOnlyAnnouncementPromise = (async () => {
-        if (relicDrop || Number(gem.rarity) >= 1_000_000 || !(effectiveRarity >= 10_000_000)) return;
+        if (relicDrop || Number(gem.rarity) >= 1_000_000 || !(effectiveRarity >= 50_000_000)) return;
         const payload = {
           player_id: playerId,
           gem_name: gem.name,

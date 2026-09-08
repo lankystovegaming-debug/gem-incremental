@@ -9,9 +9,9 @@ const migration = readFileSync(
   "utf8"
 );
 
-const lowerThresholdMigration = readFileSync(
+const effectiveThresholdMigration = readFileSync(
   new URL(
-    "../supabase/migrations/20260825053430_lower_effective_chat_threshold.sql",
+    "../supabase/migrations/20260908025114_raise_effective_chat_threshold_to_50m.sql",
     import.meta.url
   ),
   "utf8"
@@ -36,11 +36,11 @@ assert.match(migration, /v_effective_rarity >= 100000000/);
 assert.match(migration, /'history',\s*v_history_id/);
 assert.match(migration, /on conflict \(source_type, source_id\).*do nothing/s);
 assert.match(migration, /'rareChatEventId', v_rare_event_id/);
-assert.match(lowerThresholdMigration, /coalesce\(new\.effective_rarity, 0\) >= 10000000/);
-assert.match(lowerThresholdMigration, /v_effective_rarity >= 10000000/);
-assert.match(lowerThresholdMigration, /create trigger persist_rare_roll_chat_event/);
-assert.match(lowerThresholdMigration, /\) >= 10000000/);
-assert.match(rollFunction, /effectiveRarity\s*>=\s*10_000_000/);
-assert.match(chatBackend, /EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 10_000_000/);
+assert.match(effectiveThresholdMigration, /coalesce\(new\.effective_rarity, 0\) >= 50000000/);
+assert.match(effectiveThresholdMigration, /v_effective_rarity >= 50000000/);
+assert.match(effectiveThresholdMigration, /create trigger persist_rare_roll_chat_event/);
+assert.match(effectiveThresholdMigration, /coalesce\(effective_rarity, 0\) < 50000000/);
+assert.match(rollFunction, /effectiveRarity\s*>=\s*50_000_000/);
+assert.match(chatBackend, /EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 50_000_000/);
 
 console.log("Rare-roll chat event persistence checks passed.");
