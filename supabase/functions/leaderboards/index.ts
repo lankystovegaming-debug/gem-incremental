@@ -57,13 +57,16 @@ export default {
       ctx.supabaseAdmin.rpc("get_achievement_points_leaderboard", { p_limit: 100 })
     ]);
 
-    const results = [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
-      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations, achievementPoints];
-    const failed = results.find((result) => result.error);
-    if (failed?.error) {
-      console.error("Could not load leaderboard data:", failed.error);
-      return json({ error: "Could not load leaderboards." }, 500);
-    }
+    const namedResults = {
+      totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
+      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations, achievementPoints
+    };
+    const failedBoards = Object.entries(namedResults)
+      .filter(([, result]) => result.error)
+      .map(([name, result]) => {
+        console.error(`Could not load ${name} leaderboard data:`, result.error);
+        return name;
+      });
 
     const payload = {
       totalRolls: totalRolls.data ?? [], lifetimeEarnings: lifetimeEarnings.data ?? [],
@@ -71,7 +74,8 @@ export default {
       mostWeight: mostWeight.data ?? [], rawRareRoll: rawRareRoll.data ?? [],
       baseLuck: baseLuck.data ?? [], museumPrestige: museumPrestige.data ?? [],
       rarestGem: rarestGem.data ?? [], mutations: mutations.data ?? [],
-      achievementPoints: achievementPoints.data ?? []
+      achievementPoints: achievementPoints.data ?? [],
+      failedBoards
     };
     leaderboardCache = { payload, expiresAt: now + CACHE_TTL_MS };
 
