@@ -205,11 +205,6 @@ export function abbreviate(value) {
 
 export function formatWeight(value) {
   const grams = Number(value ?? 0);
-
-  if (grams >= 100000) {
-    return `${abbreviate(grams)}g`;
-  }
-
   return `${grams.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2

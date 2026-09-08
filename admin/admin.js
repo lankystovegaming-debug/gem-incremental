@@ -1722,8 +1722,8 @@ function guildMemberRows(members) {
       <tr>
         <td>${escapeHtml(member.username ?? "Unknown")}</td>
         <td>${guildRoleTag(member.role)}</td>
-        <td class="num">${formatMoney(Number(member.lifetimeContribution ?? 0), { compact: true })}</td>
-        <td class="num">${formatMoney(Number(member.weeklyContribution ?? 0), { compact: true })}</td>
+        <td class="num">${formatMoney(Number(member.lifetimeContribution ?? 0))}</td>
+        <td class="num">${formatMoney(Number(member.weeklyContribution ?? 0))}</td>
         <td class="num">${guildRosterDate(member.joinedAt)}</td>
       </tr>`).join("");
 }

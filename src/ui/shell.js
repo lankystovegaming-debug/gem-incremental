@@ -751,7 +751,7 @@ export function mountShell({ page, base = "./" }) {
     }
 
     walletPill.classList.remove("wallet--loading");
-    walletValue.textContent = formatMoney(amount, { compact: true });
+    walletValue.textContent = formatMoney(amount);
     walletPill.title = `Money: ${formatMoney(amount)}`;
   }
 

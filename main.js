@@ -183,7 +183,7 @@ let consecutiveFailures = 0;
 
 function renderSummary() {
   statMoney.textContent =
-    view.money == null ? "—" : formatMoney(view.money, { compact: true });
+    view.money == null ? "—" : formatMoney(view.money);
 
   statInventory.textContent = `${formatCount(view.inventoryCount)} / ${formatCount(
     view.capacity
@@ -213,7 +213,7 @@ function renderSummary() {
 function renderAutomationPulse() {
   if (!automationPulse) return;
   const minutes = Math.max(1 / 60, (Date.now() - automationStats.startedAt) / 60000);
-  automationPulse.innerHTML = `<strong>${getSettings().autoRoll ? "Auto roll active" : automationStats.status}</strong><span>${(automationStats.rolls / minutes).toFixed(1)} rolls/min</span><span>${formatMoney(automationStats.earned, { compact: true })} earned</span><span>${automationStats.kept} kept · ${automationStats.sold} sold</span>`;
+  automationPulse.innerHTML = `<strong>${getSettings().autoRoll ? "Auto roll active" : automationStats.status}</strong><span>${(automationStats.rolls / minutes).toFixed(1)} rolls/min</span><span>${formatMoney(automationStats.earned)} earned</span><span>${automationStats.kept} kept · ${automationStats.sold} sold</span>`;
 }
 
 async function refreshPlayerState() {
