@@ -157,7 +157,29 @@ export function formatCount(value) {
 
 // Money is exact below $10k and abbreviated above it, so the
 // wallet pill never pushes the navigation around.
-export function formatMoney(value, { compact = false } = {}) {
+function formatExactMoney(value) {
+  const text = String(value ?? 0).trim();
+  const match = text.match(/^([+-]?)(\d+)(?:\.(\d*))?$/);
+
+  if (match) {
+    const [, sign, rawWhole, rawFraction = ""] = match;
+    const whole = rawWhole.replace(/^0+(?=\d)/, "");
+    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const cents = `${rawFraction}00`.slice(0, 2);
+    return `$${sign === "-" ? "-" : ""}${grouped}.${cents}`;
+  }
+
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return `$${text}`;
+  return `$${amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true
+  })}`;
+}
+
+export function formatMoney(value, { compact = false, exact = false } = {}) {
+  if (exact) return formatExactMoney(value);
   const text = String(value ?? 0);
   if (/^[+-]?\d+$/.test(text)) {
     const abs = text.replace(/^[+-]/, "");
