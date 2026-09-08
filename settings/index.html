@@ -143,14 +143,17 @@
         <select class="select" id="autoSellTier"></select>
       </div>
 
-      <div class="setting setting--nested" id="autoSellFiltersRow">
-        <div class="setting__copy"><strong>Auto sell filters</strong><span>Match gem type and mutation count before selling.</span></div>
-        <div class="auto-sell-filter-grid">
-          <select class="select" id="autoSellKind"><option value="all">All gem types</option><option value="standard">Standard gems only</option><option value="custom">Custom gems only</option></select>
-          <input class="input setting-number" id="autoSellMinMutations" type="number" min="0" value="0" aria-label="Minimum mutations to auto sell">
-          <input class="input setting-number" id="autoSellMaxMutations" type="number" min="0" value="999" aria-label="Maximum mutations to auto sell">
+      <section class="auto-sell-filters-card" id="autoSellFiltersRow" aria-labelledby="autoSellFiltersTitle">
+        <div class="auto-sell-filters-card__head">
+          <div><strong id="autoSellFiltersTitle">Auto sell filters</strong><span>Only gems matching every selected rule can be sold automatically.</span></div>
+          <span class="auto-sell-filters-card__badge">FILTERS</span>
         </div>
-      </div>
+        <div class="auto-sell-filter-grid">
+          <label><span>Gem type</span><select class="select" id="autoSellKind"><option value="all">All gem types</option><option value="standard">Standard gems only</option><option value="custom">Custom gems only</option></select></label>
+          <label><span>Minimum mutations</span><input class="input setting-number" id="autoSellMinMutations" type="number" min="0" value="0" inputmode="numeric"></label>
+          <label><span>Maximum mutations</span><input class="input setting-number" id="autoSellMaxMutations" type="number" min="0" value="999" inputmode="numeric"></label>
+        </div>
+      </section>
 
       <div class="setting">
         <div class="setting__copy">

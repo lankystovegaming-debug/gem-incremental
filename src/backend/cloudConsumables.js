@@ -122,7 +122,7 @@ export async function useCloudConsumable(consumableId) {
 }
 
 export async function useCloudConsumablesBulk(consumableId, quantity = 1) {
-  const qty = Math.max(1, Math.min(1000000, Math.floor(Number(quantity) || 1)));
+  const qty = Math.max(1, Math.min(10000000, Math.floor(Number(quantity) || 1)));
   const { data, error } = await supabase.rpc("use_consumables_bulk", {
     p_consumable_id: consumableId,
     p_quantity: qty
