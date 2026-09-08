@@ -41,6 +41,10 @@ const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
   autoSellTier: "common",
+  autoSellKind: "all",
+  autoSellMutationId: "",
+  autoSellMinMutations: 0,
+  autoSellMaxMutations: 999,
   autoKeep: true,
   autoKeepEffectiveRarity: 1_000_000,
   rollAnimations: true,
@@ -92,6 +96,10 @@ function sanitise(value) {
     autoSellTier: allowedTiers.includes(value.autoSellTier)
       ? value.autoSellTier
       : DEFAULTS.autoSellTier,
+    autoSellKind: ["all","standard","custom"].includes(value.autoSellKind) ? value.autoSellKind : "all",
+    autoSellMutationId: String(value.autoSellMutationId || ""),
+    autoSellMinMutations: Math.max(0, Math.floor(Number(value.autoSellMinMutations) || 0)),
+    autoSellMaxMutations: Math.max(0, Math.floor(Number(value.autoSellMaxMutations) || 999)),
 
     autoKeep: value.autoKeep !== false,
     autoKeepEffectiveRarity: Math.max(
@@ -149,12 +157,19 @@ export function tierRank(tierId) {
 }
 
 
-export function shouldAutoSell(gemTierId) {
-  if (!state.autoSell) {
-    return false;
-  }
-
-  return tierRank(gemTierId) <= tierRank(state.autoSellTier);
+export function shouldAutoSell(gemOrTier) {
+  if (!state.autoSell) return false;
+  const gem = typeof gemOrTier === "object" && gemOrTier ? gemOrTier : null;
+  const tierId = gem ? (gem.tier?.id || gem.rarityTier || gem.tier_id || gem.rarity) : gemOrTier;
+  if (tierRank(tierId) > tierRank(state.autoSellTier)) return false;
+  if (!gem) return true;
+  const isCustom = Boolean(gem.custom || gem.is_custom || gem.gem_type === "custom");
+  if (state.autoSellKind === "custom" && !isCustom) return false;
+  if (state.autoSellKind === "standard" && isCustom) return false;
+  const ids = mutationIdsFor(gem);
+  if (state.autoSellMutationId && !ids.includes(state.autoSellMutationId)) return false;
+  if (ids.length < state.autoSellMinMutations || ids.length > state.autoSellMaxMutations) return false;
+  return true;
 }
 
 

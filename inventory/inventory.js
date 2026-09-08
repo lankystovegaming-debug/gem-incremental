@@ -814,6 +814,21 @@ function wireGemCard(card) {
       return;
     }
 
+    const serial = Number(gem.serial ?? gem.serial_number ?? gem.overall_serial ?? 0);
+    const denominator = String(gem.overall_chance ?? gem.chance_denominator ?? gem.effective_rarity ?? gem.rarity ?? "0").replace(/[^0-9]/g, "");
+    const veryRare = denominator && BigInt(denominator) > 1000000n;
+    if (serial === 1 || veryRare) {
+      const reason = serial === 1 ? "This is a #1 serial gem." : "This gem has an overall chance rarer than 1 in 1,000,000.";
+      const choice = await confirmDialog({
+        title: "Sell a protected rare gem?",
+        body: `<p>${escapeHtml(reason)}</p><p>This cannot be undone.</p>`,
+        confirmLabel: "Sell gem",
+        cancelLabel: "Cancel",
+        tone: "danger"
+      });
+      if (choice !== "confirm") return;
+    }
+
     sellButton.disabled = true;
     lockButton.disabled = true;
 
@@ -1327,9 +1342,10 @@ function startBoostTicker() {
       (boost) => new Date(boost.expires_at).getTime() > Date.now()
     );
 
-    if (!potionsSection.classList.contains("hidden")) {
-      renderConsumables();
-    }
+    // Do not rebuild potion cards every second: rebuilding destroys focused number inputs.
+    document.querySelectorAll(".active-boost__time[data-expires]").forEach((node) => {
+      node.textContent = formatRemaining(node.dataset.expires);
+    });
 
     if (!live) {
       clearInterval(boostTicker);
@@ -1359,9 +1375,7 @@ function renderActiveBoosts() {
             (boost) => `
               <span class="active-boost">
                 <strong>${boost.family === "relic" ? "Secondary bonuses ×1.5" : `+${Math.round(Number(boost.effect_value)*100)}% ${escapeHtml(POTION_STATS[boost.family] ?? boost.family)}`}</strong>
-                <span class="active-boost__time">${formatRemaining(
-                  boost.expires_at
-                )}</span>
+                <span class="active-boost__time" data-expires="${escapeHtml(boost.expires_at)}">${formatRemaining(boost.expires_at)}</span>
               </span>
             `
           )
@@ -1565,7 +1579,7 @@ async function usePotion(button, requestedQty = 1) {
 
   startBoostTicker();
 
-  renderAll();
+  renderConsumables();
 }
 
 

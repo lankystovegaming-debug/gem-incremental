@@ -185,16 +185,18 @@ function formatExactMoney(value, decimalPlaces = 0) {
 }
 
 export function formatMoney(value, { compact = false, exact = false, decimalPlaces = 0 } = {}) {
-  if (exact || !compact) return formatExactMoney(value, decimalPlaces);
-  const text = String(value ?? 0);
-  if (/^[+-]?\d+$/.test(text)) {
-    const abs = text.replace(/^[+-]/, "");
-    if (abs.length > 15 || compact) return formatHugeInteger(text, { prefix: "$" });
+  const text = String(value ?? 0).trim();
+  // Money stays exact through one quadrillion. Above that, always use 3 SF suffixes.
+  if (exact) return formatExactMoney(value, decimalPlaces);
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(text)) {
+    const unsigned = text.replace(/^[+-]/, "").split(".")[0].replace(/^0+/, "") || "0";
+    if (unsigned.length <= 15 && !compact) return formatExactMoney(value, decimalPlaces);
+    return formatHugeInteger(text.split(".")[0], { prefix: "$" });
   }
   const amount = Number(value ?? 0);
   if (!Number.isFinite(amount)) return `$${formatHugeDecimal(text)}`;
-  if (Math.abs(amount) >= 1000) return formatHugeDecimal(amount, { prefix: "$" });
-  return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (Math.abs(amount) > 1e15 || compact) return formatHugeDecimal(amount, { prefix: "$" });
+  return formatExactMoney(amount, decimalPlaces);
 }
 
 export function formatGemValue(value) {

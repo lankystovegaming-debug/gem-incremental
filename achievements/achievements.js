@@ -85,8 +85,14 @@ async function invoke(body) {
 }
 
 async function load() {
+  const cacheKey = "gemIncremental.achievements.v2";
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try { const data = JSON.parse(cached); S.definitions=data.definitions||[]; S.progress=new Map((data.progress||[]).map((item)=>[item.feature_id,item])); S.summary=data.summary||{}; S.milestones=data.milestones||[]; render(); } catch {}
+  }
   try {
     const data = await invoke({ action: "achievements" });
+    try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch {}
     S.definitions = data.definitions || [];
     S.progress = new Map((data.progress || []).map((item) => [item.feature_id, item]));
     S.summary = data.summary || {};

@@ -143,6 +143,15 @@
         <select class="select" id="autoSellTier"></select>
       </div>
 
+      <div class="setting setting--nested" id="autoSellFiltersRow">
+        <div class="setting__copy"><strong>Auto sell filters</strong><span>Match gem type and mutation count before selling.</span></div>
+        <div class="auto-sell-filter-grid">
+          <select class="select" id="autoSellKind"><option value="all">All gem types</option><option value="standard">Standard gems only</option><option value="custom">Custom gems only</option></select>
+          <input class="input setting-number" id="autoSellMinMutations" type="number" min="0" value="0" aria-label="Minimum mutations to auto sell">
+          <input class="input setting-number" id="autoSellMaxMutations" type="number" min="0" value="999" aria-label="Maximum mutations to auto sell">
+        </div>
+      </div>
+
       <div class="setting">
         <div class="setting__copy">
           <strong>Auto keep</strong>

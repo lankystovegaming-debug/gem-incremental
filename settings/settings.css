@@ -191,3 +191,5 @@ label.setting {
 .realism-range::-moz-range-thumb { width: 1.2rem; height: 1.2rem; border-radius: 50%; border: 2px solid var(--surface); background: var(--accent); box-shadow: 0 2px 9px rgb(0 0 0 / .35), 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
 .realism-control__value { justify-self: center; min-width: 7rem; padding: .35rem .7rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-raised); color: var(--text); font-weight: 750; text-align: center; }
 @media (max-width: 760px) { .setting--realism { display: grid; } .realism-control { width: 100%; } .realism-control__labels { font-size: .58rem; } }
+
+.auto-sell-filter-grid{display:grid;grid-template-columns:1fr 110px 110px;gap:8px;width:min(100%,520px)}@media(max-width:620px){.auto-sell-filter-grid{grid-template-columns:1fr 1fr}.auto-sell-filter-grid select{grid-column:1/-1}}

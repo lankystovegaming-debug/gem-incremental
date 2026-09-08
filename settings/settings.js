@@ -140,6 +140,9 @@ renderAppearance();
 const autoRollToggle = document.getElementById("autoRollToggle");
 const autoSellToggle = document.getElementById("autoSellToggle");
 const autoSellTier = document.getElementById("autoSellTier");
+const autoSellKind = document.getElementById("autoSellKind");
+const autoSellMinMutations = document.getElementById("autoSellMinMutations");
+const autoSellMaxMutations = document.getElementById("autoSellMaxMutations");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
@@ -161,6 +164,9 @@ function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
   autoSellToggle.checked = settings.autoSell;
   autoSellTier.value = settings.autoSellTier;
+  if (autoSellKind) autoSellKind.value = settings.autoSellKind || "all";
+  if (autoSellMinMutations) autoSellMinMutations.value = settings.autoSellMinMutations ?? 0;
+  if (autoSellMaxMutations) autoSellMaxMutations.value = settings.autoSellMaxMutations ?? 999;
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("setting--muted", !settings.autoKeep);
@@ -201,6 +207,10 @@ autoSellToggle.addEventListener("change", () =>
   updateSettings({ autoSell: autoSellToggle.checked })
 );
 
+
+autoSellKind?.addEventListener("change", () => updateSettings({ autoSellKind: autoSellKind.value }));
+autoSellMinMutations?.addEventListener("change", () => updateSettings({ autoSellMinMutations: autoSellMinMutations.value }));
+autoSellMaxMutations?.addEventListener("change", () => updateSettings({ autoSellMaxMutations: autoSellMaxMutations.value }));
 autoSellTier.addEventListener("change", () =>
   updateSettings({ autoSellTier: autoSellTier.value })
 );
