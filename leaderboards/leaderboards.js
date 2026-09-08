@@ -1180,8 +1180,14 @@ async function loadLeaderboards() {
   await loadAvatars();
 
 
+  const failedBoards = Array.isArray(response?.failedBoards)
+    ? response.failedBoards
+    : [];
   setStatus(
-    ""
+    failedBoards.length
+      ? `${failedBoards.length} leaderboard section${failedBoards.length === 1 ? "" : "s"} could not refresh. The remaining results are current.`
+      : "",
+    failedBoards.length > 0
   );
 
 

@@ -13,6 +13,9 @@ assert.match(edge, /CACHE_TTL_MS = 30_000/);
 assert.match(edge, /MAX_REQUESTS_PER_WINDOW = 6/);
 assert.match(edge, /ctx\.userClaims/);
 assert.match(edge, /ctx\.supabaseAdmin\.rpc\("get_best_roll_leaderboard"/);
+assert.match(edge, /failedBoards/);
+assert.doesNotMatch(edge, /return json\(\{ error: "Could not load leaderboards\." \}, 500\)/);
+assert.match(client, /remaining results are current/);
 assert.match(migration, /revoke all on function %s from public, anon, authenticated/);
 assert.match(migration, /grant execute on function %s to service_role/);
 
