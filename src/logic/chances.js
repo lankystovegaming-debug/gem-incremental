@@ -1,6 +1,19 @@
 import gems from "../data/gems.js";
-import { formatHugeInteger } from "../ui/format.js";
 import { GEM_MUTATIONS, normalizeMutationIds } from "../data/mutations.js";
+
+
+// Arbitrary-size denominator formatter. Kept local so the inventory chance
+// module cannot fail to load if a stale format.js is cached by the browser.
+const CHANCE_SUFFIXES = ["K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QtDc","QnDc","SxDc","SpDc","OcDc","NoDc","Vg","UVg","DVg","TVg","QtVg","QnVg","SxVg","SpVg","OcVg","NoVg","Tg","UTg","DTg","TTg"];
+export function formatHugeInteger(value) {
+  let n; try { n = typeof value === "bigint" ? value : BigInt(String(value)); } catch { return String(value); }
+  const sign=n<0n?"-":""; if(n<0n)n=-n; const raw=n.toString();
+  if(raw.length<=3) return sign+raw;
+  const exp=raw.length-1, group=Math.floor(exp/3), unit=CHANCE_SUFFIXES[group-1];
+  const lead=exp-group*3+1; const sig=raw.slice(0,3);
+  const whole=sig.slice(0,lead); const frac=sig.slice(lead).replace(/0+$/,"");
+  return unit ? `${sign}${whole}${frac?'.'+frac:''}${unit}` : `${sign}${sig[0]}.${sig.slice(1).replace(/0+$/,"")}e${exp}`;
+}
 
 export const BASE_ROLL_LUCK = 1;
 export const CHAT_CHANCE_THRESHOLD = 1_000_000;

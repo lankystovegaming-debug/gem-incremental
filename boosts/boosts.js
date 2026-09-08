@@ -112,7 +112,7 @@ function render() {
             data-buy="${escapeHtml(potion.id)}"
             ${affordable ? "" : "disabled"}
           >${affordable ? "Buy potion" : "Not enough money"}</button>
-          <button class="btn btn--sm" type="button" data-buy-bulk="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}>Buy max</button>
+          <label class="potion-bulk-label">Qty <select class="potion-bulk-select" data-buy-quantity="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}><option value="1">1</option><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label><button class="btn btn--sm" type="button" data-buy-bulk="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}>Buy selected</button>
         </div>
       </article>
     `;
@@ -186,7 +186,7 @@ async function buyPotion(button) {
 
 async function buyPotionBulk(button) {
   const potion=POTIONS.find(x=>x.id===button.dataset.buyBulk); if(!potion) return;
-  const qty=Math.floor(state.money/Number(potion.shop.price)); if(qty<=0) return;
+  const selected=button.closest(".potion-card")?.querySelector("[data-buy-quantity]"); const requested=Math.max(1,Math.floor(Number(selected?.value)||1)); const qty=Math.min(requested,Math.floor(state.money/Number(potion.shop.price))); if(qty<=0) return;
   button.disabled=true; let bought=0;
   for(let i=0;i<qty;i++){ const {data,error}=await buyCloudConsumable(potion.id); if(error) break; bought++; state.money=Number(data.money??(state.money-potion.shop.price)); const row=state.consumables.find(x=>x.consumable_id===potion.id); if(row) row.quantity=Number(data.quantity??row.quantity+1); else state.consumables.push({consumable_id:potion.id,quantity:Number(data.quantity??1)}); }
   if(bought) notify.success("Potions purchased", `${potion.name} ×${formatCount(bought)}`); render();

@@ -335,6 +335,7 @@ export function mountShell({ page, base = "./" }) {
   renderAnnouncements(header);
   renderActiveAdminEvent(header);
   renderActiveGlobalEvent(header);
+  renderActiveMutationEffects(header);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -1556,4 +1557,15 @@ function createMenuController() {
       openButton = button;
     }
   };
+}
+
+
+async function renderActiveMutationEffects(header){
+  try{
+    const {data,error}=await supabase.rpc("get_active_mutation_effects");
+    if(error||!Array.isArray(data)||!data.length)return;
+    let box=document.querySelector(".mutation-effects-banner");
+    if(!box){box=document.createElement("div");box.className="mutation-effects-banner admin-event-banner";header.after(box);}
+    box.innerHTML=data.map(e=>`<span class="admin-event-banner__content"><strong>${escapeHtml(e.name||"Mutation Effect")}</strong><span>×${Number(e.multiplier||1).toLocaleString(undefined,{maximumFractionDigits:3})} · ${Number(e.rollsRemaining||0)} roll${Number(e.rollsRemaining||0)===1?"":"s"} remaining</span></span>`).join("");
+  }catch{}
 }

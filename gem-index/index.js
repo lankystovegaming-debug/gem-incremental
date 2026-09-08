@@ -407,9 +407,6 @@ function normalizeLiveMutationCatalog(rows) {
       description: String(row?.description ?? ""),
       icon: String(row?.icon ?? "✦"),
       color: String(row?.color ?? "#9fdcff"),
-      sortOrder: Number.isFinite(Number(row?.sort_order))
-        ? Number(row.sort_order)
-        : (isBuiltIn ? (Object.keys(GEM_MUTATIONS).indexOf(id) + 1) * 10 : 1000),
       descriptionCredit: String(row?.description_credit ?? "").trim(),
       isCustom: !isBuiltIn,
       isLive: true,
@@ -420,7 +417,7 @@ function normalizeLiveMutationCatalog(rows) {
   return [...builtInById.values()]
     .filter((mutation) => mutation.enabled !== false)
     .sort((a, b) =>
-      Number(b.multiplier) - Number(a.multiplier) || a.name.localeCompare(b.name) ||
+      Number(a.multiplier) - Number(b.multiplier) || a.name.localeCompare(b.name) ||
       a.id.localeCompare(b.id)
     );
 }
@@ -517,7 +514,7 @@ async function loadLiveMutationCatalog() {
       const direct = await supabase
         .from("game_mutations")
         .select(selectClause)
-        .order("multiplier", { ascending: false })
+        .order("multiplier", { ascending: true })
         .order("name", { ascending: true });
 
       if (!direct.error && Array.isArray(direct.data) && direct.data.length) {
@@ -596,7 +593,7 @@ async function refresh() {
         .from("private_feature_gems")
         .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
         .eq("enabled", true)
-        .order("multiplier", { ascending: false })
+        .order("multiplier", { ascending: true })
         .order("rarity", { ascending: true });
     }
     if (combinations) state.combinations = combinations;

@@ -428,9 +428,10 @@ async function loadMutationCatalog(supabaseAdmin: any) {
     mutationCatalogLoad = (async () => {
       const result = await supabaseAdmin
         .from("game_mutations")
-        .select("id,name,chance,multiplier")
+        .select("id,name,chance,multiplier,description,icon,color")
         .eq("enabled", true)
-        .order("sort_order", { ascending: true });
+        .order("multiplier", { ascending: true })
+        .order("name", { ascending: true });
       if (!result.error && Array.isArray(result.data)) {
         mutationCatalogCache = {
           data: result.data,

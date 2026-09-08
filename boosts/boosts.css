@@ -147,3 +147,6 @@
   .potion-card__purchase { align-items: stretch; flex-direction: column; }
   .potion-card__purchase .btn { width: 100%; }
 }
+
+.potion-bulk-label{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted,#aab4c4)}
+.potion-bulk-select{background:#111a2b;color:inherit;border:1px solid #33415d;border-radius:7px;padding:5px}
