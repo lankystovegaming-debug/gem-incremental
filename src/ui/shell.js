@@ -751,8 +751,8 @@ export function mountShell({ page, base = "./" }) {
     }
 
     walletPill.classList.remove("wallet--loading");
-    walletValue.textContent = formatMoney(amount);
-    walletPill.title = `Money: ${formatMoney(amount)}`;
+    walletValue.textContent = formatMoney(amount, { exact: true });
+    walletPill.title = `Money: ${formatMoney(amount, { exact: true })}`;
   }
 
 
