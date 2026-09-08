@@ -1458,6 +1458,40 @@ function wireUpdateLogPublisher() {
     const existing = forcedId
       ? entries.find((entry) => String(entry.id) === String(forcedId))
       : null;
+    const version = versionInput.value.trim();
+    const derivedTitle = sections?.[0]?.heading === "Overview" ? "" : sections?.[0]?.heading ?? "";
+    const title = titleInput.value.trim() || derivedTitle;
+    const publishedOn = dateInput.value;
+
+    if (!existing) {
+      if (!version) {
+        notify.error("Version required", "Enter a version before saving this update.");
+        versionInput.focus();
+        return;
+      }
+      if (version.length > 40) {
+        notify.error("Version too long", "The version can contain at most 40 characters.");
+        versionInput.focus();
+        return;
+      }
+      if (!title) {
+        notify.error("Title required", "Enter a title, or begin the pasted update with an uppercase heading.");
+        titleInput.focus();
+        return;
+      }
+      if (title.length > 120) {
+        notify.error("Title too long", "The title can contain at most 120 characters.");
+        titleInput.focus();
+        return;
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedOn)) {
+        notify.error("Published date required", "Choose a valid published date before saving.");
+        dateInput.focus();
+        return;
+      }
+      if (!titleInput.value.trim() && derivedTitle) titleInput.value = derivedTitle;
+    }
+
     const payload = existing ? {
       id: existing.id,
       version: existing.version,
@@ -1467,9 +1501,9 @@ function wireUpdateLogPublisher() {
       published
     } : {
       id: idInput.value ? Number(idInput.value) : null,
-      version: versionInput.value.trim(),
-      title: titleInput.value.trim(),
-      publishedOn: dateInput.value,
+      version,
+      title,
+      publishedOn,
       sections,
       published
     };
