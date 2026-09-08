@@ -90,7 +90,7 @@ export default {
       });
     }
     const recipe = recipeRow.recipe;
-    if (recipe.includedSpecimens) {
+    if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
       const { data, error } = await ctx.supabase.rpc("craft_equipment_recipe", { p_recipe_id: recipeId });
       if (error) return Response.json({ error: error.message }, { status: 409 });
       return Response.json(data);
@@ -238,7 +238,6 @@ export default {
       p_roll_speed_bonus: Number(bonus.rollSpeed ?? 0),
       p_weight_luck_bonus: Number(bonus.weightLuck ?? 0),
       p_weight_multiplier_bonus: Number(bonus.weightMultiplier ?? 0),
-      p_mutation_luck_bonus: Number(bonus.mutationLuck ?? 0),
       p_required_equipment_id: equipmentRequirement?.equipmentId ?? null
     });
     if (craftError) {

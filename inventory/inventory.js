@@ -1,3 +1,4 @@
+import { PICKAXE_STATS } from '../src/data/equipmentOverhaul.js';
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
 import {
@@ -10,6 +11,7 @@ import {
 } from "../src/backend/cloudInventory.js";
 import {
   loadCloudEquipment,
+  loadEquipmentOverhaulProgress,
   setCloudEquipmentEquipped,
   enchantCloudEquipment,
   masterworkCloudEquipment
@@ -193,7 +195,7 @@ function inventoryMutation(id, savedMultiplier = null) {
 
 function inventoryChanceLabel(gem, mutationIds) {
   const mutationDenominator = mutationIds.reduce((product, id) => {
-    const chance = Number(state.mutationCatalog.get(String(id).toLowerCase())?.chance);
+    const chance = Number(inventoryMutation(id)?.chance);
     return product * (Number.isFinite(chance) && chance > 0 ? chance : 1);
   }, 1);
   const denominator = Number(gem.rarity) * mutationDenominator;
@@ -963,6 +965,7 @@ deleteMatchingButton?.addEventListener("click", async () => {
 
 const BONUS_LABELS = [
   ["luck_bonus", "Luck"],
+  ["mutation_chance_bonus", "Mutation chance"],
   ["roll_speed_bonus", "Roll speed"],
   ["weight_luck_bonus", "Weight luck"],
   ["weight_multiplier_bonus", "Weight multiplier"]
@@ -979,7 +982,7 @@ function forgeCostHtml(cost) {
 
 function renderForge() {
   if (!forgeList) return;
-  const eligible = state.equipment.filter((item) => Number(item.tier) >= 10);
+  const eligible = state.equipment.filter((item) => (item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") && Number(item.tier) >= 10);
   const enchantRelics = relicCount("Enchant Relic");
   const ancientRelics = relicCount("Ancient Relic");
   convertRelicsButton.disabled = state.money < 2_000_000 || enchantRelics < 12;
@@ -1058,6 +1061,16 @@ convertRelicsButton?.addEventListener("click", async () => {
 });
 
 
+function specialistProgress(item) {
+ const data=state.equipmentMechanics??{};const id=item.equipment_id;
+ if(id==='tectonic-pickaxe')return `Pressure: ${data.pressure??0}/100 · Crushing Depth: ${data.crushing??0} rolls`;
+ if(id==='the-accelerator')return `Velocity: ${Math.min(200,data.spool??0)}/200${Number(data.spool??0)>=200?' · Overdrive':''}`;
+ if(id==='the-excavator')return `Archaeology: ${data.excavations??0} successful Excavations · Milestones: 25 / 100 / 250 / 500`;
+ if(id==='the-resonator')return Object.entries(data.resonance??{}).map(([gem,n])=>`${gem}: ${n}/10`).join(' · ') || 'Discover Special Gems to build permanent Resonance.';
+ if(['empyrean-pickaxe','eternity-pickaxe'].includes(id)){const n=Number(data.rolls?.[id]??0);return n>=1000&&n%1000<10?`Burst: ${10-n%1000} rolls remaining`:`${n%1000}/1,000 genuine rolls`;}
+ return '';
+}
+
 function renderEquipment() {
   if (state.loading) {
     equipmentList.innerHTML = Array.from(
@@ -1083,19 +1096,17 @@ function renderEquipment() {
     return;
   }
 
-  equipmentList.innerHTML = state.equipment
+  equipmentList.innerHTML = (state.equipment.some(e=>e.equipped&&e.equipment_id==='toy-shovel') && state.equipment.some(e=>e.equipped&&e.equipment_id==='plastic-shopping-bag') ? '<div class="badge badge--accent">TEMU LOADOUT</div>' : '') + state.equipment
     .map((item) => {
       const bonuses = BONUS_LABELS.filter(
         ([key]) => Number(item[key] ?? 0) !== 0
       ).map(
         ([key, label]) =>
-          `<span class="badge badge--positive">+${(
-            Number(item[key]) * 100
-          ).toFixed(0)}% ${label}</span>`
+          `<span class="badge badge--positive">${Number((1 + Number(item[key])).toFixed(3))}× ${label}</span>`
       );
       const enchant = ENCHANTS[item.enchant_id];
       const passive = getEquipmentPassive(item.equipment_id);
-      const forgePassive = masterworkPassive(item.category, item.masterwork_passive);
+      const forgePassive = (item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") ? masterworkPassive(item.category, item.masterwork_passive) : null;
       const canEnchant = item.category === "pickaxe" && item.equipped &&
         state.gems.some((gem) => isRelic(gem) && !gem.locked);
 
@@ -1105,9 +1116,7 @@ function renderEquipment() {
             <div>
               <div class="equipment-card__name">${escapeHtml(item.name)}</div>
               <div class="equipment-card__meta">
-                ${escapeHtml(item.category)} · Tier ${escapeHtml(
-        String(item.tier)
-      )}
+                ${['plastic-shopping-bag','toy-shovel','silly-fun-happy-pickaxe'].includes(item.equipment_id) ? 'Toy' : PICKAXE_STATS[item.equipment_id] ? 'Endgame pickaxe' : `${escapeHtml(item.category)} · Tier ${item.tier}`}
               </div>
             </div>
 
@@ -1122,14 +1131,15 @@ function renderEquipment() {
             ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
           </div>
 
+          ${specialistProgress(item) ? `<p class="equipment-passive">${escapeHtml(specialistProgress(item))}</p>` : ""}
           ${passive ? `<div class="equipment-passive">
             <strong>${escapeHtml(passive.name)}</strong>
             <span>${escapeHtml(passive.description)}</span>
           </div>` : ""}
 
-          ${Number(item.masterwork_level ?? 0) > 0 ? `<div class="equipment-passive">
+          ${(item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") && Number(item.masterwork_level ?? 0) > 0 ? `<div class="equipment-passive">
             <strong>Masterwork ${item.masterwork_level}/5${item.masterwork_level === 5 ? " · Perfected" : ""}</strong>
-            <span>Equipment bonuses increased by ${item.masterwork_level}%${forgePassive ? ` · ${escapeHtml(forgePassive.name)} ${item.masterwork_passive_rank >= 2 ? "II" : "I"}` : ""}</span>
+            <span>${PICKAXE_STATS[item.equipment_id] ? "Fixed specialist stats" : `Equipment bonuses increased by ${item.masterwork_level}%`}${forgePassive ? ` · ${escapeHtml(forgePassive.name)} ${item.masterwork_passive_rank >= 2 ? "II" : "I"}` : ""}</span>
           </div>` : ""}
 
           ${enchant ? `<div class="equipment-enchant">
@@ -1329,11 +1339,7 @@ function renderActiveBoosts() {
           .map(
             (boost) => `
               <span class="active-boost">
-                <strong>+${Math.round(
-                  Number(boost.effect_value) * 100
-                )}% ${escapeHtml(
-              POTION_STATS[boost.family] ?? boost.family
-            )}</strong>
+                <strong>${boost.family === "relic" ? "Secondary bonuses ×1.5" : `+${Math.round(Number(boost.effect_value)*100)}% ${escapeHtml(POTION_STATS[boost.family] ?? boost.family)}`}</strong>
                 <span class="active-boost__time">${formatRemaining(
                   boost.expires_at
                 )}</span>
@@ -1413,15 +1419,13 @@ function renderConsumables() {
           <div class="potion-owned__name">${escapeHtml(def.name)}</div>
 
           <div class="potion-owned__meta">
-            <span class="badge badge--positive">+${Math.round(
-              def.effectValue * 100
-            )}% ${escapeHtml(stat)}</span>
+            <span class="badge badge--positive">${def.family === "relic" ? "Secondary bonuses ×1.5" : `+${Math.round(def.effectValue*100)}% ${escapeHtml(stat)}`}</span>
             <span class="badge badge--muted">Tier ${def.tier}</span>
           </div>
 
           <p class="potion-owned__note">
             ${
-              sameTypePending
+              def.family === "relic" ? "Excavator-exclusive. Boosts only normal secondary bonus portions for 60s; further uses extend duration." : sameTypePending
                 ? `Charged for your next ${formatCount(pendingCharges)} successful ${
                     pendingCharges === 1 ? "roll" : "rolls"
                   } — drink more to add charges.`
@@ -1589,7 +1593,7 @@ async function refresh() {
     return;
   }
 
-  const [gems, playerState, equipment, potions, boosts, oneRollBoost, showcase, mutationCatalog] = await Promise.all([
+  const [gems, playerState, equipment, potions, boosts, oneRollBoost, showcase, mutationCatalog, overhaulProgress] = await Promise.all([
     loadCloudGems(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
@@ -1597,7 +1601,8 @@ async function refresh() {
     loadActiveBoosts(),
     loadPendingOneRollBoost(),
     loadMyShowcase(),
-    loadMutationCatalog()
+    loadMutationCatalog(),
+    loadEquipmentOverhaulProgress()
   ]);
 
   state.loading = false;
@@ -1617,6 +1622,7 @@ async function refresh() {
     state.money = playerState.money;
   }
 
+  state.equipmentMechanics = overhaulProgress?.state ?? {};
   if (equipment) {
     state.equipment = equipment;
   }

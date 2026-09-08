@@ -1,3 +1,4 @@
+import { applyEquipmentOverhaul } from './equipmentOverhaul.js';
 import { lateGameEquipment } from './lateGameEquipment.js';
 const recipes = [
   // =========================================================
@@ -1494,4 +1495,4 @@ const recipes = [
   }
 ];
 
-export default [...recipes.filter((recipe) => recipe.category !== "lantern" && !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment];
+export default applyEquipmentOverhaul([...recipes.filter((recipe) => !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment]);

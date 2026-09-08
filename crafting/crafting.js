@@ -1,5 +1,6 @@
 import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
-import recipes from "../src/data/recipes.js";
+import baseRecipes from "../src/data/recipes.js";
+let recipes = baseRecipes;
 import { getConsumableById } from "../src/data/consumables.js";
 
 import {
@@ -17,7 +18,7 @@ import {
   setCloudAutoCraft,
   loadCloudConsumables
 } from "../src/backend/cloudCrafting.js";
-import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
+import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "../src/backend/cloudEquipment.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
 import { mountShell } from "../src/ui/shell.js";
@@ -62,6 +63,8 @@ const state = {
   consumables: [],
   money: 0,
   totalRolls: 0,
+  specialDiscoveries: {},
+  genuineRolls: 0,
   bestRareNaturalWeight100k: 0,
   bestRareNaturalWeight1m: 0,
   category: "pickaxe",
@@ -111,7 +114,7 @@ function isPotionAutoTarget(recipeId) {
 
 function ownsEquipment(equipmentId) {
   return state.equipment.some(
-    (item) => item.equipment_id === equipmentId
+    (item) => item.equipment_id === equipmentId || (equipmentId === "omnidimensional-vault" && item.equipment_id === "dimensional-vault")
   );
 }
 
@@ -123,12 +126,19 @@ function ownsTierOrHigher(category, tier) {
 }
 
 
+function ownsRecipe(recipe) {
+ return recipe.horizontal || recipe.craftingTab === 'toys' || (recipe.category === 'pickaxe' && recipe.reward.tier === 15)
+   ? ownsEquipment(recipe.id) : ownsTierOrHigher(recipe.reward.category,recipe.reward.tier);
+}
+
 // The logic module expects a plain { id } shape.
 function equipmentContext() {
   return {
     equipment: state.equipment.map((item) => ({ id: item.equipment_id })),
     consumables: state.consumables,
     totalRolls: state.totalRolls,
+    genuineRolls: state.genuineRolls,
+    specialDiscoveries: state.specialDiscoveries,
     bestRareNaturalWeight100k: state.bestRareNaturalWeight100k,
     bestRareNaturalWeight1m: state.bestRareNaturalWeight1m
   };
@@ -169,6 +179,14 @@ function requirementKey(requirement, index) {
 
 function describeRequirement(requirement, value) {
   switch (requirement.type) {
+    case 'special-discoveries': {
+      const have=Number(state.specialDiscoveries[requirement.classification]??0);
+      return {label:({daily_window:'Distinct daily-window gems (excluding the clock)',global_event:'Distinct global-event gems',special:'Distinct Special Gems'})[requirement.classification],text:`${have} / ${requirement.amount}`,fraction:ratio(have,requirement.amount)};
+    }
+    case 'potion-tier': {
+      const have=state.consumables.filter(p=>/^(lucky|speed|fortune|mass)-potion-/.test(p.consumable_id)&&p.consumable_id.endsWith('-'+requirement.tier)).reduce((n,p)=>n+Number(p.quantity??0),0);
+      return {label:`Tier ${requirement.tier} potions · any family`,text:`${have} / ${requirement.amount}`,fraction:ratio(have,requirement.amount)};
+    }
     case "consumable": {
       const item = getConsumableById(requirement.consumableId);
       // Ownership-based: show how many you own vs the amount needed.
@@ -370,6 +388,7 @@ function isConsumableRecipe(recipe) {
 function formatBonuses(bonus = {}) {
   const labels = [
     ["luck", "Luck"],
+    ["mutationChance", "Mutation chance"],
     ["rollSpeed", "Roll speed"],
     ["weightLuck", "Weight luck"],
     ["weightMultiplier", "Weight multiplier"],
@@ -388,6 +407,7 @@ function formatBonuses(bonus = {}) {
 
 function formatReward(recipe) {
   if (!isConsumableRecipe(recipe)) {
+    if (recipe.equipmentOverhaul) return Object.entries(recipe.reward.bonus).map(([key,value])=>`<span class="badge badge--positive">${Number((1+value).toFixed(3))}× ${{luck:'Luck',rollSpeed:'Roll speed',mutationChance:'Mutation chance',weightLuck:'Weight Luck',weightMultiplier:'Weight multiplier'}[key]}</span>`);
     return formatBonuses(recipe.reward?.bonus);
   }
 
@@ -415,7 +435,7 @@ function setCategory(category) {
   state.category = category;
 
   if (hideOwnedRow) {
-    hideOwnedRow.hidden = category === "potion" || category === "lantern";
+    hideOwnedRow.hidden = category === "potion";
   }
 
   for (const tab of categoryTabs) {
@@ -466,21 +486,9 @@ function renderRecipes() {
   renderAutoBanner();
   renderCraftingRecommendation();
 
-  if (state.category === "lantern") {
-    subtitle.textContent = "Lanterns are legacy equipment";
-    recipeList.innerHTML = `
-      <div class="empty" style="grid-column:1/-1">
-        ${icons.info}
-        <p class="empty__title">Lanterns have been deprecated.</p>
-        <p>Existing lanterns can still be equipped, but new lanterns can no longer be crafted.</p>
-      </div>
-    `;
-    return;
-  }
-
   const equipmentRecipes = recipes.filter((recipe) => !isConsumableRecipe(recipe));
   const owned = equipmentRecipes.filter((recipe) =>
-    ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
+    ownsRecipe(recipe)
   ).length;
 
   subtitle.textContent =
@@ -488,14 +496,14 @@ function renderRecipes() {
     `${formatMoney(state.money)} available`;
 
   let visible = recipes.filter(
-    (recipe) => recipe.category === state.category
+    (recipe) => (recipe.craftingTab ?? recipe.category) === state.category
   );
 
   if (hideOwned.checked) {
     visible = visible.filter(
       (recipe) =>
         isConsumableRecipe(recipe) ||
-        !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier)
+        !ownsRecipe(recipe)
     );
   }
 
@@ -542,26 +550,23 @@ function renderRecipeInPlace(recipeId, focusSelector = null) {
 }
 
 function renderCraftingRecommendation() {
-  const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsTierOrHigher(recipe.reward.category, recipe.reward.tier));
+  const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsRecipe(recipe));
   const next = candidates.sort((a, b) => {
     const aReady = isRecipeReady(a) ? 1 : 0, bReady = isRecipeReady(b) ? 1 : 0;
     return bReady - aReady || Number(a.reward.tier) - Number(b.reward.tier);
   })[0];
   if (!next) { craftingNext.innerHTML = `<div><span class="badge badge--positive">Complete</span><h2>All current equipment is crafted</h2><p>Focus on Masterwork upgrades or keep an eye on future recipe releases.</p></div>`; return; }
   const ready = isRecipeReady(next);
-  craftingNext.innerHTML = `<div><span class="badge badge--accent">Recommended next</span><h2>${escapeHtml(next.name)}</h2><p>${ready ? "Ready to craft now — this is your next available equipment upgrade." : `Closest next equipment upgrade · Tier ${next.reward.tier}. Pin it to keep its material goal visible.`}</p></div><div class="row"><button class="btn" data-pin-recipe="${escapeHtml(next.id)}">${pinnedRecipeIds().has(next.id) ? "Unpin recipe" : "Pin recipe"}</button><button class="btn btn--primary" data-open-recipe="${escapeHtml(next.id)}">View recipe</button></div>`;
+  craftingNext.innerHTML = `<div><span class="badge badge--accent">Recommended next</span><h2>${escapeHtml(next.name)}</h2><p>${ready ? "Ready to craft now — this is your next available equipment upgrade." : `Choose your next build. Pin this recipe to keep its material goal visible.`}</p></div><div class="row"><button class="btn" data-pin-recipe="${escapeHtml(next.id)}">${pinnedRecipeIds().has(next.id) ? "Unpin recipe" : "Pin recipe"}</button><button class="btn btn--primary" data-open-recipe="${escapeHtml(next.id)}">View recipe</button></div>`;
   craftingNext.querySelector("[data-pin-recipe]")?.addEventListener("click", () => togglePinnedRecipe(next.id));
-  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { setCategory(next.category); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
+  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { setCategory(next.craftingTab ?? next.category); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
 }
 
 
 function recipeCard(recipe) {
   const progress = ensureRecipeProgress(state.crafting, recipe);
 
-  const owned = !isConsumableRecipe(recipe) && ownsTierOrHigher(
-    recipe.reward.category,
-    recipe.reward.tier
-  );
+  const owned = !isConsumableRecipe(recipe) && ownsRecipe(recipe);
 
   const ready = !owned && isRecipeReady(recipe);
 
@@ -579,7 +584,7 @@ function recipeCard(recipe) {
         const met = ownsEquipment(requirement.equipmentId);
 
         const source = recipes.find(
-          (entry) => entry.reward?.id === requirement.equipmentId
+          (entry) => entry.reward?.id === (requirement.equipmentId === "omnidimensional-vault" ? "dimensional-vault" : requirement.equipmentId)
         );
 
         const name =
@@ -600,7 +605,7 @@ function recipeCard(recipe) {
         `;
       }
 
-      if (requirement.type === "consumable") {
+      if (["consumable","potion-tier","special-discoveries"].includes(requirement.type)) {
         const complete = isRequirementComplete(
           state.crafting, recipe, requirement, index, equipmentContext()
         );
@@ -688,7 +693,7 @@ function recipeCard(recipe) {
       <div class="recipe-card__head">
         <div class="recipe-card__identity">
           <div class="recipe-card__name">${escapeHtml(recipe.name)}</div>
-          <div class="recipe-card__tier">Tier ${recipe.reward.tier}${isConsumableRecipe(recipe) ? " · Repeatable" : ""}</div>
+          <div class="recipe-card__tier">${recipe.craftingTab === "toys" ? "Toy" : recipe.horizontal ? "Specialist" : `Tier ${recipe.reward.tier}`}${isConsumableRecipe(recipe) ? " · Repeatable" : ""}</div>
         </div>
 
         <div class="recipe-card__tools">
@@ -1081,17 +1086,21 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment, consumables] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables, overhaulProgress] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
-    loadCloudConsumables()
+    loadCloudConsumables(),
+    loadEquipmentOverhaulProgress()
   ]);
 
   state.loading = false;
+  state.specialDiscoveries = overhaulProgress ?? {};
+  state.genuineRolls = overhaulProgress?.genuineRolls ?? 0;
 
   if (craftingState) {
     state.crafting = craftingState;
+    recipes = baseRecipes.map(recipe => craftingState.progress?.[recipe.id]?._equipment_recipe ?? recipe);
   }
 
   if (playerState) {

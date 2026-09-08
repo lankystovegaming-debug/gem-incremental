@@ -1,20 +1,11 @@
+import { equipmentTotals, luckLayers, prepareEquipmentRoll } from '../../supabase/functions/roll/equipmentRules.js';
+import { getEquipmentPassive } from '../data/equipmentPassives.js';
 import {
   supabase
 } from "./supabase.js";
 import { loadActiveAdminEvent } from "./cloudAdminEvents.js";
 import { ENCHANTS, enchantDescription } from "../data/enchants.js";
 import { MASTERWORK_ATTUNEMENTS, MASTERWORK_PASSIVES } from "../data/masterwork.js";
-
-const EQUIPMENT_PASSIVES = {
-  "eclipse-pickaxe": "1.10× mutation activation chance.",
-  "singularity-pickaxe": "1.10× Luck toward 1/100,000+ base-rarity gems.",
-  "transcendent-pickaxe": "Equipped enchant effects are 10% stronger.",
-  "astral-pickaxe": "Vein Hunter duplicate-roll passive is active.",
-  "celestial-pickaxe": "Builds Rarity Resonance toward an empowered 3× Luck roll.",
-  "event-horizon-boots": "15% chance to add +1.00× to weight rolls of 2× or higher.",
-  "gravitational-boots": "Builds Gravitational Surge toward an improved weight roll.",
-  "singularity-vault": "Every 50th roll receives 1.25× final specimen weight."
-};
 
 const RESEARCH_MISC_BUFFS = [
   ["legendary_luck_multiplier", "Legendary gem Luck", "multiplier"],
@@ -63,6 +54,8 @@ export async function loadCloudDebugState() {
         inventory_capacity,
         next_roll_at,
         total_rolls,
+        equipment_state,
+        rarity_resonance,
         rarest_gem_name,
         rarest_gem_rarity
       `)
@@ -144,12 +137,14 @@ export async function loadCloudDebugState() {
         roll_speed_bonus,
         weight_luck_bonus,
         weight_multiplier_bonus,
+        mutation_chance_bonus,
         masterwork_level,
         masterwork_passive,
         masterwork_passive_rank,
         masterwork_attunement,
         enchant_id,
-        enchant_grade
+        enchant_grade,
+        enchant_state
       `);
 
 
@@ -203,7 +198,8 @@ export async function loadCloudDebugState() {
     researchEffectsResult,
     permanentModifiersResult,
     miscModifiersResult,
-    adminEventResult
+    adminEventResult,
+    equipmentPreviewResult
   ] = await Promise.all([
     supabase
       .from("player_one_roll_boosts")
@@ -237,7 +233,8 @@ export async function loadCloudDebugState() {
       .maybeSingle(),
     supabase.rpc("get_current_roll_stat_modifiers"),
     supabase.rpc("get_current_misc_buff_modifiers"),
-    loadActiveAdminEvent()
+    loadActiveAdminEvent(),
+    supabase.rpc("get_equipment_roll_preview")
   ]);
 
   if (oneRollResult.error) {
@@ -263,6 +260,11 @@ export async function loadCloudDebugState() {
   const researchEffects = researchEffectsResult.data ?? {};
   const permanentModifiers = permanentModifiersResult.data?.[0] ?? {};
   const miscModifiers = miscModifiersResult.data ?? {};
+  const authoritativePreview=equipmentPreviewResult.data??{};
+  const playtimeLevels=authoritativePreview.playtime?.levels??{};
+  const playtimeMultiplier=key=>[1,1.05,1.1,1.2,1.35,1.5,1.75,2,2.5,3,4][Math.max(0,Math.min(10,Number(playtimeLevels[key]??0)))]??1;
+  const worldSnapshot=authoritativePreview.world;
+  const worldConfig=worldSnapshot&&Date.parse(worldSnapshot.endsAt)>Date.now()&&Date.parse(worldSnapshot.startsAt)<=Date.now()?worldSnapshot.config??{}:{};
   const activeAdminEvent = Array.isArray(adminEventResult.data)
     ? adminEventResult.data[0] ?? null
     : adminEventResult.data ?? null;
@@ -346,43 +348,12 @@ export async function loadCloudDebugState() {
   };
 
 
-  for (
-    const item
-    of equipment ?? []
-  ) {
-    if (
-      !item.equipped
-    ) {
-      continue;
-    }
-
-
-    const masterworkFactor = 1 + Math.min(5, Math.max(0, Number(item.masterwork_level ?? 0))) / 100;
-
-    const itemLuck = Number(item.luck_bonus ?? 0) * masterworkFactor;
-    const itemRollSpeed = Number(item.roll_speed_bonus ?? 0) * masterworkFactor;
-    const itemWeightLuck = Number(item.weight_luck_bonus ?? 0) * masterworkFactor;
-    const itemWeightMultiplier = Number(item.weight_multiplier_bonus ?? 0) * masterworkFactor;
-    const label = equipmentLabel(item);
-
-    luck +=
-      itemLuck;
-
-    rollSpeed +=
-      itemRollSpeed;
-
-    weightLuck +=
-      itemWeightLuck;
-
-    weightMultiplier +=
-      itemWeightMultiplier;
-
-    recordAddition("luck", label, itemLuck);
-    recordAddition("rollSpeed", label, itemRollSpeed);
-    recordAddition("weightLuck", label, itemWeightLuck);
-    recordAddition("weightMultiplier", label, itemWeightMultiplier);
-  }
-
+  const equippedItems=(equipment??[]).filter(item=>item.equipped);
+  const pickaxe=equippedItems.find(item=>item.category==='pickaxe');
+  const nextEquipment=prepareEquipmentRoll(pickaxe?.equipment_id??'',player.equipment_state??{},()=>1);
+  const equipmentStats=equipmentTotals(equippedItems,(boosts??[]).some(b=>b.family==='relic'),nextEquipment.stats);
+  luck=equipmentStats.luck;rollSpeed=equipmentStats.rollSpeed;weightLuck=equipmentStats.weightLuck;weightMultiplier=equipmentStats.weightMultiplier;
+  for(const key of ['luck','rollSpeed','weightLuck','weightMultiplier']) statBreakdown[key]=[{label:'Equipment total',operation:'base',value:equipmentStats[key]}];
   // Permanent Museum artifacts are applied in the same phase as equipment
   // before research, events, and guild multipliers.
   luck += Number(permanentModifiers.artifact_luck_bonus ?? 0);
@@ -395,30 +366,22 @@ export async function loadCloudDebugState() {
   recordAddition("weightLuck", "Museum artifacts", permanentModifiers.artifact_weight_luck_bonus);
   recordAddition("weightMultiplier", "Museum artifacts", permanentModifiers.artifact_weight_multiplier_bonus);
 
-  const equippedLantern = (equipment ?? []).find(item => item.equipped && item.category === "lantern");
-  const lanternPassiveRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
-  if (equippedLantern?.masterwork_passive === "focused_beam") {
-    const focusedBeamMultiplier = lanternPassiveRank >= 2 ? 1.05 : 1.03;
-    luck *= focusedBeamMultiplier;
-    recordMultiplier("luck", "Focused Beam", focusedBeamMultiplier);
-  }
-
   // Keep the displayed values in the same order as the authoritative roll
   // service: research scales permanent gear first, then scales potion power.
   const researchLuckMultiplier = positiveNumber(researchEffects.luck_multiplier);
   const researchRollSpeedMultiplier = positiveNumber(researchEffects.roll_speed_multiplier);
   const researchWeightLuckMultiplier = positiveNumber(researchEffects.weight_luck_multiplier);
-  luck *= positiveNumber(researchEffects.luck_multiplier);
+  // Research participates in the additive personal Luck layer.
   rollSpeed *= researchRollSpeedMultiplier;
   weightLuck *= researchWeightLuckMultiplier;
-  recordMultiplier("luck", "Research", researchLuckMultiplier);
+
   recordMultiplier("rollSpeed", "Research", researchRollSpeedMultiplier);
   recordMultiplier("weightLuck", "Research", researchWeightLuckMultiplier);
 
-  const crystalLuckBonus = Number(miscModifiers.crystalLuckBonus ?? 0);
-  const hellLuckBonus = Number(miscModifiers.hellLuckBonus ?? 0);
-  const crystalWeightLuckMultiplier = positiveNumber(miscModifiers.crystalWeightLuckMultiplier);
-  const crystalWeightMultiplierMultiplier = positiveNumber(miscModifiers.crystalWeightMultiplierMultiplier);
+  const crystalLuckBonus = Number(authoritativePreview.crystal?.luckBonus ?? miscModifiers.crystalLuckBonus ?? 0);
+  const hellLuckBonus = Number(authoritativePreview.expedition?.luckBonus ?? miscModifiers.hellLuckBonus ?? 0);
+  const crystalWeightLuckMultiplier = positiveNumber(authoritativePreview.crystal?.weightLuckMultiplier ?? miscModifiers.crystalWeightLuckMultiplier);
+  const crystalWeightMultiplierMultiplier = positiveNumber(authoritativePreview.crystal?.weightMultiplierMultiplier ?? miscModifiers.crystalWeightMultiplierMultiplier);
   luck += crystalLuckBonus;
   luck += hellLuckBonus;
   weightLuck *= crystalWeightLuckMultiplier;
@@ -444,9 +407,7 @@ export async function loadCloudDebugState() {
         0
       ) * researchPotionStrength;
 
-    if (boost.family === "rollSpeed" && equippedLantern?.masterwork_passive === "potion_afterglow") {
-      effectValue *= lanternPassiveRank >= 2 ? 1.15 : 1.10;
-    }
+
 
 
     if (
@@ -485,51 +446,47 @@ export async function loadCloudDebugState() {
     }
   }
 
-  if (equippedLantern?.masterwork_passive === "overclocked_flame") {
-    const overclockedMultiplier = lanternPassiveRank >= 2 ? 1.08 : 1.05;
-    rollSpeed *= overclockedMultiplier;
-    recordMultiplier("rollSpeed", "Overclocked Flame", overclockedMultiplier);
-  }
-
-  if (
-    equippedLantern?.masterwork_passive === "flashpoint" &&
-    (Number(player.total_rolls ?? 0) + 1) % 250 === 0
-  ) {
-    const flashpointMultiplier = lanternPassiveRank >= 2 ? 1.4 : 1.25;
-    rollSpeed *= flashpointMultiplier;
-    recordMultiplier("rollSpeed", "Flashpoint (next roll)", flashpointMultiplier);
-  }
-
-  const equippedBoots = (equipment ?? []).find(item => item.equipped && item.category === "boots");
-  const bootsPassiveRank = Number(equippedBoots?.masterwork_passive_rank ?? 0);
-  if (equippedBoots?.masterwork_passive === "fortune_walker") {
-    const fortuneWalkerMultiplier = bootsPassiveRank >= 2 ? 1.08 : 1.05;
-    weightLuck *= fortuneWalkerMultiplier;
-    recordMultiplier("weightLuck", "Fortune Walker", fortuneWalkerMultiplier);
-  }
-
-
   // Guild bonuses affect ordinary Luck only, before special one-roll potions.
   const guildLuckMultiplier = positiveNumber(permanentModifiers.guild_luck_multiplier);
   const guildRollSpeedMultiplier = positiveNumber(permanentModifiers.guild_roll_speed_multiplier);
   const guildWeightLuckMultiplier = positiveNumber(permanentModifiers.guild_weight_luck_multiplier);
   const guildWeightMultiplier = positiveNumber(permanentModifiers.guild_weight_multiplier);
-  luck *= guildLuckMultiplier;
+  // Guild participates in the additive personal Luck layer.
   rollSpeed *= guildRollSpeedMultiplier;
   weightLuck *= guildWeightLuckMultiplier;
   weightMultiplier *= guildWeightMultiplier;
-  recordMultiplier("luck", "Guild upgrade", guildLuckMultiplier);
+
   recordMultiplier("rollSpeed", "Guild upgrade", guildRollSpeedMultiplier);
   recordMultiplier("weightLuck", "Guild upgrade", guildWeightLuckMultiplier);
   recordMultiplier("weightMultiplier", "Guild upgrade", guildWeightMultiplier);
 
 
-  if (oneRollBoost) {
-    const oneRollLuck = Number(oneRollBoost.effect_value ?? 0);
-    luck += oneRollLuck;
-    recordAddition("luck", "Special one-roll potion (after ordinary modifiers)", oneRollLuck);
-  }
-
+  const flatLuck=luck-equipmentStats.luck;
+  const enchantState=pickaxe?.enchant_state??{};
+  const ancient=pickaxe?.enchant_grade==='ancient';
+  let enchantComponent=1;
+  if(pickaxe?.enchant_id==='deep_strike'&&Number(enchantState.rolls??0)+1>=(ancient?5:7)) enchantComponent=ancient?1.5:1.35;
+  if(pickaxe?.enchant_id==='fortune_surge'&&Number(enchantState.remaining??0)>0) enchantComponent=ancient?1.5:1.35;
+  if(pickaxe?.enchant_id==='prospectors_instinct'&&Number(enchantState.remaining??0)>0) enchantComponent=ancient?1.6:1.4;
+  if(pickaxe?.enchant_id==='vein_hunter') enchantComponent=1+Math.min(30,Math.max(0,Number(enchantState.misses??0)))/100;
+  const sharedEnchants=new Set(['deep_strike','lucky_break','fortune_surge','collectors_edge']);
+  const attune=pickaxe?.masterwork_attunement;
+  const attunementFactor=attune==='amplified'?1.03:attune==='resonant'&&sharedEnchants.has(pickaxe?.enchant_id)?1.05:attune==='specialized'&&!sharedEnchants.has(pickaxe?.enchant_id)?1.05:1;
+  enchantComponent=1+(enchantComponent-1)*(pickaxe?.equipment_id==='transcendent-pickaxe'?1.1:1)*attunementFactor;
+  if(nextEquipment.flags.ascension) enchantComponent+=50;
+  let specialMultiplier=positiveNumber(authoritativePreview.crystal?.finalLuckMultiplier)*playtimeMultiplier("luck");
+  if(pickaxe?.equipment_id==='celestial-pickaxe'&&Number(player.rarity_resonance??0)>=100) specialMultiplier*=3;
+  if(researchEffects.statistical_breakthrough&&((Number(player.total_rolls??0)+1)%250===0))specialMultiplier*=1.2;
+  const previewLayers=luckLayers({pickaxe:equipmentStats.pickaxe,clover:equipmentStats.clover,enchant:enchantComponent,guild:guildLuckMultiplier,research:researchLuckMultiplier,flat:flatLuck,special:specialMultiplier,oneRoll:Number(oneRollBoost?.effect_value??0),world:positiveNumber(worldConfig.luckMultiplier)});
+  luck=previewLayers.final;
+  statBreakdown.luck=[
+    {label:'Pickaxe × Clover',operation:'base',value:previewLayers.base},
+    {label:'Personal: additive enchant + guild + research + focused bonuses',operation:'multiply',value:previewLayers.personal},
+    {label:'Museum + artifacts + timed potion',operation:'add',value:previewLayers.flat},
+    {label:'Special mechanics',operation:'multiply',value:previewLayers.special},
+    {label:'One-roll potion',operation:'add',value:previewLayers.oneRoll},
+    {label:'World event (base phase)',operation:'multiply',value:previewLayers.world}
+  ];
 
   if (activeAdminEvent) {
     const adminEventLabel = activeAdminEvent.name
@@ -605,10 +562,10 @@ export async function loadCloudDebugState() {
   for (const item of equipment ?? []) {
     if (!item.equipped) continue;
     const itemName = equipmentLabel(item);
-    const intrinsic = EQUIPMENT_PASSIVES[item.equipment_id];
+    const intrinsic = getEquipmentPassive(item.equipment_id)?.description;
     if (intrinsic) addMiscBuff("Equipment", itemName, "Active", intrinsic);
 
-    const passive = MASTERWORK_PASSIVES[item.category]?.[item.masterwork_passive];
+    const passive = (item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") ? MASTERWORK_PASSIVES[item.category]?.[item.masterwork_passive] : null;
     if (passive) {
       const rank = Number(item.masterwork_passive_rank ?? 0) >= 2 ? "Rank II" : "Rank I";
       addMiscBuff("Masterwork", passive.name, rank, passive.description);
@@ -648,6 +605,9 @@ export async function loadCloudDebugState() {
     addMiscBuff("Hell artifacts", "Doom gained", formatMultiplier(doomMultiplier));
   }
 
+  rollSpeed*=playtimeMultiplier('rollSpeed')*positiveNumber(worldConfig.rollSpeedMultiplier)*positiveNumber(authoritativePreview.expedition?.rollSpeedMultiplier);
+  weightLuck*=positiveNumber(authoritativePreview.expedition?.weightLuckMultiplier)*positiveNumber(worldConfig.weightLuckMultiplier);
+  weightMultiplier*=positiveNumber(authoritativePreview.expedition?.weightMultiplierMultiplier);
   const adminMutationBonus = Number(activeAdminEvent?.mutation_luck_bonus ?? 0);
   const adminMutationMultiplier = Number(activeAdminEvent?.mutation_luck_multiplier ?? 1);
   if (adminMutationBonus > 0) {
@@ -695,6 +655,9 @@ export async function loadCloudDebugState() {
       weightLuck,
       weightMultiplier,
       breakdown: statBreakdown,
+      luckLayers: previewLayers,
+      mutationChance: equipmentStats.mutation,
+      previewNote: "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
       miscellaneousBuffs: miscBuffs
     },
 

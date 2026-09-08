@@ -10,7 +10,7 @@ const roll = read("supabase/functions/roll/index.ts");
 
 assert.match(backend, /get_current_misc_buff_modifiers/);
 assert.match(backend, /RESEARCH_MISC_BUFFS/);
-assert.match(backend, /EQUIPMENT_PASSIVES/);
+assert.match(backend, /getEquipmentPassive/);
 assert.match(backend, /MASTERWORK_PASSIVES/);
 assert.match(backend, /enchantDescription/);
 assert.match(backend, /miscellaneousBuffs: miscBuffs/);

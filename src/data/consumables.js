@@ -68,6 +68,8 @@ consumables.push(
 consumables.push({ id: "plastic-bag", name: "Plastic Bag", family: "material", tier: 0,
   material: true, effectValue: 0, marketReferencePrice: 0.10, shop: { purchasable: false, price: null } });
 
+consumables.push({id:'relic-potion',name:'Relic Potion',family:'relic',tier:1,durationMs:60000,effectValue:1.5,description:'Normal secondary bonus portions ×1.5 for 60 seconds. Excavator-exclusive.',shop:{purchasable:false,price:null}});
+
 export function getConsumableById(id) {
   return consumables.find((item) => item.id === id) ?? null;
 }

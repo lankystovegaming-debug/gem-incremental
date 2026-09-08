@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {luckLayers,relicSecondary,prepareEquipmentRoll,finishEquipmentRoll,specialChance,exclusiveMutations,acceleratorSpeed,equipmentTotals} from '../supabase/functions/roll/equipmentRules.js';
+import recipes from '../src/data/recipes.js';
+const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
+near(luckLayers({pickaxe:26,clover:1.1,enchant:1.35,guild:1.1,research:1.05,focused:1.03,flat:1,special:3,oneRoll:1000,world:2}).final,2268.548);
+near(relicSecondary(1.1,true),1.15);near(relicSecondary(1.25,true),1.375);
+for(const [count,active] of [[999,false],[1000,true],[1009,true],[1010,false],[1999,false],[2000,true]]) assert.equal(prepareEquipmentRoll('empyrean-pickaxe',{rolls:{'empyrean-pickaxe':count}}).flags.ascension,active);
+near(luckLayers({pickaxe:24,enchant:51.35}).personal,51.35);
+let c=prepareEquipmentRoll('tectonic-pickaxe',{pressure:99},()=>1);
+let result=finishEquipmentRoll(c,{naturalWeight:.84,gem:{},random:()=>1});assert.equal(result.state.crushing,5);assert.equal(result.state.pressure,0);
+for(let i=5;i>0;i--){c=prepareEquipmentRoll('tectonic-pickaxe',result.state);assert.equal(c.flags.crushing,true);result=finishEquipmentRoll(c,{naturalWeight:.1,gem:{},random:()=>1});assert.equal(result.state.crushing,i-1);assert.equal(result.state.pressure,0);}
+for(const [w,gain] of [[.849,4],[.85,3],[1.099,3],[1.1,2],[1.5,1],[2,0]]) assert.equal(finishEquipmentRoll(prepareEquipmentRoll('tectonic-pickaxe'),{naturalWeight:w,random:()=>1}).state.pressure,gain);
+assert.equal(specialChance('the-resonator',{name:'X',specialGem:true},{resonance:{X:10}}),1.875);
+assert.equal(specialChance('the-resonator',{name:'X',rarity:1e12,specialGem:false},{resonance:{X:10}}),1);
+const effects=exclusiveMutations('silly-fun-happy-pickaxe',()=>0);assert.deepEqual(effects.map(m=>m.name),['Silly','Silly','Happy']);assert.equal(effects.reduce((n,m)=>n*m.multiplier,1),250);
+assert.equal(exclusiveMutations('empyrean-pickaxe',()=>0)[0].multiplier,2);
+assert.deepEqual(exclusiveMutations('empyrean-pickaxe',()=>0,false),[]);
+assert.deepEqual(prepareEquipmentRoll('toy-shovel',{},()=>0).stats,[67,2.4,6.7,6.7,2.67]);
+assert.deepEqual([0,25,50,100,200].map(acceleratorSpeed),[3.4,3.5,3.6,3.7,3.8]);
+assert.equal(finishEquipmentRoll(prepareEquipmentRoll('the-accelerator',{spool:200}),{random:()=>0,genuine:false}).breakneck,false);
+assert.equal(finishEquipmentRoll(prepareEquipmentRoll('the-excavator'),{random:()=>0}).loot,'lucky-potion-1');
+const totals=equipmentTotals([{category:'pickaxe',equipment_id:'tectonic-pickaxe'},{category:'boots',weight_luck_bonus:.15},{category:'bag',weight_multiplier_bonus:.15},{category:'lantern',mutation_chance_bonus:.25},{category:'clover',luck_bonus:.1}]);near(totals.luck,22);near(totals.weightLuck,8.05);near(totals.weightMultiplier,2.1275);near(totals.mutation,1.25);
+for(const [category,count] of [['clover',7],['lantern',10],['boots',12],['bag',12]]) assert.equal(recipes.filter(r=>r.category===category).length,count);
+assert.equal(recipes.find(r=>r.id==='plastic-shopping-bag').craftingTab,'toys');
+for(const id of ['empyrean-pickaxe','eternity-pickaxe']) assert.ok(!recipes.find(r=>r.id===id).requirements.some(r=>r.type==='equipment'));
+console.log('Equipment rules: Luck layering, burst boundaries, pressure, special tags, exclusive stacking, toys, generated-roll guards, recipes passed.');

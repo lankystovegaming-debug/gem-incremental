@@ -1,39 +1,8 @@
+import {equipmentTotals} from '../../supabase/functions/roll/equipmentRules.js';
 export function getPlayerStats(inventory) {
-  const stats = {
-    luck: 1,
-    rollSpeed: 1,
-    weightLuck: 1,
-    weightMultiplier: 1,
-    // Mutation luck multiplies mutation chance (lanterns grant it). 1 = no bonus.
-    mutationLuck: 1
-  };
-
-  for (const equipment of inventory.equipment) {
-    if (!equipment.equipped) {
-      continue;
-    }
-
-    if (equipment.bonus?.luck) {
-      stats.luck += equipment.bonus.luck;
-    }
-
-    if (equipment.bonus?.rollSpeed) {
-      stats.rollSpeed += equipment.bonus.rollSpeed;
-    }
-
-    if (equipment.bonus?.weightLuck) {
-      stats.weightLuck += equipment.bonus.weightLuck;
-    }
-
-    if (equipment.bonus?.weightMultiplier) {
-      stats.weightMultiplier +=
-        equipment.bonus.weightMultiplier;
-    }
-
-    if (equipment.bonus?.mutationLuck) {
-      stats.mutationLuck += equipment.bonus.mutationLuck;
-    }
-  }
-
-  return stats;
+ const rows=(inventory.equipment??[]).filter(e=>e.equipped).map(e=>({...e,equipment_id:e.equipment_id??e.id,
+ luck_bonus:e.luck_bonus??e.bonus?.luck??0,roll_speed_bonus:e.roll_speed_bonus??e.bonus?.rollSpeed??0,
+ weight_luck_bonus:e.weight_luck_bonus??e.bonus?.weightLuck??0,weight_multiplier_bonus:e.weight_multiplier_bonus??e.bonus?.weightMultiplier??0,
+ mutation_chance_bonus:e.mutation_chance_bonus??e.mutation_luck_bonus??e.bonus?.mutationChance??e.bonus?.mutationLuck??0}));
+ const totals=equipmentTotals(rows);return {luck:totals.luck,rollSpeed:totals.rollSpeed,weightLuck:totals.weightLuck,weightMultiplier:totals.weightMultiplier,mutationChance:totals.mutation,mutationLuck:totals.mutation};
 }
