@@ -10,7 +10,13 @@ const defs = {
   rollSpeed: ['⚡ Roll Speed', 'Rolls happen faster'],
   money: ['💰 Money', 'Increases gem sale value']
 };
-const tiers = [1, 1.05, 1.1, 1.2, 1.35, 1.5, 1.75, 2, 2.5, 3, 4];
+
+const tiers = {
+  luck:      [1, 1.05, 1.10, 1.15, 1.20, 1.30, 1.40, 1.50, 1.60, 1.75, 2.00],
+  mutation:  [1, 1.05, 1.10, 1.15, 1.20, 1.30, 1.40, 1.50, 1.65, 1.80, 2.00],
+  rollSpeed: [1, 1.01, 1.02, 1.03, 1.05, 1.07, 1.10, 1.13, 1.16, 1.20, 1.25],
+  money:     [1, 1.02, 1.04, 1.06, 1.08, 1.10, 1.15, 1.20, 1.25, 1.35, 1.50]
+};
 const costs = [100, 300, 900, 3000, 10000, 30000, 90000, 300000, 1000000, 3000000];
 
 let state = null;
@@ -42,12 +48,17 @@ function render(d = state) {
 
   for (const [id, [name, desc]] of Object.entries(defs)) {
     const level = Number(d.levels?.[id] || 0);
-    const current = tiers[Math.min(level, tiers.length - 1)];
-    const next = tiers[Math.min(level + 1, tiers.length - 1)];
+    const statTiers = tiers[id];
+  
+    const current = statTiers[Math.min(level, statTiers.length - 1)];
+    const next = statTiers[Math.min(level + 1, statTiers.length - 1)];
+  
     const cost = costs[level] ?? 3000000;
     const maxed = level >= 10;
+  
     const card = document.createElement('section');
     card.className = 'card';
+  
     card.innerHTML = `
       <h2>${name}</h2>
       <p>${desc}</p>
