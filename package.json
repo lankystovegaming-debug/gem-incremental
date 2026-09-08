@@ -17,7 +17,9 @@
     "test:equipment-overhaul": "node tests/equipment-overhaul-test.mjs && node tests/equipment-overhaul-database-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
     "test:equipment-ui": "node tests/equipment-overhaul-ui-test.mjs",
     "test:bundles": "node tests/gameplay-bundles-test.mjs && node tests/gameplay-bundles-database-test.mjs",
-    "test:bundles-ui": "node tests/gameplay-bundles-ui-test.mjs"
+    "test:bundles-ui": "node tests/gameplay-bundles-ui-test.mjs",
+    "test:cosmetics": "node tests/player-cosmetics-database-test.mjs && node tests/player-cosmetics-ui-test.mjs",
+    "preview:cosmetics": "PROFILE_PREVIEW_FIXTURE=artifacts/cosmetics-preview.json node tests/player-cosmetics-database-test.mjs && node tests/profile-preview-server.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

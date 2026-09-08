@@ -1,0 +1,94 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { PGlite } from '@electric-sql/pglite';
+process.on('uncaughtException', error => { console.error(error.message, error.detail || '', error.where || ''); process.exit(1); });
+const db = new PGlite();
+const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+const uid = '00000000-0000-4000-8000-000000000001';
+const other = '00000000-0000-4000-8000-000000000002';
+const value = async (sql,args=[]) => (await db.query(sql,args)).rows[0]?.result;
+const owns = id => value('select exists(select 1 from player_cosmetics where player_id=$1 and cosmetic_id=$2) result',[uid,id]);
+await db.exec(read('./fixtures/cosmetics-live-schema.sql'));
+await db.exec(read('./fixtures/cosmetics-live-functions.sql'));
+await db.query('insert into players(id,username) values($1,\'Test Player\'),($2,\'Other Player\')',[uid,other]);
+await db.query("insert into player_titles(player_id,title) values($1,'Developer')",[uid]);
+await db.query("insert into player_achievement_cosmetics(player_id,cosmetic_id,cosmetic_type,earned_at) values($1,'achievement-novice','badge','2026-08-23'),($1,'milestone-bronze','border','2026-08-24'),($1,'unknown-old-reward','badge','2026-08-25')",[uid]);
+await db.query("insert into player_achievement_milestones(player_id,ap) values($1,10000)",[uid]);
+await db.query("insert into player_season_cosmetics(player_id,cosmetic_id,cosmetic_type,earned_at) values($1,'first-light','title','2026-08-24')",[uid]);
+await db.exec(`insert into season_definitions(name,enabled,ends_at,tiers) values('Season Zero',true,now()+interval '20 days','[{"id":"first-light"},{"id":"season-zero"}]');
+insert into research_nodes(id,name,branch,stage,cost,required_ap,effects,description,sort_order) values('mining-mastery','Mining Mastery','mining',4,10,1000,'{"cosmetic":"mining-master"}','Test',1),('grand-curator','Grand Curator','specimen',4,20,1000,'{"cosmetic":"grand-curator"}','Test',2);
+insert into museum_collection_definitions(id,name,description,kind,prestige_reward,requirements) values
+('first-exhibit','First Exhibit','Test','showcase',100,'{"type":"count","count":1}'),
+('mutation-symphony','Mutation Symphony','Test','showcase',600,'{"type":"unique_mutations","count":4}'),
+('polished-foundations','Polished Foundations','Test','permanent',250,'{"type":"unique_gems","count":10}');
+insert into game_bundles(id,name,icon,sort_order) values('mineral','Mineral','◆',1),('celestial','Celestial','☾',2);`);
+await db.query("insert into player_research_purchases(player_id,node_id) values($1,'mining-mastery');",[uid]);
+await db.query("insert into museum_collection_completions(player_id,collection_id) values($1,'polished-foundations')",[uid]);
+await db.query("insert into museum_exhibits(player_id,slot,specimen_id,snapshot) values($1,1,100,'{\"gem_name\":\"Quartz\",\"mutation_ids\":[\"a\",\"b\",\"c\",\"d\"]}')",[uid]);
+await db.query("insert into player_bundle_completions(player_id,bundle_id) values($1,'mineral')",[uid]);
+await db.exec(read('../supabase/migrations/20260908075320_player_profiles_cosmetics_v1.sql'));
+for (const id of ['achievement-novice','milestone-bronze','master-gem-incremental','first-light','mining-master','stone-curator','founding-curator','mutation-gallery-trim','bundle-mineral','unknown-old-reward']) assert.equal(await owns(id),true,id+' backfilled');
+assert.equal(await value("select earned_at::date::text result from player_cosmetics where player_id=$1 and cosmetic_id='achievement-novice'",[uid]),'2026-08-23');
+assert.equal(await value("select enabled result from cosmetic_definitions where id='unknown-old-reward'"),false);
+assert.equal(await value("select count(*)::int result from cosmetic_definitions where 'background'=any(slots)"),0,'no filler backgrounds');
+// New rewards flow into the same table. Research respecs and exhibit removal never revoke earned cosmetics.
+await db.query("insert into player_achievement_cosmetics(player_id,cosmetic_id,cosmetic_type) values($1,'achievement-hunter','title')",[uid]);
+await db.query("insert into player_season_cosmetics(player_id,cosmetic_id,cosmetic_type) values($1,'season-zero','badge')",[uid]);
+await db.query("insert into player_research_purchases(player_id,node_id) values($1,'grand-curator')",[uid]);
+await db.query("insert into museum_collection_completions(player_id,collection_id) values($1,'serial-archive')",[uid]);
+await db.query("insert into player_bundle_completions(player_id,bundle_id) values($1,'celestial')",[uid]);
+for(const id of ['achievement-hunter','season-zero','grand-curator','archive-display-case','bundle-celestial']) assert.equal(await owns(id),true);
+await db.query('delete from player_research_purchases where player_id=$1',[uid]);
+await db.query('delete from museum_exhibits where player_id=$1',[uid]);
+assert.equal(await owns('mining-master'),true);assert.equal(await owns('mutation-gallery-trim'),true);
+await db.query("insert into museum_exhibits(player_id,slot,specimen_id,snapshot) values($1,1,101,'{}')",[other]);
+assert.equal(await value("select exists(select 1 from player_cosmetics where player_id=$1 and cosmetic_id='founding-curator') result",[other]),true);
+// Repeat bridging is idempotent and retains the original timestamp.
+await db.query("update player_achievement_cosmetics set earned_at=now() where player_id=$1 and cosmetic_id='achievement-novice'",[uid]);
+assert.equal(await value("select earned_at::date::text result from player_cosmetics where player_id=$1 and cosmetic_id='achievement-novice'",[uid]),'2026-08-23');
+await db.query("insert into player_achievement_cosmetics(player_id,cosmetic_id,cosmetic_type) values($1,'milestone-diamond','border')",[other]);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[uid]);
+await db.exec('set role authenticated');
+const set = eq => value('select set_my_cosmetic_loadout($1::jsonb) result',[JSON.stringify(eq)]);
+const equipment = {title:'master-gem-incremental',frame:'milestone-bronze',decor:'archive-display-case',badges:['master-gem-incremental','achievement-novice','season-zero'],trophies:['founding-curator','bundle-mineral'],showcase_labels:['My favourite','Best weight','Flex']};
+const equipped = await set(equipment);
+assert.equal(equipped.title.name,'Master of Gem Incremental'); assert.equal(equipped.badges.length,3);
+assert.equal(equipped.title.rarity,'Mythic');assert.equal(equipped.badges[2].rarity,'Epic');
+for(const invalid of [{frame:'milestone-diamond'},{title:'mining-master'},{title:'does-not-exist'},{title:'unknown-old-reward'},{badges:['achievement-novice','achievement-novice']},{badges:['achievement-novice','season-zero','mining-master','master-gem-incremental']},{badges:'achievement-novice'},{badges:[null]},{trophies:Array(6).fill('founding-curator')},{player_id:other},{showcase_labels:['x'.repeat(33)]},{title:32}]) await assert.rejects(()=>set(invalid));
+assert.deepEqual(await value('select equipment result from player_cosmetic_loadouts where player_id=$1',[uid]),equipment,'invalid saves are atomic');
+await assert.rejects(()=>db.query("insert into player_cosmetics(player_id,cosmetic_id,source) values($1,'milestone-diamond','fake')",[uid]),/permission denied/);
+await assert.rejects(()=>db.query('update player_cosmetic_loadouts set equipment=\'{}\''),/permission denied/);
+await assert.rejects(()=>db.query("select cosmetics_private.grant_item($1,'milestone-diamond','fake',null)",[uid]),/permission denied/);
+assert.equal(await value('select count(*)::int result from player_cosmetics where player_id=$1',[other]),0,'ownership RLS');
+const profile=await value('select get_public_profile($1) result',[uid]);
+assert.equal(profile.title,'Developer','role identity preserved');assert.equal(profile.cosmetics.title.id,'master-gem-incremental');
+assert.equal(profile.bundles.completed.length,2);assert.equal(profile.bundles.total,2);
+if (process.env.PROFILE_PREVIEW_FIXTURE) {
+  const mine = await value('select get_my_cosmetics() result');
+  const gems = [{gem_name:'Aurorium',rarity:300000000,final_weight:348.72,mutation_ids:['shiny']},{gem_name:'Bismuth',rarity:65000,final_weight:127.25,mutation_ids:[]},{gem_name:'Quartz',rarity:10,final_weight:2.85,mutation_ids:[]}];
+  const demo = {...profile,username:'The Gem Collector',total_rolls:1923421,lifetime_earnings:4230012999,raw_roll_rarity:311228191,gems_discovered:92,achievement_count:84,showcase:gems,best_roll:gems[0]};
+  demo.bundles.crown={...gems[0],final_weight_multiplier:6.38,serial_number:7};
+  mkdirSync('artifacts',{recursive:true});
+  writeFileSync(process.env.PROFILE_PREVIEW_FIXTURE,JSON.stringify({profile:demo,mine}));
+}
+const titles=await value('select get_public_player_titles($1::uuid[]) result',[[uid]]);
+assert.equal(titles[uid].title,'Developer');assert.equal(titles[uid].collectible_title.id,'master-gem-incremental');
+await set({});assert.equal((await value('select get_public_profile($1) result',[uid])).cosmetics.title,null,'unequip works');
+await set(equipment);
+await db.exec('reset role');
+await db.exec("update cosmetic_definitions set legacy_after=now()-interval '1 day' where source='season'");
+assert.equal((await value('select get_public_profile($1) result',[uid])).cosmetics.badges[2].rarity,'Legacy');
+await db.query("delete from player_cosmetics where player_id=$1 and cosmetic_id='master-gem-incremental'",[uid]);
+let publicProfile=await value('select get_public_profile($1) result',[uid]);assert.equal(publicProfile.cosmetics.title,null,'public lookup revalidates ownership');assert.equal(publicProfile.cosmetics.badges.length,2);
+await db.exec("update cosmetic_definitions set enabled=false where id='milestone-bronze'");
+assert.equal((await value('select get_public_profile($1) result',[uid])).cosmetics.frame,null,'disabled items are not rendered');
+await db.query("select set_config('request.jwt.claim.sub','',false)");
+await db.exec('set role anon');
+assert.equal((await value('select get_public_profile($1) result',[uid])).title,'Developer','public profile needs no anonymous signup');
+await assert.rejects(()=>value('select get_my_cosmetics() result'),/permission denied/);
+await assert.rejects(()=>set({title:'first-light'}),/permission denied/);
+await db.exec('reset role');
+// SECURITY DEFINER endpoints still reject an authenticated DB role without a JWT subject.
+await db.exec('set role authenticated');await assert.rejects(()=>set({}),/Sign in/);
+await db.close();
+console.log('Cosmetics migration: backfills, reward bridges, RLS, equipment validation, role separation and public resolution passed.');
