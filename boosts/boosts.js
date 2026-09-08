@@ -108,9 +108,7 @@ function render() {
         <div class="potion-card__purchase">
           <span class="potion-card__price" data-unit-price="${price}">${formatMoney(price)}</span>
           <label class="potion-bulk-label">Qty
-            <select class="potion-bulk-select" data-buy-quantity="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}>
-              <option value="1">1</option><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option>
-            </select>
+            <input class="potion-bulk-input" type="number" min="1" max="1000000" step="1" value="1" inputmode="numeric" data-buy-quantity="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"} aria-label="Potion quantity">
           </label>
           <button class="btn btn--primary potion-bulk-buy" type="button" data-buy-bulk="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}>${affordable ? "Buy potion" : "Not enough money"}</button>
         </div>
@@ -118,7 +116,7 @@ function render() {
     `;
   }).join("");
 
-  for (const select of potionList.querySelectorAll("[data-buy-quantity]")) select.addEventListener("change", (e) => { const card=e.target.closest(".potion-card"); const price=Number(card.querySelector(".potion-card__price")?.dataset.unitPrice||0); const qty=Number(e.target.value||1); const out=card.querySelector(".potion-card__price"); if(out) out.textContent=formatMoney(price*qty); });
+  for (const input of potionList.querySelectorAll("[data-buy-quantity]")) input.addEventListener("input", (e) => { const card=e.target.closest(".potion-card"); const price=Number(card.querySelector(".potion-card__price")?.dataset.unitPrice||0); const qty=Math.max(1,Math.floor(Number(e.target.value)||1)); e.target.value=qty; const out=card.querySelector(".potion-card__price"); if(out) out.textContent=formatMoney(price*qty); });
   for (const button of potionList.querySelectorAll("[data-buy-bulk]")) button.addEventListener("click", () => buyPotionBulk(button));
 }
 

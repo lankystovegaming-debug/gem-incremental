@@ -458,3 +458,5 @@
   box-shadow: inset -18px 0 28px rgba(103, 199, 255, 0.13);
 }
 .mutation-badge--misty { color: #e8f7ff; }
+
+.potion-use-row{display:flex;gap:8px;align-items:center}.potion-use-qty{width:84px;min-height:38px;border:1px solid #5d6d9f;border-radius:9px;background:#151d2d;color:#fff;padding:0 8px}.inventory-filters{flex-wrap:wrap}.inventory-filters .select{min-width:150px}
