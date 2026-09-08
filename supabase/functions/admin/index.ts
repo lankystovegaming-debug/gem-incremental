@@ -439,7 +439,7 @@ export default {
         const { data, error } = await ctx.supabaseAdmin
           .from("game_mutations")
           .select("*")
-          .order("sort_order")
+          .order("multiplier", { ascending: false })
           .order("name");
 
         if (error) {
@@ -471,10 +471,10 @@ export default {
           chance,
           multiplier,
           description: String(mutation.description ?? "").slice(0, 500),
+          description_credit: String(mutation.description_credit ?? "").slice(0, 120),
           icon: String(mutation.icon ?? "✦").slice(0, 8),
           color: String(mutation.color ?? "#9fdcff").slice(0, 32),
           enabled: mutation.enabled !== false,
-          sort_order: Math.trunc(Number(mutation.sort_order) || 0),
           updated_at: new Date().toISOString()
         };
 

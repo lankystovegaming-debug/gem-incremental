@@ -1,4 +1,5 @@
 import gems from "../data/gems.js";
+import { formatHugeInteger } from "../ui/format.js";
 import { GEM_MUTATIONS, normalizeMutationIds } from "../data/mutations.js";
 
 export const BASE_ROLL_LUCK = 1;
@@ -51,12 +52,7 @@ export function exactChanceDenominator(gemOrName, mutationIds = []) {
 
 export function formatExactDenominator(denominator) {
   if (denominator == null || denominator <= 0n) return 'Impossible';
-  const raw = denominator.toString();
-  if (raw.length <= 15) return `1 in ${denominator.toLocaleString('en-US')}`;
-  const exponent = raw.length - 1;
-  const head = raw.slice(0, 3);
-  const mantissa = head.length > 1 ? `${head[0]}.${head.slice(1)}` : head;
-  return `1 in ${mantissa}e${exponent}`;
+  return `1 in ${formatHugeInteger(denominator)}`;
 }
 
 export function mutationSelectionChance(ids = []) {

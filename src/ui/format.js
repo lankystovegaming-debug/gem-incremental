@@ -94,6 +94,62 @@ function formatAbbreviatedNumber(value) {
   return text + suffix;
 }
 
+
+// Arbitrary-size integer formatter. Uses BigInt so values above Number.MAX_VALUE
+// never become Infinity or scientific notation. Three significant figures.
+export function formatHugeInteger(value, { prefix = "", suffix = "" } = {}) {
+  let n;
+  try { n = typeof value === "bigint" ? value : BigInt(String(value).replace(/\.0+$/, "")); } catch { return `${prefix}${String(value)}${suffix}`; }
+  const sign = n < 0n ? "-" : ""; n = n < 0n ? -n : n;
+  const raw = n.toString();
+  if (raw.length <= 3) return `${prefix}${sign}${raw}${suffix}`;
+  const exponent = raw.length - 1;
+  const groupExp = Math.floor(exponent / 3) * 3;
+  const unit = gameSuffixForExponent(groupExp);
+  if (!unit) {
+    const head = raw.slice(0,3);
+    const mantissa = `${head[0]}.${head.slice(1)}`.replace(/0+$/, "").replace(/\.$/, "");
+    return `${prefix}${sign}${mantissa}e${exponent}${suffix}`;
+  }
+  const leadDigits = exponent - groupExp + 1;
+  const sig = raw.slice(0, Math.min(raw.length, leadDigits + Math.max(0, 3-leadDigits)));
+  const whole = sig.slice(0, leadDigits);
+  const frac = sig.slice(leadDigits).replace(/0+$/, "");
+  return `${prefix}${sign}${whole}${frac ? "."+frac : ""}${unit}${suffix}`;
+}
+
+export function formatHugeDecimal(value, { prefix = "", suffix = "" } = {}) {
+  const text = String(value ?? "0").trim();
+  if (/^[+-]?\d+$/.test(text)) return formatHugeInteger(text,{prefix,suffix});
+  // Decimal.js-style scientific input, including legacy values such as 1.98e52T.
+  const suffixMatch = text.match(/^([+-]?[0-9.]+)(?:e([+-]?\d+))?([A-Za-z]+)?$/i);
+  if (suffixMatch) {
+    const signMantissa = suffixMatch[1];
+    const legacyUnit = suffixMatch[3] || "";
+    const legacyIndex = GAME_SUFFIXES.indexOf(legacyUnit);
+    const legacyExponent = legacyIndex >= 0 ? (legacyIndex + 1) * 3 : 0;
+    const mantissa = Number(signMantissa);
+    const sciExponent = Number(suffixMatch[2] || 0) + legacyExponent;
+    if (Number.isFinite(mantissa)) {
+      if (sciExponent < 3 && !legacyUnit) return `${prefix}${mantissa.toLocaleString("en-US",{maximumSignificantDigits:3})}${suffix}`;
+      const baseExp = Math.floor(Math.log10(Math.abs(mantissa) || 1)) + sciExponent;
+      const groupExp = Math.floor(baseExp / 3) * 3;
+      const unit = gameSuffixForExponent(groupExp);
+      if (unit) {
+        const scaled = mantissa * 10 ** (baseExp - groupExp - Math.floor(Math.log10(Math.abs(mantissa) || 1)));
+        const out = Number(scaled).toPrecision(3).replace(/\.?0+$/," ").trim();
+        return `${prefix}${out}${unit}${suffix}`;
+      }
+    }
+  }
+  const n = Number(text);
+  if (!Number.isFinite(n)) return `${prefix}${text}${suffix}`;
+  if (Math.abs(n) < 1000) return `${prefix}${n.toLocaleString("en-US",{maximumSignificantDigits:3})}${suffix}`;
+  const exponent=Math.floor(Math.log10(Math.abs(n))); const groupExp=Math.floor(exponent/3)*3; const unit=gameSuffixForExponent(groupExp);
+  const scaled=n/10**groupExp; const out=scaled.toPrecision(3).replace(/\.?0+$/," ").trim();
+  return `${prefix}${out}${unit||""}${suffix}`;
+}
+
 export function formatCount(value) {
   return formatAbbreviatedNumber(Math.round(Number(value ?? 0)));
 }
@@ -102,16 +158,15 @@ export function formatCount(value) {
 // Money is exact below $10k and abbreviated above it, so the
 // wallet pill never pushes the navigation around.
 export function formatMoney(value, { compact = false } = {}) {
-  const amount = Number(value ?? 0);
-
-  if (compact && Math.abs(amount) >= 10000) {
-    return `$${abbreviate(amount)}`;
+  const text = String(value ?? 0);
+  if (/^[+-]?\d+$/.test(text)) {
+    const abs = text.replace(/^[+-]/, "");
+    if (abs.length > 15 || compact) return formatHugeInteger(text, { prefix: "$" });
   }
-
-  return `$${amount.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return `$${formatHugeDecimal(text)}`;
+  if (Math.abs(amount) >= 1000) return formatHugeDecimal(amount, { prefix: "$" });
+  return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 

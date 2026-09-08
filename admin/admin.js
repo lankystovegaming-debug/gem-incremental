@@ -557,8 +557,8 @@ async function loadMutationCatalog() {
       document.getElementById("mutationMultiplier").value = mutation.multiplier;
       document.getElementById("mutationIcon").value = mutation.icon || "✦";
       document.getElementById("mutationColor").value = mutation.color || "#9fdcff";
-      document.getElementById("mutationSort").value = mutation.sort_order ?? 0;
       document.getElementById("mutationDescription").value = mutation.description || "";
+      document.getElementById("mutationCredit").value = mutation.description_credit || "";
       document.getElementById("mutationEnabled").checked = mutation.enabled !== false;
       mutationCatalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -599,8 +599,8 @@ document.getElementById("mutationSave")?.addEventListener("click", async () => {
     multiplier: Number(document.getElementById("mutationMultiplier").value),
     icon: document.getElementById("mutationIcon").value,
     color: document.getElementById("mutationColor").value,
-    sort_order: Number(document.getElementById("mutationSort").value || 0),
     description: document.getElementById("mutationDescription").value,
+    description_credit: document.getElementById("mutationCredit").value,
     enabled: document.getElementById("mutationEnabled").checked
   };
 
@@ -622,7 +622,6 @@ document.getElementById("mutationClear")?.addEventListener("click", () => {
   document.getElementById("mutationMultiplier").value = "3";
   document.getElementById("mutationIcon").value = "✦";
   document.getElementById("mutationColor").value = "#9fdcff";
-  document.getElementById("mutationSort").value = "60";
   document.getElementById("mutationEnabled").checked = true;
 });
 

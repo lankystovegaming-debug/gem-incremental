@@ -28,7 +28,7 @@ import { GEM_MUTATIONS, getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
 import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
 import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, masterworkRerollCost, masterworkAttunementCost, masterworkPassive } from "../src/data/masterwork.js";
-import { gemRollChance, formatChance } from "../src/logic/chances.js";
+import { gemRollChance, formatChance, exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { icons } from "../src/ui/icons.js";

@@ -2632,3 +2632,8 @@ html.is-cinematic-active body {
 
 /* Temporary mutation effects shown after each roll */
 .roll-active-effects{display:grid;gap:.45rem;margin:.7rem 0;text-align:left}.roll-active-effect{padding:.6rem .75rem;border:1px solid var(--border);border-radius:10px;background:linear-gradient(90deg,#60a5fa16,#a78bfa12)}.roll-active-effect strong,.roll-active-effect span,.roll-active-effect small{display:block}.roll-active-effect span{font-weight:700;margin-top:.1rem}.roll-active-effect small{color:var(--text-muted);margin-top:.15rem}
+
+/* Cutscene safety: decorative mutation layers can never cover the final reveal. */
+#ultra-cutscene-overlay .mutation-scene-layer{z-index:12!important;pointer-events:none!important;overflow:hidden!important;}
+#ultra-cutscene-overlay .scene__reveal{z-index:60!important;position:relative!important;}
+#ultra-cutscene-overlay .scene__gem svg,#ultra-cutscene-overlay .scene__gem img{max-width:78%!important;max-height:78%!important;object-fit:contain!important;}

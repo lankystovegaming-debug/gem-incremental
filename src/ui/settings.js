@@ -1,4 +1,6 @@
 import { GEM_MUTATIONS } from "../data/mutations.js";
+import { supabase } from "../backend/supabase.js";
+import { ensurePlayerAuth } from "../backend/auth.js";
 
 // =========================================================
 // GAMEPLAY SETTINGS
@@ -54,6 +56,13 @@ const DEFAULTS = {
 
 
 let state = load();
+let cloudReady = false;
+export async function hydrateSettingsFromCloud() {
+  const user = await ensurePlayerAuth(); if (!user) return getSettings();
+  const { data } = await supabase.from("player_settings").select("settings").eq("player_id", user.id).maybeSingle();
+  if (data?.settings) { state = sanitise({ ...state, ...data.settings }); notify(); }
+  cloudReady = true; return getSettings();
+}
 
 
 function load() {
@@ -112,12 +121,11 @@ export function getSettings() {
 export function updateSettings(patch) {
   state = sanitise({ ...state, ...patch });
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Session-only settings are still better than none.
+  // Keep a tiny cache for instant first paint, but Supabase is authoritative.
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  if (cloudReady) {
+    ensurePlayerAuth().then((user) => user && supabase.from("player_settings").upsert({ player_id:user.id, settings:state, updated_at:new Date().toISOString() }, { onConflict:"player_id" }));
   }
-
   notify();
 
   return getSettings();

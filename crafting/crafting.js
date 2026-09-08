@@ -1044,6 +1044,10 @@ async function runPotionAutoCraftOnce() {
 
       if (!error) {
         notify.success("Potion crafted", `${recipe.name} was added to your consumables.`);
+        if ("Notification" in window) {
+          if (Notification.permission === "default") Notification.requestPermission().catch(() => {});
+          if (Notification.permission === "granted" && document.hidden) new Notification("Auto Craft complete", { body: `${recipe.name} was crafted.` });
+        }
       } else if (!String(error.message ?? "").toLowerCase().includes("requirements")) {
         console.error("[CRAFT] Auto potion craft failed:", error);
       }

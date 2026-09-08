@@ -30,7 +30,8 @@ import {
   GEM_REALISM_LEVELS,
   getSettings,
   updateSettings,
-  onSettingsChange
+  onSettingsChange,
+  hydrateSettingsFromCloud
 } from "../src/ui/settings.js";
 
 
@@ -236,6 +237,7 @@ cutsceneMinimumRarity.addEventListener("change", () => {
 onSettingsChange(paintSettings);
 
 paintSettings(getSettings());
+hydrateSettingsFromCloud().then(paintSettings);
 
 
 // =========================================================

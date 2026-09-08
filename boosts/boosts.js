@@ -112,14 +112,14 @@ function render() {
             data-buy="${escapeHtml(potion.id)}"
             ${affordable ? "" : "disabled"}
           >${affordable ? "Buy potion" : "Not enough money"}</button>
+          <button class="btn btn--sm" type="button" data-buy-bulk="${escapeHtml(potion.id)}" ${affordable ? "" : "disabled"}>Buy max</button>
         </div>
       </article>
     `;
   }).join("");
 
-  for (const button of potionList.querySelectorAll("[data-buy]")) {
-    button.addEventListener("click", () => buyPotion(button));
-  }
+  for (const button of potionList.querySelectorAll("[data-buy]")) button.addEventListener("click", () => buyPotion(button));
+  for (const button of potionList.querySelectorAll("[data-buy-bulk]")) button.addEventListener("click", () => buyPotionBulk(button));
 }
 
 function renderDailyShop() {
@@ -182,6 +182,14 @@ async function buyPotion(button) {
   }
 
   render();
+}
+
+async function buyPotionBulk(button) {
+  const potion=POTIONS.find(x=>x.id===button.dataset.buyBulk); if(!potion) return;
+  const qty=Math.floor(state.money/Number(potion.shop.price)); if(qty<=0) return;
+  button.disabled=true; let bought=0;
+  for(let i=0;i<qty;i++){ const {data,error}=await buyCloudConsumable(potion.id); if(error) break; bought++; state.money=Number(data.money??(state.money-potion.shop.price)); const row=state.consumables.find(x=>x.consumable_id===potion.id); if(row) row.quantity=Number(data.quantity??row.quantity+1); else state.consumables.push({consumable_id:potion.id,quantity:Number(data.quantity??1)}); }
+  if(bought) notify.success("Potions purchased", `${potion.name} ×${formatCount(bought)}`); render();
 }
 
 async function refresh() {

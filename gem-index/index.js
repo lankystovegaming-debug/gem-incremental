@@ -9,6 +9,7 @@ import { notify } from "../src/ui/toast.js";
 import { gemNameHtml, gemIconHtml, getGemStyle } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
 import { rarityTier, rarityLabel, formatMoney, formatWeight, formatCount, escapeHtml } from "../src/ui/format.js";
+import { exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
 
 const shell = mountShell({ page: "gem-index", base: "../" });
 const gemList = document.getElementById("gemList");
@@ -314,9 +315,7 @@ function renderMutationTabs() {
       ? state.selectedMutations.size === 0
       : state.selectedMutations.has(tab.id);
     const mutation = tab.mutation ?? mutationById.get(tab.id);
-    const customBadge = mutation?.isCustom
-      ? `<span class="mutation-tab__custom" title="Custom mutation">CUSTOM</span>`
-      : "";
+    const customBadge = "";
 
     return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}"${mutation ? ` style="--mutation-color:${escapeHtml(mutation.color || "#9fdcff")}"` : ""}>${mutation?.icon ? `<span class="mutation-tab__icon" aria-hidden="true">${escapeHtml(mutation.icon)}</span>` : ""}<span>${escapeHtml(tab.name)}</span>${customBadge}</button>`;
   }).join("");
@@ -380,7 +379,6 @@ function normalizeLiveMutationCatalog(rows) {
         ...mutation,
         icon: mutation.icon ?? "✦",
         color: mutation.color ?? "#9fdcff",
-        sortOrder: (index + 1) * 10,
         isCustom: false,
         isLive: false
       }
@@ -412,6 +410,7 @@ function normalizeLiveMutationCatalog(rows) {
       sortOrder: Number.isFinite(Number(row?.sort_order))
         ? Number(row.sort_order)
         : (isBuiltIn ? (Object.keys(GEM_MUTATIONS).indexOf(id) + 1) * 10 : 1000),
+      descriptionCredit: String(row?.description_credit ?? "").trim(),
       isCustom: !isBuiltIn,
       isLive: true,
       enabled: row?.enabled !== false
@@ -421,9 +420,7 @@ function normalizeLiveMutationCatalog(rows) {
   return [...builtInById.values()]
     .filter((mutation) => mutation.enabled !== false)
     .sort((a, b) =>
-      Number(a.sortOrder) - Number(b.sortOrder) ||
-      (a.isCustom === b.isCustom ? 0 : a.isCustom ? 1 : -1) ||
-      a.name.localeCompare(b.name) ||
+      Number(b.multiplier) - Number(a.multiplier) || a.name.localeCompare(b.name) ||
       a.id.localeCompare(b.id)
     );
 }
@@ -513,14 +510,14 @@ async function loadLiveMutationCatalog() {
   // Direct read is intentionally requested with only the columns required by
   // the Gem Index. A stale schema must not make the whole catalog disappear.
   for (const selectClause of [
-    "id,name,chance,multiplier,description,icon,color,enabled,sort_order",
+    "id,name,chance,multiplier,description,description_credit,icon,color,enabled",
     "*"
   ]) {
     try {
       const direct = await supabase
         .from("game_mutations")
         .select(selectClause)
-        .order("sort_order", { ascending: true })
+        .order("multiplier", { ascending: false })
         .order("name", { ascending: true });
 
       if (!direct.error && Array.isArray(direct.data) && direct.data.length) {
@@ -599,7 +596,7 @@ async function refresh() {
         .from("private_feature_gems")
         .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
         .eq("enabled", true)
-        .order("sort_order", { ascending: true })
+        .order("multiplier", { ascending: false })
         .order("rarity", { ascending: true });
     }
     if (combinations) state.combinations = combinations;
