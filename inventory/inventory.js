@@ -19,6 +19,7 @@ import {
 import {
   loadCloudConsumables,
   useCloudConsumable,
+  useCloudConsumablesBulk,
   loadActiveBoosts,
   loadPendingOneRollBoost
 } from "../src/backend/cloudConsumables.js";
@@ -111,6 +112,9 @@ const gemSearch = document.getElementById("gemSearch");
 const gemFilter = document.getElementById("gemFilter");
 const gemRarity = document.getElementById("gemRarity");
 const gemSort = document.getElementById("gemSort");
+const gemKind = document.getElementById("gemKind");
+const gemMutationFilter = document.getElementById("gemMutationFilter");
+const gemMutationCount = document.getElementById("gemMutationCount");
 const savedFilter = document.getElementById("savedFilter");
 const sellAllButton = document.getElementById("sellAllButton");
 const lockVisibleButton = document.getElementById("lockVisibleButton");
@@ -364,13 +368,17 @@ function visibleGems() {
       return false;
     }
 
-    if (
-      gemRarity.value !== "all" &&
-      rarityTier(gem.rarity).id !== gemRarity.value
-    ) {
-      return false;
-    }
-
+    if (gemRarity.value !== "all" && rarityTier(gem.rarity).id !== gemRarity.value) return false;
+    const ids = Array.isArray(gem.mutation_ids) ? gem.mutation_ids : (Array.isArray(gem.mutations) ? gem.mutations : []);
+    if (gemKind?.value === "custom" && !Boolean(gem.custom || gem.is_custom || gem.gem_type === "custom")) return false;
+    if (gemKind?.value === "standard" && Boolean(gem.custom || gem.is_custom || gem.gem_type === "custom")) return false;
+    if (gemMutationFilter?.value && gemMutationFilter.value !== "all" && !ids.includes(gemMutationFilter.value)) return false;
+    const mc = ids.length, bucket = gemMutationCount?.value || "all";
+    if (bucket === "0" && mc !== 0) return false;
+    if (bucket === "1-2" && (mc < 1 || mc > 2)) return false;
+    if (bucket === "3-5" && (mc < 3 || mc > 5)) return false;
+    if (bucket === "6-10" && (mc < 6 || mc > 10)) return false;
+    if (bucket === "11+" && mc < 11) return false;
     return true;
   });
 
@@ -1460,8 +1468,10 @@ function renderConsumables() {
             }
           </p>
 
-          <button
-            class="btn btn--primary btn--sm btn--block"
+          <div class="potion-use-row">
+            <input class="potion-use-qty" type="number" min="1" max="1000000" step="1" value="1" data-use-qty="${escapeHtml(def.id)}" aria-label="Quantity to use">
+            <button
+            class="btn btn--primary btn--sm"
             type="button"
             data-use="${escapeHtml(def.id)}"
             ${otherTypePending ? "disabled" : ""}
@@ -1476,19 +1486,19 @@ function renderConsumables() {
                 ? "Extend boost"
                 : "Use potion"
             }
-          </button>
+          </button></div>
         </article>
       `;
       })
       .join("");
 
   for (const button of consumableList.querySelectorAll("[data-use]")) {
-    button.addEventListener("click", () => usePotion(button));
+    button.addEventListener("click", () => { const q=Number(consumableList.querySelector(`[data-use-qty="${button.dataset.use}"]`)?.value||1); usePotion(button,q); });
   }
 }
 
 
-async function usePotion(button) {
+async function usePotion(button, requestedQty = 1) {
   const def = getConsumableById(button.dataset.use);
 
   if (!def) {
@@ -1496,8 +1506,9 @@ async function usePotion(button) {
   }
 
   button.disabled = true;
-
-  const { data, error } = await useCloudConsumable(def.id);
+  const row = state.consumables.find((entry) => entry.consumable_id === def.id);
+  const qty = Math.max(1, Math.min(Number(row?.quantity ?? requestedQty), Math.floor(Number(requestedQty) || 1)));
+  const { data, error } = qty > 1 ? await useCloudConsumablesBulk(def.id, qty) : await useCloudConsumable(def.id);
 
   if (error) {
     notify.error("Could not use potion", error.message);
@@ -1507,12 +1518,10 @@ async function usePotion(button) {
     return;
   }
 
-  const row = state.consumables.find(
-    (entry) => entry.consumable_id === def.id
-  );
+  const currentRow = row;
 
-  if (row) {
-    row.quantity = Number(data?.quantity ?? Math.max(0, row.quantity - 1));
+  if (currentRow) {
+    currentRow.quantity = Number(data?.quantity ?? Math.max(0, currentRow.quantity - qty));
   }
 
   const boost = data?.boost;
@@ -1674,3 +1683,10 @@ window.addEventListener("pageshow", (event) => {
 
 renderAll();
 refresh();
+
+
+// Build the mutation filter from the live bundled catalog.
+if (gemMutationFilter) {
+  const list = Array.isArray(GEM_MUTATIONS) ? GEM_MUTATIONS : Object.values(GEM_MUTATIONS || {});
+  gemMutationFilter.innerHTML = '<option value="all">All mutations</option>' + list.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join('');
+}

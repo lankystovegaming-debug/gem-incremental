@@ -630,7 +630,24 @@
       </div>
     </section>
 
-  </main>
+  
+    <section class="card" id="customCatalogPanel" hidden>
+      <div class="panel-heading"><div><h2>Customizable potions, equipment & recipes</h2><p>Create/edit catalog entries and recipes from one admin screen. JSON config supports any future stats.</p></div><button class="btn" id="catalogRefresh" type="button">Refresh</button></div>
+      <div class="admin-control" style="gap:10px;flex-wrap:wrap">
+        <select id="catalogType" class="select"><option value="potion">Potion</option><option value="equipment">Equipment</option><option value="recipe">Recipe</option></select>
+        <input id="catalogKey" placeholder="Unique key, e.g. mega-luck-potion">
+        <input id="catalogName" placeholder="Display name">
+        <label><input id="catalogEnabled" type="checkbox" checked> Enabled</label>
+      </div>
+      <textarea id="catalogConfig" class="admin-textarea" rows="5" placeholder='{"family":"luck","price":1000,"effectValue":0.5,"recipe":[]}'></textarea>
+      <button class="btn btn--primary" id="catalogSave" type="button">Save / add entry</button>
+      <div id="catalogList" class="admin-event-list"></div>
+    </section>
+    <section class="card" id="featureCatalogPanel" hidden>
+      <div class="panel-heading"><div><h2>Possible features</h2><p>Future content/event systems. They stay disabled until you enable them.</p></div><button class="btn" id="featureCatalogRefresh" type="button">Refresh</button></div>
+      <div id="featureCatalogList" class="admin-event-list"></div>
+    </section>
+</main>
   <script type="module" src="./admin.js"></script>
   <script type="module" src="../upcoming/upcoming.js"></script>
 </body>

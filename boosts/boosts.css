@@ -158,3 +158,5 @@
 .potion-bulk-label{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:700;font-size:.82rem;white-space:nowrap}
 .potion-bulk-select{appearance:auto;min-width:82px;background:var(--surface-solid,#172033);color:var(--text,#fff);border:1px solid var(--accent);border-radius:9px;padding:8px 10px;font:inherit;font-weight:800;line-height:1.2;cursor:pointer}
 .potion-bulk-buy{flex:1;min-width:150px}
+
+.potion-bulk-input{width:96px;min-height:42px;border:1px solid #5d6d9f;border-radius:10px;background:#182033;color:#f5f7ff;padding:0 10px;font-weight:700;font-size:15px}.potion-card__purchase{gap:12px;align-items:center}.potion-bulk-label{display:flex;align-items:center;gap:7px;color:#aeb8d0;font-weight:700}

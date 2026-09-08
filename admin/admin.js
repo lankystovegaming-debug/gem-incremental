@@ -2232,7 +2232,7 @@ referralsSearch?.addEventListener("input", renderReferralRows);
   const GROUPS = {
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
     economy: ["#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
-    content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel"],
+    content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"]
   };
 
@@ -2313,3 +2313,32 @@ referralsSearch?.addEventListener("input", renderReferralRows);
 
   window.showAdminTab = showAdminTab;
 })();
+
+
+// Admin-editable content/feature catalogs.
+async function loadCustomCatalog() {
+  const list=document.getElementById("catalogList"); if(!list) return;
+  const {data,error}=await supabase.from("admin_content_catalog").select("*").order("content_type").order("name");
+  if(error){ list.innerHTML=`<p>${escapeHtml(error.message)}</p>`; return; }
+  list.innerHTML=(data||[]).map(r=>`<article class="admin-event"><strong>${escapeHtml(r.name)}</strong> <span class="badge">${escapeHtml(r.content_type)}</span> <span class="badge">${r.enabled?'Enabled':'Disabled'}</span><code>${escapeHtml(JSON.stringify(r.config))}</code><button class="btn btn--danger btn--sm" data-catalog-delete="${r.id}">Delete</button></article>`).join("")||"<p>No custom entries yet.</p>";
+  list.querySelectorAll("[data-catalog-delete]").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this catalog entry?"))return;const {error}=await supabase.rpc("admin_delete_content_catalog",{p_id:b.dataset.catalogDelete});if(error)notify.error("Delete failed",error.message);else loadCustomCatalog();});
+}
+async function saveCustomCatalog(){
+  const type=document.getElementById("catalogType").value,key=document.getElementById("catalogKey").value.trim(),name=document.getElementById("catalogName").value.trim();
+  if(!key||!name){notify.error("Missing fields","Enter a key and name.");return;}
+  let config={}; try{config=JSON.parse(document.getElementById("catalogConfig").value||"{}");}catch{notify.error("Invalid JSON","Check the config JSON.");return;}
+  const {error}=await supabase.rpc("admin_save_content_catalog",{p_content_type:type,p_content_key:key,p_name:name,p_enabled:document.getElementById("catalogEnabled").checked,p_config:config});
+  if(error)notify.error("Save failed",error.message);else{notify.success("Saved",name);loadCustomCatalog();}
+}
+async function loadFeatureCatalog(){
+  const list=document.getElementById("featureCatalogList");if(!list)return;
+  const {data,error}=await supabase.from("admin_feature_catalog").select("*").order("category").order("name");
+  if(error){list.textContent=error.message;return;}
+  list.innerHTML=(data||[]).map(r=>`<article class="admin-event"><label><input type="checkbox" data-feature-enabled="${r.id}" ${r.enabled?'checked':''}> <strong>${escapeHtml(r.name)}</strong></label><p>${escapeHtml(r.description)}</p><span class="badge">${escapeHtml(r.category)}</span></article>`).join("");
+  list.querySelectorAll("[data-feature-enabled]").forEach(x=>x.onchange=async()=>{const row=(data||[]).find(r=>r.id===x.dataset.featureEnabled);const {error}=await supabase.rpc("admin_save_feature_catalog",{p_id:row.id,p_enabled:x.checked,p_config:row.config||{}});if(error){notify.error("Update failed",error.message);x.checked=!x.checked;}else notify.success("Feature updated",row.name);});
+}
+document.getElementById("catalogRefresh")?.addEventListener("click",loadCustomCatalog);
+document.getElementById("catalogSave")?.addEventListener("click",saveCustomCatalog);
+document.getElementById("featureCatalogRefresh")?.addEventListener("click",loadFeatureCatalog);
+// Load when the content tab is opened (also harmless if called early).
+setTimeout(()=>{loadCustomCatalog();loadFeatureCatalog();},1000);

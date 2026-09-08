@@ -121,6 +121,16 @@ export async function useCloudConsumable(consumableId) {
   };
 }
 
+export async function useCloudConsumablesBulk(consumableId, quantity = 1) {
+  const qty = Math.max(1, Math.min(1000000, Math.floor(Number(quantity) || 1)));
+  const { data, error } = await supabase.rpc("use_consumables_bulk", {
+    p_consumable_id: consumableId,
+    p_quantity: qty
+  });
+  if (!error) return { data, error: null };
+  return { data: null, error: { code: error.code, message: error.message || "The potions could not be used." } };
+}
+
 export async function loadPendingOneRollBoost() {
   const { data, error } = await supabase
     .from("player_one_roll_boosts")
