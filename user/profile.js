@@ -1,11 +1,11 @@
-import { loadBundleSummary } from '../src/backend/cloudBundles.js';
-import { ensurePlayerAuth } from '../src/backend/auth.js';
+import { cosmeticHtml, cosmeticStyle } from '../src/ui/cosmetics.js';
+import { openCustomizer } from './customize.js';
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { gemNameHtml, gemIconHtml } from "../src/ui/gemStyle.js";
 import { getGemStyle } from "../src/ui/gemStyle.js";
 import { getGemMutation } from "../src/data/mutations.js";
-import { roleForUsername, roleBadgeHtml } from "../src/ui/roles.js";
+import { roleForId, roleBadgeHtml } from "../src/ui/roles.js";
 import { escapeHtml, rarityLabel } from "../src/ui/format.js";
 
 mountShell({
@@ -94,7 +94,7 @@ function mutationText(gem) {
 }
 
 
-function showcaseCard(gem) {
+function showcaseCard(gem, label = "") {
   const name = String(gem?.gem_name ?? "Unknown Gem");
   const style = getGemStyle(name);
 
@@ -103,6 +103,7 @@ function showcaseCard(gem) {
       class="showcase-gem"
       style="--gem-color:${escapeHtml(style.color)};--gem-glow:${escapeHtml(style.glow ?? "transparent")}"
     >
+      ${label ? `<div class="showcase-gem__label">${escapeHtml(label)}</div>` : ""}
       <div class="showcase-gem__icon" aria-hidden="true">${gemIconHtml(name, "gem-icon--profile", Array.isArray(gem?.mutation_ids) ? gem.mutation_ids : (Array.isArray(gem?.mutationIds) ? gem.mutationIds : []))}</div>
 
       <div class="showcase-gem__body">
@@ -116,7 +117,7 @@ function showcaseCard(gem) {
 
         <div class="showcase-gem__details">
           <span>${formatNumber(gem?.final_weight)}g</span>
-          <span>${mutationText(gem)}</span>
+          <span>${escapeHtml(mutationText(gem))}</span>
         </div>
       </div>
     </article>
@@ -126,40 +127,12 @@ function showcaseCard(gem) {
 
 function renderStats(profile) {
   const stats = [
-    {
-      label: "Total rolls",
-      value: formatNumber(profile.total_rolls),
-      detail: "Lifetime rolls"
-    },
-    {
-      label: "Gems held",
-      value: formatNumber(profile.inventory_count),
-      detail: `${formatNumber(profile.inventory_capacity)} inventory capacity`
-    },
-    {
-      label: "Lifetime earnings",
-      value: `$${formatMoney(profile.lifetime_earnings)}`,
-      detail: "Money earned"
-    },
-    {
-      label: "Mutation luck",
-      value: `${Number(profile.mutation_luck ?? 1).toLocaleString("en-US", {
-        maximumFractionDigits: 2
-      })}×`,
-      detail: "Current multiplier"
-    },
-    {
-      label: "Rarest gem",
-      value: profile.rarest_gem_name || "None",
-      detail: profile.rarest_gem_rarity
-        ? `1 in ${formatNumber(profile.rarest_gem_rarity)}`
-        : "No rarest gem recorded"
-    },
-    {
-      label: "Showcase",
-      value: `${Array.isArray(profile.showcase) ? profile.showcase.length : 0}/3`,
-      detail: "Pinned gems"
-    }
+    { label: "Total rolls", value: formatNumber(profile.total_rolls), detail: "Lifetime rolls" },
+    { label: "Rarest raw roll", value: profile.raw_roll_rarity ? `1 in ${formatNumber(profile.raw_roll_rarity)}` : "—", detail: "Luck-adjusted roll history" },
+    { label: "Lifetime earnings", value: `$${formatMoney(profile.lifetime_earnings)}`, detail: "Money earned" },
+    { label: "Gems discovered", value: profile.gems_discovered == null ? "—" : formatNumber(profile.gems_discovered), detail: "Distinct gems in the index" },
+    { label: "Achievements", value: profile.achievement_count == null ? "—" : formatNumber(profile.achievement_count), detail: "Completed achievements" },
+    { label: "Bundles", value: profile.bundles ? `${profile.bundles.completed.length} / ${profile.bundles.total}` : "—", detail: "Permanent collections" }
   ];
 
   profileStats.innerHTML = stats
@@ -178,12 +151,15 @@ function renderStats(profile) {
 
 function renderHero(profile) {
   const username = profile.username || "Guest Player";
-  const role = roleForUsername(username);
+  const role = roleForId(profile.id);
 
+  const cosmetics = profile.cosmetics || {};
+  profileHero.dataset.background = cosmetics.background ? cosmeticStyle(cosmetics.background) : 'default';
+  document.querySelector('.profile-page').dataset.decor = cosmetics.decor ? cosmeticStyle(cosmetics.decor) : 'none';
   profileHero.innerHTML = `
     <div class="profile-hero__glow" aria-hidden="true"></div>
 
-    <div class="profile-hero__avatar">
+    <div class="profile-hero__avatar" data-frame="${cosmetics.frame ? cosmeticStyle(cosmetics.frame) : 'none'}" title="${escapeHtml(cosmetics.frame?.name || '')}">
       ${avatarHtml(profile)}
     </div>
 
@@ -196,10 +172,11 @@ function renderHero(profile) {
         ${profile.title ? `<span class="player-title-badge player-title-badge--profile" style="--player-title-color:${escapeHtml(/^#[0-9a-f]{6}$/i.test(String(profile.title_color ?? "")) ? profile.title_color : "#ffd166")}">${escapeHtml(profile.title)}</span>` : ""}
       </h1>
 
-      <p>
-        Player ID
-        <code>${escapeHtml(profile.id)}</code>
-      </p>
+      <div class="profile-collectible-title">${cosmeticHtml(cosmetics.title)}</div>
+      <div class="profile-badges" aria-label="Equipped badges">${(cosmetics.badges || []).slice(0,3).map(item => cosmeticHtml(item)).join('')}</div>
+      <p class="profile-joined">${profile.created_at ? `Joined ${escapeHtml(new Date(profile.created_at).toLocaleDateString('en-US', { month:'long', year:'numeric' }))}` : ''}</p>
+      <div class="profile-actions"><button class="btn" id="copyPlayerId">Copy Player ID</button><button class="btn btn--primary" id="customizeProfile" hidden>Customize Profile</button></div>
+      <span id="profileActionStatus" role="status" aria-live="polite"></span>
     </div>
   `;
 }
@@ -220,7 +197,7 @@ function renderShowcase(profile) {
     return;
   }
 
-  showcaseGrid.innerHTML = gems.map(showcaseCard).join("");
+  showcaseGrid.innerHTML = gems.map((gem, i) => showcaseCard(gem, profile.cosmetics?.showcase_labels?.[i] || `Showcase ${i + 1}`)).join("");
 }
 
 
@@ -246,7 +223,7 @@ function renderBestRoll(profile) {
         <p>
           ${escapeHtml(rarityLabel(gem.rarity))}
           · ${formatNumber(gem.final_weight)}g
-          · ${mutationText(gem)}
+          · ${escapeHtml(mutationText(gem))}
         </p>
       </div>
     </div>
@@ -269,6 +246,8 @@ function renderNotFound(message) {
   profileStats.innerHTML = "";
   showcaseGrid.innerHTML = "";
   bestRollSection.hidden = true;
+  document.getElementById('bundleProfileSection').hidden = true;
+  document.getElementById('trophyContent').textContent = '';
 }
 
 
@@ -301,18 +280,35 @@ async function loadProfile() {
   renderStats(data);
   renderShowcase(data);
   renderBestRoll(data);
-  await ensurePlayerAuth();
-  const {data:bundles,error:bundleError}=await loadBundleSummary(profileId);
-  if(!bundleError&&bundles){
-    const section=document.getElementById("bundleProfileSection");
-    const crown=bundles.crown;
-    document.getElementById("bundleProfileContent").innerHTML=`
-      <p><strong>${bundles.completed.length} / 7 Bundles completed</strong></p>
-      ${bundles.completed.map(b=>`<p>${escapeHtml(b.icon)} ${escapeHtml(b.name)} ✓</p>`).join("")}
-      ${crown?`<h3>👑 Crown Jewel · ${escapeHtml(crown.gem_name)}</h3><p>Base rarity: 1 in ${formatNumber(crown.rarity)} · ${formatNumber(crown.final_weight_multiplier)}× final weight</p><p>Mutations: ${escapeHtml((crown.mutation_ids??[]).join(", "))}</p>`:""}`;
-    section.hidden=false;
+  renderCollectibles(data);
+  document.getElementById('copyPlayerId').onclick = async () => {
+    try { await navigator.clipboard.writeText(profileId); document.getElementById('profileActionStatus').textContent = 'Player ID copied.'; }
+    catch { document.getElementById('profileActionStatus').textContent = `Player ID: ${profileId}`; }
+  };
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData?.session?.user?.id === profileId && data.cosmetics) {
+    const customize = document.getElementById('customizeProfile');
+    customize.hidden = false;
+    customize.onclick = () => openCustomizer(loadProfile);
   }
 }
 
 
-loadProfile();
+function renderCollectibles(profile) {
+  const trophies = profile.cosmetics?.trophies || [];
+  document.getElementById('trophyContent').innerHTML = trophies.length
+    ? trophies.map(item => cosmeticHtml(item, { trophy: true })).join('')
+    : '<p class="profile-empty">Accomplishments earned through play will find a home here.</p>';
+  const bundles = profile.bundles;
+  const section = document.getElementById('bundleProfileSection');
+  section.hidden = !bundles;
+  if (!bundles) return;
+  const completed = new Set(bundles.completed.map(bundle => bundle.id));
+  const crown = bundles.crown;
+  document.getElementById('bundleProfileContent').innerHTML = `
+    <p class="bundle-progress">${bundles.completed.length} / ${bundles.total} collections completed</p>
+    <div class="bundle-strip">${(bundles.catalog || bundles.completed).map(bundle => `<div class="bundle-medallion ${completed.has(bundle.id) ? 'is-complete' : ''}"><span aria-hidden="true">${escapeHtml(bundle.icon)}</span><strong>${escapeHtml(bundle.name)}</strong><small>${completed.has(bundle.id) ? 'Completed ✓' : 'Not completed'}</small></div>`).join('')}</div>
+    ${crown ? `<div class="profile-highlight crown-jewel"><div class="profile-highlight__gem">${gemIconHtml(crown.gem_name, 'gem-icon--best-roll', crown.mutation_ids || [])}</div><div><div class="eyebrow">👑 CROWN JEWEL</div><h3>${gemNameHtml(crown.gem_name, escapeHtml)}</h3><p>1 in ${formatNumber(crown.rarity)} · ${formatNumber(crown.final_weight_multiplier)}× final weight</p><p>${escapeHtml(mutationText(crown))}${crown.serial_number ? ` · Serial #${formatNumber(crown.serial_number)}` : ''}</p></div></div>` : '<p class="profile-empty">The Crown Jewel awaits a permanent specimen.</p>'}`;
+}
+
+loadProfile().catch(() => renderNotFound('This profile could not be loaded right now.'));

@@ -1,3 +1,4 @@
+import { cosmeticHtml } from './src/ui/cosmetics.js';
 import {
   loadChatMessages,
   sendChatMessage,
@@ -818,6 +819,8 @@ if (messagesEl && formEl && inputEl) {
         message.title_color ?? "#ffd166"
       );
     }
+
+    if (!isPrivate && message.collectible_title) label += ` ${cosmeticHtml(message.collectible_title)}`;
 
     const effect =
       isSystem && Number(message.rarity ?? 0) >= 1_000_000

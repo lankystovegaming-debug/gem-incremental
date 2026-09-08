@@ -5099,3 +5099,16 @@ input[type="radio"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Earned cosmetic identity, separate from role titles. */
+.cosmetic { --cosmetic-color: #b7becb; display: inline-flex; align-items: center; gap: .45rem; color: var(--cosmetic-color); border: 1px solid color-mix(in srgb,var(--cosmetic-color) 45%,transparent); background: color-mix(in srgb,var(--cosmetic-color) 9%,var(--surface-sunken)); border-radius: 999px; padding: .3rem .65rem; font-size: .8rem; font-weight: 650; overflow-wrap: anywhere; }
+.cosmetic--bronze { --cosmetic-color: #cd955e; }
+.cosmetic--gold, .cosmetic--sunrise { --cosmetic-color: #efc66f; }
+.cosmetic--diamond { --cosmetic-color: #82d7ee; }
+.cosmetic--prismatic, .cosmetic--mutation { --cosmetic-color: #d7a0f7; }
+.cosmetic--archive { --cosmetic-color: #b1cfbb; }
+.cosmetic--prismatic { background-image: linear-gradient(110deg,#edb96d16,#94deed26,#d493f726); animation: cosmetic-shimmer 5s ease-in-out infinite; }
+.cosmetic__icon { flex: none; font-size: 1.1em; }
+.cosmetic small { display: block; margin-top: .4rem; color: var(--text-muted); font-size: .75rem; font-weight: 400; }
+@keyframes cosmetic-shimmer { 50% { box-shadow: 0 0 15px #d493f733; } }
+@media (prefers-reduced-motion: reduce) { .cosmetic--prismatic { animation: none; } }

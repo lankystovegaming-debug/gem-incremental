@@ -410,3 +410,54 @@
   vertical-align: middle;
   white-space: nowrap;
 }
+
+/* Player showcase v1 */
+.profile-page { display: grid; gap: 18px; }
+.profile-hero { min-height: 265px; padding: 32px; }
+.profile-hero__identity { min-width: 0; }
+.profile-collectible-title .cosmetic { font-size: 1rem; margin: 4px 0 10px; }
+.profile-badges, .profile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.profile-joined, #profileActionStatus { font-size: .8rem; color: var(--text-muted); }
+.profile-stats { margin: 0; gap: 1px; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--border); }
+.profile-stat { min-height: 95px; padding: 17px 20px; border: 0; border-radius: 0; }
+.profile-stat__value { font-size: clamp(1rem,2vw,1.35rem); }
+.profile-hero__avatar[data-frame="bronze"] { border: 5px ridge #c78c51; box-shadow: 0 0 0 5px #c78c5120,0 15px 40px #0003; }
+.profile-hero__avatar[data-frame="diamond"] { border: 5px ridge #a5e7ff; box-shadow: 0 0 0 5px #a5e7ff25,0 0 28px #85dbff40; }
+.profile-hero__avatar[data-frame="prismatic"] { border: 5px ridge #d7a0f7; box-shadow: 0 0 25px #d7a0f750; }
+.profile-hero[data-background="sunrise"] { background: radial-gradient(ellipse at top right,#ad77262b,transparent 70%),var(--surface-raised); }
+.profile-hero[data-background="diamond"] { background: radial-gradient(ellipse at top right,#52b0c42b,transparent 70%),var(--surface-raised); }
+.profile-hero[data-background="prismatic"], .profile-hero[data-background="mutation"] { background: linear-gradient(120deg,#8d629523,#34798c23),var(--surface-raised); }
+.profile-hero[data-background="bronze"], .profile-hero[data-background="gold"] { background: radial-gradient(ellipse at top right,#ad77262b,transparent 70%),var(--surface-raised); }
+.profile-hero[data-background="stone"], .profile-hero[data-background="archive"] { background: linear-gradient(135deg,#99b9a41f,transparent),var(--surface-raised); }
+.showcase-gem { display: flex; flex-direction: column; text-align: center; min-height: 240px; padding: 24px 16px; gap: 14px; }
+.showcase-gem__icon { width: 100px; height: 100px; }
+.showcase-gem__label { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); overflow-wrap: anywhere; }
+.showcase-gem__details { justify-content: center; }
+.trophy-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.cosmetic--trophy { border-radius: 14px; padding: 18px; align-items: flex-start; }
+.cosmetic--trophy .cosmetic__icon { font-size: 1.8rem; }
+.profile-page[data-decor="mutation"] > .profile-showcase, .profile-page[data-decor="mutation"] > .profile-trophies { border-color: #b993dd; box-shadow: inset 0 3px #89d2d360,inset 0 -3px #d993bb60; }
+.profile-page[data-decor="archive"] > .profile-showcase, .profile-page[data-decor="archive"] > .profile-trophies { border: 4px double #8da48b; background: linear-gradient(120deg,#9fae8c0d,transparent),var(--surface-raised); }
+.bundle-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(105px,1fr)); gap: 10px; }
+.bundle-medallion { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 8px; border: 1px dashed var(--border); border-radius: 14px; color: var(--text-muted); }
+.bundle-medallion > span { font-size: 1.7rem; filter: grayscale(1); opacity: .5; }
+.bundle-medallion strong { font-size: .8rem; }
+.bundle-medallion small { font-size: .7rem; }
+.bundle-medallion.is-complete { border-style: solid; border-color: #d8b36e66; background: #d8b36e0b; color: var(--text); }
+.bundle-medallion.is-complete > span { filter: none; opacity: 1; }
+.crown-jewel { margin-top: 20px; border-color: #d8b36e66; }
+.customize-dialog { width: min(740px,calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--text); background: var(--surface-raised,#111722); border: 1px solid var(--border); border-radius: 20px; padding: 24px; }
+.customize-dialog::backdrop { background: #0009; backdrop-filter: blur(5px); }
+.customize-dialog__head, .customize-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.customize-dialog__head h2 { margin: 0; }
+.customize-dialog p { color: var(--text-muted); font-size: .85rem; }
+.customize-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.customize-field { display: grid; gap: 6px; font-size: .8rem; min-width: 0; }
+.customize-field select, .customize-field input { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 9px; color: var(--text); background: var(--surface-sunken); font: inherit; }
+.customize-dialog fieldset { border: 1px solid var(--border); border-radius: 12px; margin: 20px 0; padding: 15px; }
+.customize-dialog legend { padding: 0 5px; }
+.customize-dialog button:focus-visible, .customize-dialog select:focus-visible, .customize-dialog input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media(max-width:760px) { .profile-badges,.profile-actions { justify-content: center; } .profile-hero { padding: 24px 16px; } }
+@media(max-width:500px) { .profile-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .profile-stat { padding: 14px 12px; } .trophy-grid,.customize-fields { grid-template-columns: 1fr; } .customize-dialog { padding: 18px; } .crown-jewel { flex-direction: column; } }
+/* Shared button/card display rules must not override profile visibility gates. */
+.profile-page [hidden] { display: none !important; }
