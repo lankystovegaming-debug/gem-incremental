@@ -2628,3 +2628,7 @@ html.is-cinematic-active body {
 .mutation-scene-misty .gem-icon--cinematic {
   filter: drop-shadow(18px 0 18px rgba(56, 189, 248, .42));
 }
+
+
+/* Temporary mutation effects shown after each roll */
+.roll-active-effects{display:grid;gap:.45rem;margin:.7rem 0;text-align:left}.roll-active-effect{padding:.6rem .75rem;border:1px solid var(--border);border-radius:10px;background:linear-gradient(90deg,#60a5fa16,#a78bfa12)}.roll-active-effect strong,.roll-active-effect span,.roll-active-effect small{display:block}.roll-active-effect span{font-weight:700;margin-top:.1rem}.roll-active-effect small{color:var(--text-muted);margin-top:.15rem}

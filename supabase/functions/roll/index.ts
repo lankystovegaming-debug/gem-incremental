@@ -3101,6 +3101,13 @@ export default {
         1
       );
       const effectiveRarity = Math.max(1, Number(gem.rarity) * mutationChanceProduct);
+      // Exact base rarity denominator as an arbitrary-size integer string.
+      // Never serialize Infinity for extremely rare mutation combinations.
+      let effectiveRarityExact = BigInt(Math.max(1, Math.round(Number(gem.rarity))));
+      for (const mutation of mutations) {
+        const denominator = Math.max(1, Math.round(Number(mutation.chance || 1)));
+        effectiveRarityExact *= BigInt(denominator);
+      }
 
       const primaryMutation =
         mutations[0] ?? null;
@@ -4153,7 +4160,14 @@ export default {
 
         mutationMultiplier,
 
-        effectiveRarity,
+        effectiveRarity: Number.isFinite(effectiveRarity) ? effectiveRarity : Number.MAX_VALUE,
+        effectiveRarityExact: effectiveRarityExact.toString(),
+
+        activeMutationEffects: [
+          ...(nextMistyRolls > 0 ? [{ id: "misty", name: "Misty Mutation Surge", multiplier: Math.pow(2.5, nextMistyStacks), rollsRemaining: nextMistyRolls, description: "Mutation chance boosted" }] : []),
+          ...(nextAncientRelicRolls > 0 ? [{ id: "ancient", name: "Ancient Relic Hunt", multiplier: 1.3, rollsRemaining: nextAncientRelicRolls, description: "Ancient Relic chance boosted" }] : []),
+          ...(nextEnchantedRelicRolls > 0 ? [{ id: "enchanted", name: "Enchanted Relic Hunt", multiplier: 1.1, rollsRemaining: nextEnchantedRelicRolls, description: "All relic chances boosted" }] : [])
+        ],
 
         // Exact effective luck used for this server-authoritative roll.
         luckAtRoll: luck,

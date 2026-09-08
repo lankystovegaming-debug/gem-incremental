@@ -31,6 +31,34 @@ export function mutationChance(id) {
     : 0;
 }
 
+// Exact denominator arithmetic using BigInt prevents huge mutation combinations
+// from overflowing JavaScript Number/Infinity. This is the same class of fix
+// decimal.js provides, but keeps the browser bundle dependency-free.
+function integerDenominator(value) {
+  const text = String(value ?? '').trim();
+  if (/^\d+$/.test(text)) return BigInt(text);
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? BigInt(Math.round(n)) : 1n;
+}
+
+export function exactChanceDenominator(gemOrName, mutationIds = []) {
+  const gem = typeof gemOrName === 'string' ? gems.find((entry) => entry.name === gemOrName) : gemOrName;
+  if (!gem) return null;
+  let denominator = integerDenominator(gem.rarity);
+  for (const id of normalizeMutationIds(mutationIds)) denominator *= integerDenominator(GEM_MUTATIONS[id]?.chance ?? 1);
+  return denominator;
+}
+
+export function formatExactDenominator(denominator) {
+  if (denominator == null || denominator <= 0n) return 'Impossible';
+  const raw = denominator.toString();
+  if (raw.length <= 15) return `1 in ${denominator.toLocaleString('en-US')}`;
+  const exponent = raw.length - 1;
+  const head = raw.slice(0, 3);
+  const mantissa = head.length > 1 ? `${head[0]}.${head.slice(1)}` : head;
+  return `1 in ${mantissa}e${exponent}`;
+}
+
 export function mutationSelectionChance(ids = []) {
   return normalizeMutationIds(ids).reduce(
     (probability, id) => probability * mutationChance(id),
@@ -54,13 +82,13 @@ export function chanceDenominator(
   mutationIds = [],
   luck = BASE_ROLL_LUCK
 ) {
-  const probability = rolledResultChance(
-    gemOrName,
-    mutationIds,
-    luck
-  );
-
-  return probability > 0 ? 1 / probability : Infinity;
+  const exact = exactChanceDenominator(gemOrName, mutationIds);
+  if (exact != null) {
+    // Preserve compatibility for callers that need a Number, but never emit Infinity.
+    const max = BigInt(Number.MAX_SAFE_INTEGER);
+    return exact > max ? Number.MAX_SAFE_INTEGER : Number(exact);
+  }
+  return 0;
 }
 
 export function meetsChatChanceThreshold(
@@ -109,9 +137,13 @@ export function chanceLabelForRollResult(
   gemOrName = result?.gem,
   mutationIds = []
 ) {
-  const denominator = Number(result?.effectiveRarity ?? result?.effective_rarity);
-  if (Number.isFinite(denominator) && denominator > 0) {
-    return formatChance(1 / denominator);
+  const exactText = result?.effectiveRarityExact ?? result?.effective_rarity_exact;
+  if (exactText && /^\d+$/.test(String(exactText))) {
+    return formatExactDenominator(BigInt(String(exactText)));
   }
+  const exact = exactChanceDenominator(gemOrName, mutationIds);
+  if (exact != null) return formatExactDenominator(exact);
+  const denominator = Number(result?.effectiveRarity ?? result?.effective_rarity);
+  if (Number.isFinite(denominator) && denominator > 0) return formatChance(1 / denominator);
   return chanceLabelForResult(gemOrName, mutationIds);
 }

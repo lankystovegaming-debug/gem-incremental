@@ -550,6 +550,7 @@ function renderRoll(data, outcome) {
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}${data.equipmentPassives?.bagged ? " 🛍️" : ""}</h2>
       ${mutationNamesHtml(data?.mutations)}
+      ${(Array.isArray(data?.activeMutationEffects) && data.activeMutationEffects.length) ? `<div class="roll-active-effects">${data.activeMutationEffects.map(effect => `<div class="roll-active-effect"><strong>${escapeHtml(effect.name)}</strong><span>×${Number(effect.multiplier).toLocaleString("en-US", { maximumFractionDigits: 3 })} · ${Number(effect.rollsRemaining)} roll${Number(effect.rollsRemaining)===1?"":"s"} remaining</span><small>${escapeHtml(effect.description || "Temporary mutation effect")}</small></div>`).join("")}</div>` : ""}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
       ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
