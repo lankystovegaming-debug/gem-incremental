@@ -1,22 +1,33 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Collection Hall · Gem Incremental</title>
-<link rel="icon" href="../src/assets/favicon.ico">
-<link rel="stylesheet" href="../src/styles/app.css">
+<meta name="color-scheme" content="dark light"><meta name="description" content="Seven permanent gem Collections. Choose your sacrifices and build your legacy.">
+<title>Collections · Gem Incremental</title>
+<link rel="icon" href="../src/assets/favicon.ico"><link rel="stylesheet" href="../src/styles/app.css">
 <link rel="stylesheet" href="collection-hall.css">
 </head><body>
-<main class="expansion-page">
-<section class="expansion-hero">
-  <div class="expansion-icon">▦</div>
-  <div><div class="expansion-kicker">UNRELEASED COLLECTIONS</div><h1>Collection Hall</h1>
-  <p>Build long-term collection sets, milestone requirements, bonuses and multi-reward completion tracks. This page is intentionally disabled until you enable it from Upcoming Features.</p></div>
-  <span id="featureState" class="state-pill off">OFF</span>
-</section>
-<section class="expansion-grid">
-  <article class="expansion-panel"><h2>Configured content</h2><div id="definitions" class="expansion-list"><div class="expansion-empty">Loading…</div></div></article>
-  <article class="expansion-panel"><h2>How it works</h2><div id="details" class="expansion-details"></div></article>
-</section>
+<main class="app-main bundles-page">
+  <header class="bundles-hero card">
+    <div><p class="bundles-eyebrow">THE COLLECTION HALL</p><h1>A collection worth<br>letting go of.</h1>
+      <p>Seven permanent Bundles. Every specimen contributed is a sacrifice.<br>Build your legacy, one requirement at a time.</p></div>
+    <div class="bundles-total"><span id="bundleCount">— / 7</span><p>COLLECTIONS COMPLETED</p><button class="btn" id="refreshBundles">Refresh progress</button></div>
+  </header>
+  <div class="bundles-guidance"><p><strong>One specimen. One requirement.</strong> Contributions permanently consume your gems. Collections award bragging rights; there are no stat or currency rewards yet.</p>
+    <details><summary>How auto-contribution works</summary><p>Enable it separately on the requirements you want. A future roll contributes only when exactly one enabled, unfinished requirement matches. Bundle contributions take priority over Auto Craft. Ambiguous matches and Crown Jewel candidates stay in inventory, protected from Auto Craft and Auto Sell. Other rolls continue through your normal rules.</p><p>Locked and Museum specimens cannot be contributed. Weight requirements use final weight divided by base weight. Master unlocks after completing the first six Collections.</p></details></div>
+  <p id="bundleStatus" role="status" aria-live="polite">Opening your Collections…</p>
+  <section id="bundles" class="bundles-list" aria-label="Collections"></section>
+  <section id="crownMemory" class="card crown-memory" hidden></section>
 </main>
+<dialog id="contributionDialog" class="bundle-dialog" aria-labelledby="contributionTitle">
+  <header><div><p class="bundles-eyebrow" id="contributionEyebrow">CHOOSE YOUR SPECIMENS</p><h2 id="contributionTitle">Contribute</h2></div><button class="btn" id="closeContribution" aria-label="Close contribution">Close</button></header>
+  <p id="contributionStatus" role="status" aria-live="polite"></p>
+  <div id="candidateStep">
+    <p>Matching unlocked specimens, lowest value first. Select exactly what you want to permanently contribute.</p>
+    <div class="candidate-toolbar"><button class="btn" id="selectCandidates">Select this page</button><span id="selectionCount">0 selected</span></div>
+    <div id="bundleCandidates"></div>
+    <footer><button class="btn" id="previousCandidates">Previous</button><span id="candidatePage"></span><button class="btn" id="nextCandidates">Next</button><button class="btn btn--primary" id="reviewContribution" disabled>Review contribution</button></footer>
+  </div>
+  <div id="confirmStep" hidden><div id="contributionReview"></div><p class="sacrifice-warning">These specimens will be permanently removed. This cannot be undone.</p><footer><button class="btn" id="backToCandidates">Back</button><button class="btn btn--danger" id="submitContribution">Confirm contribution</button></footer></div>
+</dialog>
 <script type="module" src="collection-hall.js"></script>
 </body></html>

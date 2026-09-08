@@ -33,7 +33,7 @@ class Query {
 }
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);
- const responses={get_playtime_upgrades:{levels:{}},crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
+ const responses={bundle_route_roll:{status:'none'},get_playtime_upgrades:{levels:{}},crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
  return {data:responses[name]??null,error:null};

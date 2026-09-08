@@ -2,7 +2,7 @@ import { getGemMutation } from "../data/mutations.js";
 
 const KEY="gemIncremental.sessionInsights.v1";
 
-function fresh(){return{startedAt:new Date().toISOString(),rolls:0,kept:0,autoKept:0,autoSold:0,autoSoldValue:0,autoCrafted:0,relics:0,rarities:{},mutations:{},bestEffective:null,bestBase:null,heaviest:null,mostValuable:null,notable:[]};}
+function fresh(){return{startedAt:new Date().toISOString(),rolls:0,kept:0,autoKept:0,autoSold:0,autoSoldValue:0,autoCrafted:0,bundleContributed:0,relics:0,rarities:{},mutations:{},bestEffective:null,bestBase:null,heaviest:null,mostValuable:null,notable:[]};}
 function isRelic(item){return item?.dropType==="relic"||item?.name==="Enchant Relic"||item?.name==="Ancient Relic";}
 function mutationChanceProduct(ids=[]){return ids.reduce((total,id)=>total*Math.max(1,Number(getGemMutation(id)?.chance||1)),1);}
 function normalizeItem(item){
@@ -21,7 +21,7 @@ export function recordSessionRoll(data,outcome={type:"kept"}){
   const state=load(),item=result(data,outcome),tier=String(outcome.tier||"unknown");state.rolls+=1;state.rarities[tier]=(state.rarities[tier]||0)+1;
   for(const id of item.mutations)state.mutations[id]=(state.mutations[id]||0)+1;
   if(data?.gem?.dropType==="relic")state.relics+=1;
-  if(outcome.type==="auto-sold"){state.autoSold+=1;state.autoSoldValue+=Number(outcome.soldValue||data?.value||0);}else if(outcome.type==="auto-crafted")state.autoCrafted+=1;else{state.kept+=1;if(outcome.type==="auto-kept")state.autoKept+=1;}
+  if(outcome.type==="auto-sold"){state.autoSold+=1;state.autoSoldValue+=Number(outcome.soldValue||data?.value||0);}else if(outcome.type==="auto-crafted")state.autoCrafted+=1;else if(outcome.type==="bundle-contributed")state.bundleContributed+=1;else{state.kept+=1;if(outcome.type==="auto-kept")state.autoKept+=1;}
   state.bestEffective=rarer(state.bestEffective,item,"effectiveRarity");state.bestBase=rarer(state.bestBase,item,"baseRarity");state.heaviest=rarer(state.heaviest,item,"weight");state.mostValuable=rarer(state.mostValuable,item,"value");
   if(!isRelic(item)&&(item.effectiveRarity>=100000||item.mutations.length))state.notable=[item,...state.notable].slice(0,20);
   return save(state);

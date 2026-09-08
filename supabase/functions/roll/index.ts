@@ -2883,6 +2883,11 @@ export default {
       // TRY SERVER AUTO CRAFT
       // =====================================================
 
+      // Run alongside the existing crafting-state read; all eligibility and
+      // progress changes are serialized in one service-only database call.
+      const bundleRoutePromise = ctx.supabaseAdmin.rpc("bundle_route_roll", {
+        p_player_id: playerId, p_lease_id: rollLeaseId, p_specimen: specimen
+      }).then((result: any) => result);
       let autoConserved = false;
       let autoDeposited =
         false;
@@ -2920,6 +2925,15 @@ export default {
       }
 
 
+      const { data: bundleRoute, error: bundleRouteError } = await bundleRoutePromise;
+      if (bundleRouteError || !bundleRoute) {
+        // An uncertain commit must never fall back to saving a second copy.
+        console.error("Bundle routing failed:", bundleRouteError);
+        return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
+      }
+      const bundleDeposited = bundleRoute.status === "deposited";
+      const bundleKeepInInventory = bundleRoute.keepInInventory === true;
+
       const activeRecipeId =
         playerCrafting
           ?.active_auto_craft ??
@@ -2927,7 +2941,7 @@ export default {
 
 
       if (
-        activeRecipeId
+        activeRecipeId && !bundleDeposited && !bundleKeepInInventory
       ) {
         const {
           data:
@@ -3191,7 +3205,7 @@ export default {
 
 
       if (
-        !autoDeposited || autoConserved
+        !bundleDeposited && (!autoDeposited || autoConserved)
       ) {
         const {
           data:
@@ -3309,7 +3323,7 @@ export default {
       // Vein Hunter creates a true second specimen: only the base gem is
       // copied. Weight and every mutation are rolled again independently.
       // The bonus specimen does not count as another lifetime roll.
-      const primaryOccupiesSlot = (!autoDeposited || autoConserved) && !relicDrop;
+      const primaryOccupiesSlot = !bundleDeposited && (!autoDeposited || autoConserved) && !relicDrop;
       const hasDuplicateCapacity = currentInventoryCount + (primaryOccupiesSlot ? 1 : 0) < effectiveInventoryCapacity;
       if (
         hasVeinHunter &&
@@ -3729,7 +3743,7 @@ export default {
       // =====================================================
 
       const finalInventoryCount =
-        (autoDeposited && !autoConserved) || relicDrop
+        bundleDeposited || (autoDeposited && !autoConserved) || relicDrop
           ? currentInventoryCount
           : currentInventoryCount +
             1;
@@ -3858,6 +3872,8 @@ export default {
             consumed: resonanceEmpowered && luckBasedGem && gem.rarity < 100000
           } : null
         },
+
+        bundle: bundleRoute,
 
         autoCraft: {
           deposited:

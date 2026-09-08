@@ -1,0 +1,957 @@
+[
+  {
+    "id": "jewellers-01",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 6500,
+    "sort_order": 1,
+    "gem_name": "Amethyst"
+  },
+  {
+    "id": "jewellers-02",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 30000,
+    "sort_order": 2,
+    "gem_name": "Aquamarine"
+  },
+  {
+    "id": "jewellers-03",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 20000,
+    "sort_order": 3,
+    "gem_name": "Opal"
+  },
+  {
+    "id": "jewellers-04",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 15000,
+    "sort_order": 4,
+    "gem_name": "Zircon"
+  },
+  {
+    "id": "jewellers-05",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 15000,
+    "sort_order": 5,
+    "gem_name": "Moonstone"
+  },
+  {
+    "id": "jewellers-06",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 10000,
+    "sort_order": 6,
+    "gem_name": "Sapphire"
+  },
+  {
+    "id": "jewellers-07",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 8000,
+    "sort_order": 7,
+    "gem_name": "Ruby"
+  },
+  {
+    "id": "jewellers-08",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 6000,
+    "sort_order": 8,
+    "gem_name": "Emerald"
+  },
+  {
+    "id": "jewellers-09",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 5000,
+    "sort_order": 9,
+    "gem_name": "Diamond"
+  },
+  {
+    "id": "jewellers-10",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 4000,
+    "sort_order": 10,
+    "gem_name": "Tanzanite"
+  },
+  {
+    "id": "jewellers-11",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 3000,
+    "sort_order": 11,
+    "gem_name": "Alexandrite"
+  },
+  {
+    "id": "jewellers-12",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2500,
+    "sort_order": 12,
+    "gem_name": "Kunzite"
+  },
+  {
+    "id": "jewellers-13",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1500,
+    "sort_order": 13,
+    "gem_name": "Morganite"
+  },
+  {
+    "id": "jewellers-14",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1250,
+    "sort_order": 14,
+    "gem_name": "Mythril"
+  },
+  {
+    "id": "jewellers-15",
+    "bundle_id": "jewellers",
+    "section": "The Stockpile",
+    "requirement_type": "gem_quantity",
+    "required_amount": 750,
+    "sort_order": 15,
+    "gem_name": "Painite"
+  },
+  {
+    "id": "spectrum-01",
+    "bundle_id": "spectrum",
+    "section": "Red",
+    "requirement_type": "gem_quantity",
+    "required_amount": 15000,
+    "sort_order": 16,
+    "gem_name": "Carnelian"
+  },
+  {
+    "id": "spectrum-02",
+    "bundle_id": "spectrum",
+    "section": "Red",
+    "requirement_type": "gem_quantity",
+    "required_amount": 8000,
+    "sort_order": 17,
+    "gem_name": "Ruby"
+  },
+  {
+    "id": "spectrum-03",
+    "bundle_id": "spectrum",
+    "section": "Red",
+    "requirement_type": "gem_quantity",
+    "required_amount": 200,
+    "sort_order": 18,
+    "gem_name": "Red Diamond"
+  },
+  {
+    "id": "spectrum-04",
+    "bundle_id": "spectrum",
+    "section": "Orange",
+    "requirement_type": "gem_quantity",
+    "required_amount": 18000,
+    "sort_order": 19,
+    "gem_name": "Citrine"
+  },
+  {
+    "id": "spectrum-05",
+    "bundle_id": "spectrum",
+    "section": "Orange",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1200,
+    "sort_order": 20,
+    "gem_name": "Amber"
+  },
+  {
+    "id": "spectrum-06",
+    "bundle_id": "spectrum",
+    "section": "Orange",
+    "requirement_type": "gem_quantity",
+    "required_amount": 4,
+    "sort_order": 21,
+    "gem_name": "Crocoite"
+  },
+  {
+    "id": "spectrum-07",
+    "bundle_id": "spectrum",
+    "section": "Yellow",
+    "requirement_type": "gem_quantity",
+    "required_amount": 35000,
+    "sort_order": 22,
+    "gem_name": "Topaz"
+  },
+  {
+    "id": "spectrum-08",
+    "bundle_id": "spectrum",
+    "section": "Yellow",
+    "requirement_type": "gem_quantity",
+    "required_amount": 850,
+    "sort_order": 23,
+    "gem_name": "Titanite"
+  },
+  {
+    "id": "spectrum-09",
+    "bundle_id": "spectrum",
+    "section": "Yellow",
+    "requirement_type": "gem_quantity",
+    "required_amount": 45,
+    "sort_order": 24,
+    "gem_name": "Fingerite"
+  },
+  {
+    "id": "spectrum-10",
+    "bundle_id": "spectrum",
+    "section": "Green",
+    "requirement_type": "gem_quantity",
+    "required_amount": 250,
+    "sort_order": 25,
+    "gem_name": "Malachite"
+  },
+  {
+    "id": "spectrum-11",
+    "bundle_id": "spectrum",
+    "section": "Green",
+    "requirement_type": "gem_quantity",
+    "required_amount": 6500,
+    "sort_order": 26,
+    "gem_name": "Emerald"
+  },
+  {
+    "id": "spectrum-12",
+    "bundle_id": "spectrum",
+    "section": "Green",
+    "requirement_type": "gem_quantity",
+    "required_amount": 22,
+    "sort_order": 27,
+    "gem_name": "Meteorite Peridot"
+  },
+  {
+    "id": "spectrum-13",
+    "bundle_id": "spectrum",
+    "section": "Blue",
+    "requirement_type": "gem_quantity",
+    "required_amount": 30000,
+    "sort_order": 28,
+    "gem_name": "Aquamarine"
+  },
+  {
+    "id": "spectrum-14",
+    "bundle_id": "spectrum",
+    "section": "Blue",
+    "requirement_type": "gem_quantity",
+    "required_amount": 7000,
+    "sort_order": 29,
+    "gem_name": "Kyanite"
+  },
+  {
+    "id": "spectrum-15",
+    "bundle_id": "spectrum",
+    "section": "Blue",
+    "requirement_type": "gem_quantity",
+    "required_amount": 350,
+    "sort_order": 30,
+    "gem_name": "Hauyne"
+  },
+  {
+    "id": "spectrum-16",
+    "bundle_id": "spectrum",
+    "section": "Purple",
+    "requirement_type": "gem_quantity",
+    "required_amount": 5000,
+    "sort_order": 31,
+    "gem_name": "Amethyst"
+  },
+  {
+    "id": "spectrum-17",
+    "bundle_id": "spectrum",
+    "section": "Purple",
+    "requirement_type": "gem_quantity",
+    "required_amount": 4500,
+    "sort_order": 32,
+    "gem_name": "Iolite"
+  },
+  {
+    "id": "spectrum-18",
+    "bundle_id": "spectrum",
+    "section": "Purple",
+    "requirement_type": "gem_quantity",
+    "required_amount": 10,
+    "sort_order": 33,
+    "gem_name": "Sugilite"
+  },
+  {
+    "id": "spectrum-19",
+    "bundle_id": "spectrum",
+    "section": "Monochrome",
+    "requirement_type": "gem_quantity",
+    "required_amount": 5000,
+    "sort_order": 34,
+    "gem_name": "Diamond"
+  },
+  {
+    "id": "spectrum-20",
+    "bundle_id": "spectrum",
+    "section": "Monochrome",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2000,
+    "sort_order": 35,
+    "gem_name": "Black Opal"
+  },
+  {
+    "id": "spectrum-21",
+    "bundle_id": "spectrum",
+    "section": "Monochrome",
+    "requirement_type": "gem_quantity",
+    "required_amount": 75,
+    "sort_order": 36,
+    "gem_name": "Black Diamond"
+  },
+  {
+    "id": "deep-earth-01",
+    "bundle_id": "deep-earth",
+    "section": "Upper Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2500,
+    "sort_order": 37,
+    "gem_name": "Lodestone"
+  },
+  {
+    "id": "deep-earth-02",
+    "bundle_id": "deep-earth",
+    "section": "Upper Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2500,
+    "sort_order": 38,
+    "gem_name": "Grandidierite"
+  },
+  {
+    "id": "deep-earth-03",
+    "bundle_id": "deep-earth",
+    "section": "Upper Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1250,
+    "sort_order": 39,
+    "gem_name": "Titanite"
+  },
+  {
+    "id": "deep-earth-04",
+    "bundle_id": "deep-earth",
+    "section": "Lower Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 125,
+    "sort_order": 40,
+    "gem_name": "Hibonite"
+  },
+  {
+    "id": "deep-earth-05",
+    "bundle_id": "deep-earth",
+    "section": "Lower Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 65,
+    "sort_order": 41,
+    "gem_name": "Fingerite"
+  },
+  {
+    "id": "deep-earth-06",
+    "bundle_id": "deep-earth",
+    "section": "Lower Crust",
+    "requirement_type": "gem_quantity",
+    "required_amount": 20,
+    "sort_order": 42,
+    "gem_name": "Ringwoodite"
+  },
+  {
+    "id": "deep-earth-07",
+    "bundle_id": "deep-earth",
+    "section": "Upper Mantle",
+    "requirement_type": "gem_quantity",
+    "required_amount": 12,
+    "sort_order": 43,
+    "gem_name": "Moolooite"
+  },
+  {
+    "id": "deep-earth-08",
+    "bundle_id": "deep-earth",
+    "section": "Upper Mantle",
+    "requirement_type": "gem_quantity",
+    "required_amount": 9,
+    "sort_order": 44,
+    "gem_name": "Hutchinsonite"
+  },
+  {
+    "id": "deep-earth-09",
+    "bundle_id": "deep-earth",
+    "section": "Upper Mantle",
+    "requirement_type": "gem_quantity",
+    "required_amount": 7,
+    "sort_order": 45,
+    "gem_name": "Fluorcalciobritholite"
+  },
+  {
+    "id": "deep-earth-10",
+    "bundle_id": "deep-earth",
+    "section": "Deep Mantle",
+    "requirement_type": "gem_quantity",
+    "required_amount": 3,
+    "sort_order": 46,
+    "gem_name": "Georgbarsanovite"
+  },
+  {
+    "id": "deep-earth-11",
+    "bundle_id": "deep-earth",
+    "section": "Deep Mantle",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2,
+    "sort_order": 47,
+    "gem_name": "Zirkelite"
+  },
+  {
+    "id": "deep-earth-12",
+    "bundle_id": "deep-earth",
+    "section": "Deepest Specimen",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1,
+    "sort_order": 48,
+    "gem_name": "Loveringite"
+  },
+  {
+    "id": "heavyweight-01",
+    "bundle_id": "heavyweight",
+    "section": "Extreme Weight",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 70,
+    "sort_order": 49,
+    "gem_name": "Diamond",
+    "minimum_weight_multiplier": 10
+  },
+  {
+    "id": "heavyweight-02",
+    "bundle_id": "heavyweight",
+    "section": "Extreme Weight",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 32,
+    "sort_order": 50,
+    "gem_name": "Painite",
+    "minimum_weight_multiplier": 9
+  },
+  {
+    "id": "heavyweight-03",
+    "bundle_id": "heavyweight",
+    "section": "Extreme Weight",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 20,
+    "sort_order": 51,
+    "gem_name": "Titanite",
+    "minimum_weight_multiplier": 9
+  },
+  {
+    "id": "heavyweight-04",
+    "bundle_id": "heavyweight",
+    "section": "Heavy Rares",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 3,
+    "sort_order": 52,
+    "gem_name": "Hibonite",
+    "minimum_weight_multiplier": 8
+  },
+  {
+    "id": "heavyweight-05",
+    "bundle_id": "heavyweight",
+    "section": "Heavy Rares",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 3,
+    "sort_order": 53,
+    "gem_name": "Fingerite",
+    "minimum_weight_multiplier": 7
+  },
+  {
+    "id": "heavyweight-06",
+    "bundle_id": "heavyweight",
+    "section": "Heavy Rares",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 2,
+    "sort_order": 54,
+    "gem_name": "Ringwoodite",
+    "minimum_weight_multiplier": 6
+  },
+  {
+    "id": "heavyweight-07",
+    "bundle_id": "heavyweight",
+    "section": "Heavyweight Trophies",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 1,
+    "sort_order": 55,
+    "gem_name": "Dark Matter",
+    "minimum_weight_multiplier": 7
+  },
+  {
+    "id": "heavyweight-08",
+    "bundle_id": "heavyweight",
+    "section": "Heavyweight Trophies",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 2,
+    "sort_order": 56,
+    "gem_name": "Moolooite",
+    "minimum_weight_multiplier": 5
+  },
+  {
+    "id": "mutated-01",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 20000,
+    "sort_order": 57,
+    "mutation_id": "smooth"
+  },
+  {
+    "id": "mutated-02",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 12000,
+    "sort_order": 58,
+    "mutation_id": "glossy"
+  },
+  {
+    "id": "mutated-03",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 6000,
+    "sort_order": 59,
+    "mutation_id": "clear"
+  },
+  {
+    "id": "mutated-04",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 4000,
+    "sort_order": 60,
+    "mutation_id": "lustrous"
+  },
+  {
+    "id": "mutated-05",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 3000,
+    "sort_order": 61,
+    "mutation_id": "flawless"
+  },
+  {
+    "id": "mutated-06",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1200,
+    "sort_order": 62,
+    "mutation_id": "polished"
+  },
+  {
+    "id": "mutated-07",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 600,
+    "sort_order": 63,
+    "mutation_id": "gilded"
+  },
+  {
+    "id": "mutated-08",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 150,
+    "sort_order": 64,
+    "mutation_id": "charged"
+  },
+  {
+    "id": "mutated-09",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 120,
+    "sort_order": 65,
+    "mutation_id": "prismatic"
+  },
+  {
+    "id": "mutated-10",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 60,
+    "sort_order": 66,
+    "mutation_id": "radiant"
+  },
+  {
+    "id": "mutated-11",
+    "bundle_id": "mutated",
+    "section": "Mutation Stockpile",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 30,
+    "sort_order": 67,
+    "mutation_id": "celestial"
+  },
+  {
+    "id": "mutated-12",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 68,
+    "mutation_id": "enlightened"
+  },
+  {
+    "id": "mutated-13",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 69,
+    "mutation_id": "shiny"
+  },
+  {
+    "id": "mutated-14",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 70,
+    "mutation_id": "corrupted"
+  },
+  {
+    "id": "mutated-15",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 71,
+    "mutation_id": "sparkling"
+  },
+  {
+    "id": "mutated-16",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 72,
+    "mutation_id": "golden"
+  },
+  {
+    "id": "mutated-17",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 73,
+    "mutation_id": "eternal"
+  },
+  {
+    "id": "mutated-18",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 74,
+    "mutation_id": "verdant"
+  },
+  {
+    "id": "mutated-19",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 75,
+    "mutation_id": "devilish"
+  },
+  {
+    "id": "mutated-20",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 76,
+    "mutation_id": "abyssal"
+  },
+  {
+    "id": "mutated-21",
+    "bundle_id": "mutated",
+    "section": "Mutation Showcase",
+    "requirement_type": "mutation_quantity",
+    "required_amount": 1,
+    "sort_order": 77,
+    "mutation_id": "chocolate"
+  },
+  {
+    "id": "mutated-22",
+    "bundle_id": "mutated",
+    "section": "Mutation Fusion",
+    "requirement_type": "mutation_count",
+    "required_amount": 8000,
+    "sort_order": 78,
+    "minimum_mutation_count": 2
+  },
+  {
+    "id": "mutated-23",
+    "bundle_id": "mutated",
+    "section": "Mutation Fusion",
+    "requirement_type": "mutation_count",
+    "required_amount": 250,
+    "sort_order": 79,
+    "minimum_mutation_count": 3
+  },
+  {
+    "id": "mutated-24",
+    "bundle_id": "mutated",
+    "section": "Mutation Fusion",
+    "requirement_type": "mutation_count",
+    "required_amount": 4,
+    "sort_order": 80,
+    "minimum_mutation_count": 4
+  },
+  {
+    "id": "cosmic-01",
+    "bundle_id": "cosmic",
+    "section": "Cosmic Sacrifices",
+    "requirement_type": "gem_quantity",
+    "required_amount": 3,
+    "sort_order": 81,
+    "gem_name": "Lanky Gem"
+  },
+  {
+    "id": "cosmic-02",
+    "bundle_id": "cosmic",
+    "section": "Cosmic Sacrifices",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2,
+    "sort_order": 82,
+    "gem_name": "Libyan Desert Glass"
+  },
+  {
+    "id": "cosmic-03",
+    "bundle_id": "cosmic",
+    "section": "Cosmic Sacrifices",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2,
+    "sort_order": 83,
+    "gem_name": "Ammolite"
+  },
+  {
+    "id": "cosmic-04",
+    "bundle_id": "cosmic",
+    "section": "Cosmic Sacrifices",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1,
+    "sort_order": 84,
+    "gem_name": "Core of Oblivion"
+  },
+  {
+    "id": "cosmic-05",
+    "bundle_id": "cosmic",
+    "section": "Cosmic Sacrifices",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1,
+    "sort_order": 85,
+    "gem_name": "Reidite"
+  },
+  {
+    "id": "master-01",
+    "bundle_id": "master",
+    "section": "I. The Hoard",
+    "requirement_type": "gem_quantity",
+    "required_amount": 50000,
+    "sort_order": 86,
+    "gem_name": "Diamond"
+  },
+  {
+    "id": "master-02",
+    "bundle_id": "master",
+    "section": "I. The Hoard",
+    "requirement_type": "gem_quantity",
+    "required_amount": 12500,
+    "sort_order": 87,
+    "gem_name": "Painite"
+  },
+  {
+    "id": "master-03",
+    "bundle_id": "master",
+    "section": "I. The Hoard",
+    "requirement_type": "gem_quantity",
+    "required_amount": 800,
+    "sort_order": 88,
+    "gem_name": "Hibonite"
+  },
+  {
+    "id": "master-04",
+    "bundle_id": "master",
+    "section": "I. The Hoard",
+    "requirement_type": "gem_quantity",
+    "required_amount": 430,
+    "sort_order": 89,
+    "gem_name": "Fingerite"
+  },
+  {
+    "id": "master-05",
+    "bundle_id": "master",
+    "section": "I. The Hoard",
+    "requirement_type": "gem_quantity",
+    "required_amount": 145,
+    "sort_order": 90,
+    "gem_name": "Ringwoodite"
+  },
+  {
+    "id": "master-06",
+    "bundle_id": "master",
+    "section": "II. Perfect Specimens",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 300,
+    "sort_order": 91,
+    "gem_name": "Diamond",
+    "minimum_weight_multiplier": 10
+  },
+  {
+    "id": "master-07",
+    "bundle_id": "master",
+    "section": "II. Perfect Specimens",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 80,
+    "sort_order": 92,
+    "gem_name": "Painite",
+    "minimum_weight_multiplier": 10
+  },
+  {
+    "id": "master-08",
+    "bundle_id": "master",
+    "section": "II. Perfect Specimens",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 10,
+    "sort_order": 93,
+    "gem_name": "Hibonite",
+    "minimum_weight_multiplier": 9
+  },
+  {
+    "id": "master-09",
+    "bundle_id": "master",
+    "section": "II. Perfect Specimens",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 5,
+    "sort_order": 94,
+    "gem_name": "Ringwoodite",
+    "minimum_weight_multiplier": 7
+  },
+  {
+    "id": "master-10",
+    "bundle_id": "master",
+    "section": "II. Perfect Specimens",
+    "requirement_type": "gem_min_weight",
+    "required_amount": 3,
+    "sort_order": 95,
+    "gem_name": "Dark Matter",
+    "minimum_weight_multiplier": 8
+  },
+  {
+    "id": "master-11",
+    "bundle_id": "master",
+    "section": "III. Altered Perfection",
+    "requirement_type": "gem_mutation",
+    "required_amount": 25,
+    "sort_order": 96,
+    "gem_name": "Painite",
+    "mutation_id": "gilded"
+  },
+  {
+    "id": "master-12",
+    "bundle_id": "master",
+    "section": "III. Altered Perfection",
+    "requirement_type": "gem_mutation",
+    "required_amount": 6,
+    "sort_order": 97,
+    "gem_name": "Painite",
+    "mutation_id": "charged"
+  },
+  {
+    "id": "master-13",
+    "bundle_id": "master",
+    "section": "III. Altered Perfection",
+    "requirement_type": "gem_mutation",
+    "required_amount": 5,
+    "sort_order": 98,
+    "gem_name": "Diamond",
+    "mutation_id": "celestial"
+  },
+  {
+    "id": "master-14",
+    "bundle_id": "master",
+    "section": "III. Altered Perfection",
+    "requirement_type": "mutation_count",
+    "required_amount": 20,
+    "sort_order": 99,
+    "minimum_mutation_count": 4
+  },
+  {
+    "id": "master-15",
+    "bundle_id": "master",
+    "section": "IV. Cosmic Sacrifice",
+    "requirement_type": "gem_quantity",
+    "required_amount": 3,
+    "sort_order": 100,
+    "gem_name": "Carbonado"
+  },
+  {
+    "id": "master-16",
+    "bundle_id": "master",
+    "section": "IV. Cosmic Sacrifice",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2,
+    "sort_order": 101,
+    "gem_name": "Carmeltazite"
+  },
+  {
+    "id": "master-17",
+    "bundle_id": "master",
+    "section": "IV. Cosmic Sacrifice",
+    "requirement_type": "gem_quantity",
+    "required_amount": 2,
+    "sort_order": 102,
+    "gem_name": "Krotite"
+  },
+  {
+    "id": "master-18",
+    "bundle_id": "master",
+    "section": "IV. Cosmic Sacrifice",
+    "requirement_type": "gem_quantity",
+    "required_amount": 1,
+    "sort_order": 103,
+    "gem_name": "Osbornite"
+  },
+  {
+    "id": "master-crown",
+    "bundle_id": "master",
+    "section": "V. The Crown Jewel",
+    "requirement_type": "gem_rarity_weight_mutations",
+    "required_amount": 1,
+    "minimum_gem_rarity": 10000000,
+    "minimum_weight_multiplier": 5,
+    "minimum_mutation_count": 2,
+    "manual_only": true,
+    "sort_order": 104
+  }
+]
