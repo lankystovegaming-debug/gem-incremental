@@ -9,6 +9,7 @@ import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
 import { notify } from "../src/ui/toast.js";
+import { parseUpdateLogContent, updateSectionsToText } from "../src/logic/updateLogContent.js";
 
 const shell = mountShell({ page: "admin", base: "../" });
 
@@ -1354,45 +1355,6 @@ function wireAnnouncements() {
 // =========================================================
 // UPDATE LOG PUBLISHER (admin only)
 // =========================================================
-
-function parseUpdateLogContent(value) {
-  const sections = [];
-  let current = null;
-
-  for (const rawLine of String(value ?? "").split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    if (line.startsWith("## ")) {
-      const heading = line.slice(3).trim();
-      if (!heading) throw new Error("Every section needs a heading.");
-      current = { heading, bullets: [] };
-      sections.push(current);
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      if (!current) throw new Error("Add a ## section heading before its bullet points.");
-      const bullet = line.slice(2).trim();
-      if (!bullet) throw new Error("Bullet points cannot be empty.");
-      current.bullets.push(bullet);
-      continue;
-    }
-
-    throw new Error(`Unsupported line: ${line}`);
-  }
-
-  if (!sections.length || sections.some((section) => !section.bullets.length)) {
-    throw new Error("Add at least one section with at least one bullet point.");
-  }
-  return sections;
-}
-
-function updateSectionsToText(sections) {
-  return (Array.isArray(sections) ? sections : [])
-    .map((section) => `## ${section.heading}\n${(section.bullets ?? []).map((bullet) => `- ${bullet}`).join("\n")}`)
-    .join("\n\n");
-}
 
 function wireUpdateLogPublisher() {
   const panel = document.getElementById("updatesPanel");
