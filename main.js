@@ -550,7 +550,6 @@ function renderRoll(data, outcome) {
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}${data.equipmentPassives?.bagged ? " 🛍️" : ""}</h2>
       ${mutationNamesHtml(data?.mutations)}
-      ${(Array.isArray(data?.activeMutationEffects) && data.activeMutationEffects.length) ? `<div class="roll-active-effects">${data.activeMutationEffects.map(effect => `<div class="roll-active-effect"><strong>${escapeHtml(effect.name)}</strong><span>×${Number(effect.multiplier).toLocaleString("en-US", { maximumFractionDigits: 3 })} · ${Number(effect.rollsRemaining)} roll${Number(effect.rollsRemaining)===1?"":"s"} remaining</span><small>${escapeHtml(effect.description || "Temporary mutation effect")}</small></div>`).join("")}</div>` : ""}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
       ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
@@ -912,6 +911,7 @@ const EFFECT_STATS = {
 };
 
 let activeBoosts = [];
+let activeMutationEffects = [];
 let effectTicker = null;
 
 // family -> { end, total } so the bar can deplete smoothly even
@@ -948,8 +948,9 @@ function renderEffects() {
   }
 
   const live = liveBoosts();
+  const mutationLive = Array.isArray(activeMutationEffects) ? activeMutationEffects.filter((e)=>Number(e.rollsRemaining)>0) : [];
 
-  if (live.length === 0) {
+  if (live.length === 0 && mutationLive.length === 0) {
     effectHud.innerHTML = "";
     effectHud.classList.remove("is-active");
 
@@ -960,7 +961,7 @@ function renderEffects() {
 
   const now = Date.now();
 
-  effectHud.innerHTML = live
+  const potionHtml = live
     .map((boost) => {
       const end = new Date(boost.expires_at).getTime();
       const remaining = Math.max(0, end - now);
@@ -998,6 +999,8 @@ function renderEffects() {
       `;
     })
     .join("");
+  const mutationHtml = mutationLive.map((effect)=>`<div class="effect-chip effect-chip--mutation"><span class="effect-chip__icon">✦</span><span class="effect-chip__body"><span class="effect-chip__name">${escapeHtml(effect.name)}</span><span class="effect-chip__time">×${Number(effect.multiplier).toLocaleString("en-US",{maximumFractionDigits:3})} · ${Number(effect.rollsRemaining)} roll${Number(effect.rollsRemaining)===1?"":"s"}</span></span><span class="effect-chip__bar"><span style="width:100%"></span></span></div>`).join("");
+  effectHud.innerHTML = potionHtml + mutationHtml;
 }
 
 

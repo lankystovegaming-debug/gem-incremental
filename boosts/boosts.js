@@ -105,7 +105,7 @@ function render() {
         </p>
 
         <div class="potion-card__purchase">
-          <span class="potion-card__price">${formatMoney(price)}</span>
+          <span class="potion-card__price" data-unit-price="${price}">${formatMoney(price)}</span>
           <button
             class="btn btn--primary"
             type="button"
@@ -118,7 +118,8 @@ function render() {
     `;
   }).join("");
 
-  for (const button of potionList.querySelectorAll("[data-buy]")) button.addEventListener("click", () => buyPotion(button));
+  for (const button of potionList.querySelectorAll("[data-buy]")) button.addEventListener("click", () => buyPotionBulk(button));
+  for (const select of potionList.querySelectorAll("[data-buy-quantity]")) select.addEventListener("change", (e) => { const card=e.target.closest(".potion-card"); const price=Number(card.querySelector(".potion-card__price")?.dataset.unitPrice||0); const qty=Number(e.target.value||1); const out=card.querySelector(".potion-card__price"); if(out) out.textContent=formatMoney(price*qty); });
   for (const button of potionList.querySelectorAll("[data-buy-bulk]")) button.addEventListener("click", () => buyPotionBulk(button));
 }
 
@@ -185,7 +186,7 @@ async function buyPotion(button) {
 }
 
 async function buyPotionBulk(button) {
-  const potion=POTIONS.find(x=>x.id===button.dataset.buyBulk); if(!potion) return;
+  const potion=POTIONS.find(x=>x.id===(button.dataset.buyBulk||button.dataset.buy)); if(!potion) return;
   const selected=button.closest(".potion-card")?.querySelector("[data-buy-quantity]"); const requested=Math.max(1,Math.floor(Number(selected?.value)||1)); const qty=Math.min(requested,Math.floor(state.money/Number(potion.shop.price))); if(qty<=0) return;
   button.disabled=true; let bought=0;
   for(let i=0;i<qty;i++){ const {data,error}=await buyCloudConsumable(potion.id); if(error) break; bought++; state.money=Number(data.money??(state.money-potion.shop.price)); const row=state.consumables.find(x=>x.consumable_id===potion.id); if(row) row.quantity=Number(data.quantity??row.quantity+1); else state.consumables.push({consumable_id:potion.id,quantity:Number(data.quantity??1)}); }

@@ -74,6 +74,7 @@ const baseLuckTab =
   );
 
 const museumPrestigeTab = document.getElementById("museumPrestigeTab");
+const achievementPointsTab = document.getElementById("achievementPointsTab");
 
 
 let leaderboardData = {
@@ -85,7 +86,8 @@ let leaderboardData = {
   mostWeight: [],
   rawRareRoll: [],
   baseLuck: [],
-  museumPrestige: []
+  museumPrestige: [],
+  achievementPoints: []
 };
 
 
@@ -334,6 +336,7 @@ function updateTabs() {
   rawRareRollTab.classList.toggle("active", activeLeaderboard === "rawRareRoll");
   baseLuckTab.classList.toggle("active", activeLeaderboard === "baseLuck");
   museumPrestigeTab.classList.toggle("active", activeLeaderboard === "museumPrestige");
+  achievementPointsTab.classList.toggle("active", activeLeaderboard === "achievementPoints");
 }
 
 
@@ -915,6 +918,14 @@ function renderMuseumPrestige() {
   leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Museum Prestige</h2><p class="leaderboard-description">Current valid Museum Prestige from active exhibits and completed collections. Removing an exhibit immediately updates its score.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Curator</div><div class="score">Prestige</div></div><div class="leaderboard-list">${rows}</div>`;
 }
 
+
+function renderAchievementPoints() {
+  const entries = leaderboardData.achievementPoints || [];
+  if (!entries.length) { leaderboardCard.innerHTML = `<h2>Achievement Points</h2><p class="empty-message">No achievement points yet.</p>`; return; }
+  const rows = entries.map((player, index) => `<div class="leaderboard-row"><div class="rank">${rankDisplay(index+1)}</div><div class="player-name"><span class="lb-name-text">${escapeHtml(player.username || "Unknown")}</span></div><div class="score">${formatNumber(player.achievement_points || 0)} AP</div></div>`).join("");
+  leaderboardCard.innerHTML = `<div class="leaderboard-title-row"><div><h2>Achievement Points</h2><p class="leaderboard-description">Players ranked by permanent AP.</p></div></div><div class="leaderboard-header"><div>Rank</div><div>Player</div><div class="score">AP</div></div><div class="leaderboard-list">${rows}</div>`;
+}
+
 // =========================================================
 // PROFILE LINKS
 //
@@ -975,6 +986,8 @@ function renderLeaderboard() {
     renderBaseLuck();
   } else if (activeLeaderboard === "museumPrestige") {
     renderMuseumPrestige();
+  } else if (activeLeaderboard === "achievementPoints") {
+    renderAchievementPoints();
   } else {
     renderLifetimeEarnings();
   }
@@ -1058,6 +1071,7 @@ async function loadLeaderboards() {
   const rawRareRollData = response?.rawRareRoll;
   const baseLuckData = response?.baseLuck;
   const museumPrestigeData = response?.museumPrestige;
+  const achievementPointsData = response?.achievementPoints;
 
   // Rarest Gem intentionally uses the exact same inventory-only effective
   // rarity logic as Best Roll: base gem denominator multiplied by every
@@ -1153,7 +1167,8 @@ async function loadLeaderboards() {
     museumPrestige:
       Array.isArray(museumPrestigeData)
         ? museumPrestigeData.map(player => ({ ...player }))
-        : []
+        : [],
+    achievementPoints: Array.isArray(achievementPointsData) ? achievementPointsData.map(player => ({ ...player })) : []
   };
 
 
@@ -1277,3 +1292,5 @@ async function startLeaderboards() {
 
 
 startLeaderboards();
+
+achievementPointsTab.addEventListener("click", () => { activeLeaderboard = "achievementPoints"; renderLeaderboard(); });

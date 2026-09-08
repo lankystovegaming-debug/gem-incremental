@@ -41,7 +41,7 @@ export default {
     }
 
     const [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
-      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations] = await Promise.all([
+      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations, achievementPoints] = await Promise.all([
       ctx.supabaseAdmin.rpc("get_total_rolls_leaderboard", { p_limit: 100 }),
       ctx.supabaseAdmin.rpc("get_lifetime_earnings_leaderboard", { p_limit: 100 }),
       ctx.supabaseAdmin.rpc("get_gems_found_leaderboard"),
@@ -53,11 +53,14 @@ export default {
       ctx.supabaseAdmin.rpc("get_rarest_gem_leaderboard", { p_limit: 100 }),
       ctx.supabaseAdmin.from("game_mutations")
         .select("id,name,chance,multiplier,description,icon,color")
-        .eq("enabled", true).order("sort_order", { ascending: true })
+        .eq("enabled", true).order("multiplier", { ascending: true }).order("name", { ascending: true }),
+      ctx.supabaseAdmin.from("player_achievement_profiles")
+        .select("player_id,achievement_points,players!inner(username,leaderboard_hidden)")
+        .order("achievement_points", { ascending: false }).limit(100)
     ]);
 
     const results = [totalRolls, lifetimeEarnings, gemsFound, bestRoll, mostWeight,
-      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations];
+      rawRareRoll, baseLuck, museumPrestige, rarestGem, mutations, achievementPoints];
     const failed = results.find((result) => result.error);
     if (failed?.error) {
       console.error("Could not load leaderboard data:", failed.error);
@@ -69,7 +72,8 @@ export default {
       gemsFound: gemsFound.data ?? [], bestRoll: bestRoll.data ?? [],
       mostWeight: mostWeight.data ?? [], rawRareRoll: rawRareRoll.data ?? [],
       baseLuck: baseLuck.data ?? [], museumPrestige: museumPrestige.data ?? [],
-      rarestGem: rarestGem.data ?? [], mutations: mutations.data ?? []
+      rarestGem: rarestGem.data ?? [], mutations: mutations.data ?? [],
+      achievementPoints: (achievementPoints.data ?? []).filter((row:any)=>row.players?.leaderboard_hidden !== true).map((row:any)=>({ username: row.players?.username ?? "Unknown", achievement_points: row.achievement_points ?? 0 }))
     };
     leaderboardCache = { payload, expiresAt: now + CACHE_TTL_MS };
 

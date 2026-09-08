@@ -10,11 +10,11 @@ const json = (body: any, status = 200) => new Response(JSON.stringify(body), { s
 const unwrap = (response: any) => { if (response.error) throw response.error; return response.data; };
 
 // Supabase may cap a single response at 1,000 rows. Never score a truncated pool.
-async function loadCatalog(admin: any, table: string, tieKey: string) {
+async function loadCatalog(admin: any, table: string, tieKey: string, primaryKey = tieKey) {
   const rows: any[] = [];
   for (let offset = 0; ; offset += 500) {
     const page = unwrap(await admin.from(table).select("*").eq("enabled", true)
-      .order("sort_order").order(tieKey).range(offset, offset + 499));
+      .order(primaryKey, { ascending: true }).order(tieKey).range(offset, offset + 499));
     rows.push(...page);
     if (page.length < 500) return rows;
   }
@@ -54,8 +54,8 @@ export function createHandler(admin: any, clock = () => new Date()) {
       let created = false;
       if (body.action === "roll" && !result) {
         const [gems, mutations, event] = await Promise.all([
-          loadCatalog(admin, "private_feature_gems", "name"),
-          loadCatalog(admin, "game_mutations", "id"),
+          loadCatalog(admin, "private_feature_gems", "name", "rarity"),
+          loadCatalog(admin, "game_mutations", "id", "multiplier"),
           admin.rpc("get_active_global_event")
         ]);
         const specimen = generateResult(gems, mutations, unwrap(event), now);

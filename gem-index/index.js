@@ -171,7 +171,15 @@ function selectedCombination() {
 function renderSummary() {
   const selected = [...state.selectedMutations];
   const mutationCount = mutationList.length;
-  const combinationCount = mutationCount >= 52 ? "very large" : Math.pow(2, mutationCount).toLocaleString("en-US");
+  const combinationCount = (() => {
+    const n = 1n << BigInt(mutationCount);
+    const raw = n.toString();
+    if (raw.length <= 15) return Number(raw).toLocaleString("en-US");
+    const suffixes=["K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QtDc","QnDc","SxDc","SpDc","OcDc","NoDc","Vg","UVg","DVg","TVg"];
+    const exp=raw.length-1, group=Math.floor(exp/3), unit=suffixes[group-1]||`e${exp}`;
+    const lead=exp-group*3+1, sig=raw.slice(0,3), whole=sig.slice(0,lead), frac=sig.slice(lead).replace(/0+$/,"");
+    return unit.startsWith("e") ? `${sig[0]}.${sig.slice(1)}${unit}` : `${whole}${frac?"."+frac:""}${unit}`;
+  })();
 
   if (selected.length && !selected.includes("none")) {
     const entries = catalogGems.map((gem) => makeEntry(gem, selected));

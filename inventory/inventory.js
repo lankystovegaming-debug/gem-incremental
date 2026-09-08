@@ -176,7 +176,7 @@ async function loadMutationCatalog() {
     console.warn("Public mutation catalog RPC unavailable; trying direct catalog read:", result.error.message);
     result = await supabase
       .from("game_mutations")
-      .select("id,name,chance,multiplier,description,icon,color,enabled,sort_order")
+      .select("id,name,chance,multiplier,description,icon,color,enabled")
       .eq("enabled", true);
   }
   if (result.error) {
@@ -194,12 +194,22 @@ function inventoryMutation(id, savedMultiplier = null) {
 }
 
 function inventoryChanceLabel(gem, mutationIds) {
-  const mutationDenominator = mutationIds.reduce((product, id) => {
-    const chance = Number(inventoryMutation(id)?.chance);
-    return product * (Number.isFinite(chance) && chance > 0 ? chance : 1);
-  }, 1);
-  const denominator = Number(gem.rarity) * mutationDenominator;
-  return formatChance(Number.isFinite(denominator) && denominator > 0 ? 1 / denominator : 0);
+  // Exact BigInt denominator arithmetic: never overflow to Infinity for huge
+  // mutation stacks. This also keeps the inventory consistent with the roll.
+  const asBig = (value) => {
+    try { return BigInt(String(value ?? 1).split('.')[0] || '1'); } catch { return 1n; }
+  };
+  let denominator = asBig(gem.rarity);
+  for (const id of mutationIds) {
+    const chance = inventoryMutation(id)?.chance;
+    denominator *= asBig(chance);
+  }
+  const raw = denominator.toString();
+  if (raw.length <= 18) return `1 in ${Number(raw).toLocaleString('en-US')}`;
+  const suffixes=['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QtDc','QnDc','SxDc','SpDc','OcDc','NoDc','Vg','UVg','DVg','TVg','QtVg','QnVg','SxVg','SpVg','OcVg','NoVg','Tg'];
+  const exp=raw.length-1, group=Math.floor(exp/3), unit=suffixes[group-1];
+  const lead=exp-group*3+1, sig=raw.slice(0,3), whole=sig.slice(0,lead), frac=sig.slice(lead).replace(/0+$/,'');
+  return `1 in ${unit ? whole+(frac?'.'+frac:'')+unit : sig[0]+'.'+sig.slice(1)+'e'+exp}`;
 }
 
 
