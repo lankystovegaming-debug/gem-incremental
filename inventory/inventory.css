@@ -451,3 +451,10 @@
 .forge-choice { padding:14px; border:1px solid var(--accent); border-radius:12px; }
 .forge-choice__buttons { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
 @media (max-width:700px) { .forge-intro,.forge-action { align-items:stretch; flex-direction:column; } }
+
+/* Misty: blueish tint concentrated toward the right side of the specimen card. */
+.gem-card.mutation-misty {
+  background: linear-gradient(90deg, var(--surface-solid) 0%, var(--surface-solid) 58%, rgba(103, 199, 255, 0.16) 100%);
+  box-shadow: inset -18px 0 28px rgba(103, 199, 255, 0.13);
+}
+.mutation-badge--misty { color: #e8f7ff; }

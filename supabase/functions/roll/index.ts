@@ -1,16 +1,281 @@
-import { equipmentTotals, luckLayers, prepareEquipmentRoll, finishEquipmentRoll, specialChance, exclusiveMutations } from "./equipmentRules.js";
+// =========================================================
+// ROLL EDGE FUNCTION — SINGLE FILE BUILD
+// Consolidated from equipmentRules.js + eventRules.ts + index.ts
+// =========================================================
+
+// Pure rules shared with the browser. Only the server supplies RNG and saved state.
+export const PICKAXE_STATS = {
+ 'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[24,3,1,3.5,1.4],
+ 'eternity-pickaxe':[22,3,1.1,4,1.45], 'tectonic-pickaxe':[20,2.6,1,7,1.85],
+ 'the-accelerator':[21,3.4,.9,3,1.3], 'the-resonator':[20,2.8,1,3.5,1.35],
+ 'the-excavator':[19,2.9,.95,3.25,1.3], 'toy-shovel':[17,2.4,.8,2.5,1.2],
+ 'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
+};
+export const ASCENDED_VALUE = 2;
+export const SERIOUS_PICKAXES = Object.keys(PICKAXE_STATS).slice(0,7);
+export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
+export const EXCAVATION_LOOT = [
+ [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
+ [24,28,25,13,7,2,1], [19,26,28,16,8,2,1], [14,24,30,19,9,2,2]
+];
+export const relicSecondary = (total, active) => 1 + (total - 1) * (active ? 1.5 : 1);
+export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focused=1,flat=0,special=1,oneRoll=0,world=1}) {
+ const base=pickaxe*clover;
+ const personal=1+(enchant-1)+(guild-1)+(research-1)+(focused-1);
+ const ordinary=(base*personal+flat)*special;
+ return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
+}
+export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
+export function prepareEquipmentRoll(id,saved={},random=Math.random) {
+ const state=structuredClone(saved);
+ const rolls=Math.max(0,Number(state.rolls?.[id]??0));
+ let stats=PICKAXE_STATS[id]?.slice()??null;
+ const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
+  surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
+  crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
+  wrongTool:false,closeEnough:false,borrowed:null};
+ if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
+ if(id==='toy-shovel'&&random()<1/67) {
+  flags.wrongTool=true;
+  if(random()<1/67) {flags.closeEnough=true;stats=[67,2.4,6.7,6.7,2.67];}
+  else {flags.borrowed=SERIOUS_PICKAXES[Math.floor(random()*SERIOUS_PICKAXES.length)];stats=PICKAXE_STATS[flags.borrowed].slice();stats[1]=2.4;}
+ }
+ return {id,state,stats,flags};
+}
+export function specialChance(id,gem,state) {
+ return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
+}
+export function exclusiveMutations(id,random=Math.random,genuine=true) {
+ if(!genuine) return [];
+ if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
+ if(id!=='silly-fun-happy-pickaxe') return [];
+ return [[.5,'silly-small','Silly',.5],[.1,'silly-large','Silly',10],[.005,'happy','Happy',50]].flatMap(([chance,id,name,multiplier])=>random()<chance?[{id,name,chance,multiplier}]:[]);
+}
+export function finishEquipmentRoll(context,{naturalWeight,gem,random=Math.random,genuine=true}) {
+ const {id,flags}=context;const state=structuredClone(context.state);
+ if(!genuine) return {state,loot:null,breakneck:false};
+ state.rolls={...state.rolls,[id]:Number(state.rolls?.[id]??0)+1};
+ if(id==='the-accelerator') state.spool=Number(state.spool??0)+1;
+ if(id==='tectonic-pickaxe') {
+  if(flags.crushing) state.crushing=Math.max(0,Number(state.crushing)-1);
+  else if(naturalWeight!=null) {
+   state.pressure=Number(state.pressure??0)+(naturalWeight<.85?4:naturalWeight<1.1?3:naturalWeight<1.5?2:naturalWeight<2?1:0);
+   if(state.pressure>=100){state.pressure=0;state.crushing=5;}
+  }
+ }
+ if(id==='the-resonator'&&gem?.specialGem===true) {
+  const rarity=Number(gem.rarity);const gain=rarity>=5e8?10:rarity>=1e8?5:rarity>=1e7?3:rarity>=1e6?2:1;
+  state.resonance={...state.resonance,[gem.name]:Math.min(10,Number(state.resonance?.[gem.name]??0)+gain)};
+ }
+ let loot=null;
+ if(id==='the-excavator'&&random()<1/40) {
+  const mastery=Number(state.excavations??0);
+  const level=[25,100,250,500].filter(n=>mastery>=n).length;
+  let draw=random()*100;let tier=6;
+  for(let i=0;i<7;i++){draw-=EXCAVATION_LOOT[level][i];if(draw<0){tier=i;break;}}
+  loot=tier<4?`${POTION_FAMILIES[Math.floor(random()*4)]}-potion-${tier+1}`:['legendary-potion','relic-potion','mythic-potion'][tier-4];
+  state.excavations=mastery+1;
+ }
+ return {state,loot,breakneck:id==='the-accelerator'&&Number(context.state.spool??0)>=200&&random()<1/100};
+}
+export function equipmentTotals(equipment=[],relic=false,override=null) {
+ const pick=equipment.find(e=>e.category==='pickaxe');
+ const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
+ const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
+ const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
+ const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
+ // Plastic's old additive bonus/masterwork behavior is deliberately retained.
+ const wm=plastic?stats[4]+Number(plastic.weight_multiplier_bonus??1.55)*(1+Math.min(5,Math.max(0,Number(plastic.masterwork_level??0)))/100):stats[4]*secondary('bag','weight_multiplier_bonus');
+ return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm};
+}
+
+
+export type RandomSource = () => number;
+
+export type GlobalEventSnapshot = {
+  id: string;
+  eventKey: string;
+  name: string;
+  icon: string;
+  tier: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  serverNow: string;
+  config: Record<string, any>;
+  mass: number;
+  massTarget: number | null;
+  collapsedAt: string | null;
+};
+
+export type EventRollContext = {
+  occurrenceId: string | null;
+  eventKey: string | null;
+  state: string | null;
+  luckMultiplier: number;
+  rollSpeedMultiplier: number;
+  weightLuckMultiplier: number;
+  mutationMultiplier: number;
+  valueMultiplier: number;
+  luckyRoll: boolean;
+  secondChance: boolean;
+  poorWeightRerollChance: number;
+  tailContinuationChance: number | null;
+  tailEntryChance: number | null;
+  starfallActive: boolean;
+  collapsed: boolean;
+  finalSeconds: number;
+  config: Record<string, any>;
+};
+
+const positive = (value: unknown, fallback = 1) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+};
+
+function weightedState(states: any[], random: RandomSource) {
+  const total = states.reduce((sum, state) => sum + Math.max(0, Number(state.weight) || 0), 0);
+  let draw = random() * total;
+  for (const state of states) {
+    draw -= Math.max(0, Number(state.weight) || 0);
+    if (draw < 0) return state;
+  }
+  return states.at(-1) ?? null;
+}
+
+export function normalizeGlobalEvent(value: any, nowMs = Date.now()): GlobalEventSnapshot | null {
+  if (!value || typeof value !== "object" || !value.id || !value.eventKey) return null;
+  const starts = new Date(value.startsAt).getTime();
+  const ends = new Date(value.endsAt).getTime();
+  if (!Number.isFinite(starts) || !Number.isFinite(ends) || nowMs < starts || nowMs >= ends) return null;
+  return {
+    ...value,
+    config: value.config && typeof value.config === "object" ? value.config : {},
+    mass: Math.max(0, Number(value.mass) || 0),
+    massTarget: value.massTarget == null ? null : Math.max(1, Number(value.massTarget) || 1),
+    collapsedAt: value.collapsedAt ?? null
+  };
+}
+
+export function buildEventRollContext(
+  event: GlobalEventSnapshot | null,
+  random: RandomSource,
+  nowMs = Date.now()
+): EventRollContext {
+  const base: EventRollContext = {
+    occurrenceId: event?.id ?? null, eventKey: event?.eventKey ?? null, state: null,
+    luckMultiplier: 1, rollSpeedMultiplier: 1, weightLuckMultiplier: 1,
+    mutationMultiplier: 1, valueMultiplier: 1, luckyRoll: false,
+    secondChance: false, poorWeightRerollChance: 0, tailContinuationChance: null, tailEntryChance: null,
+    starfallActive: false, collapsed: Boolean(event?.collapsedAt), finalSeconds: Infinity,
+    config: event?.config ?? {}
+  };
+  if (!event) return base;
+  const config = event.config;
+  base.luckMultiplier = positive(config.luckMultiplier);
+  base.rollSpeedMultiplier = positive(config.rollSpeedMultiplier);
+  base.weightLuckMultiplier = positive(config.weightLuckMultiplier);
+  base.mutationMultiplier = positive(config.mutationMultiplier);
+  base.valueMultiplier = positive(config.valueMultiplier);
+  base.poorWeightRerollChance = Math.max(0, Math.min(1, Number(config.poorWeightRerollChance) || 0));
+  base.tailContinuationChance = config.tailContinuationChance == null
+    ? null : Math.max(0, Math.min(0.95, Number(config.tailContinuationChance) || 0));
+  base.tailEntryChance = config.tailEntryChance == null
+    ? null : Math.max(0, Math.min(0.95, Number(config.tailEntryChance) || 0));
+  base.finalSeconds = Math.max(0, (new Date(event.endsAt).getTime() - nowMs) / 1000);
+
+  if (event.eventKey === "lucky_roll" && random() < Number(config.luckyRollChance ?? 0)) {
+    base.luckyRoll = true;
+    base.luckMultiplier *= positive(config.luckyRollMultiplier);
+  }
+  if (event.eventKey === "second_chance") {
+    base.secondChance = random() < Number(config.secondChanceChance ?? 0);
+  }
+  if (event.eventKey === "unstable_luck") {
+    const phaseSeconds = Math.max(1, Number(config.phaseSeconds) || 30);
+    const phase = Math.max(0, Math.floor((nowMs - new Date(event.startsAt).getTime()) / (phaseSeconds * 1000)));
+    base.luckMultiplier *= positive(config.phaseValues?.[phase]);
+    base.state = `phase_${phase}`;
+  }
+  if (event.eventKey === "volatile_veins" || event.eventKey === "total_eclipse") {
+    const state = weightedState(Array.isArray(config.states) ? config.states : [], random);
+    if (state) {
+      base.state = String(state.key);
+      base.luckMultiplier *= positive(state.luck);
+      base.weightLuckMultiplier *= positive(state.weightLuck);
+      base.mutationMultiplier *= positive(state.mutation);
+    }
+  }
+  if (event.eventKey === "falling_stars") {
+    const elapsed = (nowMs - new Date(event.startsAt).getTime()) / 1000;
+    base.starfallActive = (config.windows ?? []).some((window: any) =>
+      elapsed >= Number(window.offsetSeconds) && elapsed < Number(window.offsetSeconds) + Number(window.durationSeconds));
+    base.state = base.starfallActive ? "starfall" : null;
+  }
+  if (event.eventKey === "singularity") {
+    if (base.finalSeconds <= 30) {
+      base.state = "final"; base.luckMultiplier *= 3; base.weightLuckMultiplier *= 2; base.mutationMultiplier *= 1.5;
+    } else if (base.finalSeconds <= 60) {
+      base.state = "surge"; base.luckMultiplier *= 2; base.weightLuckMultiplier *= 1.5;
+    } else if (base.finalSeconds <= 180) {
+      base.state = "compression"; base.luckMultiplier *= 1.5; base.weightLuckMultiplier *= 1.25;
+    } else if (base.finalSeconds <= 300) {
+      base.state = "pull"; base.luckMultiplier *= 1.25; base.weightLuckMultiplier *= 1.1;
+    } else {
+      base.state = "forming"; base.luckMultiplier *= 1.1;
+    }
+    const progress = event.massTarget ? event.mass / event.massTarget : 0;
+    base.rollSpeedMultiplier *= progress >= 0.75 ? 1.15 : progress >= 0.5 ? 1.1 : progress >= 0.25 ? 1.05 : 1;
+  }
+  return base;
+}
+
+export function eventGemLuckFactor(context: EventRollContext, gem: any): number {
+  const rarity = Number(gem.rarity) || 0;
+  const config = context.config;
+  if (gem.metadata?.ignoreEventRarityFactor) return 1;
+  if (context.eventKey === "prospectors_eye" && gem.name === config.targetGem) return positive(config.targetGemLuckMultiplier);
+  if (context.eventKey === "gem_rush" && rarity >= Number(config.rarityMin)) return positive(config.rarityLuckMultiplier);
+  if (context.eventKey === "narrowed_veins" && Array.isArray(config.selectedBand)) {
+    const [minimum, maximum] = config.selectedBand.map(Number);
+    if (rarity >= minimum && rarity < maximum) return positive(config.rarityLuckMultiplier);
+  }
+  if (["cosmic_alignment", "reality_fracture"].includes(String(context.eventKey))) {
+    for (const [minimum, factor] of config.rarityFactors ?? []) if (rarity >= Number(minimum)) return positive(factor);
+  }
+  return 1;
+}
+
+export function eventGemIsEligible(context: EventRollContext, gem: any): boolean {
+  if (!gem.requiredEventKey) return true;
+  if (gem.requiredEventKey !== context.eventKey) return false;
+  if (context.eventKey === "falling_stars" && !context.starfallActive) return false;
+  if (gem.metadata?.requiredRollState && gem.metadata.requiredRollState !== context.state) return false;
+  if (gem.metadata?.requiresCollapse && (!context.collapsed || context.finalSeconds > Number(gem.metadata.finalSeconds ?? 0))) return false;
+  return true;
+}
+
+export function eventMutationFactor(context: EventRollContext, mutation: any): number {
+  if (mutation.id === "charged") return context.eventKey === "mutation_storm" ? 2 : 0;
+  let factor = context.mutationMultiplier;
+  factor *= positive(context.config.mutationFactors?.[mutation.id]);
+  if (context.eventKey === "polished_world" && Number(mutation.multiplier) <= Number(context.config.maxMutationValue)) {
+    factor *= positive(context.config.mutationFactor);
+  }
+  return factor;
+}
+
+export function eventWeightLuckFactor(context: EventRollContext, gem: any): number {
+  if (context.eventKey === "heavy_favorites" && (context.config.targetGems ?? []).includes(gem.name)) {
+    return context.weightLuckMultiplier * positive(context.config.targetWeightLuckMultiplier);
+  }
+  return context.weightLuckMultiplier;
+}
+
+
 import {
   withSupabase
 } from "npm:@supabase/server";
-import {
-  buildEventRollContext,
-  eventGemIsEligible,
-  eventGemLuckFactor,
-  eventMutationFactor,
-  eventWeightLuckFactor,
-  normalizeGlobalEvent
-} from "./eventRules.ts";
-
 
 // =========================================================
 // PROGRESSION / ACHIEVEMENT ENGINE (INLINE FOR SUPABASE DASHBOARD DEPLOY)
@@ -657,10 +922,14 @@ const relics = {
 
 // One draw gives both mutually-exclusive relics their exact marginal odds.
 // Neither player Luck nor any other modifier is involved.
-function rollRelic() {
+function rollRelic(ancientChanceMultiplier = 1, allRelicChanceMultiplier = 1) {
+  // Mutation-triggered relic buffs are server-authoritative and only affect
+  // future rolls while their counters are active.
+  const ancientChance = Math.min(1, (1 / 1500) * Math.max(0, ancientChanceMultiplier) * Math.max(0, allRelicChanceMultiplier));
+  const enchantChance = Math.min(1 - ancientChance, (1 / 250) * Math.max(0, allRelicChanceMultiplier));
   const roll = random01();
-  if (roll < 1 / 1500) return relics.ancient;
-  if (roll < 1 / 1500 + 1 / 250) return relics.enchant;
+  if (roll < ancientChance) return relics.ancient;
+  if (roll < ancientChance + enchantChance) return relics.enchant;
   return null;
 }
 
@@ -1539,6 +1808,10 @@ export default {
             bag_compression_progress,
             best_rare_natural_weight_100k,
             best_rare_natural_weight_1m,
+            misty_mutation_boost_rolls,
+            misty_mutation_boost_stacks,
+            ancient_relic_boost_rolls,
+            enchanted_relic_boost_rolls,
             player_research_effects(
               luck_multiplier,
               legendary_luck_multiplier,
@@ -2636,7 +2909,15 @@ export default {
         eventContext, equipmentContext
       );
 
-      let gem = rollRelic() ?? rollEquipmentGem();
+      // Temporary mutation effects from PREVIOUS rolls.
+      const mistyBoostRollsBefore = Math.max(0, Number(player.misty_mutation_boost_rolls ?? 0));
+      const mistyBoostStacksBefore = Math.max(0, Number(player.misty_mutation_boost_stacks ?? 0));
+      const ancientRelicBoostRollsBefore = Math.max(0, Number(player.ancient_relic_boost_rolls ?? 0));
+      const enchantedRelicBoostRollsBefore = Math.max(0, Number(player.enchanted_relic_boost_rolls ?? 0));
+      const allRelicChanceMultiplier = enchantedRelicBoostRollsBefore > 0 ? 1.1 : 1;
+      const ancientRelicChanceMultiplier = ancientRelicBoostRollsBefore > 0 ? 1.3 : 1;
+
+      let gem = rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier) ?? rollEquipmentGem();
       const relicDrop = isRelic(gem);
       const luckBasedGem = !relicDrop && gem.affectedByLuck !== false;
 
@@ -2784,6 +3065,12 @@ export default {
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
 
+      // Misty: ×2.5 mutation chance for the next 10 rolls. Re-triggering
+      // Misty while active stacks the strength and refreshes the duration.
+      if (mistyBoostRollsBefore > 0 && mistyBoostStacksBefore > 0) {
+        mutationChanceMultiplier *= Math.pow(2.5, mistyBoostStacksBefore);
+      }
+
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
       if (activeAdminEvent) {
@@ -2829,6 +3116,45 @@ export default {
           ])
         );
 
+      // Consume temporary mutation effects for this roll, then grant/refresh
+      // effects earned by mutations on this roll. The roll lease ensures one
+      // authoritative roll is processed for a player at a time.
+      const rolledMutationIdsSet = new Set(mutationIds);
+      let nextMistyRolls = Math.max(0, mistyBoostRollsBefore - 1);
+      let nextMistyStacks = nextMistyRolls > 0 ? mistyBoostStacksBefore : 0;
+      let nextAncientRelicRolls = Math.max(0, ancientRelicBoostRollsBefore - 1);
+      let nextEnchantedRelicRolls = Math.max(0, enchantedRelicBoostRollsBefore - 1);
+
+      if (rolledMutationIdsSet.has("misty")) {
+        nextMistyStacks = (mistyBoostRollsBefore > 0 ? mistyBoostStacksBefore : 0) + 1;
+        nextMistyRolls = 10;
+      }
+      if (rolledMutationIdsSet.has("ancient")) {
+        nextAncientRelicRolls = 3;
+      }
+      if (rolledMutationIdsSet.has("enchanted")) {
+        nextEnchantedRelicRolls = 5;
+      }
+
+      if (
+        nextMistyRolls !== mistyBoostRollsBefore ||
+        nextMistyStacks !== mistyBoostStacksBefore ||
+        nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
+        nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
+      ) {
+        const { error: mutationEffectStateError } = await ctx.supabaseAdmin
+          .from("players")
+          .update({
+            misty_mutation_boost_rolls: nextMistyRolls,
+            misty_mutation_boost_stacks: nextMistyStacks,
+            ancient_relic_boost_rolls: nextAncientRelicRolls,
+            enchanted_relic_boost_rolls: nextEnchantedRelicRolls
+          })
+          .eq("id", playerId);
+        if (mutationEffectStateError) {
+          console.error("Mutation temporary effect persistence failed:", mutationEffectStateError);
+        }
+      }
 
       const researchMutationValue = mutations.length
         ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, mutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))

@@ -2613,3 +2613,18 @@ html.is-cinematic-active body {
   .gemdle-entry { flex-wrap: wrap; padding: 16px; }
   .gemdle-entry__action { width: 100%; padding-left: 40px; }
 }
+
+/* Misty mutation: white text blending into blue + a cool blue edge tint. */
+.mutation-name-effect--misty .mutation-name-effect__text {
+  background: linear-gradient(90deg, #ffffff 0%, #e9f7ff 45%, #67c7ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mutation-name-effect--misty::before {
+  background: radial-gradient(circle, rgba(125, 211, 252, .85), transparent 68%);
+}
+.mutation-scene-misty .scene__gem,
+.mutation-scene-misty .gem-icon--cinematic {
+  filter: drop-shadow(18px 0 18px rgba(56, 189, 248, .42));
+}
