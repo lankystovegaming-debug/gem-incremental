@@ -1,6 +1,6 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import {secondaryRecipes,specialistRecipes,pickaxeBonus} from '../src/data/equipmentOverhaul.js';
-const target=new URL('../supabase/migrations/20260907150633_equipment_overhaul.sql',import.meta.url);
+const target=new URL('../supabase/migrations/20260908000001_equipment_overhaul.sql',import.meta.url);
 const header=readFileSync(new URL('./equipment-overhaul-schema.sql',import.meta.url),'utf8');
 const functions=readFileSync(new URL('./equipment-overhaul-functions.sql',import.meta.url),'utf8');
 const q=s=>"'"+s.replaceAll("'","''")+"'";

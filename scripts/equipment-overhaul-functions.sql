@@ -152,6 +152,8 @@ begin
     if v_req->>'type'='equipment' then
       if not exists(select 1 from public.player_equipment where player_id=v_uid and (equipment_id=v_req->>'equipmentId' or (p_recipe_id='plastic-shopping-bag' and v_req->>'equipmentId'='omnidimensional-vault' and equipment_id='dimensional-vault')))
       then raise exception 'requirements_not_met'; end if;
+    elsif v_req->>'type'='equipment-min-tier' then
+      if not exists(select 1 from public.player_equipment where player_id=v_uid and category=v_req->>'category' and tier>=coalesce((v_req->>'tier')::integer,1)) then raise exception 'requirements_not_met'; end if;
     elsif v_req->>'type'='special-discoveries' then
       if public.equipment_special_discoveries(v_uid,v_req->>'classification')<(v_req->>'amount')::integer then raise exception 'requirements_not_met'; end if;
     elsif v_req->>'type'='potion-tier' then

@@ -6,7 +6,7 @@ Prepared on branch `codex/equipment-overhaul` from `origin/main` (`4e7b76a`). Ba
 
 Schedule a short maintenance window so old clients/roll handlers do not run against a partly updated release. Take a database backup first. The migration also stores original equipment, recipes and crafting progress in service-only `equipment_overhaul_archive`; this is a data archive, not an automatic rollback.
 
-1. Review and apply `supabase/migrations/20260907150633_equipment_overhaul.sql` to the specified project. It is one transaction, with a live ingredient guard that aborts if any named ingredient is missing, disabled or no longer always available. Do not blindly replay the repository's historical migrations onto the existing live project.
+1. Apply the incoming `20260908000000_lantern_mutation_luck.sql` migration first if it is not already applied, then review and apply `supabase/migrations/20260908000001_equipment_overhaul.sql` to the specified project. It is one transaction, with a live ingredient guard that aborts if any named ingredient is missing, disabled or no longer always available. Do not blindly replay the repository's historical migrations onto the existing live project.
 2. Deploy the following Edge Function folders, keeping the project's existing authentication/configuration settings:
    - `supabase/functions/roll/` (include `index.ts`, `eventRules.ts`, **and `equipmentRules.js`**)
    - `supabase/functions/craft-recipe/`
@@ -56,3 +56,5 @@ The migration updates SQL crafting, deposit, masterwork and equipment-switch fun
 The optimized handler retains catalog/event caching and deferred background work, removes a redundant mutation-catalog query, and adds one serialized state/loot commit. No production latency benchmark was performed; the roughly one-second target still needs verification after your deployment.
 
 The migration is generated deterministically from `src/data/equipmentOverhaul.js`, `scripts/equipment-overhaul-schema.sql`, and `scripts/equipment-overhaul-functions.sql`. After editing those sources, run `node scripts/build-equipment-overhaul-migration.mjs` and rerun tests. Treat an applied migration as immutable; use a new migration for later changes.
+
+After merging main `5924c94`, the undeployed overhaul migration was retimestamped to `20260908000001` so it runs after the earlier Lantern change. The consolidated overhaul recipes supersede that change’s Lantern values and tier-5 gate; minimum-tier requirement support remains available for grandfathered recipes. The legacy `mutation_luck_bonus` column is retained, while overhaul rolls use `mutation_chance_bonus` exclusively to prevent double-counting.

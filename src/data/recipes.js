@@ -386,7 +386,7 @@ const recipes = [
 
 
   // =========================================================
-  // LANTERNS — ROLL SPEED
+  // LANTERNS — MUTATION LUCK
   // =========================================================
 
   {
@@ -395,6 +395,9 @@ const recipes = [
     category: "lantern",
 
     requirements: [
+      // Lanterns grant mutation luck, so even the first tier is gated behind a
+      // strong pickaxe — you must have progressed to a tier-5+ pickaxe first.
+      { type: "equipment-min-tier", category: "pickaxe", tier: 5 },
       { type: "gem-count", gem: "Calcite", amount: 5 },
       { type: "gem-count", gem: "Fluorite", amount: 3 },
       { type: "gem-count", gem: "Hematite", amount: 2 },
@@ -410,7 +413,7 @@ const recipes = [
       tier: 1,
 
       bonus: {
-        rollSpeed: 0.05
+        mutationLuck: 0.02
       }
     }
   },
@@ -440,7 +443,7 @@ const recipes = [
       tier: 2,
 
       bonus: {
-        rollSpeed: 0.10
+        mutationLuck: 0.04
       }
     }
   },
@@ -467,7 +470,7 @@ const recipes = [
       tier: 3,
 
       bonus: {
-        rollSpeed: 0.25
+        mutationLuck: 0.07
       }
     }
   },
@@ -525,7 +528,7 @@ const recipes = [
       tier: 4,
 
       bonus: {
-        rollSpeed: 0.40
+        mutationLuck: 0.11
       }
     }
   },
@@ -558,7 +561,7 @@ const recipes = [
       tier: 5,
 
       bonus: {
-        rollSpeed: 0.60
+        mutationLuck: 0.16
       }
     }
   },
@@ -582,7 +585,7 @@ const recipes = [
       name: "Celestial Lantern",
       category: "lantern",
       tier: 6,
-      bonus: { rollSpeed: 0.80 }
+      bonus: { mutationLuck: 0.22 }
     }
   },
 
@@ -605,7 +608,7 @@ const recipes = [
       name: "Aether Lantern",
       category: "lantern",
       tier: 7,
-      bonus: { rollSpeed: 1.25 }
+      bonus: { mutationLuck: 0.3 }
     }
   },
 
@@ -628,7 +631,7 @@ const recipes = [
       name: "Void Lantern",
       category: "lantern",
       tier: 8,
-      bonus: { rollSpeed: 1.80 }
+      bonus: { mutationLuck: 0.42 }
     }
   },
 
@@ -650,7 +653,7 @@ const recipes = [
       name: "Event Horizon Lantern",
       category: "lantern",
       tier: 9,
-      bonus: { rollSpeed: 2.1 }
+      bonus: { mutationLuck: 0.55 }
     }
   },
 
@@ -672,7 +675,7 @@ const recipes = [
       name: "Singularity Lantern",
       category: "lantern",
       tier: 10,
-      bonus: { rollSpeed: 2.4 }
+      bonus: { mutationLuck: 0.7 }
     }
   },
 

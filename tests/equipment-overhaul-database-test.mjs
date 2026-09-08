@@ -8,6 +8,7 @@ const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
 await db.exec(read('./fixtures/late-game-live-schema.sql'));
 await db.exec(read('../supabase/migrations/20260906070703_late_game_equipment_expansion.sql'));
+await db.exec(read('../supabase/migrations/20260908000000_lantern_mutation_luck.sql'));
 await db.exec(`create table private_feature_gems(name text primary key,rarity integer,enabled boolean,availability_mode text,starts_at timestamptz,ends_at timestamptz);
 create table game_consumables(id text primary key,name text,family text,tier integer,effect_value numeric,duration_seconds integer,purchasable boolean,shop_price numeric);
 create table player_boosts(player_id uuid,family text,tier integer,effect_value numeric,expires_at timestamptz,unique(player_id,family));
@@ -25,7 +26,7 @@ const started={id:'bright-lantern',name:'Bright Lantern',category:'lantern',mone
 await q("insert into game_recipes values('bright-lantern',$1) on conflict(id) do update set recipe=excluded.recipe",[started]);
 await q("insert into crafting_progress values($1,'bright-lantern','{\"Old material\":2}',now())",[uid]);
 const plasticBefore=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;
-await db.exec(read('../supabase/migrations/20260907150633_equipment_overhaul.sql'));
+await db.exec(read('../supabase/migrations/20260908000001_equipment_overhaul.sql'));
 const plasticAfter=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;delete plasticAfter.craftingTab;assert.deepEqual(plasticAfter,plasticBefore);
 assert.equal((await q("select recipe from game_recipes where id='omnidimensional-vault'")).length,0);
 assert.equal((await q("select enchant_state from player_equipment where equipment_id='dimensional-vault'"))[0].enchant_state.preserve,1);

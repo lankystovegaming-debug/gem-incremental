@@ -29,6 +29,7 @@ import {
 import { initDevPanel } from "./devpanel.js";
 import { mountTour } from "./tour.js";
 import { mountDailyLogin } from "./dailyLogin.js";
+import { mountReferralPromo } from "./referralPromo.js";
 import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
 import { getSettings, onSettingsChange } from "./settings.js";
@@ -344,6 +345,9 @@ export function mountShell({ page, base = "./" }) {
 
   // Daily login streak: prompts once a day when a reward is claimable.
   mountDailyLogin();
+
+  // Referral promo: once-a-day popup about the limited-time invite bonus.
+  mountReferralPromo(base);
 
   // Optional global-cash side counter (off by default; toggled in Settings).
   initGlobalCash();
