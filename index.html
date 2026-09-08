@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="./style.css">
 
   <script>
-    // Paint the saved theme before first render. 
+    // Paint the saved theme before first render.
     (function () {
       try {
         var mode = localStorage.getItem("gemIncremental.theme.mode");
@@ -140,16 +140,7 @@
         </span>
       </label>
 
-      <label class="automation__row switch">
-        <input type="checkbox" id="autoSellToggle">
-        <span class="switch__track"></span>
-        <span class="automation__text">
-          <span class="automation__title">Auto sell</span>
-          <span class="automation__sub">
-            Instantly sells low-tier gems so the inventory keeps space.
-          </span>
-        </span>
-      </label>
+
 
       <label class="automation__row switch">
         <input type="checkbox" id="autoKeepToggle">
@@ -157,7 +148,7 @@
         <span class="automation__text">
           <span class="automation__title">Auto keep</span>
           <span class="automation__sub">
-            Protects valuable rolls before Auto Sell can process them.
+            Protects valuable rolls using effective rarity.
           </span>
         </span>
       </label>
@@ -175,16 +166,7 @@
         </div>
       </div>
 
-      <div class="automation__row automation__row--select" id="autoSellTierRow">
-        <label class="automation__text" for="autoSellTier">
-          <span class="automation__title">Sell up to</span>
-          <span class="automation__sub">
-            Anything rarer is always kept.
-          </span>
-        </label>
 
-        <select class="select" id="autoSellTier"></select>
-      </div>
 
       <div class="automation__pulse" id="automationPulse" aria-live="polite"></div>
     </section>

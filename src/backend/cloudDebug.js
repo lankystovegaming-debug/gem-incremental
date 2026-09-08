@@ -648,16 +648,21 @@ export async function loadCloudDebugState() {
   // RETURN
   // -------------------------------------------------------
 
+  const { data: savedPreferences, error: preferencesError } = await supabase
+    .from('player_settings').select('settings').eq('player_id', user.id).maybeSingle();
+  const buffsEnabled = savedPreferences?.settings?.enableBuffs !== false;
+
   return {
     stats: {
-      luck,
-      rollSpeed,
-      weightLuck,
-      weightMultiplier,
+      buffsEnabled,
+      luck: buffsEnabled ? luck : 1,
+      rollSpeed: buffsEnabled ? rollSpeed : 1,
+      weightLuck: buffsEnabled ? weightLuck : 1,
+      weightMultiplier: buffsEnabled ? weightMultiplier : 1,
       breakdown: statBreakdown,
       luckLayers: previewLayers,
       mutationChance: equipmentStats.mutation,
-      previewNote: "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
+      previewNote: preferencesError ? "Preferences unavailable; showing an unverified build preview." : !buffsEnabled ? "Buffs disabled — all four core stats are 1×. The build breakdown below is inactive." : "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
       miscellaneousBuffs: miscBuffs
     },
 

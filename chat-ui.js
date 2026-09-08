@@ -133,6 +133,8 @@ if (messagesEl && formEl && inputEl) {
     };
   }
 
+  window.addEventListener('gem:chat-layout-change', () => { layoutSettings = loadChatLayout(); applyChatLayout(); });
+
   function saveChatLayout() {
     writeStorage(CHAT_LAYOUT_STORAGE_KEY, layoutSettings);
   }

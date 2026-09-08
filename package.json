@@ -19,7 +19,9 @@
     "test:bundles": "node tests/gameplay-bundles-test.mjs && node tests/gameplay-bundles-database-test.mjs",
     "test:bundles-ui": "node tests/gameplay-bundles-ui-test.mjs",
     "test:cosmetics": "node tests/player-cosmetics-database-test.mjs && node tests/player-cosmetics-ui-test.mjs",
-    "preview:cosmetics": "PROFILE_PREVIEW_FIXTURE=artifacts/cosmetics-preview.json node tests/player-cosmetics-database-test.mjs && node tests/profile-preview-server.mjs"
+    "preview:cosmetics": "PROFILE_PREVIEW_FIXTURE=artifacts/cosmetics-preview.json node tests/player-cosmetics-database-test.mjs && node tests/profile-preview-server.mjs",
+    "test:qol": "node tests/qol-rules-test.mjs && node tests/qol-database-test.mjs && node tests/qol-settings-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
+    "test:qol-ui": "node tests/qol-ui-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

@@ -26,7 +26,6 @@ import {
   onThemeChange
 } from "../src/ui/theme.js";
 import {
-  SELL_TIERS,
   GEM_REALISM_LEVELS,
   getSettings,
   updateSettings,
@@ -138,12 +137,9 @@ renderAppearance();
 // =========================================================
 
 const autoRollToggle = document.getElementById("autoRollToggle");
-const autoSellToggle = document.getElementById("autoSellToggle");
-const autoSellTier = document.getElementById("autoSellTier");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
-const autoSellTierRow = document.getElementById("autoSellTierRow");
 const animationsToggle = document.getElementById("animationsToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 const globalCashToggle = document.getElementById("globalCashToggle");
@@ -152,15 +148,11 @@ const gemRealismRange = document.getElementById("gemRealismRange");
 const gemRealismValue = document.getElementById("gemRealismValue");
 
 
-autoSellTier.innerHTML = SELL_TIERS.map(
-  (tier) => `<option value="${tier.id}">${tier.label}</option>`
-).join("");
+
 
 
 function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
-  autoSellToggle.checked = settings.autoSell;
-  autoSellTier.value = settings.autoSellTier;
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("setting--muted", !settings.autoKeep);
@@ -175,7 +167,7 @@ function paintSettings(settings) {
     gemRealismRange.style.setProperty("--realism-progress", `${(index / (GEM_REALISM_LEVELS.length - 1)) * 100}%`);
   }
 
-  autoSellTierRow.classList.toggle("setting--muted", !settings.autoSell);
+
 }
 
 
@@ -197,13 +189,9 @@ autoRollToggle.addEventListener("change", () =>
   updateSettings({ autoRoll: autoRollToggle.checked })
 );
 
-autoSellToggle.addEventListener("change", () =>
-  updateSettings({ autoSell: autoSellToggle.checked })
-);
 
-autoSellTier.addEventListener("change", () =>
-  updateSettings({ autoSellTier: autoSellTier.value })
-);
+
+
 
 if (autoKeepToggle) autoKeepToggle.addEventListener("change", () =>
   updateSettings({ autoKeep: autoKeepToggle.checked })
@@ -237,7 +225,7 @@ cutsceneMinimumRarity.addEventListener("change", () => {
 onSettingsChange(paintSettings);
 
 paintSettings(getSettings());
-hydrateSettingsFromCloud().then(paintSettings);
+hydrateSettingsFromCloud().then(paintSettings).catch(error => notify.error("Settings unavailable", error.message));
 
 
 // =========================================================
@@ -366,3 +354,5 @@ async function loadAccount() {
 
 renderAccount(null, null);
 loadAccount();
+
+window.addEventListener("gem:settings-error", () => paintSettings(getSettings()));

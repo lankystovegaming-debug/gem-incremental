@@ -13,6 +13,7 @@ const bg=[];globalThis.EdgeRuntime={waitUntil:p=>bg.push(p)};
 Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){a[0]=forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(new Error().stack)?0:2**31;return a;}},configurable:true});
 const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs;
+let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false};
 const uid='00000000-0000-0000-0000-000000000001';
 class Query {
  constructor(table){this.table=table;this.mode='read';this.singleRow=false;this.payload=null;}
@@ -23,7 +24,7 @@ class Query {
   let data=null;let count=0;
   if(this.mode==='insert'&&this.table==='inventory_gems'){data={id:101,...this.payload};saved=data;}
   else if(this.mode==='read') {
-   const tables={players:player,player_equipment:equipment,player_boosts:boosts,player_one_roll_boosts:oneRoll,admin_events:admin,
+   const tables={players:player,player_crafting:{active_auto_craft:craftActive?'craft':null},game_recipes:{recipe:{equipmentOverhaul:true,requirements:[]}},crafting_progress:{progress:{}},player_equipment:equipment,player_boosts:boosts,player_one_roll_boosts:oneRoll,admin_events:admin,
     museum_artifact_registrations:[],player_gem_mutation_combinations:[],game_mutations:[{id:'polished',name:'Polished',chance:100,multiplier:1.5}],
     private_feature_gems:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false}]};
    data=tables[this.table]??(this.singleRow?null:[]);
@@ -33,7 +34,8 @@ class Query {
 }
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);
- const responses={bundle_route_roll:{status:'none'},get_playtime_upgrades:{levels:{}},crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
+ if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
+ const responses={deposit_equipment_material:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,get_playtime_upgrades:{levels:{}},crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
  return {data:responses[name]??null,error:null};
@@ -59,3 +61,33 @@ result=await run('the-accelerator',{spool:200});assert.ok(commits[0].p_bonus);as
 result=await run('the-excavator');assert.equal(commits[0].p_loot,'lucky-potion-1');assert.equal(commits[0].p_state.excavations,1);
 result=await run('silly-fun-happy-pickaxe');assert.ok(['silly-small','silly-large','happy'].every(id=>saved.mutation_ids.includes(id)));
 console.log('Actual optimized roll handler: all nine builds, layered Luck, +50 burst components, sub-1 mutation and speed, and single state commit passed.');
+
+forceProcs=false;
+qolSettings={enableBuffs:false,discoveryKeep:false};
+for(const id of Object.keys(PICKAXE_STATS)) {
+ result=await run(id,{},'slow_starter');
+ assert.deepEqual(result.finalStats,{luck:1,rollSpeed:1,weightLuck:1,weightMultiplier:1});
+ assert.equal(result.cooldown.durationMs,2500);
+ assert.equal(saved.luck_at_roll,1);
+ assert.equal(saved.final_weight,saved.rolled_weight);
+ assert.ok(!rpcs.includes('spend_one_roll_charge'),'disabled buffs retain one-roll charges');
+}
+qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};
+result=await run('celestial-pickaxe');assert.equal(result.gemFilter.sold,true);assert.equal(result.specimenId,null);
+for(const status of ['ambiguous','protected']){
+ bundleResponse={status,keepInInventory:true};result=await run('celestial-pickaxe');assert.equal(result.gemFilter.sold,false);assert.ok(!rpcs.includes('sell_inventory_gem'));
+}
+bundleResponse={status:'deposited'};result=await run('celestial-pickaxe');assert.equal(result.specimenId,null);assert.ok(!rpcs.includes('sell_inventory_gem'));
+bundleResponse={status:'none'};saleFailure=true;result=await run('celestial-pickaxe');assert.equal(result.gemFilter.sold,false);assert.equal(result.specimenId,101);saleFailure=false;
+qolSettings={autoKeep:false,gemFilter:{'Test gem':'KEEP'}};result=await run('celestial-pickaxe');assert.equal(result.gemFilter.keep,true);assert.ok(!rpcs.includes('bundle_route_roll'));assert.ok(!rpcs.includes('sell_inventory_gem'));
+qolSettings={autoKeep:true,autoKeepEffectiveRarity:1,gemFilter:{'Test gem':'SELL'}};result=await run('celestial-pickaxe');assert.equal(result.gemFilter.reason,'auto-keep');assert.equal(result.gemFilter.sold,false);
+console.log('QoL optimized-handler tests: all builds at base stats, cooldown, preserved charges, KEEP/SELL, bundle protections and sale failure passed.');
+
+qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};craftActive=true;
+for(const preserved of [false,true]){
+ craftResponse={deposited:true,preserved,requirementIndex:0};result=await run('celestial-pickaxe');
+ assert.equal(result.autoCraft.deposited,true);assert.ok(!rpcs.includes('sell_inventory_gem'));
+ assert.equal(result.specimenId,preserved?101:null);
+}
+qolSettings.gemFilter['Test gem']='KEEP';result=await run('celestial-pickaxe');assert.ok(!rpcs.includes('deposit_equipment_material'));assert.equal(result.specimenId,101);
+console.log('QoL crafting integration: deposit before SELL, Conservation retention, and KEEP bypass passed.');

@@ -5,14 +5,8 @@ import { ensurePlayerAuth } from "../backend/auth.js";
 // =========================================================
 // GAMEPLAY SETTINGS
 //
-// Automation preferences live on the device rather than the
-// server: the server stays authoritative for every action,
-// these only decide when the client asks for one.
-//
-// The Roll page and the Settings page both bind to this
-// store, so a change in one updates the other immediately.
-// =========================================================
-
+// Supabase stores automation preferences. A device cache supplies initial paint;
+// saved patches are serialized and the optimized roll backend owns all routing.
 
 const STORAGE_KEY = "gemIncremental.settings";
 
@@ -40,6 +34,7 @@ export const GEM_REALISM_LEVELS = [
 const DEFAULTS = {
   autoRoll: false,
   autoSell: false,
+  enableBuffs: true, discoveryKeep: true, discoveryKeepRarity: 10000, gemFilter: {},
   autoSellTier: "common",
   autoKeep: true,
   autoKeepEffectiveRarity: 1_000_000,
@@ -56,12 +51,32 @@ const DEFAULTS = {
 
 
 let state = load();
-let cloudReady = false;
-export async function hydrateSettingsFromCloud() {
-  const user = await ensurePlayerAuth(); if (!user) return getSettings();
-  const { data } = await supabase.from("player_settings").select("settings").eq("player_id", user.id).maybeSingle();
-  if (data?.settings) { state = sanitise({ ...state, ...data.settings }); notify(); }
-  cloudReady = true; return getSettings();
+let hydration;
+let saveQueue = Promise.resolve();
+export function hydrateSettingsFromCloud() {
+  return hydration ??= (async () => {
+    const user = await ensurePlayerAuth();
+    if (!user) throw new Error('Sign in to save settings.');
+    const { data, error } = await supabase.from('player_settings').select('settings').eq('player_id', user.id).maybeSingle();
+    if (error) throw error;
+    const cloud = data?.settings ?? {};
+    const importPatch = {};
+    for (const key of ['autoRoll','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism']) {
+      if (!(key in cloud)) importPatch[key] = state[key];
+    }
+    if (cloud.legacyAutoSell == null) {
+      importPatch.legacyAutoSellTier = cloud.autoSellTier ?? state.autoSellTier;
+      importPatch.legacyAutoSell = cloud.autoSell ?? state.autoSell;
+    }
+    if (Object.keys(importPatch).length) {
+      const { data: migrated, error: migrationError } = await supabase.rpc('update_qol_settings', { p_patch: importPatch });
+      if (migrationError) throw migrationError;
+      Object.assign(cloud, migrated);
+    }
+    state = sanitise({ ...DEFAULTS, ...cloud });
+    notify();
+    return getSettings();
+  })().catch(error => { hydration = null; throw error; });
 }
 
 
@@ -86,6 +101,11 @@ function sanitise(value) {
   const allowedTiers = SELL_TIERS.map((tier) => tier.id);
 
   return {
+    ...value,
+    enableBuffs: value.enableBuffs !== false,
+    discoveryKeep: value.discoveryKeep !== false,
+    discoveryKeepRarity: Math.min(Number.MAX_SAFE_INTEGER, Math.max(1, Math.floor(Number(value.discoveryKeepRarity) || 10000))),
+    gemFilter: value.gemFilter && typeof value.gemFilter === 'object' ? { ...value.gemFilter } : {},
     autoRoll: Boolean(value.autoRoll),
     autoSell: Boolean(value.autoSell),
 
@@ -114,21 +134,23 @@ function sanitise(value) {
 
 
 export function getSettings() {
-  return { ...state };
+  return { ...state, gemFilter: { ...state.gemFilter } };
 }
 
 
 export function updateSettings(patch) {
-  state = sanitise({ ...state, ...patch });
-
-  // Keep a tiny cache for instant first paint, but Supabase is authoritative.
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
-  if (cloudReady) {
-    ensurePlayerAuth().then((user) => user && supabase.from("player_settings").upsert({ player_id:user.id, settings:state, updated_at:new Date().toISOString() }, { onConflict:"player_id" }));
-  }
-  notify();
-
-  return getSettings();
+  const operation = saveQueue.catch(() => {}).then(async () => {
+    await hydrateSettingsFromCloud();
+    const { data, error } = await supabase.rpc('update_qol_settings', { p_patch: patch });
+    if (error) throw error;
+    state = sanitise({ ...DEFAULTS, ...data });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    notify();
+    return getSettings();
+  });
+  saveQueue = operation;
+  operation.catch(error => window.dispatchEvent(new CustomEvent('gem:settings-error', { detail: error })));
+  return operation;
 }
 
 
@@ -149,24 +171,14 @@ export function tierRank(tierId) {
 }
 
 
-export function shouldAutoSell(gemTierId) {
-  if (!state.autoSell) {
-    return false;
-  }
-
-  return tierRank(gemTierId) <= tierRank(state.autoSellTier);
-}
-
-
-
+// Automatic sale decisions now belong exclusively to the optimized roll server.
+export function shouldAutoSell() { return false; }
 
 // ---------------------------------------------------------
 // AUTO KEEP RULE
 //
-// Auto-keep is a client-side safety override for Auto Sell. The
-// server still owns the inventory and sale operation; this rule
-// simply prevents the client from asking to sell results at or
-// above the configured tier.
+// Display fallback for older roll responses. Current roll responses include
+// the authoritative retention decision.
 // ---------------------------------------------------------
 
 function mutationIdsFor(result) {

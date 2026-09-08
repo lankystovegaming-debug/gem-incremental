@@ -48,7 +48,7 @@
       <div class="page-head__title">
         <h1>Settings</h1>
         <p class="page-head__sub">
-          Appearance and automation are saved on this device.
+          Gameplay preferences sync to your account. Theme and chat layout stay on this device.
         </p>
       </div>
     </div>
@@ -56,10 +56,95 @@
 
     <!-- ================= APPEARANCE ================= -->
 
-    <section class="card setting-group" aria-labelledby="appearanceHeading">
+    <nav class="qol-settings-nav" aria-label="Settings categories">
+      <a class="btn" href="#automationHeading">Rolling</a><a class="btn" href="#gemFilterHeading">Gem Filter</a>
+      <a class="btn" href="#appearanceHeading">Display</a><a class="btn" href="#accountHeading">Account</a>
+      <a class="btn" href="#notificationsHeading">Notifications</a><a class="btn" href="#chatHeading">Chat</a><a class="btn" href="#aboutHeading">Controls</a>
+    </nav>
+
+
+
+    <!-- ================= AUTOMATION ================= -->
+
+    <section class="card setting-group" aria-labelledby="automationHeading">
+      <div class="setting-group__head">
+        <span id="automationIcon"></span>
+        <h2 id="automationHeading">Rolling & automation</h2>
+      </div>
+
+      <label class="setting switch"><span class="setting__text"><strong class="setting__title">Enable Buffs</strong><span class="setting__sub">Apply all four core stat bonuses. Turning this off uses 1× stats.</span></span><span class="setting__control"><input id="enableBuffs" type="checkbox"><span class="switch__track"></span></span></label>
+      <label class="setting switch"><span class="setting__text"><strong class="setting__title">Keep new discoveries</strong><span class="setting__sub">Protect the first discovery using base/raw rarity.</span></span><span class="setting__control"><input id="discoveryKeep" type="checkbox"><span class="switch__track"></span></span></label>
+      <label class="setting">Keep new discoveries at or above 1 in <input class="input" id="discoveryKeepRarity" type="number" min="1" max="9007199254740991" value="10000"></label>
+      <p><a href="#gemFilterHeading">Configure Gem Filter →</a></p>
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Auto roll</span>
+          <span class="setting__sub">
+            Rolls again as soon as the cooldown ends, even while you browse other game pages.
+          </span>
+        </span>
+
+        <span class="setting__control">
+          <input type="checkbox" id="autoRollToggle">
+          <span class="switch__track"></span>
+        </span>
+      </label>
+
+
+
+
+
+      <div class="setting">
+        <div class="setting__copy">
+          <strong>Auto keep</strong>
+          <span>Protect valuable rolls using effective rarity.</span>
+        </div>
+        <label class="switch">
+          <input id="autoKeepToggle" type="checkbox" role="switch">
+          <span class="switch__track"></span>
+        </label>
+      </div>
+      <div class="setting setting--nested" id="autoKeepRarityRow">
+        <div class="setting__copy">
+          <strong>Keep at or above</strong>
+          <span>Enter the minimum effective rarity that Auto Keep should protect.</span>
+        </div>
+        <input class="input setting-number" id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
+      </div>
+
+
+
+
+
+
+
+
+
+
+    </section>
+
+
+    <!-- ================= ACCOUNT ================= -->
+
+    <section class="card setting-group" aria-labelledby="gemFilterHeading">
+      <h2 id="gemFilterHeading">Gem Filter</h2>
+      <p>KEEP retains every copy. SELL runs after Collection and crafting routing. Auto Keep, qualifying new discoveries and protected specimens always override SELL. DEFAULT clears an individual rule and keeps normal routing.</p>
+      <p id="legacyFilterNotice"></p><button class="btn" id="clearLegacyFilter" hidden>Clear imported Auto Sell rule</button>
+      <div class="qol-filter-tools">
+        <input class="input" id="gemFilterSearch" type="search" placeholder="Search discovered gems" aria-label="Search discovered gems">
+        <select class="select" id="gemFilterState" aria-label="Filter by rule"><option value="ALL">All rules</option><option>DEFAULT</option><option>KEEP</option><option>SELL</option></select>
+        <label><input type="checkbox" id="gemFilterSelectAll"> Select all matching gems</label>
+        <select class="select" id="gemFilterBulk" aria-label="Bulk rule"><option>DEFAULT</option><option>KEEP</option><option>SELL</option></select>
+        <button class="btn" id="gemFilterApply">Apply to selected</button><button class="btn" id="gemFilterClearSelection">Clear selection</button>
+      </div>
+      <p id="gemFilterStatus" role="status">Loading discovered gems…</p>
+      <div id="gemFilterRows"></div>
+      <div class="row"><button class="btn" id="gemFilterPrevious">Previous</button><button class="btn" id="gemFilterNext">Next</button></div>
+    </section>
+        <section class="card setting-group" aria-labelledby="appearanceHeading">
       <div class="setting-group__head">
         <span id="appearanceIcon"></span>
-        <h2 id="appearanceHeading">Appearance</h2>
+        <h2 id="appearanceHeading">Display & appearance</h2>
       </div>
 
       <div class="setting">
@@ -92,84 +177,7 @@
 
         <div class="segmented" id="fontPicker" role="radiogroup" aria-label="Display font"></div>
       </div>
-    </section>
-
-
-    <!-- ================= AUTOMATION ================= -->
-
-    <section class="card setting-group" aria-labelledby="automationHeading">
-      <div class="setting-group__head">
-        <span id="automationIcon"></span>
-        <h2 id="automationHeading">Automation</h2>
-      </div>
-
-      <label class="setting switch">
-        <span class="setting__text">
-          <span class="setting__title">Auto roll</span>
-          <span class="setting__sub">
-            Rolls again as soon as the cooldown ends, even while you browse other game pages.
-          </span>
-        </span>
-
-        <span class="setting__control">
-          <input type="checkbox" id="autoRollToggle">
-          <span class="switch__track"></span>
-        </span>
-      </label>
-
-      <label class="setting switch">
-        <span class="setting__text">
-          <span class="setting__title">Auto sell</span>
-          <span class="setting__sub">
-            Sells low-tier gems the moment they are rolled, so your
-            storage never fills up.
-          </span>
-        </span>
-
-        <span class="setting__control">
-          <input type="checkbox" id="autoSellToggle">
-          <span class="switch__track"></span>
-        </span>
-      </label>
-
-      <div class="setting" id="autoSellTierRow">
-        <div class="setting__text">
-          <label class="setting__title" for="autoSellTier">Auto sell up to</label>
-          <span class="setting__sub">
-            Anything rarer than this is always kept. Locked gems are
-            never sold.
-          </span>
-        </div>
-        <select class="select" id="autoSellTier"></select>
-      </div>
-
-      <div class="setting">
-        <div class="setting__copy">
-          <strong>Auto keep</strong>
-          <span>Protect valuable rolls before Auto Sell can process them.</span>
-        </div>
-        <label class="switch">
-          <input id="autoKeepToggle" type="checkbox" role="switch">
-          <span class="switch__track"></span>
-        </label>
-      </div>
-      <div class="setting setting--nested" id="autoKeepRarityRow">
-        <div class="setting__copy">
-          <strong>Keep at or above</strong>
-          <span>Enter the minimum effective rarity that Auto Keep should protect.</span>
-        </div>
-        <input class="input setting-number" id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
-      </div>
-
-      <div class="setting">
-        <div class="setting__text">
-          <label class="setting__title" for="cutsceneMinimumRarity">Cutscene minimum rarity</label>
-          <span class="setting__sub">Show a full-screen cutscene only when the roll is rarer than 1 in this value. Minimum is 100,000.</span>
-        </div>
-        <input class="input setting-number" id="cutsceneMinimumRarity" type="number" min="100000" step="1000" inputmode="numeric" aria-label="Cutscene minimum rarity">
-      </div>
-
-      <div class="setting setting--realism">
+    <div class="setting setting--realism">
         <div class="setting__text">
           <label class="setting__title" for="gemRealismRange">Gem icon realism</label>
           <span class="setting__sub">Move from the original game icons through increasingly detailed gemstone materials and lighting.</span>
@@ -187,8 +195,7 @@
           <output id="gemRealismValue" class="realism-control__value" for="gemRealismRange">Classic</output>
         </div>
       </div>
-
-      <label class="setting switch">
+<label class="setting switch">
         <span class="setting__text">
           <span class="setting__title">Roll animations</span>
           <span class="setting__sub">
@@ -201,8 +208,7 @@
           <span class="switch__track"></span>
         </span>
       </label>
-
-      <label class="setting switch">
+<label class="setting switch">
         <span class="setting__text">
           <span class="setting__title">Global cash counter</span>
           <span class="setting__sub">
@@ -216,8 +222,7 @@
           <span class="switch__track"></span>
         </span>
       </label>
-
-      <label class="setting switch">
+<label class="setting switch">
         <span class="setting__text">
           <span class="setting__title">Global cash graph</span>
           <span class="setting__sub">
@@ -230,13 +235,16 @@
           <input type="checkbox" id="cashGraphToggle">
           <span class="switch__track"></span>
         </span>
-      </label>
-    </section>
-
-
-    <!-- ================= ACCOUNT ================= -->
-
-    <section class="card setting-group" aria-labelledby="accountHeading">
+      </label></section>
+<section class="card setting-group" aria-labelledby="notificationsHeading"><h2 id="notificationsHeading">Notifications & reveals</h2><div class="setting">
+        <div class="setting__text">
+          <label class="setting__title" for="cutsceneMinimumRarity">Cutscene minimum rarity</label>
+          <span class="setting__sub">Show a full-screen cutscene only when the roll is rarer than 1 in this value. Minimum is 100,000.</span>
+        </div>
+        <input class="input setting-number" id="cutsceneMinimumRarity" type="number" min="100000" step="1000" inputmode="numeric" aria-label="Cutscene minimum rarity">
+      </div><p>Rare-roll announcements are available in the chat’s Rare Rolls tab.</p></section>
+<section class="card setting-group" aria-labelledby="chatHeading"><h2 id="chatHeading">Chat</h2><label class="setting">Chat layout <select id="qolChatLayout" class="select"><option value="floating">Floating</option><option value="side-right">Right sidebar</option><option value="side-left">Left sidebar</option></select></label><p>Chat size can be adjusted by dragging the chat panel’s resize handle.</p></section>
+<section class="card setting-group" aria-labelledby="accountHeading">
       <div class="setting-group__head">
         <span id="accountIcon"></span>
         <h2 id="accountHeading">Account</h2>
@@ -269,5 +277,6 @@
   </main>
 
   <script type="module" src="./settings.js"></script>
+<script type="module" src="./qol.js"></script>
 </body>
 </html>
