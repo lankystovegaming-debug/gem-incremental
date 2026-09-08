@@ -233,14 +233,19 @@ export default {
           section.bullets.length < 1 || section.bullets.length > 30 ||
           section.bullets.some((bullet: string) => bullet.length < 1 || bullet.length > 500)
         );
-        if (
-          (id !== null && (!Number.isSafeInteger(id) || id < 1)) ||
-          version.length < 1 || version.length > 40 ||
-          title.length < 1 || title.length > 120 ||
-          !/^\d{4}-\d{2}-\d{2}$/.test(publishedOn) ||
-          invalidSections
-        ) {
-          return response({ error: "invalid_update_log" }, 400);
+        const invalidFields = [
+          id !== null && (!Number.isSafeInteger(id) || id < 1) ? "id" : null,
+          version.length < 1 || version.length > 40 ? "version" : null,
+          title.length < 1 || title.length > 120 ? "title" : null,
+          !/^\d{4}-\d{2}-\d{2}$/.test(publishedOn) ? "publishedOn" : null,
+          invalidSections ? "sections" : null
+        ].filter(Boolean);
+        if (invalidFields.length) {
+          return response({
+            error: "invalid_update_log",
+            message: `Invalid update log field${invalidFields.length === 1 ? "" : "s"}: ${invalidFields.join(", ")}.`,
+            details: { fields: invalidFields }
+          }, 400);
         }
 
         const now = new Date().toISOString();
