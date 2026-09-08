@@ -55,7 +55,12 @@ const GAME_SUFFIXES = [
   "Spg", "USpg", "DSpg", "TSpg", "QtSpg", "QnSpg", "SxSpg", "SpSpg", "OcSpg", "NoSpg",
   "Ocg", "UOcg", "DOcg", "TOcg", "QtOcg", "QnOcg", "SxOcg", "SpOcg", "OcOcg", "NoOcg",
   "Nog", "UNog", "DNog", "TNog", "QtNog", "QnNog", "SxNog", "SpNog", "OcNog", "NoNog",
-  "Ce"
+  "Ce", "UCe", "DCe", "TCe", "QtCe", "QnCe", "SxCe", "SpCe", "OcCe", "NoCe",
+  "UnCe", "UUnCe", "DUnCe", "TUnCe", "QtUnCe", "QnUnCe", "SxUnCe", "SpUnCe", "OcUnCe", "NoUnCe",
+  "DCe", "UDCe", "DDCe", "TDCe", "QtDCe", "QnDCe", "SxDCe", "SpDCe", "OcDCe", "NoDCe",
+  "TCe", "UTCe", "DTCe", "TTCe", "QtTCe", "QnTCe", "SxTCe", "SpTCe", "OcTCe", "NoTCe",
+  "QtCe", "UQtCe", "DQtCe", "TQtCe", "QtQtCe", "QnQtCe", "SxQtCe", "SpQtCe", "OcQtCe", "NoQtCe",
+  "QnCe", "UQnCe", "DQnCe", "TQnCe", "QtQnCe", "QnQnCe", "SxQnCe", "SpQnCe", "OcQnCe", "NoQnCe",
 ];
 
 function gameSuffixForExponent(exponent) {
