@@ -20,7 +20,7 @@ assert.match(rework,/alter column progress type numeric/);assert.match(rework,/a
 assert.match(client,/set_crystal_intensity/);assert.match(dialog,/preventEnter/);assert.match(dialog,/defaultAction/);
 assert.match(rework,/r\.status not in\('active','decision','awaiting_funding','ready_to_extract','forced_extraction'\)/);assert.match(rework,/r\.depth<1/);assert.match(rework,/pending=null/);assert.match(rework,/Voluntary extraction secured all cargo and artifacts/);
 assert.match(client,/skip_crystal_outpost/);assert.match(page,/Skip outpost · Continue to D\$\{r\.depth\+1\} funding/);assert.match(page,/a==="skip-outpost"/);assert.match(outpost,/function public\.skip_crystal_outpost/);assert.match(outpost,/r\.depth not in \(3, 6, 9\)/);assert.match(outpost,/status = 'awaiting_funding'/);assert.match(outpost,/pending = null/);assert.match(outpost,/grant execute on function public\.skip_crystal_outpost\(bigint\) to authenticated/);
-assert.equal((roll.match(/luck \*= researchNumber\("luck_multiplier"\)/g)||[]).length,1,"research Luck must be applied exactly once");
+assert.equal((roll.match(/research: researchNumber\("luck_multiplier"\)/g)||[]).length,1,"research Luck must be applied exactly once");
 assert.match(roll,/luck \+= crystalLuckBonus;[\s\S]*luck \+= expeditionArtifactLuckBonus;/);
 assert.match(roll,/mutationChanceMultiplier \*= crystalMutationMultiplier;[\s\S]*mutationChanceMultiplier \*= expeditionArtifactMutationMultiplier;/);
 assert.match(roll,/crystalGemValueMultiplier \*[\s\S]*expeditionArtifactGemValueMultiplier \*[\s\S]*crystalHeavyGemValueMultiplier[\s\S]*bedrock-crown/);

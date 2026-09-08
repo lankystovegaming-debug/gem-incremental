@@ -28,7 +28,7 @@ assert.match(migration, /and roll_lease_id = p_lease_id/);
 assert.match(migration, /grant execute on function public\.claim_server_roll\(uuid, numeric\) to service_role/);
 assert.match(migration, /revoke all on function public\.claim_server_roll\(uuid, numeric\) from public, anon, authenticated/);
 
-assert.match(roll, /\.rpc\("claim_server_roll"/);
+assert.match(roll, /\.rpc\("claim_equipment_roll"/);
 assert.match(roll, /p_cooldown_ms: cooldownMs/);
 assert.match(roll, /rollClaim\?\.status !== "claimed"/);
 assert.match(roll, /\.rpc\(\s*"release_server_roll"/);

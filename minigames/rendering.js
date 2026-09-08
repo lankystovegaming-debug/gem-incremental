@@ -17,6 +17,15 @@ const reduceMotion =
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+export function labelCell(node) {
+  const position = node.getAttribute("aria-label").split(":")[0].replace(/ revealed$/, "");
+  const text = node.textContent.trim().replace(/\s+/g, " ");
+  const state = text === "⚑" ? "flagged"
+    : node.dataset.open === "true" ? text || "empty" : text || "unrevealed";
+  const label = `${position}: ${state}`;
+  if (node.getAttribute("aria-label") !== label) node.setAttribute("aria-label", label);
+}
+
 export function patchCells(board, cells) {
   const animated = new Set();
   cells.forEach((cell, i) => {
@@ -46,13 +55,7 @@ export function patchCells(board, cells) {
       node.classList.toggle("filled", !!cell.tile);
       node.style.setProperty("--tile", cell.tile);
     }
-    if (node.hasAttribute("data-cell")) {
-      const label =
-        node.getAttribute("aria-label").replace(/ revealed$/, "") +
-        (cell.text ? " revealed" : "");
-      if (node.getAttribute("aria-label") !== label)
-        node.setAttribute("aria-label", label);
-    }
+    if (node.hasAttribute("data-cell")) labelCell(node);
   });
   // Batch animation restarts: one layout read for the whole reveal, not each cell.
   if (!reduceMotion && animated.size) {

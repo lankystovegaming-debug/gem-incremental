@@ -4924,6 +4924,9 @@ select,
 .daily-modal__reward { margin: 4px 0 16px; }
 .daily-modal__reward strong { color: var(--accent, #7c8cf8); }
 .daily-modal__actions { justify-content: center; }
+.referral-promo__deals { text-align: left; margin: 0 auto 14px; padding-left: 20px; max-width: 34ch; display: grid; gap: 8px; }
+.referral-promo__deals li { line-height: 1.5; color: var(--text-muted); }
+.referral-promo__deals strong { color: var(--accent, #7c8cf8); }
 .daily-modal__status { min-height: 1em; margin: 8px 0 0; font-size: .85rem; color: var(--text-muted); }
 
 

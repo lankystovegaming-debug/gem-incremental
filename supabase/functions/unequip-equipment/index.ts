@@ -29,49 +29,11 @@ export default {
         error: "invalid_equipment_id"
       }, 400);
     }
-    const { data: equipment, error: loadError } = await ctx.supabaseAdmin.from("player_equipment").select("id, category, equipped").eq("id", equipmentRowId).eq("player_id", playerId).maybeSingle();
-    if (loadError) {
-      console.error("Load equipment failed:", loadError);
-      return response({
-        error: "equipment_update_failed"
-      }, 500);
-    }
-    if (!equipment) {
-      return response({
-        error: "equipment_not_found"
-      }, 404);
-    }
-    if (equipment.equipped === shouldEquip) {
-      return response({
-        success: true,
-        equipmentRowId: equipment.id,
-        equipped: shouldEquip
-      });
-    }
-    if (shouldEquip) {
-      const { error: storeError } = await ctx.supabaseAdmin.from("player_equipment").update({
-        equipped: false
-      }).eq("player_id", playerId).eq("category", equipment.category).eq("equipped", true);
-      if (storeError) {
-        console.error("Store previous equipment failed:", storeError);
-        return response({
-          error: "equipment_update_failed"
-        }, 500);
-      }
-    }
-    const { data: updated, error: updateError } = await ctx.supabaseAdmin.from("player_equipment").update({
-      equipped: shouldEquip
-    }).eq("id", equipment.id).eq("player_id", playerId).select("id").maybeSingle();
-    if (updateError || !updated) {
-      console.error("Equipment state update failed:", updateError);
-      return response({
-        error: "equipment_update_failed"
-      }, 500);
-    }
-    return response({
-      success: true,
-      equipmentRowId: updated.id,
-      equipped: shouldEquip
+    const {data,error}=await ctx.supabase.rpc('set_overhaul_equipment_equipped', {
+      p_equipment_row_id: equipmentRowId,p_equipped: shouldEquip
     });
+    if(error) return response({error:error.message},409);
+    return response(data);
+
   })
 };

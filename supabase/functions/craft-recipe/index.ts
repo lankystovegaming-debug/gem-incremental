@@ -90,7 +90,7 @@ export default {
       });
     }
     const recipe = recipeRow.recipe;
-    if (recipe.includedSpecimens) {
+    if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
       const { data, error } = await ctx.supabase.rpc("craft_equipment_recipe", { p_recipe_id: recipeId });
       if (error) return Response.json({ error: error.message }, { status: 409 });
       return Response.json(data);
@@ -176,6 +176,18 @@ export default {
         });
       }
     }
+    // Minimum-tier gate (e.g. lanterns require a tier-5+ pickaxe first).
+    const tierRequirement = recipe.requirements.find((requirement)=>requirement.type === "equipment-min-tier");
+    if (tierRequirement) {
+      const hasTier = ownedEquipment.some((item)=>item.category === tierRequirement.category && Number(item.tier) >= Number(tierRequirement.tier));
+      if (!hasTier) {
+        return Response.json({
+          error: "missing_required_equipment"
+        }, {
+          status: 409
+        });
+      }
+    }
     // =================================
     // LOAD CRAFTING PROGRESS
     // =================================
@@ -194,7 +206,8 @@ export default {
     }
     const progress = progressRow?.progress ?? {};
     const requirementsComplete = recipe.requirements.every((requirement, index)=>{
-      if (requirement.type === "equipment") {
+      // Equipment and minimum-tier gates are checked above against owned gear.
+      if (requirement.type === "equipment" || requirement.type === "equipment-min-tier") {
         return true;
       }
       return requirementComplete(progress, requirement, index, player);

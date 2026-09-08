@@ -202,7 +202,7 @@ function render(cloudState) {
 
   const rollCooldown =
     BASE_ROLL_COOLDOWN_SECONDS /
-    Math.max(1, Number(cloudState.stats.rollSpeed) || 1);
+    Math.max(0.000001, Number(cloudState.stats.rollSpeed) || 1);
 
   content.innerHTML = [
     card(
@@ -215,7 +215,7 @@ function render(cloudState) {
           cloudState.stats.breakdown?.[key]
         )
       ).join(""),
-      "Shows your effective next-roll bonuses, including equipment, research, potions, guild upgrades, artifacts, and Admin Events. Conditional enchant effects can vary by roll."
+      cloudState.stats.previewNote ?? "Shows current equipment, research, potions, guild, artifact and world bonuses."
     ),
 
     card(

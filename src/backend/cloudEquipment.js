@@ -21,6 +21,7 @@ export async function loadCloudEquipment() {
         roll_speed_bonus,
         weight_luck_bonus,
         weight_multiplier_bonus,
+        mutation_chance_bonus,
         enchant_id,
         enchant_grade,
         enchant_state,
@@ -93,4 +94,9 @@ export async function setCloudEquipmentEquipped(equipmentRowId, equipped) {
   }
 
   return { success: true };
+}
+
+export async function loadEquipmentOverhaulProgress() {
+ const {data,error}=await supabase.rpc('get_equipment_overhaul_progress');
+ if(error) {console.error('Equipment progress unavailable',error);return null;}return data;
 }

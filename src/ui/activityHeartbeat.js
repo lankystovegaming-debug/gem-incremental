@@ -16,7 +16,10 @@ async function heartbeat() {
   try {
     const user = await ensurePlayerAuth();
     if (!user) return;
-    await supabase.rpc("record_player_presence");
+    await Promise.all([
+      supabase.rpc("record_player_presence"),
+      supabase.rpc("award_playtime_points")
+    ]);
   } catch (error) {
     // Presence is observability only. Never let an analytics outage affect
     // normal gameplay or page navigation.

@@ -37,6 +37,20 @@ export const EQUIPMENT_PASSIVES = {
   "bottomless-singularity": { name: "Event Horizon", description: "Gems at ≥5× final weight receive +10% final sell value." }
 };
 
+// Secondary passives are retired; Plastic is the sole exception.
+for (const id of Object.keys(EQUIPMENT_PASSIVES)) {
+ if (!id.endsWith('pickaxe') && id !== 'plastic-shopping-bag') delete EQUIPMENT_PASSIVES[id];
+}
+Object.assign(EQUIPMENT_PASSIVES, {
+ 'empyrean-pickaxe': {name:'Ascension',description:'Every 1,000 genuine Empyrean rolls, the next 10 add +50 to the enchant component. Exclusive Ascended mutation: 1/400, ×2 value.'},
+ 'eternity-pickaxe': {name:'Eternal Surge',description:'Every 1,000 genuine Eternity rolls, the next 10 add +50 mutation chance. Mutations stack independently.'},
+ 'tectonic-pickaxe': {name:'Deep Pressure / Crushing Depth',description:'Light natural specimens build Pressure. At 100, the next 5 genuine rolls use 40% tail entry and 45% continuation. No guaranteed heavy result.'},
+ 'the-accelerator': {name:'Velocity / Breakneck',description:'Spools to 3.8× speed after 200 rolls. Switching pickaxe resets the spool. At full Overdrive, 1/100 genuine rolls grants an extra nonrecursive roll.'},
+ 'the-resonator': {name:'Resonance',description:'1.25× Special Gem Chance. Discovering a Special Gem builds permanent per-gem Resonance, up to 1.875× chance.'},
+ 'the-excavator': {name:'Excavation / Archaeology',description:'1/40 genuine rolls grants a potion alongside the gem. Permanent mastery improves loot quality. Exclusive Relic Potions boost normal secondary bonuses for 60s.'},
+ 'toy-shovel': {name:'Wrong Tool / Close Enough',description:'1/67 genuine rolls borrows a random endgame pickaxe’s stats only. On that proc, another 1/67 uses 67× Luck, 6.7× mutation and Weight Luck, and 2.67× weight.'},
+ 'silly-fun-happy-pickaxe': {name:'Silly / Happy',description:'Independent effects: 50% Silly ×0.5, 10% Silly ×10, 0.5% Happy ×50. All can stack on the same specimen.'}
+});
 export function getEquipmentPassive(equipmentId) {
-  return EQUIPMENT_PASSIVES[equipmentId] ?? null;
+ return EQUIPMENT_PASSIVES[equipmentId] ?? null;
 }

@@ -1,3 +1,4 @@
+import { equipmentTotals, luckLayers, prepareEquipmentRoll, finishEquipmentRoll, specialChance, exclusiveMutations } from "./equipmentRules.js";
 import {
   withSupabase
 } from "npm:@supabase/server";
@@ -186,7 +187,7 @@ async function loadGemCatalog(supabaseAdmin: any, nowIso: string) {
     gemCatalogLoad = (async () => {
       const result = await supabaseAdmin
         .from("private_feature_gems")
-        .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata")
+        .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata, special_gem")
         .eq("enabled", true)
         .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
         .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
@@ -674,7 +675,8 @@ function rollGemWithPickaxePassives(
   extremeGemMultiplier = 1,
   legendaryGemMultiplier = 1,
   timeWindowMultiplier = 1,
-  eventContext: any = null
+  eventContext: any = null,
+  equipmentContext: any = null
 ) {
   const safeLuck = Math.max(1, luck);
   const maximumRarity = Math.max(...gems.map((gem) => gem.rarity));
@@ -686,10 +688,10 @@ function rollGemWithPickaxePassives(
 
   for (const gem of rollable) {
     if (gem.affectedByLuck === false) {
-      if (random01() < Math.min(1 / gem.rarity, 1)) return gem;
+      if (random01() < Math.min(specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) / gem.rarity, 1)) return gem;
       continue;
     }
-    let gemLuck = safeLuck;
+    let gemLuck = safeLuck * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
     if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
     if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
@@ -725,7 +727,7 @@ function getMutationChanceMultiplier(playerId: string) {
 
 // Every mutation is rolled independently. Multiple mutations can stack.
 function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
-  const safeMultiplier = Math.max(1, Number(chanceMultiplier) || 1);
+  const safeMultiplier = Math.max(0, Number.isFinite(Number(chanceMultiplier)) ? Number(chanceMultiplier) : 1);
 
   return gemMutations.flatMap((mutation) => {
     const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
@@ -890,14 +892,7 @@ export function getLateGameFinalWeightFactor(
   baseRarity: number,
   compressionRoll = false
 ) {
-  switch (equipmentId) {
-    case "riftwoven-bag": return naturalWeight >= 3 ? 1.10 : 1;
-    case "vault-of-plenty": return baseRarity >= 100000 ? 1.125 : 1;
-    case "dimensional-vault": return naturalWeight >= 0.90 && naturalWeight <= 1.10 ? 1.20 : 1;
-    case "singularity-vault": return compressionRoll ? 1.25 : 1;
-    case "bottomless-singularity": return 1; // Event Horizon now modifies final sell value.
-    default: return 1;
-  }
+  return 1; // Normal Bag passives are retired; Plastic has no weight passive.
 }
 
 
@@ -1538,6 +1533,7 @@ export default {
             total_rolls,
             mutation_luck,
             rarity_resonance,
+            equipment_state,
             gravitational_surge_progress,
             gravitational_surge_ready,
             bag_compression_progress,
@@ -1816,6 +1812,7 @@ export default {
             roll_speed_bonus,
             weight_luck_bonus,
             weight_multiplier_bonus,
+            mutation_chance_bonus,
             enchant_id,
             enchant_grade,
             enchant_state,
@@ -1880,12 +1877,8 @@ export default {
       const equippedLantern = (equippedEquipment ?? []).find((item) => item.category === "lantern") ?? null;
       const equippedBoots = (equippedEquipment ?? []).find((item) => item.category === "boots") ?? null;
       const equippedBag = (equippedEquipment ?? []).find((item) => item.category === "bag") ?? null;
-      const hasHeavyFooting = equippedBoots?.equipment_id === "event-horizon-boots";
-      const hasGravitationalSurge = equippedBoots?.equipment_id === "gravitational-boots";
-      const masterworkLantern = equippedLantern?.masterwork_passive ?? null;
-      const masterworkLanternRank = Number(equippedLantern?.masterwork_passive_rank ?? 0);
-      const masterworkBoots = equippedBoots?.masterwork_passive ?? null;
-      const masterworkBootsRank = Number(equippedBoots?.masterwork_passive_rank ?? 0);
+      const hasHeavyFooting = false;
+      const hasGravitationalSurge = false;
       const currentEnchantId = enchantedPickaxe?.enchant_id ?? null;
       const sharedEnchants = new Set(["deep_strike","lucky_break","fortune_surge","collectors_edge"]);
       const attunement = equippedPickaxe?.masterwork_attunement ?? null;
@@ -1904,7 +1897,7 @@ export default {
 
       // The base-gem names are enough for both Index-completion enchants.
       let discoveredGemNames = new Set<string>();
-      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id) || masterworkBoots === "trailblazer") {
+      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id)) {
         const { data: discoveries, error: discoveryError } = await ctx.supabaseAdmin
           .from("player_gem_mutation_combinations")
           .select("gem_name")
@@ -2020,6 +2013,7 @@ export default {
             roll_speed_bonus,
             weight_luck_bonus,
             weight_multiplier_bonus,
+            mutation_chance_bonus,
             luck_multiplier,
             roll_speed_multiplier,
             weight_luck_multiplier,
@@ -2073,66 +2067,18 @@ export default {
       // CALCULATE PLAYER STATS
       // =====================================================
 
-      // The saved specimen records the same effective Luck used by the RNG,
-      // including equipment, potions, and the active admin event.
-      let luck =
-        1;
-
-      // Base Luck is the player's permanent/equipment Luck only.
-      // It intentionally excludes active boosts, one-roll potions, and
-      // admin-event modifiers so the Base Luck leaderboard cannot be
-      // inflated by temporary effects.
-      let baseLuck =
-        1;
-
-      let rollSpeed =
-        1;
-
-      let weightLuck =
-        1;
-
-      let weightMultiplier =
-        1;
-
-
-      for (
-        const equipment
-        of equippedEquipment ??
-        []
-      ) {
-        const masterworkFactor = 1 + Math.min(5, Math.max(0, Number(equipment.masterwork_level ?? 0))) / 100;
-        const equipmentLuck =
-          Number(
-            equipment
-              .luck_bonus ??
-            0
-          ) * masterworkFactor;
-
-        luck +=
-          equipmentLuck;
-
-        rollSpeed +=
-          Number(
-            equipment
-              .roll_speed_bonus ??
-            0
-          ) * masterworkFactor;
-
-        weightLuck +=
-          Number(
-            equipment
-              .weight_luck_bonus ??
-            0
-          ) * masterworkFactor;
-
-        weightMultiplier +=
-          Number(
-            equipment
-              .weight_multiplier_bonus ??
-            0
-          ) * masterworkFactor;
-      }
-
+      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', player.equipment_state ?? {}, random01);
+      const relicActive = (activeBoosts ?? []).some((boost: any) => boost.family === 'relic');
+      const equipmentStats = equipmentTotals(equippedEquipment ?? [], relicActive, equipmentContext.stats);
+      let luck = equipmentStats.luck;
+      let baseLuck = luck;
+      let rollSpeed = equipmentStats.rollSpeed;
+      let weightLuck = equipmentStats.weightLuck;
+      let weightMultiplier = equipmentStats.weightMultiplier;
+      let enchantLuck = 1;
+      let guildLuck = 1;
+      let specialLuck = 1;
+      const focusedLuck = 1; // Focused Beam is retired; this personal layer remains explicit.
       // Normal Abandoned Mine Museum passives are permanent collection bonuses.
       if (mineArtifacts.has("miners-lamp")) rollSpeed += 0.02;
       if (mineArtifacts.has("clockwork-drill")) rollSpeed += 0.05;
@@ -2140,7 +2086,10 @@ export default {
       if (mineArtifacts.has("silver-pick")) weightMultiplier += 0.05;
       if (mineArtifacts.has("vein-prism")) luck += 0.05;
 
-      if (masterworkLantern === "focused_beam") luck *= masterworkLanternRank >= 2 ? 1.05 : 1.03;
+
+      const { data: playtimeUpgradeData } = await ctx.supabase.rpc("get_playtime_upgrades");
+      const playtimeLevels = (playtimeUpgradeData as any)?.levels ?? {};
+      const playtimeMultiplier = (key: string) => { const n = Number(playtimeLevels[key] ?? 0); return [1,1.05,1.1,1.2,1.35,1.5,1.75,2,2.5,3,4][Math.max(0,Math.min(10,n))] ?? 1; };
 
       const researchEffectsRaw = (player as any).player_research_effects;
       const researchEffects = Array.isArray(researchEffectsRaw)
@@ -2182,11 +2131,13 @@ export default {
       const volcanicMutationMultiplier = Math.max(1, Number(volcanicEffects.mutationChanceMultiplier ?? 1));
       const volcanicGemValueMultiplier = Math.max(1, Number(volcanicEffects.gemValueMultiplier ?? 1));
 
-      luck *= researchNumber("luck_multiplier");
+      // Research joins the additive personal layer below.
+      specialLuck *= playtimeMultiplier("luck");
       luck += crystalLuckBonus;
       luck += expeditionArtifactLuckBonus;
-      luck += volcanicLuckBonus;
+      // volcanicEffects aliases expeditionArtifactEffects; count its Luck once.
       rollSpeed *= researchNumber("roll_speed_multiplier");
+      rollSpeed *= playtimeMultiplier("rollSpeed");
       rollSpeed += volcanicRollSpeedBonus;
       weightLuck *= researchNumber("weight_luck_multiplier");
       weightLuck *= crystalWeightLuckMultiplier;
@@ -2210,9 +2161,6 @@ export default {
             0
           ) * researchPotionStrength;
 
-        if (boost.family === "rollSpeed" && masterworkLantern === "potion_afterglow") {
-          effectValue *= masterworkLanternRank >= 2 ? 1.15 : 1.10;
-        }
 
 
         if (
@@ -2251,9 +2199,6 @@ export default {
         }
       }
 
-      if (masterworkLantern === "overclocked_flame") rollSpeed *= masterworkLanternRank >= 2 ? 1.08 : 1.05;
-      if (masterworkLantern === "flashpoint" && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) rollSpeed *= masterworkLanternRank >= 2 ? 1.4 : 1.25;
-      if (masterworkBoots === "fortune_walker") weightLuck *= masterworkBootsRank >= 2 ? 1.08 : 1.05;
 
 
       // A one-roll potion (Legendary / Mythic) is special Luck. Keep it
@@ -2275,7 +2220,7 @@ export default {
         const every = enchantGrade === "ancient" ? 5 : 7;
         const counter = Number(enchantState.rolls ?? 0) + 1;
         if (counter >= every) {
-          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
           enchantState.rolls = 0;
         } else enchantState.rolls = counter;
         enchantStateChanged = true;
@@ -2284,7 +2229,7 @@ export default {
       if (enchantId === "fortune_surge") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
-          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
         } else if (random01() < (enchantGrade === "ancient" ? 0.08 : 0.05)) {
@@ -2298,13 +2243,13 @@ export default {
         const catalogSize = gems.length;
         const completion = Math.min(1, discoveredGemNames.size / catalogSize);
         const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.25 : 0.12);
-        luck *= strengthenEnchantMultiplier(baseMultiplier);
+        enchantLuck *= strengthenEnchantMultiplier(baseMultiplier);
       }
 
       if (enchantId === "prospectors_instinct") {
         const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
         if (remaining > 0) {
-          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.6 : 1.4);
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.6 : 1.4);
           enchantState.remaining = remaining - 1;
           enchantStateChanged = true;
         }
@@ -2312,15 +2257,15 @@ export default {
 
       if (enchantId === "vein_hunter") {
         const misses = Math.min(30, Math.max(0, Number(enchantState.misses ?? 0)));
-        luck *= strengthenEnchantMultiplier(1 + misses / 100);
+        enchantLuck *= strengthenEnchantMultiplier(1 + misses / 100);
       }
 
       if (enchantId === "jackpot_mining") {
         const outcome = random01();
         if (outcome < 0.08) {
-          luck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 2.5 : 1.75);
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 2.5 : 1.75);
         } else if (outcome < 0.12) {
-          luck *= 0.5;
+          enchantLuck *= 0.5;
         }
       }
 
@@ -2355,7 +2300,7 @@ export default {
           const guild = Array.isArray(guildMembership.guilds)
             ? guildMembership.guilds[0]
             : guildMembership.guilds;
-          luck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
+          guildLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
           rollSpeed *= 1 + Math.min(10, Math.max(0, Number(guild?.speed_tier ?? 0))) / 100;
           weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
         }
@@ -2368,17 +2313,17 @@ export default {
           if (guildShopError) throw guildShopError;
           guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
           for (const potionId of guildShopBuffIds) {
-            if (potionId === "lucky_brew") luck *= 1.05;
+            if (potionId === "lucky_brew") guildLuck *= 1.05;
             if (potionId === "haste_brew") rollSpeed *= 1.05;
             if (potionId === "heavy_brew") weightLuck *= 1.10;
             if (potionId === "prosperity_brew") weightMultiplier *= 1.10;
-            if (potionId === "greater_lucky") luck *= 1.10;
+            if (potionId === "greater_lucky") guildLuck *= 1.10;
             if (potionId === "greater_haste") rollSpeed *= 1.10;
             if (potionId === "legendary") {
-              luck *= 1.10; rollSpeed *= 1.10; weightLuck *= 1.15; weightMultiplier *= 1.10;
+              guildLuck *= 1.10; rollSpeed *= 1.10; weightLuck *= 1.15; weightMultiplier *= 1.10;
             }
             if (potionId === "mythic") {
-              luck *= 1.15; rollSpeed *= 1.15; weightLuck *= 1.20; weightMultiplier *= 1.15;
+              guildLuck *= 1.15; rollSpeed *= 1.15; weightLuck *= 1.20; weightMultiplier *= 1.15;
             }
           }
         }
@@ -2428,8 +2373,10 @@ export default {
           rollClaimError
       } =
         await ctx.supabaseAdmin
-          .rpc("claim_server_roll", {
+          .rpc("claim_equipment_roll", {
             p_player_id: playerId,
+          p_equipment_state: player.equipment_state ?? {},
+          p_equipment_ids: (equippedEquipment ?? []).map((item: any) => item.id),
             p_cooldown_ms: cooldownMs
           });
 
@@ -2495,11 +2442,11 @@ export default {
       // copies never advance this persisted, account-wide genuine-roll counter.
       const genuineRoll = Number(rollClaim.genuineRoll);
       if (!Number.isSafeInteger(genuineRoll) || genuineRoll < 1) throw new Error("equipment_counter_migration_required");
-      const alignmentRoll = equippedPickaxe?.equipment_id === "empyrean-pickaxe" && genuineRoll % 100 === 0;
-      const eternityRoll = equippedPickaxe?.equipment_id === "eternity-pickaxe" && genuineRoll % 250 === 0;
-      const heavyStepRoll = equippedBoots?.equipment_id === "spacetime-walkers" && genuineRoll % 50 === 0;
-      const collapseRoll = equippedBoots?.equipment_id === "reality-breakers" && genuineRoll % 100 === 0;
-      const storageRoll = equippedBag?.equipment_id === "event-horizon-vault" && genuineRoll % 100 === 0;
+      const alignmentRoll = equipmentContext.flags.ascension;
+      const eternityRoll = equipmentContext.flags.surge;
+      const heavyStepRoll = false;
+      const collapseRoll = false;
+      const storageRoll = false;
       const bagged = equippedBag?.equipment_id === "plastic-shopping-bag" && genuineRoll % 67 === 0 && random01() < 1 / 67;
 
       const claimedNextRollAt =
@@ -2522,30 +2469,13 @@ export default {
         );
         if (surgeError) throw surgeError;
         mythicSurge = surgeResult ?? null;
-        if (mythicSurge?.boosted === true) luck *= 2;
+        if (mythicSurge?.boosted === true) specialLuck *= 2;
       } catch (surgeError) {
         // A shop deployment mismatch must not strand an already-claimed roll.
         console.error("Guild Mythic Surge claim failed:", surgeError);
       }
 
-      // Legendary / Mythic potion Luck is added after every ordinary Luck
-      // multiplier, including enchant and guild effects. Global natural and
-      // admin events below are allowed to affect this special Luck.
-      if (
-        Number.isFinite(
-          oneRollLuck
-        ) &&
-        oneRollLuck > 0
-      ) {
-        luck +=
-          oneRollLuck;
-      }
-
-      // Natural events are final global multipliers, so they affect the full
-      // effective player Luck (including a special one-roll potion) without
-      // letting enchants or guild bonuses amplify that potion. Gem-specific
-      // Luck and Heavy Favorites are applied after the base gem is known.
-      luck *= eventContext.luckMultiplier;
+      // One-roll Luck and world effects are applied only after all special mechanics.
       rollSpeed *= eventContext.rollSpeedMultiplier;
 
 
@@ -2580,13 +2510,6 @@ export default {
             currentValue + bonus
           ) * multiplier;
         };
-
-        luck =
-          applyEventModifier(
-            luck,
-            activeAdminEvent.luck_bonus,
-            activeAdminEvent.luck_multiplier
-          );
 
         rollSpeed =
           applyEventModifier(
@@ -2655,6 +2578,7 @@ export default {
             baseWeight: Number(entry.base_weight),
             valuePerGram: Number(entry.value_per_gram),
             affectedByLuck: entry.affected_by_luck !== false,
+            specialGem: entry.special_gem === true,
             timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode)),
             requiredEventKey: entry.required_event_key ? String(entry.required_event_key) : null,
             metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}
@@ -2679,15 +2603,28 @@ export default {
       const legendaryGemMultiplier = researchNumber("legendary_luck_multiplier");
       const timeWindowMultiplier = researchNumber("window_luck_multiplier");
       if (researchEffects.statistical_breakthrough === true && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) {
-        luck *= 1.2;
+        specialLuck *= 1.2;
       }
       const resonanceBeforeRoll = Math.min(100, Math.max(0, Number(player.rarity_resonance ?? 0)));
       const resonanceEmpowered = hasRarityResonance && resonanceBeforeRoll >= 100;
-      if (resonanceEmpowered) luck *= 3;
+      if (resonanceEmpowered) specialLuck *= 3;
       // Heart of Resonance is a true final multiplier: apply it after every
       // additive bonus and every other Luck source assembled for this roll.
-      luck *= crystalFinalLuckMultiplier;
-      luck *= eternityRoll ? 2 : alignmentRoll ? 1.5 : 1;
+      specialLuck *= crystalFinalLuckMultiplier;
+      const luckBreakdown = luckLayers({
+        pickaxe: equipmentStats.pickaxe, clover: equipmentStats.clover,
+        enchant: enchantLuck + (alignmentRoll ? 50 : 0), guild: guildLuck,
+        research: researchNumber("luck_multiplier"), focused: focusedLuck,
+        flat: luck - equipmentStats.luck, special: specialLuck,
+        oneRoll: Number.isFinite(oneRollLuck) ? Math.max(0, oneRollLuck) : 0,
+        world: eventContext.luckMultiplier * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1))
+      });
+      // Legacy additive admin events remain a final world adjustment.
+      const adminWorldBonus = Number(activeAdminEvent?.luck_bonus ?? 0) * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1));
+      luckBreakdown.world += adminWorldBonus / Math.max(0.000001, luckBreakdown.ordinary + luckBreakdown.oneRoll);
+      luckBreakdown.final = (luckBreakdown.ordinary + luckBreakdown.oneRoll) * luckBreakdown.world;
+      luck = luckBreakdown.final;
+      baseLuck = luckBreakdown.base * luckBreakdown.personal;
       const announcedLuck = luck;
       const rollEquipmentGem = () => rollGemWithPickaxePassives(
         luck,
@@ -2696,7 +2633,7 @@ export default {
         extremeGemMultiplier,
         legendaryGemMultiplier,
         timeWindowMultiplier,
-        eventContext
+        eventContext, equipmentContext
       );
 
       let gem = rollRelic() ?? rollEquipmentGem();
@@ -2756,27 +2693,18 @@ export default {
       }
 
 
-      let surgeProgress = Math.min(99, Math.max(0, Number(player.gravitational_surge_progress ?? 0)));
-      let surgeReady = player.gravitational_surge_ready === true;
-      if (hasGravitationalSurge && !surgeReady) {
-        surgeProgress += 1;
-        if (surgeProgress >= 100) {
-          surgeProgress = 0;
-          surgeReady = true;
-        }
-      }
-
+      const surgeProgress = Number(player.gravitational_surge_progress ?? 0);
+      const surgeReady = false;
       const eventWeightLuck = weightLuck * eventWeightLuckFactor(eventContext, gem);
       const backendTailChance = eventContext.tailContinuationChance ??
         (surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3);
-      const ordinaryTailChance = equippedBoots?.equipment_id === "neutron-boots"
-        ? Math.max(0.36, backendTailChance) : backendTailChance;
+      const ordinaryTailChance = equipmentContext.flags.crushing ? 0.45 : backendTailChance;
       const eventTailChance = collapseRoll ? 0.40 : ordinaryTailChance;
       let rolledWeightMultiplier = rollWeightMultiplier(
         eventWeightLuck,
         eventTailChance,
         surgeReady && hasGravitationalSurge ? 10 : null,
-        eventContext.tailEntryChance ?? 1 / 4,
+        equipmentContext.flags.crushing ? 0.40 : eventContext.tailEntryChance ?? 1 / 4,
         heavyStepRoll ? 0.10 : 0,
         collapseRoll
       );
@@ -2785,28 +2713,13 @@ export default {
           eventWeightLuck,
           eventTailChance,
           surgeReady && hasGravitationalSurge ? 10 : null,
-          eventContext.tailEntryChance ?? 1 / 4,
+          equipmentContext.flags.crushing ? 0.40 : eventContext.tailEntryChance ?? 1 / 4,
           heavyStepRoll ? 0.10 : 0,
           collapseRoll
         );
       }
-      if (hasGravitationalSurge && surgeReady && rolledWeightMultiplier >= 2) {
-        surgeReady = false;
-      }
-      if (hasHeavyFooting && rolledWeightMultiplier >= 2 && random01() < 0.15) {
-        rolledWeightMultiplier += 1;
-      }
-
-      let compressionProgress = Math.min(49, Math.max(0, Number(player.bag_compression_progress ?? 0)));
-      let compressionRoll = false;
-      if (equippedBag?.equipment_id === "singularity-vault") {
-        compressionProgress += 1;
-        if (compressionProgress >= 50) {
-          compressionProgress = 0;
-          compressionRoll = true;
-        }
-      }
-
+      const compressionProgress = Number(player.bag_compression_progress ?? 0);
+      const compressionRoll = false;
 
       const rolledWeight =
         gem.baseWeight *
@@ -2815,13 +2728,10 @@ export default {
 
       let masterworkWeightFactor = 1;
       if (masterworkPickaxe === "steady_hand") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.05 : 1.03;
-      if (masterworkBoots === "sure_footing") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.05 : 1.03;
       if (gem.rarity >= 100000 && masterworkPickaxe === "careful_extraction") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.15 : 1.10;
-      if (gem.rarity >= 100000 && masterworkBoots === "heavy_step") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.12 : 1.08;
-      if (!discoveredGemNames.has(gem.name) && masterworkBoots === "trailblazer") masterworkWeightFactor *= masterworkBootsRank >= 2 ? 1.25 : 1.15;
 
       const bagPassiveWeightFactor = getLateGameFinalWeightFactor(
-        equippedBag?.equipment_id ?? null,
+        null, // Normal Bag passives are retired.
         rolledWeightMultiplier,
         Number(gem.rarity),
         compressionRoll
@@ -2837,13 +2747,7 @@ export default {
       // Load the admin-managed mutation catalog when available. The bundled
       // definitions remain the safe fallback for older deployments.
       try {
-        const { data: configuredMutations, error: mutationCatalogError } =
-          await ctx.supabaseAdmin
-            .from("game_mutations")
-            .select("id,name,chance,multiplier,description,icon,color")
-            .eq("enabled", true)
-            .order("sort_order")
-            .order("name");
+        const { data: configuredMutations, error: mutationCatalogError } = await loadMutationCatalog(ctx.supabaseAdmin);
 
         if (!mutationCatalogError && configuredMutations?.length) {
           gemMutations = configuredMutations.map((mutation: any) => ({
@@ -2870,10 +2774,12 @@ export default {
           Number(player.mutation_luck ?? 1) || 1
         );
 
+      mutationChanceMultiplier *= equipmentStats.mutation;
       if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= playtimeMultiplier("mutation");
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
@@ -2889,10 +2795,10 @@ export default {
         }
       }
 
-      if (eternityRoll) mutationChanceMultiplier *= 1.5;
+      if (eternityRoll) mutationChanceMultiplier += 50;
       const mutations = relicDrop
         ? []
-        : rollGemMutations(mutationChanceMultiplier, eventContext);
+        : [...rollGemMutations(mutationChanceMultiplier, eventContext), ...exclusiveMutations(equipmentContext.id, random01)];
 
       const mutationMultiplier =
         mutations.reduce(
@@ -2937,7 +2843,6 @@ export default {
         expeditionArtifactGemValueMultiplier *
         volcanicGemValueMultiplier *
         (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
-        (equippedBag?.equipment_id === "bottomless-singularity" && finalWeight / gem.baseWeight >= 5 ? 1.10 : 1) *
         (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) *
         eventContext.valueMultiplier;
 
@@ -3071,7 +2976,7 @@ export default {
         if (
           recipeRow?.recipe
         ) {
-          const recipe =
+          let recipe =
             recipeRow.recipe;
 
 
@@ -3109,6 +3014,8 @@ export default {
               {};
 
 
+            if (databaseProgress._equipment_recipe) recipe = databaseProgress._equipment_recipe;
+
             const expectedProgress =
               structuredClone(
                 databaseProgress
@@ -3121,7 +3028,7 @@ export default {
               );
 
 
-            if (recipe.includedSpecimens) {
+            if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
               const { data, error } = await ctx.supabaseAdmin.rpc("deposit_equipment_material", {
                 p_player_id: playerId, p_recipe_id: activeRecipeId, p_specimen: specimen
               });
@@ -3142,7 +3049,7 @@ export default {
                   .length;
               index++
             ) {
-              if (recipe.includedSpecimens) break;
+              if (recipe.includedSpecimens || recipe.equipmentOverhaul) break;
               const requirement =
                 recipe
                   .requirements[
@@ -3432,15 +3339,9 @@ export default {
           surgeReady && hasGravitationalSurge ? 10 : null,
           eventContext.tailEntryChance ?? 1 / 4
         );
-        if (hasGravitationalSurge && surgeReady && duplicateWeightMultiplier >= 2) {
-          surgeReady = false;
-        }
-        if (hasHeavyFooting && duplicateWeightMultiplier >= 2 && random01() < 0.15) {
-          duplicateWeightMultiplier += 1;
-        }
         const duplicateRolledWeight = gem.baseWeight * duplicateWeightMultiplier;
         const duplicateBagPassiveFactor = getLateGameFinalWeightFactor(
-          equippedBag?.equipment_id ?? null,
+          null,
           duplicateWeightMultiplier,
           Number(gem.rarity),
           compressionRoll
@@ -3459,8 +3360,7 @@ export default {
           ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
           : 1;
         const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
-          (equippedBag?.equipment_id === "bottomless-singularity" && duplicateFinalWeight / gem.baseWeight >= 5 ? 1.10 : 1) *
-          researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
+            researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
           (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) * eventContext.valueMultiplier;
 
         const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
@@ -3514,13 +3414,6 @@ export default {
       }
 
       const progressionStateUpdate: Record<string, unknown> = {};
-      if (hasGravitationalSurge) {
-        progressionStateUpdate.gravitational_surge_progress = surgeProgress;
-        progressionStateUpdate.gravitational_surge_ready = surgeReady;
-      }
-      if (equippedBag?.equipment_id === "singularity-vault") {
-        progressionStateUpdate.bag_compression_progress = compressionProgress;
-      }
       if (!relicDrop && gem.rarity >= 100000) {
         progressionStateUpdate.best_rare_natural_weight_100k = Math.max(
           Number(player.best_rare_natural_weight_100k ?? 0),
@@ -3544,6 +3437,40 @@ export default {
           console.error("Late-game equipment state persistence failed:", progressionStateError);
         }
       }
+
+      const equipmentOutcome = finishEquipmentRoll(equipmentContext, {
+        naturalWeight: relicDrop ? null : rolledWeightMultiplier, gem: relicDrop ? null : gem, random: random01
+      });
+      let breakneckGem: any = null;
+      if (equipmentOutcome.breakneck) {
+        const extra = rollGemWithPickaxePassives(
+          luckBreakdown.ordinary * luckBreakdown.world, discoveredGemNames,
+          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext
+        );
+        const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
+        const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+        const extraMutationMultiplier = extraMutations.reduce((n: number, m: any) => n * m.multiplier, 1);
+        const extraFinalWeight = extra.baseWeight * extraWeight * weightMultiplier;
+        breakneckGem = {
+          gem_name: extra.name, rarity: extra.rarity, base_weight: extra.baseWeight, value_per_gram: extra.valuePerGram,
+          rolled_weight_multiplier: extraWeight, rolled_weight: extra.baseWeight * extraWeight, final_weight: extraFinalWeight,
+          mutation_id: extraMutations[0]?.id ?? null, mutation_ids: extraMutations.map((m: any) => m.id),
+          mutation_multiplier: extraMutationMultiplier, mutation_multipliers: Object.fromEntries(extraMutations.map((m: any) => [m.id,m.multiplier])),
+          mutation_chance_multiplier: mutationChanceMultiplier,
+          value: extraFinalWeight * extra.valuePerGram * extraMutationMultiplier * researchNumber('gem_value_multiplier') *
+            (extraMutations.length ? researchNumber('mutated_value_multiplier') * (1 + Math.min(5,extraMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0))) : 1) *
+            crystalGemValueMultiplier * expeditionArtifactGemValueMultiplier * volcanicGemValueMultiplier *
+            (extraWeight >= 2 ? crystalHeavyGemValueMultiplier : 1) * (mineArtifacts.has('bedrock-crown') ? 1.05 : 1) * eventContext.valueMultiplier,
+          luck_at_roll: luckBreakdown.ordinary * luckBreakdown.world, locked: false
+        };
+      }
+      const { data: equipmentCommit, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('commit_equipment_roll', {
+        p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+        p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+        p_capacity: effectiveInventoryCapacity
+      });
+      if (equipmentCommitError) throw equipmentCommitError;
+      breakneckGem = equipmentCommit?.bonus ?? null;
 
       // Run independent post-commit systems concurrently. The specimen is
       // already committed, but we still await every task before responding so
@@ -3683,6 +3610,16 @@ export default {
           p_value: value
         });
         if (error) console.error("Mutation combination index update failed:", error);
+        // Generated specimens count as discoveries, without advancing genuine-roll mechanics.
+        if (breakneckGem) {
+          const { error: bonusIndexError } = await ctx.supabaseAdmin.rpc("record_gem_mutation_combination", {
+            p_player_id: playerId, p_gem_name: breakneckGem.gem_name,
+            p_combination_key: getMutationCombinationKey(breakneckGem.mutation_ids ?? []),
+            p_mutation_ids: breakneckGem.mutation_ids ?? [],
+            p_mutation_multipliers: breakneckGem.mutation_multipliers ?? {}, p_value: breakneckGem.value
+          });
+          if (bonusIndexError) console.error("Breakneck discovery index update failed:", bonusIndexError);
+        }
         return data ?? null;
       })();
 
@@ -3810,7 +3747,7 @@ export default {
           ? currentInventoryCount
           : currentInventoryCount +
             1;
-      const inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0);
+      const inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) + (breakneckGem ? 1 : 0);
 
       // Release only the lease owned by this invocation. If this best-effort
       // cleanup fails, the short database expiry safely unlocks the account;
@@ -3894,6 +3831,7 @@ export default {
 
         // Exact effective luck used for this server-authoritative roll.
         luckAtRoll: luck,
+        luckBreakdown,
 
         mutationCombination: {
           key: combinationKey,
@@ -3921,6 +3859,10 @@ export default {
         equipmentPassives: {
           bagged,
           genuineRoll,
+          specialist: equipmentContext.flags,
+          state: equipmentOutcome.state,
+          excavation: equipmentOutcome.loot,
+          breakneck: breakneckGem,
           alignmentRoll, eternityRoll, heavyStepRoll, collapseRoll, storageRoll,
           veinHunterDuplicate,
           rarityResonance: hasRarityResonance ? {

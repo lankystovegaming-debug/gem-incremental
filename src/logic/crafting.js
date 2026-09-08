@@ -201,10 +201,12 @@ export function isRequirementComplete(
     return inventory.equipment.some(
       (equipment) =>
         equipment.id ===
-        requirement.equipmentId
+        requirement.equipmentId || (recipe.id === "plastic-shopping-bag" && requirement.equipmentId === "omnidimensional-vault" && equipment.id === "dimensional-vault")
     );
   }
 
+  if (requirement.type === 'special-discoveries') return Number(inventory.specialDiscoveries?.[requirement.classification]??0)>=requirement.amount;
+  if (requirement.type === 'potion-tier') return (inventory.consumables??[]).filter(p=>/^(lucky|speed|fortune|mass)-potion-/.test(p.consumable_id)&&p.consumable_id.endsWith('-'+requirement.tier)).reduce((n,p)=>n+Number(p.quantity??0),0)>=requirement.amount;
   if (requirement.type === "consumable") {
     // Ownership-based: you just need to OWN the required potions — the
     // server (craft_consumable_recipe) consumes them at craft time.
@@ -217,7 +219,7 @@ export function isRequirementComplete(
   }
 
   if (requirement.type === "lifetime-rolls") {
-    return Number(inventory?.totalRolls ?? 0) >= Number(requirement.rolls ?? 0);
+    return Number((recipe.equipmentOverhaul ? inventory?.genuineRolls : inventory?.totalRolls) ?? 0) >= Number(requirement.rolls ?? 0);
   }
 
   if (requirement.type === "roll-history-condition") {
@@ -326,7 +328,7 @@ function depositSpecimen(
       recipe
     );
 
-  if (recipe.includedSpecimens) {
+  if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
     const plan = planIncludedMaterial(recipe, progress, specimen, index);
     if (!plan) return false;
     craftingState.progress[recipe.id] = plan.progress;
@@ -452,7 +454,7 @@ export function tryAutoDeposit(
       recipe
     );
 
-  if (recipe.includedSpecimens) {
+  if (recipe.includedSpecimens || recipe.equipmentOverhaul) {
     const plan = planIncludedMaterial(recipe, progress, specimen);
     if (!plan) return false;
     craftingState.progress[recipe.id] = plan.progress;

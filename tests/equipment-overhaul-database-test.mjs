@@ -1,0 +1,84 @@
+import {PGlite} from '@electric-sql/pglite';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {secondaryRecipes,specialistRecipes} from '../src/data/equipmentOverhaul.js';
+import {lateGameEquipment as oldRecipes} from '../src/data/lateGameEquipment.js';
+const db=new PGlite();
+const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
+const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
+await db.exec(read('./fixtures/late-game-live-schema.sql'));
+await db.exec(read('../supabase/migrations/20260906070703_late_game_equipment_expansion.sql'));
+await db.exec(read('../supabase/migrations/20260908000000_lantern_mutation_luck.sql'));
+await db.exec(`create table private_feature_gems(name text primary key,rarity integer,enabled boolean,availability_mode text,starts_at timestamptz,ends_at timestamptz);
+create table game_consumables(id text primary key,name text,family text,tier integer,effect_value numeric,duration_seconds integer,purchasable boolean,shop_price numeric);
+create table player_boosts(player_id uuid,family text,tier integer,effect_value numeric,expires_at timestamptz,unique(player_id,family));
+create table player_gem_mutation_combinations(player_id uuid,gem_name text);
+`);
+const names=new Set([...secondaryRecipes,...specialistRecipes].flatMap(r=>r.requirements.filter(q=>q.gem).map(q=>q.gem)));
+for(const name of names) await q("insert into private_feature_gems values($1,1000,true,'always',null,null)",[name]);
+const uid='00000000-0000-0000-0000-000000000001';
+await q("select set_config('request.jwt.claim.sub',$1,false)",[uid]);
+await q('insert into players(id,money,total_rolls,equipment_genuine_rolls) values($1,1000000000,1000000,1000000)',[uid]);
+await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped,enchant_state) values($1,'omnidimensional-vault','bag',15,'Vault',true,'{\"preserve\":1}'),($1,'reality-breakers','boots',15,'Reality Breakers',true,'{\"preserve\":2}')",[uid]);
+await q("insert into crafting_progress values($1,'empyrean-pickaxe','{\"empyrean-pickaxe-legendary\":123,\"empyrean-pickaxe-specimen-0\":4}',now())",[uid]);
+// Simulate an already-started original secondary recipe with unrelated materials.
+const started={id:'bright-lantern',name:'Bright Lantern',category:'lantern',moneyCost:10,requirements:[{type:'gem-count',gem:'Old material',amount:2}],reward:{id:'bright-lantern',name:'Bright Lantern',category:'lantern',tier:2,bonus:{luck:99}}};
+await q("insert into game_recipes values('bright-lantern',$1) on conflict(id) do update set recipe=excluded.recipe",[started]);
+await q("insert into crafting_progress values($1,'bright-lantern','{\"Old material\":2}',now())",[uid]);
+const plasticBefore=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;
+await db.exec(read('../supabase/migrations/20260908000001_equipment_overhaul.sql'));
+const plasticAfter=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;delete plasticAfter.craftingTab;assert.deepEqual(plasticAfter,plasticBefore);
+assert.equal((await q("select recipe from game_recipes where id='omnidimensional-vault'")).length,0);
+assert.equal((await q("select enchant_state from player_equipment where equipment_id='dimensional-vault'"))[0].enchant_state.preserve,1);
+assert.equal((await q("select enchant_state from player_equipment where equipment_id='gravitational-boots'"))[0].enchant_state.preserve,2);
+assert.equal((await q("select progress from crafting_progress where recipe_id='empyrean-pickaxe'"))[0].progress['empyrean-pickaxe-legendary'],123);
+const grandfather=(await q("select get_my_equipment_recipe('bright-lantern') r"))[0].r;
+assert.deepEqual(grandfather.requirements,started.requirements);
+await q("select craft_equipment_recipe('bright-lantern')");
+assert.equal((await q("select mutation_chance_bonus from player_equipment where equipment_id='bright-lantern'"))[0].mutation_chance_bonus,.035);
+assert.notDeepEqual((await q("select get_my_equipment_recipe('bright-lantern') r"))[0].r.requirements,started.requirements);
+const tectonic=specialistRecipes.find(r=>r.id==='tectonic-pickaxe');
+const plan=async(recipe,progress,weight,index=null)=>(await q('select plan_equipment_material($1,$2,$3,$4) result',[recipe,progress,{gem_name:'X',rarity:1000,base_weight:1,final_weight:weight},index]))[0].result;
+let result=await plan(tectonic,{},8);assert.equal(result.progress['tectonic-specimen-8'],1);assert.equal(Object.keys(result.progress).length,1);
+result=await plan(tectonic,result.progress,8);assert.equal(result.progress['tectonic-specimen-7'],1);
+const manualIndex=tectonic.requirements.findIndex(r=>r.id==='tectonic-specimen-5');result=await plan(tectonic,{},8,manualIndex);assert.equal(result.progress['tectonic-specimen-5'],1);
+const silly=specialistRecipes.find(r=>r.id==='silly-fun-happy-pickaxe');const lightIndex=silly.requirements.findIndex(r=>r.id==='silly-light-specimens');assert.equal(await plan(silly,{},.600001,lightIndex),null);assert.equal((await plan(silly,{},.6,lightIndex)).progress['silly-light-specimens'],1);
+// Crafted secondary consumes its previous tier; failed transaction preserves cash/potions/progress.
+const four=secondaryRecipes.find(r=>r.id==='four-leaf-clover');
+await q("insert into player_equipment(player_id,equipment_id,category,tier,equipped) values($1,'three-leaf-clover','clover',1,true)",[uid]);
+await q("insert into crafting_progress values($1,'four-leaf-clover','{\"Aventurine\":4}',now())",[uid]);
+await q("select craft_equipment_recipe('four-leaf-clover')");assert.equal((await q("select * from player_equipment where equipment_id='three-leaf-clover'")).length,0);
+assert.equal((await q("select luck_bonus from player_equipment where equipment_id='four-leaf-clover'"))[0].luck_bonus,.02);
+// Plastic ownership alias works without modifying its recipe or consuming the replacement.
+const full=Object.fromEntries(plasticBefore.requirements.filter(r=>r.id).map(r=>[r.id,r.amount]));
+await q("insert into crafting_progress values($1,'plastic-shopping-bag',$2,now())",[uid,full]);await q("insert into player_consumables values($1,'plastic-bag',67,now())",[uid]);
+await q("select craft_equipment_recipe('plastic-shopping-bag')");assert.equal((await q("select * from player_equipment where equipment_id='dimensional-vault'")).length,1);
+assert.equal((await q("select weight_multiplier_bonus from player_equipment where equipment_id='plastic-shopping-bag'"))[0].weight_multiplier_bonus,1.55);
+// Any standard family can pay tier costs; insufficient tiers roll back all earlier consumption.
+const potionRecipe={id:'test-tier-craft',category:'pickaxe',equipmentOverhaul:true,moneyCost:0,requirements:[{type:'potion-tier',tier:1,amount:5},{type:'potion-tier',tier:2,amount:1}],reward:{id:'test-tier-craft',category:'pickaxe',tier:1,bonus:{}}};
+await q("insert into game_recipes values('test-tier-craft',$1)",[potionRecipe]);
+await db.exec("insert into game_consumables values('lucky-potion-1','Luck','luck',1,1,60,true,1),('mass-potion-1','Mass','weightMultiplier',1,1,60,true,1),('speed-potion-2','Speed','rollSpeed',2,1,60,true,1)");
+await q("insert into player_consumables values($1,'lucky-potion-1',2,now()),($1,'mass-potion-1',3,now())",[uid]);
+await assert.rejects(()=>q("select craft_equipment_recipe('test-tier-craft')"),/requirements_not_met/);
+assert.equal((await q("select sum(quantity) n from player_consumables where consumable_id in ('lucky-potion-1','mass-potion-1')"))[0].n,5);
+await q("insert into player_consumables values($1,'speed-potion-2',1,now())",[uid]);await q("select craft_equipment_recipe('test-tier-craft')");
+assert.equal((await q("select sum(quantity) n from player_consumables where consumable_id in ('lucky-potion-1','mass-potion-1','speed-potion-2')"))[0].n,0);
+// Discovery counts are distinct, exclude expired limiteds, and exclude the clock only from daily.
+await db.exec("insert into private_feature_gems values('the clock',100,true,'daily',null,null,true),('Daily',100,true,'daily',null,null,true),('Event',100,true,'global_event',null,null,true),('Expired',100,true,'date_range',null,now()-interval '1 day',true)");
+await q("insert into player_gem_mutation_combinations values($1,'the clock'),($1,'Daily'),($1,'Daily'),($1,'Event'),($1,'Expired')",[uid]);
+assert.equal((await q("select equipment_special_discoveries($1,'daily_window') n",[uid]))[0].n,1);
+assert.equal((await q("select equipment_special_discoveries($1,'special') n",[uid]))[0].n,3);
+// State/loot commit is idempotent and clients cannot call it.
+const ids=(await q('select id from player_equipment where equipped')).map(r=>r.id);
+const claim=(await q('select claim_equipment_roll($1,100,$2,$3) result',[uid,(await q('select equipment_state from players where id=$1',[uid]))[0].equipment_state,ids]))[0].result;assert.equal(claim.status,'claimed');
+await assert.rejects(()=>q("update player_equipment set equipped=false where equipment_id='four-leaf-clover'"),/roll_in_progress/);
+const commitArgs=[uid,claim.leaseId,claim.genuineRoll,{excavations:1},'relic-potion',null,100];
+await q('select commit_equipment_roll($1,$2,$3,$4,$5,$6,$7)',commitArgs);await q('select commit_equipment_roll($1,$2,$3,$4,$5,$6,$7)',commitArgs);
+assert.equal((await q("select quantity from player_consumables where consumable_id='relic-potion'"))[0].quantity,1);
+assert.equal((await q("select has_function_privilege('authenticated','public.commit_equipment_roll(uuid,uuid,bigint,jsonb,text,jsonb,integer)','execute') allowed"))[0].allowed,false);
+// Switching resets only the spool and preserves permanent mastery/burst counts.
+await q("update players set roll_lease_expires_at=null,equipment_state=$2 where id=$1",[uid,{spool:200,excavations:500,rolls:{'empyrean-pickaxe':1000}}]);
+const pickRow=(await q("select id from player_equipment where equipment_id='test-tier-craft'"))[0].id;
+await q('select set_overhaul_equipment_equipped($1,false)',[pickRow]);
+assert.deepEqual((await q('select equipment_state from players where id=$1',[uid]))[0].equipment_state,{spool:0,excavations:500,rolls:{'empyrean-pickaxe':1000}});
+console.log('Database overhaul: migration, ownership/archive, unchanged Plastic recipe, independent/manual buckets, craft consumption, lease locking and idempotency passed.');await db.close();

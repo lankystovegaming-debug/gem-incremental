@@ -1,3 +1,4 @@
+import {lateGameEquipment} from '../src/data/lateGameEquipment.js';
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import recipes from "../src/data/recipes.js";
@@ -10,15 +11,13 @@ const expected = {
   "transcendent-pickaxe": ["pickaxe", 13, "luck", 21, 2500000],
   "astral-pickaxe": ["pickaxe", 14, "luck", 23, 50000000],
   "celestial-pickaxe": ["pickaxe", 15, "luck", 25, 125000000],
-  "eventide-boots": ["boots", 9, "weightLuck", 4.75, 250000],
-  "singularity-striders": ["boots", 10, "weightLuck", 5.75, 600000]
-  ,"event-horizon-boots": ["boots", 11, "weightLuck", 6.5, 15000000]
-  ,"gravitational-boots": ["boots", 12, "weightLuck", 7.25, 40000000]
-  ,"riftwoven-bag": ["bag", 9, "weightMultiplier", 0.75, 10000000]
-  ,"vault-of-plenty": ["bag", 10, "weightMultiplier", 0.85, 35000000]
-  ,"dimensional-vault": ["bag", 11, "weightMultiplier", 0.95, 90000000]
-  ,"singularity-vault": ["bag", 12, "weightMultiplier", 1.05, 200000000]
-  ,"bottomless-singularity": ["bag", 13, "weightMultiplier", 1.2, 200000000]
+  "eventide-boots": ["boots", 9, "weightLuck", 0.105, 5000000],
+  "singularity-striders": ["boots", 10, "weightLuck", 0.12, 7500000]
+  ,"event-horizon-boots": ["boots", 11, "weightLuck", 0.135, 12500000]
+  ,"gravitational-boots": ["boots", 12, "weightLuck", 0.15, 20000000]
+  ,"riftwoven-bag": ["bag", 9, "weightMultiplier", 0.11, 5000000]
+  ,"vault-of-plenty": ["bag", 10, "weightMultiplier", 0.13, 10000000]
+  ,"dimensional-vault": ["bag", 11, "weightMultiplier", 0.15, 20000000]
 };
 
 for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)) {
@@ -30,10 +29,10 @@ for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)
   assert.equal(recipe.moneyCost, cost);
 }
 
-assert.equal(recipes.some((recipe) => recipe.category === "lantern"), false);
+assert.equal(recipes.some((recipe) => recipe.category === "lantern"), true);
 assert.deepEqual(
   recipes.filter((recipe) => recipe.category === "pickaxe").map((recipe) => recipe.reward.bonus.rollSpeed),
-  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2]
+  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 2, 2, 1.6, 2.4, 1.8, 1.9, 1.4, -0.5]
 );
 
 assert.deepEqual(recipes.find((recipe) => recipe.id === "astral-pickaxe").requirements, [
@@ -54,21 +53,7 @@ assert.deepEqual(recipes.find((recipe) => recipe.id === "celestial-pickaxe").req
   { type: "lifetime-rolls", rolls: 60000 }
 ]);
 
-assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), [
-  "astral-pickaxe",
-  "bottomless-singularity",
-  "empyrean-pickaxe", "eternity-pickaxe", "event-horizon-vault", "neutron-boots", "omnidimensional-vault", "plastic-shopping-bag", "reality-breakers", "spacetime-walkers",
-  "celestial-pickaxe",
-  "dimensional-vault",
-  "eclipse-pickaxe",
-  "event-horizon-boots",
-  "gravitational-boots",
-  "riftwoven-bag",
-  "singularity-pickaxe",
-  "singularity-vault",
-  "transcendent-pickaxe",
-  "vault-of-plenty"
-].sort());
+assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), ['eclipse-pickaxe','singularity-pickaxe','transcendent-pickaxe','astral-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','toy-shovel','silly-fun-happy-pickaxe','plastic-shopping-bag'].sort());
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
@@ -83,13 +68,13 @@ assert.match(rollSource, /gem\.rarity >= 10000/);
 assert.match(rollSource, /gem\.rarity <= 1000000/);
 assert.match(rollSource, /hasRarityResonance/);
 assert.match(rollSource, /resonanceBeforeRoll >= 100/);
-assert.match(rollSource, /if \(resonanceEmpowered\) luck \*= 3/);
+assert.match(rollSource, /if \(resonanceEmpowered\) specialLuck \*= 3/);
 assert.match(rollSource, /gem\.affectedByLuck !== false/);
-assert.match(rollSource, /random01\(\) < 0\.15/);
+assert.match(rollSource, /const hasHeavyFooting = false/);
 assert.match(rollSource, /surgeReady && hasGravitationalSurge \? 2 \/ 3 : 1 \/ 3/);
 assert.match(rollSource, /surgeReady && hasGravitationalSurge \? 10 : null/);
-assert.match(rollSource, /naturalWeight >= 0\.90 && naturalWeight <= 1\.10/);
-assert.match(rollSource, /compressionProgress >= 50/);
+assert.match(rollSource, /Normal Bag passives are retired/);
+assert.match(rollSource, /const compressionRoll = false/);
 assert.match(rollSource, /bagPassiveWeightFactor/);
 
 const cloudInventorySource = readFileSync(
@@ -116,7 +101,8 @@ assert.match(lateGameMigration, /best_rare_natural_weight_1m double precision no
 assert.match(lateGameMigration, /original_t13_legacy boolean not null default false/);
 assert.match(lateGameMigration, /new\.original_t13_legacy := true/);
 
-const t13 = recipes.find((recipe) => recipe.id === "bottomless-singularity");
+assert.ok(!recipes.some(r=>r.id==="bottomless-singularity"));
+const t13 = lateGameEquipment.find((recipe) => recipe.id === "bottomless-singularity");
 assert.equal(t13.includedSpecimens, true);
 assert.equal(t13.requirements.some(r => r.type === "roll-history-condition"), false);
 const t13State = createCraftingState();
