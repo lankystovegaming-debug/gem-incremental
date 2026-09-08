@@ -7,7 +7,7 @@ import { createAdminCode, deleteAdminCode, loadAdminCodes, setAdminCodeActive } 
 import { canManageAdminEvents, loadAdminEvents, startAdminEvent, stopAdminEvent } from "../src/backend/cloudAdminEvents.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
-import { formatCount, formatMoney, formatWeight, escapeHtml } from "../src/ui/format.js";
+import { formatCount, formatMoney, formatGemValue, formatWeight, escapeHtml } from "../src/ui/format.js";
 import { notify } from "../src/ui/toast.js";
 import { parseUpdateLogContent, updateSectionsToText } from "../src/logic/updateLogContent.js";
 
@@ -336,7 +336,7 @@ function renderPlayer(data) {
             <div class="admin-list-row admin-gem-row">
               <span>
                 <strong>${escapeHtml(gem.gem_name)}</strong>
-                <small>${escapeHtml(formatWeight(gem.final_weight))} · ${escapeHtml(formatMoney(gem.value))}${gem.locked ? " · Locked" : ""}${Array.isArray(gem.mutation_ids) && gem.mutation_ids.length ? ` · ${escapeHtml(gem.mutation_ids.join(" · "))}` : ""}</small>
+                <small>${escapeHtml(formatWeight(gem.final_weight))} · ${escapeHtml(formatGemValue(gem.value))}${gem.locked ? " · Locked" : ""}${Array.isArray(gem.mutation_ids) && gem.mutation_ids.length ? ` · ${escapeHtml(gem.mutation_ids.join(" · "))}` : ""}</small>
               </span>
               <button class="btn btn--danger btn--small" data-action="delete-gem" data-specimen="${escapeHtml(gem.id)}" type="button">Delete</button>
             </div>

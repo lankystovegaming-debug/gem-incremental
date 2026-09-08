@@ -155,31 +155,37 @@ export function formatCount(value) {
 }
 
 
-// Money is exact below $10k and abbreviated above it, so the
-// wallet pill never pushes the navigation around.
-function formatExactMoney(value) {
+// Cash is shown as an exact, rounded whole-dollar amount by default.
+// Individual gem values use formatGemValue to retain two decimal places.
+function formatExactMoney(value, decimalPlaces = 0) {
   const text = String(value ?? 0).trim();
   const match = text.match(/^([+-]?)(\d+)(?:\.(\d*))?$/);
 
   if (match) {
     const [, sign, rawWhole, rawFraction = ""] = match;
-    const whole = rawWhole.replace(/^0+(?=\d)/, "");
+    const places = Math.max(0, Math.trunc(decimalPlaces));
+    const paddedFraction = rawFraction.padEnd(places + 1, "0");
+    const scaledText = `${rawWhole}${paddedFraction.slice(0, places)}`.replace(/^0+(?=\d)/, "");
+    let scaled = BigInt(scaledText || "0");
+    if (paddedFraction[places] >= "5") scaled += 1n;
+    const digits = scaled.toString().padStart(places + 1, "0");
+    const whole = places ? digits.slice(0, -places) : digits;
     const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    const cents = `${rawFraction}00`.slice(0, 2);
-    return `$${sign === "-" ? "-" : ""}${grouped}.${cents}`;
+    const fraction = places ? `.${digits.slice(-places)}` : "";
+    return `$${sign === "-" && scaled !== 0n ? "-" : ""}${grouped}${fraction}`;
   }
 
   const amount = Number(value ?? 0);
   if (!Number.isFinite(amount)) return `$${text}`;
   return `$${amount.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
     useGrouping: true
   })}`;
 }
 
-export function formatMoney(value, { compact = false, exact = false } = {}) {
-  if (exact) return formatExactMoney(value);
+export function formatMoney(value, { compact = false, exact = false, decimalPlaces = 0 } = {}) {
+  if (exact || !compact) return formatExactMoney(value, decimalPlaces);
   const text = String(value ?? 0);
   if (/^[+-]?\d+$/.test(text)) {
     const abs = text.replace(/^[+-]/, "");
@@ -189,6 +195,10 @@ export function formatMoney(value, { compact = false, exact = false } = {}) {
   if (!Number.isFinite(amount)) return `$${formatHugeDecimal(text)}`;
   if (Math.abs(amount) >= 1000) return formatHugeDecimal(amount, { prefix: "$" });
   return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function formatGemValue(value) {
+  return formatExactMoney(value, 2);
 }
 
 

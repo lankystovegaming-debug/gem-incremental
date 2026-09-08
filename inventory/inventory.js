@@ -39,6 +39,7 @@ import {
   rarityTier,
   rarityLabel,
   formatMoney,
+  formatGemValue,
   formatWeight,
   formatMultiplier,
   formatCount,
@@ -583,7 +584,7 @@ function gemCard(gem) {
 
         <div class="gem-card__row">
           <span class="gem-card__key">Value</span>
-          <span class="gem-card__val gem-card__val--money">${formatMoney(
+          <span class="gem-card__val gem-card__val--money">${formatGemValue(
             gem.value
           )}</span>
         </div>
