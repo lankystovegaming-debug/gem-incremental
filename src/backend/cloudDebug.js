@@ -261,8 +261,6 @@ export async function loadCloudDebugState() {
   const permanentModifiers = permanentModifiersResult.data?.[0] ?? {};
   const miscModifiers = miscModifiersResult.data ?? {};
   const authoritativePreview=equipmentPreviewResult.data??{};
-  const playtimeLevels=authoritativePreview.playtime?.levels??{};
-  const playtimeMultiplier=key=>[1,1.05,1.1,1.2,1.35,1.5,1.75,2,2.5,3,4][Math.max(0,Math.min(10,Number(playtimeLevels[key]??0)))]??1;
   const worldSnapshot=authoritativePreview.world;
   const worldConfig=worldSnapshot&&Date.parse(worldSnapshot.endsAt)>Date.now()&&Date.parse(worldSnapshot.startsAt)<=Date.now()?worldSnapshot.config??{}:{};
   const activeAdminEvent = Array.isArray(adminEventResult.data)
@@ -474,7 +472,7 @@ export async function loadCloudDebugState() {
   const attunementFactor=attune==='amplified'?1.03:attune==='resonant'&&sharedEnchants.has(pickaxe?.enchant_id)?1.05:attune==='specialized'&&!sharedEnchants.has(pickaxe?.enchant_id)?1.05:1;
   enchantComponent=1+(enchantComponent-1)*(pickaxe?.equipment_id==='transcendent-pickaxe'?1.1:1)*attunementFactor;
   if(nextEquipment.flags.ascension) enchantComponent+=50;
-  let specialMultiplier=positiveNumber(authoritativePreview.crystal?.finalLuckMultiplier)*playtimeMultiplier("luck");
+  let specialMultiplier=positiveNumber(authoritativePreview.crystal?.finalLuckMultiplier);
   if(pickaxe?.equipment_id==='celestial-pickaxe'&&Number(player.rarity_resonance??0)>=100) specialMultiplier*=3;
   if(researchEffects.statistical_breakthrough&&((Number(player.total_rolls??0)+1)%250===0))specialMultiplier*=1.2;
   const previewLayers=luckLayers({pickaxe:equipmentStats.pickaxe,clover:equipmentStats.clover,enchant:enchantComponent,guild:guildLuckMultiplier,research:researchLuckMultiplier,flat:flatLuck,special:specialMultiplier,oneRoll:Number(oneRollBoost?.effect_value??0),world:positiveNumber(worldConfig.luckMultiplier)});
@@ -605,7 +603,7 @@ export async function loadCloudDebugState() {
     addMiscBuff("Hell artifacts", "Doom gained", formatMultiplier(doomMultiplier));
   }
 
-  rollSpeed*=playtimeMultiplier('rollSpeed')*positiveNumber(worldConfig.rollSpeedMultiplier)*positiveNumber(authoritativePreview.expedition?.rollSpeedMultiplier);
+  rollSpeed*=positiveNumber(worldConfig.rollSpeedMultiplier)*positiveNumber(authoritativePreview.expedition?.rollSpeedMultiplier);
   weightLuck*=positiveNumber(authoritativePreview.expedition?.weightLuckMultiplier)*positiveNumber(worldConfig.weightLuckMultiplier);
   weightMultiplier*=positiveNumber(authoritativePreview.expedition?.weightMultiplierMultiplier);
   const adminMutationBonus = Number(activeAdminEvent?.mutation_luck_bonus ?? 0);
@@ -648,16 +646,21 @@ export async function loadCloudDebugState() {
   // RETURN
   // -------------------------------------------------------
 
+  const { data: savedPreferences, error: preferencesError } = await supabase
+    .from('player_settings').select('settings').eq('player_id', user.id).maybeSingle();
+  const buffsEnabled = savedPreferences?.settings?.enableBuffs !== false;
+
   return {
     stats: {
-      luck,
-      rollSpeed,
-      weightLuck,
-      weightMultiplier,
+      buffsEnabled,
+      luck: buffsEnabled ? luck : 1,
+      rollSpeed: buffsEnabled ? rollSpeed : 1,
+      weightLuck: buffsEnabled ? weightLuck : 1,
+      weightMultiplier: buffsEnabled ? weightMultiplier : 1,
       breakdown: statBreakdown,
       luckLayers: previewLayers,
       mutationChance: equipmentStats.mutation,
-      previewNote: "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
+      previewNote: preferencesError ? "Preferences unavailable; showing an unverified build preview." : !buffsEnabled ? "Buffs disabled — all four core stats are 1×. The build breakdown below is inactive." : "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
       miscellaneousBuffs: miscBuffs
     },
 

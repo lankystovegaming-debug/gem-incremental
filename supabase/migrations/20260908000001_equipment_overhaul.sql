@@ -649,7 +649,7 @@ create or replace function public.get_equipment_roll_preview() returns jsonb lan
 declare uid uuid:=auth.uid(); begin
  if uid is null then raise exception 'not_authenticated'; end if;
  return jsonb_build_object('crystal',public.crystal_player_effects(uid),
-  'expedition',public.player_expedition_artifact_effects(uid),'playtime',public.get_playtime_upgrades(),
+  'expedition',public.player_expedition_artifact_effects(uid),
   'world',public.get_active_global_event(),
   'discoveries',(select count(distinct gem_name) from public.player_gem_mutation_combinations where player_id=uid));
 end $$;

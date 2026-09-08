@@ -36,19 +36,6 @@ grant execute on function public.get_public_mutation_catalog_all() to anon,authe
 
 -- The old heartbeat award RPC is no longer called by the client. Keep a safe
 -- authenticated implementation for any remaining legacy callers.
-drop function if exists public.award_playtime_points();
-create function public.award_playtime_points() returns record
-language plpgsql security definer set search_path=public as $$
-declare v_id uuid:=auth.uid(); v_now timestamptz:=now(); v_elapsed bigint; r public.players%rowtype;
-begin
- if v_id is null then raise exception 'not_authenticated'; end if;
- select * into r from public.players where id=v_id for update;
- if not found then raise exception 'player_not_found'; end if;
- v_elapsed:=least(300,greatest(0,floor(extract(epoch from(v_now-coalesce(r.playtime_last_award_at,v_now))))::bigint));
- update public.players set playtime_seconds=coalesce(playtime_seconds,0)+v_elapsed,playtime_last_award_at=v_now where id=v_id;
- return;
-end $$;
-grant execute on function public.award_playtime_points() to authenticated,service_role;
 
 -- AP leaderboard RPC for the Edge Function and future direct use.
 create or replace function public.get_achievement_points_leaderboard(p_limit integer default 100)

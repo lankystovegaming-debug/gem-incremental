@@ -1,3 +1,4 @@
+import { mountEquipmentLoadouts } from '../src/ui/equipmentLoadouts.js';
 import { PICKAXE_STATS } from '../src/data/equipmentOverhaul.js';
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
@@ -1698,6 +1699,7 @@ window.addEventListener("pageshow", (event) => {
 renderAll();
 refresh();
 
+mountEquipmentLoadouts(document.getElementById('equipmentLoadouts'), refresh);
 
 // Build the mutation filter from the live bundled catalog.
 if (gemMutationFilter) {

@@ -9,7 +9,16 @@ globalThis.localStorage = {
 globalThis.window = { addEventListener() {} };
 
 const chances = await import("../src/logic/chances.js");
-const settings = await import("../src/ui/settings.js");
+let cloud = { legacyAutoSell:false };
+globalThis.__settingsBackend = {
+ from(){return {select(){return this;},eq(){return this;},async maybeSingle(){return {data:{settings:cloud},error:null}}};},
+ async rpc(_name,{p_patch}){cloud={...cloud,...p_patch};return {data:cloud,error:null};}
+};
+const settingsSource=fs.readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8')
+ .replace('import { supabase } from "../backend/supabase.js";', 'const supabase=globalThis.__settingsBackend;')
+ .replace('import { ensurePlayerAuth } from "../backend/auth.js";', 'const ensurePlayerAuth=async()=>({id:"test"});')
+ .replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href));
+const settings=await import('data:text/javascript;base64,'+Buffer.from(settingsSource).toString('base64'));
 
 assert.equal(chances.meetsChatChanceThreshold("Uranium"), false);
 assert.equal(chances.chanceDenominator({ name: "Uranium", rarity: 5_000 }), 5_000);
@@ -34,7 +43,7 @@ assert.equal(settings.shouldAutoKeep({
   gem: { name: "Enchant Relic", rarity: 250, dropType: "relic" }
 }), true);
 
-settings.updateSettings({ autoKeepEffectiveRarity: 2_000_000 });
+await settings.updateSettings({ autoKeepEffectiveRarity: 2_000_000 });
 assert.equal(settings.shouldAutoKeep({
   gem: { name: "Diamond", rarity: 2_300 },
   mutationIds: ["gilded"]

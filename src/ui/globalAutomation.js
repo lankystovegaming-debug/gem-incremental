@@ -1,7 +1,7 @@
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { invokeFunction } from "../backend/invoke.js";
-import { loadCloudPlayerState, loadCloudGems, sellCloudGem } from "../backend/cloudInventory.js";
-import { getSettings, onSettingsChange, shouldAutoSell, shouldAutoKeep } from "./settings.js";
+import { loadCloudPlayerState } from "../backend/cloudInventory.js";
+import { updateSettings, hydrateSettingsFromCloud, getSettings, onSettingsChange, shouldAutoKeep } from "./settings.js";
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
@@ -97,26 +97,18 @@ async function processRoll(data) {
     outcome = "Contributed to your Collection";
     sessionOutcome.type = "bundle-contributed";
   } else if (data.bundle?.keepInInventory) {
-    outcome = data.bundle.status === "protected" ? "Crown Jewel candidate — kept for manual submission"
+    outcome = data.bundle.status === "kept" ? `Kept — ${data.bundle.reason}` : data.bundle.status === "protected" ? "Crown Jewel candidate — kept for manual submission"
       : "Multiple Collection requirements match — kept in inventory";
     sessionOutcome.type = "auto-kept";
   } else if (data.autoCraft?.deposited) {
     outcome = "Auto deposited";
     sessionOutcome.type = "auto-crafted";
-  } else if (shouldAutoKeep(data)) {
+  } else if (!data.gemFilter && shouldAutoKeep(data)) {
     outcome = "Protected by Auto Keep";
     sessionOutcome.type = "auto-kept";
-  } else if (getSettings().autoSell && data.specimenId != null) {
-    const tier = rarityTier(Number(data.gem?.rarity ?? 0));
-    if (shouldAutoSell(tier.id)) {
-      const { data: sale, error } = await sellCloudGem(data.specimenId);
-      if (!error && sale) {
-        const soldValue = Number(sale.soldValue ?? data.value);
-        outcome = `Auto sold for ${formatMoney(soldValue)}`;
-        sessionOutcome = { type: "auto-sold", tier: tier.id, soldValue };
-      }
-      else if (error) console.error("[AUTOMATION] Auto sell failed:", error);
-    }
+  } else if (data.gemFilter?.sold) {
+    outcome = `Gem Filter sold for ${formatMoney(data.gemFilter.soldValue)}`;
+    sessionOutcome = { type: "auto-sold", tier: sessionOutcome.tier, soldValue: data.gemFilter.soldValue };
   }
 
   recordSessionRoll(data, sessionOutcome);
@@ -158,27 +150,10 @@ async function run() {
         return;
       }
       if (error.code === "inventory_full") {
-        const settings = getSettings();
-
-        if (settings.autoSell) {
-          const gems = await loadCloudGems();
-          const candidate = (gems ?? [])
-            .filter((gem) => !gem.locked && !shouldAutoKeep(gem))
-            .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
-
-          if (candidate?.id != null) {
-            const { error: sellError } = await sellCloudGem(candidate.id);
-            if (!sellError) {
-              schedule(120);
-              return;
-            }
-            console.error("[AUTOMATION] Could not free an inventory slot:", sellError);
-          }
-        }
-
+        updateSettings({ autoRoll: false });
         notify.warning(
           "Auto roll paused",
-          "Inventory is full. Enable Auto Sell or free an inventory slot to continue."
+          "Inventory is full. Free an inventory slot to continue."
         );
         return;
       }
@@ -229,4 +204,4 @@ window.addEventListener("beforeunload", () => {
   releaseLease();
 });
 
-sync();
+hydrateSettingsFromCloud().then(sync).catch(error => console.error("Settings unavailable", error));

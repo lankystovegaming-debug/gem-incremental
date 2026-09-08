@@ -1,13 +1,10 @@
 import { invokeFunction } from "../backend/invoke.js";
-import { loadCloudGems, sellCloudGem } from "../backend/cloudInventory.js";
 import {
   getSettings,
+  hydrateSettingsFromCloud,
   updateSettings,
-  onSettingsChange,
-  shouldAutoSell,
-  shouldAutoKeep
+  onSettingsChange
 } from "./settings.js";
-import { rarityTier } from "./format.js";
 import { notify } from "./toast.js";
 
 // The Roll page has its richer renderer/cinematic loop in main.js. Every
@@ -40,25 +37,8 @@ export function startGlobalAutoRoll(page) {
     if (!error) return;
 
     if (error.code === "inventory_full") {
-      const settings = getSettings();
-
-      if (settings.autoSell) {
-        const gems = await loadCloudGems();
-        const candidate = (gems ?? [])
-          .filter((gem) => !gem.locked && !shouldAutoKeep(gem))
-          .sort((a, b) => Number(a.rarity ?? 0) - Number(b.rarity ?? 0))[0];
-
-        if (candidate?.id != null) {
-          const { error: sellError } = await sellCloudGem(candidate.id);
-          if (!sellError) {
-            schedule(120);
-            return;
-          }
-        }
-      }
-
       updateSettings({ autoRoll: false });
-      notify.warning("Auto roll paused", "Inventory is full. Enable Auto Sell or free a slot.");
+      notify.warning("Auto roll paused", "Inventory is full. Free a slot to continue.");
       return;
     }
 
@@ -90,20 +70,6 @@ export function startGlobalAutoRoll(page) {
       if (!data) {
         schedule(500);
         return;
-      }
-
-      // Auto Craft is resolved server-side before a specimen is returned to
-      // the client. Only a specimen that remains in inventory can be sold.
-      if (
-        !data.autoCraft?.deposited &&
-        !shouldAutoKeep(data) &&
-        shouldAutoSell(rarityTier(data.gem?.rarity).id) &&
-        data.specimenId != null
-      ) {
-        const { error: sellError } = await sellCloudGem(data.specimenId);
-        if (sellError) {
-          console.error("[AUTO ROLL] Background auto-sell failed:", sellError);
-        }
       }
 
       // Let chat and any page-local UI react to the same successful roll.
@@ -142,5 +108,5 @@ export function startGlobalAutoRoll(page) {
     cleanup = null;
   };
 
-  if (getSettings().autoRoll) schedule(0);
+  hydrateSettingsFromCloud().then(() => { if (getSettings().autoRoll) schedule(0); }).catch(console.error);
 }

@@ -40,7 +40,7 @@ begin
 end $$;
 grant execute on function public.buy_consumables_bulk(text,integer) to authenticated;
 
--- Base Luck includes permanent playtime Luck upgrades using the same tier table as roll/index.ts.
+-- Base Luck is derived from equipped equipment only.
 drop function if exists public.get_base_luck_leaderboard(integer);
 create function public.get_base_luck_leaderboard(p_limit integer default 100)
 returns table(rank bigint, username text, base_luck numeric, equipped_items bigint)
@@ -48,15 +48,11 @@ language sql security definer set search_path=''
 as $$
   with player_luck as (
     select p.id,p.username,
-      (1::numeric + coalesce(sum(case when e.equipped then coalesce(e.luck_bonus,0)::numeric else 0 end),0::numeric)) *
-      (case greatest(0,least(10,coalesce(p.playtime_luck_level,0)))
-        when 0 then 1::numeric when 1 then 1.05::numeric when 2 then 1.1::numeric when 3 then 1.2::numeric
-        when 4 then 1.35::numeric when 5 then 1.5::numeric when 6 then 1.75::numeric when 7 then 2::numeric
-        when 8 then 2.5::numeric when 9 then 3::numeric else 4::numeric end) as base_luck,
+      1::numeric + coalesce(sum(case when e.equipped then coalesce(e.luck_bonus,0)::numeric else 0 end),0::numeric) as base_luck,
       count(*) filter(where e.equipped) as equipped_items
     from public.players p left join public.player_equipment e on e.player_id=p.id
     where p.username is not null and coalesce(p.leaderboard_hidden,false)=false
-    group by p.id,p.username,p.playtime_luck_level
+    group by p.id,p.username
   )
   select row_number() over(order by base_luck desc,username asc),username,base_luck,equipped_items
   from player_luck order by base_luck desc,username asc

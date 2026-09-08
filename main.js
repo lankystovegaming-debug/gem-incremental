@@ -26,10 +26,9 @@ import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./s
 import { chanceLabelForRollResult } from "./src/logic/chances.js";
 import {
   getSettings,
+  hydrateSettingsFromCloud,
   updateSettings,
   onSettingsChange,
-  shouldAutoSell,
-  SELL_TIERS,
   shouldAutoKeep
 } from "./src/ui/settings.js";
 import {
@@ -69,9 +68,6 @@ const statRolls = document.getElementById("statRolls");
 const inventoryMeter = document.getElementById("inventoryMeter");
 
 const autoRollToggle = document.getElementById("autoRollToggle");
-const autoSellToggle = document.getElementById("autoSellToggle");
-const autoSellTier = document.getElementById("autoSellTier");
-const autoSellTierRow = document.getElementById("autoSellTierRow");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
@@ -840,7 +836,7 @@ async function resolveOutcome(data) {
   }
   if (data.bundle?.keepInInventory) {
     return { type: "auto-kept", icon: icons.shield,
-      text: data.bundle.status === "protected" ? "Kept — Crown Jewel candidate (manual submission only)"
+      text: data.bundle.status === "kept" ? `Kept — ${data.bundle.reason}` : data.bundle.status === "protected" ? "Kept — Crown Jewel candidate (manual submission only)"
         : "Kept — more than one enabled Collection requirement matches",
       note: "collection protected" };
   }
@@ -859,7 +855,7 @@ async function resolveOutcome(data) {
 
   const tier = rarityTier(data.gem.rarity);
 
-  if (shouldAutoKeep(data)) {
+  if (!data.gemFilter && shouldAutoKeep(data)) {
     return {
       type: "auto-kept",
       icon: icons.shield,
@@ -868,26 +864,10 @@ async function resolveOutcome(data) {
     };
   }
 
-  if (shouldAutoSell(tier.id) && data.specimenId != null) {
-    const { data: sale, error } = await sellCloudGem(data.specimenId);
-
-    if (!error && sale) {
-      view.money = Number(sale.money ?? view.money);
-
-      view.inventoryCount = Math.max(0, view.inventoryCount - 1);
-
-      return {
-        type: "auto-sold",
-        soldValue: Number(sale.soldValue ?? data.value),
-        icon: icons.coins,
-        text: `Auto sold for ${formatMoney(sale.soldValue ?? data.value)}`,
-        note: "auto sold"
-      };
-    }
-
-    if (error) {
-      notify.error("Auto sell failed", error.message);
-    }
+  if (data.gemFilter?.sold) {
+    view.money = Number(data.gemFilter.money ?? view.money);
+    return { type: "auto-sold", soldValue: data.gemFilter.soldValue, icon: icons.coins,
+      text: `Gem Filter sold for ${formatMoney(data.gemFilter.soldValue)}`, note: 'filter sold' };
   }
 
   return {
@@ -1082,29 +1062,24 @@ document.addEventListener("visibilitychange", () => {
 // AUTOMATION CONTROLS
 // =========================================================
 
-autoSellTier.innerHTML = SELL_TIERS.map(
-  (tier) => `<option value="${tier.id}">${tier.label}</option>`
-).join("");
+
 
 
 function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
-  autoSellToggle.checked = settings.autoSell;
-  autoSellTier.value = settings.autoSellTier;
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("automation__row--muted", !settings.autoKeep);
 
-  autoSellTierRow.classList.toggle(
-    "automation__row--muted",
-    !settings.autoSell
-  );
+
   renderAutomationPulse();
 }
 
 
-autoRollToggle.addEventListener("change", () => {
-  const settings = updateSettings({ autoRoll: autoRollToggle.checked });
+autoRollToggle.addEventListener("change", async () => {
+  let settings;
+  try { settings = await updateSettings({ autoRoll: autoRollToggle.checked }); }
+  catch { return; }
 
   if (settings.autoRoll) {
     notify.info("Auto roll on", "Rolling continues while this tab is open.");
@@ -1114,21 +1089,17 @@ autoRollToggle.addEventListener("change", () => {
 });
 
 
-autoSellToggle.addEventListener("change", () => {
-  updateSettings({ autoSell: autoSellToggle.checked });
-});
 
 
-autoSellTier.addEventListener("change", () => {
-  updateSettings({ autoSellTier: autoSellTier.value });
-});
+
+
 
 if (autoKeepToggle) autoKeepToggle.addEventListener("change", () => {
   updateSettings({ autoKeep: autoKeepToggle.checked });
 });
 
 if (autoKeepRarity) autoKeepRarity.addEventListener("change", () => {
-  updateSettings({ autoKeepEffectiveRarity: autoKeepRarity.value });
+  updateSettings({ autoKeepEffectiveRarity: Number(autoKeepRarity.value) });
 });
 
 
@@ -1320,3 +1291,19 @@ window.addEventListener("gem:maintenance-refresh", async () => {
 
 
 startGame();
+
+const buffsIndicator = document.createElement('p');
+buffsIndicator.className = 'badge badge--warning';
+buffsIndicator.setAttribute('role', 'status');
+buffsIndicator.textContent = 'Buffs disabled — rolling at base stats (1× Luck, Roll Speed, Weight Luck and Weight Multiplier)';
+document.getElementById('rollButton')?.parentElement?.prepend(buffsIndicator);
+if (!buffsIndicator.isConnected) document.querySelector('main')?.prepend(buffsIndicator);
+const paintBuffs = settings => { buffsIndicator.hidden = settings.enableBuffs !== false; buffsIndicator.classList.toggle('hidden', buffsIndicator.hidden); };
+onSettingsChange(paintBuffs); paintBuffs(getSettings());
+window.addEventListener('gem:roll-complete', event => {
+ if (typeof event.detail?.buffsEnabled === 'boolean') paintBuffs({ enableBuffs:event.detail.buffsEnabled });
+});
+
+hydrateSettingsFromCloud().catch(error => notify.error("Settings unavailable", error.message));
+
+window.addEventListener("gem:settings-error", event => { paintSettings(getSettings()); notify.error("Settings were not saved", event.detail.message); });

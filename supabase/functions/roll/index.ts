@@ -1,3 +1,20 @@
+// QOL_RULES_START
+export function gemFilterDecision(settings, specimen, discovered) {
+ const name = specimen.gem_name;
+ const raw = Number(specimen.rarity);
+ const threshold = (v, fallback) => Number.isFinite(Number(v)) && Number(v) >= 1 ? Number(v) : fallback;
+ const rule = settings.gemFilter?.[name];
+ const relic = name === 'Enchant Relic' || name === 'Ancient Relic';
+ const discovery = !discovered.has(name) && settings.discoveryKeep !== false && raw >= threshold(settings.discoveryKeepRarity, 10000);
+ const autoKeep = settings.autoKeep !== false && Number(specimen.effectiveRarity) >= threshold(settings.autoKeepEffectiveRarity, 1000000);
+ const keep = relic || discovery || autoKeep || rule === 'KEEP';
+ const legacyLimit = {common:10,uncommon:50,rare:100,epic:1000,legendary:10000,mythic:100000};
+ const legacy = (settings.legacyAutoSell ?? settings.autoSell) === true && raw <= (legacyLimit[settings.legacyAutoSellTier ?? settings.autoSellTier] ?? 10);
+ return { keep, sell: !keep && (rule === 'SELL' || (rule == null && legacy)),
+  reason: relic ? 'relic' : discovery ? 'discovery' : autoKeep ? 'auto-keep' : rule === 'KEEP' ? 'filter-keep' : 'default' };
+}
+// QOL_RULES_END
+
 // =========================================================
 // ROLL EDGE FUNCTION — SINGLE FILE BUILD
 // Consolidated from equipmentRules.js + eventRules.ts + index.ts
@@ -966,7 +983,7 @@ function rollGemWithPickaxePassives(
     if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
-    if (eventContext) gemLuck *= eventGemLuckFactor(eventContext, gem);
+    if (eventContext && !eventContext.buffsDisabled) gemLuck *= eventGemLuckFactor(eventContext, gem);
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
   const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
@@ -2169,19 +2186,13 @@ export default {
       let enchantStateChanged = false;
       let slowStarterCooldownMultiplier = 1;
 
-      // The base-gem names are enough for both Index-completion enchants.
-      let discoveredGemNames = new Set<string>();
-      if (["geologist", "collectors_edge"].includes(enchantedPickaxe?.enchant_id)) {
-        const { data: discoveries, error: discoveryError } = await ctx.supabaseAdmin
-          .from("player_gem_mutation_combinations")
-          .select("gem_name")
-          .eq("player_id", playerId);
-        if (discoveryError) {
-          console.error("Failed to load enchant Index progress:", discoveryError);
-        } else {
-          discoveredGemNames = new Set((discoveries ?? []).map((row) => row.gem_name));
-        }
-      }
+      // One compact, uncached read supplies authoritative preferences and ALL
+      // distinct discoveries (no Data API row-limit truncation).
+      const { data: qolContext, error: qolError } = await ctx.supabaseAdmin.rpc('qol_roll_context', { p_player_id: playerId });
+      if (qolError || !qolContext) return jsonResponse({ error: 'qol_settings_unavailable' }, { status: 503 });
+      const rollSettings = qolContext.settings ?? {};
+      const buffsEnabled = rollSettings.enableBuffs !== false;
+      const discoveredGemNames = new Set<string>(qolContext.discoveries ?? []);
 
 
       // =====================================================
@@ -2361,9 +2372,14 @@ export default {
       if (mineArtifacts.has("vein-prism")) luck += 0.05;
 
 
-      const { data: playtimeUpgradeData } = await ctx.supabase.rpc("get_playtime_upgrades");
-      const playtimeLevels = (playtimeUpgradeData as any)?.levels ?? {};
-      const playtimeMultiplier = (key: string) => { const n = Number(playtimeLevels[key] ?? 0); return [1,1.05,1.1,1.2,1.35,1.5,1.75,2,2.5,3,4][Math.max(0,Math.min(10,n))] ?? 1; };
+      // Artifact-effect calls are independent and can be fetched together.
+      const [
+        { data: crystalEffectsData, error: crystalEffectsError },
+        { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError }
+      ] = await Promise.all([
+        ctx.supabaseAdmin.rpc("crystal_player_effects", { p_uid: playerId }),
+        ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId })
+      ]);
 
       const researchEffectsRaw = (player as any).player_research_effects;
       const researchEffects = Array.isArray(researchEffectsRaw)
@@ -2374,8 +2390,6 @@ export default {
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
 
-      const { data: crystalEffectsData, error: crystalEffectsError } = await ctx.supabaseAdmin
-        .rpc("crystal_player_effects", { p_uid: playerId });
       if (crystalEffectsError) console.warn("Crystal artifact passives unavailable:", crystalEffectsError);
       const crystalEffects = crystalEffectsData ?? {};
       const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
@@ -2386,8 +2400,6 @@ export default {
       const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
       const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
 
-      const { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError } =
-        await ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId });
       if (expeditionArtifactEffectsError) {
         console.warn("Expedition artifact passives unavailable:", expeditionArtifactEffectsError);
       }
@@ -2406,12 +2418,10 @@ export default {
       const volcanicGemValueMultiplier = Math.max(1, Number(volcanicEffects.gemValueMultiplier ?? 1));
 
       // Research joins the additive personal layer below.
-      specialLuck *= playtimeMultiplier("luck");
       luck += crystalLuckBonus;
       luck += expeditionArtifactLuckBonus;
       // volcanicEffects aliases expeditionArtifactEffects; count its Luck once.
       rollSpeed *= researchNumber("roll_speed_multiplier");
-      rollSpeed *= playtimeMultiplier("rollSpeed");
       rollSpeed += volcanicRollSpeedBonus;
       weightLuck *= researchNumber("weight_luck_multiplier");
       weightLuck *= crystalWeightLuckMultiplier;
@@ -2620,20 +2630,20 @@ export default {
       // already been persisted by claim_server_roll.
       const adminRollSpeedBonus = Number(activeAdminEvent?.roll_speed_bonus ?? 0);
       const adminRollSpeedMultiplier = Number(activeAdminEvent?.roll_speed_multiplier ?? 1);
-      const effectiveRollSpeed = (
+      const effectiveRollSpeed = buffsEnabled ? (
         rollSpeed * eventContext.rollSpeedMultiplier +
         (Number.isFinite(adminRollSpeedBonus) ? adminRollSpeedBonus : 0)
       ) * (
         Number.isFinite(adminRollSpeedMultiplier) && adminRollSpeedMultiplier > 0
           ? adminRollSpeedMultiplier
           : 1
-      ) * volcanicRollSpeedMultiplier;
+      ) * volcanicRollSpeedMultiplier : 1;
 
       const cooldownMs =
         (
           baseCooldownSeconds /
           Math.max(0.000001, effectiveRollSpeed)
-        ) * slowStarterCooldownMultiplier *
+        ) * (buffsEnabled ? slowStarterCooldownMultiplier : 1) *
         1000;
 
 
@@ -2809,6 +2819,7 @@ export default {
 
       // Heart of the Volcano is a final Roll Speed multiplier.
       rollSpeed *= volcanicRollSpeedMultiplier;
+      if (!buffsEnabled) { rollSpeed = 1; weightLuck = 1; weightMultiplier = 1; }
 
 
 
@@ -2899,15 +2910,19 @@ export default {
       luckBreakdown.final = (luckBreakdown.ordinary + luckBreakdown.oneRoll) * luckBreakdown.world;
       luck = luckBreakdown.final;
       baseLuck = luckBreakdown.base * luckBreakdown.personal;
+      if (!buffsEnabled) {
+        luck = baseLuck = 1;
+        Object.assign(luckBreakdown, { base:1, personal:1, ordinary:1, oneRoll:0, world:1, final:1 });
+      }
       const announcedLuck = luck;
       const rollEquipmentGem = () => rollGemWithPickaxePassives(
         luck,
         discoveredGemNames,
-        geologistMultiplier,
-        extremeGemMultiplier,
-        legendaryGemMultiplier,
-        timeWindowMultiplier,
-        eventContext, equipmentContext
+        buffsEnabled ? geologistMultiplier : 1,
+        buffsEnabled ? extremeGemMultiplier : 1,
+        buffsEnabled ? legendaryGemMultiplier : 1,
+        buffsEnabled ? timeWindowMultiplier : 1,
+        buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, buffsEnabled ? equipmentContext : null
       );
 
       // Temporary mutation effects from PREVIOUS rolls.
@@ -2924,7 +2939,7 @@ export default {
 
       // Lucky Break keeps the rarer result.
       if (
-        !relicDrop && enchantId === "lucky_break" &&
+        buffsEnabled && !relicDrop && enchantId === "lucky_break" &&
         random01() < (enchantGrade === "ancient" ? 0.10 : 0.05)
       ) {
         const candidate = rollEquipmentGem();
@@ -2933,7 +2948,7 @@ export default {
 
       // Second Chance compares only base rarity; weight and mutations are
       // generated exactly once for the winner.
-      if (!relicDrop && eventContext.secondChance) {
+      if (buffsEnabled && !relicDrop && eventContext.secondChance) {
         const candidate = rollEquipmentGem();
         if (candidate.rarity > gem.rarity) gem = candidate;
       }
@@ -2977,25 +2992,25 @@ export default {
 
       const surgeProgress = Number(player.gravitational_surge_progress ?? 0);
       const surgeReady = false;
-      const eventWeightLuck = weightLuck * eventWeightLuckFactor(eventContext, gem);
-      const backendTailChance = eventContext.tailContinuationChance ??
+      const eventWeightLuck = buffsEnabled ? weightLuck * eventWeightLuckFactor(eventContext, gem) : 1;
+      const backendTailChance = !buffsEnabled ? 1 / 3 : eventContext.tailContinuationChance ??
         (surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3);
-      const ordinaryTailChance = equipmentContext.flags.crushing ? 0.45 : backendTailChance;
+      const ordinaryTailChance = buffsEnabled && equipmentContext.flags.crushing ? 0.45 : backendTailChance;
       const eventTailChance = collapseRoll ? 0.40 : ordinaryTailChance;
       let rolledWeightMultiplier = rollWeightMultiplier(
         eventWeightLuck,
         eventTailChance,
         surgeReady && hasGravitationalSurge ? 10 : null,
-        equipmentContext.flags.crushing ? 0.40 : eventContext.tailEntryChance ?? 1 / 4,
+        buffsEnabled && equipmentContext.flags.crushing ? 0.40 : (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4,
         heavyStepRoll ? 0.10 : 0,
         collapseRoll
       );
-      if (rolledWeightMultiplier < 1 && random01() < eventContext.poorWeightRerollChance) {
+      if (buffsEnabled && rolledWeightMultiplier < 1 && random01() < eventContext.poorWeightRerollChance) {
         rolledWeightMultiplier = rollWeightMultiplier(
           eventWeightLuck,
           eventTailChance,
           surgeReady && hasGravitationalSurge ? 10 : null,
-          equipmentContext.flags.crushing ? 0.40 : eventContext.tailEntryChance ?? 1 / 4,
+          buffsEnabled && equipmentContext.flags.crushing ? 0.40 : (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4,
           heavyStepRoll ? 0.10 : 0,
           collapseRoll
         );
@@ -3022,8 +3037,7 @@ export default {
       const finalWeight =
         rolledWeight *
         weightMultiplier *
-        masterworkWeightFactor *
-        bagPassiveWeightFactor * (storageRoll ? 1.25 : 1);
+        (buffsEnabled ? masterworkWeightFactor * bagPassiveWeightFactor * (storageRoll ? 1.25 : 1) : 1);
 
 
       // Load the admin-managed mutation catalog when available. The bundled
@@ -3061,7 +3075,6 @@ export default {
       if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
       if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
       mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
-      mutationChanceMultiplier *= playtimeMultiplier("mutation");
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
@@ -3219,7 +3232,10 @@ export default {
 
       // Run alongside the existing crafting-state read; all eligibility and
       // progress changes are serialized in one service-only database call.
-      const bundleRoutePromise = ctx.supabaseAdmin.rpc("bundle_route_roll", {
+      const filterDecision = gemFilterDecision(rollSettings, { ...specimen, effectiveRarity }, discoveredGemNames);
+      const bundleRoutePromise = filterDecision.keep
+        ? Promise.resolve({ data: { status: 'kept', keepInInventory: true, reason: filterDecision.reason }, error: null })
+        : ctx.supabaseAdmin.rpc("bundle_route_roll", {
         p_player_id: playerId, p_lease_id: rollLeaseId, p_specimen: specimen
       }).then((result: any) => result);
       let autoConserved = false;
@@ -3671,7 +3687,7 @@ export default {
           eventWeightLuck,
           ordinaryTailChance,
           surgeReady && hasGravitationalSurge ? 10 : null,
-          eventContext.tailEntryChance ?? 1 / 4
+          (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4
         );
         const duplicateRolledWeight = gem.baseWeight * duplicateWeightMultiplier;
         const duplicateBagPassiveFactor = getLateGameFinalWeightFactor(
@@ -3680,7 +3696,7 @@ export default {
           Number(gem.rarity),
           compressionRoll
         );
-        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * masterworkWeightFactor * duplicateBagPassiveFactor;
+        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * (buffsEnabled ? masterworkWeightFactor * duplicateBagPassiveFactor : 1);
         const duplicateMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
         const duplicateMutationMultiplier = duplicateMutations.reduce(
           (total, mutation) => total * mutation.multiplier,
@@ -3776,7 +3792,7 @@ export default {
         naturalWeight: relicDrop ? null : rolledWeightMultiplier, gem: relicDrop ? null : gem, random: random01
       });
       let breakneckGem: any = null;
-      if (equipmentOutcome.breakneck) {
+      if (buffsEnabled && equipmentOutcome.breakneck) {
         const extra = rollGemWithPickaxePassives(
           luckBreakdown.ordinary * luckBreakdown.world, discoveredGemNames,
           geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext
@@ -3862,10 +3878,10 @@ export default {
             mutationChanceMultiplier,
             rawLuck: luck,
             baseLuck,
-            usedOneRollPotion: Boolean(oneRollLuck > 0),
-            usedLegendaryPotion: usedOneRollConsumable === "legendary-potion",
-            usedMythicPotion: usedOneRollConsumable === "mythic-potion",
-            usedAnyPotion: Boolean(oneRollLuck > 0)
+            usedOneRollPotion: Boolean(buffsEnabled && oneRollLuck > 0),
+            usedLegendaryPotion: buffsEnabled && usedOneRollConsumable === "legendary-potion",
+            usedMythicPotion: buffsEnabled && usedOneRollConsumable === "mythic-potion",
+            usedAnyPotion: Boolean(buffsEnabled && oneRollLuck > 0)
           }, Number(player.total_rolls ?? 0) + 1);
         } catch (error) {
           console.error("Private feature progression update failed:", error);
@@ -3873,7 +3889,7 @@ export default {
       })();
 
       const consumeBoostPromise = (async () => {
-        if (oneRollLuck <= 0) return;
+        if (!buffsEnabled || oneRollLuck <= 0) return;
         const { data: remainingOneRollCharges, error } = await ctx.supabaseAdmin.rpc(
           "spend_one_roll_charge",
           { p_player_id: playerId }
@@ -4081,7 +4097,16 @@ export default {
           ? currentInventoryCount
           : currentInventoryCount +
             1;
-      const inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) + (breakneckGem ? 1 : 0);
+      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) + (breakneckGem ? 1 : 0);
+
+      let filterSale: any = null;
+      if (filterDecision.sell && savedGem && !bundleKeepInInventory && !autoDeposited && !autoConserved) {
+        const { data: money, error: saleError } = await ctx.supabaseAdmin.rpc('sell_inventory_gem', {
+          p_player_id: playerId, p_specimen_id: savedGem.id
+        });
+        if (!saleError) { filterSale = { sold: true, soldValue: value, money }; inventoryCountWithDuplicate -= 1; }
+        else console.error('Gem Filter sale failed; specimen retained:', saleError);
+      }
 
       // Release only the lease owned by this invocation. If this best-effort
       // cleanup fails, the short database expiry safely unlocks the account;
@@ -4104,9 +4129,12 @@ export default {
 
       return jsonResponse({
         playerId,
+        buffsEnabled,
+        finalStats: { luck, rollSpeed: effectiveRollSpeed, weightLuck, weightMultiplier },
+        gemFilter: { ...filterDecision, ...(filterSale ?? { sold: false }) },
 
         specimenId:
-          savedGem?.id ??
+          (filterSale ? null : savedGem?.id) ??
           null,
 
         gem: {
