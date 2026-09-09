@@ -225,7 +225,7 @@ begin
   v_bonus:=coalesce(v_reward->'bonus','{}'::jsonb);
   v_money_cost:=coalesce((v_recipe->>'moneyCost')::double precision,0);
 
-  select money,case when v_recipe->>'equipmentOverhaul'='true' then equipment_genuine_rolls else total_rolls end,best_rare_natural_weight_100k,best_rare_natural_weight_1m
+  select money,total_rolls,best_rare_natural_weight_100k,best_rare_natural_weight_1m
   into v_new_money,v_total_rolls,v_best_100k,v_best_1m
   from public.players where id=v_uid for update;
   if not found then raise exception 'player_not_found'; end if;
