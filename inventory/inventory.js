@@ -1098,6 +1098,8 @@ convertRelicsButton?.addEventListener("click", async () => {
 
 function specialistProgress(item) {
  const data=state.equipmentMechanics??{};const id=item.equipment_id;
+ if(id==='reality-shifter')return `${Number(data.rolls?.[id]??0)%500}/500 genuine rolls · Reality Shift in ${500-Number(data.rolls?.[id]??0)%500}`;
+ if(id==='bedrock-pickaxe')return `Foundation: ${data.foundation??0}/100 · Empowered rolls remaining: ${data.bedrockBurst??0}`;
  if(id==='tectonic-pickaxe')return `Pressure: ${data.pressure??0}/100 · Crushing Depth: ${data.crushing??0} rolls`;
  if(id==='the-accelerator')return `Velocity: ${Math.min(200,data.spool??0)}/200${Number(data.spool??0)>=200?' · Overdrive':''}`;
  if(id==='the-excavator')return `Archaeology: ${data.excavations??0} successful Excavations · Milestones: 25 / 100 / 250 / 500`;
@@ -1151,7 +1153,7 @@ function renderEquipment() {
             <div>
               <div class="equipment-card__name">${escapeHtml(item.name)}</div>
               <div class="equipment-card__meta">
-                ${['plastic-shopping-bag','toy-shovel','silly-fun-happy-pickaxe'].includes(item.equipment_id) ? 'Toy' : PICKAXE_STATS[item.equipment_id] ? 'Endgame pickaxe' : `${escapeHtml(item.category)} · Tier ${item.tier}`}
+                ${['plastic-shopping-bag','toy-shovel','silly-fun-happy-pickaxe','all-rounder-toy','jackpot-slot','money-pickaxe','reality-shifter'].includes(item.equipment_id) ? 'Toy' : PICKAXE_STATS[item.equipment_id] ? 'Endgame pickaxe' : `${escapeHtml(item.category)} · Tier ${item.tier}`}
               </div>
             </div>
 

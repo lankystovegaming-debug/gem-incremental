@@ -1,4 +1,5 @@
 export const GEM_MUTATIONS = Object.freeze({
+  shifted: Object.freeze({id:'shifted',name:'Shifted',chance:5,multiplier:35,exclusive:true,description:'Reality Shift: 20% on every 500th genuine Reality Shifter roll.'}),
   'balanced': Object.freeze({id:'balanced',name:'Balanced',chance:20,multiplier:1.2,exclusive:true}),
   'ascended': Object.freeze({id:'ascended',name:'Ascended',chance:400,multiplier:2,exclusive:true}),
   'silly-small': Object.freeze({id:'silly-small',name:'Silly',chance:2,multiplier:.5,exclusive:true}),

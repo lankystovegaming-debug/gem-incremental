@@ -1,4 +1,4 @@
-import { equipmentTotals, luckLayers, prepareEquipmentRoll } from '../../supabase/functions/roll/equipmentRules.js';
+import { equipmentTotals, luckLayers, prepareEquipmentRoll, sanitizeMaxLuck, capGemLuck } from '../../supabase/functions/roll/equipmentRules.js';
 import { getEquipmentPassive } from '../data/equipmentPassives.js';
 import {
   supabase
@@ -475,7 +475,7 @@ export async function loadCloudDebugState() {
   let specialMultiplier=positiveNumber(authoritativePreview.crystal?.finalLuckMultiplier);
   if(pickaxe?.equipment_id==='celestial-pickaxe'&&Number(player.rarity_resonance??0)>=100) specialMultiplier*=3;
   if(researchEffects.statistical_breakthrough&&((Number(player.total_rolls??0)+1)%250===0))specialMultiplier*=1.2;
-  const previewLayers=luckLayers({pickaxe:equipmentStats.pickaxe,clover:equipmentStats.clover,enchant:enchantComponent,guild:guildLuckMultiplier,research:researchLuckMultiplier,flat:flatLuck,special:specialMultiplier,oneRoll:Number(oneRollBoost?.effect_value??0),world:positiveNumber(worldConfig.luckMultiplier)});
+  const previewLayers=luckLayers({pickaxe:equipmentStats.pickaxe,clover:equipmentStats.clover,enchant:enchantComponent,guild:guildLuckMultiplier,research:researchLuckMultiplier,flat:flatLuck,special:specialMultiplier*(nextEquipment.flags.realityShift?400:1),oneRoll:Number(oneRollBoost?.effect_value??0),world:positiveNumber(worldConfig.luckMultiplier)});
   luck=previewLayers.final;
   statBreakdown.luck=[
     {label:'Pickaxe × Clover',operation:'base',value:previewLayers.base},
@@ -663,16 +663,20 @@ export async function loadCloudDebugState() {
     addMiscBuff('Equipment','Mutation chance',formatMultiplier(admin(.1,'mutation_luck_bonus','mutation_luck_multiplier')));
   }
 
+  const maxLuck=sanitizeMaxLuck(savedPreferences?.settings?.maxLuck);
+  const uncappedLuck=buffsEnabled?luck:1;
+  const usedLuck=capGemLuck(uncappedLuck,maxLuck);
+  if(maxLuck!=null) addMiscBuff('Settings','Max Luck',formatMultiplier(maxLuck),`Gem selection: ${formatMultiplier(usedLuck)} (uncapped ${formatMultiplier(uncappedLuck)}). Flat gems are unaffected.`);
   return {
     stats: {
       buffsEnabled,
-      luck: buffsEnabled ? luck : 1,
+      luck: usedLuck, maxLuck, uncappedLuck,
       rollSpeed: buffsEnabled ? rollSpeed : 1,
       weightLuck: buffsEnabled ? weightLuck : 1,
       weightMultiplier: buffsEnabled ? weightMultiplier : 1,
       breakdown: statBreakdown,
       luckLayers: previewLayers,
-      mutationChance: pickaxe?.equipment_id==='all-in-pickaxe' ? (.1+Number(activeAdminEvent?.mutation_luck_bonus??0))*positiveNumber(activeAdminEvent?.mutation_luck_multiplier) : equipmentStats.mutation,
+      mutationChance: pickaxe?.equipment_id==='reality-shifter' ? 0 : pickaxe?.equipment_id==='all-in-pickaxe' ? (.1+Number(activeAdminEvent?.mutation_luck_bonus??0))*positiveNumber(activeAdminEvent?.mutation_luck_multiplier) : equipmentStats.mutation,
       previewNote: preferencesError ? "Preferences unavailable; showing an unverified build preview." : !buffsEnabled ? "Buffs disabled — all four core stats are 1×. The build breakdown below is inactive." : "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
       miscellaneousBuffs: miscBuffs
     },

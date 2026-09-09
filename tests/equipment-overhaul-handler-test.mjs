@@ -66,7 +66,7 @@ forceProcs=false;
 qolSettings={enableBuffs:false,discoveryKeep:false};
 for(const id of Object.keys(PICKAXE_STATS)) {
  result=await run(id,{},'slow_starter');
- assert.deepEqual(result.finalStats,{luck:1,rollSpeed:1,weightLuck:1,weightMultiplier:1});
+ assert.deepEqual(result.finalStats,{luck:1,uncappedLuck:1,maxLuck:null,rollSpeed:1,weightLuck:1,weightMultiplier:1});
  assert.equal(result.cooldown.durationMs,2500);
  assert.equal(saved.luck_at_roll,1);
  assert.equal(saved.final_weight,saved.rolled_weight);

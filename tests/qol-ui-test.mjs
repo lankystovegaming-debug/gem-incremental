@@ -46,6 +46,14 @@ try {
  });
  await page.goto('http://qol.test/settings/');await page.getByText('1105 matching discovered gems',{exact:false}).waitFor();
  assert.equal(await page.locator('.qol-filter-row').count(),50);
+ assert.equal(await page.locator('#maxLuck').inputValue(),'');
+ await page.locator('#maxLuck').fill('7.5');await page.locator('#maxLuck').dispatchEvent('change');
+ await page.waitForFunction(()=>!document.getElementById('maxLuck').disabled);assert.equal(settings.maxLuck,7.5);
+ await page.reload();await page.getByText('1105 matching discovered gems',{exact:false}).waitFor();assert.equal(await page.locator('#maxLuck').inputValue(),'7.5');
+ await page.locator('#maxLuck').fill('-1');await page.locator('#maxLuck').dispatchEvent('change');assert.equal(settings.maxLuck,7.5);
+ await page.locator('#maxLuck').fill('');await page.locator('#maxLuck').dispatchEvent('change');
+ await page.waitForFunction(()=>!document.getElementById('maxLuck').disabled);assert.equal(settings.maxLuck,null);
+
  await page.getByText('Enable Buffs',{exact:true}).click();await page.waitForFunction(()=>!document.getElementById('enableBuffs').disabled);assert.equal(settings.enableBuffs,false);
  await page.locator('#gemFilterSearch').fill('Gem 10');await page.locator('#gemFilterSelectAll').check();
  await page.locator('#gemFilterBulk').selectOption('KEEP');await page.locator('#gemFilterApply').click();await page.waitForFunction(()=>!document.getElementById('gemFilterApply').disabled);

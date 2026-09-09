@@ -732,6 +732,7 @@ function recipeCard(recipe) {
           ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
           : `
             <div class="requirements">${requirementsHtml}</div>
+            ${recipe.consumeMaterials ? '<p class="recipe-card__description">Materials are consumed. Deposit all uses matching unlocked inventory gems; Auto Craft collects future rolls.</p>' : ""}
 
             <div class="recipe-cost">
               <span>Cost</span>
@@ -744,6 +745,7 @@ function recipeCard(recipe) {
             </div>
 
             <div class="recipe-card__actions">
+              ${recipe.consumeMaterials ? '<button class="btn" data-action="deposit-all" type="button">Deposit all materials</button>' : ""}
               <button class="btn" data-action="auto" type="button">
                 ${icons.bolt}
                 Auto ${isAutoTarget ? "on" : "off"}

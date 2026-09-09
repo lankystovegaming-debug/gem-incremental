@@ -1,5 +1,6 @@
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
+ 'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3.1,1.05,5,1.55],
  'fortune-pickaxe':[33,2.7,.95,4,1.4], 'all-in-pickaxe':[250,.2,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[24,3,1,3.5,1.4],
@@ -9,7 +10,7 @@ export const PICKAXE_STATS = {
  'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
 };
 export const ASCENDED_VALUE = 2;
-export const SERIOUS_PICKAXES = ['celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
+export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
 export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
 export const EXCAVATION_LOOT = [
  [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
@@ -23,14 +24,17 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
-export function prepareEquipmentRoll(id,saved={},random=Math.random) {
+export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
  let stats=PICKAXE_STATS[id]?.slice()??null;
  const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
   surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
   crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
-  wrongTool:false,closeEnough:false,borrowed:null};
+  wrongTool:false,closeEnough:false,borrowed:null,
+  realityShift:genuine&&id==='reality-shifter'&&(rolls+1)%500===0,
+  foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0};
+ if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
  if(id==='toy-shovel'&&random()<1/67) {
   flags.wrongTool=true;
@@ -42,8 +46,9 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random) {
 export function specialChance(id,gem,state) {
  return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
 }
-export function exclusiveMutations(id,random=Math.random,genuine=true) {
+export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
  if(!genuine) return [];
+ if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
  if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
  if(id!=='silly-fun-happy-pickaxe') return [];
@@ -53,6 +58,16 @@ export function finishEquipmentRoll(context,{naturalWeight,gem,random=Math.rando
  const {id,flags}=context;const state=structuredClone(context.state);
  if(!genuine) return {state,loot:null,breakneck:false};
  state.rolls={...state.rolls,[id]:Number(state.rolls?.[id]??0)+1};
+ if(id==='bedrock-pickaxe') {
+  if(flags.foundationBurst) state.bedrockBurst=Math.max(0,Number(state.bedrockBurst)-1);
+  else if(gem) {
+   const rarity=Number(gem.rarity);
+   // Matches public.expedition_rarity_rank: Common <10, Uncommon <50, Rare <100.
+   const gain=rarity>=1&&rarity<10?2:rarity>=10&&rarity<50?3:rarity>=50&&rarity<100?5:0;
+   state.foundation=Math.min(100,Math.max(0,Number(state.foundation??0))+gain);
+   if(state.foundation===100) {state.foundation=0;state.bedrockBurst=10;}
+  }
+ }
  if(id==='the-accelerator') state.spool=Number(state.spool??0)+1;
  if(id==='tectonic-pickaxe') {
   if(flags.crushing) state.crushing=Math.max(0,Number(state.crushing)-1);
@@ -98,3 +113,14 @@ export function jackpotRoll(id, genuineRoll, random=Math.random, genuine=true) {
 }
 export const eligibleEquipmentGems = (gems,id) => id==='money-pickaxe' ? gems.filter(g=>Number(g.rarity)<100) : gems;
 export const flatEquipmentChance = id => id==='all-in-pickaxe'?4:1;
+
+// Persisted settings are still checked at the authoritative selection boundary.
+export function sanitizeMaxLuck(value) {
+ if(value==null || (typeof value==='string' && value.trim()==='')) return null;
+ if(!['number','string'].includes(typeof value)) return null;
+ const n=Number(value);
+ return Number.isFinite(n)&&n>=1&&n<=Number.MAX_SAFE_INTEGER?n:null;
+}
+export function capGemLuck(luck,maxLuck) {
+ const cap=sanitizeMaxLuck(maxLuck);return cap==null?luck:Math.min(luck,cap);
+}

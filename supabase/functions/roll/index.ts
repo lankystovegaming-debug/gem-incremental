@@ -22,6 +22,7 @@ export function gemFilterDecision(settings, specimen, discovered) {
 
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
+ 'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3.1,1.05,5,1.55],
  'fortune-pickaxe':[33,2.7,.95,4,1.4], 'all-in-pickaxe':[250,.2,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[24,3,1,3.5,1.4],
@@ -31,7 +32,7 @@ export const PICKAXE_STATS = {
  'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
 };
 export const ASCENDED_VALUE = 2;
-export const SERIOUS_PICKAXES = ['celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
+export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
 export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
 export const EXCAVATION_LOOT = [
  [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
@@ -45,14 +46,17 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
-export function prepareEquipmentRoll(id,saved={},random=Math.random) {
+export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
  let stats=PICKAXE_STATS[id]?.slice()??null;
  const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
   surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
   crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
-  wrongTool:false,closeEnough:false,borrowed:null};
+  wrongTool:false,closeEnough:false,borrowed:null,
+  realityShift:genuine&&id==='reality-shifter'&&(rolls+1)%500===0,
+  foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0};
+ if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
  if(id==='toy-shovel'&&random()<1/67) {
   flags.wrongTool=true;
@@ -64,8 +68,9 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random) {
 export function specialChance(id,gem,state) {
  return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
 }
-export function exclusiveMutations(id,random=Math.random,genuine=true) {
+export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
  if(!genuine) return [];
+ if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
  if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
  if(id!=='silly-fun-happy-pickaxe') return [];
@@ -75,6 +80,16 @@ export function finishEquipmentRoll(context,{naturalWeight,gem,random=Math.rando
  const {id,flags}=context;const state=structuredClone(context.state);
  if(!genuine) return {state,loot:null,breakneck:false};
  state.rolls={...state.rolls,[id]:Number(state.rolls?.[id]??0)+1};
+ if(id==='bedrock-pickaxe') {
+  if(flags.foundationBurst) state.bedrockBurst=Math.max(0,Number(state.bedrockBurst)-1);
+  else if(gem) {
+   const rarity=Number(gem.rarity);
+   // Matches public.expedition_rarity_rank: Common <10, Uncommon <50, Rare <100.
+   const gain=rarity>=1&&rarity<10?2:rarity>=10&&rarity<50?3:rarity>=50&&rarity<100?5:0;
+   state.foundation=Math.min(100,Math.max(0,Number(state.foundation??0))+gain);
+   if(state.foundation===100) {state.foundation=0;state.bedrockBurst=10;}
+  }
+ }
  if(id==='the-accelerator') state.spool=Number(state.spool??0)+1;
  if(id==='tectonic-pickaxe') {
   if(flags.crushing) state.crushing=Math.max(0,Number(state.crushing)-1);
@@ -120,6 +135,17 @@ export function jackpotRoll(id, genuineRoll, random=Math.random, genuine=true) {
 }
 export const eligibleEquipmentGems = (gems,id) => id==='money-pickaxe' ? gems.filter(g=>Number(g.rarity)<100) : gems;
 export const flatEquipmentChance = id => id==='all-in-pickaxe'?4:1;
+
+// Persisted settings are still checked at the authoritative selection boundary.
+export function sanitizeMaxLuck(value) {
+ if(value==null || (typeof value==='string' && value.trim()==='')) return null;
+ if(!['number','string'].includes(typeof value)) return null;
+ const n=Number(value);
+ return Number.isFinite(n)&&n>=1&&n<=Number.MAX_SAFE_INTEGER?n:null;
+}
+export function capGemLuck(luck,maxLuck) {
+ const cap=sanitizeMaxLuck(maxLuck);return cap==null?luck:Math.min(luck,cap);
+}
 
 
 export type RandomSource = () => number;
@@ -978,9 +1004,10 @@ function rollGemWithPickaxePassives(
   legendaryGemMultiplier = 1,
   timeWindowMultiplier = 1,
   eventContext: any = null,
-  equipmentContext: any = null
+  equipmentContext: any = null,
+  maxLuck: number | null = null
 ) {
-  const safeLuck = Math.max(0.000001, luck);
+  const safeLuck = Math.max(0.000001, capGemLuck(luck, maxLuck));
   const eligibleGems = eligibleEquipmentGems(gems, equipmentContext?.id);
   const maximumRarity = Math.max(...eligibleGems.map((gem) => gem.rarity));
   const rarityFloor = Math.min(safeLuck, maximumRarity);
@@ -994,12 +1021,13 @@ function rollGemWithPickaxePassives(
       if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) / gem.rarity, 1)) return gem;
       continue;
     }
-    let gemLuck = safeLuck * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
+    let gemLuck = Math.max(0.000001, luck) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
     if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
     if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
     if (eventContext && !eventContext.buffsDisabled) gemLuck *= eventGemLuckFactor(eventContext, gem);
+    gemLuck = capGemLuck(gemLuck, maxLuck);
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
   const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
@@ -1033,7 +1061,7 @@ function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
   const safeMultiplier = Math.max(0, Number.isFinite(Number(chanceMultiplier)) ? Number(chanceMultiplier) : 1);
 
   return gemMutations.flatMap((mutation) => {
-    if(mutation.id==='balanced') return []; // Equipment-exclusive even if added to the admin catalog.
+    if(['balanced','shifted'].includes(mutation.id)) return []; // Equipment-exclusive even if added to the admin catalog.
     const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
     if (eventFactor <= 0) return [];
     const chance = Math.min(mutation.chance * safeMultiplier * eventFactor, 1);
@@ -2964,7 +2992,7 @@ export default {
         pickaxe: equipmentStats.pickaxe, clover: equipmentStats.clover,
         enchant: enchantLuck + (alignmentRoll ? 50 : 0), guild: guildLuck,
         research: researchNumber("luck_multiplier"), focused: focusedLuck,
-        flat: luck - equipmentStats.luck, special: specialLuck * slotOutcome.luck,
+        flat: luck - equipmentStats.luck, special: specialLuck * slotOutcome.luck * (equipmentContext.flags.realityShift ? 400 : 1),
         oneRoll: Number.isFinite(oneRollLuck) ? Math.max(0, oneRollLuck) : 0,
         world: eventContext.luckMultiplier * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1))
       });
@@ -2983,15 +3011,19 @@ export default {
         luck=(250+Number(activeAdminEvent?.luck_bonus??0))*Math.max(.000001,Number(activeAdminEvent?.luck_multiplier??1));
         Object.assign(luckBreakdown,{base:250,personal:1,flat:0,special:1,ordinary:250,oneRoll:0,world:luck/250,final:luck});
       }
+      const uncappedLuck = luck;
+      const maxLuck = sanitizeMaxLuck(rollSettings.maxLuck);
+      luck = capGemLuck(luck, maxLuck);
+      Object.assign(luckBreakdown, {maxLuck, used:luck});
       const announcedLuck = luck;
       const rollEquipmentGem = () => rollGemWithPickaxePassives(
-        luck,
+        uncappedLuck,
         discoveredGemNames,
         buffsEnabled ? geologistMultiplier : 1,
         buffsEnabled ? extremeGemMultiplier : 1,
         buffsEnabled ? legendaryGemMultiplier : 1,
         buffsEnabled ? timeWindowMultiplier : 1,
-        allIn ? {...availabilityEventContext,buffsDisabled:true} : buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, equipmentContext
+        allIn ? {...availabilityEventContext,buffsDisabled:true} : buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, equipmentContext, maxLuck
       );
 
       // Temporary mutation effects from PREVIOUS rolls.
@@ -3167,9 +3199,10 @@ export default {
       }
 
       if (eternityRoll) mutationChanceMultiplier += 50;
+      if(equipmentContext.id==='reality-shifter') mutationChanceMultiplier=0;
       const mutations = relicDrop
         ? []
-        : [...rollGemMutations(mutationChanceMultiplier, eventContext), ...exclusiveMutations(equipmentContext.id, random01)];
+        : [...rollGemMutations(mutationChanceMultiplier, eventContext), ...exclusiveMutations(equipmentContext.id, random01, true, equipmentContext.flags)];
 
       const mutationMultiplier =
         mutations.reduce(
@@ -3872,7 +3905,7 @@ export default {
       if (buffsEnabled && equipmentOutcome.breakneck) {
         const extra = rollGemWithPickaxePassives(
           luckBreakdown.ordinary * luckBreakdown.world, discoveredGemNames,
-          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext
+          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext, null, maxLuck
         );
         const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
         const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
@@ -3888,7 +3921,7 @@ export default {
             (extraMutations.length ? researchNumber('mutated_value_multiplier') * (1 + Math.min(5,extraMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0))) : 1) *
             crystalGemValueMultiplier * expeditionArtifactGemValueMultiplier * volcanicGemValueMultiplier *
             (extraWeight >= 2 ? crystalHeavyGemValueMultiplier : 1) * (mineArtifacts.has('bedrock-crown') ? 1.05 : 1) * eventContext.valueMultiplier,
-          luck_at_roll: luckBreakdown.ordinary * luckBreakdown.world, locked: false
+          luck_at_roll: capGemLuck(luckBreakdown.ordinary * luckBreakdown.world, maxLuck), locked: false
         };
       }
       const { data: equipmentCommit, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('commit_equipment_roll', {
@@ -4207,7 +4240,7 @@ export default {
       return jsonResponse({
         playerId,
         buffsEnabled,
-        finalStats: { luck, rollSpeed: effectiveRollSpeed, weightLuck, weightMultiplier },
+        finalStats: { luck, uncappedLuck, maxLuck, rollSpeed: effectiveRollSpeed, weightLuck, weightMultiplier },
         gemFilter: { ...filterDecision, ...(filterSale ?? { sold: false }) },
 
         specimenId:

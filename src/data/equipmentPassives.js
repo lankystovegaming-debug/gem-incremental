@@ -42,6 +42,8 @@ for (const id of Object.keys(EQUIPMENT_PASSIVES)) {
  if (!id.endsWith('pickaxe') && id !== 'plastic-shopping-bag') delete EQUIPMENT_PASSIVES[id];
 }
 Object.assign(EQUIPMENT_PASSIVES, {
+ 'reality-shifter': {name:'Reality Shift',description:'Every 500th genuine roll with this Toy gains ×400 Luck and independently has a 20% chance of Shifted: ×35 value. Ordinary mutations are disabled. Progress persists when switched out.'},
+ 'bedrock-pickaxe': {name:'From the Ground Up',description:'Genuine Common / Uncommon / Rare rolls gain 2 / 3 / 5 Foundation. At 100, reset and empower the next 10 genuine rolls: ×1.50 Luck, ×1.25 Weight Luck, ×1.10 Weight Multiplier. Foundation pauses during the burst; all progress persists. Use Max Luck to gather low-tier materials.'},
  'all-in-pickaxe': {name:'All-In',description:'Ignores every personal and external buff. Admin Events alone remain. Flat-luck gems have 4× probability. Equipment stays equipped; potion timers continue.'},
  'all-rounder-toy': {name:'Balanced',description:'Each genuine roll has an independent 1/20 chance of Balanced: ×1.2 value, stacking with ordinary mutations.'},
  'jackpot-slot': {name:'Jackpot / House Edge',description:'Independent Luck multipliers: 1/77 ×0.77; 1/777 ×1.77; every 7th genuine roll ×0.77; every 777th ×7.77. House Edge: 0.77% of genuine rolls give no gem or reward, but still count for progression.'},
