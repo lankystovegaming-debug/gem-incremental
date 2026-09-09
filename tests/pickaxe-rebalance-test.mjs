@@ -49,7 +49,7 @@ for(const id of Object.keys(expected)) {
  assert.deepEqual(rules.finishEquipmentRoll(context,{genuine:false,gem:{rarity:2},random:()=>0}).state,context.state);
 }
 for(const [id,rolls] of [['empyrean-pickaxe',250000],['eternity-pickaxe',300000],['the-accelerator',250000],['bedrock-pickaxe',250000]]) {
- const r=recipes.find(r=>r.id===id);assert.ok(r.requirements.some(q=>q.type==='equipment-history'&&q.metric==='genuineRolls'&&q.amount===rolls&&q.consume===false));
+ const r=recipes.find(r=>r.id===id);assert.ok(r.requirements.some(q=>q.type==='lifetime-rolls'&&q.rolls===rolls));
 }
 console.log('Pickaxe rebalance: exact stats, production Fortune probability/cap boundaries, unchanged Toy borrowing, resonance bands, all Archaeology loot tiers and generated-roll guards passed.');
 
