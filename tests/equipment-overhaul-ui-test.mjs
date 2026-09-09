@@ -25,10 +25,12 @@ await page.setViewportSize({width:390,height:844});await page.screenshot({path:t
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');await page.locator('[data-category="pickaxe"]').click();
 for(const name of ['Fortune Pickaxe','All-In Pickaxe','Bedrock Pickaxe']) assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1);
 assert.ok((await page.locator('#recipeList').innerText()).includes('Uncommon'));
+for(const label of ['Raw rarity','Rarity bursts','Mutations','Huge specimens','Roll volume','Special Gems','Consumables','Foundation bursts','Generalist']) assert.equal(await page.getByText('Best for: '+label,{exact:true}).count(),1,label);
 assert.equal(await page.getByRole('button',{name:'Deposit all materials',exact:true}).count(),1);
 await page.getByRole('button',{name:'Deposit all materials',exact:true}).click();
 await page.waitForFunction(()=>window.__deposits?.length===4);
 assert.deepEqual(await page.evaluate(()=>window.__deposits.map(d=>[d.id,d.index])),[0,1,2,3].map(i=>['bedrock-pickaxe',i]));
+await page.locator('article').filter({has:page.getByText('Bedrock Pickaxe',{exact:true})}).screenshot({path:tmpdir()+'/bedrock-card-mobile.png'});
 await page.screenshot({path:tmpdir()+'/bedrock-mobile.png',fullPage:true});
 
 assert.equal(await page.locator('#recipeList').getByText('Reality Shifter',{exact:true}).count(),0);

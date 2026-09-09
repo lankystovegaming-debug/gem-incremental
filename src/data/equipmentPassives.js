@@ -42,6 +42,7 @@ for (const id of Object.keys(EQUIPMENT_PASSIVES)) {
  if (!id.endsWith('pickaxe') && id !== 'plastic-shopping-bag') delete EQUIPMENT_PASSIVES[id];
 }
 Object.assign(EQUIPMENT_PASSIVES, {
+ 'fortune-pickaxe': {name:'Fortune Favors the Bold',description:'1.10× effective Luck for Luck-affected gems with raw rarity 1/1,000,000 or rarer. Flat-luck gems are unaffected.'},
  'reality-shifter': {name:'Reality Shift',description:'Every 500th genuine roll with this Toy gains ×400 Luck and independently has a 20% chance of Shifted: ×35 value. Ordinary mutations are disabled. Progress persists when switched out.'},
  'bedrock-pickaxe': {name:'From the Ground Up',description:'Genuine Common / Uncommon / Rare rolls gain 2 / 3 / 5 Foundation. At 100, reset and empower the next 10 genuine rolls: ×1.50 Luck, ×1.25 Weight Luck, ×1.10 Weight Multiplier. Foundation pauses during the burst; all progress persists. Use Max Luck to gather low-tier materials.'},
  'all-in-pickaxe': {name:'All-In',description:'Ignores every personal and external buff. Admin Events alone remain. Flat-luck gems have 4× probability. Equipment stays equipped; potion timers continue.'},
@@ -49,7 +50,7 @@ Object.assign(EQUIPMENT_PASSIVES, {
  'jackpot-slot': {name:'Jackpot / House Edge',description:'Independent Luck multipliers: 1/77 ×0.77; 1/777 ×1.77; every 7th genuine roll ×0.77; every 777th ×7.77. House Edge: 0.77% of genuine rolls give no gem or reward, but still count for progression.'},
  'money-pickaxe': {name:'Cheap Taste',description:'Only Common and Rare-range gems below 1/100 can roll. Buffs cannot bypass this ceiling.'},
  'empyrean-pickaxe': {name:'Ascension',description:'Every 1,000 genuine Empyrean rolls, the next 10 add +50 to the enchant component. Exclusive Ascended mutation: 1/400, ×2 value.'},
- 'eternity-pickaxe': {name:'Eternal Surge',description:'Every 1,000 genuine Eternity rolls, the next 10 add +50 mutation chance. Mutations stack independently.'},
+ 'eternity-pickaxe': {name:'Mutation Surge',description:'Every 1,000 genuine Eternity rolls, the next 10 add +50 mutation chance. Mutations stack independently.'},
  'tectonic-pickaxe': {name:'Deep Pressure / Crushing Depth',description:'Light natural specimens build Pressure. At 100, the next 5 genuine rolls use 40% tail entry and 45% continuation. No guaranteed heavy result.'},
  'the-accelerator': {name:'Velocity / Breakneck',description:'Spools to 3.8× speed after 200 rolls. Switching pickaxe resets the spool. At full Overdrive, 1/100 genuine rolls grants an extra nonrecursive roll.'},
  'the-resonator': {name:'Resonance',description:'1.25× Special Gem Chance. Discovering a Special Gem builds permanent per-gem Resonance, up to 1.875× chance.'},
@@ -60,3 +61,15 @@ Object.assign(EQUIPMENT_PASSIVES, {
 export function getEquipmentPassive(equipmentId) {
  return EQUIPMENT_PASSIVES[equipmentId] ?? null;
 }
+
+export const PICKAXE_SPECIALTIES = {
+  "fortune-pickaxe": "Raw rarity",
+  "empyrean-pickaxe": "Rarity bursts",
+  "eternity-pickaxe": "Mutations",
+  "tectonic-pickaxe": "Huge specimens",
+  "the-accelerator": "Roll volume",
+  "the-resonator": "Special Gems",
+  "the-excavator": "Consumables",
+  "bedrock-pickaxe": "Foundation bursts",
+  "celestial-pickaxe": "Generalist"
+};

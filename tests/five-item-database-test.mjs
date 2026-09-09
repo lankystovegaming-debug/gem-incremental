@@ -95,6 +95,7 @@ insert into best_roll_history values('${uid}',1,'History',5000000,1),('${uid}',2
 update players set roll_lease_expires_at=null;
 `);
 await db.exec(read('../supabase/migrations/20260909023444_five_item_equipment_batch.sql'));
+await db.exec(read('../supabase/migrations/20260909100058_serious_pickaxe_desirability_rebalance.sql'));
 assert.equal((await q("select chance from game_mutations where id='balanced' and enabled"))[0].chance,'20');
 let history=(await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory;
 assert.equal(history.raw5m,3);assert.equal(history.raw10m,1);
@@ -106,7 +107,7 @@ const fund=async r=>{
 };
 for(const recipe of fiveItemRecipes)await fund(recipe);
 await q("select craft_equipment_recipe('fortune-pickaxe')");
-assert.equal((await q("select luck_bonus from player_equipment where equipment_id='fortune-pickaxe'"))[0].luck_bonus,32);
+assert.equal((await q("select luck_bonus from player_equipment where equipment_id='fortune-pickaxe'"))[0].luck_bonus,34);
 await assert.rejects(()=>q("select craft_equipment_recipe('all-in-pickaxe')"),/requirements_not_met/);
 for(const id of ['empyrean-pickaxe','eternity-pickaxe']) await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,$2,'pickaxe',15,$2,false) on conflict(player_id,equipment_id) do update set equipped=false",[uid,id]);
 // Historical ownership survives loss/consumption of the item; Celestial and Toys do not count.
@@ -138,5 +139,9 @@ console.log('Five-item database: live-compatible migration, historical gates/bac
 if(process.env.REALITY_BEDROCK_DB_TEST) {
  const {testRealityBedrockDatabase}=await import('./reality-bedrock-database-cases.mjs');
  await testRealityBedrockDatabase({db,q,uid,read,fund});
+}
+if(process.env.PICKAXE_REBALANCE_DB_TEST) {
+ const {testPickaxeRebalanceDatabase}=await import('./pickaxe-rebalance-database-cases.mjs');
+ await testPickaxeRebalanceDatabase({db,q,uid,read,fund});
 }
 await db.close();

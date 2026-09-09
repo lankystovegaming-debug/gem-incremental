@@ -4,6 +4,7 @@ export async function testRealityBedrockDatabase({db,q,uid,read,fund}) {
  await db.exec(`create table player_settings(player_id uuid primary key,settings jsonb not null default '{}',updated_at timestamptz default now());`);
  await db.exec(read('../supabase/migrations/20260908124328_qol_gem_filter_buffs_loadouts.sql'));
  await db.exec(read('../supabase/migrations/20260909060453_reality_shifter_bedrock_max_luck.sql'));
+ await db.exec(read('../supabase/migrations/20260909100058_serious_pickaxe_desirability_rebalance.sql'));
  const scalar=async(sql,args=[])=>Object.values((await q(sql,args))[0])[0];
  const [reality,bedrock]=realityBedrockRecipes;
  for(const recipe of realityBedrockRecipes)assert.deepEqual(await scalar('select recipe from game_recipes where id=$1',[recipe.id]),recipe);
@@ -55,7 +56,7 @@ export async function testRealityBedrockDatabase({db,q,uid,read,fund}) {
  assert.equal(await scalar('select money from players where id=$1',[uid]),875000000);
  await q('update players set equipment_genuine_rolls=250000 where id=$1',[uid]);
  await q("select craft_equipment_recipe('bedrock-pickaxe')");
- assert.equal(await scalar('select money from players where id=$1',[uid]),725000000);
+ assert.equal(await scalar('select money from players where id=$1',[uid]),775000000);
  assert.equal(await scalar("select luck_bonus from player_equipment where equipment_id='bedrock-pickaxe'"),24);
  assert.equal(await scalar("select count(*) from player_equipment where equipment_id='reality-shifter'"),1);
  assert.equal(await scalar('select equipment_genuine_rolls from players where id=$1',[uid]),250000);

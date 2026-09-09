@@ -1,13 +1,24 @@
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
- 'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3.1,1.05,5,1.55],
- 'fortune-pickaxe':[33,2.7,.95,4,1.4], 'all-in-pickaxe':[250,.2,.1,.1,.1],
+ 'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.2,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
- 'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[24,3,1,3.5,1.4],
- 'eternity-pickaxe':[22,3,1.1,4,1.45], 'tectonic-pickaxe':[20,2.6,1,7,1.85],
- 'the-accelerator':[21,3.4,.9,3,1.3], 'the-resonator':[20,2.8,1,3.5,1.35],
- 'the-excavator':[19,2.9,.95,3.25,1.3], 'toy-shovel':[17,2.4,.8,2.5,1.2],
+ 'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
+ 'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
+ 'the-accelerator':[24,3.4,1,4,1.4], 'the-resonator':[24,2.9,1,4,1.45],
+ 'the-excavator':[24,3,1,4,1.4], 'toy-shovel':[17,2.4,.8,2.5,1.2],
  'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
+};
+// Toy Shovel retains its pre-rebalance borrowed stats.
+const TOY_BORROWED_STATS = {
+ 'fortune-pickaxe':[33,2.7,.95,4,1.4],
+ 'empyrean-pickaxe':[24,3,1,3.5,1.4],
+ 'eternity-pickaxe':[22,3,1.1,4,1.45],
+ 'tectonic-pickaxe':[20,2.6,1,7,1.85],
+ 'the-accelerator':[21,3.4,.9,3,1.3],
+ 'the-resonator':[20,2.8,1,3.5,1.35],
+ 'the-excavator':[19,2.9,.95,3.25,1.3],
+ 'bedrock-pickaxe':[25,3.1,1.05,5,1.55]
 };
 export const ASCENDED_VALUE = 2;
 export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
@@ -39,7 +50,7 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
  if(id==='toy-shovel'&&random()<1/67) {
   flags.wrongTool=true;
   if(random()<1/67) {flags.closeEnough=true;stats=[67,2.4,6.7,6.7,2.67];}
-  else {flags.borrowed=SERIOUS_PICKAXES[Math.floor(random()*SERIOUS_PICKAXES.length)];stats=PICKAXE_STATS[flags.borrowed].slice();stats[1]=2.4;}
+  else {flags.borrowed=SERIOUS_PICKAXES[Math.floor(random()*SERIOUS_PICKAXES.length)];stats=(TOY_BORROWED_STATS[flags.borrowed]??PICKAXE_STATS[flags.borrowed]).slice();stats[1]=2.4;}
  }
  return {id,state,stats,flags};
 }
@@ -124,3 +135,5 @@ export function sanitizeMaxLuck(value) {
 export function capGemLuck(luck,maxLuck) {
  const cap=sanitizeMaxLuck(maxLuck);return cap==null?luck:Math.min(luck,cap);
 }
+
+export const fortuneLuckFactor = (id,gem) => id==='fortune-pickaxe' && gem.affectedByLuck!==false && Number(gem.rarity)>=1000000 ? 1.1 : 1;
