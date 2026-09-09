@@ -33,7 +33,7 @@ assert.doesNotMatch(read("crafting/crafting.js"), /Lanterns have been deprecated
 assert.match(crafting, /data-category="clover"/);
 assert.equal(recipes.some((recipe) => recipe.category === "lantern"), true);
 for (const recipe of recipes.filter((entry) => entry.category === "pickaxe")) {
-  assert.ok(Number(recipe.reward?.bonus?.luck) > 0, `${recipe.id} gives Luck`);
+  assert.ok(Number(recipe.reward?.bonus?.luck) > -1, `${recipe.id} has positive total Luck`);
   assert.ok(Number(recipe.reward?.bonus?.rollSpeed) > -1, `${recipe.id} gives Roll Speed`);
 }
 assert.match(migration, /set equipped=false,roll_speed_bonus=0[\s\S]*category='lantern'/);

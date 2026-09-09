@@ -32,7 +32,7 @@ for (const [id, [category, tier, stat, bonus, cost]] of Object.entries(expected)
 assert.equal(recipes.some((recipe) => recipe.category === "lantern"), true);
 assert.deepEqual(
   recipes.filter((recipe) => recipe.category === "pickaxe").map((recipe) => recipe.reward.bonus.rollSpeed),
-  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 2, 2, 1.6, 2.4, 1.8, 1.9, 1.4, -0.5]
+  [0.05, 0.10, 0.20, 0.30, 0.45, 0.60, 0.80, 1.00, 1.15, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 2, 2, 1.6, 2.4, 1.8, 1.9, 1.4, -0.5, 1.7, -0.8, 1, 0.77, -0.7]
 );
 
 assert.deepEqual(recipes.find((recipe) => recipe.id === "astral-pickaxe").requirements, [
@@ -53,7 +53,7 @@ assert.deepEqual(recipes.find((recipe) => recipe.id === "celestial-pickaxe").req
   { type: "lifetime-rolls", rolls: 60000 }
 ]);
 
-assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), ['eclipse-pickaxe','singularity-pickaxe','transcendent-pickaxe','astral-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','toy-shovel','silly-fun-happy-pickaxe','plastic-shopping-bag'].sort());
+assert.deepEqual(Object.keys(EQUIPMENT_PASSIVES).sort(), ['eclipse-pickaxe','singularity-pickaxe','transcendent-pickaxe','astral-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','toy-shovel','silly-fun-happy-pickaxe','plastic-shopping-bag','all-in-pickaxe','all-rounder-toy','jackpot-slot','money-pickaxe'].sort());
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),

@@ -205,6 +205,7 @@ export function isRequirementComplete(
     );
   }
 
+  if (requirement.type === 'equipment-history') return Number(inventory.specialDiscoveries?.batchHistory?.[requirement.metric]??0)>=requirement.amount;
   if (requirement.type === 'special-discoveries') return Number(inventory.specialDiscoveries?.[requirement.classification]??0)>=requirement.amount;
   if (requirement.type === 'potion-tier') return (inventory.consumables??[]).filter(p=>/^(lucky|speed|fortune|mass)-potion-/.test(p.consumable_id)&&p.consumable_id.endsWith('-'+requirement.tier)).reduce((n,p)=>n+Number(p.quantity??0),0)>=requirement.amount;
   if (requirement.type === "consumable") {
@@ -473,7 +474,8 @@ export function tryAutoDeposit(
       requirement.type === "equipment" ||
       requirement.type === "consumable" ||
       requirement.type === "lifetime-rolls" ||
-      requirement.type === "roll-history-condition"
+      requirement.type === "roll-history-condition" ||
+      requirement.type === "equipment-history"
     ) {
       continue;
     }
@@ -557,7 +559,8 @@ export function manuallyDepositRequirement(
     requirement.type === "consumable" ||
     requirement.type === "equipment" ||
     requirement.type === "lifetime-rolls" ||
-    requirement.type === "roll-history-condition"
+    requirement.type === "roll-history-condition" ||
+    requirement.type === "equipment-history"
   ) {
     return false;
   }

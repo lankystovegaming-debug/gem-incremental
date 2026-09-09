@@ -650,6 +650,19 @@ export async function loadCloudDebugState() {
     .from('player_settings').select('settings').eq('player_id', user.id).maybeSingle();
   const buffsEnabled = savedPreferences?.settings?.enableBuffs !== false;
 
+  if(pickaxe?.equipment_id==='all-in-pickaxe') {
+    const admin=(base,bonus,mult)=>(base+Number(activeAdminEvent?.[bonus]??0))*positiveNumber(activeAdminEvent?.[mult]);
+    luck=admin(250,'luck_bonus','luck_multiplier');
+    rollSpeed=admin(.2,'roll_speed_bonus','roll_speed_multiplier');
+    weightLuck=admin(.1,'weight_luck_bonus','weight_luck_multiplier');
+    weightMultiplier=admin(.1,'weight_multiplier_bonus','weight_multiplier_multiplier');
+    for(const [key,value] of Object.entries({luck,rollSpeed,weightLuck,weightMultiplier})) statBreakdown[key]=[{label:'All-In + Admin Event only',operation:'base',value}];
+    Object.assign(previewLayers,{base:250,personal:1,flat:0,special:1,ordinary:250,oneRoll:0,world:luck/250,final:luck});
+    miscBuffs.splice(0,miscBuffs.length);
+    addMiscBuff('Equipment','All-In','Active','Personal buffs are ignored. Potion timers continue; flat-luck gems have 4× probability.');
+    addMiscBuff('Equipment','Mutation chance',formatMultiplier(admin(.1,'mutation_luck_bonus','mutation_luck_multiplier')));
+  }
+
   return {
     stats: {
       buffsEnabled,
@@ -659,7 +672,7 @@ export async function loadCloudDebugState() {
       weightMultiplier: buffsEnabled ? weightMultiplier : 1,
       breakdown: statBreakdown,
       luckLayers: previewLayers,
-      mutationChance: equipmentStats.mutation,
+      mutationChance: pickaxe?.equipment_id==='all-in-pickaxe' ? (.1+Number(activeAdminEvent?.mutation_luck_bonus??0))*positiveNumber(activeAdminEvent?.mutation_luck_multiplier) : equipmentStats.mutation,
       previewNote: preferencesError ? "Preferences unavailable; showing an unverified build preview." : !buffsEnabled ? "Buffs disabled — all four core stats are 1×. The build breakdown below is inactive." : "Preview; random enchant and world-event outcomes are determined by the server. Each roll returns its exact Luck layers.",
       miscellaneousBuffs: miscBuffs
     },

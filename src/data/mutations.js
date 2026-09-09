@@ -1,4 +1,5 @@
 export const GEM_MUTATIONS = Object.freeze({
+  'balanced': Object.freeze({id:'balanced',name:'Balanced',chance:20,multiplier:1.2,exclusive:true}),
   'ascended': Object.freeze({id:'ascended',name:'Ascended',chance:400,multiplier:2,exclusive:true}),
   'silly-small': Object.freeze({id:'silly-small',name:'Silly',chance:2,multiplier:.5,exclusive:true}),
   'silly-large': Object.freeze({id:'silly-large',name:'Silly',chance:10,multiplier:10,exclusive:true}),

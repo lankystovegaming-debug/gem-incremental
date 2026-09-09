@@ -15,7 +15,7 @@ assert.match(migration,/interval '6 days'/);
 assert.match(migration,/interval '7 days'/);
 assert.match(migration,/date_trunc\('day',v_now at time zone 'utc'\)/);
 assert.match(migration,/when p_rarity>=10000000 then 500 when p_rarity>=1000000 then 150/);
-assert.equal((roll.match(/record_guild_roll_activity/g)||[]).length,1,"roll must record guild activity once");
+assert.equal((roll.match(/record_guild_roll_activity/g)||[]).length,2,"success and House Edge have separate guild activity paths");
 assert.equal((roll.match(/record_guild_roll_points/g)||[]).length,0,"old double-award RPC must be gone from roll");
 assert.match(features,/guild_manage_member/);
 assert.match(features,/guild_purchase_upgrade/);
