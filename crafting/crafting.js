@@ -1,4 +1,4 @@
-import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
+import { getEquipmentPassive, PICKAXE_SPECIALTIES } from "../src/data/equipmentPassives.js";
 import baseRecipes from "../src/data/recipes.js";
 let recipes = baseRecipes;
 import { getConsumableById } from "../src/data/consumables.js";
@@ -710,6 +710,7 @@ function recipeCard(recipe) {
         </div>
       </div>
 
+${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best for: ${escapeHtml(PICKAXE_SPECIALTIES[recipe.id])}</strong></p>` : ""}
       <div class="recipe-card__bonuses">
         ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
       </div>

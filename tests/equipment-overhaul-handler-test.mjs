@@ -53,7 +53,7 @@ let result=await run('celestial-pickaxe');assert.equal(result.luckBreakdown.flat
 assert.equal(result.luckBreakdown.special,3);assert.equal(result.luckBreakdown.personal,1.2);
 assert.ok(Math.abs(result.luckAtRoll-2277.92)<1e-8);assert.equal(saved.luck_at_roll,result.luckAtRoll);assert.equal(commits.length,1);
 result=await run('empyrean-pickaxe',{rolls:{'empyrean-pickaxe':1000}},'deep_strike');assert.equal(result.equipmentPassives.alignmentRoll,true);assert.ok(Math.abs(result.luckBreakdown.personal-51.55)<1e-9);
-result=await run('eternity-pickaxe',{rolls:{'eternity-pickaxe':1000}});assert.equal(result.equipmentPassives.eternityRoll,true);assert.ok(Math.abs(saved.mutation_chance_multiplier-51.375)<1e-9);
+result=await run('eternity-pickaxe',{rolls:{'eternity-pickaxe':1000}});assert.equal(result.equipmentPassives.eternityRoll,true);assert.ok(Math.abs(saved.mutation_chance_multiplier-51.5625)<1e-9);
 result=await run('silly-fun-happy-pickaxe');assert.equal(result.cooldown.durationMs,5000);assert.ok(Math.abs(saved.mutation_chance_multiplier-.625)<1e-9);
 for(const id of Object.keys(PICKAXE_STATS)) {result=await run(id);assert.equal(commits[0].p_state.rolls[id],1);assert.ok(Number.isFinite(result.value));}
 forceProcs=true;

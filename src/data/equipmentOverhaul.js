@@ -65,10 +65,10 @@ export function pickaxeBonus(id) {
 }
 function pick(id,name,cost,requirements,toy=false) {return {id,name,category:'pickaxe',craftingTab:toy?'toys':'pickaxe',horizontal:true,equipmentOverhaul:true,moneyCost:cost,requirements,reward:{id,name,category:'pickaxe',tier:15,bonus:pickaxeBonus(id)}};}
 export const specialistRecipes = [
- pick('tectonic-pickaxe','Tectonic Pickaxe',150000000,[...['Ringwoodite','Paraershovite','Vesuvianite','Fluorcalciobritholite','Singularity Shard'].map((n,i)=>gem(n,[5,3,2,1,1][i])),...bulk('tectonic-pickaxe',{Legendary:750,Mythic:200,Exotic:10}),...[5,6,7,8].map((w,i)=>specimen(`tectonic-specimen-${w}`,w,[40,15,4,1][i]))]),
- pick('the-accelerator','The Accelerator',175000000,[gem('Chronite',3),...bulk('the-accelerator',{Legendary:1000,Mythic:300,Exotic:15}),{type:'lifetime-rolls',rolls:400000}]),
- pick('the-resonator','The Resonator',150000000,[...bulk('the-resonator',{Legendary:750,Mythic:250,Exotic:10}),...['daily_window','global_event','special'].map((classification,i)=>({type:'special-discoveries',classification,amount:[5,3,10][i]}))]),
- pick('the-excavator','The Excavator',125000000,[...bulk('the-excavator',{Legendary:750,Mythic:250,Exotic:10}),...[100,75,40,15].map((amount,i)=>({type:'potion-tier',tier:i+1,amount})),{type:'consumable',consumableId:'legendary-potion',amount:3},{type:'consumable',consumableId:'mythic-potion',amount:1}]),
+ pick('tectonic-pickaxe','Tectonic Pickaxe',125000000,[...['Ringwoodite','Paraershovite','Vesuvianite','Fluorcalciobritholite','Singularity Shard'].map((n,i)=>gem(n,[5,3,2,1,1][i])),...bulk('tectonic-pickaxe',{Legendary:750,Mythic:200,Exotic:10}),...[5,6,7,8].map((w,i)=>specimen(`tectonic-specimen-${w}`,w,[30,12,4,1][i]))]),
+ pick('the-accelerator','The Accelerator',100000000,[gem('Chronite',3),...bulk('the-accelerator',{Legendary:750,Mythic:200,Exotic:10}),{type:'equipment-history',metric:'genuineRolls',amount:250000,label:'Lifetime genuine rolls',consume:false}]),
+ pick('the-resonator','The Resonator',100000000,[...bulk('the-resonator',{Legendary:600,Mythic:200,Exotic:10}),...['daily_window','global_event','special'].map((classification,i)=>({type:'special-discoveries',classification,amount:[5,3,10][i]}))]),
+ pick('the-excavator','The Excavator',100000000,[...bulk('the-excavator',{Legendary:500,Mythic:150,Exotic:10}),...[75,50,30,10].map((amount,i)=>({type:'potion-tier',tier:i+1,amount})),{type:'consumable',consumableId:'legendary-potion',amount:3},{type:'consumable',consumableId:'mythic-potion',amount:1}]),
  pick('toy-shovel','Toy Shovel',670000000.67,[{type:'equipment',equipmentId:'plastic-shopping-bag',consume:false},...bulk('toy-shovel',{Legendary:6700,Mythic:2067,Exotic:67,Exalted:6}),gem('random rock I found outside',67),gem('Quartz',67),{type:'consumable',consumableId:'plastic-bag',amount:67},specimen('toy-shovel-specimens',6.7,67)],true),
  pick('silly-fun-happy-pickaxe','Silly Fun Happy Pickaxe',6767676.76,[gem('random rock I found outside',10),gem('Quartz',50),...bulk('silly-fun-happy-pickaxe',{Rare:100,Legendary:67,Mythic:10,Exotic:1}),specimen('silly-light-specimens',.6,10,true)],true)
 ];
@@ -76,7 +76,7 @@ const batchBands={Common:[1,9],Uncommon:[10,49],Rare:[50,99],Epic:[100,999],Lege
 const batchBulk=(id,counts)=>Object.entries(counts).map(([label,amount])=>({id:`${id}-${label.toLowerCase()}`,type:'gem-count',label,amount,minimumRarity:batchBands[label][0],maximumRarity:batchBands[label][1]}));
 const history=(metric,amount,label)=>({type:'equipment-history',metric,amount,label,consume:false});
 export const fiveItemRecipes=[
- {...pick('fortune-pickaxe','Fortune Pickaxe',200000000,[...batchBulk('fortune-pickaxe',{Legendary:1500,Mythic:500,Exotic:25,Exalted:2}),history('raw5m',3,'Raw-rarity ≥1/5M rolls'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),description:'A pickaxe made for miners who believe you can never have too much luck. Sacrifices a little of everything else for a simple advantage: more Luck.'},
+ {...pick('fortune-pickaxe','Fortune Pickaxe',100000000,[...batchBulk('fortune-pickaxe',{Legendary:1000,Mythic:300,Exotic:15,Exalted:1}),history('raw5m',3,'Raw-rarity ≥1/5M rolls'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),description:'A pickaxe made for miners who believe you can never have too much luck. Sacrifices a little of everything else for a simple advantage: more Luck.'},
  pick('all-in-pickaxe','All-In Pickaxe',250000000,[...batchBulk('all-in-pickaxe',{Legendary:5000,Mythic:1500,Exotic:100,Exalted:5}),history('endgamePickaxes',3,'Distinct post-Celestial endgame Pickaxes ever owned'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),
  {...pick('all-rounder-toy','All Rounder Toy',50000000,[...batchBulk('all-rounder-toy',{Epic:200,Mythic:100}),gem('Uranium',50),...batchBulk('all-rounder-toy',{Exotic:20}),gem('Cryoshock',5),...batchBulk('all-rounder-toy',{Exalted:3})],true),description:'Tired of unbalanced stats and broken abilities? Well, wish no more—introducing the All Rounder Toy with balanced stats.'},
  {...pick('jackpot-slot','Jackpot Slot',77700000,[...batchBulk('jackpot-slot',{Common:7777,Mythic:777,Exotic:77,Exalted:7}),history('genuineRolls',77700,'Lifetime genuine rolls')],true),description:'Slots slots slots, I bet everything on slots. Ain’t no body taking my spot, I just hit the jackpotttt'},
@@ -84,7 +84,7 @@ export const fiveItemRecipes=[
 ];
 export const realityBedrockRecipes=[
  {...pick('reality-shifter','Reality Shifter',125000000,[gem('Eternal Glowstone',1000),gem('Nyx Obsidian',1000),gem('Solarion',1),gem('Polaris',1),history('genuineRolls',50000,'Lifetime genuine rolls')],true),consumeMaterials:true,description:'Reality shall conform before our power. Kneel, for you are in the presence of a god.'},
- {...pick('bedrock-pickaxe','Bedrock Pickaxe',150000000,[...batchBulk('bedrock-pickaxe',{Common:10000,Uncommon:7500,Rare:5000,Epic:2500}),history('genuineRolls',250000,'Lifetime genuine rolls')]),consumeMaterials:true}
+ {...pick('bedrock-pickaxe','Bedrock Pickaxe',100000000,[...batchBulk('bedrock-pickaxe',{Common:10000,Uncommon:7500,Rare:5000,Epic:2500}),history('genuineRolls',250000,'Lifetime genuine rolls')]),consumeMaterials:true}
 ];
 export function applyEquipmentOverhaul(recipes) {
  const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes,...realityBedrockRecipes].map(r=>[r.id,r]));
@@ -94,6 +94,16 @@ export function applyEquipmentOverhaul(recipes) {
   if(r.id==='plastic-shopping-bag') {r.craftingTab='toys';return r;}
   if(PICKAXE_STATS[r.id]) {
    r.reward.bonus=pickaxeBonus(r.id);r.equipmentOverhaul=true;
+   if(['empyrean-pickaxe','eternity-pickaxe'].includes(r.id)) {
+    const emp=r.id==='empyrean-pickaxe';
+    r.moneyCost=emp?250000000:300000000;
+    const amounts=emp?[2000,750,50,2,1,20,10]:[3500,1250,100,3,1,30,15];
+    let index=0;
+    r.requirements=r.requirements.map(q=>q.type==='lifetime-rolls'
+     ? history('genuineRolls',emp?250000:300000,'Lifetime genuine rolls')
+     : ['gem-count','specimen-condition'].includes(q.type)?{...q,amount:amounts[index++]}:q);
+    for(const q of r.requirements) if(q.type==='specimen-condition') q.label=`${q.amount} ${q.minimumRarity===1000?'Legendary':'Mythic'}+ ≥${q.minimumWeightMultiplier}× final weight (included in totals)`;
+   }
    if(r.id!=='celestial-pickaxe') {r.horizontal=true;r.requirements=r.requirements.filter(q=>q.type!=='equipment');}
   }
   return r;

@@ -6,7 +6,7 @@ import {fiveItemRecipes} from '../src/data/equipmentOverhaul.js';
 import {isRequirementComplete} from '../src/logic/crafting.js';
 import {getGemMutation} from '../src/data/mutations.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-10);
-for(const [id,stats] of Object.entries({'fortune-pickaxe':[33,2.7,.95,4,1.4],'all-in-pickaxe':[250,.2,.1,.1,.1],'all-rounder-toy':[2,2,2,2,2],'jackpot-slot':[7.77,1.77,.77,1.77,.77],'money-pickaxe':[.01,.3,2,10,200]}))assert.deepEqual(PICKAXE_STATS[id],stats);
+for(const [id,stats] of Object.entries({'fortune-pickaxe':[35,2.8,1,4.25,1.45],'all-in-pickaxe':[250,.2,.1,.1,.1],'all-rounder-toy':[2,2,2,2,2],'jackpot-slot':[7.77,1.77,.77,1.77,.77],'money-pickaxe':[.01,.3,2,10,200]}))assert.deepEqual(PICKAXE_STATS[id],stats);
 const draw=(values)=>()=>values.shift();
 near(jackpotRoll('jackpot-slot',777,draw([0,0,1])).luck,.77*1.77*.77*7.77);
 near(jackpotRoll('jackpot-slot',7,()=>1).luck,.77);
@@ -34,10 +34,10 @@ for(const recipe of fiveItemRecipes) {
 let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8');
 const selection=source.slice(source.indexOf('function rollGemWithPickaxePassives('),source.indexOf('// MUTATION RNG'));
 let random=.5;
-const {eligibleEquipmentGems,flatEquipmentChance,specialChance,capGemLuck}=await import('../supabase/functions/roll/equipmentRules.js');
-const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor','capGemLuck',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
+const {eligibleEquipmentGems,flatEquipmentChance,specialChance,capGemLuck,fortuneLuckFactor}=await import('../supabase/functions/roll/equipmentRules.js');
+const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor','capGemLuck','fortuneLuckFactor',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
 const catalog=[{name:'Common',rarity:2},{name:'Rare',rarity:99},{name:'Epic',rarity:100},{name:'Ultra',rarity:1e9},{name:'Flat',rarity:50,affectedByLuck:false}];
-const roll=choose(catalog,()=>random,eligibleEquipmentGems,flatEquipmentChance,specialChance,()=>true,()=>1,capGemLuck);
+const roll=choose(catalog,()=>random,eligibleEquipmentGems,flatEquipmentChance,specialChance,()=>true,()=>1,capGemLuck,fortuneLuckFactor);
 for(const luck of [.01,1,250,1e12])for(const rng of [0,.001,.5,.999999]) {random=rng;assert.ok(roll(luck,new Set(),1e12,1e12,1e12,1e12,null,{id:'money-pickaxe'}).rarity<100);}
 random=.07999;assert.equal(roll(250,new Set(),1,1,1,1,null,{id:'all-in-pickaxe'}).name,'Flat');
 random=.08001;assert.notEqual(roll(250,new Set(),1,1,1,1,null,{id:'all-in-pickaxe'}).name,'Flat');

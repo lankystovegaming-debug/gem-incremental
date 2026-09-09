@@ -28,7 +28,7 @@ import { setShowcase, loadMyShowcase } from "../src/backend/cloudShowcase.js";
 import { getConsumableById } from "../src/data/consumables.js";
 import { GEM_MUTATIONS, getGemMutation } from "../src/data/mutations.js";
 import { ENCHANTS, RELICS, enchantDescription, isRelic } from "../src/data/enchants.js";
-import { getEquipmentPassive } from "../src/data/equipmentPassives.js";
+import { getEquipmentPassive, PICKAXE_SPECIALTIES } from "../src/data/equipmentPassives.js";
 import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, masterworkRerollCost, masterworkAttunementCost, masterworkPassive } from "../src/data/masterwork.js";
 import { gemRollChance, formatChance, exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
 
@@ -1102,8 +1102,8 @@ function specialistProgress(item) {
  if(id==='bedrock-pickaxe')return `Foundation: ${data.foundation??0}/100 · Empowered rolls remaining: ${data.bedrockBurst??0}`;
  if(id==='tectonic-pickaxe')return `Pressure: ${data.pressure??0}/100 · Crushing Depth: ${data.crushing??0} rolls`;
  if(id==='the-accelerator')return `Velocity: ${Math.min(200,data.spool??0)}/200${Number(data.spool??0)>=200?' · Overdrive':''}`;
- if(id==='the-excavator')return `Archaeology: ${data.excavations??0} successful Excavations · Milestones: 25 / 100 / 250 / 500`;
- if(id==='the-resonator')return Object.entries(data.resonance??{}).map(([gem,n])=>`${gem}: ${n}/10`).join(' · ') || 'Discover Special Gems to build permanent Resonance.';
+ if(id==='the-excavator') {const n=Number(data.excavations??0), milestones=[25,100,250,500];return `Archaeology level ${milestones.filter(m=>n>=m).length}/4 · ${n} successful Excavations · ${milestones.find(m=>n<m)?`Next milestone: ${milestones.find(m=>n<m)}`:'Maximum quality reached'}`;}
+ if(id==='the-resonator')return Object.entries(data.resonance??{}).map(([gem,n])=>`${gem}: Resonance ${n}/10 — Special Gem Chance ×${Number((1.25*(1+.05*Math.min(10,Number(n)))).toFixed(4))}`).join(' · ') || 'Resonance 0/10 — Special Gem Chance ×1.25. Discover Special Gems to build permanent Resonance.';
  if(['empyrean-pickaxe','eternity-pickaxe'].includes(id)){const n=Number(data.rolls?.[id]??0);return n>=1000&&n%1000<10?`Burst: ${10-n%1000} rolls remaining`:`${n%1000}/1,000 genuine rolls`;}
  return '';
 }
@@ -1164,6 +1164,7 @@ function renderEquipment() {
             }
           </div>
 
+${PICKAXE_SPECIALTIES[item.equipment_id] ? `<p class="equipment-specialty"><strong>Best for: ${escapeHtml(PICKAXE_SPECIALTIES[item.equipment_id])}</strong></p>` : ""}
           <div class="bonus-list">
             ${bonuses.join("") || '<span class="badge badge--muted">No bonus</span>'}
           </div>

@@ -19,7 +19,7 @@ assert.deepEqual(prepareEquipmentRoll('toy-shovel',{},()=>0).stats,[67,2.4,6.7,6
 assert.deepEqual([0,25,50,100,200].map(acceleratorSpeed),[3.4,3.5,3.6,3.7,3.8]);
 assert.equal(finishEquipmentRoll(prepareEquipmentRoll('the-accelerator',{spool:200}),{random:()=>0,genuine:false}).breakneck,false);
 assert.equal(finishEquipmentRoll(prepareEquipmentRoll('the-excavator'),{random:()=>0}).loot,'lucky-potion-1');
-const totals=equipmentTotals([{category:'pickaxe',equipment_id:'tectonic-pickaxe'},{category:'boots',weight_luck_bonus:.15},{category:'bag',weight_multiplier_bonus:.15},{category:'lantern',mutation_chance_bonus:.25},{category:'clover',luck_bonus:.1}]);near(totals.luck,22);near(totals.weightLuck,8.05);near(totals.weightMultiplier,2.1275);near(totals.mutation,1.25);
+const totals=equipmentTotals([{category:'pickaxe',equipment_id:'tectonic-pickaxe'},{category:'boots',weight_luck_bonus:.15},{category:'bag',weight_multiplier_bonus:.15},{category:'lantern',mutation_chance_bonus:.25},{category:'clover',luck_bonus:.1}]);near(totals.luck,26.4);near(totals.weightLuck,8.05);near(totals.weightMultiplier,2.185);near(totals.mutation,1.25);
 for(const [category,count] of [['clover',7],['lantern',10],['boots',12],['bag',12]]) assert.equal(recipes.filter(r=>r.category===category).length,count);
 assert.equal(recipes.find(r=>r.id==='plastic-shopping-bag').craftingTab,'toys');
 for(const id of ['empyrean-pickaxe','eternity-pickaxe']) assert.ok(!recipes.find(r=>r.id===id).requirements.some(r=>r.type==='equipment'));

@@ -42,8 +42,8 @@ assert.ok(source.includes(readFileSync(new URL('../supabase/functions/roll/equip
 const selection=source.slice(source.indexOf('function rollGemWithPickaxePassives('),source.indexOf('// MUTATION RNG'));
 let rng=.5;
 const catalog=[{name:'Common',rarity:2},{name:'Uncommon',rarity:10},{name:'Rare',rarity:50},{name:'Epic',rarity:100},{name:'Ultra',rarity:1e9},{name:'Flat',rarity:500,affectedByLuck:false}];
-const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor','capGemLuck',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
-const roll=choose(catalog,()=>rng,rules.eligibleEquipmentGems,rules.flatEquipmentChance,rules.specialChance,()=>true,()=>1e6,capGemLuck);
+const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor','capGemLuck','fortuneLuckFactor',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
+const roll=choose(catalog,()=>rng,rules.eligibleEquipmentGems,rules.flatEquipmentChance,rules.specialChance,()=>true,()=>1e6,capGemLuck,rules.fortuneLuckFactor);
 assert.equal(roll(1e12,new Set(),1e12,1e12,1e12,1e12,{},null,1).name,'Common');
 assert.notEqual(roll(1e12,new Set(),1,1,1,1,null,null,null).name,'Common');
 for(const cap of [null,1,7]) {
