@@ -1,30 +1,7 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mutation Index · Gem Incremental</title>
-  <link rel="stylesheet" href="../style.css">
-  <link rel="stylesheet" href="./mutation-index.css">
-</head>
-<body class="mutation-index-body">
-  <main class="mutation-index-page" id="mutationIndexPage">
-    <section class="mutation-index-hero" aria-labelledby="mutationIndexTitle">
-      <div class="mutation-index-hero__copy">
-        <div class="mutation-index-kicker">GEM CATALOG</div>
-        <h1 id="mutationIndexTitle">Mutation Index</h1>
-        <p>Every obtainable mutation in one clean catalog, ordered from the smallest multiplier to the largest.</p>
-      </div>
-      <div class="mutation-index-hero__meta">
-        <strong id="mutationCount">—</strong><span>obtainable mutations</span>
-      </div>
-    </section>
-    <section class="mutation-index-toolbar" aria-label="Mutation catalog controls">
-      <label class="mutation-index-search"><span>Search</span><input id="mutationSearch" type="search" placeholder="Search mutations…" autocomplete="off"></label>
-      <div class="mutation-index-sort">Sorted by <strong>multiplier ↑</strong></div>
-    </section>
-    <div id="list" class="mutation-index-grid" aria-live="polite"></div>
-  </main>
-  <script type="module" src="./index.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Browse every obtainable mutation in Gem Incremental, including exact base chances and value multipliers."><title>Mutation Index · Gem Incremental</title><link rel="stylesheet" href="../style.css"><link rel="stylesheet" href="./mutation-index.css"></head>
+<body class="mutation-index-body"><main class="mutation-index-page" id="mutationIndexPage">
+<section class="mutation-index-hero" aria-labelledby="mutationIndexTitle"><div><div class="mutation-index-kicker">LIVE CATALOG</div><h1 id="mutationIndexTitle">Mutation Index</h1><p>Browse every obtainable mutation, its exact natural odds, and the value multiplier it adds to a gem.</p></div><div class="mutation-index-hero__count"><strong id="mutationCount">—</strong><span>obtainable mutations</span></div></section>
+<section class="mutation-index-summary" aria-label="Mutation catalog summary"><div><span>Visible now</span><strong id="visibleCount">—</strong></div><div><span>Rarest base chance</span><strong id="rarestMutation">—</strong></div><div><span>Largest value multiplier</span><strong id="largestMultiplier">—</strong></div></section>
+<section class="mutation-index-toolbar" aria-label="Mutation catalog controls"><label class="mutation-index-search"><span>Search mutations</span><div><span aria-hidden="true">⌕</span><input id="mutationSearch" type="search" placeholder="Name, description, ID, or rarity…" autocomplete="off"><button id="clearSearch" type="button" hidden aria-label="Clear mutation search">×</button></div></label><label class="mutation-index-sort"><span>Sort by</span><select id="mutationSort"><option value="multiplier-asc">Multiplier: low to high</option><option value="multiplier-desc">Multiplier: high to low</option><option value="chance-asc">Chance: common to rare</option><option value="chance-desc">Chance: rare to common</option><option value="name">Name: A to Z</option></select></label></section>
+<p id="catalogStatus" class="mutation-index-status" aria-live="polite">Loading the live mutation catalog…</p><div id="list" class="mutation-index-grid" aria-live="polite" aria-busy="true"><div class="mutation-index-loading"><span></span><span></span><span></span></div></div>
+</main><script type="module" src="./index.js?v=20260909-complete-fix"></script></body></html>
