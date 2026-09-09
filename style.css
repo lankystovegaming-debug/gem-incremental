@@ -553,6 +553,85 @@ kbd {
   font-size: 0.82rem;
 }
 
+/* ---------------------------------------------------------
+   CRAFTING PROGRESS PREVIEW
+   --------------------------------------------------------- */
+
+.crafting-preview {
+  margin-top: var(--space-4);
+}
+
+.crafting-preview__subtitle,
+.crafting-preview__updated,
+.crafting-preview__empty {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.crafting-preview__list {
+  display: grid;
+  gap: 8px;
+}
+
+.crafting-preview__recipe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px var(--space-3);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--surface-sunken);
+  text-decoration: none;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.crafting-preview__recipe:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.crafting-preview__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crafting-preview__identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crafting-preview__identity small,
+.crafting-preview__updated {
+  color: var(--text-faint);
+}
+
+.crafting-preview__percent {
+  align-self: center;
+  color: var(--positive);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.crafting-preview__bar {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+}
+
+.crafting-preview__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--positive));
+}
+
 
 /* ---------------------------------------------------------
    SESSION HISTORY

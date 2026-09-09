@@ -219,7 +219,7 @@ export function isRequirementComplete(
   }
 
   if (requirement.type === "lifetime-rolls") {
-    return Number((recipe.equipmentOverhaul ? inventory?.genuineRolls : inventory?.totalRolls) ?? 0) >= Number(requirement.rolls ?? 0);
+    return Number(inventory?.totalRolls ?? 0) >= Number(requirement.rolls ?? 0);
   }
 
   if (requirement.type === "roll-history-condition") {
