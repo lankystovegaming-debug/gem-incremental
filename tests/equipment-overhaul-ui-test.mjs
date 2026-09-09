@@ -18,8 +18,11 @@ await page.route('**/*',async route=>{const url=new URL(route.request().url());i
 await page.goto('http://equipment.test/crafting/');await page.locator('#recipeList').getByText('Celestial Pickaxe',{exact:true}).waitFor();
 await page.locator('[data-category="clover"]').click();assert.equal(await page.locator('#recipeList').getByText('Celestial Clover',{exact:true}).count(),1);
 await page.locator('[data-category="lantern"]').click();assert.equal(await page.locator('#recipeList').getByText('Singularity Lantern',{exact:true}).count(),1);
-await page.locator('[data-category="toys"]').click();for(const name of ['Plastic Shopping Bag','Toy Shovel','Silly Fun Happy Pickaxe'])assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1,name);
+await page.locator('[data-category="toys"]').click();for(const name of ['Plastic Shopping Bag','Toy Shovel','Silly Fun Happy Pickaxe','All Rounder Toy','Jackpot Slot','Money Pickaxe'])assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1,name);
+assert.ok((await page.locator('#recipeList').innerText()).includes('historical, not consumed'));
 await page.screenshot({path:tmpdir()+'/equipment-toys-desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:tmpdir()+'/equipment-toys-mobile.png',fullPage:true});
-assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');assert.deepEqual(errors,[]);console.log('Crafting browser smoke passed: Clover, Lantern, three Toys, mobile width, no page errors.');
+assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');await page.locator('[data-category="pickaxe"]').click();
+for(const name of ['Fortune Pickaxe','All-In Pickaxe']) assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1);
+assert.deepEqual(errors,[]);console.log('Crafting browser smoke passed: Clover, Lantern, six Toys, Fortune and All-In, mobile width, no page errors.');
 }finally{await browser.close()}

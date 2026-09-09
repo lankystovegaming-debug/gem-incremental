@@ -26,7 +26,7 @@ class Query {
   else if(this.mode==='read') {
    const tables={players:player,player_crafting:{active_auto_craft:craftActive?'craft':null},game_recipes:{recipe:{equipmentOverhaul:true,requirements:[]}},crafting_progress:{progress:{}},player_equipment:equipment,player_boosts:boosts,player_one_roll_boosts:oneRoll,admin_events:admin,
     museum_artifact_registrations:[],player_gem_mutation_combinations:[],game_mutations:[{id:'polished',name:'Polished',chance:100,multiplier:1.5}],
-    private_feature_gems:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false}]};
+    private_feature_gems:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}]};
    data=tables[this.table]??(this.singleRow?null:[]);
   }
   return Promise.resolve({data,error:null,count}).then(resolve,reject);
@@ -60,7 +60,7 @@ forceProcs=true;
 result=await run('the-accelerator',{spool:200});assert.ok(commits[0].p_bonus);assert.equal(commits[0].p_state.spool,201);assert.equal(commits[0].p_state.rolls['the-accelerator'],1);assert.ok(commits[0].p_bonus.luck_at_roll<result.luckAtRoll);assert.equal(rpcs.filter(n=>n==='record_gem_mutation_combination').length,2);
 result=await run('the-excavator');assert.equal(commits[0].p_loot,'lucky-potion-1');assert.equal(commits[0].p_state.excavations,1);
 result=await run('silly-fun-happy-pickaxe');assert.ok(['silly-small','silly-large','happy'].every(id=>saved.mutation_ids.includes(id)));
-console.log('Actual optimized roll handler: all nine builds, layered Luck, +50 burst components, sub-1 mutation and speed, and single state commit passed.');
+console.log('Actual optimized roll handler: all equipment builds, layered Luck, +50 burst components, sub-1 mutation and speed, and single state commit passed.');
 
 forceProcs=false;
 qolSettings={enableBuffs:false,discoveryKeep:false};

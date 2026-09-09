@@ -21,7 +21,8 @@
     "test:cosmetics": "node tests/player-cosmetics-database-test.mjs && node tests/player-cosmetics-ui-test.mjs",
     "preview:cosmetics": "PROFILE_PREVIEW_FIXTURE=artifacts/cosmetics-preview.json node tests/player-cosmetics-database-test.mjs && node tests/profile-preview-server.mjs",
     "test:qol": "node tests/qol-rules-test.mjs && node tests/qol-database-test.mjs && node tests/qol-settings-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
-    "test:qol-ui": "node tests/qol-ui-test.mjs"
+    "test:qol-ui": "node tests/qol-ui-test.mjs",
+    "test:five-items": "node tests/five-item-rules-test.mjs && node tests/five-item-handler-test.mjs && node tests/five-item-database-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

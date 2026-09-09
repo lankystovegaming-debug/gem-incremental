@@ -42,6 +42,10 @@ for (const id of Object.keys(EQUIPMENT_PASSIVES)) {
  if (!id.endsWith('pickaxe') && id !== 'plastic-shopping-bag') delete EQUIPMENT_PASSIVES[id];
 }
 Object.assign(EQUIPMENT_PASSIVES, {
+ 'all-in-pickaxe': {name:'All-In',description:'Ignores every personal and external buff. Admin Events alone remain. Flat-luck gems have 4× probability. Equipment stays equipped; potion timers continue.'},
+ 'all-rounder-toy': {name:'Balanced',description:'Each genuine roll has an independent 1/20 chance of Balanced: ×1.2 value, stacking with ordinary mutations.'},
+ 'jackpot-slot': {name:'Jackpot / House Edge',description:'Independent Luck multipliers: 1/77 ×0.77; 1/777 ×1.77; every 7th genuine roll ×0.77; every 777th ×7.77. House Edge: 0.77% of genuine rolls give no gem or reward, but still count for progression.'},
+ 'money-pickaxe': {name:'Cheap Taste',description:'Only Common and Rare-range gems below 1/100 can roll. Buffs cannot bypass this ceiling.'},
  'empyrean-pickaxe': {name:'Ascension',description:'Every 1,000 genuine Empyrean rolls, the next 10 add +50 to the enchant component. Exclusive Ascended mutation: 1/400, ×2 value.'},
  'eternity-pickaxe': {name:'Eternal Surge',description:'Every 1,000 genuine Eternity rolls, the next 10 add +50 mutation chance. Mutations stack independently.'},
  'tectonic-pickaxe': {name:'Deep Pressure / Crushing Depth',description:'Light natural specimens build Pressure. At 100, the next 5 genuine rolls use 40% tail entry and 45% continuation. No guaranteed heavy result.'},

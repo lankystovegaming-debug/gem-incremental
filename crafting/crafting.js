@@ -179,6 +179,10 @@ function requirementKey(requirement, index) {
 
 function describeRequirement(requirement, value) {
   switch (requirement.type) {
+    case 'equipment-history': {
+      const have=Number(state.specialDiscoveries.batchHistory?.[requirement.metric]??0);
+      return {label:requirement.label+' · historical, not consumed',text:`${formatCount(have)} / ${formatCount(requirement.amount)}`,fraction:ratio(have,requirement.amount)};
+    }
     case 'special-discoveries': {
       const have=Number(state.specialDiscoveries[requirement.classification]??0);
       return {label:({daily_window:'Distinct daily-window gems (excluding the clock)',global_event:'Distinct global-event gems',special:'Distinct Special Gems'})[requirement.classification],text:`${have} / ${requirement.amount}`,fraction:ratio(have,requirement.amount)};
@@ -605,7 +609,7 @@ function recipeCard(recipe) {
         `;
       }
 
-      if (["consumable","potion-tier","special-discoveries"].includes(requirement.type)) {
+      if (["consumable","potion-tier","special-discoveries","equipment-history"].includes(requirement.type)) {
         const complete = isRequirementComplete(
           state.crafting, recipe, requirement, index, equipmentContext()
         );

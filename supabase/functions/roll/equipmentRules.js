@@ -1,5 +1,7 @@
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
+ 'fortune-pickaxe':[33,2.7,.95,4,1.4], 'all-in-pickaxe':[250,.2,.1,.1,.1],
+ 'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[24,3,1,3.5,1.4],
  'eternity-pickaxe':[22,3,1.1,4,1.45], 'tectonic-pickaxe':[20,2.6,1,7,1.85],
  'the-accelerator':[21,3.4,.9,3,1.3], 'the-resonator':[20,2.8,1,3.5,1.35],
@@ -7,7 +9,7 @@ export const PICKAXE_STATS = {
  'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
 };
 export const ASCENDED_VALUE = 2;
-export const SERIOUS_PICKAXES = Object.keys(PICKAXE_STATS).slice(0,7);
+export const SERIOUS_PICKAXES = ['celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
 export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
 export const EXCAVATION_LOOT = [
  [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
@@ -42,6 +44,7 @@ export function specialChance(id,gem,state) {
 }
 export function exclusiveMutations(id,random=Math.random,genuine=true) {
  if(!genuine) return [];
+ if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
  if(id!=='silly-fun-happy-pickaxe') return [];
  return [[.5,'silly-small','Silly',.5],[.1,'silly-large','Silly',10],[.005,'happy','Happy',50]].flatMap(([chance,id,name,multiplier])=>random()<chance?[{id,name,chance,multiplier}]:[]);
@@ -77,9 +80,21 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const pick=equipment.find(e=>e.category==='pickaxe');
  const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
  const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.2,mutation:.1,weightLuck:.1,weightMultiplier:.1};
  const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.
  const wm=plastic?stats[4]+Number(plastic.weight_multiplier_bonus??1.55)*(1+Math.min(5,Math.max(0,Number(plastic.masterwork_level??0)))/100):stats[4]*secondary('bag','weight_multiplier_bonus');
  return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm};
 }
+
+// Called only after the server has accepted a genuine roll, before any gem RNG.
+export function jackpotRoll(id, genuineRoll, random=Math.random, genuine=true) {
+ if(id!=='jackpot-slot'||!genuine) return {luck:1,houseEdge:false};
+ const unlucky=random()<1/77, jackpot=random()<1/777;
+ const seventh=genuineRoll%7===0, sevenSeventySeventh=genuineRoll%777===0;
+ return {unlucky,jackpot,seventh,sevenSeventySeventh,
+  luck:(unlucky ? .77 : 1) * (jackpot ? 1.77 : 1) * (seventh ? .77 : 1) * (sevenSeventySeventh ? 7.77 : 1),houseEdge:random()<.0077};
+}
+export const eligibleEquipmentGems = (gems,id) => id==='money-pickaxe' ? gems.filter(g=>Number(g.rarity)<100) : gems;
+export const flatEquipmentChance = id => id==='all-in-pickaxe'?4:1;

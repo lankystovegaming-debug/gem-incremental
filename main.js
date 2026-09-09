@@ -255,6 +255,7 @@ function requirementFraction(requirement, index, progress, context, complete) {
     "lifetime-rolls": [context.totalRolls, requirement.rolls]
   };
   if (requirement.type === "rarity-points") ratios[requirement.type] = [value?.points, requirement.points];
+  if (requirement.type === "equipment-history") ratios[requirement.type] = [context.specialDiscoveries?.batchHistory?.[requirement.metric], requirement.amount];
   if (requirement.type === "special-discoveries") ratios[requirement.type] = [context.specialDiscoveries?.[requirement.classification], requirement.amount];
   if (requirement.type === "gem-range") {
     const amounts = requirement.gems.map((name) => Math.min(1, Number(value?.[name] ?? 0) / Number(requirement.amountEach ?? 1)));
@@ -893,6 +894,19 @@ async function performRoll() {
   view.inventoryCount = data.inventory?.count ?? view.inventoryCount;
   view.capacity = data.inventory?.capacity ?? view.capacity;
   view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
+
+  if(data.houseEdge) {
+    automationStats.rolls += 1;
+    renderAutomationPulse();
+    renderSummary();
+    recordSessionRoll(data,{type:'house-edge'});
+    renderSessionInsights();
+    gemStage.className='stage__display is-revealed';
+    gemStage.innerHTML = '<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>';
+    if(data.cooldown?.nextRollAt) startCooldown(new Date(data.cooldown.nextRollAt).getTime(),data.cooldown.durationMs);
+    else showReady();
+    return;
+  }
 
   const outcome = await resolveOutcome(data);
   automationStats.rolls += 1;

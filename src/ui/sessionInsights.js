@@ -18,6 +18,7 @@ function result(data,outcome){const mutationList=mutations(data),ids=mutationLis
 function rarer(current,item,key){return!current||Number(item[key])>Number(current[key])?item:current;}
 
 export function recordSessionRoll(data,outcome={type:"kept"}){
+  if(data?.houseEdge) {const state=load();state.rolls+=1;state.houseEdgeLosses=Number(state.houseEdgeLosses??0)+1;return save(state);}
   const state=load(),item=result(data,outcome),tier=String(outcome.tier||"unknown");state.rolls+=1;state.rarities[tier]=(state.rarities[tier]||0)+1;
   for(const id of item.mutations)state.mutations[id]=(state.mutations[id]||0)+1;
   if(data?.gem?.dropType==="relic")state.relics+=1;

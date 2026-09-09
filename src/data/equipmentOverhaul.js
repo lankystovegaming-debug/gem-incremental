@@ -72,8 +72,18 @@ export const specialistRecipes = [
  pick('toy-shovel','Toy Shovel',670000000.67,[{type:'equipment',equipmentId:'plastic-shopping-bag',consume:false},...bulk('toy-shovel',{Legendary:6700,Mythic:2067,Exotic:67,Exalted:6}),gem('random rock I found outside',67),gem('Quartz',67),{type:'consumable',consumableId:'plastic-bag',amount:67},specimen('toy-shovel-specimens',6.7,67)],true),
  pick('silly-fun-happy-pickaxe','Silly Fun Happy Pickaxe',6767676.76,[gem('random rock I found outside',10),gem('Quartz',50),...bulk('silly-fun-happy-pickaxe',{Rare:100,Legendary:67,Mythic:10,Exotic:1}),specimen('silly-light-specimens',.6,10,true)],true)
 ];
+const batchBands={Common:[1,9],Rare:[50,99],Epic:[100,999],Legendary:[1000,9999],Mythic:[10000,99999],Exotic:[100000,999999],Exalted:[1000000,9999999]};
+const batchBulk=(id,counts)=>Object.entries(counts).map(([label,amount])=>({id:`${id}-${label.toLowerCase()}`,type:'gem-count',label,amount,minimumRarity:batchBands[label][0],maximumRarity:batchBands[label][1]}));
+const history=(metric,amount,label)=>({type:'equipment-history',metric,amount,label,consume:false});
+export const fiveItemRecipes=[
+ {...pick('fortune-pickaxe','Fortune Pickaxe',200000000,[...batchBulk('fortune-pickaxe',{Legendary:1500,Mythic:500,Exotic:25,Exalted:2}),history('raw5m',3,'Raw-rarity ≥1/5M rolls'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),description:'A pickaxe made for miners who believe you can never have too much luck. Sacrifices a little of everything else for a simple advantage: more Luck.'},
+ pick('all-in-pickaxe','All-In Pickaxe',250000000,[...batchBulk('all-in-pickaxe',{Legendary:5000,Mythic:1500,Exotic:100,Exalted:5}),history('endgamePickaxes',3,'Distinct post-Celestial endgame Pickaxes ever owned'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),
+ {...pick('all-rounder-toy','All Rounder Toy',50000000,[...batchBulk('all-rounder-toy',{Epic:200,Mythic:100}),gem('Uranium',50),...batchBulk('all-rounder-toy',{Exotic:20}),gem('Cryoshock',5),...batchBulk('all-rounder-toy',{Exalted:3})],true),description:'Tired of unbalanced stats and broken abilities? Well, wish no more—introducing the All Rounder Toy with balanced stats.'},
+ {...pick('jackpot-slot','Jackpot Slot',77700000,[...batchBulk('jackpot-slot',{Common:7777,Mythic:777,Exotic:77,Exalted:7}),history('genuineRolls',77700,'Lifetime genuine rolls')],true),description:'Slots slots slots, I bet everything on slots. Ain’t no body taking my spot, I just hit the jackpotttt'},
+ {...pick('money-pickaxe','Money Pickaxe',100000000,[...batchBulk('money-pickaxe',{Common:10000,Rare:5000}),gem('Quartz',2500),gem('Calcite',1000),gem('Feldspar',500),history('heavy5',250,'Specimens ≥5× natural weight'),history('lifetimeEarnings',1000000000,'Lifetime earnings ($)')],true),description:"Rarity doesn't pay the bills. 200× more rock does."}
+];
 export function applyEquipmentOverhaul(recipes) {
- const replacements=new Map([...secondaryRecipes,...specialistRecipes].map(r=>[r.id,r]));
+ const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes].map(r=>[r.id,r]));
  const retired = new Set(['neutron-boots','spacetime-walkers','reality-breakers','singularity-vault','bottomless-singularity','event-horizon-vault','omnidimensional-vault']);
  const result=recipes.filter(r=>!replacements.has(r.id)&&!retired.has(r.id)).map(original=>{
   const r=structuredClone(original);
