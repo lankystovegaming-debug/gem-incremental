@@ -74,6 +74,8 @@
 
       <label class="setting switch"><span class="setting__text"><strong class="setting__title">Enable Buffs</strong><span class="setting__sub">Apply all four core stat bonuses. Turning this off uses 1× stats.</span></span><span class="setting__control"><input id="enableBuffs" type="checkbox"><span class="switch__track"></span></span></label>
       <label class="setting switch"><span class="setting__text"><strong class="setting__title">Keep new discoveries</strong><span class="setting__sub">Protect the first discovery using base/raw rarity.</span></span><span class="setting__control"><input id="discoveryKeep" type="checkbox"><span class="switch__track"></span></span></label>
+      <label class="setting" for="maxLuck">Max Luck (×) <input class="input setting-number" id="maxLuck" type="number" min="1" max="9007199254740991" step="any" placeholder="No cap" aria-describedby="maxLuckHelp"></label>
+      <p id="maxLuckHelp" class="muted">Blank disables the cap. Limits normal gem-selection Luck only, including burst Luck. Other stats and flat-gem probabilities stay unchanged.</p>
       <label class="setting">Keep new discoveries at or above 1 in <input class="input" id="discoveryKeepRarity" type="number" min="1" max="9007199254740991" value="10000"></label>
       <p><a href="#gemFilterHeading">Configure Gem Filter →</a></p>
       <label class="setting switch">

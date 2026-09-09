@@ -1,3 +1,4 @@
+import { sanitizeMaxLuck } from '../../supabase/functions/roll/equipmentRules.js';
 import { GEM_MUTATIONS } from "../data/mutations.js";
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
@@ -32,6 +33,7 @@ export const GEM_REALISM_LEVELS = [
 ];
 
 const DEFAULTS = {
+  maxLuck: null,
   autoRoll: false,
   autoSell: false,
   enableBuffs: true, discoveryKeep: true, discoveryKeepRarity: 10000, gemFilter: {},
@@ -102,6 +104,7 @@ function sanitise(value) {
 
   return {
     ...value,
+    maxLuck: sanitizeMaxLuck(value.maxLuck),
     enableBuffs: value.enableBuffs !== false,
     discoveryKeep: value.discoveryKeep !== false,
     discoveryKeepRarity: Math.min(Number.MAX_SAFE_INTEGER, Math.max(1, Math.floor(Number(value.discoveryKeepRarity) || 10000))),

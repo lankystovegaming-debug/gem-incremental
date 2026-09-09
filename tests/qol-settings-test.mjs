@@ -18,6 +18,7 @@ globalThis.__backend={
 const source=readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8')
 .replace('import { supabase } from "../backend/supabase.js";','const supabase=globalThis.__backend;')
 .replace('import { ensurePlayerAuth } from "../backend/auth.js";','const ensurePlayerAuth=async()=>({id:"test"});')
+.replace("'../../supabase/functions/roll/equipmentRules.js'",JSON.stringify(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url).href))
 .replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href));
 const store=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
@@ -30,3 +31,7 @@ await store.updateSettings({enableBuffs:true});assert.equal(store.getSettings().
 assert.equal(store.shouldAutoSell('common'),false,'the browser never independently auto-sells');
 const copy=store.getSettings();copy.gemFilter.Quartz='SELL';assert.equal(store.getSettings().gemFilter.Quartz,'KEEP');
 console.log('QoL settings: device migration, Auto Keep preservation, shared hydration, serialized patches, independent rules, failed saves and recovery passed.');
+
+await store.updateSettings({maxLuck:1.5});assert.equal(store.getSettings().maxLuck,1.5);
+fail=true;await assert.rejects(()=>store.updateSettings({maxLuck:2}));assert.equal(store.getSettings().maxLuck,1.5);
+await store.updateSettings({maxLuck:null});assert.equal(store.getSettings().maxLuck,null);

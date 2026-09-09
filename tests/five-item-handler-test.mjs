@@ -25,7 +25,7 @@ class Query {
   if(this.mode==='insert'&&this.table==='inventory_gems'){data={id:101,...this.payload};saved=data;}
   else if(this.mode==='read') {
    const tables={players:player,player_crafting:{active_auto_craft:craftActive?'craft':null},game_recipes:{recipe:{equipmentOverhaul:true,requirements:[]}},crafting_progress:{progress:{}},player_equipment:equipment,player_boosts:boosts,player_one_roll_boosts:oneRoll,admin_events:admin,
-    museum_artifact_registrations:[],player_gem_mutation_combinations:[],game_mutations:[{id:'polished',name:'Polished',chance:100,multiplier:1.5}],
+    museum_artifact_registrations:[],player_gem_mutation_combinations:[],game_mutations:[{id:'polished',name:'Polished',chance:100,multiplier:1.5},{id:'shifted',name:'Shifted',chance:5,multiplier:35}],
     private_feature_gems:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}]};
    data=tables[this.table]??(this.singleRow?null:[]);
   }
@@ -70,3 +70,43 @@ for(const name of ['bundle_route_roll','record_server_roll','record_gem_mutation
 assert.ok(rpcs.includes('spend_one_roll_charge'));assert.equal(rpcs.filter(n=>n==='record_guild_roll_activity').length,1);
 assert.ok(rpcs.includes('record_season_roll'));assert.ok(rpcs.includes('record_abandoned_mine_roll'));
 console.log('Five-item optimized handler: All-In isolation/admin modifiers, Balanced, hard rarity ceiling and reward-free House Edge passed.');
+
+// Next batch runs through this same production-handler harness and live-shaped layers.
+forceLoss=false;forceProcs=false;qolSettings={discoveryKeep:false};
+const baseReality=await run('reality-shifter',{rolls:{'reality-shifter':498}});
+assert.equal(saved.mutation_chance_multiplier,0);assert.deepEqual(saved.mutation_ids,[]);
+assert.equal(baseReality.equipmentPassives.state.rolls['reality-shifter'],499);
+forceProcs=true;
+const shifted=await run('reality-shifter',{rolls:{'reality-shifter':499}});
+assert.deepEqual(saved.mutation_ids,['shifted']);near(saved.mutation_multiplier,35);
+assert.equal(saved.mutation_chance_multiplier,0);
+assert.equal(shifted.equipmentPassives.state.rolls['reality-shifter'],500);
+near(shifted.luckBreakdown.ordinary,baseReality.luckBreakdown.ordinary*400);
+near(shifted.luckBreakdown.oneRoll,baseReality.luckBreakdown.oneRoll);
+near(shifted.luckAtRoll,(shifted.luckBreakdown.ordinary+shifted.luckBreakdown.oneRoll)*shifted.luckBreakdown.world);
+const postShift=await run('reality-shifter',{rolls:{'reality-shifter':500}});
+assert.deepEqual(saved.mutation_ids,[]);near(postShift.luckAtRoll,baseReality.luckAtRoll);
+forceProcs=false;
+const baseBedrock=await run('bedrock-pickaxe',{foundation:95});
+const burstBedrock=await run('bedrock-pickaxe',{foundation:0,bedrockBurst:10});
+near(burstBedrock.luckBreakdown.base/baseBedrock.luckBreakdown.base,1.5);
+assert.equal(burstBedrock.equipmentPassives.state.bedrockBurst,9);
+assert.equal(burstBedrock.equipmentPassives.state.foundation,0);
+qolSettings={discoveryKeep:false,maxLuck:1};
+const capped=await run('bedrock-pickaxe',{foundation:98});
+assert.equal(capped.gem.name,'Quartz');assert.equal(capped.finalStats.luck,1);
+assert.equal(capped.luckAtRoll,1);assert.equal(saved.luck_at_roll,1);
+assert.equal(capped.equipmentPassives.state.foundation,0);assert.equal(capped.equipmentPassives.state.bedrockBurst,10);
+near(capped.finalStats.rollSpeed,baseBedrock.finalStats.rollSpeed);
+near(capped.finalStats.weightLuck,baseBedrock.finalStats.weightLuck);
+near(capped.finalStats.weightMultiplier,baseBedrock.finalStats.weightMultiplier);
+qolSettings={discoveryKeep:false,maxLuck:7};forceProcs=true;
+const cappedShift=await run('reality-shifter',{rolls:{'reality-shifter':499}});
+assert.equal(cappedShift.luckAtRoll,7);assert.deepEqual(saved.mutation_ids,['shifted']);
+qolSettings={discoveryKeep:false,maxLuck:1};forceProcs=false;
+result=await run('all-in-pickaxe');assert.equal(result.finalStats.luck,1);assert.equal(result.finalStats.uncappedLuck,510);
+near(result.finalStats.rollSpeed,.9);assert.equal(result.gem.flatChanceMultiplier,4);
+for(const invalid of [-1,'NaN','Infinity',false,{},1e100]) {
+ qolSettings={discoveryKeep:false,maxLuck:invalid};result=await run('all-in-pickaxe');assert.equal(result.luckAtRoll,510);
+}
+console.log('Reality/Bedrock optimized handler: exclusive zero-mutation bypass, 499/500/501, authoritative Luck order, burst state, capped low-tier acquisition, independent stats and All-In passed.');

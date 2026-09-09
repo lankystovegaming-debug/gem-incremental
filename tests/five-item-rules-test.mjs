@@ -34,10 +34,10 @@ for(const recipe of fiveItemRecipes) {
 let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8');
 const selection=source.slice(source.indexOf('function rollGemWithPickaxePassives('),source.indexOf('// MUTATION RNG'));
 let random=.5;
-const {eligibleEquipmentGems,flatEquipmentChance,specialChance}=await import('../supabase/functions/roll/equipmentRules.js');
-const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
+const {eligibleEquipmentGems,flatEquipmentChance,specialChance,capGemLuck}=await import('../supabase/functions/roll/equipmentRules.js');
+const choose=new Function('gems','random01','eligibleEquipmentGems','flatEquipmentChance','specialChance','eventGemIsEligible','eventGemLuckFactor','capGemLuck',stripTypeScriptTypes(selection)+';return rollGemWithPickaxePassives;');
 const catalog=[{name:'Common',rarity:2},{name:'Rare',rarity:99},{name:'Epic',rarity:100},{name:'Ultra',rarity:1e9},{name:'Flat',rarity:50,affectedByLuck:false}];
-const roll=choose(catalog,()=>random,eligibleEquipmentGems,flatEquipmentChance,specialChance,()=>true,()=>1);
+const roll=choose(catalog,()=>random,eligibleEquipmentGems,flatEquipmentChance,specialChance,()=>true,()=>1,capGemLuck);
 for(const luck of [.01,1,250,1e12])for(const rng of [0,.001,.5,.999999]) {random=rng;assert.ok(roll(luck,new Set(),1e12,1e12,1e12,1e12,null,{id:'money-pickaxe'}).rarity<100);}
 random=.07999;assert.equal(roll(250,new Set(),1,1,1,1,null,{id:'all-in-pickaxe'}).name,'Flat');
 random=.08001;assert.notEqual(roll(250,new Set(),1,1,1,1,null,{id:'all-in-pickaxe'}).name,'Flat');

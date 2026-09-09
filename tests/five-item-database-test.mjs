@@ -135,4 +135,8 @@ await assert.rejects(()=>q('select commit_jackpot_loss($1,$2,77703,$3)',[uid,lea
 assert.equal((await q("select has_function_privilege('authenticated','public.commit_jackpot_loss(uuid,uuid,bigint,jsonb)','execute') allowed"))[0].allowed,false);
 assert.equal((await q("select has_table_privilege('authenticated','public.equipment_ownership_history','insert') allowed"))[0].allowed,false);
 console.log('Five-item database: live-compatible migration, historical gates/backfill, ownership retention, all five crafts, unchanged Plastic, atomic/idempotent losses and permissions passed.');
+if(process.env.REALITY_BEDROCK_DB_TEST) {
+ const {testRealityBedrockDatabase}=await import('./reality-bedrock-database-cases.mjs');
+ await testRealityBedrockDatabase({db,q,uid,read,fund});
+}
 await db.close();

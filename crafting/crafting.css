@@ -319,12 +319,17 @@
 
 .recipe-card__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: auto;
 }
 
 .recipe-card__actions .btn {
   flex: 1;
+}
+
+.recipe-card__actions [data-action="deposit-all"] {
+  flex-basis: 100%;
 }
 
 .recipe-card__owned {

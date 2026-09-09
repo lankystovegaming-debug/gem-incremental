@@ -654,6 +654,7 @@ function renderRoll(data, outcome) {
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}${data.equipmentPassives?.bagged ? " 🛍️" : ""}</h2>
       ${mutationNamesHtml(data?.mutations)}
+      ${data.finalStats?.maxLuck != null ? `<p class="gem-reveal__outcome">Gem-selection Luck: ${formatMultiplier(data.finalStats.luck)} · Max Luck: ${formatMultiplier(data.finalStats.maxLuck)} · Uncapped: ${formatMultiplier(data.finalStats.uncappedLuck)}</p>` : ""}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
       ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
