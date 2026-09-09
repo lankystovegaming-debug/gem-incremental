@@ -13,6 +13,9 @@ import {
   sellCloudGem
 } from "./src/backend/cloudInventory.js";
 import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
+import { loadCloudCraftingState, loadCloudConsumables } from "./src/backend/cloudCrafting.js";
+import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "./src/backend/cloudEquipment.js";
+import { isRequirementComplete } from "./src/logic/crafting.js";
 
 import { mountShell } from "./src/ui/shell.js";
 import { initReferral } from "./src/ui/referralBootstrap.js";
@@ -72,6 +75,8 @@ const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
 const automationPulse = document.getElementById("automationPulse");
+const craftingProgressList = document.getElementById("craftingProgressList");
+const craftingProgressUpdated = document.getElementById("craftingProgressUpdated");
 const sessionInsightsPanel = document.getElementById("sessionInsightsPanel");
 const clearSessionInsightsButton = document.getElementById("clearSessionInsights");
 const sessionInsightStats = document.getElementById("sessionInsightStats");
@@ -211,6 +216,107 @@ function renderAutomationPulse() {
   if (!automationPulse) return;
   const minutes = Math.max(1 / 60, (Date.now() - automationStats.startedAt) / 60000);
   automationPulse.innerHTML = `<strong>${getSettings().autoRoll ? "Auto roll active" : automationStats.status}</strong><span>${(automationStats.rolls / minutes).toFixed(1)} rolls/min</span><span>${formatMoney(automationStats.earned, { exact: true })} earned</span><span>${automationStats.kept} kept · ${automationStats.sold} sold</span>`;
+}
+
+const CRAFTING_PREVIEW_REFRESH_MS = 60_000;
+
+function craftingRequirementKey(requirement, index) {
+  if (requirement.id) return requirement.id;
+  if (requirement.type === "gem-count") return requirement.gem;
+  if (["consumable", "consumable-count", "potion", "potion-count"].includes(requirement.type)) {
+    return requirement.consumableId ?? requirement.consumable_id ?? requirement.potionId ?? requirement.potion_id ?? `${requirement.type}-${index}`;
+  }
+  return `${requirement.type}-${index}`;
+}
+
+function hasCraftingProgress(progress = {}) {
+  return Object.entries(progress).some(([key, value]) => {
+    if (key === "_equipment_recipe") return false;
+    if (typeof value === "number") return value > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (value && typeof value === "object") {
+      return Number(value.points ?? 0) > 0 || Object.keys(value).some((entry) => entry !== "gemTypes" && Number(value[entry] ?? 0) > 0);
+    }
+    return false;
+  });
+}
+
+function requirementFraction(requirement, index, progress, context, complete) {
+  if (complete) return 1;
+  const value = progress[craftingRequirementKey(requirement, index)];
+  const ratios = {
+    "gem-count": [value, requirement.amount],
+    "gem-total-weight": [value, requirement.totalWeight],
+    "specimen-total-weight": [value, requirement.totalWeight],
+    "specimen-value-total": [value, requirement.totalValue],
+    "gem-min-weight-multiplier": [value, requirement.amount ?? 1],
+    "gem-max-weight-multiplier": [value, requirement.amount ?? 1],
+    "specimen-condition": [value, requirement.amount ?? 1],
+    "lifetime-rolls": [context.totalRolls, requirement.rolls]
+  };
+  if (requirement.type === "rarity-points") ratios[requirement.type] = [value?.points, requirement.points];
+  if (requirement.type === "special-discoveries") ratios[requirement.type] = [context.specialDiscoveries?.[requirement.classification], requirement.amount];
+  if (requirement.type === "gem-range") {
+    const amounts = requirement.gems.map((name) => Math.min(1, Number(value?.[name] ?? 0) / Number(requirement.amountEach ?? 1)));
+    return amounts.length ? amounts.reduce((sum, amount) => sum + amount, 0) / amounts.length : 0;
+  }
+  const [current, target] = ratios[requirement.type] ?? [0, 1];
+  return Math.max(0, Math.min(1, Number(current ?? 0) / Math.max(1, Number(target ?? 1))));
+}
+
+async function refreshCraftingProgressPreview() {
+  if (!craftingProgressList) return;
+  const user = await ensurePlayerAuth();
+  if (!user) {
+    craftingProgressList.innerHTML = '<p class="crafting-preview__empty">Sign in to view crafting progress.</p>';
+    return;
+  }
+  const [crafting, player, equipment, consumables, overhaul] = await Promise.all([
+    loadCloudCraftingState(), loadCloudPlayerState(), loadCloudEquipment(), loadCloudConsumables(), loadEquipmentOverhaulProgress()
+  ]);
+  if (!crafting || !player || !equipment || !consumables) {
+    craftingProgressList.innerHTML = '<p class="crafting-preview__empty">Crafting progress could not be refreshed.</p>';
+    return;
+  }
+
+  const recipeCatalog = recipes.map((recipe) => crafting.progress?.[recipe.id]?._equipment_recipe ?? recipe);
+  const activeId = crafting.activeAutoCraftRecipeId;
+  const context = {
+    equipment: equipment.map((item) => ({ id: item.equipment_id })),
+    consumables,
+    totalRolls: player.total_rolls,
+    genuineRolls: overhaul?.genuineRolls ?? 0,
+    specialDiscoveries: overhaul ?? {},
+    bestRareNaturalWeight100k: player.best_rare_natural_weight_100k,
+    bestRareNaturalWeight1m: player.best_rare_natural_weight_1m
+  };
+  const started = recipeCatalog
+    .filter((recipe) => recipe.id === activeId || hasCraftingProgress(crafting.progress?.[recipe.id]))
+    .map((recipe) => {
+      const progress = crafting.progress?.[recipe.id] ?? {};
+      const results = recipe.requirements.map((requirement, index) => {
+        const complete = isRequirementComplete(crafting, recipe, requirement, index, context);
+        return { complete, fraction: requirementFraction(requirement, index, progress, context, complete) };
+      });
+      const fraction = results.length ? results.reduce((sum, result) => sum + result.fraction, 0) / results.length : 0;
+      return { recipe, results, fraction };
+    })
+    .sort((a, b) => Number(b.recipe.id === activeId) - Number(a.recipe.id === activeId) || b.fraction - a.fraction);
+
+  if (!started.length) {
+    craftingProgressList.innerHTML = '<p class="crafting-preview__empty">No recipes in progress yet. Deposit materials on the Crafting page to begin.</p>';
+  } else {
+    craftingProgressList.innerHTML = started.map(({ recipe, results, fraction }) => {
+      const completed = results.filter((result) => result.complete).length;
+      const percent = Math.round(fraction * 100);
+      return `<a class="crafting-preview__recipe" href="./crafting/" aria-label="Open ${escapeHtml(recipe.name)} in Crafting">
+        <span class="crafting-preview__identity"><strong>${escapeHtml(recipe.name)}</strong><small>${recipe.id === activeId ? "Auto Craft · " : ""}${completed} / ${results.length} requirements</small></span>
+        <span class="crafting-preview__percent">${percent}%</span>
+        <span class="crafting-preview__bar"><span style="width:${percent}%"></span></span>
+      </a>`;
+    }).join("");
+  }
+  if (craftingProgressUpdated) craftingProgressUpdated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · refreshes every minute`;
 }
 
 async function refreshPlayerState() {
@@ -1291,6 +1397,8 @@ window.addEventListener("gem:maintenance-refresh", async () => {
 
 
 startGame();
+refreshCraftingProgressPreview();
+setInterval(refreshCraftingProgressPreview, CRAFTING_PREVIEW_REFRESH_MS);
 
 const buffsIndicator = document.createElement('p');
 buffsIndicator.className = 'badge badge--warning';
