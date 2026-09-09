@@ -67,18 +67,26 @@ function comboKey(gemName, combinationKey) {
 }
 
 async function loadCombinations(playerId) {
-  const { data, error } = await supabase
-    .from("player_gem_mutation_combinations")
-    .select("gem_name,combination_key,mutation_ids,mutation_multipliers,total_found,highest_value,first_discovered_at")
-    .eq("player_id", playerId);
+  const pageSize = 1000;
+  const data = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data: page, error } = await supabase
+      .from("player_gem_mutation_combinations")
+      .select("id,gem_name,combination_key,mutation_ids,mutation_multipliers,total_found,highest_value,first_discovered_at")
+      .eq("player_id", playerId)
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
 
-  if (error) {
-    console.error("Failed to load mutation combination index:", error);
-    return null;
+    if (error) {
+      console.error("Failed to load mutation combination index:", error);
+      return null;
+    }
+    data.push(...(page ?? []));
+    if ((page?.length ?? 0) < pageSize) break;
   }
 
   const result = {};
-  for (const entry of data ?? []) {
+  for (const entry of data) {
     const ids = normalizeMutationIds(entry.mutation_ids ?? []);
     const key = comboKey(entry.gem_name, entry.combination_key || mutationCombinationKey(ids));
     result[key] = {
