@@ -24,7 +24,9 @@
     "test:qol-ui": "node tests/qol-ui-test.mjs",
     "test:five-items": "node tests/five-item-rules-test.mjs && node tests/five-item-handler-test.mjs && node tests/five-item-database-test.mjs",
     "test:reality-bedrock": "node tests/reality-bedrock-rules-test.mjs && node tests/five-item-handler-test.mjs && REALITY_BEDROCK_DB_TEST=1 node tests/five-item-database-test.mjs",
-    "test:pickaxe-rebalance": "node tests/pickaxe-rebalance-test.mjs && node tests/equipment-overhaul-test.mjs && node tests/reality-bedrock-rules-test.mjs && node tests/five-item-rules-test.mjs && node tests/equipment-overhaul-handler-test.mjs && node tests/five-item-handler-test.mjs && REALITY_BEDROCK_DB_TEST=1 PICKAXE_REBALANCE_DB_TEST=1 node tests/five-item-database-test.mjs"
+    "test:pickaxe-rebalance": "node tests/pickaxe-rebalance-test.mjs && node tests/equipment-overhaul-test.mjs && node tests/reality-bedrock-rules-test.mjs && node tests/five-item-rules-test.mjs && node tests/equipment-overhaul-handler-test.mjs && node tests/five-item-handler-test.mjs && REALITY_BEDROCK_DB_TEST=1 PICKAXE_REBALANCE_DB_TEST=1 node tests/five-item-database-test.mjs",
+    "test:economy": "node tests/economy-database-test.mjs && node tests/admin-panel-tabs-test.mjs && node tests/admin-bank-overview-test.mjs",
+    "test:economy-ui": "node tests/economy-ui-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

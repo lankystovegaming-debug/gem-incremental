@@ -234,6 +234,21 @@
       <div id="mutationCatalogList" class="admin-list"></div>
     </section>
 
+    <section class="card admin-economy" id="economyPanel" hidden>
+      <div class="admin-section-head">
+        <div><h2>Economy Breakdown</h2><p class="page-head__sub" id="economySummary">Not loaded yet</p></div>
+        <button class="btn" id="economyRefresh" type="button">Refresh</button>
+      </div>
+      <div class="analytics-toggle" id="economyFilters" role="group" aria-label="Economy period">
+        <button type="button" class="analytics-toggle__btn" data-economy-period="1H" aria-pressed="false">1H</button>
+        <button type="button" class="analytics-toggle__btn" data-economy-period="6H" aria-pressed="false">6H</button>
+        <button type="button" class="analytics-toggle__btn is-active" data-economy-period="24H" aria-pressed="true">24H</button>
+        <button type="button" class="analytics-toggle__btn" data-economy-period="7D" aria-pressed="false">7D</button>
+        <button type="button" class="analytics-toggle__btn" data-economy-period="All" aria-pressed="false">All</button>
+      </div>
+      <div id="economyContent" aria-live="polite"></div>
+    </section>
+
     <section class="card admin-analytics" id="analyticsPanel" hidden>
       <div class="admin-section-head">
         <div>

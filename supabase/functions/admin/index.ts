@@ -616,24 +616,11 @@ export default {
           return response({ error: "invalid_amount" }, 400);
         }
 
-        const { data: player } = await ctx.supabaseAdmin
-          .from("players").select("money, lifetime_earnings").eq("id", targetId).maybeSingle();
-        if (!player) return response({ error: "player_not_found" }, 404);
-
-        const before = Number(player.money ?? 0);
-        const after = Math.max(0, before + amount);
-        // Credit lifetime earnings too (only for additions), so granted
-        // money is reflected on the leaderboard.
-        const lifetimeBefore = Number(player.lifetime_earnings ?? 0);
-        const lifetimeAfter = Math.max(0, lifetimeBefore + Math.max(0, amount));
-        const { error } = await ctx.supabaseAdmin
-          .from("players")
-          .update({ money: after, lifetime_earnings: lifetimeAfter })
-          .eq("id", targetId);
-        if (error) return response({ error: "money_update_failed" }, 500);
-
-        await audit(ctx, adminId, targetId, "money_adjusted", { amount, before, after });
-        return response({ money: after });
+        const { data, error } = await ctx.supabaseAdmin.rpc("admin_adjust_economy_cash", {
+          p_admin_id: adminId, p_player_id: targetId, p_amount: amount
+        });
+        if (error) return response({ error: "money_update_failed", message: error.message }, 500);
+        return response(data);
       }
 
       if (action === "grant_gem") {

@@ -1,3 +1,4 @@
+import { mountEconomy } from "./economy.js";
 import { loadGemCatalog } from "../src/backend/gemCatalog.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
@@ -36,7 +37,7 @@ const adminPanelBack = document.getElementById("adminPanelBack");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-economy, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -2215,6 +2216,12 @@ referralsSearch?.addEventListener("input", renderReferralRows);
 // is a thin presentational layer: it moves the existing panels into tab
 // pages and reuses their existing loaders, so their behaviour is unchanged.
 // =========================================================
+const economyBreakdown = mountEconomy({
+  panel: document.getElementById("economyPanel"), content: document.getElementById("economyContent"),
+  summary: document.getElementById("economySummary"), filters: document.getElementById("economyFilters"),
+  refresh: document.getElementById("economyRefresh"), rpc: (name, args) => supabase.rpc(name, args)
+});
+
 (function initAdminTabs() {
   const tabBar = document.getElementById("adminTabs");
   const mainEl = document.querySelector("main.app-main");
@@ -2231,7 +2238,7 @@ referralsSearch?.addEventListener("input", renderReferralRows);
 
   const GROUPS = {
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
-    economy: ["#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
+    economy: ["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"]
   };
@@ -2253,7 +2260,7 @@ referralsSearch?.addEventListener("input", renderReferralRows);
 
   // Heavier panels are only loaded when their tab is first opened.
   const LAZY = {
-    economy: () => (typeof loadAnalytics === "function" ? loadAnalytics() : null),
+    economy: () => { economyBreakdown.load(); if (typeof loadAnalytics === "function") loadAnalytics(); },
     community: () => {
       if (typeof loadIpAudit === "function") loadIpAudit();
       if (typeof loadReferrals === "function") loadReferrals();
