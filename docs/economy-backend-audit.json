@@ -1,0 +1,463 @@
+{
+  "project": "igrddscmrdrrwtvyspbf",
+  "auditedAt": "2026-09-09",
+  "repositoryBase": "1b8f03f",
+  "databaseFunctions": [
+    {
+      "name": "_prune_global_cash_events",
+      "signature": "CREATE OR REPLACE FUNCTION public._prune_global_cash_events()"
+    },
+    {
+      "name": "achievement_milestones_v013",
+      "signature": "CREATE OR REPLACE FUNCTION public.achievement_milestones_v013()"
+    },
+    {
+      "name": "admin_create_code",
+      "signature": "CREATE OR REPLACE FUNCTION public.admin_create_code(p_code text, p_money_reward numeric DEFAULT 0, p_consumable_id text DEFAULT NULL::text, p_consumable_quantity integer DEFAULT 0, p_expires_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_max_redemptions integer DEFAULT NULL::integer)"
+    },
+    {
+      "name": "admin_get_bank_overview",
+      "signature": "CREATE OR REPLACE FUNCTION public.admin_get_bank_overview()"
+    },
+    {
+      "name": "aggregate_cash_generation_events",
+      "signature": "CREATE OR REPLACE FUNCTION public.aggregate_cash_generation_events()"
+    },
+    {
+      "name": "apply_crafting_deposit",
+      "signature": "CREATE OR REPLACE FUNCTION public.apply_crafting_deposit(p_player_id uuid, p_recipe_id text, p_specimen_id bigint, p_expected_progress jsonb, p_new_progress jsonb)"
+    },
+    {
+      "name": "apply_private_feature_currency_reward",
+      "signature": "CREATE OR REPLACE FUNCTION public.apply_private_feature_currency_reward(p_player_id uuid, p_money numeric DEFAULT 0, p_coins bigint DEFAULT 0, p_capacity integer DEFAULT 0)"
+    },
+    {
+      "name": "apply_reward_object",
+      "signature": "CREATE OR REPLACE FUNCTION public.apply_reward_object(p_uid uuid, p_reward jsonb)"
+    },
+    {
+      "name": "bank_borrow",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_borrow(p_amount double precision)"
+    },
+    {
+      "name": "bank_borrow_limit",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_borrow_limit(p_score integer, p_balance double precision)"
+    },
+    {
+      "name": "bank_dashboard_json",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_dashboard_json(p_uid uuid)"
+    },
+    {
+      "name": "bank_declare_bankruptcy",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_declare_bankruptcy()"
+    },
+    {
+      "name": "bank_deposit",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_deposit(p_amount double precision)"
+    },
+    {
+      "name": "bank_repay",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_repay(p_amount double precision)"
+    },
+    {
+      "name": "bank_touch",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_touch(p_uid uuid)"
+    },
+    {
+      "name": "bank_withdraw",
+      "signature": "CREATE OR REPLACE FUNCTION public.bank_withdraw(p_amount double precision)"
+    },
+    {
+      "name": "bundle_route_roll",
+      "signature": "CREATE OR REPLACE FUNCTION public.bundle_route_roll(p_player_id uuid, p_lease_id uuid, p_specimen jsonb)"
+    },
+    {
+      "name": "burn_player_money",
+      "signature": "CREATE OR REPLACE FUNCTION public.burn_player_money(p_amount numeric DEFAULT NULL::numeric, p_burn_all boolean DEFAULT false)"
+    },
+    {
+      "name": "buy_auction",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_auction(p_auction_id bigint)"
+    },
+    {
+      "name": "buy_consumable",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_consumable(p_consumable_id text)"
+    },
+    {
+      "name": "buy_consumables_bulk",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_consumables_bulk(p_consumable_id text, p_quantity integer)"
+    },
+    {
+      "name": "buy_daily_shop_offer",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_daily_shop_offer(p_slot integer)"
+    },
+    {
+      "name": "buy_gem",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_gem(p_gem_name text)"
+    },
+    {
+      "name": "buy_shares",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_shares(p_amount numeric)"
+    },
+    {
+      "name": "buy_volcanic_cooling",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_volcanic_cooling(p_run_id bigint, p_tier integer)"
+    },
+    {
+      "name": "buy_volcanic_monitoring",
+      "signature": "CREATE OR REPLACE FUNCTION public.buy_volcanic_monitoring(p_run_id bigint, p_tier integer)"
+    },
+    {
+      "name": "cancel_gem_order",
+      "signature": "CREATE OR REPLACE FUNCTION public.cancel_gem_order(p_order_id bigint)"
+    },
+    {
+      "name": "choose_abandoned_mine_camp_service",
+      "signature": "CREATE OR REPLACE FUNCTION public.choose_abandoned_mine_camp_service(p_run_id bigint, p_service text)"
+    },
+    {
+      "name": "continue_crystal_hell_overdepth",
+      "signature": "CREATE OR REPLACE FUNCTION public.continue_crystal_hell_overdepth(p_run_id bigint)"
+    },
+    {
+      "name": "continue_crystal_overdepth",
+      "signature": "CREATE OR REPLACE FUNCTION public.continue_crystal_overdepth(p_run_id bigint)"
+    },
+    {
+      "name": "continue_mine_overdepth",
+      "signature": "CREATE OR REPLACE FUNCTION public.continue_mine_overdepth(p_run_id bigint)"
+    },
+    {
+      "name": "craft_consumable_recipe",
+      "signature": "CREATE OR REPLACE FUNCTION public.craft_consumable_recipe(p_recipe_id text)"
+    },
+    {
+      "name": "craft_equipment_recipe",
+      "signature": "CREATE OR REPLACE FUNCTION public.craft_equipment_recipe(p_recipe_id text)"
+    },
+    {
+      "name": "craft_equipment_recipe",
+      "signature": "CREATE OR REPLACE FUNCTION public.craft_equipment_recipe(p_player_id uuid, p_recipe_id text, p_money_cost double precision, p_reward_id text, p_reward_name text, p_reward_category text, p_reward_tier integer, p_luck_bonus double precision, p_roll_speed_bonus double precision, p_weight_luck_bonus double precision, p_weight_multiplier_bonus double precision, p_required_equipment_id text)"
+    },
+    {
+      "name": "create_gem_order",
+      "signature": "CREATE OR REPLACE FUNCTION public.create_gem_order(p_gem_name text, p_price double precision)"
+    },
+    {
+      "name": "create_guild_v2",
+      "signature": "CREATE OR REPLACE FUNCTION public.create_guild_v2(p_player_id uuid, p_name text, p_tag text, p_description text, p_emblem text, p_primary text, p_secondary text, p_accent text, p_join_mode text)"
+    },
+    {
+      "name": "dependency_improvement",
+      "signature": "CREATE OR REPLACE FUNCTION public.dependency_improvement(p_action text, p_target text, p_payload jsonb DEFAULT '{}'::jsonb)"
+    },
+    {
+      "name": "deposit_equipment_material",
+      "signature": "CREATE OR REPLACE FUNCTION public.deposit_equipment_material(p_player_id uuid, p_recipe_id text, p_specimen jsonb DEFAULT NULL::jsonb, p_requirement_index integer DEFAULT NULL::integer)"
+    },
+    {
+      "name": "enter_expedition",
+      "signature": "CREATE OR REPLACE FUNCTION public.enter_expedition(p_cadence text, p_difficulty text)"
+    },
+    {
+      "name": "expedition_grant_selected_reward",
+      "signature": "CREATE OR REPLACE FUNCTION public.expedition_grant_selected_reward(p_uid uuid, p_cadence text, p_difficulty text, p_choice text)"
+    },
+    {
+      "name": "expedition_reward_choice_valid",
+      "signature": "CREATE OR REPLACE FUNCTION public.expedition_reward_choice_valid(p_cadence text, p_difficulty text, p_choice text)"
+    },
+    {
+      "name": "expire_stale_gem_orders",
+      "signature": "CREATE OR REPLACE FUNCTION public.expire_stale_gem_orders()"
+    },
+    {
+      "name": "finalize_guild_competitions",
+      "signature": "CREATE OR REPLACE FUNCTION public.finalize_guild_competitions()"
+    },
+    {
+      "name": "fulfill_gem_order",
+      "signature": "CREATE OR REPLACE FUNCTION public.fulfill_gem_order(p_order_id bigint, p_specimen_id bigint)"
+    },
+    {
+      "name": "fund_abandoned_mine",
+      "signature": "CREATE OR REPLACE FUNCTION public.fund_abandoned_mine(p_depth integer)"
+    },
+    {
+      "name": "fund_abandoned_mine_hell",
+      "signature": "CREATE OR REPLACE FUNCTION public.fund_abandoned_mine_hell(p_depth integer)"
+    },
+    {
+      "name": "fund_crystal_depth",
+      "signature": "CREATE OR REPLACE FUNCTION public.fund_crystal_depth(p_run_id bigint, p_depth integer)"
+    },
+    {
+      "name": "fund_crystal_hell_depth",
+      "signature": "CREATE OR REPLACE FUNCTION public.fund_crystal_hell_depth(p_run_id bigint, p_depth integer)"
+    },
+    {
+      "name": "fund_volcanic_depth",
+      "signature": "CREATE OR REPLACE FUNCTION public.fund_volcanic_depth(p_run_id bigint, p_depth integer)"
+    },
+    {
+      "name": "get_admin_analytics",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_admin_analytics()"
+    },
+    {
+      "name": "get_crystal_caverns_dashboard",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_crystal_caverns_dashboard()"
+    },
+    {
+      "name": "get_global_cash_feed",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_global_cash_feed()"
+    },
+    {
+      "name": "get_global_cash_history",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_global_cash_history(p_hours integer DEFAULT 24)"
+    },
+    {
+      "name": "get_mining_cache_state",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_mining_cache_state()"
+    },
+    {
+      "name": "get_normal_abandoned_mine_dashboard",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_normal_abandoned_mine_dashboard()"
+    },
+    {
+      "name": "get_share_market",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_share_market()"
+    },
+    {
+      "name": "get_top_money_burners",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_top_money_burners(p_limit integer DEFAULT 10)"
+    },
+    {
+      "name": "get_volcanic_depths_dashboard",
+      "signature": "CREATE OR REPLACE FUNCTION public.get_volcanic_depths_dashboard()"
+    },
+    {
+      "name": "grant_achievement_rewards_v013",
+      "signature": "CREATE OR REPLACE FUNCTION public.grant_achievement_rewards_v013(p_uid uuid, p_rewards jsonb)"
+    },
+    {
+      "name": "guild_purchase_points_with_cash",
+      "signature": "CREATE OR REPLACE FUNCTION public.guild_purchase_points_with_cash(p_player_id uuid)"
+    },
+    {
+      "name": "login_streak_reward",
+      "signature": "CREATE OR REPLACE FUNCTION public.login_streak_reward(p_day integer)"
+    },
+    {
+      "name": "masterwork_equipment_beta",
+      "signature": "CREATE OR REPLACE FUNCTION public.masterwork_equipment_beta(p_equipment_row_id bigint, p_action text, p_choice text DEFAULT NULL::text)"
+    },
+    {
+      "name": "masterwork_equipment_with_cache_tokens",
+      "signature": "CREATE OR REPLACE FUNCTION public.masterwork_equipment_with_cache_tokens(p_equipment_row_id bigint, p_action text, p_choice text DEFAULT NULL::text)"
+    },
+    {
+      "name": "migrate_legacy_save",
+      "signature": "CREATE OR REPLACE FUNCTION public.migrate_legacy_save(p_player_id uuid, p_money numeric, p_inventory_capacity integer, p_total_rolls bigint, p_rarest_gem_name text, p_rarest_gem_rarity integer, p_inventory_gems jsonb, p_equipment jsonb, p_crafting_progress jsonb, p_active_auto_craft text, p_gem_index jsonb)"
+    },
+    {
+      "name": "museum_expand",
+      "signature": "CREATE OR REPLACE FUNCTION public.museum_expand(p_player_id uuid)"
+    },
+    {
+      "name": "place_bid",
+      "signature": "CREATE OR REPLACE FUNCTION public.place_bid(p_auction_id bigint, p_amount double precision)"
+    },
+    {
+      "name": "playtime_upgrade_multiplier",
+      "signature": "CREATE OR REPLACE FUNCTION public.playtime_upgrade_multiplier(p_upgrade text, p_level integer)"
+    },
+    {
+      "name": "purchase_mining_cache",
+      "signature": "CREATE OR REPLACE FUNCTION public.purchase_mining_cache(p_cache_id text, p_use_credits boolean DEFAULT false)"
+    },
+    {
+      "name": "purchase_season_premium",
+      "signature": "CREATE OR REPLACE FUNCTION public.purchase_season_premium(p_season_id uuid)"
+    },
+    {
+      "name": "record_crystal_hell_roll",
+      "signature": "CREATE OR REPLACE FUNCTION public.record_crystal_hell_roll(p_player_id uuid, p_payload jsonb)"
+    },
+    {
+      "name": "record_normal_crystal_cavern_roll",
+      "signature": "CREATE OR REPLACE FUNCTION public.record_normal_crystal_cavern_roll(p_player_id uuid, p_payload jsonb)"
+    },
+    {
+      "name": "redeem_code_single_reward",
+      "signature": "CREATE OR REPLACE FUNCTION public.redeem_code_single_reward(p_code text)"
+    },
+    {
+      "name": "refresh_daily_shop",
+      "signature": "CREATE OR REPLACE FUNCTION public.refresh_daily_shop()"
+    },
+    {
+      "name": "refresh_player_achievements_v013_legacy",
+      "signature": "CREATE OR REPLACE FUNCTION public.refresh_player_achievements_v013_legacy(p_uid uuid)"
+    },
+    {
+      "name": "refresh_player_achievements_v013_pre_hidden_v2",
+      "signature": "CREATE OR REPLACE FUNCTION public.refresh_player_achievements_v013_pre_hidden_v2(p_uid uuid)"
+    },
+    {
+      "name": "refresh_player_achievements_v013_pre_secret_timeout_fix",
+      "signature": "CREATE OR REPLACE FUNCTION public.refresh_player_achievements_v013_pre_secret_timeout_fix(p_uid uuid)"
+    },
+    {
+      "name": "reroll_expedition_quest",
+      "signature": "CREATE OR REPLACE FUNCTION public.reroll_expedition_quest(p_quest_id bigint)"
+    },
+    {
+      "name": "reset_research_tree_v014",
+      "signature": "CREATE OR REPLACE FUNCTION public.reset_research_tree_v014(p_player_id uuid)"
+    },
+    {
+      "name": "resolve_abandoned_mine_hell_event",
+      "signature": "CREATE OR REPLACE FUNCTION public.resolve_abandoned_mine_hell_event(p_run_id bigint, p_option text)"
+    },
+    {
+      "name": "resolve_crystal_decision",
+      "signature": "CREATE OR REPLACE FUNCTION public.resolve_crystal_decision(p_run_id bigint, p_choice text)"
+    },
+    {
+      "name": "resolve_crystal_hell_decision",
+      "signature": "CREATE OR REPLACE FUNCTION public.resolve_crystal_hell_decision(p_run_id bigint, p_choice text)"
+    },
+    {
+      "name": "reveal_abandoned_mine_hell_card",
+      "signature": "CREATE OR REPLACE FUNCTION public.reveal_abandoned_mine_hell_card(p_run_id bigint, p_slot integer)"
+    },
+    {
+      "name": "sample_volcanic_magma",
+      "signature": "CREATE OR REPLACE FUNCTION public.sample_volcanic_magma(p_run_id bigint)"
+    },
+    {
+      "name": "season_grant_reward",
+      "signature": "CREATE OR REPLACE FUNCTION public.season_grant_reward(p_uid uuid, p_season uuid, p_reward jsonb)"
+    },
+    {
+      "name": "season_zero_tiers",
+      "signature": "CREATE OR REPLACE FUNCTION public.season_zero_tiers()"
+    },
+    {
+      "name": "sell_inventory_gem",
+      "signature": "CREATE OR REPLACE FUNCTION public.sell_inventory_gem(p_player_id uuid, p_specimen_id bigint)"
+    },
+    {
+      "name": "sell_shares",
+      "signature": "CREATE OR REPLACE FUNCTION public.sell_shares(p_shares numeric)"
+    },
+    {
+      "name": "settle_abandoned_mine",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_abandoned_mine(p_run_id bigint)"
+    },
+    {
+      "name": "settle_abandoned_mine_hell",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_abandoned_mine_hell(p_run_id bigint)"
+    },
+    {
+      "name": "settle_crystal_caverns",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_crystal_caverns(p_run_id bigint)"
+    },
+    {
+      "name": "settle_due_auctions",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_due_auctions()"
+    },
+    {
+      "name": "settle_my_referral",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_my_referral()"
+    },
+    {
+      "name": "settle_volcanic_depths",
+      "signature": "CREATE OR REPLACE FUNCTION public.settle_volcanic_depths(p_run_id bigint)"
+    },
+    {
+      "name": "share_index_price",
+      "signature": "CREATE OR REPLACE FUNCTION public.share_index_price()"
+    },
+    {
+      "name": "share_price_at",
+      "signature": "CREATE OR REPLACE FUNCTION public.share_price_at(p_invested numeric)"
+    },
+    {
+      "name": "snapshot_global_cash",
+      "signature": "CREATE OR REPLACE FUNCTION public.snapshot_global_cash()"
+    },
+    {
+      "name": "update_qol_settings",
+      "signature": "CREATE OR REPLACE FUNCTION public.update_qol_settings(p_patch jsonb)"
+    },
+    {
+      "name": "upgrade_inventory_capacity",
+      "signature": "CREATE OR REPLACE FUNCTION public.upgrade_inventory_capacity(p_player_id uuid)"
+    },
+    {
+      "name": "upgrade_inventory_infinite",
+      "signature": "CREATE OR REPLACE FUNCTION public.upgrade_inventory_infinite()"
+    },
+    {
+      "name": "volcanic_award_cargo",
+      "signature": "CREATE OR REPLACE FUNCTION public.volcanic_award_cargo(p_run volcanic_depth_runs, p_value numeric)"
+    },
+    {
+      "name": "war_cancel",
+      "signature": "CREATE OR REPLACE FUNCTION public.war_cancel(p_war uuid)"
+    },
+    {
+      "name": "war_challenge",
+      "signature": "CREATE OR REPLACE FUNCTION public.war_challenge(p_opponent text, p_metric text, p_duration integer, p_stake numeric DEFAULT 0)"
+    },
+    {
+      "name": "war_metric_value",
+      "signature": "CREATE OR REPLACE FUNCTION public.war_metric_value(p_uid uuid, p_metric text)"
+    },
+    {
+      "name": "war_resolve_due",
+      "signature": "CREATE OR REPLACE FUNCTION public.war_resolve_due()"
+    },
+    {
+      "name": "war_respond",
+      "signature": "CREATE OR REPLACE FUNCTION public.war_respond(p_war uuid, p_accept boolean)"
+    }
+  ],
+  "edgeSlugsReviewed": [
+    "admin",
+    "bounties",
+    "bundles",
+    "craft-recipe",
+    "delete-gem",
+    "dungeons",
+    "enchant-equipment",
+    "expansion-features",
+    "features",
+    "forge",
+    "gemdle",
+    "islands",
+    "leaderboards",
+    "manual-deposit",
+    "masterwork-equipment",
+    "migrate-crafting",
+    "migrate-save",
+    "minigames",
+    "museum",
+    "private-features",
+    "pvp",
+    "relics",
+    "roll",
+    "seasons",
+    "seed-recipes",
+    "sell-gem",
+    "set-auto-craft",
+    "toggle-gem-lock",
+    "treasure-expeditions",
+    "unequip-equipment",
+    "upgrade-inventory",
+    "workbench",
+    "world-bosses",
+    "shared"
+  ]
+}

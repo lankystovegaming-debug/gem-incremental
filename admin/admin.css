@@ -694,3 +694,25 @@
 .admin-tab-btn.is-active{color:var(--accent-text,#0b0e14);background:var(--accent)}
 .admin-tab-page{display:grid;gap:1rem}
 .admin-tab-page[hidden]{display:none}
+
+/* Economy accounting */
+.economy-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:18px 0; }
+.economy-stat { padding:16px; border:1px solid var(--border, #29334a); border-radius:12px; background:rgba(111,147,220,.06); }
+.economy-stat > span { display:block; font-size:13px; opacity:.7; margin-bottom:8px; }
+.economy-stat strong { font-size:23px; }
+.economy-supply { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:16px; border:1px solid #456c5a; border-radius:12px; }
+.economy-supply strong { margin-left:12px; color:#9bd8b4; }
+.economy-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.economy-breakdown { min-width:0; margin-top:18px; }
+.economy-breakdown td:last-child { text-align:right; white-space:nowrap; }
+.economy-breakdown summary { cursor:pointer; }
+.economy-breakdown ul { padding-left:16px; font-size:12px; opacity:.8; }
+.economy-breakdown li { margin:8px 0; overflow-wrap:anywhere; }
+.economy-breakdown li > span { display:block; }
+.economy-empty,.economy-warning { padding:16px; background:rgba(212,174,91,.10); border-radius:10px; }
+@media(max-width:760px) { .economy-columns { grid-template-columns:1fr; } .economy-breakdown td:last-child { white-space:normal; } }
+.economy-breakdown .shareholders-table { width:100%; min-width:0; table-layout:fixed; }
+.economy-breakdown .shareholders-table th:first-child { width:62%; }
+.economy-breakdown .shareholders-table td { overflow-wrap:anywhere; }
+.economy-breakdown .shareholders-table td:last-child { white-space:normal; }
+.economy-supply strong { color:inherit; }
