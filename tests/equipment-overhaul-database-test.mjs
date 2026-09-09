@@ -27,6 +27,7 @@ await q("insert into game_recipes values('bright-lantern',$1) on conflict(id) do
 await q("insert into crafting_progress values($1,'bright-lantern','{\"Old material\":2}',now())",[uid]);
 const plasticBefore=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;
 await db.exec(read('../supabase/migrations/20260908000001_equipment_overhaul.sql'));
+await db.exec(read('../supabase/migrations/20260909002417_fix_crafting_lifetime_roll_requirement.sql'));
 const plasticAfter=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;delete plasticAfter.craftingTab;assert.deepEqual(plasticAfter,plasticBefore);
 assert.equal((await q("select recipe from game_recipes where id='omnidimensional-vault'")).length,0);
 assert.equal((await q("select enchant_state from player_equipment where equipment_id='dimensional-vault'"))[0].enchant_state.preserve,1);
@@ -81,4 +82,10 @@ await q("update players set roll_lease_expires_at=null,equipment_state=$2 where 
 const pickRow=(await q("select id from player_equipment where equipment_id='test-tier-craft'"))[0].id;
 await q('select set_overhaul_equipment_equipped($1,false)',[pickRow]);
 assert.deepEqual((await q('select equipment_state from players where id=$1',[uid]))[0].equipment_state,{spool:0,excavations:500,rolls:{'empyrean-pickaxe':1000}});
+// Overhaul recipes still use lifetime rolls for explicitly named lifetime-rolls requirements.
+await q('update players set total_rolls=500000,equipment_genuine_rolls=0 where id=$1',[uid]);
+const lifetimeRecipe={id:'test-lifetime-craft',category:'pickaxe',equipmentOverhaul:true,moneyCost:0,requirements:[{type:'lifetime-rolls',rolls:350000}],reward:{id:'test-lifetime-craft',name:'Lifetime Test',category:'pickaxe',tier:1,bonus:{}}};
+await q("insert into game_recipes values('test-lifetime-craft',$1)",[lifetimeRecipe]);
+await q("select craft_equipment_recipe('test-lifetime-craft')");
+assert.equal((await q("select count(*) n from player_equipment where player_id=$1 and equipment_id='test-lifetime-craft'",[uid]))[0].n,1);
 console.log('Database overhaul: migration, ownership/archive, unchanged Plastic recipe, independent/manual buckets, craft consumption, lease locking and idempotency passed.');await db.close();
