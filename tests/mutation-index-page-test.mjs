@@ -24,8 +24,9 @@ for (const id of ['mutationCount','discoveredCount','totalDiscoveries','rarestMu
   assert.match(html, new RegExp(`id="${id}"`));
 }
 assert.match(html, /aria-busy="true"/);
-assert.match(html, /mutation-index\.css\?v=20260910-discoveries/);
-assert.match(html, /index\.js\?v=20260910-discoveries/);
+assert.match(html, /src\/styles\/app\.css\?v=20260910-loading-fix/);
+assert.match(html, /mutation-index\.css\?v=20260910-loading-fix/);
+assert.match(html, /index\.js\?v=20260910-loading-fix/);
 assert.match(css, /@media\(max-width:620px\)/);
 assert.match(css, /prefers-reduced-motion:reduce/);
 
