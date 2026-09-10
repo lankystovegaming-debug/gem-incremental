@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="A compact, searchable guide to Gem Incremental: Luck, weight, mutations, Actual Chance, events and progression.">
+  <title>Info · Gem Incremental</title>
+  <link rel="icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2" href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./info.css">
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice", "aurora", "graphite"];
+
+        if (allowedModes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+        document.documentElement.setAttribute(
+          "data-accent",
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1
+            ? accent
+            : "indigo"
+        );
+      } catch (error) {}
+    })();
+  </script>
+</head>
+<body>
+  <main class="app-main info-page">
+    <header class="page-head"><div class="page-head__title">
+      <h1>ℹ️ Game Info</h1>
+      <p class="page-head__sub">Quick explanations of Gem Incremental’s mechanics and terminology.</p>
+    </div></header>
+    <div class="info-toolbar">
+      <label class="info-search" for="infoSearch">Search mechanics
+        <input type="search" id="infoSearch" placeholder="Try actual chance, weight luck, or an event…" aria-controls="infoGroups" autocomplete="off">
+      </label>
+      <button type="button" class="btn btn--ghost" id="infoClear" hidden>Clear search</button>
+      <button type="button" class="btn btn--ghost" id="infoCollapse">Collapse all</button>
+    </div>
+    <p class="info-status" id="infoStatus" role="status" aria-live="polite"></p>
+    <nav class="info-shortcuts" aria-label="Popular mechanics">
+      <a href="#actual-chance">Actual Chance</a><a href="#luck">Luck</a>
+      <a href="#weight-luck">Weight Luck</a><a href="#random-events">Random Events</a>
+    </nav>
+    <div id="infoGroups"></div>
+    <div class="info-empty" id="infoEmpty" hidden><strong>No matching mechanics.</strong><p>Try a shorter term, such as “weight”, “mutation” or “event”, or clear your search.</p></div>
+    <noscript><p>Enable JavaScript to search and read the game reference.</p></noscript>
+  </main>
+  <script type="module" src="./info.js"></script>
+</body>
+</html>
