@@ -192,6 +192,7 @@ export function mountShell({ page, base = "./" }) {
           </button>
           <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
             <div class="menu__label">Quick links</div>
+            <a class="menu__item" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
             <a class="menu__item" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
             <button class="menu__item" type="button" data-more-action="howto">
               ${icons.book}<span>How to play</span>
@@ -334,7 +335,7 @@ export function mountShell({ page, base = "./" }) {
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
   renderActiveAdminEvent(header);
-  renderActiveGlobalEvent(header);
+  renderActiveGlobalEvent(header, base);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -1306,7 +1307,7 @@ async function renderActiveAdminEvent(header) {
   update();
 }
 
-async function renderActiveGlobalEvent(header) {
+async function renderActiveGlobalEvent(header, base = "./") {
   const user = await ensurePlayerAuth();
   if (!user) return;
   let refreshInterval = null;
@@ -1375,7 +1376,8 @@ async function renderActiveGlobalEvent(header) {
     banner.innerHTML = `
       <span class="admin-event-banner__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
       <span class="admin-event-banner__content">
-        <strong>${escapeHtml(event.name)}</strong>
+        <strong>${escapeHtml(event.name)} · ${escapeHtml(event.tier)}</strong>
+        <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
         <span>${escapeHtml(details.length ? `${event.description} · ${details.join(" · ")}` : event.description)}</span>
       </span>
       <strong class="admin-event-banner__timer" aria-label="Time remaining">${eventTime(remainingSeconds * 1000)}</strong>`;

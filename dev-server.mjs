@@ -96,8 +96,8 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  // Match static hosting's directory redirect for clean Minigames URLs.
-  if (/^\/minigames(?:\/[a-z0-9-]+)?$/.test(pathname)) {
+  // Match static hosting's directory redirect for clean Minigames and Info URLs.
+  if (/^\/(?:minigames(?:\/[a-z0-9-]+)?|info)$/.test(pathname)) {
     fs.stat(path.join(filePath, "index.html"), (error, stats) => {
       if (!error && stats.isFile()) {
         response.writeHead(301, {
