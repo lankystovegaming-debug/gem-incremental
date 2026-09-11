@@ -1,3 +1,14 @@
+/* Month One is a deliberately dark, cinematic recap page whose purple accents
+   are tuned for a dark backdrop. It pulls in the shared app.css, which would
+   otherwise switch to the light palette on a light-mode device or theme —
+   washing the accents out and leaving dark base text on a light background.
+   Pin the page to its intended dark look regardless of the site/OS theme. */
+body {
+  color-scheme: dark;
+  color: #e8ecf4;
+  background-color: #0b0e14;
+  background-image: radial-gradient(900px 520px at 50% -10%, #151b2b, transparent 70%);
+}
 .recap {
   max-width: 1120px;
   margin: auto;
