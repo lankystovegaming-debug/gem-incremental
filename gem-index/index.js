@@ -615,37 +615,31 @@ async function refresh() {
     if (combinations) state.combinations = combinations;
 
     if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
-      const builtInNames = new Set(gems.map((gem) => gem.name));
-      const custom = privateGemsResult.data.filter((gem) => !builtInNames.has(gem.name)).map((gem) => ({
-        title: String(gem.title ?? gem.metadata?.title ?? ""), name: String(gem.name), rarity: Number(gem.rarity), baseWeight: Number(gem.base_weight), valuePerGram: Number(gem.value_per_gram),
-        description: String(gem.description ?? gem.metadata?.description ?? "Admin-created gem."),
-        hideRarityUntilDiscovered: gem.hide_rarity_until_discovered === true || gem.metadata?.hideRarityUntilDiscovered === true
-        ,affectedByLuck: gem.affected_by_luck !== false
-        ,availabilityMode: String(gem.availability_mode || "always"), dailyStartTime: gem.daily_start_time, dailyEndTime: gem.daily_end_time, availabilityTimezone: String(gem.availability_timezone || "Asia/Singapore")
-      }));
       catalogGems = privateGemsResult.data.map((gem) => ({
-      title: String(gem.title ?? gem.metadata?.title ?? ""),
-      name: String(gem.name),
-      rarity: Number(gem.rarity),
-      baseWeight: Number(gem.base_weight),
-      valuePerGram: Number(gem.value_per_gram),
-      description: String(
-        gem.description ?? gem.metadata?.description ?? ""
-      ),
-      hideRarityUntilDiscovered:
-        gem.hide_rarity_until_discovered === true ||
-        gem.metadata?.hideRarityUntilDiscovered === true,
-      affectedByLuck: gem.affected_by_luck !== false,
-      availabilityMode: String(gem.availability_mode || "always"),
-      dailyStartTime: gem.daily_start_time,
-      dailyEndTime: gem.daily_end_time,
-      availabilityTimezone: String(
-        gem.availability_timezone || "Asia/Singapore"
-      )
-    }));
-      catalogGems = [...gems, ...custom];
+        title: String(gem.title ?? gem.metadata?.title ?? ""),
+        name: String(gem.name),
+        rarity: Number(gem.rarity),
+        baseWeight: Number(gem.base_weight),
+        valuePerGram: Number(gem.value_per_gram),
+        description: String(
+          gem.description ?? gem.metadata?.description ?? ""
+        ),
+        hideRarityUntilDiscovered:
+          gem.hide_rarity_until_discovered === true ||
+          gem.metadata?.hideRarityUntilDiscovered === true,
+        affectedByLuck: gem.affected_by_luck !== false,
+        availabilityMode: String(gem.availability_mode || "always"),
+        dailyStartTime: gem.daily_start_time,
+        dailyEndTime: gem.daily_end_time,
+        availabilityTimezone: String(
+          gem.availability_timezone || "Asia/Singapore"
+        )
+      }));
     } else if (privateGemsResult.error) {
-      console.warn("Live gem catalog unavailable; using bundled gems:", privateGemsResult.error.message);
+      console.warn(
+        "Live gem catalog unavailable; using bundled gems:",
+        privateGemsResult.error.message
+      );
       catalogGems = [...gems];
     }
 
