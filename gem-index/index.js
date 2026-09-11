@@ -623,6 +623,26 @@ async function refresh() {
         ,affectedByLuck: gem.affected_by_luck !== false
         ,availabilityMode: String(gem.availability_mode || "always"), dailyStartTime: gem.daily_start_time, dailyEndTime: gem.daily_end_time, availabilityTimezone: String(gem.availability_timezone || "Asia/Singapore")
       }));
+      catalogGems = privateGemsResult.data.map((gem) => ({
+      title: String(gem.title ?? gem.metadata?.title ?? ""),
+      name: String(gem.name),
+      rarity: Number(gem.rarity),
+      baseWeight: Number(gem.base_weight),
+      valuePerGram: Number(gem.value_per_gram),
+      description: String(
+        gem.description ?? gem.metadata?.description ?? ""
+      ),
+      hideRarityUntilDiscovered:
+        gem.hide_rarity_until_discovered === true ||
+        gem.metadata?.hideRarityUntilDiscovered === true,
+      affectedByLuck: gem.affected_by_luck !== false,
+      availabilityMode: String(gem.availability_mode || "always"),
+      dailyStartTime: gem.daily_start_time,
+      dailyEndTime: gem.daily_end_time,
+      availabilityTimezone: String(
+        gem.availability_timezone || "Asia/Singapore"
+      )
+    }));
       catalogGems = [...gems, ...custom];
     } else if (privateGemsResult.error) {
       console.warn("Live gem catalog unavailable; using bundled gems:", privateGemsResult.error.message);
