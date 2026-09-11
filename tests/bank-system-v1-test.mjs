@@ -106,10 +106,11 @@ for (const action of ["deposit", "withdraw", "borrow", "repay"]) {
 // Borrowing and repaying confirm the terms first (real-bank interaction).
 assert.match(page, /title: "Take out a loan\?"/);
 assert.match(page, /title: "Repay your loan\?"/);
-// Bankruptcy is offered (with confirmation) only when the loan is in default.
+// Bankruptcy is offered (with confirmation) only for a defaulted loan
+// (currently past due, or having missed a payment — see the v1.1 migration).
 assert.match(page, /data-action="bankruptcy"/);
 assert.match(page, /title: "Declare bankruptcy\?"/);
-assert.match(page, /data\.in_default \? `<button/);
+assert.match(page, /defaulted \? `<button/);
 assert.equal((page.match(/await confirmDialog\(/g) || []).length, 3, "borrow, repay and bankruptcy must each confirm");
 assert.match(html, /<link rel="stylesheet" href="\.\/bank\.css">/);
 assert.match(html, /id="savings"[\s\S]*id="credit"[\s\S]*id="loan"[\s\S]*id="ledger"/);
