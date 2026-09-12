@@ -33,11 +33,16 @@ const featureLabButton = document.getElementById("featureLabButton");
 const featureLab = document.getElementById("adminFeatureLab");
 const featureLabBack = document.getElementById("featureLabBack");
 const adminPanelBack = document.getElementById("adminPanelBack");
+const appealsPanel = document.getElementById("appealsPanel");
+const appealsSummary = document.getElementById("appealsSummary");
+const appealsContent = document.getElementById("appealsContent");
+const appealsFilter = document.getElementById("appealsFilter");
+const appealsRefresh = document.getElementById("appealsRefresh");
 
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-economy, .admin-ip-audit, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-economy, .admin-ip-audit, .admin-appeals, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -1862,10 +1867,8 @@ function ipAuditAccountRows(accounts) {
   }).join("");
 }
 
-// The canned reason used by the IP-audit "Ban Now" shortcut. The ban screen
-// renders the [text](url) appeal link as a real link (see showBanScreen).
 const ALT_ACCOUNT_BAN_REASON =
-  "alt account. If you think this is wrong, please appeal [here](https://forms.gle/hkQVWTfCNpLZxLyRA).";
+  "Alt account. If you think this is wrong, submit an appeal from this ban screen.";
 
 async function banAltAccountFromAudit(playerId, button) {
   if (!playerId) return;
@@ -2208,6 +2211,138 @@ referralsSearch?.addEventListener("input", renderReferralRows);
 
 
 // =========================================================
+// BAN APPEALS
+// =========================================================
+function appealDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
+}
+
+function appealStatusLabel(statusValue) {
+  const statusName = String(statusValue ?? "pending");
+  return statusName.charAt(0).toUpperCase() + statusName.slice(1);
+}
+
+function renderAppeals(appeals) {
+  if (!appealsContent) return;
+  if (!appeals.length) {
+    appealsContent.innerHTML = '<div class="empty"><p class="empty__title">No appeals in this view.</p></div>';
+    return;
+  }
+
+  appealsContent.innerHTML = appeals.map((appeal) => {
+    const pending = appeal.status === "pending";
+    const statusClass = `appeal-card__status--${escapeHtml(appeal.status ?? "pending")}`;
+    return `
+      <article class="appeal-card" data-appeal-card="${escapeHtml(appeal.id)}">
+        <header class="appeal-card__header">
+          <div>
+            <h3>${escapeHtml(appeal.username ?? "Unnamed player")}</h3>
+            <p>${escapeHtml(appeal.player_id)} · Submitted ${escapeHtml(appealDate(appeal.created_at))}</p>
+          </div>
+          <span class="appeal-card__status ${statusClass}">${escapeHtml(appealStatusLabel(appeal.status))}</span>
+        </header>
+        <div class="appeal-card__reason">
+          <span>Reason for appeal</span>
+          <p>${escapeHtml(appeal.reason ?? "No reason supplied.")}</p>
+        </div>
+        ${pending ? `
+          <label class="field appeal-card__message">
+            <span>Message to the player</span>
+            <textarea rows="3" maxlength="2000" data-appeal-message
+              placeholder="Required when accepting: give a stern warning and state what happens if rules are broken again."></textarea>
+            <small>Required for Accept. Optional for Reject; the player will otherwise see “Your ban appeal was rejected.”</small>
+          </label>
+          <div class="appeal-card__actions">
+            <button class="btn" type="button" data-appeal-inspect="${escapeHtml(appeal.player_id)}">Inspect player</button>
+            <button class="btn btn--danger" type="button" data-appeal-review="rejected">Reject</button>
+            <button class="btn btn--primary" type="button" data-appeal-review="accepted">Accept &amp; unban</button>
+          </div>` : `
+          <div class="appeal-card__decision">
+            <span>Message sent</span>
+            <p>${escapeHtml(appeal.decision_message ?? "—")}</p>
+            <small>Reviewed ${escapeHtml(appealDate(appeal.reviewed_at))}</small>
+          </div>`}
+      </article>`;
+  }).join("");
+}
+
+async function reviewBanAppeal(card, decision) {
+  const appealId = card?.dataset.appealCard;
+  const message = card?.querySelector("[data-appeal-message]")?.value.trim() ?? "";
+  if (!appealId) return;
+  if (decision === "accepted" && !message) {
+    notify.error("Warning required", "Write the stern warning the player must see when they are unbanned.");
+    card.querySelector("[data-appeal-message]")?.focus();
+    return;
+  }
+
+  const verb = decision === "accepted" ? "accept this appeal and unban the player" : "reject this appeal";
+  if (!window.confirm(`Are you sure you want to ${verb}?`)) return;
+  card.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+
+  const { error } = await adminRequest("appeals_review", {
+    appealId,
+    decision,
+    message
+  });
+  if (error) {
+    notify.error("Appeal review failed", error.message);
+    card.querySelectorAll("button").forEach((button) => { button.disabled = false; });
+    return;
+  }
+
+  notify.success(
+    decision === "accepted" ? "Player unbanned" : "Appeal rejected",
+    decision === "accepted"
+      ? "The player will see your warning when they return to the game."
+      : "The player will see that their request was rejected."
+  );
+  await loadBanAppeals();
+}
+
+async function loadBanAppeals() {
+  if (!appealsPanel || !appealsContent) return;
+  appealsPanel.hidden = false;
+  if (appealsRefresh) appealsRefresh.disabled = true;
+  appealsContent.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const appealStatus = appealsFilter?.value ?? "pending";
+  const { data, error } = await adminRequest("appeals_list", { status: appealStatus });
+  if (appealsRefresh) appealsRefresh.disabled = false;
+  if (error) {
+    appealsContent.innerHTML =
+      `<div class="empty"><p class="empty__title">Could not load appeals</p><p>${escapeHtml(error.message)}</p></div>`;
+    if (appealsSummary) appealsSummary.textContent = "Failed to load.";
+    return;
+  }
+
+  const appeals = Array.isArray(data?.appeals) ? data.appeals : [];
+  const pendingCount = Number(data?.pendingCount ?? 0);
+  if (appealsSummary) {
+    appealsSummary.textContent = `${pendingCount} pending · ${appeals.length} shown`;
+  }
+  renderAppeals(appeals);
+}
+
+appealsRefresh?.addEventListener("click", loadBanAppeals);
+appealsFilter?.addEventListener("change", loadBanAppeals);
+appealsContent?.addEventListener("click", (event) => {
+  const inspectButton = event.target.closest("[data-appeal-inspect]");
+  if (inspectButton) {
+    window.showAdminTab?.("search");
+    inspectPlayer(inspectButton.dataset.appealInspect);
+    return;
+  }
+  const reviewButton = event.target.closest("[data-appeal-review]");
+  if (reviewButton) {
+    reviewBanAppeal(reviewButton.closest("[data-appeal-card]"), reviewButton.dataset.appealReview);
+  }
+});
+
+
+// =========================================================
 // ADMIN TAB NAVIGATION
 //
 // Groups the admin panels into top-level tabs so the page is a set of
@@ -2240,7 +2375,8 @@ const economyBreakdown = mountEconomy({
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
     economy: ["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
-    community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"]
+    community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
+    appeals: ["#appealsPanel"]
   };
 
   // Build one page wrapper per tab and move the matching panels into it.
@@ -2261,6 +2397,7 @@ const economyBreakdown = mountEconomy({
   // Heavier panels are only loaded when their tab is first opened.
   const LAZY = {
     economy: () => { economyBreakdown.load(); if (typeof loadAnalytics === "function") loadAnalytics(); },
+    appeals: () => (typeof loadBanAppeals === "function" ? loadBanAppeals() : null),
     community: () => {
       if (typeof loadIpAudit === "function") loadIpAudit();
       if (typeof loadReferrals === "function") loadReferrals();

@@ -68,6 +68,7 @@
       <button class="admin-tab-btn" type="button" data-admin-tab="economy">Economy</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="content">Content &amp; events</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="appeals">Appeals</button>
     </nav>
 
     <section class="card admin-search" id="adminSearchCard">
@@ -347,6 +348,25 @@
       </details>
 
       <div id="ipAuditContent" class="ip-audit-content"></div>
+    </section>
+
+    <section class="card admin-appeals" id="appealsPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Ban appeals</h2>
+          <p class="page-head__sub" id="appealsSummary">Review reasons submitted from the in-game ban screen.</p>
+        </div>
+        <div class="admin-section-head__tools">
+          <select id="appealsFilter" class="select" aria-label="Appeal status">
+            <option value="pending">Pending</option>
+            <option value="all">All appeals</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button class="btn" id="appealsRefresh" type="button">Refresh</button>
+        </div>
+      </div>
+      <div id="appealsContent" class="appeals-content"></div>
     </section>
 
     <section id="searchResults" class="admin-results"></section>

@@ -204,6 +204,70 @@ export default {
         return response({ error: "admin_forbidden" }, 403);
       }
 
+      if (action === "appeals_list") {
+        const requestedStatus = String(body.status ?? "pending");
+        const statusFilter = ["pending", "accepted", "rejected"].includes(requestedStatus)
+          ? requestedStatus
+          : null;
+
+        let appealsQuery = ctx.supabaseAdmin
+          .from("ban_appeals")
+          .select("id,player_id,username,reason,status,decision_message,created_at,reviewed_at,reviewed_by")
+          .order("created_at", { ascending: false })
+          .limit(250);
+        if (statusFilter) appealsQuery = appealsQuery.eq("status", statusFilter);
+
+        const [appealsResult, pendingResult] = await Promise.all([
+          appealsQuery,
+          ctx.supabaseAdmin
+            .from("ban_appeals")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending")
+        ]);
+        if (appealsResult.error) {
+          return response({ error: "appeals_load_failed", message: appealsResult.error.message }, 500);
+        }
+        if (pendingResult.error) {
+          return response({ error: "appeals_count_failed", message: pendingResult.error.message }, 500);
+        }
+
+        return response({
+          appeals: appealsResult.data ?? [],
+          pendingCount: pendingResult.count ?? 0
+        });
+      }
+
+      if (action === "appeals_review") {
+        const appealId = String(body.appealId ?? "");
+        const decision = String(body.decision ?? "").toLowerCase();
+        const message = String(body.message ?? "").trim();
+        if (!validUuid(appealId)) return response({ error: "invalid_appeal_id" }, 400);
+        if (!["accepted", "rejected"].includes(decision)) {
+          return response({ error: "invalid_appeal_decision" }, 400);
+        }
+        if (decision === "accepted" && !message) {
+          return response({ error: "unban_warning_required" }, 400);
+        }
+        if (message.length > 2000) {
+          return response({ error: "decision_message_too_long" }, 400);
+        }
+
+        const { data, error } = await ctx.supabaseAdmin.rpc("admin_review_ban_appeal", {
+          p_appeal_id: appealId,
+          p_decision: decision,
+          p_message: message,
+          p_reviewed_by: adminId
+        });
+        if (error) {
+          return response({ error: "appeal_review_failed", message: error.message }, 500);
+        }
+
+        await audit(ctx, adminId, data?.player_id ?? null, `ban_appeal_${decision}`, {
+          appealId
+        });
+        return response({ appeal: data });
+      }
+
       if (action === "update_logs_list") {
         const { data, error } = await ctx.supabaseAdmin
           .from("update_logs")

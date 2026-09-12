@@ -695,6 +695,99 @@
 .admin-tab-page{display:grid;gap:1rem}
 .admin-tab-page[hidden]{display:none}
 
+/* Ban appeals */
+.appeals-content {
+  display: grid;
+  gap: 1rem;
+  margin-top: var(--space-3);
+}
+.appeal-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface-solid);
+}
+.appeal-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.appeal-card__header h3,
+.appeal-card__header p,
+.appeal-card__reason p,
+.appeal-card__decision p {
+  margin: 0;
+}
+.appeal-card__header p {
+  margin-top: .25rem;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.appeal-card__status {
+  flex: 0 0 auto;
+  padding: .2rem .65rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 800;
+}
+.appeal-card__status--pending {
+  color: #f5b23f;
+  background: color-mix(in srgb, #f5b23f 15%, transparent);
+}
+.appeal-card__status--accepted {
+  color: var(--positive, #36c275);
+  background: color-mix(in srgb, var(--positive, #36c275) 14%, transparent);
+}
+.appeal-card__status--rejected {
+  color: var(--negative, #e5534b);
+  background: color-mix(in srgb, var(--negative, #e5534b) 14%, transparent);
+}
+.appeal-card__reason,
+.appeal-card__decision {
+  display: grid;
+  gap: .35rem;
+  padding: .8rem .9rem;
+  border-radius: var(--radius-sm, 10px);
+  background: var(--surface-sunken);
+}
+.appeal-card__reason > span,
+.appeal-card__decision > span {
+  color: var(--text-muted);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.appeal-card__reason p,
+.appeal-card__decision p {
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.appeal-card__decision small,
+.appeal-card__message small {
+  color: var(--text-muted);
+}
+.appeal-card__message textarea {
+  resize: vertical;
+}
+.appeal-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 620px) {
+  .appeal-card__header {
+    flex-direction: column;
+  }
+  .appeal-card__actions .btn {
+    flex: 1 1 100%;
+  }
+}
+
 /* Economy accounting */
 .economy-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:18px 0; }
 .economy-stat { padding:16px; border:1px solid var(--border, #29334a); border-radius:12px; background:rgba(111,147,220,.06); }
