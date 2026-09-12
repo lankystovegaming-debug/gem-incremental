@@ -56,16 +56,16 @@ assert.match(adminJs, /rpc\("admin_ban_player"[\s\S]*?p_hours:\s*0/,
   "Ban Now must call admin_ban_player with p_hours: 0 (permanent)");
 assert.match(adminJs, /ALT_ACCOUNT_BAN_REASON/,
   "admin.js must use a canned alt-account ban reason");
-assert.match(adminJs, /alt account\. If you think this is wrong, please appeal \[here\]\(https:\/\/forms\.gle\/hkQVWTfCNpLZxLyRA\)/,
-  "the canned reason must carry the appeal-form link");
+assert.match(adminJs, /Alt account\. If you think this is wrong, submit an appeal from this ban screen\./,
+  "the canned reason must direct players to the in-game appeal form");
 
-// The ban screen must turn the [here](url) markdown link into a real, safe link.
-assert.match(shellJs, /function renderBanReason\(/,
-  "shell.js must define renderBanReason");
-assert.match(shellJs, /https\?:\\\/\\\//,
-  "renderBanReason must restrict appeal links to http/https URLs");
-assert.match(shellJs, /renderBanReason\(reason/,
-  "the ban screen must render the reason through renderBanReason");
+// The ban screen must keep reasons as text and use the in-game appeal form.
+assert.match(shellJs, /querySelector\("\.ban-screen__reason"\)\.textContent/,
+  "the ban reason must be assigned as text");
+assert.match(shellJs, /data-ban-appeal-form/,
+  "the ban screen must contain the in-game appeal form");
+assert.doesNotMatch(shellJs, /forms\.gle/,
+  "the ban screen must not link to an external appeal form");
 
 // ── HTML + CSS hooks ──────────────────────────────────────────────────────
 assert.match(adminHtml, /id="ipWhitelistInput"/, "index.html must have the whitelist input");

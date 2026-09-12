@@ -9,7 +9,7 @@ const css = read("admin/admin.css");
 
 // ── Tab bar markup ────────────────────────────────────────────────────
 assert.match(html, /<nav class="admin-tabs" id="adminTabs"[^>]*hidden>/);
-for (const tab of ["search", "economy", "content", "community"]) {
+for (const tab of ["search", "economy", "content", "community", "appeals"]) {
   assert.match(html, new RegExp(`data-admin-tab="${tab}"`), `tab bar must have the ${tab} tab`);
 }
 // The player search card gets an id so it can be moved into the Search tab.
@@ -21,6 +21,7 @@ assert.match(js, /function initAdminTabs\(\)/);
 assert.match(js, /search: \["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"\]/);
 assert.match(js, /economy: \["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"\]/);
 assert.match(js, /community: \["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"\]/);
+assert.match(js, /appeals: \["#appealsPanel"\]/);
 // Builds a page wrapper per tab and switches between them.
 assert.match(js, /data\.adminTabPage = name|dataset\.adminTabPage = name/);
 assert.match(js, /function showAdminTab\(name\)/);

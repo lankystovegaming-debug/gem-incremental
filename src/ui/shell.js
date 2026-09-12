@@ -15,6 +15,11 @@ import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { loadCloudPlayerState } from "../backend/cloudInventory.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
+import {
+  acknowledgeBanAppealDecision,
+  loadMyBanAppeal,
+  submitBanAppeal
+} from "../backend/cloudBanAppeals.js";
 import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
 import { loadActiveGlobalEvent } from "../backend/cloudGlobalEvents.js";
 import {
@@ -761,15 +766,29 @@ export function mountShell({ page, base = "./" }) {
   // seasons, and any future page). Pages that also set it just override
   // with the same value.
   ensurePlayerAuth()
-    .then((user) => (user ? loadCloudPlayerState() : null))
-    .then((state) => {
+    .then(async (user) => {
+      if (!user) return { state: null, appeal: null };
+      const [stateResult, appealResult] = await Promise.allSettled([
+        loadCloudPlayerState(),
+        loadMyBanAppeal()
+      ]);
+      return {
+        state: stateResult.status === "fulfilled" ? stateResult.value : null,
+        appeal: appealResult.status === "fulfilled" && !appealResult.value?.error
+          ? appealResult.value?.data ?? null
+          : null
+      };
+    })
+    .then(({ state, appeal }) => {
       if (state && state.money != null) {
         applyWallet(state.money);
       }
       // A banned player is stopped at the door on every page. The server
       // (roll and other actions) rejects them too; this is the visible half.
       if (state && state.ban_until && new Date(state.ban_until) > new Date()) {
-        showBanScreen(state.ban_until, state.ban_reason);
+        showBanScreen(state.ban_until, state.ban_reason, appeal);
+      } else if (appeal && ["accepted", "rejected"].includes(appeal.status)) {
+        showBanAppealDecision(appeal);
       }
     })
     .catch(() => {
@@ -793,19 +812,120 @@ export function mountShell({ page, base = "./" }) {
 // A full-screen block shown on every page while the player is banned. The
 // server rejects banned players independently, so bypassing this overlay in
 // devtools only leaves an unplayable game behind it.
-// Escape the reason text, then upgrade a single `[label](https://url)` markdown
-// link into a real anchor. Only http/https URLs are allowed, so a crafted
-// reason can never smuggle a javascript: URI or any other markup through.
-function renderBanReason(reason) {
-  const escaped = escapeHtml(String(reason));
-  return escaped.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/,
-    (_match, label, url) =>
-      `<a class="ban-screen__appeal" href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
-  );
+function appealErrorMessage(error) {
+  const message = String(error?.message ?? "");
+  if (message.includes("appeal_reason_too_short")) return "Please enter at least 3 characters.";
+  if (message.includes("appeal_reason_too_long")) return "Keep your appeal under 2,000 characters.";
+  if (message.includes("active_ban_required")) return "This account is no longer banned. Refresh the page.";
+  return message || "The appeal could not be submitted. Please try again.";
 }
 
-function showBanScreen(banUntil, reason) {
+function renderBanAppealControls(overlay, initialAppeal) {
+  const host = overlay.querySelector("[data-ban-appeal-host]");
+  if (!host) return;
+
+  function render(appeal) {
+    if (appeal?.status === "pending") {
+      host.innerHTML = `
+        <div class="ban-screen__appeal-status ban-screen__appeal-status--pending">
+          <strong>Appeal submitted</strong>
+          <span>Your username was saved with your reason. The team will review it here in the game.</span>
+        </div>`;
+      return;
+    }
+
+    if (appeal?.status === "rejected") {
+      host.innerHTML = `
+        <div class="ban-screen__appeal-status ban-screen__appeal-status--rejected" role="status">
+          <strong>Your ban appeal was rejected.</strong>
+          ${appeal.decision_message
+            ? `<span>${escapeHtml(appeal.decision_message)}</span>`
+            : ""}
+        </div>`;
+      return;
+    }
+
+    host.innerHTML = `
+      <form class="ban-screen__appeal-form" data-ban-appeal-form>
+        <label for="banAppealReason">Why should this ban be reconsidered?</label>
+        <textarea id="banAppealReason" rows="4" minlength="3" maxlength="2000" required
+          placeholder="Explain your reason for appealing..."></textarea>
+        <small>Your current username is attached automatically. You can submit one appeal for this ban.</small>
+        <button class="btn btn--primary" type="submit">Submit appeal</button>
+        <p class="ban-screen__appeal-feedback" data-ban-appeal-feedback aria-live="polite"></p>
+      </form>`;
+
+    const form = host.querySelector("[data-ban-appeal-form]");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const textarea = form.querySelector("textarea");
+      const button = form.querySelector("button");
+      const feedback = form.querySelector("[data-ban-appeal-feedback]");
+      const appealReason = textarea?.value.trim() ?? "";
+      if (appealReason.length < 3) {
+        feedback.textContent = "Please enter at least 3 characters.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Submitting…";
+      feedback.textContent = "";
+      const { data, error } = await submitBanAppeal(appealReason);
+      if (error) {
+        feedback.textContent = appealErrorMessage(error);
+        button.disabled = false;
+        button.textContent = "Submit appeal";
+        return;
+      }
+      render(data);
+    });
+  }
+
+  render(initialAppeal);
+
+  // Keep the locked screen current while it is open. An accepted appeal
+  // removes the ban on the server, so a reload enters the game and displays
+  // the administrator's warning immediately.
+  const poll = window.setInterval(async () => {
+    if (!overlay.isConnected) {
+      window.clearInterval(poll);
+      return;
+    }
+    const { data, error } = await loadMyBanAppeal();
+    if (error || !data) return;
+    if (data.status === "accepted") {
+      window.clearInterval(poll);
+      window.location.reload();
+      return;
+    }
+    if (data.status !== initialAppeal?.status) {
+      initialAppeal = data;
+      render(data);
+    }
+  }, 15000);
+}
+
+async function showBanAppealDecision(appeal) {
+  if (!appeal?.id || document.getElementById("banScreen")) return;
+  const accepted = appeal.status === "accepted";
+  const message = appeal.decision_message || (accepted
+    ? "Your account has been unbanned. Any further rule violation may result in a permanent ban."
+    : "Your ban appeal was rejected.");
+
+  const choice = await confirmDialog({
+    title: accepted ? "Your ban has been lifted" : "Your ban appeal was rejected",
+    body: `<p>${escapeHtml(message)}</p>`,
+    confirmLabel: "I understand",
+    cancelLabel: "Read later",
+    tone: accepted ? "default" : "danger"
+  });
+
+  if (choice === "confirm") {
+    await acknowledgeBanAppealDecision(appeal.id);
+  }
+}
+
+function showBanScreen(banUntil, reason, appeal = null) {
   if (document.getElementById("banScreen")) return;
 
   const until = new Date(banUntil);
@@ -820,7 +940,7 @@ function showBanScreen(banUntil, reason) {
         background:radial-gradient(120% 120% at 50% -10%, color-mix(in srgb, var(--danger,#ef4444) 16%, transparent), transparent 60%),
           color-mix(in srgb, var(--bg,#0b0e14) 86%, #000);
         backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%)}
-      .ban-screen__card{position:relative;max-width:460px;width:100%;text-align:center;overflow:hidden;
+      .ban-screen__card{position:relative;max-width:500px;width:100%;max-height:calc(100vh - 48px);text-align:center;overflow-y:auto;
         background:linear-gradient(180deg, color-mix(in srgb,var(--danger,#ef4444) 6%, var(--surface-raised,#161b22)), var(--surface-raised,#161b22));
         border:1px solid var(--border,#2a2f3a);border-radius:var(--radius-lg,20px);
         box-shadow:var(--shadow-lg,0 30px 80px -24px rgba(0,0,0,.8)), 0 0 0 1px color-mix(in srgb,var(--danger,#ef4444) 18%, transparent);
@@ -848,8 +968,19 @@ function showBanScreen(banUntil, reason) {
         background:color-mix(in srgb,var(--danger,#ef4444) 10%,transparent);
         border:1px solid color-mix(in srgb,var(--danger,#ef4444) 26%,transparent);border-radius:12px;padding:13px 16px}
       .ban-screen__foot{margin:20px 0 0;font-size:.82rem;color:var(--text-muted,#9aa4b2)}
-      .ban-screen__appeal{color:var(--accent,#8ab4ff);font-weight:700;text-decoration:underline}
-      .ban-screen__appeal:hover{text-decoration:none}
+      .ban-screen__appeal-host{margin-top:22px;padding-top:20px;border-top:1px solid var(--border,#2a2f3a);text-align:left}
+      .ban-screen__appeal-form{display:grid;gap:10px}
+      .ban-screen__appeal-form label{font-weight:700;color:var(--text,#f4f6fb)}
+      .ban-screen__appeal-form textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:96px;padding:11px 12px;
+        color:var(--text,#f4f6fb);background:var(--surface,#0f1319);border:1px solid var(--border,#2a2f3a);border-radius:10px;font:inherit}
+      .ban-screen__appeal-form textarea:focus{outline:2px solid color-mix(in srgb,var(--accent,#8ab4ff) 50%,transparent);border-color:var(--accent,#8ab4ff)}
+      .ban-screen__appeal-form small{color:var(--text-muted,#9aa4b2);line-height:1.4}
+      .ban-screen__appeal-form .btn{justify-self:start}
+      .ban-screen__appeal-feedback{min-height:1.2em;margin:0;color:var(--danger,#ef4444);font-size:.82rem}
+      .ban-screen__appeal-status{display:grid;gap:7px;padding:14px 16px;border-radius:12px;line-height:1.45}
+      .ban-screen__appeal-status span{color:var(--text-muted,#9aa4b2);font-size:.9rem}
+      .ban-screen__appeal-status--pending{background:color-mix(in srgb,var(--accent,#8ab4ff) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent,#8ab4ff) 28%,transparent)}
+      .ban-screen__appeal-status--rejected{background:color-mix(in srgb,var(--danger,#ef4444) 10%,transparent);border:1px solid color-mix(in srgb,var(--danger,#ef4444) 28%,transparent)}
       @keyframes banIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
       @media (prefers-reduced-motion:reduce){.ban-screen__card{animation:none}}
     `;
@@ -878,18 +1009,15 @@ function showBanScreen(banUntil, reason) {
              <div class="ban-screen__seg"><b data-m>00</b><span>min</span></div>
              <div class="ban-screen__seg"><b data-s>00</b><span>sec</span></div>
            </div>`}
-      <p class="ban-screen__foot">Think this is a mistake? <a class="ban-screen__appeal" href="https://forms.gle/1oeXJ8Rd6dvX3FGs5" target="_blank" rel="noopener noreferrer">Appeal your ban</a>.</p>
+      <div class="ban-screen__appeal-host" data-ban-appeal-host></div>
     </div>`;
 
-  // The reason may carry a single markdown-style appeal link, e.g.
-  // "…please appeal [here](https://forms.gle/…)". Everything is HTML-escaped
-  // first (so the reason still can't inject markup), then that one safe
-  // http(s) link is turned into a real anchor.
-  overlay.querySelector(".ban-screen__reason").innerHTML =
-    renderBanReason(reason || "No reason was provided.");
+  overlay.querySelector(".ban-screen__reason").textContent =
+    reason || "No reason was provided.";
 
   document.body.appendChild(overlay);
   document.documentElement.style.overflow = "hidden";
+  renderBanAppealControls(overlay, appeal);
 
   if (!permanent) {
     const segD = overlay.querySelector("[data-seg-d]");

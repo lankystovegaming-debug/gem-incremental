@@ -12,6 +12,7 @@
     "test:minigames-db": "node tests/minigames-database-test.mjs",
     "test:minigames-ui": "node tests/minigames-ui-test.mjs && node tests/minigames-controls-test.mjs",
     "test:minigames-render": "node tests/minigames-render-test.mjs",
+    "pretest:late-game": "node tests/ban-appeals-test.mjs && node tests/ban-appeals-database-test.mjs",
     "test:late-game": "node tests/late-game-expansion-test.mjs && node tests/late-game-expansion-database-test.mjs",
     "test:month-one": "node tests/month-one-recap-test.mjs && node tests/month-one-client-test.mjs",
     "test:equipment-overhaul": "node tests/equipment-overhaul-test.mjs && node tests/equipment-overhaul-database-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
