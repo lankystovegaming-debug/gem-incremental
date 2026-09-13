@@ -60,6 +60,28 @@ for (const guarded of ["ban", "unban"]) {
   assert.match(slice, /term\.confirm\(/, `command '${guarded}' should confirm before acting`);
 }
 
+// Player commands autocomplete a target from the full roster.
+assert.match(cli, /supabase\.rpc\("admin_list_players"\)/);
+assert.match(cli, /function playerSuggestions\(\)/);
+assert.match(cli, /const PLAYER_FIRST = new Set\(\[/);
+// The wrap offers the roster at arg 0 and defers later args to any existing hook.
+assert.match(cli, /args\.length === 0 \? playerSuggestions\(\) : \(laterArgs \? laterArgs\(args\) : \[\]\)/);
+for (const name of ["ban", "unban", "money", "inspect", "lock"]) {
+  assert.match(cli, new RegExp(`"${name}"`), `PLAYER_FIRST missing ${name}`);
+}
+
+// The admin-gated roster RPC migration exists.
+const migration = await readFile(
+  new URL("../supabase/migrations/20260913180000_admin_list_players.sql", import.meta.url),
+  "utf8"
+);
+assert.match(migration, /create or replace function public\.admin_list_players\(\)/);
+assert.match(migration, /security definer/);
+assert.match(migration, /from public\.admins where user_id = auth\.uid\(\)/);
+assert.match(migration, /raise exception 'not_admin'/);
+assert.match(migration, /from public\.players\s+where username is not null/);
+assert.match(migration, /grant execute on function public\.admin_list_players\(\) to authenticated/);
+
 // The admin page mounts the CLI as its own tab.
 assert.match(adminJs, /import \{ mountAdminCli \} from "\.\/adminCli\.js"/);
 assert.match(adminJs, /cli: \["#cliPanel"\]/);

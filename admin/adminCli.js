@@ -28,6 +28,24 @@ import { formatCount, formatMoney } from "../src/ui/format.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Every username that has ever played, loaded once so player commands can
+// autocomplete a target. Filled by refreshAllPlayers() when the CLI mounts.
+let allPlayers = [];
+
+async function refreshAllPlayers() {
+  const { data, error } = await supabase.rpc("admin_list_players");
+
+  if (!error && Array.isArray(data)) {
+    allPlayers = data;
+  }
+
+  return allPlayers;
+}
+
+function playerSuggestions() {
+  return allPlayers;
+}
+
 
 // Print an arbitrary RPC result in a readable way without knowing
 // its exact shape: arrays become summarised rows, objects become
@@ -106,6 +124,10 @@ export function mountAdminCli({ mount }) {
   // Every admin panel's loader reveals its own section; the tab system only
   // toggles the page wrapper. Without this the panel stays display:none.
   mount.hidden = false;
+
+  // Preload the full player roster so /ban and the other player commands
+  // autocomplete a target.
+  refreshAllPlayers();
 
   // Cache resolved usernames → ids so repeated commands don't re-search.
   const resolved = new Map();
@@ -1206,7 +1228,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     }
   };
 
-  return [
+  const commands = [
     check, search, inspect, meta,
     money, gem, potion, mutationLuck, coins, capacity, rolls, boost, oneRoll,
     grantAllPotions, grantAllGems, clearInv, deleteGem, cooldown, title, lbVis,
@@ -1218,6 +1240,30 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     sections, section, mutations,
     codes, code, events, event
   ];
+
+  // Every one of these takes a <player> as its first argument, so offer the
+  // full roster there. Any existing suggest() (e.g. lock's on/off, ban's perm)
+  // still handles later arguments.
+  const PLAYER_FIRST = new Set([
+    "inspect", "meta", "money", "gem", "potion", "mutationluck", "coins",
+    "capacity", "rolls", "boost", "oneroll", "grantallpotions", "grantallgems",
+    "clearinv", "deletegem", "cooldown", "title", "lbvis", "lock",
+    "ban", "unban", "baninfo"
+  ]);
+
+  for (const command of commands) {
+    if (!PLAYER_FIRST.has(command.name)) {
+      continue;
+    }
+
+    const laterArgs = command.suggest;
+
+    command.suggest = (args) => (
+      args.length === 0 ? playerSuggestions() : (laterArgs ? laterArgs(args) : [])
+    );
+  }
+
+  return commands;
 }
 
 

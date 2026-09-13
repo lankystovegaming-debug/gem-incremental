@@ -31,6 +31,9 @@ assert.match(terminal, /event\.key === "Tab"/);
 assert.match(terminal, /event\.key === "ArrowDown"/);
 assert.match(terminal, /event\.key === "ArrowUp"/);
 assert.match(terminal, /event\.key === "Escape"/);
+// Long suggestion lists (e.g. the full player roster) are capped for speed.
+assert.match(terminal, /const MAX_SUGGESTIONS = 50/);
+assert.match(terminal, /more — keep typing to narrow/);
 
 // --- Theme-aware styling (light + dark + system), no hard-coded surface ---
 assert.match(css, /--cli-bg:/);

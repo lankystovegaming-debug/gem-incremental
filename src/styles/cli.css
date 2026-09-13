@@ -234,6 +234,12 @@
   text-overflow: ellipsis;
 }
 
+.cli__suggestion-more {
+  padding: 4px 8px;
+  color: var(--cli-muted);
+  font-style: italic;
+}
+
 @media (max-width: 480px) {
   .cli {
     right: 8px;
