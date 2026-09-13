@@ -8,6 +8,10 @@ const migration = readFileSync(
   new URL("../supabase/migrations/20260913033312_batch_rolling_and_all_in_balance.sql", import.meta.url),
   "utf8"
 );
+const counterFix = readFileSync(
+  new URL("../supabase/migrations/20260913100304_fix_total_roll_crafting_and_batch_unlocks.sql", import.meta.url),
+  "utf8"
+);
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 
 await db.exec(`
@@ -19,6 +23,7 @@ await db.exec(`
     'select ''${uid}''::uuid';
   create table players (
     id uuid primary key,
+    total_rolls bigint not null default 0,
     equipment_genuine_rolls bigint not null default 0,
     equipment_state jsonb not null default '{}',
     next_roll_at timestamptz,
@@ -34,6 +39,12 @@ await db.exec(`
   );
   create table equipment_ownership_history (player_id uuid not null, equipment_id text not null);
   create table game_recipes (id text primary key, recipe jsonb not null);
+  create table crafting_progress (
+    player_id uuid not null,
+    recipe_id text not null,
+    progress jsonb not null default '{}',
+    primary key (player_id, recipe_id)
+  );
   create table player_settings (
     player_id uuid primary key,
     settings jsonb not null default '{}',
@@ -53,12 +64,20 @@ await db.exec(`
   insert into players(id) values ('${uid}');
   insert into game_recipes(id, recipe) values (
     'all-in-pickaxe',
-    '{"reward":{"bonus":{"luck":249,"rollSpeed":-0.8,"mutationChance":-0.9,"weightLuck":-0.9,"weightMultiplier":-0.9}}}'
+    '{"requirements":[{"type":"equipment-history","metric":"genuineRolls","amount":500000,"label":"Lifetime genuine rolls","consume":false}],"reward":{"bonus":{"luck":249,"rollSpeed":-0.8,"mutationChance":-0.9,"weightLuck":-0.9,"weightMultiplier":-0.9}}}'
+  );
+  insert into crafting_progress(player_id,recipe_id,progress) values (
+    '${uid}','all-in-pickaxe',
+    '{"_equipment_recipe":{"requirements":[{"type":"equipment-history","metric":"genuineRolls","amount":500000,"label":"Lifetime genuine rolls","consume":false}]}}'
   );
   insert into player_equipment(player_id,equipment_id,equipped,roll_speed_bonus)
   values ('${uid}','all-in-pickaxe',true,-0.8);
 `);
 await db.exec(migration);
+await db.exec(counterFix);
+
+assert.equal((await one("select recipe->'requirements'->0->>'type' type from game_recipes where id='all-in-pickaxe'")).type, "lifetime-rolls");
+assert.equal((await one("select progress#>>'{_equipment_recipe,requirements,0,type}' type from crafting_progress where recipe_id='all-in-pickaxe'")).type, "lifetime-rolls");
 
 assert.equal(Number((await one("select recipe->'reward'->'bonus'->>'rollSpeed' speed from game_recipes where id='all-in-pickaxe'")).speed), -0.75);
 assert.equal((await one("select roll_speed_bonus speed from player_equipment where equipment_id='all-in-pickaxe'")).speed, -0.75);
@@ -72,15 +91,15 @@ for (const value of [0, 5, 1.5, "2", true, null]) {
 assert.equal((await one("select roll_batch_unlock_status($1,2) result", [uid])).result.status, "unlocked");
 assert.equal((await one("select roll_batch_unlock_status($1,3) result", [uid])).result.status, "batch_locked");
 
-await db.query("update players set equipment_genuine_rolls=100000 where id=$1", [uid]);
+await db.query("update players set total_rolls=100000 where id=$1", [uid]);
 const state = (await one("select equipment_state from players where id=$1", [uid])).equipment_state;
 const ids = (await db.query("select id from player_equipment where player_id=$1 and equipped order by id", [uid])).rows.map((row) => row.id);
 const triple = (await one("select claim_equipment_roll_batch($1,7500,$2,$3,3) result", [uid, state, ids])).result;
 assert.equal(triple.status, "claimed");
 assert.equal(triple.batchSize, 3);
-assert.equal(Number(triple.genuineRoll), 100001);
+assert.equal(Number(triple.genuineRoll), 1);
 
-await db.query("update players set equipment_genuine_rolls=500000,next_roll_at=null,roll_lease_id=null,roll_lease_expires_at=null where id=$1", [uid]);
+await db.query("update players set total_rolls=500000,next_roll_at=null,roll_lease_id=null,roll_lease_expires_at=null where id=$1", [uid]);
 assert.equal((await one("select roll_batch_unlock_status($1,4) result", [uid])).result.status, "batch_locked");
 await db.query("insert into equipment_ownership_history values($1,'celestial-pickaxe')", [uid]);
 assert.equal((await one("select roll_batch_unlock_status($1,4) result", [uid])).result.status, "unlocked");
