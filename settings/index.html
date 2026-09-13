@@ -145,9 +145,12 @@
       <div class="qol-filter-tools">
         <input class="input" id="gemFilterSearch" type="search" placeholder="Search discovered gems" aria-label="Search discovered gems">
         <select class="select" id="gemFilterState" aria-label="Filter by rule"><option value="ALL">All rules</option><option>DEFAULT</option><option>KEEP</option><option>SELL</option></select>
-        <label><input type="checkbox" id="gemFilterSelectAll"> Select all matching gems</label>
-        <select class="select" id="gemFilterBulk" aria-label="Bulk rule"><option>DEFAULT</option><option>KEEP</option><option>SELL</option></select>
-        <button class="btn" id="gemFilterApply">Apply to selected</button><button class="btn" id="gemFilterClearSelection">Clear selection</button>
+        <button class="btn" id="gemFilterBulkMode" type="button" aria-pressed="false">Select / bulk edit</button>
+        <div class="qol-filter-bulk" id="gemFilterBulkControls" hidden>
+          <label><input type="checkbox" id="gemFilterSelectAll"> Select all matching gems</label>
+          <select class="select" id="gemFilterBulk" aria-label="Bulk rule"><option>DEFAULT</option><option>KEEP</option><option>SELL</option></select>
+          <button class="btn" id="gemFilterApply">Apply to selected</button><button class="btn" id="gemFilterClearSelection">Clear selection</button>
+        </div>
       </div>
       <p id="gemFilterStatus" role="status">Loading discovered gems…</p>
       <div id="gemFilterRows"></div>

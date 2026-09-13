@@ -229,11 +229,14 @@ function lotVisual(auction) {
     return `<li class="lot-item tier-${tier.id}">
       <span class="lot-item__name">${muts.length ? muts.map((m) => escapeHtml(m.name)).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</span>
       <span class="lot-item__meta">${rarityLabel(gem.rarity)}</span></li>`;
-  }).join("");
+  });
   const potionRows = potionItems.map((item) =>
     `<li class="lot-item lot-item--potion">
       <span class="lot-item__name">${icons.potion} ${escapeHtml(potionName(item.consumable_id))}</span>
-      <span class="lot-item__meta">×${formatCount(item.quantity)}</span></li>`).join("");
+      <span class="lot-item__meta">×${formatCount(item.quantity)}</span></li>`);
+  const rows = [...gemRows, ...potionRows];
+  const preview = rows.slice(0, 3).join("");
+  const remainder = rows.slice(3);
 
   return `
     <div class="auction-lot">
@@ -241,7 +244,8 @@ function lotVisual(auction) {
         <span class="badge badge--accent">Bundle</span>
         <span class="auction-lot__count">${formatCount(count)} item${count === 1 ? "" : "s"}</span>
       </div>
-      <ul class="auction-lot__list">${gemRows}${potionRows}</ul>
+      <ul class="auction-lot__list">${preview}</ul>
+      ${remainder.length ? `<details class="auction-lot__more"><summary>+${formatCount(remainder.length)} more</summary><ul class="auction-lot__list">${remainder.join("")}</ul></details>` : ""}
     </div>`;
 }
 

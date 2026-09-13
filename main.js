@@ -1266,7 +1266,7 @@ function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
   if (batchSize) {
     const access = {
-      genuineRolls: view.genuineRolls,
+      totalRolls: view.totalRolls,
       hasCelestialPickaxe: view.hasCelestialPickaxe
     };
     batchSize.innerHTML = renderBatchOptions(access);

@@ -38,12 +38,12 @@ const ICON_FOR = {
 };
 
 
-export function toast(title, { text = "", type = "info", duration } = {}) {
+export function toast(title, { text = "", type = "info", duration, compact = false } = {}) {
   const host = ensureRegion();
 
   const element = document.createElement("div");
 
-  element.className = `toast toast--${type}`;
+  element.className = `toast toast--${type}${compact ? " toast--compact" : ""}`;
 
   element.innerHTML = `
     ${ICON_FOR[type] ?? ICON_FOR.info}

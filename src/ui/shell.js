@@ -198,6 +198,7 @@ export function mountShell({ page, base = "./" }) {
           <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
             <div class="menu__label">Quick links</div>
             <a class="menu__item" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
+            <a class="menu__item" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
             <a class="menu__item" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
             <button class="menu__item" type="button" data-more-action="howto">
               ${icons.book}<span>How to play</span>
@@ -1137,6 +1138,31 @@ const DISMISSED_KEY = "gemIncremental.dismissedAnnouncements";
 const CONTRIBUTE_URL =
   "https://github.com/lankystovegaming-debug/gem-incremental/issues";
 
+function announcementHtml(body) {
+  const source = String(body ?? "");
+  const urlPattern = /https?:\/\/[^\s<]+/gi;
+  let cursor = 0;
+  let output = "";
+  for (const match of source.matchAll(urlPattern)) {
+    const matched = match[0];
+    const raw = matched.replace(/[),.;!?]+$/, "");
+    const trailing = matched.slice(raw.length);
+    const index = match.index ?? 0;
+    output += escapeHtml(source.slice(cursor, index));
+    let label = "Open link →";
+    try {
+      const host = new URL(raw).hostname.replace(/^www\./, "");
+      if (host === "discord.gg" || host.endsWith("discord.com")) label = "Join Discord →";
+      else if (host === "github.com") label = "View on GitHub →";
+      else label = `Open ${host} →`;
+    } catch {}
+    output += `<a class="announce__link" href="${escapeHtml(raw)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+    output += escapeHtml(trailing);
+    cursor = index + matched.length;
+  }
+  return output + escapeHtml(source.slice(cursor));
+}
+
 
 // Fixed bottom-left links so players can contribute or flag a bug
 // from any page without cluttering the header.
@@ -1349,7 +1375,7 @@ async function renderAnnouncements(header) {
             : "info"
         }" data-id="${entry.id}">
           <span class="announce__icon">${icons.megaphone}</span>
-          <span class="announce__body">${escapeHtml(entry.body)}</span>
+          <span class="announce__body">${announcementHtml(entry.body)}</span>
           <button class="announce__close" type="button" aria-label="Dismiss">×</button>
         </div>
       `

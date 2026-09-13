@@ -809,3 +809,42 @@
 .economy-breakdown .shareholders-table td { overflow-wrap:anywhere; }
 .economy-breakdown .shareholders-table td:last-child { white-space:normal; }
 .economy-supply strong { color:inherit; }
+
+
+/* =========================================================
+   ACTIVITY ALERTS
+   ========================================================= */
+.admin-table-wrap { overflow-x: auto; }
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.admin-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-alert-amount { font-variant-numeric: tabular-nums; }
+.admin-alert-row--high { background: color-mix(in srgb, var(--negative) 8%, transparent); }
+
+.admin-alert-sev {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+.admin-alert-sev--high { background: var(--negative); }
+.admin-alert-sev--medium { background: var(--accent); }

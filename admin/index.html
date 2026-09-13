@@ -69,6 +69,8 @@
       <button class="admin-tab-btn" type="button" data-admin-tab="content">Content &amp; events</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="appeals">Appeals</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="alerts">Alerts</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="cli">CLI</button>
     </nav>
 
     <section class="card admin-search" id="adminSearchCard">
@@ -372,6 +374,36 @@
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>
+
+    <section class="card admin-alerts" id="alertsPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Activity alerts</h2>
+          <p class="page-head__sub" id="alertsSummary">Unusual money movement — cash spikes, bank deposits, admin grants, and activity bursts.</p>
+        </div>
+        <div class="admin-section-head__tools">
+          <label class="field field--inline">
+            <span>Window (hrs)</span>
+            <input id="alertsHours" class="input" type="number" min="1" max="168" step="1" value="24">
+          </label>
+          <label class="field field--inline">
+            <span>Min amount</span>
+            <input id="alertsMinAmount" class="input" type="number" min="1" step="1000000" value="100000000">
+          </label>
+          <button class="btn" id="alertsRefresh" type="button">Refresh</button>
+        </div>
+      </div>
+      <div id="alertsContent" class="admin-alerts-content"></div>
+    </section>
+
+    <section class="card admin-cli" id="cliPanel" hidden>
+      <div class="admin-section-head">
+        <div>
+          <h2>Admin CLI</h2>
+          <p class="page-head__sub">Command line for player, moderation, and ops actions. Type /help or /man.</p>
+        </div>
+      </div>
+    </section>
 
 
     <section class="admin-feature-lab-shell" id="adminFeatureLab" hidden>

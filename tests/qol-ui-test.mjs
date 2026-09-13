@@ -55,7 +55,8 @@ try {
  await page.waitForFunction(()=>!document.getElementById('maxLuck').disabled);assert.equal(settings.maxLuck,null);
 
  await page.getByText('Enable Buffs',{exact:true}).click();await page.waitForFunction(()=>!document.getElementById('enableBuffs').disabled);assert.equal(settings.enableBuffs,false);
- await page.locator('#gemFilterSearch').fill('Gem 10');await page.locator('#gemFilterSelectAll').check();
+ await page.locator('[data-gem="Gem 0000"][data-direct-rule="SELL"]').click();await page.waitForFunction(()=>!document.querySelector('[data-direct-rule]').disabled);assert.equal(settings.gemFilter['Gem 0000'],'SELL');
+ await page.locator('#gemFilterSearch').fill('Gem 10');await page.locator('#gemFilterBulkMode').click();await page.locator('#gemFilterSelectAll').check();
  await page.locator('#gemFilterBulk').selectOption('KEEP');await page.locator('#gemFilterApply').click();await page.waitForFunction(()=>!document.getElementById('gemFilterApply').disabled);
  assert.equal(Object.values(settings.gemFilter).filter(x=>x==='KEEP').length,100,'bulk edit includes matches beyond the visible page');
  await page.locator('#gemFilterSearch').fill('');await page.locator('#gemFilterState').selectOption('KEEP');assert.match(await page.locator('#gemFilterStatus').innerText(),/^100 matching/);

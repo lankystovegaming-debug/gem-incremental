@@ -1,4 +1,5 @@
 import { mountEconomy } from "./economy.js";
+import { mountAdminCli } from "./adminCli.js";
 import { loadGemCatalog } from "../src/backend/gemCatalog.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
@@ -2343,6 +2344,107 @@ appealsContent?.addEventListener("click", (event) => {
 
 
 // =========================================================
+// ACTIVITY ALERTS
+//
+// Surfaces unusual money movement (cash spikes, bank deposits, admin
+// grants, gain spikes, activity bursts) from the economy_cash_ledger,
+// each with who / when / IP. Read-only; all detection runs server-side
+// in the admin_get_activity_alerts RPC.
+// =========================================================
+
+const ALERT_LABELS = {
+  cash_spike: "Cash spike",
+  bank_deposit: "Bank deposit",
+  admin_grant: "Admin grant",
+  gain_spike: "Gain spike",
+  activity_burst: "Activity burst"
+};
+
+function alertWhen(iso) {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+  return new Date(iso).toLocaleString();
+}
+
+async function loadAlerts() {
+  const panel = document.getElementById("alertsPanel");
+  const content = document.getElementById("alertsContent");
+  const summary = document.getElementById("alertsSummary");
+  if (!panel || !content) return;
+
+  panel.hidden = false;
+  content.innerHTML = '<div class="skeleton" style="height:180px"></div>';
+
+  const hours = Math.max(1, Math.min(168, Math.trunc(Number(document.getElementById("alertsHours")?.value) || 24)));
+  const minAmount = Math.max(1, Number(document.getElementById("alertsMinAmount")?.value) || 100000000);
+
+  const { data, error } = await supabase.rpc("admin_get_activity_alerts", {
+    p_hours: hours,
+    p_min_amount: minAmount
+  });
+
+  if (error) {
+    content.innerHTML = `<div class="empty"><p class="empty__title">Could not load alerts</p><p>${escapeHtml(error.message)}</p></div>`;
+    notify.error("Alerts failed", error.message);
+    return;
+  }
+
+  const alerts = data?.alerts ?? [];
+  if (summary) {
+    summary.textContent =
+      `${formatCount(alerts.length)} alert${alerts.length === 1 ? "" : "s"} in the last ${hours}h · ` +
+      `${formatMoney(data?.totalInflow ?? 0)} total inflow`;
+  }
+
+  if (!alerts.length) {
+    content.innerHTML = `<div class="empty"><p class="empty__title">No alerts</p><p>Nothing unusual in the last ${hours} hours above ${escapeHtml(formatMoney(minAmount))}.</p></div>`;
+    return;
+  }
+
+  const rows = alerts.map((alert) => {
+    const magnitude = alert.amount != null
+      ? formatMoney(alert.amount)
+      : `${formatCount(alert.events ?? 0)} events`;
+    const detail = [
+      alert.category ? escapeHtml(String(alert.category)) : null,
+      alert.events != null && alert.amount != null ? `${formatCount(alert.events)} events` : null
+    ].filter(Boolean).join(" · ");
+
+    return `
+      <tr class="admin-alert-row admin-alert-row--${escapeHtml(alert.severity ?? "medium")}">
+        <td><span class="admin-alert-sev admin-alert-sev--${escapeHtml(alert.severity ?? "medium")}">${escapeHtml((alert.severity ?? "medium").toUpperCase())}</span></td>
+        <td>${escapeHtml(ALERT_LABELS[alert.type] ?? alert.type ?? "—")}</td>
+        <td>${escapeHtml(alert.username ?? "—")}</td>
+        <td>${escapeHtml(alert.ip ?? "—")}</td>
+        <td class="admin-alert-amount">${escapeHtml(magnitude)}</td>
+        <td>${detail || "—"}</td>
+        <td title="${escapeHtml(alert.at ?? "")}">${escapeHtml(alertWhen(alert.at))}</td>
+      </tr>`;
+  }).join("");
+
+  content.innerHTML = `
+    <div class="admin-table-wrap">
+      <table class="admin-table admin-alerts-table">
+        <thead>
+          <tr><th>Severity</th><th>Type</th><th>Player</th><th>IP</th><th>Amount</th><th>Detail</th><th>When</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+document.getElementById("alertsRefresh")?.addEventListener("click", loadAlerts);
+for (const id of ["alertsHours", "alertsMinAmount"]) {
+  document.getElementById(id)?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") loadAlerts();
+  });
+}
+
+
+// =========================================================
 // ADMIN TAB NAVIGATION
 //
 // Groups the admin panels into top-level tabs so the page is a set of
@@ -2376,7 +2478,9 @@ const economyBreakdown = mountEconomy({
     economy: ["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
-    appeals: ["#appealsPanel"]
+    appeals: ["#appealsPanel"],
+    alerts: ["#alertsPanel"],
+    cli: ["#cliPanel"]
   };
 
   // Build one page wrapper per tab and move the matching panels into it.
@@ -2401,7 +2505,9 @@ const economyBreakdown = mountEconomy({
     community: () => {
       if (typeof loadIpAudit === "function") loadIpAudit();
       if (typeof loadReferrals === "function") loadReferrals();
-    }
+    },
+    alerts: () => (typeof loadAlerts === "function" ? loadAlerts() : null),
+    cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") })
   };
   const loaded = new Set();
   let active = "search";

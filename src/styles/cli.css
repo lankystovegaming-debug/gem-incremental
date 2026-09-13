@@ -1,0 +1,250 @@
+/* =========================================================
+   CLI TERMINAL WIDGET
+   Shared presentation for the maintenance and admin command
+   lines. Theme-aware: a light surface in light mode, a dark
+   surface in dark mode, following the site's data-theme (and
+   prefers-color-scheme when no explicit theme is set).
+   ========================================================= */
+
+.cli {
+  /* Light palette (default). Dark overrides follow below. */
+  --cli-bg: #ffffff;
+  --cli-bar: #eef1f5;
+  --cli-border: #d5dbe3;
+  --cli-text: #1b2430;
+  --cli-muted: #5b6b7d;
+  --cli-error: #c0392b;
+  --cli-success: #197a45;
+  --cli-warn: #8a5a00;
+  --cli-echo: #1f6feb;
+  --cli-prompt: #197a45;
+  --cli-input-bg: #fbfcfe;
+  --cli-sel: #e5efff;
+
+  position: fixed;
+  z-index: 4000;
+  right: 16px;
+  bottom: 16px;
+  width: min(560px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  background: var(--cli-bg);
+  color: var(--cli-text);
+  border: 1px solid var(--cli-border);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* Explicit dark theme. */
+:root[data-theme="dark"] .cli {
+  --cli-bg: #0b0f14;
+  --cli-bar: #111823;
+  --cli-border: #223042;
+  --cli-text: #d7e0ea;
+  --cli-muted: #7c8ea3;
+  --cli-error: #ff8b7a;
+  --cli-success: #7ee0a6;
+  --cli-warn: #ffd479;
+  --cli-echo: #6fb0ff;
+  --cli-prompt: #7ee0a6;
+  --cli-input-bg: #0d131b;
+  --cli-sel: #1b2634;
+}
+
+/* System dark, only when the site has not forced light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cli {
+    --cli-bg: #0b0f14;
+    --cli-bar: #111823;
+    --cli-border: #223042;
+    --cli-text: #d7e0ea;
+    --cli-muted: #7c8ea3;
+    --cli-error: #ff8b7a;
+    --cli-success: #7ee0a6;
+    --cli-warn: #ffd479;
+    --cli-echo: #6fb0ff;
+    --cli-prompt: #7ee0a6;
+    --cli-input-bg: #0d131b;
+    --cli-sel: #1b2634;
+  }
+}
+
+/* Docked mode: fill a host panel (used by the admin CLI tab). */
+.cli--docked {
+  position: static;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  height: min(640px, 70vh);
+  box-shadow: none;
+}
+
+.cli__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--cli-bar);
+  border-bottom: 1px solid var(--cli-border);
+}
+
+.cli__title {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cli-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.cli__close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--cli-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.cli__close:hover {
+  color: var(--cli-text);
+  background: var(--cli-border);
+}
+
+.cli__output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.cli__line { margin: 0; }
+.cli__line--info { color: var(--cli-text); }
+.cli__line--muted { color: var(--cli-muted); }
+.cli__line--error { color: var(--cli-error); }
+.cli__line--success { color: var(--cli-success); }
+.cli__line--warn { color: var(--cli-warn); }
+.cli__line--echo { color: var(--cli-echo); }
+.cli__line--heading {
+  color: var(--cli-muted);
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Input area + autocomplete anchor. Column: [hint] over [prompt + input]. */
+.cli__form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--cli-border);
+  background: var(--cli-input-bg);
+}
+
+.cli__inputrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Parameter signature hint shown once a command is recognised. */
+.cli__hint {
+  font-size: 12px;
+  color: var(--cli-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cli__hint-name { color: var(--cli-prompt); font-weight: 600; }
+.cli__hint-current {
+  color: var(--cli-text);
+  background: var(--cli-sel);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.cli__hint-sub { color: var(--cli-muted); }
+
+.cli__prompt {
+  color: var(--cli-prompt);
+  font-weight: 600;
+  flex: none;
+}
+
+.cli__input {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--cli-text);
+  font: inherit;
+  padding: 4px 0;
+}
+
+.cli__input::placeholder { color: var(--cli-muted); }
+
+/* Autocomplete suggestions, floating above the input. */
+.cli__suggestions {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 4px);
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--cli-bg);
+  border: 1px solid var(--cli-border);
+  border-radius: 8px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.25);
+  padding: 4px;
+}
+
+.cli__suggestion {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cli__suggestion:hover {
+  background: var(--cli-sel);
+}
+
+.cli__suggestion.is-active {
+  background: var(--cli-sel);
+}
+
+.cli__suggestion-name { color: var(--cli-text); }
+.cli__suggestion-hint {
+  color: var(--cli-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cli__suggestion-more {
+  padding: 4px 8px;
+  color: var(--cli-muted);
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .cli {
+    right: 8px;
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+  }
+}

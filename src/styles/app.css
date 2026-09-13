@@ -2407,6 +2407,183 @@ a.btn--icon[aria-current="page"] {
   }
 }
 
+/* =========================================================
+   MOBILE P0: one safe-area contract for every floating control
+   ========================================================= */
+
+:root {
+  --mobile-nav-clearance: calc(78px + env(safe-area-inset-bottom));
+  --mobile-floating-gap: 12px;
+  --mobile-touch-target: 44px;
+}
+
+.announce__link { font-weight: 750; white-space: nowrap; }
+
+@media (max-width: 780px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .topbar {
+    height: 58px;
+    min-height: 58px;
+    padding-inline: 8px;
+  }
+
+  .topbar__inner {
+    min-height: 58px;
+    padding-inline: 0;
+  }
+
+  .brand > span:last-child,
+  .topbar-explore__button span,
+  .topbar-more__button span,
+  .topbar-explore__button > svg:last-child,
+  .topbar-more__button > svg:last-child,
+  .account-btn__name,
+  #shellThemeAnchor {
+    display: none;
+  }
+
+  .brand,
+  .brand__mark,
+  .topbar-explore__button,
+  .topbar-more__button,
+  .topbar__tools .btn--icon,
+  .account-btn,
+  .wallet {
+    min-width: var(--mobile-touch-target);
+    min-height: var(--mobile-touch-target);
+    justify-content: center;
+  }
+
+  .wallet:not(.wallet--expanded) span { display: none; }
+  .wallet.wallet--expanded { position: absolute; right: 104px; z-index: 3; }
+
+  .tabbar__link {
+    min-height: 56px;
+    padding-block: 7px;
+  }
+
+  .toast-region {
+    right: 12px;
+    bottom: calc(var(--mobile-nav-clearance) + 72px);
+    left: 12px;
+  }
+
+  .toast--compact {
+    align-self: center;
+    width: min(100%, 360px);
+    padding: 8px 11px;
+    border-radius: 12px;
+    font-size: .8rem;
+  }
+
+  .toast--compact .toast__text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .announce { padding: 8px 12px; font-size: .82rem; }
+  .announce__body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  button,
+  .btn,
+  select,
+  .select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  summary,
+  [role="button"] {
+    min-height: var(--mobile-touch-target);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .nav__link:hover,
+  .card:hover,
+  .panel:hover,
+  .gem-card:hover,
+  .index-card:hover {
+    transform: none;
+  }
+}
+
+/* Desktop keeps the original always-visible side counter. */
+.global-cash__trigger,
+.global-cash__close,
+.global-cash__backdrop { display: none; }
+
+.global-cash__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.global-cash__panel-head { display: contents; }
+
+@media (max-width: 680px) {
+  .global-cash {
+    left: var(--mobile-floating-gap);
+    bottom: calc(var(--mobile-nav-clearance) + var(--mobile-floating-gap));
+    z-index: 165;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .global-cash__trigger {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 13px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-solid);
+    color: var(--text-muted);
+    box-shadow: var(--shadow-md);
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 750;
+  }
+
+  .global-cash__panel {
+    position: fixed;
+    right: 8px;
+    bottom: calc(var(--mobile-nav-clearance) + 8px);
+    left: 8px;
+    z-index: 171;
+    display: none;
+    max-height: min(62dvh, 520px);
+    overflow-y: auto;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    background: var(--surface-solid);
+    box-shadow: 0 24px 80px rgb(0 0 0 / .55);
+  }
+
+  .global-cash.is-open .global-cash__panel { display: flex; }
+  .global-cash__panel-head { display: flex; align-items: center; justify-content: space-between; }
+  .global-cash__close { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--surface-raised); color: var(--text); font-size: 1.4rem; }
+  .global-cash__value { font-size: 1.05rem; }
+  .global-cash__feed { max-width: none; gap: 5px; }
+  .global-cash__event { padding: 6px 0; font-size: .78rem; white-space: normal; }
+
+  .global-cash__backdrop:not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 164;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgb(0 0 0 / .42);
+  }
+}
+
 .gem-reveal__chance,.scene__chance{margin:.45rem 0 0;color:var(--text-muted);font-size:.82rem;font-variant-numeric:tabular-nums}.scene__mutation{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.42rem;max-width:min(90vw,900px);margin:.7rem auto .2rem}.scene__mutation .mutation-name-effect{font-size:.72rem;white-space:nowrap;padding:0;border-radius:0}.history__mutations{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;min-width:0}.history__mutations .mutation-name-effect{font-size:.6rem;padding:0;border-radius:0}.history__meta{font-variant-numeric:tabular-nums}.setting-number{width:150px}.menu{max-height:min(80vh,520px);overflow:auto}
 
 
@@ -5112,3 +5289,18 @@ input[type="radio"] {
 .cosmetic small { display: block; margin-top: .4rem; color: var(--text-muted); font-size: .75rem; font-weight: 400; }
 @keyframes cosmetic-shimmer { 50% { box-shadow: 0 0 15px #d493f733; } }
 @media (prefers-reduced-motion: reduce) { .cosmetic--prismatic { animation: none; } }
+
+/* Final cascade guard: later visual-polish layers must not shrink mobile shell
+   controls below the shared touch target. */
+@media (max-width: 780px) {
+  .topbar .brand,
+  .topbar .brand__mark,
+  .topbar .nav__link,
+  .topbar .btn,
+  .topbar .account-btn,
+  .topbar .wallet,
+  .topbar [role="button"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

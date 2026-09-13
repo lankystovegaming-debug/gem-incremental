@@ -69,6 +69,48 @@
   min-width: 190px;
 }
 
+.inventory-filter-primary,
+.inventory-filter-sheet {
+  display: contents;
+}
+
+.inventory-filter-toggle,
+.inventory-filter-sheet__head,
+.inventory-filter-backdrop { display: none; }
+
+.inventory-load-more {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-load-more span { margin-left: 6px; color: var(--text-muted); font-size: .78rem; }
+
+.back-to-top {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--mobile-nav-clearance, 78px) + 14px);
+  z-index: 155;
+  min-width: 64px;
+  min-height: 44px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  font: inherit;
+  font-weight: 750;
+}
+
+.back-to-top[hidden] { display: none; }
+
 
 /* ---------------------------------------------------------
    GEM CARDS
@@ -317,6 +359,9 @@
   font-size: .82rem;
 }
 
+details.equipment-passive summary { cursor: pointer; font-weight: 700; }
+details.equipment-passive > span { display: block; margin-top: 5px; }
+
 .equipment-enchant--empty { color: var(--text-faint); border-color: var(--border); }
 .gem-card--relic { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
@@ -460,3 +505,103 @@
 .mutation-badge--misty { color: #e8f7ff; }
 
 .potion-use-row{display:flex;gap:8px;align-items:center}.potion-use-qty{width:84px;min-height:38px;border:1px solid #5d6d9f;border-radius:9px;background:#151d2d;color:#fff;padding:0 8px}.inventory-filters{flex-wrap:wrap}.inventory-filters .select{min-width:150px}
+
+/* Mobile inventory controls stay reachable while the long specimen list uses
+   incremental chunks. Secondary filters and destructive actions live in a
+   bottom sheet instead of wrapping into several cramped toolbar rows. */
+@media (max-width: 720px) {
+  .inventory-toolbar {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+  .inventory-toolbar .segmented { width: max-content; min-width: 100%; }
+  .inventory-toolbar .segmented__item { min-height: 44px; }
+
+  .inventory-filters {
+    position: sticky;
+    top: 58px;
+    z-index: 35;
+    display: block;
+    margin-inline: -4px;
+    padding: 8px 4px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+  }
+
+  .inventory-filter-primary { display: flex; gap: 8px; }
+  .inventory-filter-primary .gem-search { min-width: 0; }
+  .inventory-filter-toggle { display: inline-flex; flex: 0 0 auto; }
+
+  .inventory-filter-sheet {
+    position: fixed;
+    right: 8px;
+    bottom: calc(var(--mobile-nav-clearance, 78px) + 8px);
+    left: 8px;
+    z-index: 181;
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    max-height: min(74dvh, 620px);
+    overflow-y: auto;
+    padding: 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    background: var(--surface-solid);
+    box-shadow: 0 24px 80px rgb(0 0 0 / .6);
+  }
+  .inventory-filter-sheet.is-open { display: grid; }
+  .inventory-filter-sheet__head { display: flex; align-items: center; justify-content: space-between; }
+  .inventory-filter-sheet .select,
+  .inventory-filter-sheet .btn { width: 100%; min-width: 0; }
+  .inventory-filter-sheet .select,
+  .inventory-filter-sheet .btn { min-height: 44px; }
+  .inventory-filter-backdrop:not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 34;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgb(0 0 0 / .42);
+  }
+  body.inventory-filters-open { overflow: hidden; }
+  .grid--cards { grid-template-columns: 1fr; }
+  .gem-card__actions .btn { min-height: 44px; }
+  .equipment-passive > span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  details.equipment-passive[open] > span { -webkit-line-clamp: unset; }
+}
+
+@media (min-width: 721px) {
+  .back-to-top { display: none; }
+}
+
+.loadout-manager__head { margin: 20px 0 12px; }
+.loadout-manager__head p { margin: 4px 0 0; color: var(--text-muted); font-size: .84rem; }
+.loadout-manager__list { display: grid; gap: 10px; margin-bottom: 20px; }
+.loadout-row {
+  display: grid;
+  grid-template-columns: minmax(170px, .8fr) minmax(0, 1.6fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.loadout-row__name { display: grid; gap: 4px; color: var(--text-muted); font-size: .72rem; font-weight: 700; }
+.loadout-row__details { margin: 0; overflow: hidden; color: var(--text-muted); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.loadout-row__actions { display: flex; gap: 6px; }
+
+@media (max-width: 720px) {
+  .loadout-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
+  .loadout-row__details { grid-column: 1 / -1; grid-row: 2; }
+  .loadout-row__actions { grid-column: 2; grid-row: 1; }
+  .loadout-row__actions .btn { min-width: 44px; padding-inline: 9px; }
+}
+
+@media (max-width: 430px) {
+  .loadout-row { display: flex; flex-direction: column; align-items: stretch; }
+  .loadout-row__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
