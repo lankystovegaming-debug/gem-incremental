@@ -5,6 +5,7 @@ import { buildEventRollContext, eventGemIsEligible, eventGemLuckFactor, eventMut
 const schema = readFileSync(new URL("../supabase/migrations/20260901011651_global_random_events_schema.sql", import.meta.url), "utf8");
 const scheduler = readFileSync(new URL("../supabase/migrations/20260901011652_global_random_events_scheduler.sql", import.meta.url), "utf8");
 const roll = readFileSync(new URL("../supabase/functions/roll/index.ts", import.meta.url), "utf8");
+const hotPath = readFileSync(new URL("../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql", import.meta.url), "utf8");
 const shell = readFileSync(new URL("../src/ui/shell.js", import.meta.url), "utf8");
 const eventKeys = [...schema.matchAll(/^\s*\('([a-z_]+)'\s*,/gm)].map(match => match[1]);
 assert.equal(new Set(eventKeys.slice(0, 25)).size, 25);
@@ -15,8 +16,9 @@ assert.match(schema, /revoke all on function public\.record_global_event_roll\(u
 assert.match(scheduler, /for update/);
 assert.match(scheduler, /recent_event_keys=.*\[1:5\]/);
 assert.match(scheduler, /advance-global-random-events/);
-assert.match(roll, /\.rpc\("get_active_global_event"\)/);
-assert.match(roll, /eventGemIsEligible\(eventContext, entry\)/);
+assert.match(roll, /const globalEventData = batchExecution\.globalEventData[\s\S]*rollContext\.globalEvent/);
+assert.match(hotPath, /'globalEvent', public\.get_active_global_event\(\)/);
+assert.match(roll, /eventGemIsEligible\(availabilityEventContext, entry\)/);
 assert.match(roll, /record_global_event_roll/);
 assert.match(shell, /timerInterval = setInterval\(updateTimer, 1_000\)/);
 assert.match(shell, /activeEndsAt - \(Date\.now\(\) \+ serverClockOffsetMs\)/);

@@ -9,6 +9,10 @@ const roll = await readFile(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
   "utf8"
 );
+const hotPathMigration = await readFile(
+  new URL("../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql", import.meta.url),
+  "utf8"
+);
 const cloud = await readFile(
   new URL("../src/backend/cloudConsumables.js", import.meta.url),
   "utf8"
@@ -44,8 +48,9 @@ assert.match(migration, /revoke execute on function public\.spend_one_roll_charg
 // The roll edge function spends one charge (not a blanket delete) after commit.
 assert.match(roll, /"spend_one_roll_charge"/);
 assert.doesNotMatch(roll, /"player_one_roll_boosts"\s*\)\s*\.delete\(\)/);
-assert.match(roll, /"effect_value, consumable_id, charges"/);
-assert.match(roll, /remainingOneRollCharges/);
+assert.match(roll, /const oneRollBoost = rollContext\.oneRollBoost/);
+assert.match(hotPathMigration, /select effect_value, consumable_id, charges from public\.player_one_roll_boosts/);
+assert.match(hotPathMigration, /perform public\.spend_one_roll_charge\(p_player_id\)/);
 
 // Client reads the charge count so the UI can show remaining charges.
 assert.match(cloud, /consumable_id, effect_value, charges, activated_at/);

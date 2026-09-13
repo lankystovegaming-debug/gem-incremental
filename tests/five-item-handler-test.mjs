@@ -35,6 +35,23 @@ class Query {
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);rpcCalls.push({name,args:structuredClone(args)});
  if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
+ if(name==='roll_prepare_context')return {data:{
+  player,ban:null,inventoryCount:0,equipment,mineArtifacts:[],
+  qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
+  activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
+  expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
+  catalogVersions:{gems:1,mutations:1},
+  gemCatalog:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
+  mutationCatalog:[{id:'polished',name:'Polished',chance:100,multiplier:1.5},{id:'shifted',name:'Shifted',chance:5,multiplier:35}]
+ },error:null};
+ if(name==='roll_finish_bookkeeping'){
+  if(args.p_phase==='critical'){
+   player.total_rolls+=1;
+   return {data:{lifetimeStats:{total_rolls:player.total_rolls},mutationCombination:{},guildPoints:null,globalEventProgress:null,errors:[]},error:null};
+  }
+  if((args.p_phase==='background'||args.p_phase==='loss')&&args.p_payload.consumeOneRollCharge)oneRoll=null;
+  return {data:{errors:[]},error:null};
+ }
  const responses={deposit_equipment_material:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);player.equipment_state=structuredClone(args.p_state);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
@@ -70,8 +87,7 @@ assert.equal(result.houseEdge,true);assert.equal(result.gem,null);assert.equal(s
 assert.equal(result.equipmentPassives.state.rolls['jackpot-slot'],77);assert.equal(result.equipmentPassives.state.batchHistory.heavy5,250);
 assert.equal(result.lifetimeStats.totalRolls,5001);assert.ok(rpcs.includes('commit_jackpot_loss'));
 for(const name of ['bundle_route_roll','record_server_roll','record_gem_mutation_combination','sell_inventory_gem']) assert.ok(!rpcs.includes(name),name);
-assert.ok(rpcs.includes('spend_one_roll_charge'));assert.equal(rpcs.filter(n=>n==='record_guild_roll_activity').length,1);
-assert.ok(rpcs.includes('record_season_roll'));assert.ok(rpcs.includes('record_abandoned_mine_roll'));
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='loss').length,1);
 console.log('Five-item optimized handler: All-In isolation/admin modifiers, Balanced, hard rarity ceiling and reward-free House Edge passed.');
 
 // Next batch runs through this same production-handler harness and live-shaped layers.
@@ -125,11 +141,11 @@ assert.ok(batch.results[0].luckAtRoll>batch.results[1].luckAtRoll);
 assert.equal(player.total_rolls,5004);
 assert.equal(rpcs.filter(name=>name==='claim_equipment_roll_batch').length,1);
 assert.equal(rpcs.filter(name=>name==='commit_equipment_roll').length,4);
-assert.equal(rpcs.filter(name=>name==='record_server_roll').length,4);
-assert.equal(rpcs.filter(name=>name==='spend_one_roll_charge').length,1);
-const progressCalls=rpcCalls.filter(call=>call.name==='process_private_feature_progress_event_incremental');
-assert.deepEqual(progressCalls.map(call=>call.args.p_payload.usedOneRollPotion),[true,false,false,false]);
-assert.deepEqual(progressCalls.map(call=>call.args.p_payload.usedMythicPotion),[true,false,false,false]);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='critical').length,4);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='background'&&call.args.p_payload.consumeOneRollCharge).length,1);
+const progressCalls=rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='background');
+assert.deepEqual(progressCalls.map(call=>call.args.p_payload.progressPayload.usedOneRollPotion),[true,false,false,false]);
+assert.deepEqual(progressCalls.map(call=>call.args.p_payload.progressPayload.usedMythicPotion),[true,false,false,false]);
 near(batch.cooldown.durationMs,batch.results[0].cooldown.durationMs);
 console.log('Optimized handler batch: one Mythic-boosted roll, three ordinary rolls, one spent charge, four counters and state commits passed.');
 
@@ -141,5 +157,6 @@ assert.deepEqual(lossBatch.results.map(entry=>entry.lifetimeStats.totalRolls),[5
 assert.equal(player.total_rolls,5004);
 assert.equal(rpcs.filter(name=>name==='commit_jackpot_loss').length,4);
 assert.equal(rpcs.filter(name=>name==='record_server_roll').length,0);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='loss').length,4);
 forceLoss=false;
 console.log('Optimized handler House Edge batch: four genuine losses and four total-roll increments passed.');
