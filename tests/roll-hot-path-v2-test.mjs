@@ -14,6 +14,10 @@ const contextColumnFix = readFileSync(
   new URL("../supabase/migrations/20260913123601_fix_roll_prepare_context_admin_event_columns.sql", import.meta.url),
   "utf8"
 );
+const serviceRoleAuthFix = readFileSync(
+  new URL("../supabase/migrations/20260913124716_fix_roll_service_role_secret_key_auth.sql", import.meta.url),
+  "utf8"
+);
 const edge = readFileSync(new URL("../supabase/functions/roll/index.ts", import.meta.url), "utf8");
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 
@@ -97,6 +101,7 @@ await db.exec(`
 
 await db.exec(migration);
 await db.exec(contextColumnFix);
+await db.exec(serviceRoleAuthFix);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_finish_bookkeeping(uuid,text,jsonb)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('service_role','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, true);
@@ -123,6 +128,16 @@ await db.exec(`
   insert into game_mutations values ('polished','Polished',100,2,'','','',true);
 `);
 
+await db.exec("select set_config('request.jwt.claim.role', '', false); set role service_role");
+const secretKeyContext = (await one("select roll_prepare_context($1,now(),null,null) context", [uid])).context;
+assert.equal(secretKeyContext.player.username, "Miner", "opaque secret-key service role works without legacy JWT claims");
+const secretKeyBookkeeping = (await one(
+  "select roll_finish_bookkeeping($1,'loss',$2) result",
+  [uid, { rollNumber: 1, progressPayload: {}, expeditionPayload: {} }]
+)).result;
+assert.deepEqual(secretKeyBookkeeping.errors, [], "opaque secret-key service role can run post-roll bookkeeping");
+await db.exec("reset role");
+
 const initial = (await one("select roll_prepare_context($1,now(),null,null) context", [uid])).context;
 assert.equal(initial.player.username, "Miner", "ordinary roll context includes the player");
 assert.equal(Number(initial.inventoryCount), 1, "full-inventory decisions use the authoritative non-relic count");
@@ -147,9 +162,10 @@ const invalidated = (await one("select roll_prepare_context($1,now(),$2,$3) cont
 ])).context;
 assert.equal(Number(invalidated.mutationCatalog[0].multiplier), 3, "catalog mutation invalidates the warm cache version");
 
-await db.exec("select set_config('request.jwt.claim.role', 'authenticated', false)");
-await assert.rejects(() => db.query("select roll_prepare_context($1,now(),null,null)", [uid]), /service_role_required/);
-await db.exec("select set_config('request.jwt.claim.role', 'service_role', false)");
+await db.exec("set role authenticated");
+await assert.rejects(() => db.query("select roll_prepare_context($1,now(),null,null)", [uid]), /permission denied/);
+await assert.rejects(() => db.query("select roll_finish_bookkeeping($1,'background','{}'::jsonb)", [uid]), /permission denied/);
+await db.exec("reset role");
 
 for (let weight = 1; weight <= 100; weight += 1) {
   await db.query("insert into roll_weight_history(player_id,username,gem_name,final_weight) values($1,'Miner','Quartz',$2)", [uid, weight]);
