@@ -2827,3 +2827,51 @@ html.is-cinematic-active body {
 
 .effect-chip--mutation{border-left-color:#a78bfa;background:color-mix(in srgb,#2a2145 72%,var(--surface-solid));}
 .effect-chip--mutation .effect-chip__icon{color:#c4b5fd}.effect-chip--mutation .effect-chip__bar>span{background:#a78bfa}
+
+/* Mobile roll card: keep the hero result, stats and both batch outcomes in
+   one compact scan without hiding any current two-roll information. */
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  .stage__hint { display: none; }
+}
+
+@media (max-width: 600px) {
+  .stage__display { min-height: 250px; }
+  .gem-reveal { gap: 7px; }
+  .gem-reveal__art { width: 76px; height: 76px; }
+  .gem-reveal__facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    max-width: none;
+    gap: 6px;
+  }
+  .gem-fact {
+    display: block;
+    min-width: 0;
+    padding: 8px 5px;
+    text-align: center;
+  }
+  .gem-fact__label { font-size: .56rem; }
+  .gem-fact__value { overflow: hidden; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+  .batch-results { margin-top: 14px; padding-top: 12px; }
+  .batch-results__heading span { display: none; }
+  .batch-results__grid { gap: 7px; }
+  .batch-result { grid-template-columns: 34px minmax(0, 1fr); gap: 9px; padding: 8px 10px; border-radius: 11px; }
+  .batch-result__art { width: 34px; height: 34px; font-size: 1.35rem; }
+  .batch-result__art .gem-icon { width: 32px; height: 32px; }
+  .batch-result__index { font-size: .58rem; }
+  .batch-result__name { font-size: .88rem; }
+  .batch-result__meta,
+  .batch-result__outcome { font-size: .68rem; }
+  .history__row {
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    grid-template-areas: "dot name value" "dot meta value";
+    gap: 2px 8px;
+    min-height: 48px;
+    padding: 7px 4px;
+  }
+  .history__dot { grid-area: dot; }
+  .history__name { grid-area: name; }
+  .history__mutations { grid-area: name; justify-self: end; max-width: 48%; overflow: hidden; }
+  .history__meta { grid-area: meta; overflow: hidden; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+  .history__value { grid-area: value; font-size: .78rem; }
+}

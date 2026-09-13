@@ -582,6 +582,25 @@
   font-variant-numeric: tabular-nums;
 }
 
+.auction-lot__more summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.auction-lot__more[open] summary { margin-bottom: 4px; }
+
+@media (max-width: 600px) {
+  .auction-grid { grid-template-columns: minmax(0, 1fr); }
+  .auction-card { width: 100%; min-width: 0; }
+  .auction-lot__list { max-height: none; overflow: visible; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabs .segmented__item { flex: 0 0 auto; min-height: 44px; }
+}
+
 
 /* ---------------------------------------------------------
    ORDERS

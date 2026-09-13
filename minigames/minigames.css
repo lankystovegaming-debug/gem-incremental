@@ -833,11 +833,45 @@
 .mg-board-scroll {
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
   padding: 3px;
 }
 .mg-board[data-columns] {
   min-width: calc(var(--columns) * 27px - 3px);
+}
+
+@media (max-width: 720px) {
+  .mg-board-scroll {
+    margin-inline: -12px;
+    padding: 8px 12px 12px;
+    scroll-padding-inline: 12px;
+  }
+  .mg-board:not(.mg-stack):not(.mg-2048)[data-columns] {
+    width: max-content;
+    min-width: calc(var(--columns) * 44px + (var(--columns) - 1) * 3px);
+    margin: 10px 0;
+  }
+  .mg-board:not(.mg-stack):not(.mg-2048) .mg-cell {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 15px;
+  }
+  .mg-scroll-hint {
+    position: sticky;
+    left: 0;
+    width: fit-content;
+  }
+  #flag-mode { width: 24px; height: 24px; }
+  label:has(#flag-mode) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    gap: 8px;
+  }
 }
 .mg-2048 {
   max-width: 360px;

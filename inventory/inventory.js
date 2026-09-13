@@ -132,6 +132,11 @@ const deleteChanceOp = document.getElementById("deleteChanceOp");
 const deleteChanceDenominator = document.getElementById("deleteChanceDenominator");
 const deleteRulesPreview = document.getElementById("deleteRulesPreview");
 const deleteMatchingButton = document.getElementById("deleteMatchingButton");
+const inventoryFilterToggle = document.getElementById("inventoryFilterToggle");
+const inventoryFilterClose = document.getElementById("inventoryFilterClose");
+const inventoryFilterSheet = document.getElementById("inventoryFilterSheet");
+const inventoryFilterBackdrop = document.getElementById("inventoryFilterBackdrop");
+const inventoryBackToTop = document.getElementById("inventoryBackToTop");
 
 document.getElementById("refreshIcon").innerHTML = icons.refresh;
 document.getElementById("searchIcon").innerHTML = icons.search;
@@ -153,6 +158,10 @@ const state = {
   showcaseIds: [],
   mutationCatalog: new Map(Object.values(GEM_MUTATIONS).map((mutation) => [mutation.id, mutation]))
 };
+
+const GEM_RENDER_CHUNK = 36;
+let renderedGemCount = GEM_RENDER_CHUNK;
+let gemListObserver = null;
 
 function normalizeMutationCatalog(rows = []) {
   const catalog = new Map(Object.values(GEM_MUTATIONS).map((mutation) => [mutation.id, mutation]));
@@ -430,8 +439,9 @@ function renderDeleteRules() {
   deleteRulesButton.disabled = state.loading || state.gems.length === 0;
 }
 
-function renderGems() {
+function renderGems({ reset = false } = {}) {
   const gems = visibleGems();
+  if (reset) renderedGemCount = GEM_RENDER_CHUNK;
 
   // Sell all operates on the current view, so the rarity / search /
   // lock filters double as a "sell only these" selector.
@@ -489,10 +499,30 @@ function renderGems() {
     return;
   }
 
-  inventoryList.innerHTML = gems.map(gemCard).join("");
+  const rendered = gems.slice(0, renderedGemCount);
+  inventoryList.innerHTML = rendered.map(gemCard).join("") + (rendered.length < gems.length
+    ? `<button class="inventory-load-more" type="button" data-load-more>
+        Show more <span>${formatCount(rendered.length)} of ${formatCount(gems.length)}</span>
+      </button>`
+    : "");
 
   for (const card of inventoryList.querySelectorAll(".gem-card")) {
     wireGemCard(card);
+  }
+
+  gemListObserver?.disconnect();
+  const more = inventoryList.querySelector("[data-load-more]");
+  const loadMore = () => {
+    if (!more?.isConnected) return;
+    renderedGemCount += GEM_RENDER_CHUNK;
+    renderGems();
+  };
+  more?.addEventListener("click", loadMore);
+  if (more && "IntersectionObserver" in window) {
+    gemListObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
+    }, { rootMargin: "320px 0px" });
+    gemListObserver.observe(more);
   }
 }
 
@@ -527,7 +557,7 @@ function applySavedFilter(value) {
   } else if (value === "unlocked") {
     gemSearch.value = ""; gemFilter.value = "unlocked"; gemRarity.value = "all"; gemSort.value = "newest";
   }
-  renderGems();
+  renderGems({ reset: true });
 }
 
 
@@ -1170,10 +1200,10 @@ ${PICKAXE_SPECIALTIES[item.equipment_id] ? `<p class="equipment-specialty"><stro
           </div>
 
           ${specialistProgress(item) ? `<p class="equipment-passive">${escapeHtml(specialistProgress(item))}</p>` : ""}
-          ${passive ? `<div class="equipment-passive">
-            <strong>${escapeHtml(passive.name)}</strong>
+          ${passive ? `<details class="equipment-passive" ${window.matchMedia("(min-width: 721px)").matches ? "open" : ""}>
+            <summary>${escapeHtml(passive.name)}</summary>
             <span>${escapeHtml(passive.description)}</span>
-          </div>` : ""}
+          </details>` : ""}
 
           ${(item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") && Number(item.masterwork_level ?? 0) > 0 ? `<div class="equipment-passive">
             <strong>Masterwork ${item.masterwork_level}/5${item.masterwork_level === 5 ? " · Perfected" : ""}</strong>
@@ -1608,8 +1638,8 @@ function renderAll() {
 }
 
 
-for (const control of [gemSearch, gemFilter, gemRarity, gemSort]) {
-  control.addEventListener("input", renderGems);
+for (const control of [gemSearch, gemFilter, gemRarity, gemSort, gemKind, gemMutationFilter, gemMutationCount]) {
+  control?.addEventListener("input", () => renderGems({ reset: true }));
 }
 savedFilter?.addEventListener("change", () => applySavedFilter(savedFilter.value));
 
@@ -1703,6 +1733,32 @@ renderAll();
 refresh();
 
 mountEquipmentLoadouts(document.getElementById('equipmentLoadouts'), refresh);
+
+function setInventoryFiltersOpen(open) {
+  inventoryFilterSheet?.classList.toggle("is-open", open);
+  inventoryFilterToggle?.setAttribute("aria-expanded", String(open));
+  if (inventoryFilterBackdrop) inventoryFilterBackdrop.hidden = !open;
+  document.body.classList.toggle("inventory-filters-open", open);
+  if (open) inventoryFilterClose?.focus({ preventScroll: true });
+  else inventoryFilterToggle?.focus({ preventScroll: true });
+}
+
+inventoryFilterToggle?.addEventListener("click", () => setInventoryFiltersOpen(true));
+inventoryFilterClose?.addEventListener("click", () => setInventoryFiltersOpen(false));
+inventoryFilterBackdrop?.addEventListener("click", () => setInventoryFiltersOpen(false));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && inventoryFilterSheet?.classList.contains("is-open")) setInventoryFiltersOpen(false);
+});
+
+let backToTopFrame = 0;
+window.addEventListener("scroll", () => {
+  if (backToTopFrame) return;
+  backToTopFrame = requestAnimationFrame(() => {
+    backToTopFrame = 0;
+    if (inventoryBackToTop) inventoryBackToTop.hidden = window.scrollY < 700;
+  });
+}, { passive: true });
+inventoryBackToTop?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
 // Build the mutation filter from the live bundled catalog.
 if (gemMutationFilter) {

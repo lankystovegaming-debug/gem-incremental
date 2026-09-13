@@ -3,7 +3,7 @@ import { invokeFunction } from "../backend/invoke.js";
 import { loadCloudPlayerState } from "../backend/cloudInventory.js";
 import { updateSettings, hydrateSettingsFromCloud, getSettings, onSettingsChange, shouldAutoKeep } from "./settings.js";
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
-import { notify } from "./toast.js";
+import { notify, toast } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
 import { batchCooldown, batchRollResults } from "../logic/batchRolling.js";
 
@@ -89,6 +89,44 @@ function showGlobalRollEffect(data, outcome = "Stored") {
   }, 1250);
 }
 
+function isMobileViewport() {
+  return window.matchMedia?.("(max-width: 780px)").matches ?? false;
+}
+
+function isActiveMinigame() {
+  return document.documentElement.hasAttribute("data-minigame-active");
+}
+
+function isNotableRoll(data) {
+  const rarity = Number(data?.effectiveRarity ?? data?.gem?.rarity ?? 0);
+  const mutationCount = Array.isArray(data?.mutations)
+    ? data.mutations.length
+    : Array.isArray(data?.mutationIds)
+      ? data.mutationIds.length
+      : Number(Boolean(data?.mutation?.id));
+  return rarity >= Math.max(100000, Number(getSettings().cutsceneMinimumRarity) || 100000)
+    || mutationCount > 0
+    || data?.gem?.dropType === "relic"
+    || data?.isNewDiscovery === true
+    || data?.newDiscovery === true
+    || data?.discovery?.isNew === true;
+}
+
+function showBackgroundRollNotification(data, outcome) {
+  const notable = isNotableRoll(data);
+  if (!isMobileViewport() || notable) {
+    showGlobalRollEffect(data, outcome);
+    return;
+  }
+  if (isActiveMinigame()) return;
+  toast(`${data?.gem?.name ?? "Gem"} rolled`, {
+    text: outcome,
+    type: data?.gemFilter?.sold ? "success" : "info",
+    duration: 2200,
+    compact: true
+  });
+}
+
 async function processRoll(data) {
   if (!data) return;
 
@@ -114,7 +152,7 @@ async function processRoll(data) {
 
   recordSessionRoll(data, sessionOutcome);
   window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
-  showGlobalRollEffect(data, outcome);
+  showBackgroundRollNotification(data, outcome);
 }
 
 async function run() {

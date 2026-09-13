@@ -638,8 +638,8 @@
 /* Sit above the mobile tab bar, and go near-full-width on phones. */
 @media (max-width: 720px) {
   .chat-fab {
-    right: var(--space-3);
-    bottom: calc(var(--space-3) + 64px);
+    right: var(--mobile-floating-gap, 12px);
+    bottom: calc(var(--mobile-nav-clearance, 78px) + var(--mobile-floating-gap, 12px));
   }
   .chat-dock,
   .chat-dock[data-layout="side-right"],
@@ -647,7 +647,7 @@
     top: auto;
     left: var(--space-2);
     right: var(--space-2);
-    bottom: calc(var(--space-2) + 64px);
+    bottom: calc(var(--mobile-nav-clearance, 78px) + 8px);
     width: auto;
     height: 62vh;
     min-width: 0;
