@@ -5,8 +5,13 @@ import { PGlite } from "@electric-sql/pglite";
 const db = new PGlite();
 const uid = "00000000-0000-0000-0000-000000000001";
 const gid = "00000000-0000-0000-0000-000000000002";
+const eventId = "00000000-0000-0000-0000-000000000003";
 const migration = readFileSync(
   new URL("../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql", import.meta.url),
+  "utf8"
+);
+const contextColumnFix = readFileSync(
+  new URL("../supabase/migrations/20260913123601_fix_roll_prepare_context_admin_event_columns.sql", import.meta.url),
   "utf8"
 );
 const edge = readFileSync(new URL("../supabase/functions/roll/index.ts", import.meta.url), "utf8");
@@ -40,7 +45,7 @@ await db.exec(`
   create table player_one_roll_boosts (player_id uuid primary key, consumable_id text, effect_value numeric, charges integer);
   create table admin_events (
     id uuid primary key, name text, luck_bonus numeric, roll_speed_bonus numeric, weight_luck_bonus numeric,
-    weight_multiplier_bonus numeric, mutation_chance_bonus numeric, luck_multiplier numeric,
+    weight_multiplier_bonus numeric, luck_multiplier numeric,
     roll_speed_multiplier numeric, weight_luck_multiplier numeric, weight_multiplier_multiplier numeric,
     mutation_luck_bonus numeric, mutation_luck_multiplier numeric, starts_at timestamptz, ends_at timestamptz,
     active boolean
@@ -91,6 +96,7 @@ await db.exec(`
 `);
 
 await db.exec(migration);
+await db.exec(contextColumnFix);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_finish_bookkeeping(uuid,text,jsonb)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('service_role','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, true);
@@ -104,6 +110,15 @@ await db.exec(`
   insert into guild_members values ('${gid}','${uid}',now()-interval '2 days');
   insert into guild_shop_buffs values ('${gid}','mythic',now()+interval '1 hour');
   insert into user_roll_luck_rarity_mult values ('${uid}',now()+interval '1 day','test ban');
+  insert into admin_events(
+    id, name, luck_bonus, roll_speed_bonus, weight_luck_bonus, weight_multiplier_bonus,
+    luck_multiplier, roll_speed_multiplier, weight_luck_multiplier,
+    weight_multiplier_multiplier, mutation_luck_bonus, mutation_luck_multiplier,
+    starts_at, ends_at, active
+  ) values (
+    '${eventId}', 'Live columns', 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    now()-interval '1 hour', now()+interval '1 hour', true
+  );
   insert into private_feature_gems values ('Quartz',1,1,1,true,'always',null,null,null,null,'UTC',null,'{}',false,1,true);
   insert into game_mutations values ('polished','Polished',100,2,'','','',true);
 `);
@@ -116,6 +131,8 @@ assert.equal(Number(initial.oneRollBoost.charges), 2, "potion charge is loaded i
 assert.equal(initial.guild.shopBuffIds[0], "mythic", "active guild buff is included");
 assert.equal(initial.globalEvent.eventKey, "starfall", "active global event is included");
 assert.equal(initial.ban.note, "test ban", "banned-player state is included");
+assert.equal(Number(initial.activeAdminEvent.mutation_luck_bonus), 10, "admin events use the live mutation-luck columns");
+assert.equal(initial.activeAdminEvent.mutation_chance_bonus, undefined, "stale admin event columns are not queried");
 assert.equal(initial.gemCatalog.length, 1);
 assert.equal(initial.mutationCatalog.length, 1);
 
