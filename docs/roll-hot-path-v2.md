@@ -73,8 +73,11 @@ No deployment is performed by this change.
 2. Apply `supabase/migrations/20260913123601_fix_roll_prepare_context_admin_event_columns.sql`.
    This follow-up is required for databases where the first migration has
    already been applied; it removes a stale `admin_events` column reference.
-3. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function.
-4. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
+3. Apply `supabase/migrations/20260913124716_fix_roll_service_role_secret_key_auth.sql`.
+   This allows the service-role-only RPCs to work with opaque Supabase secret
+   keys, which do not carry the legacy JWT role claim.
+4. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function.
+5. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
    a player with an active guild potion, an active natural/admin event, a banned
    player, and a player without enough free inventory slots for the batch.
 
