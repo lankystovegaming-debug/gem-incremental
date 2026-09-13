@@ -2,10 +2,11 @@
 // CLI TERMINAL WIDGET
 //
 // A small, reusable command-line surface. It renders an output
-// log and an input line, keeps a command history, and dispatches
-// typed lines to a caller-supplied command set. It knows nothing
-// about the game — the maintenance and admin CLIs each build their
-// own command list on top of it, so the two remain separate.
+// log and an input line, keeps a command history, offers
+// Minecraft-style autocomplete suggestions, and dispatches typed
+// lines to a caller-supplied command set. It knows nothing about
+// the game — the maintenance and admin CLIs each build their own
+// command list on top of it, so the two remain separate.
 // =========================================================
 
 
@@ -52,7 +53,8 @@ function padCell(value, width) {
 
 
 // commands: array of
-//   { name, group, usage, summary, man?, run(args, term) }
+//   { name, group, usage, summary, man?, suggest?(args), run(args, term) }
+// `suggest(args)` returns candidate strings for the next argument.
 // Built-in help / man / clear are added automatically.
 export function createCliTerminal(options) {
   const {
@@ -77,6 +79,7 @@ export function createCliTerminal(options) {
     </div>
     <div class="cli__output" id="cliOutput" role="log" aria-live="polite"></div>
     <form class="cli__form" id="cliForm">
+      <div class="cli__suggestions" id="cliSuggestions" hidden></div>
       <span class="cli__prompt">${prompt}</span>
       <input class="cli__input" id="cliInput" type="text" autocomplete="off"
              autocapitalize="off" spellcheck="false"
@@ -88,10 +91,13 @@ export function createCliTerminal(options) {
   const form = root.querySelector("#cliForm");
   const input = root.querySelector("#cliInput");
   const closeButton = root.querySelector(".cli__close");
+  const suggestionsBox = root.querySelector("#cliSuggestions");
 
   const history = [];
   let historyIndex = -1;
   let pendingConfirm = null;
+  let suggestions = [];
+  let selected = 0;
 
   // -------------------------------------------------------
   // OUTPUT HELPERS
@@ -210,7 +216,7 @@ export function createCliTerminal(options) {
         }
       }
 
-      term.printMuted("Use /man <command> for details on one command.");
+      term.printMuted("Tab completes commands. Use /man <command> for details.");
     }
   });
 
@@ -231,7 +237,7 @@ export function createCliTerminal(options) {
       if (!args.length) {
         term.printHeading("MANUAL");
         term.printMuted("Arguments in <angles> are required, [brackets] optional.");
-        term.printMuted("Wrap values with spaces in \"double quotes\".");
+        term.printMuted("Wrap values with spaces in \"double quotes\". Tab autocompletes.");
       }
 
       for (const rawName of names) {
@@ -262,6 +268,126 @@ export function createCliTerminal(options) {
     run() {
       term.clear();
     }
+  });
+
+  // -------------------------------------------------------
+  // AUTOCOMPLETE
+  // -------------------------------------------------------
+
+  // Work out completion candidates for the current input. Each result
+  // is { label, hint, apply } where `apply` is the full input line to
+  // set if the candidate is chosen.
+  function computeSuggestions(value) {
+    const endsWithSpace = /\s$/.test(value);
+    const tokens = tokenize(value);
+
+    // Completing the command name (first token).
+    if (tokens.length === 0 || (tokens.length === 1 && !endsWithSpace)) {
+      const prefix = (tokens[0] ?? "").replace(/^\//, "").toLowerCase();
+
+      return order
+        .filter((name) => name.startsWith(prefix))
+        .map((name) => ({
+          label: `/${name}`,
+          hint: registry.get(name).summary,
+          apply: `/${name} `
+        }));
+    }
+
+    // Completing an argument via the command's own suggest() hook.
+    const command = registry.get(tokens[0].replace(/^\//, "").toLowerCase());
+
+    if (!command || typeof command.suggest !== "function") {
+      return [];
+    }
+
+    const priorArgs = endsWithSpace ? tokens.slice(1) : tokens.slice(1, -1);
+    const partial = endsWithSpace ? "" : tokens[tokens.length - 1];
+
+    let candidates = [];
+
+    try {
+      candidates = command.suggest(priorArgs) ?? [];
+    } catch {
+      candidates = [];
+    }
+
+    const base = (endsWithSpace ? tokens : tokens.slice(0, -1)).join(" ");
+
+    return candidates
+      .filter((candidate) => candidate.toLowerCase().startsWith(partial.toLowerCase()))
+      .map((candidate) => ({
+        label: candidate,
+        hint: "",
+        apply: `${base} ${candidate} `
+      }));
+  }
+
+  function renderSuggestions() {
+    suggestions = pendingConfirm ? [] : computeSuggestions(input.value);
+
+    if (!suggestions.length) {
+      suggestionsBox.hidden = true;
+      suggestionsBox.innerHTML = "";
+
+      return;
+    }
+
+    if (selected >= suggestions.length) {
+      selected = 0;
+    }
+
+    suggestionsBox.innerHTML = suggestions
+      .map((suggestion, index) => `
+        <div class="cli__suggestion${index === selected ? " is-active" : ""}" data-index="${index}">
+          <span class="cli__suggestion-name">${escapeText(suggestion.label)}</span>
+          <span class="cli__suggestion-hint">${escapeText(suggestion.hint)}</span>
+        </div>
+      `)
+      .join("");
+
+    suggestionsBox.hidden = false;
+  }
+
+  function escapeText(text) {
+    return String(text ?? "").replace(/[&<>"]/g, (character) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]
+    ));
+  }
+
+  function applySuggestion(index) {
+    const suggestion = suggestions[index];
+
+    if (!suggestion) {
+      return;
+    }
+
+    input.value = suggestion.apply;
+
+    selected = 0;
+
+    renderSuggestions();
+
+    input.focus();
+  }
+
+  function hideSuggestions() {
+    suggestions = [];
+    suggestionsBox.hidden = true;
+    suggestionsBox.innerHTML = "";
+  }
+
+  // Apply on mousedown so the input does not blur away before the click.
+  suggestionsBox.addEventListener("mousedown", (event) => {
+    const item = event.target.closest(".cli__suggestion");
+
+    if (!item) {
+      return;
+    }
+
+    event.preventDefault();
+
+    applySuggestion(Number(item.dataset.index));
   });
 
   // -------------------------------------------------------
@@ -316,6 +442,8 @@ export function createCliTerminal(options) {
 
     input.value = "";
 
+    hideSuggestions();
+
     if (value.trim() !== "") {
       history.push(value);
 
@@ -329,26 +457,77 @@ export function createCliTerminal(options) {
     dispatch(value);
   });
 
+  input.addEventListener("input", () => {
+    selected = 0;
+
+    renderSuggestions();
+  });
+
   input.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
+    const open = !suggestionsBox.hidden && suggestions.length > 0;
 
-      if (history.length === 0) {
-        return;
+    if (event.key === "Tab") {
+      // Tab completes the highlighted suggestion (Minecraft-style).
+      if (open) {
+        event.preventDefault();
+
+        applySuggestion(selected);
       }
 
-      historyIndex = Math.max(0, historyIndex - 1);
-      input.value = history[historyIndex] ?? "";
-    } else if (event.key === "ArrowDown") {
-      event.preventDefault();
-
-      if (history.length === 0) {
-        return;
-      }
-
-      historyIndex = Math.min(history.length, historyIndex + 1);
-      input.value = history[historyIndex] ?? "";
+      return;
     }
+
+    if (event.key === "Escape") {
+      // Escape first dismisses the suggestion list; a second press can
+      // then bubble up to close the terminal.
+      if (open) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        hideSuggestions();
+      }
+
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      if (open) {
+        event.preventDefault();
+
+        selected = (selected + 1) % suggestions.length;
+
+        renderSuggestions();
+      } else if (history.length) {
+        event.preventDefault();
+
+        historyIndex = Math.min(history.length, historyIndex + 1);
+        input.value = history[historyIndex] ?? "";
+      }
+
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      if (open) {
+        event.preventDefault();
+
+        selected = (selected - 1 + suggestions.length) % suggestions.length;
+
+        renderSuggestions();
+      } else if (history.length) {
+        event.preventDefault();
+
+        historyIndex = Math.max(0, historyIndex - 1);
+        input.value = history[historyIndex] ?? "";
+      }
+
+      return;
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    // Let a click on a suggestion land first.
+    setTimeout(hideSuggestions, 120);
   });
 
   closeButton.addEventListener("click", () => {

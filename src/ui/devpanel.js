@@ -215,6 +215,27 @@ function buildCommands(user) {
       "  /give me gem \"Black Opal\" 5",
       "  /give me equip all-in-pickaxe"
     ],
+    suggest(args) {
+      if (args.length === 0) {
+        return ["me"];
+      }
+
+      if (args.length === 1) {
+        return ["money", "coins", "rolls", "slots", "rp", "gem", "potion", "equip"];
+      }
+
+      const what = (args[1] ?? "").toLowerCase();
+
+      if (args.length === 2 && (what === "potion" || what === "pot")) {
+        return consumables.map((item) => item.id);
+      }
+
+      if (args.length === 2 && (what === "equip" || what === "equipment")) {
+        return equipmentCatalog.map((item) => item.id);
+      }
+
+      return [];
+    },
     async run(args, term) {
       const target = resolveTarget(args[0]);
       const what = (args[1] ?? "").toLowerCase();
@@ -379,6 +400,9 @@ function buildCommands(user) {
       "  /set me mutationluck 100      set the mutation-luck multiplier (1..100000)",
       "  /set me rarest \"Void Opal\"    set the displayed rarest gem"
     ],
+    suggest(args) {
+      return args.length === 0 ? ["me"] : args.length === 1 ? ["mutationluck", "rarest"] : [];
+    },
     async run(args, term) {
       const target = resolveTarget(args[0]);
       const field = (args[1] ?? "").toLowerCase();
@@ -438,6 +462,9 @@ function buildCommands(user) {
       "  family is one of: luck | rollSpeed | weightLuck | weightMultiplier",
       "  /boost me luck 100 300   +100% luck for 300 seconds"
     ],
+    suggest(args) {
+      return args.length === 0 ? ["me"] : args.length === 1 ? BOOST_FAMILIES : [];
+    },
     async run(args, term) {
       const target = resolveTarget(args[0]);
       const family = args[1];
@@ -582,6 +609,9 @@ function buildCommands(user) {
     group: "Lookup",
     usage: "/equipment [tab]",
     summary: "List equipment ids for /give equip (tab: pickaxe, toys, clover, lantern, boots, bag).",
+    suggest(args) {
+      return args.length === 0 ? ["pickaxe", "toys", "clover", "lantern", "boots", "bag"] : [];
+    },
     async run(args, term) {
       const tab = (args[0] ?? "").toLowerCase();
       const rows = equipmentCatalog
