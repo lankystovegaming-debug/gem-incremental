@@ -479,81 +479,9 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
   });
 }
 
-let globalEventSnapshotCache: { data: any; expiresAt: number } | null = null;
-let globalEventSnapshotLoad: Promise<any> | null = null;
-const ROLL_CATALOG_CACHE_MS = 5_000;
-let mutationCatalogCache: { data: any[]; expiresAt: number } | null = null;
-let mutationCatalogLoad: Promise<any> | null = null;
-let gemCatalogCache: { data: any[]; expiresAt: number } | null = null;
-let gemCatalogLoad: Promise<any> | null = null;
-
-async function loadGlobalEventSnapshot(supabaseAdmin: any) {
-  const now = Date.now();
-  if (globalEventSnapshotCache && globalEventSnapshotCache.expiresAt > now) {
-    return globalEventSnapshotCache.data;
-  }
-  if (!globalEventSnapshotLoad) {
-    globalEventSnapshotLoad = (async () => {
-      const { data, error } = await supabaseAdmin.rpc("get_active_global_event");
-      if (error) console.error("Equipment material deposit failed:", error);
-      globalEventSnapshotCache = { data, expiresAt: Date.now() + 1_000 };
-      return data;
-    })().finally(() => { globalEventSnapshotLoad = null; });
-  }
-  return globalEventSnapshotLoad;
-}
-
-async function loadMutationCatalog(supabaseAdmin: any) {
-  const now = Date.now();
-  if (mutationCatalogCache && mutationCatalogCache.expiresAt > now) {
-    return { data: mutationCatalogCache.data, error: null };
-  }
-  if (!mutationCatalogLoad) {
-    mutationCatalogLoad = (async () => {
-      const result = await supabaseAdmin
-        .from("game_mutations")
-        .select("id,name,chance,multiplier,description,icon,color")
-        .eq("enabled", true)
-        .order("multiplier", { ascending: true })
-        .order("name", { ascending: true });
-      if (!result.error && Array.isArray(result.data)) {
-        mutationCatalogCache = {
-          data: result.data,
-          expiresAt: Date.now() + ROLL_CATALOG_CACHE_MS
-        };
-      }
-      return result;
-    })().finally(() => { mutationCatalogLoad = null; });
-  }
-  return mutationCatalogLoad;
-}
-
-async function loadGemCatalog(supabaseAdmin: any, nowIso: string) {
-  const now = Date.now();
-  if (gemCatalogCache && gemCatalogCache.expiresAt > now) {
-    return { data: gemCatalogCache.data, error: null };
-  }
-  if (!gemCatalogLoad) {
-    gemCatalogLoad = (async () => {
-      const result = await supabaseAdmin
-        .from("private_feature_gems")
-        .select("name, rarity, base_weight, value_per_gram, affected_by_luck, availability_mode, daily_start_time, daily_end_time, availability_timezone, required_event_key, metadata, special_gem")
-        .eq("enabled", true)
-        .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
-        .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
-        .order("sort_order")
-        .order("rarity", { ascending: false });
-      if (!result.error && Array.isArray(result.data)) {
-        gemCatalogCache = {
-          data: result.data,
-          expiresAt: Date.now() + ROLL_CATALOG_CACHE_MS
-        };
-      }
-      return result;
-    })().finally(() => { gemCatalogLoad = null; });
-  }
-  return gemCatalogLoad;
-}
+type VersionedCatalogCache = { version: number; data: any[] };
+let mutationCatalogCache: VersionedCatalogCache | null = null;
+let gemCatalogCache: VersionedCatalogCache | null = null;
 
 
 // =========================================================
@@ -1871,69 +1799,41 @@ async function executeSingleRoll(
         );
       }
 
+      // A displayed batch is one effectively-simultaneous action. Every
+      // timed availability/buff check uses this shared request-start instant.
+      const now = batchExecution.requestStartedAt;
+
+      // One service-only RPC supplies the full authoritative pre-roll
+      // snapshot. Catalog rows are returned only when their trigger-maintained
+      // version differs from the warm isolate's cached version.
+      const { data: rollContext, error: rollContextError } = await ctx.supabaseAdmin.rpc(
+        "roll_prepare_context",
+        {
+          p_player_id: playerId,
+          p_now: now.toISOString(),
+          p_gem_catalog_version: gemCatalogCache?.version ?? null,
+          p_mutation_catalog_version: mutationCatalogCache?.version ?? null
+        }
+      );
+
+      if (rollContextError || !rollContext) {
+        console.error("Roll context load failed:", rollContextError);
+        return jsonResponse({ error: "roll_context_unavailable" }, { status: 503 });
+      }
+
 
       // =====================================================
       // LOAD PLAYER
       // =====================================================
 
-      const {
-        data:
-          player,
-        error:
-          playerError
-      } =
-        await ctx.supabase
-          .from(
-            "players"
-          )
-          .select(`
-            id,
-            username,
-            next_roll_at,
-            inventory_capacity,
-            total_rolls,
-            mutation_luck,
-            rarity_resonance,
-            equipment_state,
-            gravitational_surge_progress,
-            gravitational_surge_ready,
-            bag_compression_progress,
-            best_rare_natural_weight_100k,
-            best_rare_natural_weight_1m,
-            misty_mutation_boost_rolls,
-            misty_mutation_boost_stacks,
-            ancient_relic_boost_rolls,
-            enchanted_relic_boost_rolls,
-            player_research_effects(
-              luck_multiplier,
-              legendary_luck_multiplier,
-              extreme_luck_multiplier,
-              window_luck_multiplier,
-              roll_speed_multiplier,
-              weight_luck_multiplier,
-              gem_value_multiplier,
-              mutation_chance_multiplier,
-              mutated_value_multiplier,
-              compound_value_per_mutation,
-              potion_strength_multiplier,
-              inventory_bonus,
-              statistical_breakthrough
-            )
-          `)
-          .eq(
-            "id",
-            playerId
-          )
-          .single();
+      const player = rollContext.player;
 
 
       if (
-        playerError ||
         !player
       ) {
         console.error(
-          "Player load failed:",
-          playerError
+          "Player load failed"
         );
 
 
@@ -1956,11 +1856,7 @@ async function executeSingleRoll(
       // state lives in its own table (user_roll_luck_rarity_mult).
       // =====================================================
 
-      const { data: banRow } = await ctx.supabaseAdmin
-        .from("user_roll_luck_rarity_mult")
-        .select("active_until, note")
-        .eq("player_id", playerId)
-        .maybeSingle();
+      const banRow = rollContext.ban;
 
       if (
         banRow?.active_until &&
@@ -1984,8 +1880,15 @@ async function executeSingleRoll(
       // fallback above for old deployments, but prefer the live catalog so
       // newly-created mutations actually participate in rolls.
       try {
-        const { data: liveMutations, error: liveMutationError } =
-          await loadMutationCatalog(ctx.supabaseAdmin);
+        const versions = rollContext.catalogVersions ?? {};
+        if (Array.isArray(rollContext.mutationCatalog)) {
+          mutationCatalogCache = {
+            version: Number(versions.mutations),
+            data: rollContext.mutationCatalog
+          };
+        }
+        const liveMutations = mutationCatalogCache?.data ?? null;
+        const liveMutationError = liveMutations ? null : new Error("mutation_catalog_missing");
 
         if (!liveMutationError && Array.isArray(liveMutations) && liveMutations.length) {
           gemMutations = liveMutations
@@ -2015,11 +1918,6 @@ async function executeSingleRoll(
       // =====================================================
       // CHECK COOLDOWN
       // =====================================================
-
-      // A displayed batch is one effectively-simultaneous action. Every
-      // timed availability/buff check uses this shared request-start instant.
-      const now = batchExecution.requestStartedAt;
-
 
       if (
         batchIndex === 0 &&
@@ -2064,64 +1962,7 @@ async function executeSingleRoll(
       // CHECK INVENTORY CAPACITY
       // =====================================================
 
-      const {
-        count:
-          inventoryCount,
-        error:
-          inventoryCountError
-      } =
-        await ctx.supabase
-          .from(
-            "inventory_gems"
-          )
-          .select(
-            "id",
-            {
-              count:
-                "exact",
-
-              head:
-                true
-            }
-          )
-          .eq(
-            "player_id",
-            playerId
-          )
-          .neq(
-            "gem_name",
-            "Enchant Relic"
-          )
-          .neq(
-            "gem_name",
-            "Ancient Relic"
-          );
-
-
-      if (
-        inventoryCountError
-      ) {
-        console.error(
-          "Inventory count failed:",
-          inventoryCountError
-        );
-
-
-        return jsonResponse(
-          {
-            error:
-              "Failed to check inventory."
-          },
-          {
-            status: 500
-          }
-        );
-      }
-
-
-      const currentInventoryCount =
-        inventoryCount ??
-        0;
+      const currentInventoryCount = Number(rollContext.inventoryCount ?? 0);
 
       const researchEffectsAtCapacityRaw = (player as any).player_research_effects;
       const researchEffectsAtCapacity = Array.isArray(researchEffectsAtCapacityRaw)
@@ -2167,72 +2008,10 @@ async function executeSingleRoll(
       // LOAD EQUIPPED CLOUD EQUIPMENT
       // =====================================================
 
-      const {
-        data:
-          equippedEquipment,
-        error:
-          equipmentError
-      } =
-        await ctx.supabase
-          .from(
-            "player_equipment"
-          )
-          .select(`
-            id,
-            equipment_id,
-            category,
-            luck_bonus,
-            roll_speed_bonus,
-            weight_luck_bonus,
-            weight_multiplier_bonus,
-            mutation_chance_bonus,
-            enchant_id,
-            enchant_grade,
-            enchant_state,
-            masterwork_level,
-            masterwork_passive,
-            masterwork_passive_rank,
-            masterwork_attunement
-          `)
-          .eq(
-            "player_id",
-            playerId
-          )
-          .eq(
-            "equipped",
-            true
-          );
-
-
-      if (
-        equipmentError
-      ) {
-        console.error(
-          "Failed to load equipment stats:",
-          equipmentError
-        );
-
-
-        return jsonResponse(
-          {
-            error:
-              "Failed to load equipment stats."
-          },
-          {
-            status: 500
-          }
-        );
-      }
-
-      const { data: mineArtifactRows, error: mineArtifactError } = await ctx.supabaseAdmin
-        .from("museum_artifact_registrations")
-        .select("artifact_key")
-        .eq("player_id", playerId);
-      if (mineArtifactError) {
-        console.error("Failed to load Museum artifact passives:", mineArtifactError);
-        return jsonResponse({ error: "Failed to load Museum artifact passives." }, { status: 500 });
-      }
-      const mineArtifacts = new Set((mineArtifactRows ?? []).map((row: any) => String(row.artifact_key)));
+      const equippedEquipment = Array.isArray(rollContext.equipment) ? rollContext.equipment : [];
+      const mineArtifacts = new Set<string>(
+        (Array.isArray(rollContext.mineArtifacts) ? rollContext.mineArtifacts : []).map(String)
+      );
 
       const equippedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe"
@@ -2272,8 +2051,8 @@ async function executeSingleRoll(
 
       // One compact, uncached read supplies authoritative preferences and ALL
       // distinct discoveries (no Data API row-limit truncation).
-      const { data: qolContext, error: qolError } = await ctx.supabaseAdmin.rpc('qol_roll_context', { p_player_id: playerId });
-      if (qolError || !qolContext) return jsonResponse({ error: 'qol_settings_unavailable' }, { status: 503 });
+      const qolContext = rollContext.qol;
+      if (!qolContext) return jsonResponse({ error: 'qol_settings_unavailable' }, { status: 503 });
       const rollSettings = qolContext.settings ?? {};
       const buffsEnabled = rollSettings.enableBuffs !== false;
       const discoveredGemNames = new Set<string>(qolContext.discoveries ?? []);
@@ -2283,38 +2062,11 @@ async function executeSingleRoll(
       // LOAD ACTIVE PLAYER BOOSTS
       // =====================================================
 
-      let activeBoosts = batchExecution.activeBoosts;
-      let boostError = null;
-      if (activeBoosts === undefined) {
-        const boostResult = await ctx.supabase
-          .from("player_boosts")
-          .select("family, tier, effect_value")
-          .eq("player_id", playerId)
-          .gt("expires_at", now.toISOString());
-        activeBoosts = boostResult.data ?? [];
-        boostError = boostResult.error;
-        if (!boostError) batchExecution.activeBoosts = structuredClone(activeBoosts);
-      }
-
-
-      if (
-        boostError
-      ) {
-        console.error(
-          "Failed to load active boosts:",
-          boostError
-        );
-
-
-        return jsonResponse(
-          {
-            error:
-              "Failed to load active boosts."
-          },
-          {
-            status: 500
-          }
-        );
+      const activeBoosts = batchExecution.activeBoosts ?? (
+        Array.isArray(rollContext.activeBoosts) ? rollContext.activeBoosts : []
+      );
+      if (batchExecution.activeBoosts === undefined) {
+        batchExecution.activeBoosts = structuredClone(activeBoosts);
       }
 
 
@@ -2325,105 +2077,28 @@ async function executeSingleRoll(
       // remains until its final charge is spent.
       // =====================================================
 
-      const {
-        data:
-          oneRollBoost,
-        error:
-          oneRollBoostError
-      } =
-        await ctx.supabaseAdmin
-          .from(
-            "player_one_roll_boosts"
-          )
-          .select(
-            "effect_value, consumable_id, charges"
-          )
-          .eq(
-            "player_id",
-            playerId
-          )
-          .maybeSingle();
-
-      if (oneRollBoostError) {
-        console.error(
-          "Failed to load one-roll boost:",
-          oneRollBoostError
-        );
-      }
+      const oneRollBoost = rollContext.oneRollBoost ?? null;
 
 
       // =====================================================
       // LOAD ACTIVE ADMIN EVENT
       // =====================================================
 
-      let activeAdminEvent = batchExecution.activeAdminEvent;
-      let adminEventError = null;
-      if (activeAdminEvent === undefined) {
-        const adminEventResult = await ctx.supabaseAdmin
-          .from(
-            "admin_events"
-          )
-          .select(`
-            id,
-            name,
-            luck_bonus,
-            roll_speed_bonus,
-            weight_luck_bonus,
-            weight_multiplier_bonus,
-            mutation_chance_bonus,
-            luck_multiplier,
-            roll_speed_multiplier,
-            weight_luck_multiplier,
-            weight_multiplier_multiplier,
-            mutation_luck_bonus,
-            mutation_luck_multiplier,
-            ends_at
-          `)
-          .eq(
-            "active",
-            true
-          )
-          .lte(
-            "starts_at",
-            now.toISOString()
-          )
-          .gt(
-            "ends_at",
-            now.toISOString()
-          )
-          .order(
-            "starts_at",
-            { ascending: false }
-          )
-          .limit(1)
-          .maybeSingle();
-        activeAdminEvent = adminEventResult.data ?? null;
-        adminEventError = adminEventResult.error;
-        if (!adminEventError) batchExecution.activeAdminEvent = structuredClone(activeAdminEvent);
-      }
-
-
-      if (adminEventError) {
-        // A temporary event-loading problem should not prevent normal rolls.
-        console.error(
-          "Failed to load active admin event:",
-          adminEventError
-        );
+      const activeAdminEvent = batchExecution.activeAdminEvent === undefined
+        ? rollContext.activeAdminEvent ?? null
+        : batchExecution.activeAdminEvent;
+      if (batchExecution.activeAdminEvent === undefined) {
+        batchExecution.activeAdminEvent = structuredClone(activeAdminEvent);
       }
 
       // One compact authoritative snapshot covers every natural-event rule.
       // Definitions, phases and selected targets are materialized when the
       // occurrence starts, so the hot roll path never performs event joins.
-      let globalEventData = batchExecution.globalEventData;
-      if (globalEventData === undefined) {
-        try {
-          globalEventData = await loadGlobalEventSnapshot(ctx.supabaseAdmin);
-          batchExecution.globalEventData = structuredClone(globalEventData ?? null);
-        } catch (globalEventError) {
-          globalEventData = null;
-          batchExecution.globalEventData = null;
-          console.warn("Global event snapshot unavailable; rolling normally:", globalEventError);
-        }
+      const globalEventData = batchExecution.globalEventData === undefined
+        ? rollContext.globalEvent ?? null
+        : batchExecution.globalEventData;
+      if (batchExecution.globalEventData === undefined) {
+        batchExecution.globalEventData = structuredClone(globalEventData);
       }
       const activeGlobalEvent = normalizeGlobalEvent(globalEventData, now.getTime());
       const availabilityEventContext = buildEventRollContext(activeGlobalEvent, random01, now.getTime());
@@ -2454,14 +2129,8 @@ async function executeSingleRoll(
       if (mineArtifacts.has("vein-prism")) luck += 0.05;
 
 
-      // Artifact-effect calls are independent and can be fetched together.
-      const [
-        { data: crystalEffectsData, error: crystalEffectsError },
-        { data: expeditionArtifactEffectsData, error: expeditionArtifactEffectsError }
-      ] = await Promise.all([
-        ctx.supabaseAdmin.rpc("crystal_player_effects", { p_uid: playerId }),
-        ctx.supabaseAdmin.rpc("player_expedition_artifact_effects", { p_player_id: playerId })
-      ]);
+      const crystalEffectsData = rollContext.crystalEffects ?? {};
+      const expeditionArtifactEffectsData = rollContext.expeditionArtifactEffects ?? {};
 
       const researchEffectsRaw = (player as any).player_research_effects;
       const researchEffects = allIn ? {} : Array.isArray(researchEffectsRaw)
@@ -2472,7 +2141,6 @@ async function executeSingleRoll(
         return Number.isFinite(value) && value > 0 ? value : fallback;
       };
 
-      if (crystalEffectsError) console.warn("Crystal artifact passives unavailable:", crystalEffectsError);
       const crystalEffects = allIn ? {} : crystalEffectsData ?? {};
       const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
       const crystalFinalLuckMultiplier = Math.max(1, Number(crystalEffects.finalLuckMultiplier ?? 1));
@@ -2482,9 +2150,6 @@ async function executeSingleRoll(
       const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
       const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
 
-      if (expeditionArtifactEffectsError) {
-        console.warn("Expedition artifact passives unavailable:", expeditionArtifactEffectsError);
-      }
       const expeditionArtifactEffects = allIn ? {} : expeditionArtifactEffectsData ?? {};
       const expeditionArtifactLuckBonus = Math.max(0, Number(expeditionArtifactEffects.luckBonus ?? 0));
       const expeditionArtifactMutationMultiplier = Math.max(1, Number(expeditionArtifactEffects.mutationChanceMultiplier ?? 1));
@@ -2656,31 +2321,12 @@ async function executeSingleRoll(
       // Eligible guild members receive small permanent multiplicative
       // enhancements. The 24-hour delay prevents join-hopping for bonuses.
       try {
-        let guildMembership = batchExecution.guildSnapshot?.membership ?? null;
-        if (!batchExecution.guildSnapshot) {
-          const { data, error } = await ctx.supabaseAdmin
-            .from("guild_members")
-            .select("guild_id,eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
-            .eq("player_id", playerId)
-            .maybeSingle();
-          if (error) throw error;
-          guildMembership = data ?? null;
-          if (guildMembership) {
-            const { data: guildShopBuffs, error: guildShopError } = await ctx.supabaseAdmin
-              .from("guild_shop_buffs")
-              .select("potion_id")
-              .eq("guild_id", guildMembership.guild_id)
-              .gt("expires_at", now.toISOString());
-            if (guildShopError) throw guildShopError;
-            guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
-          }
-          batchExecution.guildSnapshot = {
-            membership: structuredClone(guildMembership),
-            shopBuffIds: [...guildShopBuffIds]
-          };
-        } else {
-          guildShopBuffIds = [...batchExecution.guildSnapshot.shopBuffIds];
-        }
+        const guildSnapshot = batchExecution.guildSnapshot ?? rollContext.guild ?? { membership: null, shopBuffIds: [] };
+        if (!batchExecution.guildSnapshot) batchExecution.guildSnapshot = structuredClone(guildSnapshot);
+        const guildMembership = guildSnapshot.membership ?? null;
+        guildShopBuffIds = Array.isArray(guildSnapshot.shopBuffIds)
+          ? guildSnapshot.shopBuffIds.map(String)
+          : [];
         if (guildMembership && Date.parse(guildMembership.eligible_at) <= now.getTime()) {
           const guild = Array.isArray(guildMembership.guilds)
             ? guildMembership.guilds[0]
@@ -2883,24 +2529,24 @@ async function executeSingleRoll(
             enchantStateChanged=true;
           }
           if(enchantId==='slow_starter'&&enchantGrade==='ancient') {enchantState.rolls=(Number(enchantState.rolls??0)+1)%100;enchantStateChanged=true;}
-          const tasks=[
-            processProgressEvent(ctx.supabaseAdmin,playerId,'roll',{gemName:null,gemRarity:0,finalWeight:0,value:0,mutationIds:[],usedOneRollPotion:buffsEnabled&&oneRollLuck>0},loss.total_rolls),
-            ctx.supabaseAdmin.rpc('record_season_roll',{p_player_id:playerId,p_rarity:0,p_effective_rarity:0,p_mutation_count:0,p_relic:false}),
-            ctx.supabaseAdmin.rpc('claim_guild_mythic_surge',{p_player_id:playerId}),
-            ctx.supabaseAdmin.rpc('record_guild_roll_activity',{p_player_id:playerId,p_rarity:0,p_rarity_tier:'',p_effective_rarity:0,p_weight_multiplier:0,p_final_weight:0,p_value:0,p_mutated:false,p_is_relic:false}),
-            ctx.supabaseAdmin.rpc('record_global_event_roll',{p_occurrence_id:availabilityEventContext.occurrenceId}),
-            ctx.supabaseAdmin.rpc('record_abandoned_mine_roll',{p_player_id:playerId,p_payload:{rarity:0,finalWeight:0,displayedValue:0,mutationIds:[]}}),
-            ctx.supabaseAdmin.from('players').update({
-              misty_mutation_boost_rolls:Math.max(0,Number(player.misty_mutation_boost_rolls??0)-1),
-              misty_mutation_boost_stacks:Number(player.misty_mutation_boost_rolls??0)>1?Number(player.misty_mutation_boost_stacks??0):0,
-              ancient_relic_boost_rolls:Math.max(0,Number(player.ancient_relic_boost_rolls??0)-1),
-              enchanted_relic_boost_rolls:Math.max(0,Number(player.enchanted_relic_boost_rolls??0)-1)
-            }).eq('id',playerId)
-          ];
-          if(buffsEnabled&&oneRollLuck>0) tasks.push(ctx.supabaseAdmin.rpc('spend_one_roll_charge',{p_player_id:playerId}));
-          if(enchantedPickaxe&&enchantStateChanged) tasks.push(ctx.supabaseAdmin.from('player_equipment').update({enchant_state:enchantState}).eq('id',enchantedPickaxe.id).eq('player_id',playerId));
-          const houseEdgeBookkeeping = Promise.allSettled(tasks).then(results=>{
-            for(const result of results) if(result.status==='rejected'||(result.value as any)?.error) console.error('House Edge progression failed',result);
+          const houseEdgeBookkeeping = ctx.supabaseAdmin.rpc('roll_finish_bookkeeping', {
+            p_player_id: playerId,
+            p_phase: 'loss',
+            p_payload: {
+              rollNumber: loss.total_rolls,
+              eventOccurrenceId: availabilityEventContext.occurrenceId,
+              consumeOneRollCharge: Boolean(buffsEnabled && oneRollLuck > 0),
+              enchantedEquipmentId: enchantedPickaxe?.id ?? null,
+              enchantStateChanged: Boolean(enchantedPickaxe && enchantStateChanged),
+              enchantState,
+              progressPayload: {
+                gemName: null, gemRarity: 0, finalWeight: 0, value: 0,
+                mutationIds: [], usedOneRollPotion: buffsEnabled && oneRollLuck > 0
+              }
+            }
+          }).then(({ data, error }: any) => {
+            if (error) console.error('House Edge bookkeeping failed', error);
+            else if (data?.errors?.length) console.warn('House Edge bookkeeping partial failures', data.errors);
           });
           if (batchExecution.batchSize > 1) await houseEdgeBookkeeping;
           else EdgeRuntime.waitUntil(houseEdgeBookkeeping);
@@ -2998,8 +2644,15 @@ async function executeSingleRoll(
       // catalog so ordinary rolling continues to work during deployment.
       // =====================================================
       try {
-        const { data: configuredGems, error: configuredGemError } =
-          await loadGemCatalog(ctx.supabaseAdmin, now.toISOString());
+        const versions = rollContext.catalogVersions ?? {};
+        if (Array.isArray(rollContext.gemCatalog)) {
+          gemCatalogCache = {
+            version: Number(versions.gems),
+            data: rollContext.gemCatalog
+          };
+        }
+        const configuredGems = gemCatalogCache?.data ?? null;
+        const configuredGemError = configuredGems ? null : new Error("gem_catalog_missing");
 
         if (!configuredGemError && configuredGems) {
           // An installed-but-empty catalog means the admin deliberately
@@ -3012,7 +2665,9 @@ async function executeSingleRoll(
             );
           }
 
-          const dailyAvailable = (entry: any) => {
+          const timeAvailable = (entry: any) => {
+            if (entry.starts_at && Date.parse(entry.starts_at) > now.getTime()) return false;
+            if (entry.ends_at && Date.parse(entry.ends_at) <= now.getTime()) return false;
             if (!["daily", "date_range_daily"].includes(String(entry.availability_mode))) return true;
             if (!entry.daily_start_time || !entry.daily_end_time) return false;
             try {
@@ -3024,7 +2679,7 @@ async function executeSingleRoll(
               return start === end || (start < end ? current >= start && current < end : current >= start || current < end);
             } catch { return false; }
           };
-          gems = configuredGems.filter(dailyAvailable).map((entry: any) => ({
+          gems = configuredGems.filter(timeAvailable).map((entry: any) => ({
             name: String(entry.name),
             rarity: Number(entry.rarity),
             baseWeight: Number(entry.base_weight),
@@ -3035,7 +2690,7 @@ async function executeSingleRoll(
             requiredEventKey: entry.required_event_key ? String(entry.required_event_key) : null,
             metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}
           })).filter((entry: any) => eventGemIsEligible(availabilityEventContext, entry));
-        } else if (configuredGemError && configuredGemError.code !== "42P01") {
+        } else if (configuredGemError) {
           console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
         }
       } catch (catalogError) {
@@ -3219,7 +2874,8 @@ async function executeSingleRoll(
       // Load the admin-managed mutation catalog when available. The bundled
       // definitions remain the safe fallback for older deployments.
       try {
-        const { data: configuredMutations, error: mutationCatalogError } = await loadMutationCatalog(ctx.supabaseAdmin);
+        const configuredMutations = mutationCatalogCache?.data ?? null;
+        const mutationCatalogError = configuredMutations ? null : new Error("mutation_catalog_missing");
 
         if (!mutationCatalogError && configuredMutations?.length) {
           gemMutations = configuredMutations.map((mutation: any) => ({
@@ -4007,10 +3663,100 @@ async function executeSingleRoll(
       if (equipmentCommitError) throw equipmentCommitError;
       breakneckGem = equipmentCommit?.bonus ?? null;
 
+      const combinationKey = getMutationCombinationKey(mutationIds);
+      const rollNumber = Number(player.total_rolls ?? 0) + 1;
+      const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
+      const boostTiers = Object.fromEntries(
+        (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
+      );
+      const progressPayload = {
+        gemName: gem.name,
+        gemRarity: gem.rarity,
+        finalWeight,
+        value,
+        mutationIds,
+        mutationMultiplier,
+        mutationChanceMultiplier,
+        rawLuck: luck,
+        baseLuck,
+        usedOneRollPotion: Boolean(buffsEnabled && oneRollLuck > 0),
+        usedLegendaryPotion: buffsEnabled && usedOneRollConsumable === "legendary-potion",
+        usedMythicPotion: buffsEnabled && usedOneRollConsumable === "mythic-potion",
+        usedAnyPotion: Boolean(buffsEnabled && oneRollLuck > 0)
+      };
+      const expeditionPayload = {
+        gemName: relicDrop ? null : gem.name,
+        rarity: relicDrop ? 0 : gem.rarity,
+        weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
+        finalWeight: relicDrop ? 0 : finalWeight,
+        displayedValue: relicDrop ? 0 : value,
+        mutationIds: relicDrop ? [] : mutationIds,
+        boostFamilies: (activeBoosts ?? []).map((boost) => boost.family),
+        boostTiers,
+        relicName: relicDrop ? gem.name : null
+      };
+      const bookkeepingPayload = {
+        username: player.username ?? playerId,
+        gemName: gem.name,
+        rarity: gem.rarity,
+        effectiveRarity,
+        finalWeight,
+        value,
+        rolledWeightMultiplier,
+        mutationId: primaryMutation?.id ?? null,
+        mutationIds,
+        mutationMultiplier,
+        mutationMultipliers,
+        combinationKey,
+        rawLuck: luck,
+        baseLuck,
+        announcedLuck,
+        rollNumber,
+        relic: relicDrop,
+        eventOccurrenceId: availabilityEventContext.occurrenceId,
+        bonusCombination: breakneckGem ? {
+          gemName: breakneckGem.gem_name,
+          combinationKey: getMutationCombinationKey(breakneckGem.mutation_ids ?? []),
+          mutationIds: breakneckGem.mutation_ids ?? [],
+          mutationMultipliers: breakneckGem.mutation_multipliers ?? {},
+          value: breakneckGem.value
+        } : null,
+        enchantedEquipmentId: enchantedPickaxe?.id ?? null,
+        enchantStateChanged: Boolean(enchantedPickaxe && enchantStateChanged),
+        enchantState,
+        consumeOneRollCharge: Boolean(!allIn && buffsEnabled && oneRollLuck > 0),
+        progressPayload,
+        expeditionPayload
+      };
+      const consolidatedBookkeeping = true;
+      const criticalBookkeepingPromise = ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
+        p_player_id: playerId,
+        p_phase: "critical",
+        p_payload: bookkeepingPayload
+      }).then(({ data, error }: any) => {
+        if (error) {
+          console.error("Critical roll bookkeeping failed:", error);
+          return {};
+        }
+        if (data?.errors?.length) console.warn("Critical roll bookkeeping partial failures:", data.errors);
+        return data ?? {};
+      });
+      const consolidatedBackgroundPromise = criticalBookkeepingPromise.then(() =>
+        ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
+          p_player_id: playerId,
+          p_phase: "background",
+          p_payload: bookkeepingPayload
+        })
+      ).then(({ data, error }: any) => {
+        if (error) console.error("Background roll bookkeeping failed:", error);
+        else if (data?.errors?.length) console.warn("Background roll bookkeeping partial failures:", data.errors);
+      });
+
       // Run independent post-commit systems concurrently. The specimen is
       // already committed, but we still await every task before responding so
       // achievements, stats, indexes, and returned summary data stay current.
       const enchantStatePromise = (async () => {
+        if (consolidatedBookkeeping) return;
         if (!enchantedPickaxe || !enchantStateChanged) return;
         const { error } = await ctx.supabaseAdmin
           .from("player_equipment")
@@ -4021,6 +3767,7 @@ async function executeSingleRoll(
       })();
 
       const bestRollHistoryPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         const { error } = await ctx.supabaseAdmin.rpc("record_roll_leaderboard_entry", {
           p_player_id: playerId,
           p_username: player.username ?? playerId,
@@ -4039,6 +3786,7 @@ async function executeSingleRoll(
       })();
 
       const weightHistoryPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         const { error } = await ctx.supabaseAdmin.from("roll_weight_history").insert({
           player_id: playerId,
           username: player.username ?? playerId,
@@ -4051,6 +3799,7 @@ async function executeSingleRoll(
       })();
 
       const progressionPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         try {
           const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
           await processProgressEvent(ctx.supabaseAdmin, playerId, "roll", {
@@ -4074,6 +3823,7 @@ async function executeSingleRoll(
       })();
 
       const consumeBoostPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         if (allIn || !buffsEnabled || oneRollLuck <= 0) return;
         const { data: remainingOneRollCharges, error } = await ctx.supabaseAdmin.rpc(
           "spend_one_roll_charge",
@@ -4089,6 +3839,7 @@ async function executeSingleRoll(
       })();
 
       const lifetimeStatsPromise = (async () => {
+        if (consolidatedBookkeeping) return (await criticalBookkeepingPromise).lifetimeStats ?? null;
         const { data, error } = await ctx.supabaseAdmin.rpc("record_server_roll", {
           p_player_id: playerId,
           p_gem_name: gem.name,
@@ -4099,10 +3850,8 @@ async function executeSingleRoll(
         return data ?? null;
       })();
 
-      const boostTiers = Object.fromEntries(
-        (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
-      );
       const expeditionPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         const { error } = await ctx.supabaseAdmin.rpc("record_abandoned_mine_roll", {
           p_player_id: playerId,
           p_payload: {
@@ -4121,6 +3870,7 @@ async function executeSingleRoll(
       })();
 
       const seasonPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         const { error } = await ctx.supabaseAdmin.rpc("record_season_roll", {
           p_player_id: playerId,
           p_rarity: relicDrop ? 0 : gem.rarity,
@@ -4133,8 +3883,8 @@ async function executeSingleRoll(
         }
       })();
 
-      const combinationKey = getMutationCombinationKey(mutationIds);
       const mutationCombinationPromise = (async () => {
+        if (consolidatedBookkeeping) return (await criticalBookkeepingPromise).mutationCombination ?? null;
         if (relicDrop) return null;
         const { data, error } = await ctx.supabaseAdmin.rpc("record_gem_mutation_combination", {
           p_player_id: playerId,
@@ -4159,6 +3909,7 @@ async function executeSingleRoll(
       })();
 
       const mutationOnlyAnnouncementPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         if (relicDrop || Number(gem.rarity) >= 1_000_000 || !(effectiveRarity >= 50_000_000)) return;
         const payload = {
           player_id: playerId,
@@ -4182,6 +3933,7 @@ async function executeSingleRoll(
       })();
 
       const announcementMutationPromise = (async () => {
+        if (consolidatedBookkeeping) return;
         // record_server_roll creates base-rarity announcements, so wait only
         // for that dependency while the other post-commit tasks continue.
         await lifetimeStatsPromise;
@@ -4209,6 +3961,7 @@ async function executeSingleRoll(
       })();
 
       const guildPromise = (async () => {
+        if (consolidatedBookkeeping) return (await criticalBookkeepingPromise).guildPoints ?? null;
         try {
           const { data, error } = await ctx.supabaseAdmin.rpc("record_guild_roll_activity", {
             p_player_id: playerId,
@@ -4230,6 +3983,7 @@ async function executeSingleRoll(
       })();
 
       const globalEventRollPromise = (async () => {
+        if (consolidatedBookkeeping) return (await criticalBookkeepingPromise).globalEventProgress ?? null;
         const { data, error } = await ctx.supabaseAdmin.rpc("record_global_event_roll", {
           p_occurrence_id: availabilityEventContext.occurrenceId
         });
@@ -4244,6 +3998,7 @@ async function executeSingleRoll(
       // them, but do not add the slowest bookkeeping task to player-visible
       // response latency.
       const backgroundPostCommitPromise = Promise.all([
+        consolidatedBackgroundPromise,
         enchantStatePromise,
         bestRollHistoryPromise,
         weightHistoryPromise,

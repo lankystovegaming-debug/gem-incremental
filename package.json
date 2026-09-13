@@ -29,7 +29,8 @@
     "test:economy": "node tests/economy-database-test.mjs && node tests/admin-panel-tabs-test.mjs && node tests/admin-bank-overview-test.mjs",
     "test:economy-ui": "node tests/economy-ui-test.mjs",
     "test:info": "node --test tests/info-page-test.mjs",
-    "test:batch-rolling": "node tests/batch-rolling-test.mjs && node tests/batch-rolling-database-test.mjs",
+    "test:batch-rolling": "node tests/batch-rolling-test.mjs && node tests/batch-rolling-database-test.mjs && node tests/roll-hot-path-v2-test.mjs",
+    "test:roll-hot-path": "node tests/roll-hot-path-v2-test.mjs",
     "test:mobile-p0-p1": "node tests/mobile-p0-p1-ui-test.mjs"
   },
   "devDependencies": {

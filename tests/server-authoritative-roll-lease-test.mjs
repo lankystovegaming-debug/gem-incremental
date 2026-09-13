@@ -17,6 +17,10 @@ const hotPathMigration = readFileSync(
   new URL('../supabase/migrations/20260901050842_optimize_roll_hot_path.sql', import.meta.url),
   'utf8',
 );
+const hotPathV2Migration = readFileSync(
+  new URL('../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql', import.meta.url),
+  'utf8',
+);
 
 assert.match(migration, /roll_lease_id uuid/);
 assert.match(migration, /roll_lease_expires_at timestamptz/);
@@ -77,10 +81,13 @@ assert.match(
 );
 assert.match(hotPathMigration, /if p_event_type <> 'roll' then[\s\S]*insert into public\.private_feature_progress_events/i);
 assert.match(hotPathMigration, /'progressEngine', 'incremental-v3'/);
-assert.match(roll, /const ROLL_CATALOG_CACHE_MS = 5_000/);
-assert.match(roll, /async function loadMutationCatalog/);
-assert.match(roll, /async function loadGemCatalog/);
-assert.match(roll, /await loadMutationCatalog\(ctx\.supabaseAdmin\)/);
-assert.match(roll, /await loadGemCatalog\(ctx\.supabaseAdmin, now\.toISOString\(\)\)/);
+assert.match(roll, /roll_prepare_context/);
+assert.match(roll, /gemCatalogCache\?\.version/);
+assert.match(roll, /mutationCatalogCache\?\.version/);
+assert.doesNotMatch(roll, /ROLL_CATALOG_CACHE_MS/);
+assert.match(hotPathV2Migration, /create trigger bump_roll_gem_catalog_version/i);
+assert.match(hotPathV2Migration, /create trigger bump_roll_mutation_catalog_version/i);
+assert.match(hotPathV2Migration, /grant execute on function public\.roll_prepare_context[\s\S]*to service_role/i);
+assert.match(hotPathV2Migration, /grant execute on function public\.roll_finish_bookkeeping[\s\S]*to service_role/i);
 
 console.log('Server-authoritative roll lease checks passed.');

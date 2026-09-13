@@ -35,6 +35,20 @@ class Query {
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);
  if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
+ if(name==='roll_prepare_context')return {data:{
+  player,ban:null,inventoryCount:0,equipment,mineArtifacts:[],
+  qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
+  activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
+  expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
+  catalogVersions:{gems:1,mutations:1},
+  gemCatalog:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
+  mutationCatalog:[{id:'polished',name:'Polished',chance:100,multiplier:1.5}]
+ },error:null};
+ if(name==='roll_finish_bookkeeping'){
+  if(args.p_phase==='critical')return {data:{lifetimeStats:{total_rolls:5001},mutationCombination:{},guildPoints:null,globalEventProgress:null,errors:[]},error:null};
+  if(args.p_phase==='background'&&args.p_payload.consumeOneRollCharge)oneRoll=null;
+  return {data:{errors:[]},error:null};
+ }
  const responses={deposit_equipment_material:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
@@ -57,7 +71,7 @@ result=await run('eternity-pickaxe',{rolls:{'eternity-pickaxe':1000}});assert.eq
 result=await run('silly-fun-happy-pickaxe');assert.equal(result.cooldown.durationMs,5000);assert.ok(Math.abs(saved.mutation_chance_multiplier-.625)<1e-9);
 for(const id of Object.keys(PICKAXE_STATS)) {result=await run(id);assert.equal(commits[0].p_state.rolls[id],1);assert.ok(Number.isFinite(result.value));}
 forceProcs=true;
-result=await run('the-accelerator',{spool:200});assert.ok(commits[0].p_bonus);assert.equal(commits[0].p_state.spool,201);assert.equal(commits[0].p_state.rolls['the-accelerator'],1);assert.ok(commits[0].p_bonus.luck_at_roll<result.luckAtRoll);assert.equal(rpcs.filter(n=>n==='record_gem_mutation_combination').length,2);
+result=await run('the-accelerator',{spool:200});assert.ok(commits[0].p_bonus);assert.equal(commits[0].p_state.spool,201);assert.equal(commits[0].p_state.rolls['the-accelerator'],1);assert.ok(commits[0].p_bonus.luck_at_roll<result.luckAtRoll);assert.equal(rpcs.filter(n=>n==='roll_finish_bookkeeping').length,2);
 result=await run('the-excavator');assert.equal(commits[0].p_loot,'lucky-potion-1');assert.equal(commits[0].p_state.excavations,1);
 result=await run('silly-fun-happy-pickaxe');assert.ok(['silly-small','silly-large','happy'].every(id=>saved.mutation_ids.includes(id)));
 console.log('Actual optimized roll handler: all equipment builds, layered Luck, +50 burst components, sub-1 mutation and speed, and single state commit passed.');
