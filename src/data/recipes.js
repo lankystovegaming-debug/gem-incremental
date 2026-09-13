@@ -1495,4 +1495,17 @@ const recipes = [
   }
 ];
 
-export default applyEquipmentOverhaul([...recipes.filter((recipe) => !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment]);
+const overhauledRecipes = applyEquipmentOverhaul([...recipes.filter((recipe) => !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment]);
+
+export default overhauledRecipes;
+
+// Every grantable equipment reward (pickaxe, toys, clover, lantern, boots, bag),
+// flattened from the live overhauled catalogue for the maintenance panel. Each
+// entry keeps the reward stats plus a `tab` (the crafting tab it lives under, so
+// "toys" reads as its own group) for the picker. Consumables are excluded.
+export const equipmentCatalog = overhauledRecipes
+  .filter((recipe) => recipe.reward && recipe.reward.type !== "consumable")
+  .map((recipe) => ({
+    ...recipe.reward,
+    tab: recipe.craftingTab ?? recipe.reward.category
+  }));
