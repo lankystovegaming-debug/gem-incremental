@@ -70,8 +70,11 @@ grows their history.
 No deployment is performed by this change.
 
 1. Apply `supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql`.
-2. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function.
-3. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
+2. Apply `supabase/migrations/20260913123601_fix_roll_prepare_context_admin_event_columns.sql`.
+   This follow-up is required for databases where the first migration has
+   already been applied; it removes a stale `admin_events` column reference.
+3. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function.
+4. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
    a player with an active guild potion, an active natural/admin event, a banned
    player, and a player without enough free inventory slots for the batch.
 
