@@ -327,8 +327,15 @@ export function createCliTerminal(options) {
       }));
   }
 
+  // Cap how many rows render at once so a large list (e.g. the full player
+  // roster) stays fast; the rest is reachable by typing more to narrow.
+  const MAX_SUGGESTIONS = 50;
+
   function renderSuggestions() {
-    suggestions = pendingConfirm ? [] : computeSuggestions(input.value);
+    const all = pendingConfirm ? [] : computeSuggestions(input.value);
+    const overflow = Math.max(0, all.length - MAX_SUGGESTIONS);
+
+    suggestions = all.slice(0, MAX_SUGGESTIONS);
 
     if (!suggestions.length) {
       suggestionsBox.hidden = true;
@@ -348,7 +355,8 @@ export function createCliTerminal(options) {
           <span class="cli__suggestion-hint">${escapeText(suggestion.hint)}</span>
         </div>
       `)
-      .join("");
+      .join("")
+      + (overflow ? `<div class="cli__suggestion-more">… ${overflow} more — keep typing to narrow</div>` : "");
 
     suggestionsBox.hidden = false;
   }
