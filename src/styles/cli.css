@@ -140,16 +140,40 @@
   margin-top: 6px;
 }
 
-/* Input row + autocomplete anchor. */
+/* Input area + autocomplete anchor. Column: [hint] over [prompt + input]. */
 .cli__form {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   padding: 8px 12px;
   border-top: 1px solid var(--cli-border);
   background: var(--cli-input-bg);
 }
+
+.cli__inputrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Parameter signature hint shown once a command is recognised. */
+.cli__hint {
+  font-size: 12px;
+  color: var(--cli-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cli__hint-name { color: var(--cli-prompt); font-weight: 600; }
+.cli__hint-current {
+  color: var(--cli-text);
+  background: var(--cli-sel);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.cli__hint-sub { color: var(--cli-muted); }
 
 .cli__prompt {
   color: var(--cli-prompt);

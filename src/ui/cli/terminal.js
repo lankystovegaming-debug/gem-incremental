@@ -80,10 +80,13 @@ export function createCliTerminal(options) {
     <div class="cli__output" id="cliOutput" role="log" aria-live="polite"></div>
     <form class="cli__form" id="cliForm">
       <div class="cli__suggestions" id="cliSuggestions" hidden></div>
-      <span class="cli__prompt">${prompt}</span>
-      <input class="cli__input" id="cliInput" type="text" autocomplete="off"
-             autocapitalize="off" spellcheck="false"
-             placeholder="type a command — /help or /man">
+      <div class="cli__hint" id="cliHint" hidden></div>
+      <div class="cli__inputrow">
+        <span class="cli__prompt">${prompt}</span>
+        <input class="cli__input" id="cliInput" type="text" autocomplete="off"
+               autocapitalize="off" spellcheck="false"
+               placeholder="type a command — /help or /man">
+      </div>
     </form>
   `;
 
@@ -92,6 +95,7 @@ export function createCliTerminal(options) {
   const input = root.querySelector("#cliInput");
   const closeButton = root.querySelector(".cli__close");
   const suggestionsBox = root.querySelector("#cliSuggestions");
+  const hintBar = root.querySelector("#cliHint");
 
   const history = [];
   let historyIndex = -1;
@@ -355,6 +359,46 @@ export function createCliTerminal(options) {
     ));
   }
 
+  // Once a command is recognised, show its parameter signature and
+  // highlight the argument currently being typed — the Minecraft-style
+  // hint you get after typing e.g. "/ban ".
+  function updateHint(value) {
+    const endsWithSpace = /\s$/.test(value);
+    const tokens = tokenize(value);
+
+    if (pendingConfirm || tokens.length === 0) {
+      hintBar.hidden = true;
+
+      return;
+    }
+
+    const command = registry.get(tokens[0].replace(/^\//, "").toLowerCase());
+
+    // Only once the command is chosen (followed by a space or an argument).
+    if (!command || (tokens.length === 1 && !endsWithSpace)) {
+      hintBar.hidden = true;
+
+      return;
+    }
+
+    const argIndex = endsWithSpace ? tokens.length - 1 : tokens.length - 2;
+    const params = command.usage.split(/\s+/).slice(1);
+
+    const rendered = params
+      .map((part, index) => (
+        index === argIndex
+          ? `<b class="cli__hint-current">${escapeText(part)}</b>`
+          : `<span>${escapeText(part)}</span>`
+      ))
+      .join(" ");
+
+    hintBar.innerHTML =
+      `<span class="cli__hint-name">/${escapeText(command.name)}</span> ${rendered}` +
+      (command.summary ? ` <span class="cli__hint-sub">— ${escapeText(command.summary)}</span>` : "");
+
+    hintBar.hidden = false;
+  }
+
   function applySuggestion(index) {
     const suggestion = suggestions[index];
 
@@ -367,6 +411,7 @@ export function createCliTerminal(options) {
     selected = 0;
 
     renderSuggestions();
+    updateHint(input.value);
 
     input.focus();
   }
@@ -375,6 +420,11 @@ export function createCliTerminal(options) {
     suggestions = [];
     suggestionsBox.hidden = true;
     suggestionsBox.innerHTML = "";
+  }
+
+  function hideHint() {
+    hintBar.hidden = true;
+    hintBar.innerHTML = "";
   }
 
   // Apply on mousedown so the input does not blur away before the click.
@@ -443,6 +493,7 @@ export function createCliTerminal(options) {
     input.value = "";
 
     hideSuggestions();
+    hideHint();
 
     if (value.trim() !== "") {
       history.push(value);
@@ -461,6 +512,7 @@ export function createCliTerminal(options) {
     selected = 0;
 
     renderSuggestions();
+    updateHint(input.value);
   });
 
   input.addEventListener("keydown", (event) => {
@@ -527,7 +579,10 @@ export function createCliTerminal(options) {
 
   input.addEventListener("blur", () => {
     // Let a click on a suggestion land first.
-    setTimeout(hideSuggestions, 120);
+    setTimeout(() => {
+      hideSuggestions();
+      hideHint();
+    }, 120);
   });
 
   closeButton.addEventListener("click", () => {

@@ -17,6 +17,15 @@ assert.match(terminal, /order\s*\.filter\(\(name\) => name\.startsWith\(prefix\)
 // Per-command argument completion via a suggest() hook.
 assert.match(terminal, /typeof command\.suggest !== "function"/);
 assert.match(terminal, /command\.suggest\(priorArgs\)/);
+// Parameter/signature hint appears once a command is recognised, and marks
+// the argument currently being typed.
+assert.match(terminal, /function updateHint/);
+assert.match(terminal, /command\.usage\.split\(/);
+assert.match(terminal, /cli__hint-current/);
+assert.match(terminal, /const argIndex = endsWithSpace \? tokens\.length - 1 : tokens\.length - 2/);
+assert.match(css, /\.cli__hint-current/);
+assert.match(css, /\.cli__inputrow/);
+
 // Tab applies; arrows navigate the open list.
 assert.match(terminal, /event\.key === "Tab"/);
 assert.match(terminal, /event\.key === "ArrowDown"/);
