@@ -2,7 +2,7 @@
 
 This change reduces Edge Function-to-Postgres round trips without moving random
 selection or gameplay formulas out of the optimized `roll` Edge Function.
-The deployed Supabase `roll` v152 implementation and live schema on project
+The deployed Supabase `roll` v153 implementation and live schema on project
 `igrddscmrdrrwtvyspbf` were used as the source of truth.
 
 ## What changed
@@ -13,8 +13,33 @@ The deployed Supabase `roll` v152 implementation and live schema on project
 non-relic inventory count, equipment, Museum artifacts, QoL settings and
 discoveries, timed boosts, one-roll potion, admin event, natural event snapshot,
 crystal/expedition artifact effects, and guild/buff state in one service-role-only
-call. A batch still uses its original shared request timestamp and snapshots its
+call. It now also includes `player_crafting.active_auto_craft`, so an ordinary
+roll does not issue a separate crafting-state read. A batch still uses its
+original shared request timestamp and snapshots its
 timed boosts/events/guild state on the first result.
+
+### Auto Craft deposit
+
+`roll_autocraft_deposit()` is a service-role-only transaction that resolves the
+player's current active recipe, locks the same player/progress rows used by
+manual deposits and crafting, loads the authoritative recipe/progress, and
+applies at most one eligible rolled specimen deposit.
+
+The Edge Function still runs Collection Hall bundle routing first. Protected,
+ambiguous, or deposited bundle specimens never reach Auto Craft. KEEP-filtered
+specimens also continue to bypass both automatic consumers. For equipment-
+overhaul, included-specimen, and gem-count requirements, the new RPC delegates
+to the existing `deposit_equipment_material()` planner inside the same database
+transaction. That preserves dynamic `_equipment_recipe` material plans,
+requirement ordering, Plastic Shopping Bag conservation, inventory retention,
+and the existing `autoCraft` response fields. Legacy total-weight, total-value,
+condition, rarity-point, and gem-range progress is updated directly while the
+progress row is locked.
+
+The active Auto Craft path is therefore one Edge-to-Postgres request after
+bundle routing instead of separate player-crafting, recipe, progress, and
+deposit requests. Players without an active Auto Craft make no post-context
+crafting request.
 
 ### Bookkeeping
 
@@ -28,6 +53,11 @@ The phases keep the previous response-latency boundary: ordinary single-roll
 background work remains in `EdgeRuntime.waitUntil`, while each item of a batch
 awaits its background phase before the next item so potion charges and state are
 current.
+
+The permanently bypassed per-system Edge bookkeeping promises were removed.
+The critical/background/loss behavior remains owned by
+`roll_finish_bookkeeping()`; only the unreachable `consolidatedBookkeeping=true`
+fallback branches were deleted.
 
 ### Catalog invalidation
 
@@ -76,13 +106,20 @@ No deployment is performed by this change.
 3. Apply `supabase/migrations/20260913124716_fix_roll_service_role_secret_key_auth.sql`.
    This allows the service-role-only RPCs to work with opaque Supabase secret
    keys, which do not carry the legacy JWT role claim.
-4. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function.
-5. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
+4. Apply `supabase/migrations/20260913233627_optimize_roll_autocraft_hot_path.sql`.
+   This adds Auto Craft to the pre-roll context and creates the service-role-only
+   atomic deposit RPC.
+5. Deploy `supabase/functions/roll/index.ts` as the optimized `roll` function,
+   preserving `verify_jwt=false`; the function continues to authenticate
+   requests through `@supabase/server` custom auth.
+6. Smoke-test an ordinary roll, a four-roll batch, a stacked one-roll potion,
    a player with an active guild potion, an active natural/admin event, a banned
-   player, and a player without enough free inventory slots for the batch.
+   player, a player without enough free inventory slots for the batch, bundle
+   routing precedence, Auto Craft with and without preservation, and both legacy
+   and equipment-overhaul recipe deposits.
 
-The migration must be applied first because the updated Edge Function requires
-both new RPCs.
+The migrations must be applied first because the updated Edge Function requires
+the new Auto Craft RPC in addition to the v2 context/bookkeeping RPCs.
 
 ## Local verification
 
@@ -96,4 +133,7 @@ npm run test:batch-rolling
 The PGlite contract test verifies service-role isolation, ordinary context data,
 four-slot batch preflight wiring, potion charges, guild buffs, active events,
 bans, inventory counts, catalog version invalidation, both bookkeeping phases,
-and top-100-per-player retention.
+top-100-per-player retention, Auto Craft context, atomic aggregate progress, and
+material-planner preservation routing. The handler tests verify bundle/KEEP
+precedence, inventory retention, response fields, and the absence of direct
+crafting-table calls and dead legacy bookkeeping branches.

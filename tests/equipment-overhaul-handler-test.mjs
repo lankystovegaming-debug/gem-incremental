@@ -36,7 +36,7 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);
  if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
  if(name==='roll_prepare_context')return {data:{
-  player,ban:null,inventoryCount:0,equipment,mineArtifacts:[],
+  player,ban:null,inventoryCount:0,activeAutoCraft:craftActive?'craft':null,equipment,mineArtifacts:[],
   qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
   activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
   expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
@@ -49,7 +49,7 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
   if(args.p_phase==='background'&&args.p_payload.consumeOneRollCharge)oneRoll=null;
   return {data:{errors:[]},error:null};
  }
- const responses={deposit_equipment_material:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
+ const responses={roll_autocraft_deposit:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
  return {data:responses[name]??null,error:null};
@@ -99,9 +99,10 @@ console.log('QoL optimized-handler tests: all builds at base stats, cooldown, pr
 
 qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};craftActive=true;
 for(const preserved of [false,true]){
- craftResponse={deposited:true,preserved,requirementIndex:0};result=await run('celestial-pickaxe');
- assert.equal(result.autoCraft.deposited,true);assert.ok(!rpcs.includes('sell_inventory_gem'));
+ craftResponse={deposited:true,preserved,recipeId:'craft',requirementIndex:0};result=await run('celestial-pickaxe');
+ assert.equal(result.autoCraft.deposited,true);assert.equal(result.autoCraft.preserved,preserved);
+ assert.equal(result.autoCraft.recipeId,'craft');assert.equal(result.autoCraft.requirementIndex,0);assert.ok(!rpcs.includes('sell_inventory_gem'));
  assert.equal(result.specimenId,preserved?101:null);
 }
-qolSettings.gemFilter['Test gem']='KEEP';result=await run('celestial-pickaxe');assert.ok(!rpcs.includes('deposit_equipment_material'));assert.equal(result.specimenId,101);
+qolSettings.gemFilter['Test gem']='KEEP';result=await run('celestial-pickaxe');assert.ok(!rpcs.includes('roll_autocraft_deposit'));assert.equal(result.specimenId,101);
 console.log('QoL crafting integration: deposit before SELL, Conservation retention, and KEEP bypass passed.');
