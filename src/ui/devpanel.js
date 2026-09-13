@@ -42,6 +42,7 @@ const BOOST_FAMILIES = ["luck", "rollSpeed", "weightLuck", "weightMultiplier"];
 let progress = 0;
 let panel = null;
 let catalogGems = gems;
+let onlinePlayers = [];
 
 
 export function initDevPanel() {
@@ -144,6 +145,9 @@ async function open() {
     })
     .catch(() => { /* keep the bundled list as fallback */ });
 
+  // Preload who is online so the target autocomplete offers real names.
+  refreshOnlinePlayers();
+
   document.addEventListener("keydown", onEscape, true);
 }
 
@@ -164,6 +168,23 @@ function resolveTarget(token) {
 
 function whoLabel(target) {
   return target === "" ? "you" : target;
+}
+
+// Autocomplete options for a <player> argument: yourself first, then the
+// names of players currently online.
+function playerSuggestions() {
+  return ["me", ...onlinePlayers];
+}
+
+// Refresh the cached online-player list from the server (best effort).
+async function refreshOnlinePlayers() {
+  const result = await callDependency("online", "", {});
+
+  if (result.ok && Array.isArray(result.data)) {
+    onlinePlayers = result.data;
+  }
+
+  return onlinePlayers;
 }
 
 
@@ -217,7 +238,7 @@ function buildCommands(user) {
     ],
     suggest(args) {
       if (args.length === 0) {
-        return ["me"];
+        return playerSuggestions();
       }
 
       if (args.length === 1) {
@@ -401,7 +422,7 @@ function buildCommands(user) {
       "  /set me rarest \"Void Opal\"    set the displayed rarest gem"
     ],
     suggest(args) {
-      return args.length === 0 ? ["me"] : args.length === 1 ? ["mutationluck", "rarest"] : [];
+      return args.length === 0 ? playerSuggestions() : args.length === 1 ? ["mutationluck", "rarest"] : [];
     },
     async run(args, term) {
       const target = resolveTarget(args[0]);
@@ -463,7 +484,7 @@ function buildCommands(user) {
       "  /boost me luck 100 300   +100% luck for 300 seconds"
     ],
     suggest(args) {
-      return args.length === 0 ? ["me"] : args.length === 1 ? BOOST_FAMILIES : [];
+      return args.length === 0 ? playerSuggestions() : args.length === 1 ? BOOST_FAMILIES : [];
     },
     async run(args, term) {
       const target = resolveTarget(args[0]);
@@ -491,6 +512,9 @@ function buildCommands(user) {
     group: "Grants",
     usage: "/cooldown <player>",
     summary: "Clear a player's roll cooldown.",
+    suggest(args) {
+      return args.length === 0 ? playerSuggestions() : [];
+    },
     async run(args, term) {
       const target = resolveTarget(args[0]);
 
@@ -563,6 +587,19 @@ function buildCommands(user) {
       );
 
       term.printMuted(`${names.length} player(s)`);
+      term.print(names.join("  ") || "(none)");
+    }
+  };
+
+  const online = {
+    name: "online",
+    group: "Lookup",
+    usage: "/online",
+    summary: "List players currently online (also refreshes target autocomplete).",
+    async run(args, term) {
+      const names = await refreshOnlinePlayers();
+
+      term.printMuted(`${names.length} online`);
       term.print(names.join("  ") || "(none)");
     }
   };
@@ -643,7 +680,7 @@ function buildCommands(user) {
 
   return [
     give, set, boost, cooldown, massroll,
-    players, gemsCmd, potions, equipment, whoami
+    players, online, gemsCmd, potions, equipment, whoami
   ];
 }
 
