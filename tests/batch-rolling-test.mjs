@@ -46,5 +46,8 @@ assert.match(edge, /claim_equipment_roll_batch/);
 assert.match(edge, /finally \{[\s\S]*release_server_roll/);
 assert.match(settings, /batchSize: normalizeUiBatchSize/);
 assert.match(main, /invokeFunction\("roll", \{ batchSize: getSettings\(\)\.batchSize \}\)/);
+assert.match(main, /appendBatchResults\(results, outcomes\)/);
+assert.match(main, /All \$\{results\.length\} batch results/);
+assert.match(main, /Each card is a separate genuine roll/);
 
 console.log("Batch rolling rules, sequential edge architecture, UI wiring and All-In balance checks passed.");

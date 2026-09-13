@@ -607,6 +607,57 @@ function mutationNamesHtml(mutations = []) {
   `;
 }
 
+function appendBatchResults(results, outcomes) {
+  if (!Array.isArray(results) || results.length <= 1) return;
+
+  const cards = results.map((result, index) => {
+    const genuineRoll = Number(result?.equipmentPassives?.genuineRoll);
+    const rollLabel = `Roll ${index + 1}`;
+    const counterLabel = Number.isSafeInteger(genuineRoll) ? ` · Genuine #${formatCount(genuineRoll)}` : "";
+
+    if (result?.houseEdge) {
+      return `
+        <article class="batch-result batch-result--house-edge">
+          <div class="batch-result__art" aria-hidden="true">🎰</div>
+          <div class="batch-result__copy">
+            <span class="batch-result__index">${rollLabel}${counterLabel}</span>
+            <strong class="batch-result__name">House Edge</strong>
+            <span class="batch-result__meta">No gem · still counted as a genuine roll</span>
+          </div>
+        </article>
+      `;
+    }
+
+    const tier = rarityTier(Number(result?.gem?.rarity ?? 0));
+    const mutationIds = Array.isArray(result?.mutationIds) ? result.mutationIds : [];
+    const outcome = outcomes.get(result);
+    return `
+      <article class="batch-result tier-${tier.id}">
+        <div class="batch-result__art">${gemIconHtml(result.gem.name, "gem-icon--batch", mutationIds)}</div>
+        <div class="batch-result__copy">
+          <span class="batch-result__index">${rollLabel}${counterLabel}</span>
+          <strong class="batch-result__name">${gemNameHtml(result.gem.name, escapeHtml)}</strong>
+          ${historyMutationNamesHtml(result.mutations, mutationIds)}
+          <span class="batch-result__meta">${escapeHtml(rarityLabel(result.gem.rarity))} · ${formatWeight(result.finalWeight)} · ${formatGemValue(result.value)}</span>
+          <span class="batch-result__outcome">${escapeHtml(outcome?.text ?? "Stored in inventory")}</span>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  const summary = document.createElement("section");
+  summary.className = "batch-results";
+  summary.setAttribute("aria-label", `${results.length} independent batch roll results`);
+  summary.innerHTML = `
+    <div class="batch-results__heading">
+      <strong>All ${results.length} batch results</strong>
+      <span>Each card is a separate genuine roll.</span>
+    </div>
+    <div class="batch-results__grid">${cards}</div>
+  `;
+  gemStage.append(summary);
+}
+
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
   const rarity = Number(data.gem.rarity ?? 0);
@@ -954,6 +1005,7 @@ async function performRoll() {
   } else if (featured) {
     cinematicPromise = renderRoll(featured, outcomes.get(featured));
   }
+  appendBatchResults(results, outcomes);
 
   const cooldown = batchCooldown(data);
   if (cooldown?.nextRollAt) {
