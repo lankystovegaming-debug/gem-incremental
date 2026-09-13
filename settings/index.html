@@ -92,6 +92,16 @@
         </span>
       </label>
 
+      <div class="setting">
+        <div class="setting__text">
+          <label class="setting__title" for="batchSize">Batch size</label>
+          <span class="setting__sub" id="batchSizeHelp">
+            Larger batches make independent rolls in one request. Cooldown grows proportionally, so total rolls per hour stay unchanged.
+          </span>
+        </div>
+        <select class="select" id="batchSize" aria-describedby="batchSizeHelp"></select>
+      </div>
+
 
 
 

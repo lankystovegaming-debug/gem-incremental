@@ -6,7 +6,7 @@ import {fiveItemRecipes} from '../src/data/equipmentOverhaul.js';
 import {isRequirementComplete} from '../src/logic/crafting.js';
 import {getGemMutation} from '../src/data/mutations.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-10);
-for(const [id,stats] of Object.entries({'fortune-pickaxe':[35,2.8,1,4.25,1.45],'all-in-pickaxe':[250,.2,.1,.1,.1],'all-rounder-toy':[2,2,2,2,2],'jackpot-slot':[7.77,1.77,.77,1.77,.77],'money-pickaxe':[.01,.3,2,10,200]}))assert.deepEqual(PICKAXE_STATS[id],stats);
+for(const [id,stats] of Object.entries({'fortune-pickaxe':[35,2.8,1,4.25,1.45],'all-in-pickaxe':[250,.25,.1,.1,.1],'all-rounder-toy':[2,2,2,2,2],'jackpot-slot':[7.77,1.77,.77,1.77,.77],'money-pickaxe':[.01,.3,2,10,200]}))assert.deepEqual(PICKAXE_STATS[id],stats);
 const draw=(values)=>()=>values.shift();
 near(jackpotRoll('jackpot-slot',777,draw([0,0,1])).luck,.77*1.77*.77*7.77);
 near(jackpotRoll('jackpot-slot',7,()=>1).luck,.77);
@@ -21,7 +21,7 @@ const saved={rolls:{'jackpot-slot':776},batchHistory:{raw5m:3,heavy5:250}};
 assert.deepEqual(finishEquipmentRoll(prepareEquipmentRoll('jackpot-slot',saved),{genuine:false}).state,saved);
 assert.equal(getGemMutation('balanced').multiplier,1.2);
 const rows=[{category:'pickaxe',equipment_id:'all-in-pickaxe',masterwork_level:5},...['clover','boots','lantern','bag'].map(category=>({category,equipment_id:category==='bag'?'plastic-shopping-bag':category,luck_bonus:999,weight_luck_bonus:999,mutation_chance_bonus:999,weight_multiplier_bonus:999}))];
-assert.deepEqual(equipmentTotals(rows,true),{pickaxe:250,clover:1,luck:250,rollSpeed:.2,mutation:.1,weightLuck:.1,weightMultiplier:.1});
+assert.deepEqual(equipmentTotals(rows,true),{pickaxe:250,clover:1,luck:250,rollSpeed:.25,mutation:.1,weightLuck:.1,weightMultiplier:.1});
 assert.equal(fiveItemRecipes.length,5);
 for(const recipe of fiveItemRecipes) {
  assert.ok(!recipe.requirements.some(r=>r.type==='equipment'));

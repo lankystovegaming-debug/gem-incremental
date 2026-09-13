@@ -4,6 +4,7 @@ import { invokeFunction } from "./invoke.js";
 const DEFAULT_PLAYER_STATE = {
   inventory_capacity: 15,
   money: 0,
+  equipment_genuine_rolls: 0,
   next_roll_at: null
 };
 
@@ -92,6 +93,7 @@ export async function loadCloudPlayerState() {
       inventory_capacity,
       money,
       total_rolls,
+      equipment_genuine_rolls,
       best_rare_natural_weight_100k,
       best_rare_natural_weight_1m,
       next_roll_at
@@ -136,6 +138,7 @@ export async function loadCloudPlayerState() {
     ),
     money: Number(data.money ?? 0),
     total_rolls: Number(data.total_rolls ?? 0),
+    equipment_genuine_rolls: Number(data.equipment_genuine_rolls ?? 0),
     best_rare_natural_weight_100k: Number(data.best_rare_natural_weight_100k ?? 0),
     best_rare_natural_weight_1m: Number(data.best_rare_natural_weight_1m ?? 0),
     next_roll_at: data.next_roll_at ?? null,

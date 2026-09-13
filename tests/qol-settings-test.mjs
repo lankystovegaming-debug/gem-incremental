@@ -19,7 +19,8 @@ const source=readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8
 .replace('import { supabase } from "../backend/supabase.js";','const supabase=globalThis.__backend;')
 .replace('import { ensurePlayerAuth } from "../backend/auth.js";','const ensurePlayerAuth=async()=>({id:"test"});')
 .replace("'../../supabase/functions/roll/equipmentRules.js'",JSON.stringify(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url).href))
-.replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href));
+.replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href))
+.replace('"../logic/batchRolling.js"',JSON.stringify(new URL('../src/logic/batchRolling.js',import.meta.url).href));
 const store=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
 assert.equal(cloud.legacyAutoSell,true);assert.equal(cloud.legacyAutoSellTier,'mythic');assert.equal(cloud.autoKeepEffectiveRarity,234567);
