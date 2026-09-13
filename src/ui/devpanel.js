@@ -5,6 +5,7 @@ import { sellCloudGem } from "../backend/cloudInventory.js";
 import gems from "../data/gems.js";
 import { loadGemCatalog } from "../backend/gemCatalog.js";
 import consumables from "../data/consumables.js";
+import { equipmentCatalog } from "../data/recipes.js";
 import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
 import { confirmDialog } from "./dialog.js";
@@ -39,6 +40,46 @@ const BOOST_FAMILIES = [
   { id: "weightLuck", label: "Weight luck" },
   { id: "weightMultiplier", label: "Weight multiplier" }
 ];
+
+// Display labels for the equipment picker, keyed by crafting tab. Any tab not
+// listed here still appears (falling back to its raw id), so a future gear
+// type shows up without a code change.
+const EQUIPMENT_TAB_LABELS = {
+  pickaxe: "Pickaxes",
+  toys: "Toys",
+  clover: "Clovers",
+  lantern: "Lanterns",
+  boots: "Boots",
+  bag: "Bags"
+};
+
+// Build the equipment <select> markup, grouped by crafting tab and ordered
+// within each group by tier so the list reads from starter to endgame.
+function equipmentOptionsMarkup() {
+  const tabs = [];
+
+  for (const item of equipmentCatalog) {
+    if (!tabs.includes(item.tab)) {
+      tabs.push(item.tab);
+    }
+  }
+
+  return tabs
+    .map((tab) => {
+      const label = EQUIPMENT_TAB_LABELS[tab] ?? tab;
+      const options = equipmentCatalog
+        .filter((item) => item.tab === tab)
+        .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))
+        .map(
+          (item) =>
+            `<option value="${item.id}">T${item.tier ?? 1} · ${item.name}</option>`
+        )
+        .join("");
+
+      return `<optgroup label="${label}">${options}</optgroup>`;
+    })
+    .join("");
+}
 
 
 let progress = 0;
@@ -233,6 +274,19 @@ async function open() {
       <div class="devpanel__sep"></div>
 
       <label class="devpanel__field">
+        <span>Equipment</span>
+        <select class="select" id="devEquipment">
+          ${equipmentOptionsMarkup()}
+        </select>
+      </label>
+
+      <button class="btn btn--block btn--sm" data-action="equipment" type="button">
+        Give equipment
+      </button>
+
+      <div class="devpanel__sep"></div>
+
+      <label class="devpanel__field">
         <span>Potion</span>
         <select class="select" id="devPotion">
           ${consumables
@@ -325,6 +379,7 @@ async function open() {
       if (list.some((gem) => gem.name === selected)) gemSelect.value = selected;
     })
     .catch(() => { /* keep the bundled list as fallback */ });
+  const equipmentSelect = panel.querySelector("#devEquipment");
   const potionSelect = panel.querySelector("#devPotion");
   const potionQtyInput = panel.querySelector("#devPotionQty");
   const familySelect = panel.querySelector("#devBoostFamily");
@@ -753,6 +808,60 @@ async function open() {
 
 
   // -------------------------------------------------------
+  // GIVE EQUIPMENT — grants and equips any catalogue item
+  //
+  // Covers every gear tab (pickaxe, toys, clover, lantern, boots, bag).
+  // The bonus values ride along in the payload, but overhauled gear is
+  // re-normalised from the authoritative recipe server-side, so a granted
+  // item always carries the same stats a crafted one would.
+  // -------------------------------------------------------
+
+  panel
+    .querySelector('[data-action="equipment"]')
+    .addEventListener("click", async () => {
+      const item = equipmentCatalog.find(
+        (entry) => entry.id === equipmentSelect.value
+      );
+
+      if (!item) {
+        return;
+      }
+
+      const bonus = item.bonus ?? {};
+
+      if (!(await confirmSend(`Give ${item.name} (T${item.tier ?? 1}).`))) {
+        return;
+      }
+
+      const result = await callDependency("equipment", targetValue(), {
+        equipment_id: item.id,
+        category: item.category,
+        tier: item.tier ?? 1,
+        name: item.name,
+        luck_bonus: Number(bonus.luck ?? 0),
+        roll_speed_bonus: Number(bonus.rollSpeed ?? 0),
+        weight_luck_bonus: Number(bonus.weightLuck ?? 0),
+        weight_multiplier_bonus: Number(bonus.weightMultiplier ?? 0),
+        mutation_chance_bonus: Number(bonus.mutationChance ?? 0)
+      });
+
+      if (!result.ok) {
+        status.textContent = result.message;
+
+        notify.error("Failed", result.message);
+
+        return;
+      }
+
+      status.textContent = `Sent ${item.name} to ${who()}.`;
+
+      notify.success("Sent", `${item.name} delivered to ${who()}.`);
+
+      refreshIfSelf(isSelf());
+    });
+
+
+  // -------------------------------------------------------
   // GIVE POTION (adds to the target's consumable stash)
   // -------------------------------------------------------
 
@@ -944,6 +1053,10 @@ async function callDependency(action, target, payload) {
 
   if (/invalid_research_points/.test(message)) {
     return { ok: false, message: "Enter 1 to 1,000,000 Research Points." };
+  }
+
+  if (/roll_in_progress/.test(message)) {
+    return { ok: false, message: "A roll is in progress — try again in a moment." };
   }
 
   return { ok: false, message: "The action could not be completed." };
