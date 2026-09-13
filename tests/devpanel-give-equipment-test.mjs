@@ -19,14 +19,13 @@ assert.match(recipes, /export const equipmentCatalog =/);
 assert.match(recipes, /recipe\.reward\.type !== "consumable"/);
 assert.match(recipes, /tab: recipe\.craftingTab \?\? recipe\.reward\.category/);
 
-// The panel imports the catalogue, renders a grouped picker, and wires the action.
+// The maintenance CLI imports the catalogue and grants equipment via /give equip,
+// routed through the dependency_improvement equipment action.
 assert.match(panel, /import \{ equipmentCatalog \} from "\.\.\/data\/recipes\.js"/);
-assert.match(panel, /id="devEquipment"/);
-assert.match(panel, /data-action="equipment"/);
-assert.match(panel, /callDependency\("equipment"/);
+assert.match(panel, /"equip"/);
+assert.match(panel, /"equipment", target/);
 assert.match(panel, /equipment_id: item\.id/);
 assert.match(panel, /mutation_chance_bonus: Number\(bonus\.mutationChance \?\? 0\)/);
-assert.match(panel, /optgroup/);
 assert.match(panel, /roll_in_progress/);
 
 // The imported catalogue covers every gear tab the request called out.

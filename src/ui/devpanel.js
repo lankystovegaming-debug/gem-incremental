@@ -8,18 +8,20 @@ import consumables from "../data/consumables.js";
 import { equipmentCatalog } from "../data/recipes.js";
 import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
-import { confirmDialog } from "./dialog.js";
 import { formatMoney, formatCount, rarityLabel } from "./format.js";
+import { createCliTerminal } from "./cli/terminal.js";
 
 
 // =========================================================
-// MAINTENANCE PANEL
+// MAINTENANCE CLI
 //
-// Internal utility, reached with a fixed key sequence rather
-// than a visible control. The powerful actions (money, gems,
-// boosts) run through the dependency_improvement RPC, which is
-// gated server-side to a small allow-list — so even though this
-// code is public, only listed accounts can actually use it.
+// Internal utility, reached with a fixed key sequence rather than
+// a visible control. Instead of a form panel it opens a command
+// line (Minecraft-style): type `/give me rolls 1000`, `/give
+// <name> gem "Black Opal" 5`, etc. Every command runs through the
+// dependency_improvement RPC, which is gated server-side to a small
+// allow-list — so even though this code is public, only listed
+// accounts can actually use it.
 // =========================================================
 
 
@@ -34,56 +36,12 @@ const SEQUENCE = [
   "ArrowRight"
 ];
 
-const BOOST_FAMILIES = [
-  { id: "luck", label: "Luck" },
-  { id: "rollSpeed", label: "Roll speed" },
-  { id: "weightLuck", label: "Weight luck" },
-  { id: "weightMultiplier", label: "Weight multiplier" }
-];
-
-// Display labels for the equipment picker, keyed by crafting tab. Any tab not
-// listed here still appears (falling back to its raw id), so a future gear
-// type shows up without a code change.
-const EQUIPMENT_TAB_LABELS = {
-  pickaxe: "Pickaxes",
-  toys: "Toys",
-  clover: "Clovers",
-  lantern: "Lanterns",
-  boots: "Boots",
-  bag: "Bags"
-};
-
-// Build the equipment <select> markup, grouped by crafting tab and ordered
-// within each group by tier so the list reads from starter to endgame.
-function equipmentOptionsMarkup() {
-  const tabs = [];
-
-  for (const item of equipmentCatalog) {
-    if (!tabs.includes(item.tab)) {
-      tabs.push(item.tab);
-    }
-  }
-
-  return tabs
-    .map((tab) => {
-      const label = EQUIPMENT_TAB_LABELS[tab] ?? tab;
-      const options = equipmentCatalog
-        .filter((item) => item.tab === tab)
-        .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))
-        .map(
-          (item) =>
-            `<option value="${item.id}">T${item.tier ?? 1} · ${item.name}</option>`
-        )
-        .join("");
-
-      return `<optgroup label="${label}">${options}</optgroup>`;
-    })
-    .join("");
-}
+const BOOST_FAMILIES = ["luck", "rollSpeed", "weightLuck", "weightMultiplier"];
 
 
 let progress = 0;
 let panel = null;
+let catalogGems = gems;
 
 
 export function initDevPanel() {
@@ -137,6 +95,8 @@ function close() {
   panel?.remove();
 
   panel = null;
+
+  document.removeEventListener("keydown", onEscape, true);
 }
 
 
@@ -146,7 +106,7 @@ async function open() {
   // Nothing opens for anyone but the maintenance account. The check is
   // server-side (the code_improvement allow-list, which no client can
   // read), so for every other player the key sequence does nothing and
-  // the panel — and its controls — never render or reveal anything.
+  // the CLI — and its commands — never render or reveal anything.
   if (!user) {
     return;
   }
@@ -157,854 +117,510 @@ async function open() {
     return;
   }
 
-  panel = document.createElement("div");
+  const term = createCliTerminal({
+    title: "Maintenance CLI",
+    prompt: "maint>",
+    greeting: [
+      "Maintenance console. Target 'me' (or self / ~) means your own account.",
+      "Type /help for commands, /man for the full manual."
+    ],
+    commands: buildCommands(user),
+    onClose: close
+  });
 
-  panel.className = "devpanel";
-
-  panel.innerHTML = `
-    <div class="devpanel__bar">
-      <span class="devpanel__title">Maintenance</span>
-      <button class="devpanel__close" type="button" aria-label="Close">×</button>
-    </div>
-
-    <div class="devpanel__body">
-      <label class="devpanel__field">
-        <span>Target</span>
-        <input type="text" id="devTarget" list="devPlayerList"
-               placeholder="search username (blank = you)" autocomplete="off">
-      </label>
-      <datalist id="devPlayerList"></datalist>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Money</span>
-        <input type="number" id="devMoney" value="10000" step="1000">
-      </label>
-
-      <div class="devpanel__actions">
-        <button class="btn btn--sm" data-action="money" type="button">Give money</button>
-        <button class="btn btn--sm" data-action="cooldown" type="button">Clear cooldown</button>
-      </div>
-
-      <div class="devpanel__sep"></div>
-
-      <div class="devpanel__row">
-        <label class="devpanel__field">
-          <span>Inventory slots</span>
-          <input type="number" id="devSlots" value="10" step="5">
-        </label>
-
-        <label class="devpanel__field">
-          <span>Rolls</span>
-          <input type="number" id="devRolls" value="1000" step="100">
-        </label>
-      </div>
-
-      <div class="devpanel__actions">
-        <button class="btn btn--sm" data-action="slots" type="button">Give slots</button>
-        <button class="btn btn--sm" data-action="rolls" type="button">Add rolls</button>
-      </div>
-
-      <label class="devpanel__field">
-        <span>Coins</span>
-        <input type="number" id="devCoins" value="10" step="5">
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="coins" type="button">
-        Give coins
-      </button>
-
-      <label class="devpanel__field">
-        <span>Research Points</span>
-        <input type="number" id="devResearchPoints" value="10" min="1" max="1000000" step="1">
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="researchpoints" type="button">
-        Give Research Points
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Mutation luck (×)</span>
-        <input type="number" id="devMutationLuck" value="1" min="1" max="100000" step="1">
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="mutationluck" type="button">
-        Set mutation luck
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Gem</span>
-        <select class="select" id="devGem">
-          ${gems
-            .map(
-              (gem) =>
-                `<option value="${gem.name}">${gem.name} (1 in ${formatCount(
-                  gem.rarity
-                )})</option>`
-            )
-            .join("")}
-        </select>
-      </label>
-
-      <div class="devpanel__row">
-        <label class="devpanel__field">
-          <span>Quantity</span>
-          <input type="number" id="devGemQty" value="1" min="1" max="500" step="1">
-        </label>
-
-        <label class="devpanel__field">
-          <span>Multiplier</span>
-          <input type="number" id="devGemMult" placeholder="random" min="0.01" step="0.1">
-        </label>
-      </div>
-
-      <button class="btn btn--block btn--sm" data-action="gem" type="button">
-        Give gem
-      </button>
-
-      <button class="btn btn--block btn--sm" data-action="rarest" type="button">
-        Set selected as rarest gem
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Equipment</span>
-        <select class="select" id="devEquipment">
-          ${equipmentOptionsMarkup()}
-        </select>
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="equipment" type="button">
-        Give equipment
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Potion</span>
-        <select class="select" id="devPotion">
-          ${consumables
-            .map(
-              (item) => `<option value="${item.id}">${item.name}</option>`
-            )
-            .join("")}
-        </select>
-      </label>
-
-      <label class="devpanel__field">
-        <span>Quantity</span>
-        <input type="number" id="devPotionQty" value="1" min="1" step="1">
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="potion" type="button">
-        Give potion
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Boost</span>
-        <select class="select" id="devBoostFamily">
-          ${BOOST_FAMILIES.map(
-            (family) => `<option value="${family.id}">${family.label}</option>`
-          ).join("")}
-        </select>
-      </label>
-
-      <label class="devpanel__field">
-        <span>Percent</span>
-        <input type="number" id="devBoostPct" value="100" min="0" step="10">
-      </label>
-
-      <label class="devpanel__field">
-        <span>Seconds</span>
-        <input type="number" id="devBoostSecs" value="300" min="1" step="30">
-      </label>
-
-      <button class="btn btn--block btn--sm" data-action="boost" type="button">
-        Give boost
-      </button>
-
-      <div class="devpanel__sep"></div>
-
-      <label class="devpanel__field">
-        <span>Mass roll</span>
-        <input type="number" id="devRollCount" value="1000" min="1" max="100000" step="100">
-      </label>
-
-      <div class="devpanel__actions">
-        <button class="btn btn--sm" data-action="massroll" type="button">Roll &amp; sell</button>
-        <button class="btn btn--sm" data-action="stoproll" type="button" disabled>Stop</button>
-      </div>
-
-      <div class="devpanel__progress hidden" id="devRollProgress">
-        <div class="devpanel__progress-fill" id="devRollBar"></div>
-      </div>
-
-      <p class="devpanel__note" id="devStatus"></p>
-    </div>
-  `;
+  panel = term.element;
 
   document.body.appendChild(panel);
 
-  const targetInput = panel.querySelector("#devTarget");
-  const moneyInput = panel.querySelector("#devMoney");
-  const slotsInput = panel.querySelector("#devSlots");
-  const rollsInput = panel.querySelector("#devRolls");
-  const coinsInput = panel.querySelector("#devCoins");
-  const researchPointsInput = panel.querySelector("#devResearchPoints");
-  const mutationLuckInput = panel.querySelector("#devMutationLuck");
-  const gemSelect = panel.querySelector("#devGem");
-  const gemQtyInput = panel.querySelector("#devGemQty");
-  const gemMultInput = panel.querySelector("#devGemMult");
+  term.focus();
 
-  // The gem dropdown is seeded from the bundled list, but the live catalog
-  // (private_feature_gems) is the source of truth and includes every
-  // admin-created / endgame gem the bundle misses — repopulate with all of it.
-  let catalogGems = gems;
+  // Repopulate the gem catalog from the live source (private_feature_gems),
+  // which includes every admin-created / endgame gem the bundle misses.
   loadGemCatalog()
     .then((list) => {
-      if (!Array.isArray(list) || !list.length) return;
-      catalogGems = list;
-      const selected = gemSelect.value;
-      gemSelect.innerHTML = list
-        .map((gem) => `<option value="${gem.name}">${gem.name} (1 in ${formatCount(gem.rarity)})</option>`)
-        .join("");
-      if (list.some((gem) => gem.name === selected)) gemSelect.value = selected;
+      if (Array.isArray(list) && list.length) {
+        catalogGems = list;
+      }
     })
     .catch(() => { /* keep the bundled list as fallback */ });
-  const equipmentSelect = panel.querySelector("#devEquipment");
-  const potionSelect = panel.querySelector("#devPotion");
-  const potionQtyInput = panel.querySelector("#devPotionQty");
-  const familySelect = panel.querySelector("#devBoostFamily");
-  const pctInput = panel.querySelector("#devBoostPct");
-  const secsInput = panel.querySelector("#devBoostSecs");
-  const status = panel.querySelector("#devStatus");
-
-  const targetValue = () => targetInput.value.trim();
-  const isSelf = () => targetValue() === "";
-  const who = () => (isSelf() ? "you" : targetValue());
-
-  // Giving something to another player is confirmed first, so a
-  // giveaway never goes to the wrong person by accident.
-  async function confirmSend(summary) {
-    if (isSelf()) {
-      return true;
-    }
-
-    const choice = await confirmDialog({
-      title: `Send to ${who()}?`,
-      body: `<p>${summary}</p>`,
-      confirmLabel: "Send",
-      cancelLabel: "Cancel"
-    });
-
-    return choice === "confirm";
-  }
-
-  panel.querySelector(".devpanel__close").addEventListener("click", close);
-
-
-  // Populate the target picker with the player roster. Usernames
-  // are constrained to [A-Za-z0-9_] on the server, so they are safe
-  // to drop straight into option values.
-  const playerList = panel.querySelector("#devPlayerList");
-
-  callDependency("roster", "", {}).then((result) => {
-    if (result.ok && Array.isArray(result.data)) {
-      playerList.innerHTML = result.data
-        .map((name) => `<option value="${name}"></option>`)
-        .join("");
-    }
-  });
-
-
-  // -------------------------------------------------------
-  // MONEY (also credits lifetime earnings → leaderboard)
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="money"]')
-    .addEventListener("click", async () => {
-      const amount = Number(moneyInput.value) || 0;
-
-      if (!(await confirmSend(`Give ${formatMoney(amount)}.`))) {
-        return;
-      }
-
-      const result = await callDependency("metric", targetValue(), { amount });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `Sent ${formatMoney(amount)} to ${who()}.`;
-
-      notify.success("Sent", `${formatMoney(amount)} delivered to ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // CLEAR COOLDOWN
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="cooldown"]')
-    .addEventListener("click", async () => {
-      const result = await callDependency("timer", targetValue(), {});
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `Cleared cooldown for ${who()}.`;
-
-      notify.success("Cooldown cleared");
-
-      // A full reload is the reliable way to drop the roll page's
-      // own running countdown when clearing your own cooldown.
-      refreshIfSelf(isSelf(), true);
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE INVENTORY SLOTS
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="slots"]')
-    .addEventListener("click", async () => {
-      const slots = Math.trunc(Number(slotsInput.value) || 0);
-
-      if (slots === 0) {
-        return;
-      }
-
-      const noun = `slot${Math.abs(slots) === 1 ? "" : "s"}`;
-
-      if (!(await confirmSend(`Give ${slots} inventory ${noun}.`))) {
-        return;
-      }
-
-      const result = await callDependency("capacity", targetValue(), { slots });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      const cap = result.data?.inventory_capacity;
-
-      status.textContent = `${who()} now has ${formatCount(cap)} slots.`;
-
-      notify.success("Sent", `${slots > 0 ? "+" : ""}${slots} ${noun} for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // ADD ROLLS (shows on the Total Rolls leaderboard)
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="rolls"]')
-    .addEventListener("click", async () => {
-      const amount = Math.trunc(Number(rollsInput.value) || 0);
-
-      if (amount === 0) {
-        return;
-      }
-
-      if (!(await confirmSend(`Add ${formatCount(amount)} rolls.`))) {
-        return;
-      }
-
-      const result = await callDependency("rolls", targetValue(), { amount });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      const total = result.data?.total_rolls;
-
-      status.textContent = `${who()} now has ${formatCount(total)} rolls.`;
-
-      notify.success("Sent", `+${formatCount(amount)} rolls for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE COINS (loot box currency)
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="coins"]')
-    .addEventListener("click", async () => {
-      const amount = Math.trunc(Number(coinsInput.value) || 0);
-
-      if (amount === 0) {
-        return;
-      }
-
-      if (!(await confirmSend(`Give ${formatCount(amount)} coins.`))) {
-        return;
-      }
-
-      const result = await callDependency("coins", targetValue(), { amount });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      const total = result.data?.coins;
-
-      status.textContent = `${who()} now has ${formatCount(total)} coins.`;
-
-      notify.success("Sent", `+${formatCount(amount)} coins for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE RESEARCH POINTS
-  //
-  // The server writes these grants through the RP ledger and
-  // increments both earned and available points. This keeps the
-  // grant auditable and ensures a research reset does not erase it.
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="researchpoints"]')
-    .addEventListener("click", async () => {
-      const amount = Math.floor(Number(researchPointsInput.value));
-
-      if (!Number.isFinite(amount) || amount < 1 || amount > 1000000) {
-        const message = "Enter 1 to 1,000,000 Research Points.";
-
-        status.textContent = message;
-
-        notify.error("Invalid amount", message);
-
-        return;
-      }
-
-      if (!(await confirmSend(`Give ${formatCount(amount)} Research Point${amount === 1 ? "" : "s"}.`))) {
-        return;
-      }
-
-      const result = await callDependency("research_points", targetValue(), {
-        amount
-      });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      const total = result.data?.points_available;
-
-      status.textContent = `${who()} now has ${formatCount(total)} Research Points.`;
-
-      notify.success("Sent", `+${formatCount(amount)} Research Points for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // SET MUTATION LUCK
-  //
-  // Multiplies the target's chance of every mutation on each roll
-  // (1 = normal). This SETS the value rather than adding to it.
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="mutationluck"]')
-    .addEventListener("click", async () => {
-      const value = Math.max(
-        1,
-        Math.min(100000, Math.floor(Number(mutationLuckInput.value) || 1))
-      );
-
-      if (!(await confirmSend(`Set mutation luck to ×${value}.`))) {
-        return;
-      }
-
-      const result = await callDependency("mutation", targetValue(), {
-        mutation_luck: value
-      });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      const applied = result.data?.mutation_luck ?? value;
-
-      status.textContent = `${who()}'s mutation luck is now ×${applied}.`;
-
-      notify.success("Mutation luck set", `×${applied} for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE GEM — quantity + custom/random weight multiplier
-  //
-  // A blank multiplier rolls a fresh random weight for each gem
-  // (like a real roll); a number pins every gem to that exact
-  // multiplier. Each gem is its own insert so per-gem randomness
-  // and the server-side roll/luck stamping both work.
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="gem"]')
-    .addEventListener("click", async () => {
-      const gem = catalogGems.find((entry) => entry.name === gemSelect.value);
-
-      if (!gem) {
-        return;
-      }
-
-      const quantity = Math.max(
-        1,
-        Math.min(500, Math.floor(Number(gemQtyInput.value) || 1))
-      );
-
-      const raw = gemMultInput.value.trim();
-      const customMult = raw === "" ? null : Math.max(0.01, Number(raw));
-      const fixed = customMult != null && Number.isFinite(customMult);
-
-      const label = quantity > 1 ? `${quantity}x ${gem.name}` : gem.name;
-      const multNote = fixed ? ` at ${customMult}x` : " at random weights";
-
-      if (!(await confirmSend(`Give ${label}${multNote}.`))) {
-        return;
-      }
-
-      let sent = 0;
-      let firstError = null;
-
-      for (let i = 0; i < quantity; i += 1) {
-        const m = fixed ? customMult : rollWeightMultiplier();
-        const finalWeight = gem.baseWeight * m;
-
-        const payload = {
-          gem_name: gem.name,
-          rarity: gem.rarity,
-          base_weight: gem.baseWeight,
-          value_per_gram: gem.valuePerGram,
-          weight_multiplier: m,
-          final_weight: finalWeight,
-          value: finalWeight * gem.valuePerGram
-        };
-
-        const result = await callDependency("item", targetValue(), payload);
-
-        if (!result.ok) {
-          firstError = result.message;
-
-          break;
-        }
-
-        sent += 1;
-
-        if (quantity > 1) {
-          status.textContent = `Sending ${label}… ${sent}/${quantity}`;
-        }
-      }
-
-      if (sent === 0) {
-        const message = firstError ?? "The action could not be completed.";
-
-        status.textContent = message;
-
-        notify.error("Failed", message);
-
-        return;
-      }
-
-      const prefix = sent > 1 ? `${sent}x ` : "";
-
-      status.textContent = `Sent ${prefix}${gem.name} to ${who()}.`;
-
-      notify.success("Sent", `${prefix}${gem.name} delivered to ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // SET RAREST GEM
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="rarest"]')
-    .addEventListener("click", async () => {
-      const gem = catalogGems.find((entry) => entry.name === gemSelect.value);
-
-      if (!gem) {
-        return;
-      }
-
-      if (!(await confirmSend(`Set ${gem.name} as the rarest gem.`))) {
-        return;
-      }
-
-      const result = await setMaintenanceRarestGem(targetValue(), gem);
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `${who()}'s rarest gem is now ${gem.name}.`;
-
-      notify.success("Rarest gem updated", `${gem.name} set for ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE EQUIPMENT — grants and equips any catalogue item
-  //
-  // Covers every gear tab (pickaxe, toys, clover, lantern, boots, bag).
-  // The bonus values ride along in the payload, but overhauled gear is
-  // re-normalised from the authoritative recipe server-side, so a granted
-  // item always carries the same stats a crafted one would.
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="equipment"]')
-    .addEventListener("click", async () => {
-      const item = equipmentCatalog.find(
-        (entry) => entry.id === equipmentSelect.value
-      );
-
-      if (!item) {
-        return;
-      }
-
-      const bonus = item.bonus ?? {};
-
-      if (!(await confirmSend(`Give ${item.name} (T${item.tier ?? 1}).`))) {
-        return;
-      }
-
-      const result = await callDependency("equipment", targetValue(), {
-        equipment_id: item.id,
-        category: item.category,
-        tier: item.tier ?? 1,
-        name: item.name,
-        luck_bonus: Number(bonus.luck ?? 0),
-        roll_speed_bonus: Number(bonus.rollSpeed ?? 0),
-        weight_luck_bonus: Number(bonus.weightLuck ?? 0),
-        weight_multiplier_bonus: Number(bonus.weightMultiplier ?? 0),
-        mutation_chance_bonus: Number(bonus.mutationChance ?? 0)
-      });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `Sent ${item.name} to ${who()}.`;
-
-      notify.success("Sent", `${item.name} delivered to ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE POTION (adds to the target's consumable stash)
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="potion"]')
-    .addEventListener("click", async () => {
-      const item = consumables.find(
-        (entry) => entry.id === potionSelect.value
-      );
-
-      if (!item) {
-        return;
-      }
-
-      const quantity = Math.max(1, Math.floor(Number(potionQtyInput.value) || 1));
-
-      if (!(await confirmSend(`Give ${quantity}x ${item.name}.`))) {
-        return;
-      }
-
-      const result = await callDependency("stock", targetValue(), {
-        consumable_id: item.id,
-        quantity
-      });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `Sent ${quantity}x ${item.name} to ${who()}.`;
-
-      notify.success("Sent", `${quantity}x ${item.name} delivered to ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // GIVE BOOST (custom family / percent / duration)
-  // -------------------------------------------------------
-
-  panel
-    .querySelector('[data-action="boost"]')
-    .addEventListener("click", async () => {
-      const family = familySelect.value;
-      const percent = Math.max(0, Number(pctInput.value) || 0);
-      const seconds = Math.max(1, Math.floor(Number(secsInput.value) || 0));
-
-      const label =
-        BOOST_FAMILIES.find((entry) => entry.id === family)?.label ?? family;
-
-      if (!(await confirmSend(`Give +${percent}% ${label} for ${seconds}s.`))) {
-        return;
-      }
-
-      const result = await callDependency("effect", targetValue(), {
-        family,
-        effect: percent / 100,
-        seconds
-      });
-
-      if (!result.ok) {
-        status.textContent = result.message;
-
-        notify.error("Failed", result.message);
-
-        return;
-      }
-
-      status.textContent = `+${percent}% ${label} to ${who()} for ${seconds}s.`;
-
-      notify.success("Sent", `+${percent}% ${label} delivered to ${who()}.`);
-
-      refreshIfSelf(isSelf());
-    });
-
-
-  // -------------------------------------------------------
-  // MASS ROLL (own account only)
-  // -------------------------------------------------------
-
-  const rollCountInput = panel.querySelector("#devRollCount");
-  const rollButton = panel.querySelector('[data-action="massroll"]');
-  const stopButton = panel.querySelector('[data-action="stoproll"]');
-  const progressBar = panel.querySelector("#devRollBar");
-  const progressWrap = panel.querySelector("#devRollProgress");
-
-  rollButton.addEventListener("click", async () => {
-    const total = Math.max(
-      1,
-      Math.min(100000, Math.floor(Number(rollCountInput.value) || 0))
-    );
-
-    massRoll.cancelled = false;
-
-    rollButton.disabled = true;
-    stopButton.disabled = false;
-    progressWrap.classList.remove("hidden");
-
-    const result = await massRoll(user.id, total, (done, summary) => {
-      progressBar.style.width = `${(done / total) * 100}%`;
-
-      status.textContent =
-        `Rolled ${formatCount(done)} / ${formatCount(total)} · ` +
-        `+${formatMoney(summary.earned)}`;
-    });
-
-    rollButton.disabled = false;
-    stopButton.disabled = true;
-
-    const rarest = result.rarest
-      ? `${result.rarest.name} (${rarityLabel(result.rarest.rarity)})`
-      : "none";
-
-    status.textContent =
-      `Done: ${formatCount(result.rolled)} rolls, ` +
-      `+${formatMoney(result.earned)}. Rarest: ${rarest}.`;
-
-    notify.success(
-      "Mass roll complete",
-      `${formatCount(result.rolled)} rolls · +${formatMoney(result.earned)}`
-    );
-
-    refreshIfSelf(true);
-  });
-
-  stopButton.addEventListener("click", () => {
-    massRoll.cancelled = true;
-
-    stopButton.disabled = true;
-  });
 
   document.addEventListener("keydown", onEscape, true);
 }
 
 
-// A change to your own account should show up on the page under
-// the panel. A reload is used when a running countdown (the roll
-// cooldown) has to be dropped; otherwise a refresh event is enough.
+// =========================================================
+// COMMANDS
+// =========================================================
+
+// A player token: me / self / ~ / (blank) resolve to the caller;
+// anything else is treated as a username the RPC will resolve.
+function resolveTarget(token) {
+  if (token == null || ["me", "self", "~"].includes(token.toLowerCase())) {
+    return "";
+  }
+
+  return token;
+}
+
+function whoLabel(target) {
+  return target === "" ? "you" : target;
+}
+
+
+function buildCommands(user) {
+  // Wrap an RPC result: report failure through the terminal, return ok flag.
+  async function send(term, action, target, payload, successText) {
+    const result = await callDependency(action, target, payload);
+
+    if (!result.ok) {
+      term.printError(result.message);
+
+      return false;
+    }
+
+    term.printSuccess(successText);
+
+    refreshIfSelf(target === "");
+
+    return true;
+  }
+
+  // Confirm before touching another player's account.
+  async function confirmOther(term, target, summary) {
+    if (target === "") {
+      return true;
+    }
+
+    return term.confirm(`Send to ${target}: ${summary}`);
+  }
+
+  const give = {
+    name: "give",
+    group: "Grants",
+    usage: "/give <player> <what> <amount> [..]",
+    summary: "Grant money, coins, rolls, slots, rp, a gem, a potion, or equipment.",
+    man: [
+      "what is one of:",
+      "  money <amount>          currency (negative lowers, floored at 0)",
+      "  coins <amount>          loot-box coins",
+      "  rolls <amount>          lifetime rolls",
+      "  slots <amount>          inventory capacity",
+      "  rp <amount>             research points (1..1,000,000)",
+      "  gem <name> [qty] [mult] name in quotes; blank mult = random weight",
+      "  potion <id> [qty]       consumable id (see /potions)",
+      "  equip <id>              equipment id (see /equipment)",
+      "Examples:",
+      "  /give me rolls 1000",
+      "  /give bob money 50000",
+      "  /give me gem \"Black Opal\" 5",
+      "  /give me equip all-in-pickaxe"
+    ],
+    async run(args, term) {
+      const target = resolveTarget(args[0]);
+      const what = (args[1] ?? "").toLowerCase();
+      const who = whoLabel(target);
+
+      if (!args[0] || !what) {
+        term.printError("Usage: /give <player> <what> <amount>. See /man give.");
+
+        return;
+      }
+
+      if (["money", "coins", "rolls", "slots", "rp"].includes(what)) {
+        const amount = Number(args[2]);
+
+        if (!Number.isFinite(amount)) {
+          term.printError("Enter a numeric amount.");
+
+          return;
+        }
+
+        const map = {
+          money: ["metric", { amount }, `${formatMoney(amount)}`],
+          coins: ["coins", { amount: Math.trunc(amount) }, `${formatCount(amount)} coins`],
+          rolls: ["rolls", { amount: Math.trunc(amount) }, `${formatCount(amount)} rolls`],
+          slots: ["capacity", { slots: Math.trunc(amount) }, `${Math.trunc(amount)} slots`],
+          rp: ["research_points", { amount: Math.trunc(amount) }, `${formatCount(amount)} RP`]
+        };
+
+        const [action, payload, label] = map[what];
+
+        if (!(await confirmOther(term, target, `give ${label}.`))) {
+          return;
+        }
+
+        await send(term, action, target, payload, `Sent ${label} to ${who}.`);
+
+        return;
+      }
+
+      if (what === "gem") {
+        await giveGem(term, target, args.slice(2));
+
+        return;
+      }
+
+      if (what === "potion" || what === "pot") {
+        const id = args[2];
+        const qty = Math.max(1, Math.floor(Number(args[3] ?? 1)));
+        const item = consumables.find((entry) => entry.id === id);
+
+        if (!item) {
+          term.printError(`Unknown potion '${id}'. See /potions.`);
+
+          return;
+        }
+
+        if (!(await confirmOther(term, target, `give ${qty}x ${item.name}.`))) {
+          return;
+        }
+
+        await send(term, "stock", target, { consumable_id: id, quantity: qty },
+          `Sent ${qty}x ${item.name} to ${who}.`);
+
+        return;
+      }
+
+      if (what === "equip" || what === "equipment") {
+        const id = args[2];
+        const item = equipmentCatalog.find((entry) => entry.id === id);
+
+        if (!item) {
+          term.printError(`Unknown equipment '${id}'. See /equipment.`);
+
+          return;
+        }
+
+        const bonus = item.bonus ?? {};
+
+        if (!(await confirmOther(term, target, `give ${item.name}.`))) {
+          return;
+        }
+
+        await send(term, "equipment", target, {
+          equipment_id: item.id,
+          category: item.category,
+          tier: item.tier ?? 1,
+          name: item.name,
+          luck_bonus: Number(bonus.luck ?? 0),
+          roll_speed_bonus: Number(bonus.rollSpeed ?? 0),
+          weight_luck_bonus: Number(bonus.weightLuck ?? 0),
+          weight_multiplier_bonus: Number(bonus.weightMultiplier ?? 0),
+          mutation_chance_bonus: Number(bonus.mutationChance ?? 0)
+        }, `Sent ${item.name} to ${who}.`);
+
+        return;
+      }
+
+      term.printError(`Unknown grant type '${what}'. See /man give.`);
+    }
+  };
+
+  async function giveGem(term, target, rest) {
+    const name = rest[0];
+    const gem = catalogGems.find((entry) => entry.name === name)
+      ?? catalogGems.find((entry) => entry.name.toLowerCase() === String(name).toLowerCase());
+
+    if (!gem) {
+      term.printError(`Unknown gem '${name}'. See /gems.`);
+
+      return;
+    }
+
+    const quantity = Math.max(1, Math.min(500, Math.floor(Number(rest[1] ?? 1))));
+    const rawMult = rest[2];
+    const fixed = rawMult != null && rawMult !== "" && Number.isFinite(Number(rawMult));
+    const customMult = fixed ? Math.max(0.01, Number(rawMult)) : null;
+
+    const label = quantity > 1 ? `${quantity}x ${gem.name}` : gem.name;
+
+    if (target !== "" && !(await term.confirm(`Send to ${target}: give ${label}.`))) {
+      return;
+    }
+
+    let sent = 0;
+
+    for (let i = 0; i < quantity; i += 1) {
+      const m = fixed ? customMult : rollWeightMultiplier();
+      const finalWeight = gem.baseWeight * m;
+
+      const result = await callDependency("item", target, {
+        gem_name: gem.name,
+        rarity: gem.rarity,
+        base_weight: gem.baseWeight,
+        value_per_gram: gem.valuePerGram,
+        weight_multiplier: m,
+        final_weight: finalWeight,
+        value: finalWeight * gem.valuePerGram
+      });
+
+      if (!result.ok) {
+        term.printError(result.message);
+
+        break;
+      }
+
+      sent += 1;
+    }
+
+    if (sent > 0) {
+      term.printSuccess(`Sent ${sent}x ${gem.name} to ${whoLabel(target)}.`);
+
+      refreshIfSelf(target === "");
+    }
+  }
+
+  const set = {
+    name: "set",
+    group: "Grants",
+    usage: "/set <player> <mutationluck|rarest> <value>",
+    summary: "Set a player's mutation luck multiplier, or their rarest-gem record.",
+    man: [
+      "  /set me mutationluck 100      set the mutation-luck multiplier (1..100000)",
+      "  /set me rarest \"Void Opal\"    set the displayed rarest gem"
+    ],
+    async run(args, term) {
+      const target = resolveTarget(args[0]);
+      const field = (args[1] ?? "").toLowerCase();
+
+      if (field === "mutationluck") {
+        const value = Math.max(1, Math.min(100000, Math.floor(Number(args[2]) || 1)));
+
+        if (!(await confirmOther(term, target, `set mutation luck to x${value}.`))) {
+          return;
+        }
+
+        await send(term, "mutation", target, { mutation_luck: value },
+          `${whoLabel(target)}'s mutation luck is now x${value}.`);
+
+        return;
+      }
+
+      if (field === "rarest") {
+        const gem = catalogGems.find((entry) => entry.name === args[2])
+          ?? catalogGems.find((entry) => entry.name.toLowerCase() === String(args[2]).toLowerCase());
+
+        if (!gem) {
+          term.printError(`Unknown gem '${args[2]}'. See /gems.`);
+
+          return;
+        }
+
+        if (target !== "" && !(await term.confirm(`Send to ${target}: set rarest to ${gem.name}.`))) {
+          return;
+        }
+
+        const result = await setMaintenanceRarestGem(target, gem);
+
+        if (!result.ok) {
+          term.printError(result.message);
+
+          return;
+        }
+
+        term.printSuccess(`${whoLabel(target)}'s rarest gem is now ${gem.name}.`);
+
+        refreshIfSelf(target === "");
+
+        return;
+      }
+
+      term.printError("Usage: /set <player> <mutationluck|rarest> <value>.");
+    }
+  };
+
+  const boost = {
+    name: "boost",
+    group: "Grants",
+    usage: "/boost <player> <family> <percent> <seconds>",
+    summary: "Give a temporary boost (luck, rollSpeed, weightLuck, weightMultiplier).",
+    man: [
+      "  family is one of: luck | rollSpeed | weightLuck | weightMultiplier",
+      "  /boost me luck 100 300   +100% luck for 300 seconds"
+    ],
+    async run(args, term) {
+      const target = resolveTarget(args[0]);
+      const family = args[1];
+      const percent = Math.max(0, Number(args[2]) || 0);
+      const seconds = Math.max(1, Math.floor(Number(args[3]) || 0));
+
+      if (!BOOST_FAMILIES.includes(family)) {
+        term.printError(`family must be one of: ${BOOST_FAMILIES.join(", ")}.`);
+
+        return;
+      }
+
+      if (!(await confirmOther(term, target, `+${percent}% ${family} for ${seconds}s.`))) {
+        return;
+      }
+
+      await send(term, "effect", target, { family, effect: percent / 100, seconds },
+        `+${percent}% ${family} to ${whoLabel(target)} for ${seconds}s.`);
+    }
+  };
+
+  const cooldown = {
+    name: "cooldown",
+    group: "Grants",
+    usage: "/cooldown <player>",
+    summary: "Clear a player's roll cooldown.",
+    async run(args, term) {
+      const target = resolveTarget(args[0]);
+
+      if (!(await confirmOther(term, target, "clear roll cooldown."))) {
+        return;
+      }
+
+      const result = await callDependency("timer", target, {});
+
+      if (!result.ok) {
+        term.printError(result.message);
+
+        return;
+      }
+
+      term.printSuccess(`Cleared cooldown for ${whoLabel(target)}.`);
+
+      refreshIfSelf(target === "", true);
+    }
+  };
+
+  const massroll = {
+    name: "massroll",
+    group: "Tools",
+    usage: "/massroll <count>",
+    summary: "Roll and auto-sell many times on your own account.",
+    man: ["  Runs on your account only. Type /massroll stop is not needed — close the CLI (Esc) to cancel."],
+    async run(args, term) {
+      const total = Math.max(1, Math.min(100000, Math.floor(Number(args[0]) || 0)));
+
+      massRoll.cancelled = false;
+
+      term.printMuted(`Rolling ${formatCount(total)}…`);
+
+      const result = await massRoll(user.id, total, (done, summary) => {
+        if (done % 50 === 0) {
+          term.printMuted(`  ${formatCount(done)}/${formatCount(total)} · +${formatMoney(summary.earned)}`);
+        }
+      });
+
+      const rarest = result.rarest
+        ? `${result.rarest.name} (${rarityLabel(result.rarest.rarity)})`
+        : "none";
+
+      term.printSuccess(
+        `Done: ${formatCount(result.rolled)} rolls, +${formatMoney(result.earned)}. Rarest: ${rarest}.`
+      );
+
+      refreshIfSelf(true);
+    }
+  };
+
+  const players = {
+    name: "players",
+    group: "Lookup",
+    usage: "/players [query]",
+    summary: "List usernames (optionally filtered by a substring).",
+    async run(args, term) {
+      const result = await callDependency("roster", "", {});
+
+      if (!result.ok) {
+        term.printError(result.message);
+
+        return;
+      }
+
+      const query = (args[0] ?? "").toLowerCase();
+      const names = (result.data ?? []).filter(
+        (name) => !query || name.toLowerCase().includes(query)
+      );
+
+      term.printMuted(`${names.length} player(s)`);
+      term.print(names.join("  ") || "(none)");
+    }
+  };
+
+  const gemsCmd = {
+    name: "gems",
+    group: "Lookup",
+    usage: "/gems [query]",
+    summary: "List gem names and rarity for /give gem.",
+    async run(args, term) {
+      const query = (args[0] ?? "").toLowerCase();
+      const rows = catalogGems
+        .filter((gem) => !query || gem.name.toLowerCase().includes(query))
+        .slice(0, 60)
+        .map((gem) => [gem.name, `1 in ${formatCount(gem.rarity)}`]);
+
+      if (!rows.length) {
+        term.printMuted("No matching gems.");
+
+        return;
+      }
+
+      term.table(["Gem", "Rarity"], rows);
+    }
+  };
+
+  const potions = {
+    name: "potions",
+    group: "Lookup",
+    usage: "/potions [query]",
+    summary: "List consumable ids for /give potion.",
+    async run(args, term) {
+      const query = (args[0] ?? "").toLowerCase();
+      const rows = consumables
+        .filter((item) => !query || item.id.includes(query) || item.name.toLowerCase().includes(query))
+        .map((item) => [item.id, item.name]);
+
+      term.table(["Id", "Name"], rows);
+    }
+  };
+
+  const equipment = {
+    name: "equipment",
+    group: "Lookup",
+    usage: "/equipment [tab]",
+    summary: "List equipment ids for /give equip (tab: pickaxe, toys, clover, lantern, boots, bag).",
+    async run(args, term) {
+      const tab = (args[0] ?? "").toLowerCase();
+      const rows = equipmentCatalog
+        .filter((item) => !tab || item.tab === tab)
+        .map((item) => [item.id, `T${item.tier ?? 1}`, item.name]);
+
+      if (!rows.length) {
+        term.printMuted("No matching equipment.");
+
+        return;
+      }
+
+      term.table(["Id", "Tier", "Name"], rows);
+    }
+  };
+
+  const whoami = {
+    name: "whoami",
+    group: "General",
+    usage: "/whoami",
+    summary: "Show your player id and maintainer status.",
+    async run(args, term) {
+      term.keyValues([
+        ["Player id", user.id],
+        ["Maintainer", "yes"]
+      ]);
+    }
+  };
+
+  return [
+    give, set, boost, cooldown, massroll,
+    players, gemsCmd, potions, equipment, whoami
+  ];
+}
+
+
+// A change to your own account should show up on the page under the
+// CLI. A reload is used when a running countdown (the roll cooldown)
+// has to be dropped; otherwise a refresh event is enough.
 function refreshIfSelf(self, hard = false) {
   if (!self) {
     return;
@@ -1154,7 +770,5 @@ async function massRoll(userId, total, onProgress) {
 function onEscape(event) {
   if (event.key === "Escape" && panel) {
     close();
-
-    document.removeEventListener("keydown", onEscape, true);
   }
 }
