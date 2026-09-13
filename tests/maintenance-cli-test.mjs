@@ -35,7 +35,7 @@ assert.doesNotMatch(panel, /data-action=/);
 assert.doesNotMatch(panel, /id="devTarget"/);
 
 // Every maintenance command is present.
-for (const name of ["give", "set", "boost", "cooldown", "massroll", "players", "gems", "potions", "equipment", "whoami"]) {
+for (const name of ["give", "set", "boost", "cooldown", "massroll", "players", "online", "gems", "potions", "equipment", "whoami"]) {
   assert.match(panel, new RegExp(`name: "${name}"`), `missing command: ${name}`);
 }
 
@@ -45,5 +45,26 @@ for (const token of ["money", "coins", "rolls", "slots", "rp", "gem", "potion", 
 }
 // Equipment grants use the overhauled column.
 assert.match(panel, /mutation_chance_bonus: Number\(bonus\.mutationChance/);
+
+// Target autocomplete offers online players, not just "me".
+assert.match(panel, /function playerSuggestions\(\)/);
+assert.match(panel, /return \["me", \.\.\.onlinePlayers\]/);
+assert.match(panel, /callDependency\("online"/);
+// /give, /set, /boost, /cooldown all suggest the player list.
+const suggestCount = (panel.match(/\? playerSuggestions\(\)/g) || []).length
+  + (panel.match(/return playerSuggestions\(\)/g) || []).length;
+assert.ok(suggestCount >= 4, `expected >=4 player-arg suggest hooks, found ${suggestCount}`);
+
+// The migration adds the read-only `online` action, preserving the rest.
+const migration = await readFile(
+  new URL("../supabase/migrations/20260913170000_maintenance_online_players.sql", import.meta.url),
+  "utf8"
+);
+assert.match(migration, /if p_action = 'online' then/);
+assert.match(migration, /from public\.player_presence pr/);
+assert.match(migration, /last_seen_at > now\(\) - interval '2 minutes'/);
+for (const action of ["roster", "metric", "equipment", "research_points", "timer"]) {
+  assert.match(migration, new RegExp(`p_action = '${action}'`));
+}
 
 console.log("maintenance-cli checks passed");
