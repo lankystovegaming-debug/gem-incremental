@@ -323,6 +323,54 @@
   min-height: 1.1em;
 }
 
+/* Rarity bands are the memory boundary for the catalog: collapsed bands have
+   no card nodes at all, and are populated only when opened. */
+#gemList { display: block; }
+.index-band {
+  margin-bottom: 12px;
+  overflow: clip;
+  border: 1px solid color-mix(in srgb, var(--tier, var(--accent)) 28%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+}
+.index-band__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.index-band__summary::-webkit-details-marker { display:none; }
+.index-band__summary::after { content:"⌄"; color:var(--text-muted); font-size:1.1rem; transition:transform .16s ease; }
+.index-band[open] .index-band__summary::after { transform:rotate(180deg); }
+.index-band__summary > span:first-child { display:flex; align-items:baseline; gap:8px; min-width:0; }
+.index-band__summary strong { color:var(--tier, var(--text)); font-family:var(--font-display); }
+.index-band__summary small,
+.index-band__count { color:var(--text-muted); font-size:.74rem; white-space:nowrap; }
+.index-band__grid { padding:0 12px 12px; }
+.index-band:not([open]) .index-band__grid { display:none; }
+
+@media (max-width: 720px) {
+  .index-filters {
+    position: sticky;
+    top: 58px;
+    z-index: 35;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    margin-inline:-12px;
+    padding:8px 12px;
+    background:color-mix(in srgb,var(--bg) 94%,transparent);
+  }
+  .index-search { grid-column:1 / -1; min-width:0; }
+  .index-filters .select { min-width:0; }
+  .index-band__summary { min-height:56px; }
+  .index-band__summary > span:first-child { align-items:flex-start; flex-direction:column; gap:1px; }
+  .index-band__grid { grid-template-columns:1fr; padding:0 8px 8px; }
+}
+
 .index-card__chance {
   display: flex;
   justify-content: space-between;

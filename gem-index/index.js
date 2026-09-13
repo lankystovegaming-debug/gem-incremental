@@ -31,6 +31,7 @@ let catalogGems = [...gems];
 let indexEntries = [];
 let loadedPlayerId = null;
 let refreshInFlight = null;
+const expandedBands = new Set();
 
 const state = {
   index: {},
@@ -343,8 +344,50 @@ function renderList() {
     return;
   }
   const list = visibleEntries();
-  gemList.innerHTML = list.length ? list.map(gemCard).join("") : `<div class="empty" style="grid-column:1/-1">${icons.search}<p class="empty__title">Nothing matches</p><p>Try a different search or mutation filter.</p></div>`;
+  if (!list.length) {
+    gemList.innerHTML = `<div class="empty" style="grid-column:1/-1">${icons.search}<p class="empty__title">Nothing matches</p><p>Try a different search or mutation filter.</p></div>`;
+    return;
+  }
+
+  const bands = new Map();
+  for (const entry of list) {
+    const tier = rarityTier(entry.gem.rarity);
+    if (!bands.has(tier.id)) bands.set(tier.id, { tier, entries: [] });
+    bands.get(tier.id).entries.push(entry);
+  }
+
+  const autoReveal = gemSearch.value.trim() !== "" || gemFilter.value !== "all";
+  if (!autoReveal && expandedBands.size === 0) expandedBands.add(bands.keys().next().value);
+
+  gemList.innerHTML = [...bands.entries()].map(([id, band]) => {
+    const open = autoReveal || expandedBands.has(id);
+    const found = band.entries.filter((entry) => discoveredRecord(entry)).length;
+    return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}>
+      <summary class="index-band__summary">
+        <span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} discovered</small></span>
+        <span class="index-band__count">${formatCount(band.entries.length)} cards</span>
+      </summary>
+      <div class="index-band__grid grid grid--cards">${open ? band.entries.map(gemCard).join("") : ""}</div>
+    </details>`;
+  }).join("");
 }
+
+gemList.addEventListener("toggle", (event) => {
+  const band = event.target.closest?.("[data-tier-band]");
+  if (!band || event.target !== band) return;
+  const id = band.dataset.tierBand;
+  const container = band.querySelector(".index-band__grid");
+  if (band.open) {
+    expandedBands.add(id);
+    if (container && !container.childElementCount) {
+      const entries = visibleEntries().filter((entry) => rarityTier(entry.gem.rarity).id === id);
+      container.innerHTML = entries.map(gemCard).join("");
+    }
+  } else {
+    expandedBands.delete(id);
+    if (container) container.replaceChildren();
+  }
+}, true);
 
 mutationTabs.addEventListener("click", (event) => {
   const button = event.target.closest("[data-mutation-filter]");
@@ -360,6 +403,7 @@ mutationTabs.addEventListener("click", (event) => {
     if (state.selectedMutations.has(id)) state.selectedMutations.delete(id);
     else state.selectedMutations.add(id);
   }
+  expandedBands.clear();
   renderMutationTabs();
   renderSelectedMutationSummary();
   renderSummary();
@@ -386,6 +430,7 @@ for (const control of [gemSearch, gemFilter, gemSort]) {
   control.addEventListener("input", scheduleListRender);
   control.addEventListener("change", scheduleListRender);
 }
+gemSort.addEventListener("change", () => expandedBands.clear());
 
 function normalizeLiveMutationCatalog(rows) {
   const builtInById = new Map(

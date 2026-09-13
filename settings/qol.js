@@ -3,7 +3,7 @@ import { getSettings, updateSettings, hydrateSettingsFromCloud, onSettingsChange
 import { escapeHtml } from '../src/ui/format.js';
 import { notify } from '../src/ui/toast.js';
 const el = id => document.getElementById(id);
-let gems = [], page = 0, selected = new Set(), busy = false;
+let gems = [], page = 0, selected = new Set(), busy = false, bulkMode = false;
 const limit = 50;
 function rule(gem) {
  const s = getSettings();
@@ -25,18 +25,21 @@ function paint() {
  el('clearLegacyFilter').hidden = !s.legacyAutoSell;
  el('clearLegacyFilter').disabled = busy;
  const rows = matching(); page = Math.min(page, Math.max(0,Math.ceil(rows.length/limit)-1));
- el('gemFilterRows').innerHTML = rows.slice(page*limit,(page+1)*limit).map(g => `<div class="qol-filter-row"><input type="checkbox" data-select="${escapeHtml(g.name)}" aria-label="Select ${escapeHtml(g.name)}" ${selected.has(g.name)?'checked':''}><span>${escapeHtml(g.name)}<br><small>Base rarity: 1 in ${Number(g.rarity).toLocaleString()}</small></span><select ${busy?'disabled':''} class="select" data-rule="${escapeHtml(g.name)}" aria-label="Rule for ${escapeHtml(g.name)}">${['DEFAULT','KEEP','SELL'].map(v=>`<option ${rule(g)===v?'selected':''}>${v}</option>`).join('')}</select></div>`).join('');
- el('gemFilterStatus').textContent = `${rows.length} matching discovered gems · ${selected.size} selected · Page ${page+1} of ${Math.max(1,Math.ceil(rows.length/limit))}`;
+ el('gemFilterRows').innerHTML = rows.slice(page*limit,(page+1)*limit).map(g => { const current=rule(g); return `<div class="qol-filter-row">${bulkMode?`<input type="checkbox" data-select="${escapeHtml(g.name)}" aria-label="Select ${escapeHtml(g.name)}" ${selected.has(g.name)?'checked':''}>`:''}<span class="qol-filter-row__gem">${escapeHtml(g.name)}<small>Base rarity: 1 in ${Number(g.rarity).toLocaleString()}</small></span><div class="qol-rule-buttons" role="group" aria-label="Rule for ${escapeHtml(g.name)}">${['DEFAULT','KEEP','SELL'].map(v=>`<button type="button" ${busy?'disabled':''} class="qol-rule-button${current===v?' is-active':''}" data-direct-rule="${v}" data-gem="${escapeHtml(g.name)}" aria-pressed="${current===v}">${v}</button>`).join('')}</div></div>`; }).join('');
+ el('gemFilterStatus').textContent = `${rows.length} matching discovered gems${bulkMode?` · ${selected.size} selected`:''} · Page ${page+1} of ${Math.max(1,Math.ceil(rows.length/limit))}`;
  el('gemFilterPrevious').disabled = busy || page===0;
  el('gemFilterNext').disabled = busy || (page+1)*limit>=rows.length;
  el('gemFilterApply').disabled = busy || !selected.size;
  el('gemFilterClearSelection').disabled = busy || !selected.size;
  el('gemFilterSelectAll').checked = rows.length>0 && rows.every(g=>selected.has(g.name));
  el('gemFilterSelectAll').indeterminate = rows.some(g=>selected.has(g.name)) && !el('gemFilterSelectAll').checked;
+ el('gemFilterBulkControls').hidden = !bulkMode;
+ el('gemFilterBulkMode').setAttribute('aria-pressed',String(bulkMode));
+ el('gemFilterBulkMode').textContent = bulkMode ? 'Exit bulk edit' : 'Select / bulk edit';
 }
 async function save(patch) {
  if(busy)return;busy=true;paint();
- document.querySelectorAll('#gemFilterRows select, #enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck').forEach(e=>e.disabled=true);
+ document.querySelectorAll('#gemFilterRows button, #enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck').forEach(e=>e.disabled=true);
  try { await updateSettings(patch); }
  catch(error) { notify.error('Settings were not saved',error.message); }
  finally { busy=false; paint();document.querySelectorAll('#enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck').forEach(e=>e.disabled=false); }
@@ -55,8 +58,13 @@ el('gemFilterPrevious').onclick=()=>{page--;paint();};el('gemFilterNext').onclic
 el('gemFilterRows').addEventListener('change',event=>{
  const input=event.target;
  if(input.dataset.select){input.checked?selected.add(input.dataset.select):selected.delete(input.dataset.select);paint();}
- if(input.dataset.rule)save({gemFilter:{[input.dataset.rule]:input.value}});
 });
+el('gemFilterRows').addEventListener('click',event=>{
+ const button=event.target.closest('[data-direct-rule]');
+ if(!button||busy)return;
+ save({gemFilter:{[button.dataset.gem]:button.dataset.directRule}});
+});
+el('gemFilterBulkMode').onclick=()=>{bulkMode=!bulkMode;if(!bulkMode)selected.clear();paint();};
 el('gemFilterSelectAll').onchange=()=>{for(const g of matching())el('gemFilterSelectAll').checked?selected.add(g.name):selected.delete(g.name);paint();};
 el('gemFilterApply').onclick=()=>save({gemFilter:Object.fromEntries([...selected].map(name=>[name,el('gemFilterBulk').value]))});
 onSettingsChange(paint);

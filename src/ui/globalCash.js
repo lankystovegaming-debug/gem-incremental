@@ -24,10 +24,12 @@ const METRICS = ["total", "cash"];
 
 let widget = null;
 let valueEls = {};      // { total: el, cash: el }
-let onlineEl = null;
+let onlineEls = [];
 let feedEl = null;
+let backdrop = null;
 let pollTimer = null;
 let rafId = null;
+let keydownHandler = null;
 // The counter shows the economy with a smooth ~5s lag: on each poll it eases
 // from its current value to the freshly-polled (real) value over one poll
 // interval. It only ever heads toward a value that has actually happened, so it
@@ -114,8 +116,10 @@ async function poll() {
   paint();
   if (!still) ensureAnimating();
 
-  if (onlineEl && Number.isFinite(Number(data.online))) {
-    onlineEl.textContent = Number(data.online).toLocaleString("en-US");
+  if (Number.isFinite(Number(data.online))) {
+    for (const element of onlineEls) {
+      element.textContent = Number(data.online).toLocaleString("en-US");
+    }
   }
 
   renderFeed(data.events);
@@ -147,32 +151,67 @@ function mount() {
 
   widget = document.createElement("div");
   widget.className = "global-cash";
-  widget.setAttribute("role", "status");
-  widget.setAttribute("aria-live", "off");
   widget.innerHTML = `
-    <div class="global-cash__online" title="Players active in the last couple of minutes">
+    <button class="global-cash__trigger" type="button" aria-expanded="false" aria-controls="globalCashPanel">
       <span class="global-cash__dot" aria-hidden="true"></span>
-      <span class="global-cash__online-num">—</span>&nbsp;online now
-    </div>
-    <div class="global-cash__stat">
-      <span class="global-cash__label">Global cash</span>
-      <span class="global-cash__value" data-metric="total"
-            title="Total lifetime earnings across every player">—</span>
-    </div>
-    <div class="global-cash__stat">
-      <span class="global-cash__label">Player cash</span>
-      <span class="global-cash__value global-cash__value--cash" data-metric="cash"
-            title="Total money in every player's wallet right now (assets not counted)">—</span>
-    </div>
-    <div class="global-cash__feed"></div>
+      <span class="global-cash__online-num">—</span><span>&nbsp;online</span>
+    </button>
+    <section class="global-cash__panel" id="globalCashPanel" aria-label="Live game activity" aria-live="off">
+      <div class="global-cash__panel-head">
+        <div class="global-cash__online" title="Players active in the last couple of minutes">
+          <span class="global-cash__dot" aria-hidden="true"></span>
+          <span class="global-cash__online-num">—</span>&nbsp;online now
+        </div>
+        <button class="global-cash__close" type="button" aria-label="Close live activity">×</button>
+      </div>
+      <div class="global-cash__stat">
+        <span class="global-cash__label">Global cash</span>
+        <span class="global-cash__value" data-metric="total"
+              title="Total lifetime earnings across every player">—</span>
+      </div>
+      <div class="global-cash__stat">
+        <span class="global-cash__label">Player cash</span>
+        <span class="global-cash__value global-cash__value--cash" data-metric="cash"
+              title="Total money in every player's wallet right now (assets not counted)">—</span>
+      </div>
+      <div class="global-cash__feed"></div>
+    </section>
   `;
+  backdrop = document.createElement("button");
+  backdrop.className = "global-cash__backdrop";
+  backdrop.type = "button";
+  backdrop.setAttribute("aria-label", "Close live activity");
+  backdrop.hidden = true;
   document.body.appendChild(widget);
+  document.body.appendChild(backdrop);
   valueEls = {
     total: widget.querySelector('[data-metric="total"]'),
     cash: widget.querySelector('[data-metric="cash"]')
   };
-  onlineEl = widget.querySelector(".global-cash__online-num");
+  onlineEls = [...widget.querySelectorAll(".global-cash__online-num")];
   feedEl = widget.querySelector(".global-cash__feed");
+
+  const trigger = widget.querySelector(".global-cash__trigger");
+  const closeButton = widget.querySelector(".global-cash__close");
+  const close = () => {
+    widget?.classList.remove("is-open");
+    trigger?.setAttribute("aria-expanded", "false");
+    if (backdrop) backdrop.hidden = true;
+  };
+  const open = () => {
+    widget?.classList.add("is-open");
+    trigger?.setAttribute("aria-expanded", "true");
+    if (backdrop) backdrop.hidden = false;
+    closeButton?.focus({ preventScroll: true });
+  };
+  trigger?.addEventListener("click", open);
+  closeButton?.addEventListener("click", close);
+  backdrop.addEventListener("click", close);
+  widget._closePanel = close;
+  keydownHandler = (event) => {
+    if (event.key === "Escape" && widget?.classList.contains("is-open")) close();
+  };
+  document.addEventListener("keydown", keydownHandler);
 
   displayed = { total: null, cash: null };
   fromVal = { total: null, cash: null };
@@ -186,10 +225,13 @@ function mount() {
 function unmount() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+  if (keydownHandler) { document.removeEventListener("keydown", keydownHandler); keydownHandler = null; }
   widget?.remove();
+  backdrop?.remove();
   widget = null;
+  backdrop = null;
   valueEls = {};
-  onlineEl = null;
+  onlineEls = [];
   feedEl = null;
   displayed = { total: null, cash: null };
   fromVal = { total: null, cash: null };

@@ -27,6 +27,9 @@ await page.route("**/src/ui/shell.js", (r) =>
     body: "export function mountShell(){}",
   }),
 );
+await page.route("**/src/backend/auth.js", (r) =>
+  r.fulfill({ contentType: "text/javascript", body: "export async function ensurePlayerAuth(){return {id:'test-player'}}" }),
+);
 await page.route("**/src/backend/supabase.js", (r) =>
   r.fulfill({
     contentType: "text/javascript",

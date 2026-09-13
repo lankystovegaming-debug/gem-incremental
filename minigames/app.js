@@ -346,6 +346,7 @@ function route() {
   lastMovement = 0;
   keys.clear();
   run = null;
+  document.documentElement.removeAttribute("data-minigame-active");
   const pathId = location.pathname.startsWith(hubPath)
     ? location.pathname.slice(hubPath.length).split("/")[0]
     : null;
@@ -633,6 +634,7 @@ function updateBoard(s) {
 function render() {
   if (!run) return;
   const s = run.state;
+  document.documentElement.toggleAttribute("data-minigame-active", !s.done);
   if (s.done) {
     arcadeRenderer?.destroy();
     bladeTrail?.destroy();
