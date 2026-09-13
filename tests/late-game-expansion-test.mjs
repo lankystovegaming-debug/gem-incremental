@@ -7,7 +7,7 @@ const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 const source=read('../supabase/functions/roll/index.ts');
 const js=source;
 const start=js.indexOf('export function rollWeightMultiplier(');
-const end=js.indexOf('// AUTO CRAFT HELPERS',start);
+const end=js.indexOf('// EDGE FUNCTION',start);
 let seed=67100;
 const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/2**32);
 const {rollWeightMultiplier, getLateGameFinalWeightFactor}=new Function('random01','randomBetween',js.slice(start,end).replace(/:\s*(?:number|string)(?:\s*\|\s*null)?/g,'').replaceAll('export function','function')+'\nreturn {rollWeightMultiplier,getLateGameFinalWeightFactor};')(random,(a,b)=>a+(b-a)*random());

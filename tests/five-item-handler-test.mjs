@@ -36,7 +36,7 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);rpcCalls.push({name,args:structuredClone(args)});
  if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
  if(name==='roll_prepare_context')return {data:{
-  player,ban:null,inventoryCount:0,equipment,mineArtifacts:[],
+  player,ban:null,inventoryCount:0,activeAutoCraft:craftActive?'craft':null,equipment,mineArtifacts:[],
   qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
   activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
   expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
@@ -52,7 +52,7 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
   if((args.p_phase==='background'||args.p_phase==='loss')&&args.p_payload.consumeOneRollCharge)oneRoll=null;
   return {data:{errors:[]},error:null};
  }
- const responses={deposit_equipment_material:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
+ const responses={roll_autocraft_deposit:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
   claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
  if(name==='commit_equipment_roll'){commits.push(args);player.equipment_state=structuredClone(args.p_state);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
  if(name==='commit_jackpot_loss'){player.equipment_state=structuredClone(args.p_state);player.total_rolls+=1;return {data:{total_rolls:player.total_rolls},error:null};}
