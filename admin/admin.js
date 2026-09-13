@@ -1,4 +1,5 @@
 import { mountEconomy } from "./economy.js";
+import { mountAdminCli } from "./adminCli.js";
 import { loadGemCatalog } from "../src/backend/gemCatalog.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import consumables, { getConsumableById } from "../src/data/consumables.js";
@@ -2376,7 +2377,8 @@ const economyBreakdown = mountEconomy({
     economy: ["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
-    appeals: ["#appealsPanel"]
+    appeals: ["#appealsPanel"],
+    cli: ["#cliPanel"]
   };
 
   // Build one page wrapper per tab and move the matching panels into it.
@@ -2401,7 +2403,8 @@ const economyBreakdown = mountEconomy({
     community: () => {
       if (typeof loadIpAudit === "function") loadIpAudit();
       if (typeof loadReferrals === "function") loadReferrals();
-    }
+    },
+    cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") })
   };
   const loaded = new Set();
   let active = "search";
