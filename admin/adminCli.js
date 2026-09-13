@@ -893,6 +893,55 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     }
   };
 
+  const alerts = {
+    name: "alerts",
+    group: "Analytics",
+    usage: "/alerts [hours] [minAmount]",
+    summary: "Unusual money movement — who, when, IP (default 24h, min 100M).",
+    man: [
+      "  /alerts             last 24h, min amount 100,000,000",
+      "  /alerts 6 500000000 last 6h, min amount 500M",
+      "  Types: cash spikes, bank deposits, admin grants, gain spikes, activity bursts."
+    ],
+    async run(args, term) {
+      const hours = Math.max(1, Math.min(168, Math.trunc(Number(args[0]) || 24)));
+      const minAmount = Math.max(1, Number(args[1]) || 100000000);
+
+      const { data, error } = await supabase.rpc("admin_get_activity_alerts", {
+        p_hours: hours,
+        p_min_amount: minAmount
+      });
+
+      if (error) {
+        term.printError(error.message);
+
+        return;
+      }
+
+      const list = data?.alerts ?? [];
+
+      term.printMuted(`${list.length} alert(s) in ${hours}h · ${formatMoney(data?.totalInflow ?? 0)} total inflow`);
+
+      if (!list.length) {
+        term.printMuted("Nothing unusual.");
+
+        return;
+      }
+
+      term.table(
+        ["Sev", "Type", "Player", "IP", "Amount/Events", "When"],
+        list.map((a) => [
+          (a.severity ?? "med").toUpperCase(),
+          a.type ?? "—",
+          a.username ?? "—",
+          a.ip ?? "—",
+          a.amount != null ? formatMoney(a.amount) : `${a.events ?? 0} ev`,
+          a.at ? new Date(a.at).toLocaleString() : "—"
+        ])
+      );
+    }
+  };
+
   const marketfees = {
     name: "marketfees",
     group: "Analytics",
@@ -1234,7 +1283,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     grantAllPotions, grantAllGems, clearInv, deleteGem, cooldown, title, lbVis,
     lock, ban, unban, baninfo, appeals, appeal,
     announce,
-    analytics, marketfees, museum, bank, shareholders,
+    analytics, alerts, marketfees, museum, bank, shareholders,
     guilds, referrals,
     sharedips, whitelist,
     sections, section, mutations,
