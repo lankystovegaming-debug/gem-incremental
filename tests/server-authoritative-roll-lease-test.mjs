@@ -28,7 +28,7 @@ assert.match(migration, /and roll_lease_id = p_lease_id/);
 assert.match(migration, /grant execute on function public\.claim_server_roll\(uuid, numeric\) to service_role/);
 assert.match(migration, /revoke all on function public\.claim_server_roll\(uuid, numeric\) from public, anon, authenticated/);
 
-assert.match(roll, /\.rpc\("claim_equipment_roll"/);
+assert.match(roll, /\.rpc\("claim_equipment_roll_batch"/);
 assert.match(roll, /p_cooldown_ms: cooldownMs/);
 assert.match(roll, /rollClaim\?\.status !== "claimed"/);
 assert.match(roll, /\.rpc\(\s*"release_server_roll"/);
@@ -36,7 +36,7 @@ assert.match(roll, /p_lease_id: rollLeaseId/);
 assert.doesNotMatch(roll, /next_roll_at\.is\.null,next_roll_at\.lte/);
 
 const backgroundBlock = roll.match(
-  /const backgroundPostCommitPromise = Promise\.all\(\[[\s\S]*?EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\);/,
+  /const backgroundPostCommitPromise = Promise\.all\(\[[\s\S]*?else EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\);/,
 )?.[0] ?? '';
 const responseBlock = roll.match(
   /const \[\s*lifetimeStats,[\s\S]*?globalEventRollPromise\s*\n\s*\]\);/,

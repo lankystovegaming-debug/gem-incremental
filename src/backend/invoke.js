@@ -14,6 +14,10 @@ import { supabase } from "./supabase.js";
 
 const FRIENDLY_MESSAGES = {
   cooldown: "That roll is still on cooldown.",
+  invalid_batch_size: "That batch size is not available.",
+  batch_locked: "That batch size has not been unlocked yet.",
+  batch_incomplete: "The server could not finish every roll in this batch.",
+  roll_state_changed: "Your equipment changed while the roll was starting. Try again.",
   inventory_full: "Your inventory is full. Sell or craft something first.",
   gem_locked: "That gem is locked. Unlock it before selling.",
   relic_not_sellable: "Relics cannot be sold; use one to enchant a pickaxe.",

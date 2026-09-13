@@ -5,6 +5,7 @@ import { updateSettings, hydrateSettingsFromCloud, getSettings, onSettingsChange
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
+import { batchCooldown, batchRollResults } from "../logic/batchRolling.js";
 
 // One browser-wide automation lease prevents two tabs from continuously
 // racing each other. The server cooldown remains the final authority.
@@ -143,7 +144,7 @@ async function run() {
       return;
     }
 
-    const { data, error } = await invokeFunction("roll");
+    const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
     if (error) {
       if (error.code === "cooldown" && error.details?.nextRollAt) {
         schedule(Math.max(80, new Date(error.details.nextRollAt).getTime() - Date.now() + 40));
@@ -162,8 +163,9 @@ async function run() {
       return;
     }
 
-    await processRoll(data);
-    const nextRoll = data?.cooldown?.nextRollAt ? new Date(data.cooldown.nextRollAt).getTime() : Date.now() + 2500;
+    for (const result of batchRollResults(data)) await processRoll(result);
+    const cooldown = batchCooldown(data);
+    const nextRoll = cooldown?.nextRollAt ? new Date(cooldown.nextRollAt).getTime() : Date.now() + 2500;
     schedule(Math.max(80, nextRoll - Date.now() + 30));
   } catch (error) {
     console.error("[AUTOMATION] Unexpected error:", error);

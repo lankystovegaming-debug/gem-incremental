@@ -1,5 +1,8 @@
 import { supabase } from "../src/backend/supabase.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+import { loadCloudEquipment } from "../src/backend/cloudEquipment.js";
+import { isBatchSizeUnlocked, renderBatchOptions } from "../src/logic/batchRolling.js";
 import {
   describeAccount,
   isGoogleEnabled,
@@ -137,6 +140,7 @@ renderAppearance();
 // =========================================================
 
 const autoRollToggle = document.getElementById("autoRollToggle");
+const batchSize = document.getElementById("batchSize");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
@@ -146,6 +150,7 @@ const globalCashToggle = document.getElementById("globalCashToggle");
 const cashGraphToggle = document.getElementById("cashGraphToggle");
 const gemRealismRange = document.getElementById("gemRealismRange");
 const gemRealismValue = document.getElementById("gemRealismValue");
+let batchAccess = { genuineRolls: 0, hasCelestialPickaxe: false };
 
 
 
@@ -153,6 +158,12 @@ const gemRealismValue = document.getElementById("gemRealismValue");
 
 function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
+  if (batchSize) {
+    batchSize.innerHTML = renderBatchOptions(batchAccess);
+    batchSize.value = String(
+      isBatchSizeUnlocked(settings.batchSize, batchAccess) ? settings.batchSize : 1
+    );
+  }
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("setting--muted", !settings.autoKeep);
@@ -187,6 +198,10 @@ if (gemRealismRange) {
 
 autoRollToggle.addEventListener("change", () =>
   updateSettings({ autoRoll: autoRollToggle.checked })
+);
+
+batchSize?.addEventListener("change", () =>
+  updateSettings({ batchSize: Number(batchSize.value) })
 );
 
 
@@ -225,7 +240,17 @@ cutsceneMinimumRarity.addEventListener("change", () => {
 onSettingsChange(paintSettings);
 
 paintSettings(getSettings());
-hydrateSettingsFromCloud().then(paintSettings).catch(error => notify.error("Settings unavailable", error.message));
+Promise.all([
+  hydrateSettingsFromCloud(),
+  loadCloudPlayerState(),
+  loadCloudEquipment()
+]).then(([settings, player, equipment]) => {
+  batchAccess = {
+    genuineRolls: Number(player?.equipment_genuine_rolls ?? 0),
+    hasCelestialPickaxe: (equipment ?? []).some((item) => item.equipment_id === "celestial-pickaxe")
+  };
+  paintSettings(settings);
+}).catch(error => notify.error("Settings unavailable", error.message));
 
 
 // =========================================================

@@ -1,7 +1,7 @@
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
- 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.2,.1,.1,.1],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
  'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
@@ -106,7 +106,7 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const pick=equipment.find(e=>e.category==='pickaxe');
  const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
  const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
- if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.2,mutation:.1,weightLuck:.1,weightMultiplier:.1};
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.25,mutation:.1,weightLuck:.1,weightMultiplier:.1};
  const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.

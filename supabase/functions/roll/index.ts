@@ -23,7 +23,7 @@ export function gemFilterDecision(settings, specimen, discovered) {
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
- 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.2,.1,.1,.1],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
  'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
@@ -128,7 +128,7 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const pick=equipment.find(e=>e.category==='pickaxe');
  const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
  const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
- if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.2,mutation:.1,weightLuck:.1,weightMultiplier:.1};
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.25,mutation:.1,weightLuck:.1,weightMultiplier:.1};
  const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.
@@ -159,6 +159,19 @@ export function capGemLuck(luck,maxLuck) {
 }
 
 export const fortuneLuckFactor = (id,gem) => id==='fortune-pickaxe' && gem.affectedByLuck!==false && Number(gem.rarity)>=1000000 ? 1.1 : 1;
+
+export function normalizeRequestedBatchSize(value: unknown): number | null {
+  const size = Number(value ?? 1);
+  return Number.isSafeInteger(size) && size >= 1 && size <= 4 ? size : null;
+}
+
+export function batchCooldownMs(singleRollCooldownMs: number, batchSize: number): number {
+  const size = normalizeRequestedBatchSize(batchSize);
+  if (size == null || !Number.isFinite(singleRollCooldownMs) || singleRollCooldownMs <= 0) {
+    throw new Error("invalid_batch_cooldown");
+  }
+  return singleRollCooldownMs * size;
+}
 
 
 export type RandomSource = () => number;
@@ -1818,22 +1831,25 @@ function depositIntoProgress(
 // EDGE FUNCTION
 // =========================================================
 
-export default {
-  fetch: withSupabase(
-    {
-      auth: "user"
-    },
+type BatchExecution = {
+  batchSize: number;
+  requestStartedAt: Date;
+  leaseId?: string;
+  firstGenuineRoll?: number;
+  nextRollAt?: string;
+  cooldownMs?: number;
+  activeBoosts?: any[];
+  activeAdminEvent?: any | null;
+  globalEventData?: any | null;
+  guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
+};
 
-    async (
-      req,
-      ctx
-    ) => {
-      if (req.method === "OPTIONS") {
-        return new Response("ok", {
-          status: 200,
-          headers: corsHeaders
-        });
-      }
+async function executeSingleRoll(
+  req: Request,
+  ctx: any,
+  batchExecution: BatchExecution,
+  batchIndex: number
+) {
 
       // =====================================================
       // IDENTIFY PLAYER
@@ -2000,11 +2016,13 @@ export default {
       // CHECK COOLDOWN
       // =====================================================
 
-      const now =
-        new Date();
+      // A displayed batch is one effectively-simultaneous action. Every
+      // timed availability/buff check uses this shared request-start instant.
+      const now = batchExecution.requestStartedAt;
 
 
       if (
+        batchIndex === 0 &&
         player.next_roll_at
       ) {
         const currentNextRoll =
@@ -2119,7 +2137,10 @@ export default {
 
       if (
         currentInventoryCount >=
-        effectiveInventoryCapacity
+        effectiveInventoryCapacity ||
+        (batchIndex === 0 &&
+          batchExecution.batchSize > 1 &&
+          currentInventoryCount + batchExecution.batchSize > effectiveInventoryCapacity)
       ) {
         return jsonResponse(
           {
@@ -2130,7 +2151,10 @@ export default {
               currentInventoryCount,
 
             capacity:
-              effectiveInventoryCapacity
+              effectiveInventoryCapacity,
+
+            requiredFreeSlots:
+              batchExecution.batchSize
           },
           {
             status: 409
@@ -2259,27 +2283,18 @@ export default {
       // LOAD ACTIVE PLAYER BOOSTS
       // =====================================================
 
-      const {
-        data:
-          activeBoosts,
-        error:
-          boostError
-      } =
-        await ctx.supabase
-          .from(
-            "player_boosts"
-          )
-          .select(
-            "family, tier, effect_value"
-          )
-          .eq(
-            "player_id",
-            playerId
-          )
-          .gt(
-            "expires_at",
-            now.toISOString()
-          );
+      let activeBoosts = batchExecution.activeBoosts;
+      let boostError = null;
+      if (activeBoosts === undefined) {
+        const boostResult = await ctx.supabase
+          .from("player_boosts")
+          .select("family, tier, effect_value")
+          .eq("player_id", playerId)
+          .gt("expires_at", now.toISOString());
+        activeBoosts = boostResult.data ?? [];
+        boostError = boostResult.error;
+        if (!boostError) batchExecution.activeBoosts = structuredClone(activeBoosts);
+      }
 
 
       if (
@@ -2341,13 +2356,10 @@ export default {
       // LOAD ACTIVE ADMIN EVENT
       // =====================================================
 
-      const {
-        data:
-          activeAdminEvent,
-        error:
-          adminEventError
-      } =
-        await ctx.supabaseAdmin
+      let activeAdminEvent = batchExecution.activeAdminEvent;
+      let adminEventError = null;
+      if (activeAdminEvent === undefined) {
+        const adminEventResult = await ctx.supabaseAdmin
           .from(
             "admin_events"
           )
@@ -2385,6 +2397,10 @@ export default {
           )
           .limit(1)
           .maybeSingle();
+        activeAdminEvent = adminEventResult.data ?? null;
+        adminEventError = adminEventResult.error;
+        if (!adminEventError) batchExecution.activeAdminEvent = structuredClone(activeAdminEvent);
+      }
 
 
       if (adminEventError) {
@@ -2398,11 +2414,16 @@ export default {
       // One compact authoritative snapshot covers every natural-event rule.
       // Definitions, phases and selected targets are materialized when the
       // occurrence starts, so the hot roll path never performs event joins.
-      let globalEventData = null;
-      try {
-        globalEventData = await loadGlobalEventSnapshot(ctx.supabaseAdmin);
-      } catch (globalEventError) {
-        console.warn("Global event snapshot unavailable; rolling normally:", globalEventError);
+      let globalEventData = batchExecution.globalEventData;
+      if (globalEventData === undefined) {
+        try {
+          globalEventData = await loadGlobalEventSnapshot(ctx.supabaseAdmin);
+          batchExecution.globalEventData = structuredClone(globalEventData ?? null);
+        } catch (globalEventError) {
+          globalEventData = null;
+          batchExecution.globalEventData = null;
+          console.warn("Global event snapshot unavailable; rolling normally:", globalEventError);
+        }
       }
       const activeGlobalEvent = normalizeGlobalEvent(globalEventData, now.getTime());
       const availabilityEventContext = buildEventRollContext(activeGlobalEvent, random01, now.getTime());
@@ -2635,12 +2656,31 @@ export default {
       // Eligible guild members receive small permanent multiplicative
       // enhancements. The 24-hour delay prevents join-hopping for bonuses.
       try {
-        const { data: guildMembership, error: guildBonusError } = await ctx.supabaseAdmin
-          .from("guild_members")
-          .select("guild_id,eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
-          .eq("player_id", playerId)
-          .maybeSingle();
-        if (guildBonusError) throw guildBonusError;
+        let guildMembership = batchExecution.guildSnapshot?.membership ?? null;
+        if (!batchExecution.guildSnapshot) {
+          const { data, error } = await ctx.supabaseAdmin
+            .from("guild_members")
+            .select("guild_id,eligible_at,guilds(luck_tier,speed_tier,weight_luck_tier)")
+            .eq("player_id", playerId)
+            .maybeSingle();
+          if (error) throw error;
+          guildMembership = data ?? null;
+          if (guildMembership) {
+            const { data: guildShopBuffs, error: guildShopError } = await ctx.supabaseAdmin
+              .from("guild_shop_buffs")
+              .select("potion_id")
+              .eq("guild_id", guildMembership.guild_id)
+              .gt("expires_at", now.toISOString());
+            if (guildShopError) throw guildShopError;
+            guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
+          }
+          batchExecution.guildSnapshot = {
+            membership: structuredClone(guildMembership),
+            shopBuffIds: [...guildShopBuffIds]
+          };
+        } else {
+          guildShopBuffIds = [...batchExecution.guildSnapshot.shopBuffIds];
+        }
         if (guildMembership && Date.parse(guildMembership.eligible_at) <= now.getTime()) {
           const guild = Array.isArray(guildMembership.guilds)
             ? guildMembership.guilds[0]
@@ -2650,13 +2690,6 @@ export default {
           weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
         }
         if (guildMembership) {
-          const { data: guildShopBuffs, error: guildShopError } = await ctx.supabaseAdmin
-            .from("guild_shop_buffs")
-            .select("potion_id")
-            .eq("guild_id", guildMembership.guild_id)
-            .gt("expires_at", now.toISOString());
-          if (guildShopError) throw guildShopError;
-          guildShopBuffIds = (guildShopBuffs ?? []).map((row: any) => String(row.potion_id));
           for (const potionId of guildShopBuffIds) {
             if (potionId === "lucky_brew") guildLuck *= 1.05;
             if (potionId === "haste_brew") rollSpeed *= 1.05;
@@ -2691,7 +2724,7 @@ export default {
       // already been persisted by claim_server_roll.
       const adminRollSpeedBonus = Number(activeAdminEvent?.roll_speed_bonus ?? 0);
       const adminRollSpeedMultiplier = Number(activeAdminEvent?.roll_speed_multiplier ?? 1);
-      if(allIn) { rollSpeed=.2; weightLuck=.1; weightMultiplier=.1; enchantLuck=1; guildLuck=1; specialLuck=1; luck=250; baseLuck=250; }
+      if(allIn) { rollSpeed=.25; weightLuck=.1; weightMultiplier=.1; enchantLuck=1; guildLuck=1; specialLuck=1; luck=250; baseLuck=250; }
       const effectiveRollSpeed = buffsEnabled ? (
         rollSpeed * eventContext.rollSpeedMultiplier +
         (Number.isFinite(adminRollSpeedBonus) ? adminRollSpeedBonus : 0)
@@ -2701,30 +2734,42 @@ export default {
           : 1
       ) * volcanicRollSpeedMultiplier : 1;
 
-      const cooldownMs =
+      const singleCooldownMs =
         (
           baseCooldownSeconds /
           Math.max(0.000001, effectiveRollSpeed)
         ) * (buffsEnabled ? slowStarterCooldownMultiplier : 1) *
         1000;
 
+      const cooldownMs = batchIndex === 0
+        ? batchCooldownMs(singleCooldownMs, batchExecution.batchSize)
+        : Number(batchExecution.cooldownMs);
+
 
       // Browser visibility is not a security boundary. Claim a database
       // lease using the database clock so multiple tabs, direct requests,
       // and userscripts all serialize through one authoritative gate.
-      const {
-        data:
-          rollClaim,
-        error:
-          rollClaimError
-      } =
-        await ctx.supabaseAdmin
-          .rpc("claim_equipment_roll", {
-            p_player_id: playerId,
+      let rollClaim: any;
+      let rollClaimError: any = null;
+      if (batchIndex === 0) {
+        const claimResult = await ctx.supabaseAdmin
+          .rpc("claim_equipment_roll_batch", {
+          p_player_id: playerId,
           p_equipment_state: player.equipment_state ?? {},
           p_equipment_ids: (equippedEquipment ?? []).map((item: any) => item.id),
-            p_cooldown_ms: cooldownMs
+          p_cooldown_ms: cooldownMs,
+          p_batch_size: batchExecution.batchSize
           });
+        rollClaim = claimResult.data;
+        rollClaimError = claimResult.error;
+      } else {
+        rollClaim = {
+          status: "claimed",
+          leaseId: batchExecution.leaseId,
+          nextRollAt: batchExecution.nextRollAt,
+          genuineRoll: Number(batchExecution.firstGenuineRoll) + batchIndex
+        };
+      }
 
 
       if (
@@ -2751,6 +2796,15 @@ export default {
       if (
         rollClaim?.status !== "claimed"
       ) {
+        if (rollClaim?.status === "invalid_batch_size") {
+          return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
+        }
+        if (rollClaim?.status === "batch_locked") {
+          return jsonResponse({ error: "batch_locked", ...rollClaim }, { status: 403 });
+        }
+        if (rollClaim?.status === "state_changed") {
+          return jsonResponse({ error: "roll_state_changed" }, { status: 409 });
+        }
         const blockedUntil =
           rollClaim?.retryAt
             ? new Date(
@@ -2805,6 +2859,13 @@ export default {
           rollClaim.leaseId
         );
 
+      if (batchIndex === 0) {
+        batchExecution.leaseId = rollLeaseId;
+        batchExecution.firstGenuineRoll = genuineRoll;
+        batchExecution.nextRollAt = claimedNextRollAt.toISOString();
+        batchExecution.cooldownMs = cooldownMs;
+      }
+
       const slotOutcome = jackpotRoll(equipmentContext.id, genuineRoll, random01);
       if(slotOutcome.houseEdge) {
         const lostState=finishEquipmentRoll(equipmentContext,{naturalWeight:null,gem:null,random:random01}).state;
@@ -2838,11 +2899,12 @@ export default {
           ];
           if(buffsEnabled&&oneRollLuck>0) tasks.push(ctx.supabaseAdmin.rpc('spend_one_roll_charge',{p_player_id:playerId}));
           if(enchantedPickaxe&&enchantStateChanged) tasks.push(ctx.supabaseAdmin.from('player_equipment').update({enchant_state:enchantState}).eq('id',enchantedPickaxe.id).eq('player_id',playerId));
-          EdgeRuntime.waitUntil(Promise.allSettled(tasks).then(results=>{
+          const houseEdgeBookkeeping = Promise.allSettled(tasks).then(results=>{
             for(const result of results) if(result.status==='rejected'||(result.value as any)?.error) console.error('House Edge progression failed',result);
-          }));
+          });
+          if (batchExecution.batchSize > 1) await houseEdgeBookkeeping;
+          else EdgeRuntime.waitUntil(houseEdgeBookkeeping);
         }
-        await ctx.supabaseAdmin.rpc('release_server_roll',{p_player_id:playerId,p_lease_id:rollLeaseId});
         return jsonResponse({playerId,houseEdge:true,gem:null,specimenId:null,
           equipmentPassives:{genuineRoll,specialist:slotOutcome,state:lostState},
           lifetimeStats:{totalRolls:loss.total_rolls},cooldown:{nextRollAt:claimedNextRollAt.toISOString(),durationMs:cooldownMs}});
@@ -4194,7 +4256,8 @@ export default {
       ]).then(() => undefined).catch((error) => {
         console.error("Background roll bookkeeping crashed:", error);
       });
-      EdgeRuntime.waitUntil(backgroundPostCommitPromise);
+      if (batchExecution.batchSize > 1) await backgroundPostCommitPromise;
+      else EdgeRuntime.waitUntil(backgroundPostCommitPromise);
 
       // These values are included in the response (or are prerequisites for
       // response-visible state), so wait only for this smaller critical set.
@@ -4230,21 +4293,6 @@ export default {
         if (!saleError) { filterSale = { sold: true, soldValue: value, money }; inventoryCountWithDuplicate -= 1; }
         else console.error('Gem Filter sale failed; specimen retained:', saleError);
       }
-
-      // Release only the lease owned by this invocation. If this best-effort
-      // cleanup fails, the short database expiry safely unlocks the account;
-      // a stale request can never clear a newer request's lease token.
-      const { error: releaseRollLeaseError } = await ctx.supabaseAdmin.rpc(
-        "release_server_roll",
-        {
-          p_player_id: playerId,
-          p_lease_id: rollLeaseId
-        }
-      );
-      if (releaseRollLeaseError) {
-        console.error("Roll lease release failed:", releaseRollLeaseError);
-      }
-
 
       // =====================================================
       // RETURN SUCCESSFUL ROLL
@@ -4405,6 +4453,77 @@ export default {
           nextRollAt:
             claimedNextRollAt
               .toISOString()
+        }
+      });
+}
+
+export default {
+  fetch: withSupabase(
+    {
+      auth: "user"
+    },
+    async (req, ctx) => {
+      if (req.method === "OPTIONS") {
+        return new Response("ok", { status: 200, headers: corsHeaders });
+      }
+
+      let requestBody: any = {};
+      try {
+        requestBody = await req.json();
+      } catch {
+        // Existing clients send an empty JSON object; a missing body remains ×1.
+      }
+
+      const batchSize = normalizeRequestedBatchSize(requestBody?.batchSize ?? 1);
+      if (batchSize == null) {
+        return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
+      }
+
+      const execution: BatchExecution = {
+        batchSize,
+        requestStartedAt: new Date()
+      };
+      const results: any[] = [];
+
+      try {
+        for (let batchIndex = 0; batchIndex < batchSize; batchIndex += 1) {
+          const response = await executeSingleRoll(req, ctx, execution, batchIndex);
+          const payload = await response.json();
+          if (!response.ok) {
+            if (results.length === 0) {
+              return jsonResponse(payload, { status: response.status });
+            }
+            return jsonResponse({
+              error: "batch_incomplete",
+              completed: results.length,
+              requested: batchSize,
+              results,
+              cause: payload,
+              cooldown: execution.nextRollAt ? {
+                durationMs: execution.cooldownMs,
+                nextRollAt: execution.nextRollAt
+              } : null
+            }, { status: 500 });
+          }
+          results.push(payload);
+        }
+      } finally {
+        if (execution.leaseId) {
+          const { error } = await ctx.supabaseAdmin.rpc("release_server_roll", {
+            p_player_id: ctx.userClaims?.id,
+            p_lease_id: execution.leaseId
+          });
+          if (error) console.error("Roll lease release failed:", error);
+        }
+      }
+
+      if (batchSize === 1) return jsonResponse(results[0]);
+      return jsonResponse({
+        batchSize,
+        results,
+        cooldown: {
+          durationMs: execution.cooldownMs,
+          nextRollAt: execution.nextRollAt
         }
       });
     }

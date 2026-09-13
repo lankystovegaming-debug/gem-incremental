@@ -66,7 +66,7 @@ export function pickaxeBonus(id) {
 function pick(id,name,cost,requirements,toy=false) {return {id,name,category:'pickaxe',craftingTab:toy?'toys':'pickaxe',horizontal:true,equipmentOverhaul:true,moneyCost:cost,requirements,reward:{id,name,category:'pickaxe',tier:15,bonus:pickaxeBonus(id)}};}
 export const specialistRecipes = [
  pick('tectonic-pickaxe','Tectonic Pickaxe',125000000,[...['Ringwoodite','Paraershovite','Vesuvianite','Fluorcalciobritholite','Singularity Shard'].map((n,i)=>gem(n,[5,3,2,1,1][i])),...bulk('tectonic-pickaxe',{Legendary:750,Mythic:200,Exotic:10}),...[5,6,7,8].map((w,i)=>specimen(`tectonic-specimen-${w}`,w,[30,12,4,1][i]))]),
- pick('the-accelerator','The Accelerator',100000000,[gem('Chronite',3),...bulk('the-accelerator',{Legendary:750,Mythic:200,Exotic:10}),{type:'lifetime-rolls',rolls:250000}]),
+ pick('the-accelerator','The Accelerator',100000000,[gem('Chronite',3),...bulk('the-accelerator',{Legendary:750,Mythic:200,Exotic:10}),{type:'equipment-history',metric:'genuineRolls',amount:250000,label:'Lifetime genuine rolls',consume:false}]),
  pick('the-resonator','The Resonator',100000000,[...bulk('the-resonator',{Legendary:600,Mythic:200,Exotic:10}),...['daily_window','global_event','special'].map((classification,i)=>({type:'special-discoveries',classification,amount:[5,3,10][i]}))]),
  pick('the-excavator','The Excavator',100000000,[...bulk('the-excavator',{Legendary:500,Mythic:150,Exotic:10}),...[75,50,30,10].map((amount,i)=>({type:'potion-tier',tier:i+1,amount})),{type:'consumable',consumableId:'legendary-potion',amount:3},{type:'consumable',consumableId:'mythic-potion',amount:1}]),
  pick('toy-shovel','Toy Shovel',670000000.67,[{type:'equipment',equipmentId:'plastic-shopping-bag',consume:false},...bulk('toy-shovel',{Legendary:6700,Mythic:2067,Exotic:67,Exalted:6}),gem('random rock I found outside',67),gem('Quartz',67),{type:'consumable',consumableId:'plastic-bag',amount:67},specimen('toy-shovel-specimens',6.7,67)],true),
@@ -75,7 +75,7 @@ export const specialistRecipes = [
 const batchBands={Common:[1,9],Uncommon:[10,49],Rare:[50,99],Epic:[100,999],Legendary:[1000,9999],Mythic:[10000,99999],Exotic:[100000,999999],Exalted:[1000000,9999999]};
 const batchBulk=(id,counts)=>Object.entries(counts).map(([label,amount])=>({id:`${id}-${label.toLowerCase()}`,type:'gem-count',label,amount,minimumRarity:batchBands[label][0],maximumRarity:batchBands[label][1]}));
 const history=(metric,amount,label)=>({type:'equipment-history',metric,amount,label,consume:false});
-const lifetimeRolls=(rolls)=>({type:'lifetime-rolls',rolls});
+const lifetimeRolls=(rolls)=>({type:'equipment-history',metric:'genuineRolls',amount:rolls,label:'Lifetime genuine rolls',consume:false});
 export const fiveItemRecipes=[
  {...pick('fortune-pickaxe','Fortune Pickaxe',100000000,[...batchBulk('fortune-pickaxe',{Legendary:1000,Mythic:300,Exotic:15,Exalted:1}),history('raw5m',3,'Raw-rarity ≥1/5M rolls'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),description:'A pickaxe made for miners who believe you can never have too much luck. Sacrifices a little of everything else for a simple advantage: more Luck.'},
  pick('all-in-pickaxe','All-In Pickaxe',250000000,[...batchBulk('all-in-pickaxe',{Legendary:5000,Mythic:1500,Exotic:100,Exalted:5}),history('endgamePickaxes',3,'Distinct post-Celestial endgame Pickaxes ever owned'),history('raw10m',1,'Raw-rarity ≥1/10M rolls')]),

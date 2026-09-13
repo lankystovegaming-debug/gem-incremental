@@ -16,6 +16,12 @@ import { loadActiveBoosts } from "./src/backend/cloudConsumables.js";
 import { loadCloudCraftingState, loadCloudConsumables } from "./src/backend/cloudCrafting.js";
 import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "./src/backend/cloudEquipment.js";
 import { isRequirementComplete } from "./src/logic/crafting.js";
+import {
+  batchCooldown,
+  batchRollResults,
+  isBatchSizeUnlocked,
+  renderBatchOptions
+} from "./src/logic/batchRolling.js";
 
 import { mountShell } from "./src/ui/shell.js";
 import { initReferral } from "./src/ui/referralBootstrap.js";
@@ -71,6 +77,7 @@ const statRolls = document.getElementById("statRolls");
 const inventoryMeter = document.getElementById("inventoryMeter");
 
 const autoRollToggle = document.getElementById("autoRollToggle");
+const batchSize = document.getElementById("batchSize");
 const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
@@ -121,6 +128,8 @@ const view = {
   inventoryCount: 0,
   capacity: 15,
   totalRolls: 0,
+  genuineRolls: 0,
+  hasCelestialPickaxe: false,
   ready: false
 };
 
@@ -321,14 +330,16 @@ async function refreshCraftingProgressPreview() {
 }
 
 async function refreshPlayerState() {
-  const [playerState, inventoryResult] = await Promise.all([
+  const [playerState, inventoryResult, equipment] = await Promise.all([
     loadCloudPlayerState(),
 
     supabase
       .from("inventory_gems")
       .select("id", { count: "exact", head: true })
       .neq("gem_name", "Enchant Relic")
-      .neq("gem_name", "Ancient Relic")
+      .neq("gem_name", "Ancient Relic"),
+
+    loadCloudEquipment()
   ]);
 
   if (!playerState) {
@@ -338,12 +349,17 @@ async function refreshPlayerState() {
   view.money = playerState.money;
   view.capacity = playerState.inventory_capacity;
   view.totalRolls = playerState.total_rolls;
+  view.genuineRolls = playerState.equipment_genuine_rolls;
+  view.hasCelestialPickaxe = (equipment ?? []).some(
+    (item) => item.equipment_id === "celestial-pickaxe"
+  );
 
   if (!inventoryResult.error) {
     view.inventoryCount = inventoryResult.count ?? 0;
   }
 
   renderSummary();
+  paintSettings(getSettings());
 
   return playerState;
 }
@@ -822,7 +838,7 @@ async function performRoll() {
 
   setButton({ mode: "rolling", label: "Rolling", disabled: true });
 
-  const { data, error } = await invokeFunction("roll");
+  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
 
   rollInFlight = false;
 
@@ -888,52 +904,60 @@ async function performRoll() {
   // APPLY RESULT
   // -------------------------------------------------------
 
-  activeMutationEffects = Array.isArray(data.activeMutationEffects) ? data.activeMutationEffects : activeMutationEffects;
-  renderEffects();
-  if (activeMutationEffects.some((e)=>Number(e.rollsRemaining)>0)) startEffectTicker();
+  const results = batchRollResults(data);
+  const outcomes = new Map();
+  let featured = null;
 
-  view.inventoryCount = data.inventory?.count ?? view.inventoryCount;
-  view.capacity = data.inventory?.capacity ?? view.capacity;
-  view.totalRolls = data.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
-
-  if(data.houseEdge) {
+  for (const result of results) {
+    activeMutationEffects = Array.isArray(result.activeMutationEffects)
+      ? result.activeMutationEffects
+      : activeMutationEffects;
+    view.inventoryCount = result.inventory?.count ?? view.inventoryCount;
+    view.capacity = result.inventory?.capacity ?? view.capacity;
+    view.totalRolls = result.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
+    view.genuineRolls = result.equipmentPassives?.genuineRoll ?? view.genuineRolls + 1;
     automationStats.rolls += 1;
-    renderAutomationPulse();
-    renderSummary();
-    recordSessionRoll(data,{type:'house-edge'});
-    renderSessionInsights();
-    gemStage.className='stage__display is-revealed';
-    gemStage.innerHTML = '<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>';
-    if(data.cooldown?.nextRollAt) startCooldown(new Date(data.cooldown.nextRollAt).getTime(),data.cooldown.durationMs);
-    else showReady();
-    return;
+
+    if (result.houseEdge) {
+      recordSessionRoll(result, { type: "house-edge" });
+      if (!featured) featured = result;
+      continue;
+    }
+
+    const outcome = await resolveOutcome(result);
+    outcomes.set(result, outcome);
+    automationStats.earned += Number(outcome?.soldValue ?? 0);
+    if (outcome?.type === "auto-sold") automationStats.sold += 1;
+    else if (["auto-kept", "kept"].includes(outcome?.type)) automationStats.kept += 1;
+    recordSessionRoll(result, { ...outcome, tier: rarityTier(result.gem.rarity).id });
+    addHistory(result, outcome.note);
+
+    // Every result announces independently; batching must not collapse rare
+    // chat/progression events into one representative specimen.
+    window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: result }));
+    if (!featured || Number(result.effectiveRarity ?? 0) >= Number(featured.effectiveRarity ?? 0)) {
+      featured = result;
+    }
   }
 
-  const outcome = await resolveOutcome(data);
-  automationStats.rolls += 1;
-  automationStats.earned += Number(outcome?.soldValue ?? 0);
-  if (outcome?.type === "auto-sold") automationStats.sold += 1;
-  else if (["auto-kept", "kept"].includes(outcome?.type)) automationStats.kept += 1;
+  renderEffects();
+  if (activeMutationEffects.some((effect) => Number(effect.rollsRemaining) > 0)) startEffectTicker();
   renderAutomationPulse();
-  recordSessionRoll(data, { ...outcome, tier: rarityTier(data.gem.rarity).id });
   renderSessionInsights();
-
   renderSummary();
+  paintSettings(getSettings());
 
-  const cinematicPromise = renderRoll(data, outcome);
+  let cinematicPromise = Promise.resolve();
+  if (featured?.houseEdge) {
+    gemStage.className = "stage__display is-revealed";
+    gemStage.innerHTML = '<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>';
+  } else if (featured) {
+    cinematicPromise = renderRoll(featured, outcomes.get(featured));
+  }
 
-  addHistory(data, outcome.note);
-
-  // Let the chat UI render the same player-facing rare-roll announcement
-  // immediately, including mutation-only rare combinations. The server-side
-  // announcement remains authoritative for persisted/global messages.
-  window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
-
-  if (data.cooldown?.nextRollAt) {
-    startCooldown(
-      new Date(data.cooldown.nextRollAt).getTime(),
-      data.cooldown.durationMs
-    );
+  const cooldown = batchCooldown(data);
+  if (cooldown?.nextRollAt) {
+    startCooldown(new Date(cooldown.nextRollAt).getTime(), cooldown.durationMs);
   }
 
   // Keep the roll locked for the entire 1/100k+ cinematic. If the server
@@ -941,7 +965,7 @@ async function performRoll() {
   // allowing the next roll.
   await cinematicPromise;
 
-  if (!data.cooldown?.nextRollAt) {
+  if (!cooldown?.nextRollAt) {
     showReady();
   }
 }
@@ -1188,6 +1212,14 @@ document.addEventListener("visibilitychange", () => {
 
 function paintSettings(settings) {
   autoRollToggle.checked = settings.autoRoll;
+  if (batchSize) {
+    const access = {
+      genuineRolls: view.genuineRolls,
+      hasCelestialPickaxe: view.hasCelestialPickaxe
+    };
+    batchSize.innerHTML = renderBatchOptions(access);
+    batchSize.value = String(isBatchSizeUnlocked(settings.batchSize, access) ? settings.batchSize : 1);
+  }
   if (autoKeepToggle) autoKeepToggle.checked = settings.autoKeep;
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("automation__row--muted", !settings.autoKeep);
@@ -1207,6 +1239,10 @@ autoRollToggle.addEventListener("change", async () => {
 
     maybeAutoRoll();
   }
+});
+
+batchSize?.addEventListener("change", () => {
+  updateSettings({ batchSize: Number(batchSize.value) });
 });
 
 

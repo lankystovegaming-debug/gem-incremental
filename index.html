@@ -142,6 +142,16 @@
 
 
 
+      <div class="automation__row automation__row--select">
+        <label class="automation__text" for="batchSize">
+          <span class="automation__title">Batch size</span>
+          <span class="automation__sub" id="batchSizeHelp">
+            Independent rolls per request; cooldown scales equally, so rolls per hour do not change.
+          </span>
+        </label>
+        <select class="select" id="batchSize" aria-describedby="batchSizeHelp"></select>
+      </div>
+
       <label class="automation__row switch">
         <input type="checkbox" id="autoKeepToggle">
         <span class="switch__track"></span>

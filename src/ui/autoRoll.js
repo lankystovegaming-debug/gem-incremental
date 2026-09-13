@@ -6,6 +6,7 @@ import {
   onSettingsChange
 } from "./settings.js";
 import { notify } from "./toast.js";
+import { batchCooldown, batchRollResults } from "../logic/batchRolling.js";
 
 // The Roll page has its richer renderer/cinematic loop in main.js. Every
 // other page uses this lightweight background controller so Auto Roll keeps
@@ -53,7 +54,7 @@ export function startGlobalAutoRoll(page) {
     inFlight = true;
 
     try {
-      const { data, error } = await invokeFunction("roll");
+      const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
 
       if (error) {
         await handleFailure(error);
@@ -72,10 +73,12 @@ export function startGlobalAutoRoll(page) {
         return;
       }
 
-      // Let chat and any page-local UI react to the same successful roll.
-      window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: data }));
+      // Let chat and any page-local UI react to every independent result.
+      for (const result of batchRollResults(data)) {
+        window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: result }));
+      }
 
-      const nextRollAt = data.cooldown?.nextRollAt;
+      const nextRollAt = batchCooldown(data)?.nextRollAt;
       if (nextRollAt) {
         schedule(Math.max(50, new Date(nextRollAt).getTime() - Date.now()));
       } else {
