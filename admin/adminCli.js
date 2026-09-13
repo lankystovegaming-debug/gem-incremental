@@ -103,6 +103,10 @@ export function mountAdminCli({ mount }) {
 
   mount.dataset.cliMounted = "true";
 
+  // Every admin panel's loader reveals its own section; the tab system only
+  // toggles the page wrapper. Without this the panel stays display:none.
+  mount.hidden = false;
+
   // Cache resolved usernames → ids so repeated commands don't re-search.
   const resolved = new Map();
 
@@ -578,6 +582,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Player",
     usage: "/title <player> set \"<title>\" [color] | /title <player> remove",
     summary: "Set or remove a player's title.",
+    suggest(args) { return args.length === 1 ? ["set", "remove"] : []; },
     async run(args, term) {
       const mode = (args[1] ?? "").toLowerCase();
 
@@ -613,6 +618,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Player",
     usage: "/lbvis <player> <hide|show>",
     summary: "Hide or show a player on leaderboards.",
+    suggest(args) { return args.length === 1 ? ["hide", "show"] : []; },
     async run(args, term) {
       const mode = (args[1] ?? "").toLowerCase();
 
@@ -632,6 +638,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Moderation",
     usage: "/lock <player> <on|off>",
     summary: "Lock or unlock a player's account.",
+    suggest(args) { return args.length === 1 ? ["on", "off"] : []; },
     async run(args, term) {
       const mode = (args[1] ?? "").toLowerCase();
 
@@ -654,6 +661,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Moderation",
     usage: "/ban <player> <hours|perm> [reason..]",
     summary: "Ban a player for N hours, or 'perm' for permanent.",
+    suggest(args) { return args.length === 1 ? ["perm"] : []; },
     man: [
       "  hours = 0 or 'perm' bans permanently.",
       "  /ban bob 24 spamming chat",
@@ -764,6 +772,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Moderation",
     usage: "/appeal <appealId> <accept|reject> [message..]",
     summary: "Accept (unban) or reject a ban appeal.",
+    suggest(args) { return args.length === 1 ? ["accept", "reject"] : []; },
     async run(args, term) {
       const appealId = args[0];
       const decisionToken = (args[1] ?? "").toLowerCase();
@@ -806,6 +815,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Announce",
     usage: "/announce <message..> | /announce clear | /announce <tone>: <message..>",
     summary: "Post a site announcement, or clear all announcements.",
+    suggest(args) { return args.length === 0 ? ["clear", "info:", "warning:", "success:"] : []; },
     man: [
       "  /announce clear                 remove all active announcements",
       "  /announce Server restart at 5pm post with the default tone",
@@ -952,6 +962,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "IP audit",
     usage: "/whitelist [add <ip> [note..] | remove <ip>]",
     summary: "List, add to, or remove from the IP whitelist.",
+    suggest(args) { return args.length === 0 ? ["add", "remove"] : []; },
     async run(args, term) {
       const mode = (args[0] ?? "").toLowerCase();
 
@@ -1009,6 +1020,12 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Feature Lab",
     usage: "/section <toggle|access> <id> <on|off | admin|all>",
     summary: "Enable/disable a section, or set admin-only access.",
+    suggest(args) {
+      if (args.length === 0) return ["toggle", "access"];
+      if (args.length === 2 && args[0] === "toggle") return ["on", "off"];
+      if (args.length === 2 && args[0] === "access") return ["admin", "all"];
+      return [];
+    },
     async run(args, term) {
       const mode = (args[0] ?? "").toLowerCase();
       const id = args[1];
@@ -1065,6 +1082,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Codes & events",
     usage: "/code create <CODE> <money> [maxRedemptions] | /code toggle <id> <on|off> | /code delete <id>",
     summary: "Create, enable/disable, or delete a redemption code.",
+    suggest(args) { return args.length === 0 ? ["create", "toggle", "delete"] : []; },
     man: [
       "  /code create SUMMER25 100000 500   money reward + optional redemption cap",
       "  /code toggle <codeId> off",
@@ -1138,6 +1156,7 @@ function buildCommands({ resolvePlayer, playerAction, rpc }) {
     group: "Codes & events",
     usage: "/event start <name> <minutes> <luck%> | /event stop <id>",
     summary: "Start a simple luck event, or stop a running one.",
+    suggest(args) { return args.length === 0 ? ["start", "stop"] : []; },
     man: [
       "  /event start DoubleLuck 60 100   name, duration minutes, +luck% (as a bonus)",
       "  /event stop <eventId>",
