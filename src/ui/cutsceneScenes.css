@@ -25,6 +25,11 @@
 .cs-environment,.cs-energy { z-index:8;pointer-events:none; }
 .cs-environment>span,.cs-energy>span { position:absolute;display:block; }
 .cs-reticle { position:absolute;z-index:30;left:50%;top:47%;width:min(42vmin,360px);aspect-ratio:1;transform:translate(-50%,-50%); }
+.cutscene-v5[data-phase="reveal"] .cs-reticle {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
 .cs-reticle__ring { position:absolute;inset:0;border:1px solid color-mix(in srgb,var(--cs-c) 72%,transparent);border-radius:50%;box-shadow:0 0 18px color-mix(in srgb,var(--cs-c) 32%,transparent);animation:csRing var(--cinematic-duration) ease both; }
 .cs-reticle__ring--inner { inset:14%;border-style:dashed;animation-direction:reverse; }
 .cs-reticle__tick { position:absolute;left:50%;top:50%;width:132%;height:1px;background:linear-gradient(90deg,transparent,var(--cs-c),transparent);transform:translate(-50%,-50%);opacity:.55; }

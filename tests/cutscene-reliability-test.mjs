@@ -113,6 +113,7 @@ const automation = source("src/ui/globalAutomation.js");
 const scenes = source("src/ui/cutsceneScenes.js");
 const config = source("src/ui/cutsceneConfig.js");
 const primitives = source("src/ui/cutscenePrimitives.js");
+const sceneStyles = source("src/ui/cutsceneScenes.css");
 const styles = source("style.css");
 
 assert.match(main, /isCutsceneEligible\(\{/);
@@ -150,6 +151,11 @@ assert.match(scenes, /getCutsceneDefinition/);
 assert.match(scenes, /createTheatricalUiClones/);
 assert.match(primitives, /cloneNode\(true\)/);
 assert.match(primitives, /node\.disabled = true/);
+assert.match(
+  sceneStyles,
+  /data-phase="reveal"\] \.cs-reticle\s*\{[\s\S]*?visibility:\s*hidden/,
+  "the scanner specimen must retire before the final reveal gem appears"
+);
 assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
