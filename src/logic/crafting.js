@@ -172,6 +172,20 @@ function specimenMatches(
     return false;
   }
 
+  if (
+    requirement.minimumFinalWeight != null &&
+    finalWeight < requirement.minimumFinalWeight
+  ) {
+    return false;
+  }
+
+  if (
+    requirement.minimumValue != null &&
+    Number(specimen.value) < requirement.minimumValue
+  ) {
+    return false;
+  }
+
   return true;
 }
 

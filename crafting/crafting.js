@@ -411,7 +411,7 @@ function formatBonuses(bonus = {}) {
 
 function formatReward(recipe) {
   if (!isConsumableRecipe(recipe)) {
-    if (recipe.equipmentOverhaul) return Object.entries(recipe.reward.bonus).map(([key,value])=>`<span class="badge badge--positive">${Number((1+value).toFixed(3))}× ${{luck:'Luck',rollSpeed:'Roll speed',mutationChance:'Mutation chance',weightLuck:'Weight Luck',weightMultiplier:'Weight multiplier'}[key]}</span>`);
+    if (recipe.equipmentOverhaul) return Object.entries(recipe.reward.bonus).map(([key,value])=>`<span class="badge badge--positive">${Number((1+value).toFixed(3))}× ${{luck:'Luck',rollSpeed:'Roll speed',mutationChance:'Mutation chance',weightLuck:'Weight Luck',weightMultiplier:'Weight multiplier',finalSell:'Final Sell'}[key]}</span>`);
     return formatBonuses(recipe.reward?.bonus);
   }
 

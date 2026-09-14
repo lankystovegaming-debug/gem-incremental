@@ -144,4 +144,8 @@ if(process.env.PICKAXE_REBALANCE_DB_TEST) {
  const {testPickaxeRebalanceDatabase}=await import('./pickaxe-rebalance-database-cases.mjs');
  await testPickaxeRebalanceDatabase({db,q,uid,read,fund});
 }
+if(process.env.SUPERSIZER_DB_TEST) {
+ const {testSupersizerDatabase}=await import('./supersizer-database-cases.mjs');
+ await testSupersizerDatabase({db,q,uid,read});
+}
 await db.close();

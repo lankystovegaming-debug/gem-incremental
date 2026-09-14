@@ -3,11 +3,15 @@ export function planIncludedMaterial(recipe, progress, specimen, requestedIndex 
   const rarity = Number(specimen.gem?.rarity ?? specimen.rarity);
   const name = specimen.gem?.name ?? specimen.gem_name;
   const base = Number(specimen.gem?.baseWeight ?? specimen.base_weight);
-  const weight = Number(specimen.finalWeight ?? specimen.final_weight) / base;
+  const finalWeight = Number(specimen.finalWeight ?? specimen.final_weight);
+  const value = Number(specimen.value);
+  const weight = finalWeight / base;
   if (!(base > 0) || !Number.isFinite(weight) || !Number.isFinite(rarity)) return null;
   const matches = r => (!r.gem || r.gem === name)
     && rarity >= (r.minimumRarity ?? 0) && rarity <= (r.maximumRarity ?? Infinity)
-    && weight >= (r.minimumWeightMultiplier ?? 0) && weight <= (r.maximumWeightMultiplier ?? Infinity);
+    && weight >= (r.minimumWeightMultiplier ?? 0) && weight <= (r.maximumWeightMultiplier ?? Infinity)
+    && (r.minimumFinalWeight == null || finalWeight >= r.minimumFinalWeight)
+    && (r.minimumValue == null || value >= r.minimumValue);
   const reqs = recipe.requirements.map((r, i) => ({ ...r, index: i }));
   if (requestedIndex != null && !matches(reqs[requestedIndex])) return null;
   if (recipe.equipmentOverhaul && !recipe.includedSpecimens) {
@@ -15,11 +19,14 @@ export function planIncludedMaterial(recipe, progress, specimen, requestedIndex 
       && (requestedIndex == null || requestedIndex === r.index) && matches(r)
       && Number(progress[r.id ?? r.gem] ?? 0)<r.amount)
       .sort((a,b)=>(a.type==='specimen-condition'?0:1)-(b.type==='specimen-condition'?0:1)
+        || (b.minimumValue??0)-(a.minimumValue??0)
+        || (b.minimumFinalWeight??0)-(a.minimumFinalWeight??0)
         || (b.minimumWeightMultiplier??0)-(a.minimumWeightMultiplier??0)
         || (a.maximumWeightMultiplier??Infinity)-(b.maximumWeightMultiplier??Infinity) || a.index-b.index);
     const r=eligible[0];if(!r)return null;const key=r.id??r.gem;
     return {progress:{...progress,[key]:Number(progress[key]??0)+1},requirementIndex:r.index,
-      conservationEligible:r.type==='gem-count' && r.minimumWeightMultiplier==null && r.maximumWeightMultiplier==null};
+      conservationEligible:r.type==='gem-count' && r.minimumWeightMultiplier==null && r.maximumWeightMultiplier==null
+        && r.minimumFinalWeight==null && r.minimumValue==null};
   }
   const bulk = reqs.find(r => r.type === 'gem-count' && matches(r) && Number(progress[r.id] ?? 0) < r.amount);
   if (!bulk) return null;

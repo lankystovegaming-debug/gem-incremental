@@ -105,10 +105,13 @@ export default {
     // =================================
     // SELL AT DATABASE LEVEL
     // =================================
-    const { data: newMoney, error: sellError } = await ctx.supabaseAdmin.rpc("sell_inventory_gem", {
-      p_player_id: playerId,
-      p_specimen_id: specimenId
-    });
+    const [{ data: newMoney, error: sellError }, { data: sellMultiplier, error: multiplierError }] = await Promise.all([
+      ctx.supabaseAdmin.rpc("sell_inventory_gem", {
+        p_player_id: playerId,
+        p_specimen_id: specimenId
+      }),
+      ctx.supabaseAdmin.rpc("equipment_gem_sell_multiplier", { p_player_id: playerId })
+    ]);
     if (sellError) {
       console.error("Sell failed:", sellError);
       return Response.json({
@@ -117,6 +120,7 @@ export default {
         status: 500
       });
     }
+    if (multiplierError) console.warn("Sell multiplier display lookup failed:", multiplierError);
     const { error: seasonSaleError } = await ctx.supabaseAdmin.rpc("record_season_sale", {
       p_player_id: playerId
     });
@@ -128,7 +132,7 @@ export default {
     // =================================
     return Response.json({
       specimenId,
-      soldValue: gem.value,
+      soldValue: Number(gem.value) * Math.max(1, Number(sellMultiplier ?? 1)),
       money: newMoney
     });
   })

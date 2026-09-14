@@ -1,6 +1,7 @@
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
+ 'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
@@ -21,7 +22,16 @@ const TOY_BORROWED_STATS = {
  'bedrock-pickaxe':[25,3.1,1.05,5,1.55]
 };
 export const ASCENDED_VALUE = 2;
-export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','all-in-pickaxe'];
+export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','supersizer-pickaxe','all-in-pickaxe'];
+export const SUPERSIZER_SIZE_MUTATIONS = [
+ {id:'supersizer-small',name:'Small',chance:1/3,multiplier:.75,weightMultiplier:.75,sizeMutation:true},
+ {id:'supersizer-big',name:'Big',chance:1/10,multiplier:1.25,weightMultiplier:1.25,sizeMutation:true},
+ {id:'supersizer-giant',name:'Giant',chance:1/100,multiplier:2,weightMultiplier:2,sizeMutation:true},
+ {id:'supersizer-massive',name:'Massive',chance:1/1000,multiplier:5,weightMultiplier:5,sizeMutation:true},
+ {id:'supersizer-colossal',name:'Colossal',chance:1/10000,multiplier:10,weightMultiplier:10,sizeMutation:true},
+ {id:'supersizer-titanic',name:'Titanic',chance:1/100000,multiplier:20,weightMultiplier:20,sizeMutation:true},
+ {id:'supersizer-gargantuan',name:'Gargantuan',chance:1/1000000,multiplier:25,weightMultiplier:25,sizeMutation:true}
+];
 export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
 export const EXCAVATION_LOOT = [
  [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
@@ -35,16 +45,21 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
-export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true) {
+export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true,now=Date.now()) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
  let stats=PICKAXE_STATS[id]?.slice()??null;
+ const blessingUntil=Date.parse(String(state.supersizerBlessingUntil??''));
+ const blessingActive=id==='supersizer-pickaxe'&&genuine&&Number.isFinite(blessingUntil)&&blessingUntil>Number(now);
+ const blessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0));
  const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
   surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
   crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
   wrongTool:false,closeEnough:false,borrowed:null,
   realityShift:genuine&&id==='reality-shifter'&&(rolls+1)%500===0,
-  foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0};
+  foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
+  supersizerBlessing:blessingActive,
+  supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20};
  if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
  if(id==='toy-shovel'&&random()<1/67) {
@@ -53,6 +68,16 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
   else {flags.borrowed=SERIOUS_PICKAXES[Math.floor(random()*SERIOUS_PICKAXES.length)];stats=(TOY_BORROWED_STATS[flags.borrowed]??PICKAXE_STATS[flags.borrowed]).slice();stats[1]=2.4;}
  }
  return {id,state,stats,flags};
+}
+export function supersizerSizeMutation(id,random=Math.random,genuine=true) {
+ if(id!=='supersizer-pickaxe'||!genuine)return null;
+ const draw=random();let cumulative=0;
+ for(const mutation of SUPERSIZER_SIZE_MUTATIONS){cumulative+=mutation.chance;if(draw<cumulative)return {...mutation};}
+ return null;
+}
+export function supersizerBlessingMultipliers(flags={}) {
+ if(!flags.supersizerBlessing)return {luck:1,weightMultiplier:1,rollSpeed:1,finalSell:1};
+ return {luck:flags.supersizerBlessedRoll?10000:2,weightMultiplier:2.25,rollSpeed:.75,finalSell:1.5};
 }
 export function specialChance(id,gem,state) {
  return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
@@ -65,10 +90,20 @@ export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) 
  if(id!=='silly-fun-happy-pickaxe') return [];
  return [[.5,'silly-small','Silly',.5],[.1,'silly-large','Silly',10],[.005,'happy','Happy',50]].flatMap(([chance,id,name,multiplier])=>random()<chance?[{id,name,chance,multiplier}]:[]);
 }
-export function finishEquipmentRoll(context,{naturalWeight,gem,random=Math.random,genuine=true}) {
+export function finishEquipmentRoll(context,{naturalWeight,gem,sizeMutation=null,now=Date.now(),random=Math.random,genuine=true}) {
  const {id,flags}=context;const state=structuredClone(context.state);
  if(!genuine) return {state,loot:null,breakneck:false};
  state.rolls={...state.rolls,[id]:Number(state.rolls?.[id]??0)+1};
+ if(id==='supersizer-pickaxe') {
+  if(flags.supersizerBlessing) state.supersizerBlessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0))+1;
+  else state.supersizerBlessedRolls=0;
+  if(sizeMutation?.id==='supersizer-gargantuan') {
+   // Refresh to five minutes from this roll. An already-active blessing keeps
+   // its ten-roll cadence; a newly-started blessing begins at zero AFTER it.
+   if(!flags.supersizerBlessing) state.supersizerBlessedRolls=0;
+   state.supersizerBlessingUntil=new Date(Number(now)+300000).toISOString();
+  }
+ }
  if(id==='bedrock-pickaxe') {
   if(flags.foundationBurst) state.bedrockBurst=Math.max(0,Number(state.bedrockBurst)-1);
   else if(gem) {
