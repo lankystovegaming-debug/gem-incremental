@@ -1236,7 +1236,108 @@ type BatchExecution = {
   guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
   pets?: any[];
   equipmentBonusRows?: any[];
+  timing?: RollInvocationTiming;
 };
+
+type RollSubrollTiming = {
+  index: number;
+  total_ms?: number;
+  background_awaited: boolean;
+  phases: Record<string, number>;
+  flags: Record<string, boolean | string>;
+};
+
+type RollInvocationTiming = {
+  sample_rate: number;
+  started_at_ms: number;
+  subrolls: RollSubrollTiming[];
+  lease_release_ms: number;
+  wait_until_registered: boolean;
+  response_done: Promise<void>;
+  mark_response_done: () => void;
+};
+
+export function normalizeRollTimingSampleRate(raw: unknown): number {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 0.05;
+}
+
+const ROLL_TIMING_SAMPLE_RATE = normalizeRollTimingSampleRate(
+  (globalThis as any).Deno?.env?.get?.("ROLL_TIMING_SAMPLE_RATE") ?? 0.05
+);
+
+function shouldSampleRollTiming(): boolean {
+  if (ROLL_TIMING_SAMPLE_RATE <= 0) return false;
+  if (ROLL_TIMING_SAMPLE_RATE >= 1) return true;
+  const draw = new Uint32Array(1);
+  crypto.getRandomValues(draw);
+  return draw[0] / 0x100000000 < ROLL_TIMING_SAMPLE_RATE;
+}
+
+function createRollInvocationTiming(startedAtMs: number): RollInvocationTiming {
+  let markResponseDone = () => {};
+  const responseDone = new Promise<void>((resolve) => { markResponseDone = resolve; });
+  return {
+    sample_rate: ROLL_TIMING_SAMPLE_RATE,
+    started_at_ms: startedAtMs,
+    subrolls: [],
+    lease_release_ms: 0,
+    wait_until_registered: false,
+    response_done: responseDone,
+    mark_response_done: markResponseDone
+  };
+}
+
+function timingNow(batchExecution: BatchExecution): number {
+  return batchExecution.timing ? performance.now() : 0;
+}
+
+function recordRollPhase(
+  batchExecution: BatchExecution,
+  batchIndex: number,
+  phase: string,
+  startedAtMs: number
+): void {
+  const subroll = batchExecution.timing?.subrolls[batchIndex];
+  if (!subroll) return;
+  const elapsed = Math.max(0, performance.now() - startedAtMs);
+  subroll.phases[phase] = Math.round(((subroll.phases[phase] ?? 0) + elapsed) * 100) / 100;
+}
+
+function logRollTiming(payload: Record<string, unknown>): void {
+  console.log(`[ROLL_TIMING] ${JSON.stringify(payload)}`);
+}
+
+function registerRollWaitUntil(
+  batchExecution: BatchExecution,
+  batchIndex: number,
+  backgroundPromise: Promise<unknown>
+): void {
+  if (!batchExecution.timing) {
+    EdgeRuntime.waitUntil(backgroundPromise);
+    return;
+  }
+  const waitUntilStartedAt = performance.now();
+  batchExecution.timing.wait_until_registered = true;
+  EdgeRuntime.waitUntil(Promise.all([
+    backgroundPromise,
+    batchExecution.timing.response_done
+  ]).then(() => {
+    const phases = batchExecution.timing?.subrolls[batchIndex]?.phases ?? {};
+    logRollTiming({
+      event: "roll_timing",
+      segment: "waitUntil",
+      batch_size: 1,
+      sample_rate: batchExecution.timing?.sample_rate,
+      wait_until_ms: Math.round((performance.now() - waitUntilStartedAt) * 100) / 100,
+      whole_invocation_ms: Math.round((performance.now() - Number(batchExecution.timing?.started_at_ms)) * 100) / 100,
+      subroll_index: batchIndex + 1,
+      background_phases: Object.fromEntries(
+        Object.entries(phases).filter(([phase]) => phase.includes("bookkeeping_background") || phase.includes("bookkeeping_loss"))
+      )
+    });
+  }));
+}
 
 async function executeSingleRoll(
   req: Request,
@@ -1272,6 +1373,7 @@ async function executeSingleRoll(
       // One service-only RPC supplies the full authoritative pre-roll
       // snapshot. Catalog rows are returned only when their trigger-maintained
       // version differs from the warm isolate's cached version.
+      const prepareContextStartedAt = timingNow(batchExecution);
       const { data: rollContext, error: rollContextError } = await ctx.supabaseAdmin.rpc(
         "roll_prepare_context",
         {
@@ -1281,6 +1383,7 @@ async function executeSingleRoll(
           p_mutation_catalog_version: mutationCatalogCache?.version ?? null
         }
       );
+      recordRollPhase(batchExecution, batchIndex, "roll_prepare_context_ms", prepareContextStartedAt);
 
       if (rollContextError || !rollContext) {
         console.error("Roll context load failed:", rollContextError);
@@ -1900,6 +2003,7 @@ async function executeSingleRoll(
       // and userscripts all serialize through one authoritative gate.
       let rollClaim: any;
       let rollClaimError: any = null;
+      const leaseClaimStartedAt = timingNow(batchExecution);
       if (batchIndex === 0) {
         const claimResult = await ctx.supabaseAdmin
           .rpc("claim_equipment_roll_batch", {
@@ -1919,6 +2023,9 @@ async function executeSingleRoll(
           genuineRoll: Number(batchExecution.firstGenuineRoll) + batchIndex
         };
       }
+      recordRollPhase(batchExecution, batchIndex, "lease_claim_ms", leaseClaimStartedAt);
+      const timingFlags = batchExecution.timing?.subrolls[batchIndex]?.flags;
+      if (timingFlags) timingFlags.lease_claim = batchIndex === 0 ? "rpc" : "batch_reuse";
 
 
       if (
@@ -2032,6 +2139,7 @@ async function executeSingleRoll(
             enchantStateChanged=true;
           }
           if(enchantId==='slow_starter'&&enchantGrade==='ancient') {enchantState.rolls=(Number(enchantState.rolls??0)+1)%100;enchantStateChanged=true;}
+          const houseEdgeBookkeepingStartedAt = timingNow(batchExecution);
           const houseEdgeBookkeeping = ctx.supabaseAdmin.rpc('roll_finish_bookkeeping', {
             p_player_id: playerId,
             p_phase: 'loss',
@@ -2048,11 +2156,12 @@ async function executeSingleRoll(
               }
             }
           }).then(({ data, error }: any) => {
+            recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_loss_ms", houseEdgeBookkeepingStartedAt);
             if (error) console.error('House Edge bookkeeping failed', error);
             else if (data?.errors?.length) console.warn('House Edge bookkeeping partial failures', data.errors);
           });
           if (batchExecution.batchSize > 1) await houseEdgeBookkeeping;
-          else EdgeRuntime.waitUntil(houseEdgeBookkeeping);
+          else registerRollWaitUntil(batchExecution, batchIndex, houseEdgeBookkeeping);
         }
         return jsonResponse({playerId,houseEdge:true,gem:null,specimenId:null,
           equipmentPassives:{genuineRoll,specialist:slotOutcome,state:lostState},
@@ -2204,6 +2313,8 @@ async function executeSingleRoll(
       // =====================================================
       // GENERATE ROLL
       // =====================================================
+
+      let rngJsStartedAt = timingNow(batchExecution);
 
       const geologistMultiplier = enchantId === "geologist"
         ? strengthenEnchantMultiplier(1.5)
@@ -2535,6 +2646,7 @@ async function executeSingleRoll(
         nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
         nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
       ) {
+        recordRollPhase(batchExecution, batchIndex, "rng_js_ms", rngJsStartedAt);
         const { error: mutationEffectStateError } = await ctx.supabaseAdmin
           .from("players")
           .update({
@@ -2547,6 +2659,7 @@ async function executeSingleRoll(
         if (mutationEffectStateError) {
           console.error("Mutation temporary effect persistence failed:", mutationEffectStateError);
         }
+        rngJsStartedAt = timingNow(batchExecution);
       }
 
       const researchMutationValue = mutations.length
@@ -2596,6 +2709,7 @@ async function executeSingleRoll(
 
         value
       };
+      recordRollPhase(batchExecution, batchIndex, "rng_js_ms", rngJsStartedAt);
 
 
       // =====================================================
@@ -2607,6 +2721,7 @@ async function executeSingleRoll(
         { ...specimen, effectiveRarity },
         discoveredGemNames
       );
+      const bundleRouteStartedAt = timingNow(batchExecution);
       const bundleRoutePromise = filterDecision.keep
         ? Promise.resolve({
           data: { status: "kept", keepInInventory: true, reason: filterDecision.reason },
@@ -2624,6 +2739,8 @@ async function executeSingleRoll(
       let autoCraftRequirementIndex = null;
 
       const { data: bundleRoute, error: bundleRouteError } = await bundleRoutePromise;
+      recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
+      if (timingFlags) timingFlags.bundle_route_roll_used = !filterDecision.keep;
       if (bundleRouteError || !bundleRoute) {
         // An uncertain commit must never fall back to saving a second copy.
         console.error("Bundle routing failed:", bundleRouteError);
@@ -2633,11 +2750,14 @@ async function executeSingleRoll(
       const bundleKeepInInventory = bundleRoute.keepInInventory === true;
 
       if (rollContext.activeAutoCraft && !bundleDeposited && !bundleKeepInInventory) {
+        const autoCraftStartedAt = timingNow(batchExecution);
         const { data: autoCraftResult, error: autoCraftError } =
           await ctx.supabaseAdmin.rpc("roll_autocraft_deposit", {
             p_player_id: playerId,
             p_specimen: specimen
           });
+        recordRollPhase(batchExecution, batchIndex, "roll_autocraft_deposit_ms", autoCraftStartedAt);
+        if (timingFlags) timingFlags.roll_autocraft_deposit_used = true;
 
         if (autoCraftError) {
           console.error("Auto Craft deposit failed:", autoCraftError);
@@ -2663,6 +2783,7 @@ async function executeSingleRoll(
       if (
         !bundleDeposited && (!autoDeposited || autoConserved)
       ) {
+        const inventoryInsertStartedAt = timingNow(batchExecution);
         const {
           data:
             insertedGem,
@@ -2748,6 +2869,8 @@ async function executeSingleRoll(
             })
             .select()
             .single();
+        recordRollPhase(batchExecution, batchIndex, "inventory_insert_ms", inventoryInsertStartedAt);
+        if (timingFlags) timingFlags.inventory_insert_used = true;
 
 
         if (
@@ -2819,6 +2942,7 @@ async function executeSingleRoll(
             researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
           (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) * eventContext.valueMultiplier;
 
+        const duplicateInventoryInsertStartedAt = timingNow(batchExecution);
         const { data: duplicateGem, error: duplicateError } = await ctx.supabaseAdmin
           .from("inventory_gems")
           .insert({
@@ -2846,6 +2970,8 @@ async function executeSingleRoll(
           })
           .select()
           .single();
+        recordRollPhase(batchExecution, batchIndex, "inventory_insert_ms", duplicateInventoryInsertStartedAt);
+        if (timingFlags) timingFlags.inventory_insert_used = true;
 
         if (duplicateError) {
           console.error("Vein Hunter duplicate insert failed:", duplicateError);
@@ -2931,11 +3057,13 @@ async function executeSingleRoll(
           luck_at_roll: capGemLuck(luckBreakdown.ordinary * luckBreakdown.world, maxLuck), locked: false
         };
       }
+      const equipmentCommitStartedAt = timingNow(batchExecution);
       const { data: equipmentCommit, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('commit_equipment_roll', {
         p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
         p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
         p_capacity: effectiveInventoryCapacity
       });
+      recordRollPhase(batchExecution, batchIndex, "commit_equipment_roll_ms", equipmentCommitStartedAt);
       if (equipmentCommitError) throw equipmentCommitError;
       breakneckGem = equipmentCommit?.bonus ?? null;
 
@@ -3022,11 +3150,13 @@ async function executeSingleRoll(
         progressPayload,
         expeditionPayload
       };
+      const criticalBookkeepingStartedAt = timingNow(batchExecution);
       const criticalBookkeepingPromise = ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
         p_player_id: playerId,
         p_phase: "critical",
         p_payload: bookkeepingPayload
       }).then(({ data, error }: any) => {
+        recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_critical_ms", criticalBookkeepingStartedAt);
         if (error) {
           console.error("Critical roll bookkeeping failed:", error);
           return {};
@@ -3034,13 +3164,17 @@ async function executeSingleRoll(
         if (data?.errors?.length) console.warn("Critical roll bookkeeping partial failures:", data.errors);
         return data ?? {};
       });
-      const consolidatedBackgroundPromise = criticalBookkeepingPromise.then(() =>
-        ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
+      const consolidatedBackgroundPromise = criticalBookkeepingPromise.then(() => {
+        const backgroundBookkeepingStartedAt = timingNow(batchExecution);
+        return ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
           p_player_id: playerId,
           p_phase: "background",
           p_payload: bookkeepingPayload
-        })
-      ).then(({ data, error }: any) => {
+        }).then((result: any) => {
+          recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", backgroundBookkeepingStartedAt);
+          return result;
+        });
+      }).then(({ data, error }: any) => {
         if (error) console.error("Background roll bookkeeping failed:", error);
         else if (data?.errors?.length) console.warn("Background roll bookkeeping partial failures:", data.errors);
       });
@@ -3067,7 +3201,7 @@ async function executeSingleRoll(
           console.error("Background roll bookkeeping crashed:", error);
         });
       if (batchExecution.batchSize > 1) await backgroundPostCommitPromise;
-      else EdgeRuntime.waitUntil(backgroundPostCommitPromise);
+      else registerRollWaitUntil(batchExecution, batchIndex, backgroundPostCommitPromise);
 
 
       // These values are included in the response (or are prerequisites for
@@ -3283,6 +3417,9 @@ export default {
         return new Response("ok", { status: 200, headers: corsHeaders });
       }
 
+      const timingSampled = shouldSampleRollTiming();
+      const invocationTimingStartedAt = timingSampled ? performance.now() : 0;
+
       let requestBody: any = {};
       try {
         requestBody = await req.json();
@@ -3297,13 +3434,33 @@ export default {
 
       const execution: BatchExecution = {
         batchSize,
-        requestStartedAt: new Date()
+        requestStartedAt: new Date(),
+        timing: timingSampled ? createRollInvocationTiming(invocationTimingStartedAt) : undefined
       };
       const results: any[] = [];
 
       try {
         for (let batchIndex = 0; batchIndex < batchSize; batchIndex += 1) {
-          const response = await executeSingleRoll(req, ctx, execution, batchIndex);
+          const subrollTiming = execution.timing ? {
+            index: batchIndex + 1,
+            background_awaited: batchSize > 1,
+            phases: {},
+            flags: {
+              bundle_route_roll_used: false,
+              roll_autocraft_deposit_used: false,
+              inventory_insert_used: false
+            }
+          } satisfies RollSubrollTiming : null;
+          if (subrollTiming) execution.timing?.subrolls.push(subrollTiming);
+          const subrollStartedAt = timingNow(execution);
+          let response: Response;
+          try {
+            response = await executeSingleRoll(req, ctx, execution, batchIndex);
+          } finally {
+            if (subrollTiming) {
+              subrollTiming.total_ms = Math.round((performance.now() - subrollStartedAt) * 100) / 100;
+            }
+          }
           const payload = await response.json();
           if (!response.ok) {
             if (results.length === 0) {
@@ -3324,12 +3481,29 @@ export default {
           results.push(payload);
         }
       } finally {
+        const leaseReleaseStartedAt = timingNow(execution);
         if (execution.leaseId) {
           const { error } = await ctx.supabaseAdmin.rpc("release_server_roll", {
             p_player_id: ctx.userClaims?.id,
             p_lease_id: execution.leaseId
           });
           if (error) console.error("Roll lease release failed:", error);
+        }
+        if (execution.timing) {
+          execution.timing.lease_release_ms = Math.round((performance.now() - leaseReleaseStartedAt) * 100) / 100;
+          const responsePathMs = Math.round((performance.now() - execution.timing.started_at_ms) * 100) / 100;
+          logRollTiming({
+            event: "roll_timing",
+            segment: "response",
+            batch_size: batchSize,
+            sample_rate: execution.timing.sample_rate,
+            response_path_ms: responsePathMs,
+            whole_invocation_ms:
+              batchSize > 1 || !execution.timing.wait_until_registered ? responsePathMs : null,
+            lease_release_ms: execution.timing.lease_release_ms,
+            subrolls: execution.timing.subrolls
+          });
+          execution.timing.mark_response_done();
         }
       }
 
