@@ -1,4 +1,11 @@
 export const GEM_MUTATIONS = Object.freeze({
+  'supersizer-small': Object.freeze({id:'supersizer-small',name:'Small',chance:3,multiplier:.75,exclusive:true,description:'Supersizer only: ×0.75 weight and ×0.75 value.'}),
+  'supersizer-big': Object.freeze({id:'supersizer-big',name:'Big',chance:10,multiplier:1.25,exclusive:true,description:'Supersizer only: ×1.25 weight and ×1.25 value.'}),
+  'supersizer-giant': Object.freeze({id:'supersizer-giant',name:'Giant',chance:100,multiplier:2,exclusive:true,description:'Supersizer only: ×2 weight and ×2 value.'}),
+  'supersizer-massive': Object.freeze({id:'supersizer-massive',name:'Massive',chance:1000,multiplier:5,exclusive:true,description:'Supersizer only: ×5 weight and ×5 value.'}),
+  'supersizer-colossal': Object.freeze({id:'supersizer-colossal',name:'Colossal',chance:10000,multiplier:10,exclusive:true,description:'Supersizer only: ×10 weight and ×10 value.'}),
+  'supersizer-titanic': Object.freeze({id:'supersizer-titanic',name:'Titanic',chance:100000,multiplier:20,exclusive:true,description:'Supersizer only: ×20 weight and ×20 value.'}),
+  'supersizer-gargantuan': Object.freeze({id:'supersizer-gargantuan',name:'Gargantuan',chance:1000000,multiplier:25,exclusive:true,description:'Supersizer only: ×25 weight and ×25 value; starts Gargantuan’s Blessing after the roll.'}),
   shifted: Object.freeze({id:'shifted',name:'Shifted',chance:5,multiplier:35,exclusive:true,description:'Reality Shift: 20% on every 500th genuine Reality Shifter roll.'}),
   'balanced': Object.freeze({id:'balanced',name:'Balanced',chance:20,multiplier:1.2,exclusive:true}),
   'ascended': Object.freeze({id:'ascended',name:'Ascended',chance:400,multiplier:2,exclusive:true}),

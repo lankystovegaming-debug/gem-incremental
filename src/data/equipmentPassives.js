@@ -56,7 +56,8 @@ Object.assign(EQUIPMENT_PASSIVES, {
  'the-resonator': {name:'Resonance',description:'1.25× Special Gem Chance. Discovering a Special Gem builds permanent per-gem Resonance, up to 1.875× chance.'},
  'the-excavator': {name:'Excavation / Archaeology',description:'1/40 genuine rolls grants a potion alongside the gem. Permanent mastery improves loot quality. Exclusive Relic Potions boost normal secondary bonuses for 60s.'},
  'toy-shovel': {name:'Wrong Tool / Close Enough',description:'1/67 genuine rolls borrows a random endgame pickaxe’s stats only. On that proc, another 1/67 uses 67× Luck, 6.7× mutation and Weight Luck, and 2.67× weight.'},
- 'silly-fun-happy-pickaxe': {name:'Silly / Happy',description:'Independent effects: 50% Silly ×0.5, 10% Silly ×10, 0.5% Happy ×50. All can stack on the same specimen.'}
+ 'silly-fun-happy-pickaxe': {name:'Silly / Happy',description:'Independent effects: 50% Silly ×0.5, 10% Silly ×10, 0.5% Happy ×50. All can stack on the same specimen.'},
+ 'supersizer-pickaxe': {name:"Gargantuan’s Blessing",description:'Size mutations are mutually exclusive and multiply both weight and value. Gargantuan starts or refreshes a 5-minute blessing after its triggering roll: ×1.5 Final Sell, ×2 Final Luck, ×2.25 final Weight Multiplier, and ×0.75 final Roll Speed. Every 10th genuine blessed roll independently has a 1/20 chance to use ×10,000 Final Luck for that roll.'}
 });
 export function getEquipmentPassive(equipmentId) {
  return EQUIPMENT_PASSIVES[equipmentId] ?? null;
@@ -71,5 +72,6 @@ export const PICKAXE_SPECIALTIES = {
   "the-resonator": "Special Gems",
   "the-excavator": "Consumables",
   "bedrock-pickaxe": "Foundation bursts",
-  "celestial-pickaxe": "Generalist"
+  "celestial-pickaxe": "Generalist",
+  "supersizer-pickaxe": "Money + oversized specimens"
 };

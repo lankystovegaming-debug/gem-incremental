@@ -87,8 +87,23 @@ export const realityBedrockRecipes=[
  {...pick('reality-shifter','Reality Shifter',125000000,[gem('Eternal Glowstone',1000),gem('Nyx Obsidian',1000),gem('Solarion',1),gem('Polaris',1),lifetimeRolls(50000)],true),consumeMaterials:true,description:'Reality shall conform before our power. Kneel, for you are in the presence of a god.'},
  {...pick('bedrock-pickaxe','Bedrock Pickaxe',100000000,[...batchBulk('bedrock-pickaxe',{Common:10000,Uncommon:7500,Rare:5000,Epic:2500}),lifetimeRolls(250000)]),consumeMaterials:true}
 ];
+export const supersizerRecipes=[
+ {...pick('supersizer-pickaxe','Supersizer Pickaxe',1099000000,[
+  {id:'supersizer-value-50m',type:'specimen-condition',minimumValue:50000000,amount:1,label:'1 gem worth at least $50M'},
+  {id:'supersizer-value-10m',type:'specimen-condition',minimumValue:10000000,amount:2,label:'2 gems worth at least $10M'},
+  {type:'consumable',consumableId:'mythic-potion',amount:10},
+  {type:'consumable',consumableId:'legendary-potion',amount:25},
+  {id:'supersizer-quartz',type:'specimen-condition',gem:'Quartz',minimumFinalWeight:1000,amount:50,label:'50 Quartz at 1,000g+ final weight'},
+  ...batchBulk('supersizer-pickaxe',{Exotic:75,Mythic:125}),
+  history('supersizerHeavy10',3,'3 historical specimens at ≥10× final/base weight'),
+  history('supersizerRareHeavy5',5,'5 historical 1/10M+ base-rarity specimens at ≥5× final/base weight'),
+  history('genuineRolls',300000,'Lifetime genuine rolls'),
+  history('supersizerSpecialists',3,'Distinct eligible post-Celestial specialist Pickaxes ever owned')
+ ]),consumeMaterials:true,description:'The mining industry said this was excessive. We made it bigger.',
+ reward:{id:'supersizer-pickaxe',name:'Supersizer Pickaxe',category:'pickaxe',tier:18,bonus:{...pickaxeBonus('supersizer-pickaxe'),finalSell:.25}}}
+];
 export function applyEquipmentOverhaul(recipes) {
- const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes,...realityBedrockRecipes].map(r=>[r.id,r]));
+ const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes,...realityBedrockRecipes,...supersizerRecipes].map(r=>[r.id,r]));
  const retired = new Set(['neutron-boots','spacetime-walkers','reality-breakers','singularity-vault','bottomless-singularity','event-horizon-vault','omnidimensional-vault']);
  const result=recipes.filter(r=>!replacements.has(r.id)&&!retired.has(r.id)).map(original=>{
   const r=structuredClone(original);

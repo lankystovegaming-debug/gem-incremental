@@ -1135,6 +1135,12 @@ function specialistProgress(item) {
  if(id==='the-excavator') {const n=Number(data.excavations??0), milestones=[25,100,250,500];return `Archaeology level ${milestones.filter(m=>n>=m).length}/4 · ${n} successful Excavations · ${milestones.find(m=>n<m)?`Next milestone: ${milestones.find(m=>n<m)}`:'Maximum quality reached'}`;}
  if(id==='the-resonator')return Object.entries(data.resonance??{}).map(([gem,n])=>`${gem}: Resonance ${n}/10 — Special Gem Chance ×${Number((1.25*(1+.05*Math.min(10,Number(n)))).toFixed(4))}`).join(' · ') || 'Resonance 0/10 — Special Gem Chance ×1.25. Discover Special Gems to build permanent Resonance.';
  if(['empyrean-pickaxe','eternity-pickaxe'].includes(id)){const n=Number(data.rolls?.[id]??0);return n>=1000&&n%1000<10?`Burst: ${10-n%1000} rolls remaining`:`${n%1000}/1,000 genuine rolls`;}
+ if(id==='supersizer-pickaxe'){
+  const blessingUntil=Date.parse(String(data.supersizerBlessingUntil??''));
+  if(!Number.isFinite(blessingUntil)||blessingUntil<=Date.now())return 'Gargantuan’s Blessing inactive';
+  const expiry=new Date(blessingUntil).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  return `Gargantuan’s Blessing active until ${expiry} · Blessed-roll cadence: ${Number(data.supersizerBlessedRolls??0)%10}/10`;
+ }
  return '';
 }
 
