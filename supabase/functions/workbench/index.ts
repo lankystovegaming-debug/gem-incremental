@@ -313,6 +313,8 @@ export default {
           .select("*")
           .eq("player_id", playerId)
           .eq("locked", false)
+          .neq("gem_name", "Enchant Relic")
+          .neq("gem_name", "Ancient Relic")
           .order("rarity", { ascending: true })
           .limit(200);
 
@@ -357,6 +359,8 @@ export default {
           .select("*")
           .eq("player_id", playerId)
           .eq("locked", false)
+          .neq("gem_name", "Enchant Relic")
+          .neq("gem_name", "Ancient Relic")
           .in("id", materialIds);
 
         if (error) {

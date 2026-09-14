@@ -66,10 +66,10 @@ export async function masterworkCloudEquipment(equipmentRowId, action, choice = 
   return invokeFunction("masterwork-equipment", { equipmentRowId, action, choice });
 }
 
-export async function enchantCloudEquipment(equipmentRowId, relicGemId) {
+export async function enchantCloudEquipment(equipmentRowId, relicType) {
   const { data, error } = await invokeFunction("enchant-equipment", {
     equipmentRowId,
-    relicGemId
+    relicType
   });
 
   if (error) {

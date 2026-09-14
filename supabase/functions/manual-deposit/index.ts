@@ -1137,6 +1137,14 @@ const consumableRow =
             "player_id",
             playerId
           )
+          .neq(
+            "gem_name",
+            "Enchant Relic"
+          )
+          .neq(
+            "gem_name",
+            "Ancient Relic"
+          )
           // Legacy specimens can have a null lock flag. The inventory UI
           // already treats null as unlocked, so keep manual crafting
           // compatible while the database backfill rolls out.

@@ -31,14 +31,14 @@ const FRIENDLY_MESSAGES = {
   unequip_failed: "That equipment could not be unequipped.",
   equipment_update_failed: "That equipment could not be updated.",
   invalid_equipment: "Only an equipped pickaxe can be enchanted.",
-  invalid_relic: "That unlocked relic is no longer available.",
+  invalid_relic: "That relic balance is no longer available.",
   enchant_failed: "The pickaxe could not be enchanted.",
   upgrade_failed: "The storage upgrade could not be completed."
   ,masterwork_failed: "The Forge could not complete that action."
   ,masterwork_tier_locked: "Only Tier 10 or higher equipment can be Masterworked."
   ,masterwork_maxed: "That equipment is already Perfected."
-  ,not_enough_enchant_relics: "You do not have enough unlocked Enchant Relics."
-  ,not_enough_ancient_relics: "You do not have enough unlocked Ancient Relics."
+  ,not_enough_enchant_relics: "You do not have enough Enchant Relics."
+  ,not_enough_ancient_relics: "You do not have enough Ancient Relics."
   ,username_required: "Enter the exact username of the player you want to invite."
   ,player_not_found: "No player with that username could be found."
   ,player_already_in_guild: "That player is already in a guild."

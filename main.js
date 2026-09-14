@@ -592,7 +592,7 @@ function renderRoll(data, outcome) {
       ${data.finalStats?.maxLuck != null ? `<p class="gem-reveal__outcome">Gem-selection Luck: ${formatMultiplier(data.finalStats.luck)} · Max Luck: ${formatMultiplier(data.finalStats.maxLuck)} · Uncapped: ${formatMultiplier(data.finalStats.uncappedLuck)}</p>` : ""}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
-      ${isRelic ? '<p class="gem-reveal__outcome">Use this unlocked relic on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
+      ${isRelic ? '<p class="gem-reveal__outcome">This relic was added to your stacked balance. Use it on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Value</span><span class="gem-fact__value">${formatGemValue(data.value)}</span></div>
