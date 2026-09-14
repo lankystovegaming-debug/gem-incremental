@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const main = fs.readFileSync(path.join(root, "main.js"), "utf8");
-assert.match(main, /buildJaOreCutscene/);
-assert.match(main, /gemName\.toLowerCase\(\) === "ja-ore"/);
+assert.match(main, /renderCutscene/);
+assert.doesNotMatch(main, /gemName\.toLowerCase\(\) === "ja-ore"/);
 
 const cutscene = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.js"), "utf8");
 const cutsceneCss = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.css"), "utf8");
@@ -16,6 +16,9 @@ assert.match(cutscene, /With our powers combined/);
 assert.match(cutscene, /JA_ORE_DATA_URI/);
 assert.match(cutscene, /buildJaOreCutscene/);
 assert.match(cutsceneCss, /data:image\/png;base64/);
+
+const config = fs.readFileSync(path.join(root, "src/ui/cutsceneConfig.js"), "utf8");
+assert.match(config, /if \(value >= 1_000_000\) return PRISM/);
 
 const migration = fs.readFileSync(
   path.join(root, "supabase/migrations/20260819000010_unreleased_expansion_features.sql"),

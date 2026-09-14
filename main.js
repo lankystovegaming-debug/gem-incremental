@@ -28,9 +28,7 @@ import { initReferral } from "./src/ui/referralBootstrap.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
-import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
-import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
-import { buildGlitchedOreCutscene } from "./src/ui/glitchedOreCutscene.js";
+import { renderCutscene } from "./src/ui/cutsceneScenes.js";
 import {
   cutsceneController,
   cutsceneDuration,
@@ -439,115 +437,6 @@ function stopCooldown() {
 // GEM REVEAL
 // =========================================================
 
-function buildUltraCutscene(data, gemName, tier, visualVariant, visualHue, visualSpeed, duration) {
-  const existing = document.getElementById("ultra-cutscene-overlay");
-  existing?.remove();
-
-  const overlay = document.createElement("div");
-  overlay.id = "ultra-cutscene-overlay";
-
-  const rarityValue = Number(data?.gem?.rarity ?? 0);
-  const mutationIds = Array.from(new Set(
-    (Array.isArray(data?.mutations) ? data.mutations.map(m => m?.id) : [])
-      .concat(data?.mutation?.id ?? data?.mutationId ?? data?.gem?.mutation_id ?? data?.gem?.mutationId ?? data?.mutation_id ?? [])
-      .filter(Boolean)
-      .map(id => String(id).toLowerCase())
-  ));
-  const mutationObjects = mutationIds.map((id) => getGemMutation(id)).filter(Boolean);
-  const mutationId = mutationIds[0] ?? "";
-  const mutationClass = mutationIds.map(id => ` mutation-scene-${id.replace(/[^a-z0-9_-]/g, "")}`).join("");
-
-  const rarityClass =
-    rarityValue >= 10000000 ? " ultra-level-10m" :
-    rarityValue >= 4000000 ? " ultra-level-4m" :
-    rarityValue >= 1000000 ? " ultra-level-1m" :
-    rarityValue >= 500000 ? " ultra-level-500k" :
-    " ultra-level-100k";
-
-  const isXyGem = gemName.toLowerCase() === "xy gem";
-  overlay.className =
-    `ultra-cutscene-overlay ultra-scene-${visualVariant}${rarityClass}${mutationClass}${isXyGem ? " ultra-xy-gem" : ""}`;
-  overlay.setAttribute("aria-hidden", "true");
-  overlay.dataset.rarity = String(rarityValue);
-  if (mutationId) overlay.dataset.mutation = mutationId;
-  overlay.style.setProperty("--gem-hue", `${visualHue}`);
-  overlay.style.setProperty("--gem-speed", visualSpeed);
-  overlay.style.setProperty("--cinematic-duration", `${duration}ms`);
-
-  const sceneMarkup = [
-    // 0 — Eclipse
-    `<span class="scene__eclipse"></span><span class="scene__corona"></span><span class="scene__orbit scene__orbit-a"></span><span class="scene__orbit scene__orbit-b"></span><span class="scene__stars"></span><span class="scene__particles"></span>`,
-    // 1 — Celestial gate
-    `<span class="scene__gate scene__gate-a"></span><span class="scene__gate scene__gate-b"></span><span class="scene__gate scene__gate-c"></span><span class="scene__constellation"></span><span class="scene__comets"></span>`,
-    // 2 — Prism fracture
-    `<span class="scene__prism"></span><span class="scene__fracture scene__fracture-a"></span><span class="scene__fracture scene__fracture-b"></span><span class="scene__rainbow"></span><span class="scene__shards"></span>`,
-    // 3 — Void rift
-    `<span class="scene__rift"></span><span class="scene__rift-ring"></span><span class="scene__tentacles"></span><span class="scene__void-stars"></span><span class="scene__shockwaves"></span>`,
-    // 4 — Divine beam
-    `<span class="scene__sky"></span><span class="scene__beam scene__beam-a"></span><span class="scene__beam scene__beam-b"></span><span class="scene__beam scene__beam-c"></span><span class="scene__halo"></span><span class="scene__feathers"></span>`,
-    // 5 — Arcane spell
-    `<span class="scene__magic-circle scene__magic-circle-a"></span><span class="scene__magic-circle scene__magic-circle-b"></span><span class="scene__runes"></span><span class="scene__sigils"></span><span class="scene__arcane-sparks"></span>`,
-    // 6 — Supernova
-    `<span class="scene__supernova"></span><span class="scene__shockwave scene__shockwave-a"></span><span class="scene__shockwave scene__shockwave-b"></span><span class="scene__solar-flare"></span><span class="scene__debris"></span>`,
-    // 7 — Crystal cathedral
-    `<span class="scene__cathedral"></span><span class="scene__crystal-cracks"></span><span class="scene__crystal-rays"></span><span class="scene__floating-gems"></span><span class="scene__dust"></span>`,
-    // 8 — Galaxy spiral
-    `<span class="scene__galaxy"></span><span class="scene__galaxy-core"></span><span class="scene__galaxy-arms"></span><span class="scene__nebula"></span><span class="scene__stars"></span>`,
-    // 9 — Reality collapse
-    `<span class="scene__grid"></span><span class="scene__collapse"></span><span class="scene__glitch-rings"></span><span class="scene__energy-blades"></span><span class="scene__afterimage"></span>`
-  ][visualVariant];
-
-  overlay.innerHTML = `
-    <div class="scene__backdrop"></div>
-    <div class="scene__world">${sceneMarkup}</div>
-    ${mutationIds.map(id => `<div class="mutation-scene-layer mutation-scene-layer--${id}" aria-hidden="true"><span class="mutation-fx mutation-fx--a"></span><span class="mutation-fx mutation-fx--b"></span><span class="mutation-fx mutation-fx--c"></span><span class="mutation-fx mutation-fx--d"></span></div>`).join("")}
-    ${isXyGem ? `
-      <div class="xy__cataclysm" aria-hidden="true">
-        <span class="xy__void"></span>
-        <span class="xy__cross"></span>
-        <span class="xy__cross xy__cross--b"></span>
-        <span class="xy__slash xy__slash--a"></span>
-        <span class="xy__slash xy__slash--b"></span>
-        <span class="xy__shard xy__shard--a"></span>
-        <span class="xy__shard xy__shard--b"></span>
-        <span class="xy__shard xy__shard--c"></span>
-        <span class="xy__shard xy__shard--d"></span>
-        <span class="xy__energy"></span>
-        <span class="xy__glitch"></span>
-        <span class="xy__halo"></span>
-      </div>
-    ` : ""}
-    <div class="scene__mega-world" aria-hidden="true">
-      <span class="mega__warp"></span>
-      <span class="mega__ring mega__ring--a"></span>
-      <span class="mega__ring mega__ring--b"></span>
-      <span class="mega__ring mega__ring--c"></span>
-      <span class="mega__meteor-field"></span>
-      <span class="mega__fracture"></span>
-      <span class="mega__shockwave"></span>
-      <span class="mega__singularity"></span>
-      <span class="mega__title">LIMIT BREAK</span>
-    </div>
-    <div class="scene__flash"></div>
-    <div class="scene__vignette"></div>
-    <div class="scene__scanlines"></div>
-    <div class="scene__reveal">
-      <div class="scene__gem">${gemIconHtml(gemName, "gem-icon--cinematic", mutationIds)}</div>
-      <div class="scene__tier">${escapeHtml(tier.name)}</div>
-      <h2 class="scene__name ${isXyGem ? "scene__name--xy" : ""}">${gemNameHtml(gemName, escapeHtml, mutationIds.map(id => `gem-styled--mutation-${id}`).join(" "))}</h2>
-      ${mutationObjects.length ? `<div class="scene__mutation ${mutationObjects.length > 1 ? "scene__mutation--many" : ""}" aria-label="Mutations">${mutationObjects.map((m, index) => `${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
-      <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
-      <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}</div>
-    </div>
-    <div class="scene__letterbox scene__letterbox-top"></div>
-    <div class="scene__letterbox scene__letterbox-bottom"></div>
-  `;
-
-  document.body.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add("is-playing"));
-  return overlay;
-}
-
 function mutationNamesHtml(mutations = []) {
   const normalized = Array.isArray(mutations)
     ? mutations.filter((mutation) => mutation?.id)
@@ -711,23 +600,7 @@ function renderRoll(data, outcome) {
 
     return cutsceneController.play({
       duration,
-      render: () => {
-        const normalizedGemName = gemName.trim().toLowerCase();
-        try {
-          if (normalizedGemName === "heart of xy" || normalizedGemName === "xy gem") {
-            return buildXyGemCutscene(data, outcome, duration);
-          }
-          if (normalizedGemName === "ja-ore") {
-            return buildJaOreCutscene(data, outcome, duration);
-          }
-          if (/glitch(?:ed)?[\s_-]*ore/.test(normalizedGemName)) {
-            return buildGlitchedOreCutscene(data, duration);
-          }
-        } catch (error) {
-          console.error(`${gemName} cutscene failed, using standard:`, error);
-        }
-        return buildUltraCutscene(data, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
-      },
+      render: () => renderCutscene(data, duration),
       onCleanup: () => {
         gemStage.classList.remove("is-animating", "is-big", "is-cinematic", "is-ultra-rare");
         gemStage.style.removeProperty("--cinematic-duration");

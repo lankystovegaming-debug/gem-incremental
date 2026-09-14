@@ -1,0 +1,191 @@
+#ultra-cutscene-overlay.cutscene-v5 {
+  --cs-c: hsl(var(--gem-hue, 210) 92% 68%);
+  --cs-c2: hsl(calc(var(--gem-hue, 210) + 62) 94% 72%);
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  overflow: hidden !important;
+  contain: strict;
+  isolation: isolate;
+  background: #02040a;
+  color: #f7fbff;
+  opacity: 0;
+  cursor: default;
+  transition: opacity .2s ease;
+  font-family: var(--font-display, system-ui, sans-serif);
+}
+#ultra-cutscene-overlay.cutscene-v5.is-playing { opacity: 1; }
+.cutscene-v5 *, .cutscene-v5 *::before, .cutscene-v5 *::after { box-sizing: border-box; }
+.cs-backdrop,.cs-environment,.cs-energy,.cs-vignette,.cs-ui-clones { position:absolute; inset:0; }
+.cs-backdrop {
+  background: radial-gradient(circle at 50% 48%, color-mix(in srgb,var(--cs-c) 20%,transparent),transparent 28%),#02040a;
+  animation: csBreathe var(--cinematic-duration) ease-in-out both;
+}
+.cs-vignette { z-index:80;pointer-events:none;background:radial-gradient(circle,transparent 25%,rgb(0 0 0/.88) 110%); }
+.cs-environment,.cs-energy { z-index:8;pointer-events:none; }
+.cs-environment>span,.cs-energy>span { position:absolute;display:block; }
+.cs-reticle { position:absolute;z-index:30;left:50%;top:47%;width:min(42vmin,360px);aspect-ratio:1;transform:translate(-50%,-50%); }
+.cs-reticle__ring { position:absolute;inset:0;border:1px solid color-mix(in srgb,var(--cs-c) 72%,transparent);border-radius:50%;box-shadow:0 0 18px color-mix(in srgb,var(--cs-c) 32%,transparent);animation:csRing var(--cinematic-duration) ease both; }
+.cs-reticle__ring--inner { inset:14%;border-style:dashed;animation-direction:reverse; }
+.cs-reticle__tick { position:absolute;left:50%;top:50%;width:132%;height:1px;background:linear-gradient(90deg,transparent,var(--cs-c),transparent);transform:translate(-50%,-50%);opacity:.55; }
+.cs-reticle__tick--y { transform:translate(-50%,-50%) rotate(90deg); }
+.cs-specimen { position:absolute;inset:24%;display:grid;place-items:center;filter:brightness(.18) saturate(.5) drop-shadow(0 0 20px var(--cs-c));animation:csSpecimen var(--cinematic-duration) ease both; }
+.cs-specimen .gem-icon,.cs-reveal__gem .gem-icon { width:100%;height:100%; }
+.cs-pulse { left:50%;top:47%;width:10vmin;aspect-ratio:1;border:2px solid var(--cs-c);border-radius:50%;transform:translate(-50%,-50%);opacity:0;animation:csPulse var(--cinematic-duration) ease-out both; }
+.cs-pulse--b { animation-delay:calc(var(--cinematic-duration) * .09);border-color:var(--cs-c2); }
+.cs-pulse--c { animation-delay:calc(var(--cinematic-duration) * .18); }
+.cs-beam { left:50%;top:-20%;width:2px;height:72%;transform-origin:50% 100%;background:linear-gradient(transparent,#fff,var(--cs-c));box-shadow:0 0 18px var(--cs-c);opacity:0;animation:csBeam var(--cinematic-duration) ease both; }
+.cs-beam--b { transform:rotate(48deg);filter:hue-rotate(80deg); }
+.cs-beam--c { transform:rotate(-48deg);filter:hue-rotate(180deg); }
+.cs-fracture { left:50%;top:47%;width:140vw;height:2px;background:linear-gradient(90deg,transparent,var(--cs-c),#fff,var(--cs-c2),transparent);transform:translate(-50%,-50%) rotate(22deg) scaleX(0);box-shadow:0 0 25px var(--cs-c);animation:csFracture var(--cinematic-duration) ease both; }
+.cs-fracture--b { transform:translate(-50%,-50%) rotate(-38deg) scaleX(0);animation-delay:calc(var(--cinematic-duration) * .05); }
+.cs-particles { inset:-20%;background-image:radial-gradient(circle,#fff 0 1px,transparent 1.5px),radial-gradient(circle,var(--cs-c) 0 1px,transparent 2px);background-size:31px 31px,57px 53px;mask:radial-gradient(circle,transparent 0 8%,#000 32%,transparent 72%);animation:csParticles var(--cinematic-duration) linear both; }
+.cs-lattice { inset:8%;opacity:calc(.1 + var(--cs-intensity) * .35);background:linear-gradient(30deg,transparent 49.6%,var(--cs-c) 50%,transparent 50.4%),linear-gradient(150deg,transparent 49.6%,var(--cs-c2) 50%,transparent 50.4%);background-size:48px 84px;animation:csLattice var(--cinematic-duration) ease both; }
+.cs-flash { inset:0;background:#fff;opacity:0;mix-blend-mode:screen;animation:csFlash var(--cinematic-duration) ease both; }
+.cs-scanner { position:absolute;z-index:55;left:clamp(18px,5vw,72px);top:clamp(20px,8vh,90px);max-width:min(560px,88vw);font-family:var(--font-mono,monospace);letter-spacing:.12em;text-transform:uppercase;text-shadow:0 0 16px var(--cs-c); }
+.cs-scanner__label { color:var(--cs-c2);font-size:clamp(10px,1.2vw,15px);font-weight:900;margin-bottom:12px;opacity:.8; }
+.cs-scanner__counter { min-height:1em;font-size:clamp(30px,8vw,96px);font-variant-numeric:tabular-nums;font-weight:900;letter-spacing:-.04em; }
+.cs-beat { position:absolute;left:0;top:2.4rem;width:min(760px,88vw);font-size:clamp(13px,2vw,24px);opacity:0;transform:translateY(8px);filter:blur(5px);transition:opacity .25s,transform .35s,filter .35s; }
+.cs-beat.is-current { opacity:1;transform:none;filter:none; }
+.cs-reveal { position:absolute;z-index:60;inset:0;display:grid;place-items:center;align-content:center;text-align:center;padding:12vh 5vw 7vh;opacity:0;transform:scale(.88);filter:blur(12px);transition:opacity .7s,transform 1s cubic-bezier(.16,1,.3,1),filter .8s; }
+.cs-reveal.is-visible { opacity:1;transform:none;filter:none; }
+.cs-reveal__gem { width:clamp(96px,17vmin,220px);height:clamp(96px,17vmin,220px);filter:drop-shadow(0 0 15px var(--cs-c)) drop-shadow(0 0 60px var(--cs-c2)); }
+.cs-reveal__tier { margin-top:1.5vh;color:var(--cs-c2);font-size:clamp(10px,1.3vw,17px);font-weight:900;letter-spacing:.45em;text-transform:uppercase; }
+.cs-reveal__name { max-width:94vw;margin:.15em 0 0;font-size:clamp(34px,6.5vw,96px);line-height:.95;overflow-wrap:anywhere;text-shadow:0 0 16px var(--cs-c),0 0 60px var(--cs-c2); }
+.cs-reveal__mutations,.cs-reveal__rarity,.cs-reveal__chance { margin-top:.7rem;font-family:var(--font-mono,monospace);font-size:clamp(12px,1.6vw,20px); }
+.cs-reveal__mutations { color:var(--cs-c2);letter-spacing:.12em; }
+.cs-reveal__chance { opacity:.72;font-size:clamp(11px,1.2vw,15px); }
+.cs-letterbox { position:absolute;z-index:90;left:0;right:0;height:0;background:#000;animation:csLetterbox var(--cinematic-duration) ease both; }
+.cs-letterbox--top { top:0; }.cs-letterbox--bottom { bottom:0; }
+
+/* Generic identities */
+.cs--facet .cs-reticle { width:min(34vmin,290px); }
+.cs--facet .cs-lattice,.cs--facet .cs-particles,.cs--facet .cs-pulse { display:none; }
+.cs--facet .cs-specimen { animation-name:csFacetSpecimen; }
+.cs--prism .cs-pulse,.cs--prism .cs-lattice { display:none; }
+.cs--prism .cs-beam { opacity:.8; }
+.cs--resonance .cs-beam { display:none; }
+.cs--resonance .cs-pulse { animation-duration:calc(var(--cinematic-duration) * .72); }
+
+/* Environmental and bespoke identities */
+.cs-horizon { left:0;right:0;top:58%;height:2px;background:linear-gradient(90deg,transparent,#ffd58a,transparent);box-shadow:0 0 35px 8px #ff9a45;opacity:0; }
+.cs-star { left:50%;top:48%;width:9vmin;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:#fff3c5;box-shadow:0 0 45px 15px #ffb74d,0 0 150px 45px #ff6d31;opacity:0; }
+.cs-water { inset:55% 0 0;background:linear-gradient(#15456c,#031323 70%);transform:translateY(100%); }
+.cs-landscape { left:-10%;right:-10%;bottom:-5%;height:35%;background:#111827;clip-path:polygon(0 85%,12% 62%,28% 75%,44% 35%,58% 76%,72% 54%,100% 82%,100% 100%,0 100%);opacity:0; }
+.cs-aurora { left:-15%;right:-15%;top:6%;height:70%;border-radius:50%;background:linear-gradient(100deg,transparent,#55ffc844,#8a6dff88,#5fffe255,transparent);filter:blur(20px);opacity:0; }
+.cs-aurora--b { transform:rotate(-14deg);filter:hue-rotate(90deg) blur(24px); }
+.cs-shadow { left:-20%;top:15%;width:140%;height:65%;background:radial-gradient(ellipse,#000 0 28%,transparent 60%);opacity:0; }
+.cs-paw { right:-20%;top:38%;width:clamp(90px,20vw,250px);height:clamp(75px,17vw,210px);border-radius:50% 50% 44% 44%;background:#f7edff;box-shadow:0 0 60px #fff;opacity:0;transform:rotate(-30deg); }
+.cs-paw::before { content:"";position:absolute;left:5%;right:5%;top:-38%;height:55%;background:radial-gradient(ellipse at 12% 60%,#f7edff 0 13%,transparent 14%),radial-gradient(ellipse at 37% 32%,#f7edff 0 13%,transparent 14%),radial-gradient(ellipse at 63% 32%,#f7edff 0 13%,transparent 14%),radial-gradient(ellipse at 88% 60%,#f7edff 0 13%,transparent 14%); }
+.cs--sunrise .cs-horizon,.cs--eventide .cs-horizon,.cs--last-light .cs-horizon { animation:csHorizon var(--cinematic-duration) ease both; }
+.cs--sunrise .cs-star,.cs--solar .cs-star { animation:csStarBirth var(--cinematic-duration) ease both; }
+.cs--eventide .cs-backdrop { animation-name:csEventide; }
+.cs--deadstar .cs-star { opacity:1;animation:csDeadstar var(--cinematic-duration) ease both; }
+.cs--deadstar .cs-reticle,.cs--last-light .cs-reticle { animation:csReticleOut var(--cinematic-duration) ease both; }
+.cs--last-light .cs-backdrop { animation-name:csLastLight; }
+.cs--meteor .cs-specimen,.cs--impact .cs-specimen,.cs--lunar-impact .cs-specimen { animation-name:csMeteor; }
+.cs--pressure-one .cs-specimen { animation-name:csPressureOne; }
+.cs--pressure-two .cs-specimen { animation-name:csPressureTwo; }
+.cs--inferno .cs-backdrop { background:radial-gradient(circle,#fff 0,#ff7a18 12%,#5b0902 45%,#080101 75%);animation-name:csInferno; }
+.cs--ascend .cs-reticle { animation:csAscend var(--cinematic-duration) ease both; }
+.cs--polaris .cs-particles { animation-name:csStarTrails; }
+.cs--ocean .cs-water { animation:csFlood var(--cinematic-duration) ease both; }
+.cs--ocean .cs-shadow { animation:csOceanShadow var(--cinematic-duration) ease both; }
+.cs--ocean .cs-reticle { animation:csSink var(--cinematic-duration) ease both; }
+.cs--lunar .cs-landscape,.cs--lunar-impact .cs-landscape,.cs--tranquillity .cs-landscape { animation:csLandscape var(--cinematic-duration) ease both; }
+.cs--tranquillity .cs-scanner { animation:csScannerFade var(--cinematic-duration) ease both; }
+.cs--aurora .cs-aurora { animation:csAurora var(--cinematic-duration) ease both; }
+.cs--black-hole .cs-reticle { animation:csBlackHole var(--cinematic-duration) ease both; }
+.cs--black-hole .cs-shadow { animation:csConsume var(--cinematic-duration) ease both; }
+.cs--black-hole .cs-ui-clones { animation:csConsume var(--cinematic-duration) ease both; }
+.cs--cat .cs-paw { animation:csPaw var(--cinematic-duration) steps(1,end) both; }
+.cs--cat .cs-reticle { animation:csBonk var(--cinematic-duration) steps(1,end) both; }
+.cs--wrong .cs-energy { animation:csWrong var(--cinematic-duration) cubic-bezier(.2,.8,.2,1) both; }
+.cs--wrong .cs-ui-clones { animation:csWrongUi var(--cinematic-duration) steps(1,end) both; }
+.cs--reality .cs-ui-clones { animation:csReality var(--cinematic-duration) ease both;clip-path:polygon(0 0,48% 0,52% 48%,100% 42%,100% 100%,44% 100%,48% 54%,0 62%); }
+.cs--glitched-gem { animation:csGlitchPage var(--cinematic-duration) steps(12,end) both; }
+.cs--glitched-gem .cs-ui-clones { animation:csGlitchClones var(--cinematic-duration) steps(9,end) both; }
+.cs--glitched-gem[data-phase="intro"] .cs-reticle,.cs--glitched-gem[data-phase="intro"] .cs-energy { opacity:0; }
+.cs-fake-result { display:none;position:absolute;z-index:58;inset:0;place-content:center;place-items:center;gap:8px;text-align:center;background:var(--surface,#090d18);color:var(--text,#f7fbff); }
+.cs-fake-result__gem { width:130px;height:130px; }.cs-fake-result__gem .gem-icon{width:100%;height:100%}
+.cs-fake-result strong{font-size:clamp(34px,6vw,72px)}.cs-fake-result span,.cs-fake-result small{color:var(--text-muted,#aab4c5)}
+.cs--glitched-gem[data-phase="intro"] .cs-fake-result { display:grid; }
+.cs--glitched-gem[data-phase="intro"] .cs-backdrop { opacity:0; }
+.cs--where[data-phase="intro"] .cs-reticle { left:var(--where-x);top:var(--where-y);transform:translate(-50%,-50%) scale(.28); }
+.cs--where[data-phase="beat-3"] .cs-reticle { transition:left .4s,top .4s,transform .4s;left:50%;top:47%;transform:translate(-50%,-50%); }
+.cs--buffer .cs-reveal__name,.cs--perfect-id .cs-reveal__name,.cs--master-analysis .cs-reveal__name { font-size:clamp(24px,4vw,58px); }
+.cs--noob .cs-reticle__ring { border-radius:0;border-style:dashed; }
+.cs--noob .cs-specimen { image-rendering:pixelated;filter:none; }
+.cs--missing .cs-reticle { animation:csMissing var(--cinematic-duration) steps(1,end) both; }
+.cs--false-ending[data-phase="beat-1"] .cs-reveal { opacity:1; }
+.cs--analysis .cs-lattice { opacity:.8; }
+.cs--finality .cs-reveal__name,.cs--memory .cs-reveal__name { letter-spacing:.08em; }
+.cs--finality[data-phase="beat-7"]>*:not(.cs-scanner),.cs--finality[data-phase="beat-8"]>*:not(.cs-scanner) { opacity:0!important; }
+.cs--finality[data-phase="beat-7"] .cs-scanner,.cs--finality[data-phase="beat-8"] .cs-scanner { inset:0;max-width:none;display:grid;place-content:center;text-align:center; }
+.cs--almost .cs-reticle,.cs--almost .cs-energy { display:none; }
+.cs--almost .cs-scanner { inset:0;max-width:none;display:grid;place-content:center;text-align:center; }
+.cs--almost .cs-scanner__label { order:2; }.cs--almost .cs-scanner__counter { order:1; }
+.cs--almost .cs-scanner__counter.is-carry { color:#ff6b7d;transform:translateX(5px);text-decoration:line-through; }
+.cs--memory .cs-backdrop { animation-name:csMemory; }
+
+/* Cloned UI is inert and purely theatrical. */
+.cs-ui-clones { z-index:18;pointer-events:none;opacity:0;overflow:hidden; }
+.cs-ui-clone { position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;margin:0!important;overflow:hidden!important;user-select:none!important;filter:saturate(.5) contrast(1.2); }
+.cs-ui-clone--2 { clip-path:polygon(0 34%,100% 20%,100% 66%,0 76%); }
+.cs-ui-clone--3 { clip-path:polygon(8% 8%,92% 18%,78% 92%,18% 82%); }
+.cs-lingering-crack { position:fixed;z-index:2147483001;left:50%;top:50%;width:70vw;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,#fff9,transparent);transform:translate(-50%,-50%) rotate(21deg) scaleX(0);transition:transform .15s,opacity .3s; }
+.cs-lingering-crack.is-visible { transform:translate(-50%,-50%) rotate(21deg) scaleX(1); }
+
+@keyframes csBreathe{0%{filter:brightness(.25)}35%{filter:brightness(1)}100%{filter:brightness(.7)}}
+@keyframes csRing{0%{opacity:0;transform:scale(.2) rotate(-90deg)}22%{opacity:1}72%{transform:scale(1) rotate(180deg)}100%{opacity:.2;transform:scale(1.08) rotate(270deg)}}
+@keyframes csSpecimen{0%,18%{opacity:0;transform:scale(.45);filter:brightness(.05)}42%{opacity:1}68%{filter:brightness(.45) saturate(.8)}100%{filter:brightness(1)}}
+@keyframes csFacetSpecimen{0%,12%{opacity:0;filter:brightness(.05)}34%{opacity:1;filter:brightness(.18)}62%{filter:brightness(.55)}78%,100%{filter:brightness(1)}}
+@keyframes csPulse{0%,8%{opacity:0;transform:translate(-50%,-50%) scale(.1)}18%{opacity:calc(.35 + var(--cs-intensity) * .65)}75%,100%{opacity:0;transform:translate(-50%,-50%) scale(calc(5 + var(--cs-intensity) * 7))}}
+@keyframes csBeam{0%,15%{opacity:0;height:0}30%{opacity:.9;height:72%}62%{opacity:.6}78%,100%{opacity:0;height:25%}}
+@keyframes csFracture{0%,58%{opacity:0;transform:translate(-50%,-50%) rotate(22deg) scaleX(0)}66%{opacity:1;transform:translate(-50%,-50%) rotate(22deg) scaleX(1)}82%,100%{opacity:0}}
+@keyframes csParticles{0%{opacity:0;transform:scale(1.8) rotate(0)}28%{opacity:.8}68%{transform:scale(.45) rotate(160deg)}100%{opacity:0;transform:scale(.2) rotate(260deg)}}
+@keyframes csLattice{0%,28%{opacity:0;transform:scale(1.3)}48%{opacity:calc(.1 + var(--cs-intensity) * .35)}82%{transform:scale(.9)}100%{opacity:0}}
+@keyframes csFlash{0%,64%,70%,100%{opacity:0}67%{opacity:.75}}
+@keyframes csLetterbox{0%,4%{height:0}10%,92%{height:7vh}100%{height:0}}
+@keyframes csHorizon{0%,10%{opacity:0;transform:scaleX(.01)}38%{opacity:1;transform:scaleX(1)}100%{opacity:.3}}
+@keyframes csStarBirth{0%,18%{opacity:0;transform:translate(-50%,-50%) scale(.05)}45%{opacity:1;transform:translate(-50%,-50%) scale(1.8)}72%,100%{opacity:.35;transform:translate(-50%,-50%) scale(.3)}}
+@keyframes csEventide{0%{background:#80cfff}30%{background:#f28a45}58%{background:#4b356e}100%{background:#030716}}
+@keyframes csDeadstar{0%{opacity:1;filter:brightness(1)}65%{opacity:.12;transform:translate(-50%,-50%) scale(.35)}80%,100%{opacity:0}}
+@keyframes csReticleOut{0%,58%{opacity:1}72%{opacity:0}88%,100%{opacity:1}}
+@keyframes csLastLight{0%{background:#171122}58%,78%{background:#000}100%{background:radial-gradient(circle at 50% 47%,#fff 0,#6aaaff22 5%,#000 18%)}}
+@keyframes csMeteor{0%{transform:translate(70vw,-60vh) scale(3)}42%{transform:translate(0) scale(1.2)}58%{transform:translate(0) scale(1.2)}70%,100%{transform:scale(1)}}
+@keyframes csPressureOne{0%{transform:scale(1.6)}65%{transform:scale(.65);filter:brightness(2)}100%{transform:scale(1)}}
+@keyframes csPressureTwo{0%{transform:scale(.7)}65%{transform:scale(.08);filter:brightness(4)}100%{transform:scale(1)}}
+@keyframes csInferno{0%{filter:brightness(.05)}62%{filter:brightness(2.8)}76%{filter:brightness(.15)}100%{filter:brightness(1)}}
+@keyframes csAscend{0%{top:110%}62%{top:-20%;transform:translate(-50%,-50%) scale(.25)}72%{top:-20%}82%,100%{top:47%;transform:translate(-50%,-50%) scale(1)}}
+@keyframes csStarTrails{0%{transform:rotate(0);filter:blur(0)}68%{transform:rotate(540deg);filter:blur(3px)}100%{opacity:0}}
+@keyframes csFlood{0%,10%{transform:translateY(100%)}48%,100%{transform:translateY(-55%)}}
+@keyframes csOceanShadow{0%,54%{opacity:0;transform:translateX(-40%)}72%{opacity:.8;transform:translateX(15%)}86%,100%{opacity:0;transform:translateX(60%)}}
+@keyframes csSink{0%{top:32%}70%,100%{top:78%;filter:brightness(.45)}}
+@keyframes csLandscape{0%,12%{opacity:0;transform:scale(2)}48%,100%{opacity:1;transform:scale(1)}}
+@keyframes csScannerFade{0%,40%{opacity:1}68%,100%{opacity:0}}
+@keyframes csAurora{0%,10%{opacity:0;transform:translateY(-30%) rotate(-8deg)}38%{opacity:.9}80%{transform:translateY(10%) rotate(12deg)}100%{opacity:.3}}
+@keyframes csBlackHole{0%,28%{filter:none}58%{transform:translate(-50%,-50%) scale(.3);filter:brightness(0);border-color:#fff}74%,100%{transform:translate(-50%,-50%) scale(7);filter:brightness(0)}}
+@keyframes csConsume{0%,38%{opacity:0;transform:scale(1)}55%{opacity:.6}78%{opacity:1;transform:scale(.02) rotate(240deg)}88%,100%{opacity:0;background:#000}}
+@keyframes csPaw{0%,38%{opacity:0;right:-20%}39%,42%{opacity:1;right:28%}43%,52%{opacity:0;right:-20%}53%,56%{opacity:1;right:31%}57%,100%{opacity:0}}
+@keyframes csBonk{0%,38%{left:50%}39%,45%{left:24%}46%,52%{left:50%}53%,59%{left:78%}60%,100%{left:50%}}
+@keyframes csWrong{0%,38%{transform:none}55%,68%{transform:scaleX(-1);filter:invert(1)}72%{transform:scaleX(-1);animation-direction:reverse}76%,100%{transform:none}}
+@keyframes csWrongUi{0%,70%{opacity:0}71%,74%{opacity:.8;transform:scaleX(-1) translateX(8%)}75%,100%{opacity:0}}
+@keyframes csReality{0%,28%{opacity:0;transform:none}46%{opacity:.8;transform:translate(-2%,2%) skew(2deg)}65%{transform:translate(4%,-3%) rotate(1deg) scale(1.06)}78%,100%{opacity:0;transform:none}}
+@keyframes csGlitchPage{0%,12%{filter:none}18%{filter:hue-rotate(90deg) contrast(1.8);transform:translateX(2px)}36%{filter:invert(.2) hue-rotate(210deg);transform:translateX(-4px)}62%{filter:saturate(3)}100%{filter:none;transform:none}}
+@keyframes csGlitchClones{0%,15%{opacity:0}22%{opacity:.8;transform:translate(4%,-2%)}38%{transform:translate(-6%,3%) scale(1.08)}64%{opacity:1;transform:scale(.3) rotate(12deg)}72%,100%{opacity:0}}
+@keyframes csMissing{0%,48%{opacity:0}49%,54%{opacity:1}55%,65%{opacity:0}66%,100%{opacity:1}}
+@keyframes csMemory{0%{background:#000}12%{background:#1f143d}20%{background:#fff1a833}29%{background:#260500}38%{background:#001d3d}47%{background:#000}56%{background:#173f36}65%{background:#2a0030}76%,100%{background:#03040a}}
+
+@media (max-width:700px),(pointer:coarse){
+  .cs-reticle{width:min(58vw,270px)}
+  .cs-scanner{top:6vh;left:18px}
+  .cs-reveal{padding-inline:18px}.cs-reveal__name{font-size:clamp(30px,10vw,58px)}
+  .cs-particles{background-size:49px 49px,73px 69px}
+}
+@media (prefers-reduced-motion:reduce){
+  .cutscene-v5 .cs-particles,.cutscene-v5 .cs-lattice,.cutscene-v5 .cs-ui-clones{display:none}
+  .cutscene-v5 *{animation-timing-function:linear!important}
+  .cutscene-v5 .cs-reticle,.cutscene-v5 .cs-specimen{transform:none}
+  .cutscene-v5 .cs-reticle{transform:translate(-50%,-50%)}
+}
