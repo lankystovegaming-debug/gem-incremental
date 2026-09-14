@@ -24,8 +24,8 @@ assert.match(migration, /create table if not exists public\.expansion_feature_de
 for (const type of types) assert.match(migration, new RegExp(`'${type}'`));
 
 const replay = fs.readFileSync(path.join(root,"src/ui/cutsceneReplay.js"),"utf8");
-assert.match(replay, /buildJaOreCutscene/);
-assert.match(replay, /replayName === "ja-ore"/);
+assert.match(replay, /renderCutscene/);
+assert.doesNotMatch(replay, /replayName === "ja-ore"/);
 
 const upcoming = fs.readFileSync(path.join(root,"upcoming/index.html"),"utf8");
 assert.match(upcoming, /data-tab="expansion"/);

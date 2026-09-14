@@ -1,27 +1,15 @@
+import { configuredCutsceneDuration, getCutsceneDefinition } from "./cutsceneConfig.js";
+
 const MOBILE_QUERY = "(max-width: 700px), (pointer: coarse)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const FADE_OUT_MS = 250;
-
-function normalizedName(value) {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function baseDurationForRarity(rarity) {
-  const value = Number(rarity ?? 0);
-
-  if (value >= 10_000_000) return 22_000;
-  if (value >= 4_000_000) return 18_000;
-  if (value >= 1_800_000) return 15_000;
-  if (value >= 800_000) return 13_500;
-  if (value >= 480_000) return 12_000;
-  if (value >= 250_000) return 10_500;
-  if (value >= 100_000) return 9_000;
-  if (value >= 10_000) return 2_400;
-
-  return 0;
-}
 
 export function isMobileCutsceneViewport() {
   return globalThis.matchMedia?.(MOBILE_QUERY).matches ?? false;
+}
+
+export function prefersReducedCutsceneMotion() {
+  return globalThis.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false;
 }
 
 export function isCutsceneEligible({ rarity, threshold, dropType } = {}) {
@@ -32,18 +20,16 @@ export function isCutsceneEligible({ rarity, threshold, dropType } = {}) {
     && Number.isFinite(rarityValue)
     && Number.isFinite(thresholdValue)
     && rarityValue > thresholdValue
-    && baseDurationForRarity(rarityValue) > 0;
+    && getCutsceneDefinition({ rarity: rarityValue }) !== null;
 }
 
-export function cutsceneDuration({ rarity, gemName, mobile = isMobileCutsceneViewport() } = {}) {
-  const name = normalizedName(gemName);
-  let duration = baseDurationForRarity(rarity);
-
-  if (name === "xy gem" || name === "heart of xy") duration = Math.max(duration, 30_000);
-  else if (name === "ja-ore") duration = 15_000;
-  else if (/glitch(?:ed)?[\s_-]*ore/.test(name)) duration = Math.max(duration, 12_000);
-
-  return mobile ? Math.round(duration * 1.08) : duration;
+export function cutsceneDuration({
+  rarity,
+  gemName,
+  mobile = isMobileCutsceneViewport(),
+  reducedMotion = prefersReducedCutsceneMotion()
+} = {}) {
+  return configuredCutsceneDuration({ rarity, gemName, mobile, reducedMotion });
 }
 
 export class CutsceneController {
@@ -74,15 +60,35 @@ export class CutsceneController {
       fadeTimer: null,
       resolve: resolvePlay,
       onCleanup,
+      renderCleanup: null,
+      keydownHandler: null,
       fadeOutMs: Math.max(0, Number(fadeOutMs) || 0)
     };
     globalThis.document?.querySelectorAll?.(
       "#ultra-cutscene-overlay, #ja-ore-cutscene, #glitched-ore-cutscene"
     ).forEach((overlay) => overlay.remove());
     globalThis.document?.documentElement?.classList?.add("is-cinematic-active");
+    globalThis.document?.documentElement?.setAttribute?.("aria-busy", "true");
+
+    this.#active.keydownHandler = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault?.();
+        this.interrupt();
+        return;
+      }
+      event.preventDefault?.();
+      event.stopImmediatePropagation?.();
+    };
+    globalThis.addEventListener?.("keydown", this.#active.keydownHandler, true);
 
     try {
-      this.#active.overlay = render(durationMs);
+      const rendered = render(durationMs);
+      if (rendered?.overlay) {
+        this.#active.overlay = rendered.overlay;
+        this.#active.renderCleanup = rendered.cleanup;
+      } else {
+        this.#active.overlay = rendered;
+      }
     } catch (error) {
       this.#finish(token, { immediate: true, interrupted: true });
       throw error;
@@ -105,8 +111,13 @@ export class CutsceneController {
       active.overlay?.remove?.();
       this.#active = null;
       globalThis.document?.documentElement?.classList?.remove("is-cinematic-active");
+      globalThis.document?.documentElement?.removeAttribute?.("aria-busy");
+      globalThis.removeEventListener?.("keydown", active.keydownHandler, true);
+      try { active.renderCleanup?.({ interrupted }); }
+      catch (error) { console.error("Cutscene renderer cleanup failed:", error); }
       try { active.onCleanup?.({ interrupted }); }
-      finally { active.resolve({ interrupted }); }
+      catch (error) { console.error("Cutscene stage cleanup failed:", error); }
+      active.resolve({ interrupted });
     };
 
     if (immediate || active.fadeOutMs === 0) complete();
@@ -116,3 +127,4 @@ export class CutsceneController {
 
 export const cutsceneController = new CutsceneController();
 globalThis.addEventListener?.("pagehide", () => cutsceneController.interrupt());
+globalThis.addEventListener?.("beforeunload", () => cutsceneController.interrupt());
