@@ -1,13 +1,14 @@
 # Economy Breakdown: audit and deployment
 
-Prepared against **Supabase `igrddscmrdrrwtvyspbf` on 2026-09-09**, repository base `1b8f03f`. Nothing has been deployed. Deployed database definitions and all 34 Edge deployments were inspected, including the optimized `roll` v151 and admin v46. The backend, not old repository migrations, supplied the flow/formula audit. `economy-backend-audit.json` inventories the database definitions reviewed.
+The original ledger was prepared against **Supabase `igrddscmrdrrwtvyspbf` on 2026-09-09**, repository base `1b8f03f`. The correction follow-up was verified against the live ledger and current admin RPC on 2026-09-14. Nothing in this follow-up has been deployed. The backend, not old repository migrations, supplied the flow/formula audit. `economy-backend-audit.json` inventories the database definitions reviewed.
 
 ## Deployment order
 
-1. Apply `supabase/migrations/20260909104511_economy_cash_ledger.sql` yourself. It is one transaction and briefly locks cash/fee tables against concurrent writes. Its five-second lock timeout aborts the whole migration on contention; retry in a quieter period.
-2. Deploy `supabase/functions/admin/index.ts` yourself. Only its money adjustment changes: a row-locked RPC replaces read/overwrite/write, and commits the existing audit entry with the balance and ledger.
-3. Release the root `admin/` frontend using the game's normal workflow. If it arrives first, the panel says tracking is not deployed yet and offers Refresh.
-4. As an admin, verify a normal sale, bank deposit/withdrawal and purchase in Economy. Existing specialized histories should still contain those operations. No artificial production transactions are needed to populate the dashboard.
+1. Apply `supabase/migrations/20260909104511_economy_cash_ledger.sql` yourself if it is not already deployed. It is one transaction and briefly locks cash/fee tables against concurrent writes. Its five-second lock timeout aborts the whole migration on contention; retry in a quieter period.
+2. Apply `supabase/migrations/20260914000613_economy_historical_corrections.sql` yourself. It adds a private annotation overlay, classifies the reviewed bank-bug episode, and replaces only the admin summary RPC. It deliberately does not update or delete any ledger row.
+3. Deploy `supabase/functions/admin/index.ts` yourself if the ledger version is not already deployed. Only its money adjustment changes: a row-locked RPC replaces read/overwrite/write, and commits the existing audit entry with the balance and ledger.
+4. Release the root `admin/` frontend using the game's normal workflow. If it arrives first, the panel remains compatible with the old `unattributed` response fields until the correction migration is applied.
+5. As an admin, verify a normal sale, bank deposit/withdrawal and purchase in Economy. Existing specialized histories should still contain those operations. No artificial production transactions are needed to populate the dashboard.
 
 Three guarded hooks expose the actual computed fees in `buy_shares(numeric)`, `sell_shares(numeric)` and `war_resolve_due()`. If their exact deployed definitions changed since this audit, the migration aborts and names the function. Re-audit that newer function and update the hook; do not bypass the guard to overwrite new formulas. Other gameplay functions are not replaced. **No roll redeployment is required**: its cash changes already use tracked database RPCs. The nested legacy `gem-incremental-admin-panel/` snapshot is not the root game's active admin UI.
 
@@ -17,14 +18,17 @@ The ledger contains signed numeric amount, source/sink/transfer, category, opera
 
 The first recognized writer in PostgreSQL's call stack determines attribution. Thus nested `bank_touch` interest remains a source even inside a deposit. Ordinary references identify the database function; fee references additionally identify the specialized history row or war UUID. Generic rewards are labeled system rewards at the verified operation level, without inventing a particular quest ID. No user-controlled request header determines attribution. No raw SQL, secrets, request headers or full player profiles are copied to the ledger.
 
-Unrecognized updates are recorded under `unattributed`, shown as a warning with a separate net, and excluded from claimed source/sink totals. New cash writers need a reviewed entry in `economy_private.cash_paths`; nested sources/sinks inside transfer operations need their own classified helper. Inserts/deletes record nonzero initialization/removal explicitly.
+Unrecognized updates remain stored under the raw ledger category `unattributed`, but the admin API/UI calls them **unclassified**. They are shown as a warning with a separate net and excluded from source/sink/transfer/correction totals. New cash writers need a reviewed entry in `economy_private.cash_paths`; nested sources/sinks inside transfer operations need their own classified helper. Inserts/deletes record nonzero initialization/removal explicitly.
+
+Reviewed exceptions use `economy_private.cash_correction_annotations`, keyed to immutable ledger IDs. The historical bank-bug episode is selected using its audited player, ledger/time envelope, database-writer categories, and endpoint metadata—not a rounded amount—and guarded to exactly 289 rows. Its repeated loan issuance, deposits, credited interest, and final reset are one correction episode, so none appears as genuine creation or meaningful transfer activity. `account_removal` is always reported as a correction because deleting an account is an administrative supply event rather than gameplay spending. The original rows, values, directions, references, and metadata are unchanged.
 
 - Cash created = signed source sum. Cash destroyed = negative signed sink sum. Net creation = created − destroyed.
 - Refunds are positive sink reversals. Masterwork token reimbursements reduce Masterwork destruction rather than becoming sources; a refund-only period can have negative destruction.
 - Both bank transfer legs are stored; top-level transfer statistics count the wallet leg once. Market and war stakes, payouts and refunds are transfers. Escrow can enter and leave in different periods.
 - A withheld fee uses two clearing entries: positive reclassification in the original flow and negative fee sink. They sum to zero and do not charge a wallet again. Share buy fees reclassify part of the share sink; share sale fees expose gross proceeds and the withheld fee. The hooks use the live implementation's variables.
-- Total Money Supply = **current wallet cash + bank deposits for every player**, independent of the period. It excludes escrow, shares, gem values and uncredited interest and does not subtract debt. Older analytics exclude one test username; the UI explicitly labels the new all-player scope. Buying shares consumes cash for a noncash asset; selling shares creates cash.
-- Reconciliation: **wallet+bank recorded change = net creation + transfer net + unattributed net**. Clearing entries cancel. This does not fabricate a historical opening balance.
+- Total Money Supply = **current wallet cash + bank deposits**, independent of the period, excluding rows designated by `system_account_exclusions.exclude_from_economy`. It excludes escrow, shares, gem values and uncredited interest and does not subtract debt. Buying shares consumes cash for a noncash asset; selling shares creates cash.
+- Genuine economy: **net economic change = sources − sinks**.
+- Reconciliation: **wallet+bank recorded change = net economic change + transfer net + corrections + unclassified net**. Clearing entries cancel. This does not fabricate a historical opening balance.
 - All means since deployment. No existing balances or specialized transaction rows are backfilled. Savings interest is recognized when credited, even if its accrual began earlier.
 
 ## Cash-path audit
@@ -61,13 +65,13 @@ The old deployed `dungeons` function attempts `increment_player_money`, but that
 
 ## Security, performance and validation
 
-The ledger has RLS and no direct client/service-role table privileges. Private helpers have fixed empty search paths and no client execute grants. The summary RPC checks the authenticated admin/owner; the adjustment RPC is service-role-only and checks the admin ID supplied by the authenticated Edge action. Ordinary players cannot choose attribution or write telemetry.
+The ledger and correction annotations have RLS and no direct client/service-role table privileges. Private helpers have fixed empty search paths and no client execute grants. The summary RPC checks the authenticated admin/owner; the adjustment RPC is service-role-only and checks the admin ID supplied by the authenticated Edge action. Ordinary players cannot choose attribution or write telemetry.
 
 The time index supports bounded periods; player/time supports investigation. One database aggregation avoids browser row caps. All grows with retained ledger history; monitor storage/query time before introducing rollups. No pruning policy is silently introduced. Existing global cash analytics remain unchanged.
 
 Tests:
 
-- `npm run test:economy`: local PostgreSQL/PGlite with audited live bank/share/war functions; empty history, authorization, atomic admin audit, transfers, nested interest, loans/repayment, rollback, no-op writes, unknown writes, token refunds, fee clearing, all filters, exact cutoff, account deletion and reconciliation; existing admin tab/bank regressions.
+- `npm run test:economy`: local PostgreSQL/PGlite with audited live bank/share/war functions; empty history, authorization, designated-account exclusions, atomic admin audit, transfers, nested interest, loans/repayment, rollback, no-op writes, unclassified writes, correction annotations with raw-row preservation, token refunds, fee clearing, all filters, exact cutoff, account deletion and four-term reconciliation; existing admin tab/bank regressions.
 - `ECONOMY_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs npm run test:economy-ui`: local Chrome fixture UI, all filters, expandable rows, stale requests, empty/missing deployment/error/retry states, escaping and desktop/mobile layout. Requires Chrome and Playwright; never contacts production.
 
 The migration is executed locally in tests. **No production schema/function deployment or cash mutation was performed.** Live security advisors were inspected as baseline only; the new privileges were checked locally because the new schema is not deployed.
