@@ -31,7 +31,7 @@
     "test:economy-ui": "node tests/economy-ui-test.mjs",
     "test:info": "node --test tests/info-page-test.mjs",
     "test:batch-rolling": "node tests/batch-rolling-test.mjs && node tests/batch-rolling-database-test.mjs && node tests/roll-hot-path-v2-test.mjs",
-    "test:roll-hot-path": "node tests/roll-hot-path-v2-test.mjs && node tests/equipment-overhaul-handler-test.mjs && node tests/five-item-handler-test.mjs",
+    "test:roll-hot-path": "node tests/roll-hot-path-v2-test.mjs && node tests/roll-timing-instrumentation-test.mjs && node tests/equipment-overhaul-handler-test.mjs && node tests/five-item-handler-test.mjs",
     "test:mobile-p0-p1": "node tests/mobile-p0-p1-ui-test.mjs",
     "test:cutscenes": "node tests/cutscene-reliability-test.mjs",
     "test:stacked-relics": "node tests/stacked-relic-balances-test.mjs"
