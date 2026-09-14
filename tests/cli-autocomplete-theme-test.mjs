@@ -17,6 +17,10 @@ assert.match(terminal, /order\s*\.filter\(\(name\) => name\.startsWith\(prefix\)
 // Per-command argument completion via a suggest() hook.
 assert.match(terminal, /typeof command\.suggest !== "function"/);
 assert.match(terminal, /command\.suggest\(priorArgs\)/);
+// Suggestions are quote-aware: values with spaces are quoted on apply, and a
+// half-typed opening quote still matches (needed for multi-word gem names).
+assert.match(terminal, /\/\\s\/\.test\(candidate\) \? `"\$\{candidate\}"`/);
+assert.match(terminal, /\.replace\(\/\^\["']\/, ""\)/);
 // Parameter/signature hint appears once a command is recognised, and marks
 // the argument currently being typed.
 assert.match(terminal, /function updateHint/);

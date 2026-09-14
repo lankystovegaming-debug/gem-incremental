@@ -247,6 +247,10 @@ function buildCommands(user) {
 
       const what = (args[1] ?? "").toLowerCase();
 
+      if (args.length === 2 && what === "gem") {
+        return catalogGems.map((gem) => gem.name);
+      }
+
       if (args.length === 2 && (what === "potion" || what === "pot")) {
         return consumables.map((item) => item.id);
       }
@@ -611,10 +615,10 @@ function buildCommands(user) {
     summary: "List gem names and rarity for /give gem.",
     async run(args, term) {
       const query = (args[0] ?? "").toLowerCase();
-      const rows = catalogGems
+      const matched = catalogGems
         .filter((gem) => !query || gem.name.toLowerCase().includes(query))
-        .slice(0, 60)
-        .map((gem) => [gem.name, `1 in ${formatCount(gem.rarity)}`]);
+        .sort((a, b) => (a.rarity ?? 0) - (b.rarity ?? 0));
+      const rows = matched.map((gem) => [gem.name, `1 in ${formatCount(gem.rarity)}`]);
 
       if (!rows.length) {
         term.printMuted("No matching gems.");
@@ -622,6 +626,7 @@ function buildCommands(user) {
         return;
       }
 
+      term.printMuted(`${rows.length} gem(s)`);
       term.table(["Gem", "Rarity"], rows);
     }
   };
