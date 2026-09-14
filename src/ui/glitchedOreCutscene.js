@@ -146,13 +146,5 @@ export function buildGlitchedOreCutscene(data, duration = 16000) {
   }
   requestAnimationFrame(() => overlay.classList.add("is-playing"));
   raf = requestAnimationFrame(frame);
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      overlay.remove();
-      resolve();
-    }, D + 300);
-  });
+  return overlay;
 }

@@ -8,6 +8,8 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { gemNameHtml, gemIconHtml, getGemStyle } from "../src/ui/gemStyle.js";
 import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
+import { isCutsceneEligible } from "../src/ui/cutsceneController.js";
+import { getSettings } from "../src/ui/settings.js";
 import { rarityTier, rarityLabel, formatMoney, formatWeight, formatCount, escapeHtml } from "../src/ui/format.js";
 import { exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
 
@@ -270,7 +272,11 @@ function gemCard(entry) {
     </article>`;
   }
 
-  const replayable = Number(entry.gem.rarity) >= 100000;
+  const replayable = isCutsceneEligible({
+    rarity: entry.gem.rarity,
+    threshold: getSettings().cutsceneMinimumRarity,
+    dropType: entry.gem.dropType
+  });
   const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
   const replayAttrs = entry.mutationIds.length ? ` data-replay-mutations="${escapeHtml(entry.mutationIds.join(","))}"` : "";
   const gemStyle = getGemStyle(entry.gem.name);

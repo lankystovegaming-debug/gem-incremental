@@ -30,6 +30,12 @@ import { notify } from "./src/ui/toast.js";
 import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
 import { buildXyGemCutscene } from "./src/ui/xyGemCutscene.js";
 import { buildJaOreCutscene } from "./src/ui/jaOreCutscene.js";
+import { buildGlitchedOreCutscene } from "./src/ui/glitchedOreCutscene.js";
+import {
+  cutsceneController,
+  cutsceneDuration,
+  isCutsceneEligible
+} from "./src/ui/cutsceneController.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
 import { chanceLabelForRollResult } from "./src/logic/chances.js";
@@ -140,50 +146,6 @@ const MAX_HISTORY = 12;
 
 let cooldownTimer = null;
 let rollInFlight = false;
-// Ultra-rare cinematic lock. 1/100k+ reveals own the input while the
-// cinematic is playing, so auto-roll and keyboard/manual rolling cannot
-// interrupt the reveal.
-let cinematicActive = false;
-let cinematicTimer = null;
-
-function cinematicDuration(rarity = 100000) {
-  // Cinematics scale with rarity. Every 1/100k+ result gets a full
-  // fullscreen reveal, while 1/4m+ results become deliberately long,
-  // multi-beat "event" cinematics.
-  const rarityValue = Number(rarity ?? 100000);
-  let duration = 8200;
-
-  if (rarityValue >= 10000000) duration = 22000;
-  else if (rarityValue >= 4000000) duration = 18000;
-  else if (rarityValue >= 1800000) duration = 15000;
-  else if (rarityValue >= 800000) duration = 13500;
-  else if (rarityValue >= 480000) duration = 12000;
-  else if (rarityValue >= 250000) duration = 10500;
-  else if (rarityValue >= 100000) duration = 9000;
-  else if (rarityValue >= 10000) duration = 2400;
-
-  // Give phones a little more breathing room without making the
-  // ultra-rare experience materially shorter.
-  return window.matchMedia("(max-width: 700px), (pointer: coarse)").matches
-    ? Math.round(duration * 1.08)
-    : duration;
-}
-
-function endCinematic() {
-  cinematicActive = false;
-  document.documentElement.classList.remove("is-cinematic-active");
-
-  if (cinematicTimer) {
-    clearTimeout(cinematicTimer);
-    cinematicTimer = null;
-  }
-
-  // If the normal cooldown already expired while the cinematic was
-  // playing, make the roll button available now.
-  if (!cooldownTimer && !rollInFlight) {
-    showReady();
-  }
-}
 
 let consecutiveFailures = 0;
 
@@ -477,7 +439,7 @@ function stopCooldown() {
 // GEM REVEAL
 // =========================================================
 
-function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration) {
+function buildUltraCutscene(data, gemName, tier, visualVariant, visualHue, visualSpeed, duration) {
   const existing = document.getElementById("ultra-cutscene-overlay");
   existing?.remove();
 
@@ -576,7 +538,6 @@ function buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualH
       ${mutationObjects.length ? `<div class="scene__mutation ${mutationObjects.length > 1 ? "scene__mutation--many" : ""}" aria-label="Mutations">${mutationObjects.map((m, index) => `${index > 0 ? '<span class="mutation-name-separator" aria-hidden="true">·</span>' : ""}<span class="mutation-name-effect mutation-name-effect--${escapeHtml(m.id)}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(m.name)}</span></span>`).join("")}</div>` : ""}
       <div class="scene__rarity">${rarityLabel(data.gem.rarity)}</div>
       <div class="scene__chance">Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}</div>
-      <div class="scene__outcome">${outcome.icon}${escapeHtml(outcome.text)}</div>
     </div>
     <div class="scene__letterbox scene__letterbox-top"></div>
     <div class="scene__letterbox scene__letterbox-bottom"></div>
@@ -662,12 +623,17 @@ function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity);
   const rarity = Number(data.gem.rarity ?? 0);
   const isRelic = data.gem.dropType === "relic";
+  const settings = getSettings();
 
   // Every non-relic roll gets the normal roll-effect. A full cutscene is
   // reserved for gems strictly rarer than the player-selected 1-in-N
   // threshold. Relics never trigger either — their odds ignore Luck, so
   // they get a plain reveal.
-  const isUltraRare = !isRelic && rarity > getSettings().cutsceneMinimumRarity;
+  const isUltraRare = isCutsceneEligible({
+    rarity,
+    threshold: settings.cutsceneMinimumRarity,
+    dropType: data.gem.dropType
+  });
   const isEpicRollEffect = !isRelic;
 
   const gemName = String(data.gem.name ?? "Gem");
@@ -719,7 +685,7 @@ function renderRoll(data, outcome) {
     <div class="gem-reveal">
       <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll", mutationIds)}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
-      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}${data.equipmentPassives?.bagged ? " 🛍️" : ""}</h2>
+      <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
       ${mutationNamesHtml(data?.mutations)}
       ${data.finalStats?.maxLuck != null ? `<p class="gem-reveal__outcome">Gem-selection Luck: ${formatMultiplier(data.finalStats.luck)} · Max Luck: ${formatMultiplier(data.finalStats.maxLuck)} · Uncapped: ${formatMultiplier(data.finalStats.uncappedLuck)}</p>` : ""}
       <p class="page-head__sub num">${isRelic ? "RELIC" : rarityLabel(data.gem.rarity)}</p>
@@ -729,59 +695,52 @@ function renderRoll(data, outcome) {
         <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Value</span><span class="gem-fact__value">${formatGemValue(data.value)}</span></div>
       </div>`}
-      <p class="gem-reveal__outcome">${outcome.icon}${escapeHtml(outcome.text)}</p>
+    </div>
+    <div class="roll-action-status" role="status">
+      ${data.equipmentPassives?.bagged ? '<span class="roll-action-status__flag">🛍️ Bagged</span>' : ""}
+      <span class="roll-action-status__outcome">${outcome.icon}${escapeHtml(outcome.text)}</span>
     </div>
   `;
 
-  if (!getSettings().rollAnimations) return Promise.resolve();
-  gemStage.classList.add("is-animating");
-
-  if (isEpicRollEffect || isUltraRare) gemStage.classList.add("is-big");
-
   if (isUltraRare) {
-    const duration = gemName.toLowerCase() === "xy gem"
-      ? 30000
-      : gemName.toLowerCase() === "ja-ore"
-        ? 15000
-        : cinematicDuration(rarity);
-    cinematicActive = true;
-    document.documentElement.classList.add("is-cinematic-active");
-    gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
-    gemStage.classList.add("is-cinematic");
-    // Xy Gem gets its own bespoke cutscene; everything else uses the
-    // standard tiered one. Fall back if the custom scene ever throws.
-    let overlay;
-    if (gemName.toLowerCase() === "heart of xy" || gemName.toLowerCase() === "xy gem") {
-      try {
-        overlay = buildXyGemCutscene(data, outcome, duration);
-      } catch (error) {
-        console.error("Xy Gem cutscene failed, using standard:", error);
-        overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
-      }
-    } else if (gemName.toLowerCase() === "ja-ore") {
-      try {
-        overlay = buildJaOreCutscene(data, outcome, duration);
-      } catch (error) {
-        console.error("Ja-ore cutscene failed, using standard:", error);
-        overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
-      }
-    } else {
-      overlay = buildUltraCutscene(data, outcome, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+    const duration = cutsceneDuration({ rarity, gemName });
+    if (settings.rollAnimations) {
+      gemStage.classList.add("is-animating", "is-big", "is-cinematic");
+      gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
     }
 
-    return new Promise((resolve) => {
-      cinematicTimer = setTimeout(() => {
-        overlay?.classList.remove("is-playing");
-        setTimeout(() => overlay?.remove(), 250);
+    return cutsceneController.play({
+      duration,
+      render: () => {
+        const normalizedGemName = gemName.trim().toLowerCase();
+        try {
+          if (normalizedGemName === "heart of xy" || normalizedGemName === "xy gem") {
+            return buildXyGemCutscene(data, outcome, duration);
+          }
+          if (normalizedGemName === "ja-ore") {
+            return buildJaOreCutscene(data, outcome, duration);
+          }
+          if (/glitch(?:ed)?[\s_-]*ore/.test(normalizedGemName)) {
+            return buildGlitchedOreCutscene(data, duration);
+          }
+        } catch (error) {
+          console.error(`${gemName} cutscene failed, using standard:`, error);
+        }
+        return buildUltraCutscene(data, gemName, tier, visualVariant, visualHue, visualSpeed, duration);
+      },
+      onCleanup: () => {
         gemStage.classList.remove("is-animating", "is-big", "is-cinematic", "is-ultra-rare");
         gemStage.style.removeProperty("--cinematic-duration");
         gemStage.style.removeProperty("--gem-hue");
         gemStage.style.removeProperty("--gem-speed");
-        endCinematic();
-        resolve();
-      }, duration);
+      }
     });
   }
+
+  if (!settings.rollAnimations) return Promise.resolve();
+  gemStage.classList.add("is-animating");
+
+  if (isEpicRollEffect) gemStage.classList.add("is-big");
 
   setTimeout(() => {
     gemStage.classList.remove("is-animating", "is-big", "is-epic-roll");
@@ -879,7 +838,7 @@ renderSessionInsights();
 // =========================================================
 
 async function performRoll() {
-  if (rollInFlight || cinematicActive || !view.ready) {
+  if (rollInFlight || cutsceneController.isActive || !view.ready) {
     return;
   }
 
@@ -1012,12 +971,12 @@ async function performRoll() {
     startCooldown(new Date(cooldown.nextRollAt).getTime(), cooldown.durationMs);
   }
 
-  // Keep the roll locked for the entire 1/100k+ cinematic. If the server
+  // Keep the roll locked for the entire eligible cinematic. If the server
   // cooldown is shorter, its timer will wait for the cinematic lock before
   // allowing the next roll.
   await cinematicPromise;
 
-  if (!cooldown?.nextRollAt) {
+  if (!cooldownTimer) {
     showReady();
   }
 }
@@ -1225,7 +1184,7 @@ function maybeAutoRoll() {
     !getSettings().autoRoll ||
     !view.ready ||
     rollInFlight ||
-    cinematicActive
+    cutsceneController.isActive
   ) {
     return;
   }
@@ -1238,7 +1197,7 @@ function maybeAutoRoll() {
   // Fire the next roll as soon as the server cooldown ends. The old 350ms
   // artificial delay made auto-roll feel noticeably laggy.
   queueMicrotask(() => {
-    if (getSettings().autoRoll && view.ready && !rollInFlight) {
+    if (getSettings().autoRoll && view.ready && !rollInFlight && !cutsceneController.isActive) {
       performRoll();
     }
   });

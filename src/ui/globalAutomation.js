@@ -6,6 +6,7 @@ import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify, toast } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
 import { batchCooldown, batchRollResults } from "../logic/batchRolling.js";
+import { isCutsceneEligible } from "./cutsceneController.js";
 
 // One browser-wide automation lease prevents two tabs from continuously
 // racing each other. The server cooldown remains the final authority.
@@ -104,7 +105,11 @@ function isNotableRoll(data) {
     : Array.isArray(data?.mutationIds)
       ? data.mutationIds.length
       : Number(Boolean(data?.mutation?.id));
-  return rarity >= Math.max(100000, Number(getSettings().cutsceneMinimumRarity) || 100000)
+  return isCutsceneEligible({
+    rarity,
+    threshold: Math.max(100000, Number(getSettings().cutsceneMinimumRarity) || 100000),
+    dropType: data?.gem?.dropType
+  })
     || mutationCount > 0
     || data?.gem?.dropType === "relic"
     || data?.isNewDiscovery === true
