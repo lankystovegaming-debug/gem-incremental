@@ -5,11 +5,13 @@ const browser=await chromium.launch({headless:true,channel:'chrome'});
 const root=new URL('../',import.meta.url);
 const artifacts=new URL('../artifacts/economy/',import.meta.url);mkdirSync(artifacts,{recursive:true});
 const panel=readFileSync(new URL('admin/index.html',root),'utf8').match(/    <section class="card admin-economy"[\s\S]*?<\/section>/)[0];
-const fixture={period:'24H',trackingSince:'2026-09-09T10:00:00Z',generatedAt:'2026-09-09T11:00:00Z',cashCreated:1234000,cashDestroyed:800000,netCreation:434000,walletToBank:400000,bankToWallet:250000,totalMoneySupply:981000000,walletCash:681000000,bankDeposits:300000000,transferNet:-2500,balanceChange:431500,balanceEvents:45,unattributedEntries:0,unattributedNet:0,breakdown:[
+const fixture={period:'24H',trackingSince:'2026-09-09T10:00:00Z',generatedAt:'2026-09-09T11:00:00Z',cashCreated:1234000,cashDestroyed:800000,netCreation:434000,walletToBank:400000,bankToWallet:250000,totalMoneySupply:981000000,walletCash:681000000,bankDeposits:300000000,transferNet:-2500,correctionNet:100,correctionEntries:2,balanceChange:431600,balanceEvents:47,unclassifiedEntries:0,unclassifiedNet:0,breakdown:[
  {direction:'source',category:'gem_sales',subcategory:'sell_inventory_gem',amount:1200000,entries:35,credited:1200000,debited:0},
  {direction:'source',category:'bank_interest',subcategory:'bank_touch',amount:34000,entries:5,credited:34000,debited:0},
  {direction:'sink',category:'equipment_crafting',subcategory:'craft_equipment_recipe',amount:-650000,entries:2,credited:0,debited:650000},
- {direction:'sink',category:'market_fees',subcategory:'listing',amount:-150000,entries:3,credited:0,debited:150000}
+ {direction:'sink',category:'market_fees',subcategory:'listing',amount:-150000,entries:3,credited:0,debited:150000},
+ {direction:'correction',category:'bank_bug_correction',subcategory:'bank_loans',amount:1000,entries:1,credited:1000,debited:0,correctionReason:'Historical bank bug'},
+ {direction:'correction',category:'bank_bug_correction',subcategory:'unattributed',amount:-900,entries:1,credited:0,debited:900,correctionReason:'Historical bank bug'}
 ]};
 let mode='normal';const calls=[];const errors=[];
 try{
@@ -22,16 +24,18 @@ try{
    if(mode==='missing')return route.fulfill({json:{error:{code:'PGRST202'}}});
    if(mode==='error')return route.fulfill({json:{error:{message:'<img src=x onerror="alert(1)"> network error'}}});
    const data={...fixture,period};
-   if(mode==='empty'){Object.assign(data,{breakdown:[],balanceEvents:0,cashCreated:0,cashDestroyed:0,netCreation:0,walletToBank:0,bankToWallet:0,transferNet:0,balanceChange:0});}
+   if(mode==='empty'){Object.assign(data,{breakdown:[],balanceEvents:0,cashCreated:0,cashDestroyed:0,netCreation:0,walletToBank:0,bankToWallet:0,transferNet:0,correctionNet:0,correctionEntries:0,balanceChange:0});}
    return route.fulfill({json:{data}});
   }
   if(url.pathname==='/')return route.fulfill({contentType:'text/html',body:`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/styles/app.css"><link rel="stylesheet" href="/admin/admin.css"></head><body><main style="max-width:1200px;margin:24px auto;padding:16px"><h1>Admin · Economy</h1>${panel}</main><script type="module">import {mountEconomy} from '/admin/economy.js';window.controller=mountEconomy({panel:document.getElementById('economyPanel'),content:document.getElementById('economyContent'),summary:document.getElementById('economySummary'),filters:document.getElementById('economyFilters'),refresh:document.getElementById('economyRefresh'),rpc:(name,args)=>fetch('/mock',{method:'POST',body:JSON.stringify({name,args})}).then(r=>r.json())});window.controller.load();</script></body></html>`});
   try{return route.fulfill({contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'application/octet-stream',body:readFileSync(new URL('.'+url.pathname,root))});}catch{return route.fulfill({status:404,body:''});}
  });
  await page.goto('http://economy.test');await page.locator('.economy-stat').first().waitFor();
- assert.equal(await page.locator('.economy-stat').count(),5);
+ assert.equal(await page.locator('.economy-stat').count(),6);
  assert.match(await page.locator('#economyContent').innerText(),/Detailed tracking since/);
  assert.match(await page.locator('#economyContent').innerText(),/Total Money Supply/);
+ assert.match(await page.locator('#economyContent').innerText(),/Historical \/ Administrative Corrections/);
+ assert.match(await page.locator('#economyContent').innerText(),/net economic change.*transfer net.*corrections.*unclassified/i);
  await page.getByText('Gem sales',{exact:true}).click();assert.ok(await page.getByText('sell inventory gem',{exact:true}).isVisible());
  await page.screenshot({path:new URL('desktop.png',artifacts).pathname,fullPage:true});
  for(const period of ['1H','6H','24H','7D','All']){
