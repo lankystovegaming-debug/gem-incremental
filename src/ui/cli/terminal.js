@@ -306,7 +306,9 @@ export function createCliTerminal(options) {
     }
 
     const priorArgs = endsWithSpace ? tokens.slice(1) : tokens.slice(1, -1);
-    const partial = endsWithSpace ? "" : tokens[tokens.length - 1];
+    // Strip a leading quote so a half-typed "Singularity… still matches, and
+    // match case-insensitively on either the start or any word of the value.
+    const partial = (endsWithSpace ? "" : tokens[tokens.length - 1]).replace(/^["']/, "").toLowerCase();
 
     let candidates = [];
 
@@ -319,12 +321,17 @@ export function createCliTerminal(options) {
     const base = (endsWithSpace ? tokens : tokens.slice(0, -1)).join(" ");
 
     return candidates
-      .filter((candidate) => candidate.toLowerCase().startsWith(partial.toLowerCase()))
-      .map((candidate) => ({
-        label: candidate,
-        hint: "",
-        apply: `${base} ${candidate} `
-      }));
+      .filter((candidate) => {
+        const value = String(candidate).toLowerCase();
+
+        return !partial || value.startsWith(partial) || value.split(/\s+/).some((word) => word.startsWith(partial));
+      })
+      .map((candidate) => {
+        // Values with spaces (e.g. gem names) must be quoted to stay one token.
+        const quoted = /\s/.test(candidate) ? `"${candidate}"` : candidate;
+
+        return { label: candidate, hint: "", apply: `${base} ${quoted} ` };
+      });
   }
 
   // Cap how many rows render at once so a large list (e.g. the full player

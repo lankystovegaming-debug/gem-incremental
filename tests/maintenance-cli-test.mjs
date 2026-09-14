@@ -46,6 +46,10 @@ for (const token of ["money", "coins", "rolls", "slots", "rp", "gem", "potion", 
 // Equipment grants use the overhauled column.
 assert.match(panel, /mutation_chance_bonus: Number\(bonus\.mutationChance/);
 
+// /give autocompletes gem names, and /gems lists the whole catalogue (no 60 cap).
+assert.match(panel, /what === "gem"\) \{\s*return catalogGems\.map\(\(gem\) => gem\.name\)/);
+assert.doesNotMatch(panel, /\.slice\(0, 60\)/);
+
 // Target autocomplete offers online players, not just "me".
 assert.match(panel, /function playerSuggestions\(\)/);
 assert.match(panel, /return \["me", \.\.\.onlinePlayers\]/);
