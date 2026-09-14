@@ -1,4 +1,3 @@
-import { icons } from "./icons.js";
 import { rarityTier, rarityLabel, escapeHtml } from "./format.js";
 import { gemNameHtml, gemIconHtml } from "./gemStyle.js";
 import { getGemMutation } from "../data/mutations.js";
@@ -6,6 +5,12 @@ import { getSettings } from "./settings.js";
 import { chanceLabelForResult } from "../logic/chances.js";
 import { buildJaOreCutscene } from "./jaOreCutscene.js";
 import { buildGlitchedOreCutscene } from "./glitchedOreCutscene.js";
+import { buildXyGemCutscene } from "./xyGemCutscene.js";
+import {
+  cutsceneController,
+  cutsceneDuration,
+  isCutsceneEligible
+} from "./cutsceneController.js";
 
 function hashString(value) {
   let hash = 0;
@@ -13,25 +18,6 @@ function hashString(value) {
     hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
   }
   return hash;
-}
-
-function durationForRarity(rarity) {
-  const r = Number(rarity ?? 0);
-
-  // 10k–99k cutscenes are intentionally short.
-  if (r >= 10000 && r < 100000) return 1800;
-
-  // Keep the larger rarity cinematics dramatic.
-  if (r >= 10000000) return 22000;
-  if (r >= 6000000 && r < 7000000) return 15000;
-  if (r >= 4000000) return 18000;
-  if (r >= 1800000) return 15000;
-  if (r >= 800000) return 13500;
-  if (r >= 480000) return 12000;
-  if (r >= 250000) return 10500;
-  if (r >= 100000) return 9000;
-
-  return 0;
 }
 
 function sceneMarkup(variant) {
@@ -61,17 +47,21 @@ function mutationLayer(mutationId) {
   `;
 }
 
-export async function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) {
+function buildReplayOverlay({ gem, mutationId = null, mutationIds = [], duration }) {
   const rarity = Number(gem?.rarity ?? 0);
-  const duration = durationForRarity(rarity);
-  if (rarity < getSettings().cutsceneMinimumRarity) return;
-  if (!duration) return;
-
-  document.getElementById("ultra-cutscene-overlay")?.remove();
-  document.getElementById("ja-ore-cutscene")?.remove();
-
   const ids = Array.from(new Set([...(Array.isArray(mutationIds) ? mutationIds : []), ...(mutationId ? [mutationId] : [])])).filter(Boolean);
   const replayName = String(gem?.name ?? "Gem").trim().toLowerCase();
+
+  if (replayName === "xy gem" || replayName === "heart of xy") {
+    const mutations = ids.map(id => getGemMutation(id)).filter(Boolean).map(m => ({
+      id: m.id, name: m.name, multiplier: m.multiplier
+    }));
+    return buildXyGemCutscene(
+      { gem: { ...gem, rarity }, mutations, mutation: mutations[0] ?? null },
+      { icon: "", text: "Cinematic replay" },
+      duration
+    );
+  }
 
   // Glitched Ore gets its own renderer: chromatic fracture, reality-rift
   // staging, bounded canvas particles and a hard-impact reveal. The renderer
@@ -83,7 +73,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       mutationIds: ids,
       mutations: ids.map(id => getGemMutation(id)).filter(Boolean).map(m => ({ id: m.id, name: m.name, multiplier: m.multiplier }))
     };
-    return buildGlitchedOreCutscene(replayData, Math.max(12000, duration));
+    return buildGlitchedOreCutscene(replayData, duration);
   }
 
   // JA-ore replay now uses the same bespoke retro pixel-cinema scene as a
@@ -96,7 +86,7 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
       })),
       mutation: ids[0] ? { id: ids[0] } : null
     };
-    return buildJaOreCutscene(replayData, { icon: "◈", text: "Cinematic replay" }, Math.max(15000, duration));
+    return buildJaOreCutscene(replayData, { icon: "◈", text: "Cinematic replay" }, duration);
   }
   const mutations = ids.map(id => getGemMutation(id)).filter(Boolean);
   const mutation = mutations[0] ?? null;
@@ -167,10 +157,20 @@ export async function replayGemCutscene({ gem, mutationId = null, mutationIds = 
 
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add("is-playing"));
+  return overlay;
+}
 
-  await new Promise((resolve) => setTimeout(resolve, duration));
+export function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) {
+  const rarity = Number(gem?.rarity ?? 0);
+  const threshold = getSettings().cutsceneMinimumRarity;
 
-  overlay.classList.remove("is-playing");
-  await new Promise((resolve) => setTimeout(resolve, 250));
-  overlay.remove();
+  if (!isCutsceneEligible({ rarity, threshold, dropType: gem?.dropType })) {
+    return Promise.resolve({ played: false });
+  }
+
+  const duration = cutsceneDuration({ rarity, gemName: gem?.name });
+  return cutsceneController.play({
+    duration,
+    render: () => buildReplayOverlay({ gem, mutationId, mutationIds, duration })
+  });
 }
