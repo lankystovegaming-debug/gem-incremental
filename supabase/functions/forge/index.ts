@@ -33,14 +33,16 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{
   if(a==="materials"){
    const {data:gems,error}=await ctx.supabaseAdmin.from("inventory_gems")
     .select("id,gem_name,rarity,value,locked,final_weight,mutation_multiplier")
-    .eq("player_id",playerId).eq("locked",false).order("rarity",{ascending:true}).limit(200);
+    .eq("player_id",playerId).eq("locked",false)
+    .neq("gem_name","Enchant Relic").neq("gem_name","Ancient Relic")
+    .order("rarity",{ascending:true}).limit(200);
    if(error)throw error;
    return json({gems:gems??[]});
   }
   if(a==="start"){
    const type=b.itemType==="armor"?"armor":"weapon";const ids=Array.isArray(b.materialIds)?b.materialIds.map(String):[];
    if(ids.length<c.min_materials||ids.length>c.max_materials)return json({error:"invalid_material_count",min:c.min_materials,max:c.max_materials},400);
-   const {data:gems,error}=await ctx.supabaseAdmin.from("inventory_gems").select("id,gem_name,value_per_gram,rarity,mutation_multiplier").eq("player_id",playerId).in("id",ids);
+   const {data:gems,error}=await ctx.supabaseAdmin.from("inventory_gems").select("id,gem_name,value_per_gram,rarity,mutation_multiplier").eq("player_id",playerId).in("id",ids).neq("gem_name","Enchant Relic").neq("gem_name","Ancient Relic");
    if(error)throw error;if((gems??[]).length!==ids.length)return json({error:"materials_missing"},400);
    const {data:session,error:se}=await ctx.supabaseAdmin.from("forge_sessions").insert({player_id:playerId,item_type:type,material_ids:ids,material_summary:gems,stage:1,stage_scores:[],quality:1}).select("*").single();
    if(se)throw se;return json({session,stage:1,stageTime:c.stage_time_seconds});

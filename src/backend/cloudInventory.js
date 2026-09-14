@@ -72,6 +72,37 @@ export async function loadCloudGems() {
   return gems;
 }
 
+export async function loadCloudRelicBalances() {
+  const {
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession();
+
+  const user = session?.user;
+
+  if (sessionError || !user) {
+    console.error("Failed to load current session:", sessionError);
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("player_relic_balances")
+    .select("relic_type, amount")
+    .eq("player_id", user.id);
+
+  // During a staged deployment the frontend may briefly run against the old
+  // schema. The inventory page derives legacy counts from inventory_gems in
+  // that case, then switches to this table as soon as the migration lands.
+  if (error?.code === "42P01") return null;
+
+  if (error) {
+    console.error("Failed to load relic balances:", error);
+    return null;
+  }
+
+  return data ?? [];
+}
+
 // A player who has just signed in may not have a row yet, so a
 // missing one is the starting state rather than a failure.
 export async function loadCloudPlayerState() {

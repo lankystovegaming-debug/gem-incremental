@@ -45,68 +45,46 @@ export default {
     const playerId = ctx.userClaims?.id;
     if (!playerId) return json({ error: "unauthorized" }, 401);
 
-    let body: { equipmentRowId?: number; relicGemId?: number };
+    let body: { equipmentRowId?: number; relicType?: string };
     try { body = await req.json(); } catch { return json({ error: "invalid_request" }, 400); }
 
     const equipmentId = Number(body.equipmentRowId);
-    const relicId = Number(body.relicGemId);
-    if (!Number.isInteger(equipmentId) || !Number.isInteger(relicId)) {
+    const relicType = String(body.relicType ?? "");
+    const grade = relicGrades[relicType];
+    if (!Number.isInteger(equipmentId) || !grade) {
       return json({ error: "invalid_request" }, 400);
     }
 
-    const [{ data: equipment }, { data: relic }] = await Promise.all([
-      ctx.supabaseAdmin.from("player_equipment")
-        .select("id, category, equipped, enchant_id, enchant_grade, enchant_state")
-        .eq("id", equipmentId).eq("player_id", playerId).maybeSingle(),
-      ctx.supabaseAdmin.from("inventory_gems")
-        .select("id, gem_name, locked")
-        .eq("id", relicId).eq("player_id", playerId).maybeSingle()
-    ]);
+    const { data: equipment } = await ctx.supabaseAdmin.from("player_equipment")
+      .select("id, category, equipped, enchant_id, enchant_grade, enchant_state")
+      .eq("id", equipmentId).eq("player_id", playerId).maybeSingle();
 
     if (!equipment || equipment.category !== "pickaxe" || !equipment.equipped) {
       return json({ error: "invalid_equipment" }, 400);
     }
 
-    const grade = relicGrades[relic?.gem_name];
-    if (!relic || relic.locked || !grade) return json({ error: "invalid_relic" }, 400);
-
     const eligible = pools[grade].filter((id) => id !== equipment.enchant_id);
     const enchantId = eligible[randomIndex(eligible.length)];
 
-    // Claim the unlocked relic first. A concurrent request can consume it only once.
-    const { data: consumed, error: consumeError } = await ctx.supabaseAdmin
-      .from("inventory_gems").delete().eq("id", relicId).eq("player_id", playerId)
-      .eq("locked", false).select("id").maybeSingle();
-    if (consumeError || !consumed) return json({ error: "invalid_relic" }, 409);
+    const { data, error } = await ctx.supabaseAdmin.rpc("apply_equipment_enchant", {
+      p_player_id: playerId,
+      p_equipment_row_id: equipmentId,
+      p_relic_type: relicType,
+      p_enchant_id: enchantId,
+      p_enchant_grade: grade
+    });
 
-    const { error: enchantError } = await ctx.supabaseAdmin
-      .from("player_equipment")
-      .update({ enchant_id: enchantId, enchant_grade: grade, enchant_state: {} })
-      .eq("id", equipmentId).eq("player_id", playerId);
-
-    if (enchantError) {
-      // Best-effort compensation so a transient equipment write does not spend the relic.
-      await ctx.supabaseAdmin.from("inventory_gems").insert({
-        player_id: playerId,
-        gem_name: relic.gem_name,
-        rarity: grade === "ancient" ? 1500 : 250,
-        base_weight: 0, value_per_gram: 0, rolled_weight_multiplier: 1,
-        rolled_weight: 0, final_weight: 0, value: 0, locked: false
-      });
-      console.error("Enchant equipment update failed:", enchantError);
-      return json({ error: "enchant_failed" }, 500);
+    if (error) {
+      const code = [
+        "not_enough_enchant_relics",
+        "not_enough_ancient_relics",
+        "invalid_equipment",
+        "invalid_relic",
+        "same_enchant"
+      ].find((value) => error.message.includes(value)) ?? "enchant_failed";
+      return json({ error: code }, code.startsWith("not_enough_") ? 409 : 400);
     }
 
-    const { error: expeditionError } = await ctx.supabaseAdmin.rpc(
-      "record_expedition_relic_spend",
-      {
-        p_player_id: playerId,
-        p_enchant: grade === "normal" ? 1 : 0,
-        p_ancient: grade === "ancient" ? 1 : 0
-      }
-    );
-    if (expeditionError) console.error("Expedition relic progress failed:", expeditionError);
-
-    return json({ equipmentRowId: equipmentId, relicGemId: relicId, enchantId, grade });
+    return json(data);
   })
 };

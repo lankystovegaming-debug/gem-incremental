@@ -519,7 +519,7 @@ orderButton.addEventListener("click", async () => {
 function availableGems() {
   const query = sellGemSearch.value.trim().toLowerCase();
   return state.gems
-    .filter((gem) => !gem.locked)
+    .filter((gem) => !gem.locked && !isRelic(gem))
     .filter((gem) => !query || gem.gem_name.toLowerCase().includes(query))
     .sort((a, b) => Number(b.rarity) - Number(a.rarity));
 }

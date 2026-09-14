@@ -2663,18 +2663,36 @@ async function executeSingleRoll(
       if (
         !bundleDeposited && (!autoDeposited || autoConserved)
       ) {
-        const {
-          data:
-            insertedGem,
-          error:
-            saveGemError
-        } =
-          await ctx
-            .supabaseAdmin
-            .from(
-              "inventory_gems"
-            )
-            .insert({
+        if (relicDrop) {
+          const { error: grantRelicError } = await ctx.supabaseAdmin.rpc(
+            "grant_player_relic",
+            {
+              p_player_id: playerId,
+              p_relic_type: gem.name,
+              p_amount: 1
+            }
+          );
+
+          if (grantRelicError) {
+            console.error("Failed to save rolled relic:", grantRelicError);
+            return jsonResponse(
+              { error: "Failed to save rolled relic." },
+              { status: 500 }
+            );
+          }
+        } else {
+          const {
+            data:
+              insertedGem,
+            error:
+              saveGemError
+          } =
+            await ctx
+              .supabaseAdmin
+              .from(
+                "inventory_gems"
+              )
+              .insert({
               player_id:
                 playerId,
 
@@ -2745,35 +2763,36 @@ async function executeSingleRoll(
 
               value_multiplier_at_roll:
                 eventContext.valueMultiplier
-            })
-            .select()
-            .single();
+              })
+              .select()
+              .single();
 
 
-        if (
-          saveGemError ||
-          !insertedGem
-        ) {
-          console.error(
-            "Failed to save rolled gem:",
-            saveGemError
-          );
+          if (
+            saveGemError ||
+            !insertedGem
+          ) {
+            console.error(
+              "Failed to save rolled gem:",
+              saveGemError
+            );
 
 
-          return jsonResponse(
-            {
-              error:
-                "Failed to save rolled gem."
-            },
-            {
-              status: 500
-            }
-          );
+            return jsonResponse(
+              {
+                error:
+                  "Failed to save rolled gem."
+              },
+              {
+                status: 500
+              }
+            );
+          }
+
+
+          savedGem =
+            insertedGem;
         }
-
-
-        savedGem =
-          insertedGem;
       }
 
       // Vein Hunter creates a true second specimen: only the base gem is
