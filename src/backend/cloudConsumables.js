@@ -87,8 +87,9 @@ function normaliseShopError(error) {
 // exactly one successful roll; other potions create timed boosts.
 export async function useCloudConsumable(consumableId) {
   const oneRoll = ["legendary-potion", "mythic-potion"].includes(consumableId);
+  const petLuck = ["pet-luck-treat", "enchanted-pet-toy", "celestial-pet-charm", "mythic-pet-whistle"].includes(consumableId);
   const { data, error } = await supabase.rpc(
-    oneRoll ? "activate_one_roll_potion" : "use_consumable",
+    oneRoll ? "activate_one_roll_potion" : petLuck ? "activate_pet_luck_boost" : "use_consumable",
     {
       p_consumable_id: consumableId
     }

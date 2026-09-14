@@ -589,6 +589,19 @@ function appendBatchResults(results, outcomes) {
       `;
     }
 
+    if (result?.pet) {
+      return `
+        <article class="batch-result batch-result--pet">
+          <div class="batch-result__art" aria-hidden="true">🐾</div>
+          <div class="batch-result__copy">
+            <span class="batch-result__index">${rollLabel}${counterLabel}</span>
+            <strong class="batch-result__name">PET: ${escapeHtml(result.pet.name ?? result.pet.id)}</strong>
+            <span class="batch-result__meta">Pet obtained · ×${formatCount(Number(result.pet.quantity ?? 1))} owned</span>
+          </div>
+        </article>
+      `;
+    }
+
     const tier = rarityTier(Number(result?.gem?.rarity ?? 0));
     const mutationIds = Array.isArray(result?.mutationIds) ? result.mutationIds : [];
     const outcome = outcomes.get(result);
@@ -986,6 +999,15 @@ async function performRoll() {
 // Ambiguous Bundle matches and Crown candidates remain in inventory.
 // Only gems that remain in inventory can reach the Auto Sell rule.
 async function resolveOutcome(data) {
+  if (data.pet) {
+    return {
+      type: "pet",
+      icon: "🐾",
+      text: `PET FOUND — ${data.pet.name ?? data.pet.id}!`,
+      note: "pet obtained"
+    };
+  }
+
   if (data.bundle?.status === "deposited") {
     return { type: "bundle-contributed", icon: icons.book,
       text: "Contributed to your Collection", note: "bundle contributed" };
@@ -1048,7 +1070,8 @@ const EFFECT_STATS = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
-  weightMultiplier: "Weight multiplier"
+  weightMultiplier: "Weight multiplier",
+  petLuck: "Pet Luck"
 };
 
 let activeBoosts = [];
@@ -1128,13 +1151,13 @@ function renderEffects() {
             <span class="effect-chip__name">+${percent}% ${escapeHtml(
         EFFECT_STATS[boost.family] ?? boost.family
       )}</span>
-            <span class="effect-chip__time">${formatEffectRemaining(
+            <span class="effect-chip__time">${boost.family === "petLuck" ? "Until pet roll" : formatEffectRemaining(
               remaining
             )}</span>
           </span>
 
           <span class="effect-chip__bar">
-            <span style="width:${fraction * 100}%"></span>
+            <span style="width:${boost.family === "petLuck" ? 100 : fraction * 100}%"></span>
           </span>
         </div>
       `;

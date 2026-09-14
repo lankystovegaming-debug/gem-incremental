@@ -1084,6 +1084,46 @@ function startPotionAutoCraftLoop() {
 // LOAD
 // =========================================================
 
+async function loadAdminEquipmentRecipes() {
+  const { data, error } = await (await import("../src/backend/supabase.js")).supabase
+    .from("admin_content_catalog")
+    .select("content_key,name,enabled,config")
+    .eq("content_type","equipment")
+    .eq("enabled",true);
+  if (error) {
+    console.warn("[CRAFT] Admin equipment catalogue unavailable:", error);
+    return [];
+  }
+  return (data ?? []).map(row => {
+    const c = row.config && typeof row.config === "object" ? row.config : {};
+    const mode = String(c.boostMode ?? "rollSpeed");
+    const value = Number(c.boostValue ?? 0);
+    const bonus = mode === "rollBulk"
+      ? { rollBulk: Math.max(0, Math.floor(value)) }
+      : mode === "petLuck"
+      ? { petLuck: Math.max(0, value) }
+      : { rollSpeed: Math.max(0, value) };
+    return {
+      id: row.content_key,
+      name: row.name,
+      category: c.category ?? "pickaxe",
+      craftingTab: c.category ?? "pickaxe",
+      horizontal: true,
+      equipmentOverhaul: true,
+      moneyCost: Math.max(0, Number(c.moneyCost ?? 0)),
+      description: c.description ?? "",
+      requirements: Array.isArray(c.requirements) ? c.requirements : [],
+      reward: {
+        id: row.content_key,
+        name: row.name,
+        category: c.category ?? "pickaxe",
+        tier: Math.max(1, Number(c.tier ?? 1)),
+        bonus
+      }
+    };
+  });
+}
+
 async function refresh() {
   const user = await ensurePlayerAuth();
 
@@ -1097,12 +1137,13 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment, consumables, overhaulProgress] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
     loadCloudConsumables(),
-    loadEquipmentOverhaulProgress()
+    loadEquipmentOverhaulProgress(),
+    loadAdminEquipmentRecipes()
   ]);
 
   state.loading = false;
@@ -1111,7 +1152,10 @@ async function refresh() {
 
   if (craftingState) {
     state.crafting = craftingState;
-    recipes = baseRecipes.map(recipe => craftingState.progress?.[recipe.id]?._equipment_recipe ?? recipe);
+    recipes = [...baseRecipes, ...(adminEquipmentRecipes ?? [])]
+      .map(recipe => craftingState.progress?.[recipe.id]?._equipment_recipe ?? recipe);
+  } else {
+    recipes = [...baseRecipes, ...(adminEquipmentRecipes ?? [])];
   }
 
   if (playerState) {

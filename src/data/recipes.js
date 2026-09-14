@@ -1495,6 +1495,67 @@ const recipes = [
   }
 ];
 
+
+// =========================================================
+// PET-LUCK TOYS / PET GEAR
+// These do not enable a pet inventory UI. They only prepare the pet-roll system.
+// =========================================================
+recipes.push(
+  {
+    id:"pet-luck-treat", name:"Pet Luck Treat", category:"toys", craftingTab:"toys",
+    requirements:[
+      {type:"gem-count",gem:"Quartz",amount:25},
+      {type:"gem-count",gem:"Peridot",amount:5}
+    ], moneyCost:1000,
+    reward:{type:"consumable",id:"pet-luck-treat",name:"Pet Luck Treat",family:"petLuck",tier:1,amount:1,effectValue:0.25}
+  },
+  {
+    id:"enchanted-pet-toy", name:"Enchanted Pet Toy", category:"toys", craftingTab:"toys",
+    requirements:[
+      {type:"consumable",consumableId:"pet-luck-treat",amount:2},
+      {type:"gem-count",gem:"Amethyst",amount:10},
+      {type:"gem-count",gem:"Sapphire",amount:5}
+    ], moneyCost:10000,
+    reward:{type:"consumable",id:"enchanted-pet-toy",name:"Enchanted Pet Toy",family:"petLuck",tier:2,amount:1,effectValue:0.75}
+  },
+  {
+    id:"celestial-pet-charm", name:"Celestial Pet Charm", category:"toys", craftingTab:"toys",
+    requirements:[
+      {type:"consumable",consumableId:"enchanted-pet-toy",amount:2},
+      {type:"gem-count",gem:"Diamond",amount:5},
+      {type:"gem-count",gem:"Aether Quartz",amount:2}
+    ], moneyCost:250000,
+    reward:{type:"consumable",id:"celestial-pet-charm",name:"Celestial Pet Charm",family:"petLuck",tier:3,amount:1,effectValue:2}
+  },
+  {
+    id:"mythic-pet-whistle", name:"Mythic Pet Whistle", category:"toys", craftingTab:"toys",
+    requirements:[
+      {type:"consumable",consumableId:"celestial-pet-charm",amount:2},
+      {type:"gem-count",gem:"Chronite",amount:2},
+      {type:"gem-count",gem:"Void Opal",amount:1}
+    ], moneyCost:5000000,
+    reward:{type:"consumable",id:"mythic-pet-whistle",name:"Mythic Pet Whistle",family:"petLuck",tier:4,amount:1,effectValue:5}
+  },
+  {
+    id:"pet-luck-collar", name:"Pet Luck Collar", category:"petGear", craftingTab:"petGear", horizontal:true,
+    requirements:[
+      {type:"gem-count",gem:"Emerald",amount:25},
+      {type:"gem-count",gem:"Sapphire",amount:15},
+      {type:"gem-count",gem:"Chronite",amount:1}
+    ], moneyCost:750000,
+    reward:{id:"pet-luck-collar",name:"Pet Luck Collar",category:"petGear",tier:20,bonus:{petLuck:3}}
+  },
+  {
+    id:"cosmic-pet-harness", name:"Cosmic Pet Harness", category:"petGear", craftingTab:"petGear", horizontal:true,
+    requirements:[
+      {type:"equipment",equipmentId:"pet-luck-collar"},
+      {type:"gem-count",gem:"Aether Quartz",amount:5},
+      {type:"gem-count",gem:"Void Opal",amount:2}
+    ], moneyCost:25000000,
+    reward:{id:"cosmic-pet-harness",name:"Cosmic Pet Harness",category:"petGear",tier:21,bonus:{petLuck:8}}
+  }
+);
+
 const overhauledRecipes = applyEquipmentOverhaul([...recipes.filter((recipe) => !lateGameEquipment.some(item => item.id === recipe.id)), ...lateGameEquipment]);
 
 export default overhauledRecipes;

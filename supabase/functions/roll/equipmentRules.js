@@ -111,7 +111,9 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.
  const wm=plastic?stats[4]+Number(plastic.weight_multiplier_bonus??1.55)*(1+Math.min(5,Math.max(0,Number(plastic.masterwork_level??0)))/100):stats[4]*secondary('bag','weight_multiplier_bonus');
- return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm};
+ const rollBulk = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.roll_bulk_bonus ?? 0), 0));
+ const petLuck = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.pet_luck_bonus ?? 0), 0));
+ return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm,rollBulk,petLuck};
 }
 
 // Called only after the server has accepted a genuine roll, before any gem RNG.

@@ -17,7 +17,7 @@ const settings = read("../src/ui/settings.js");
 const main = read("../main.js");
 
 assert.deepEqual(BATCH_ROLL_OPTIONS.map((option) => option.baseCooldownSeconds), [2.5, 5, 7.5, 10]);
-assert.equal(normalizeUiBatchSize(99), 1);
+assert.equal(normalizeUiBatchSize(99), 99);
 assert.equal(isBatchSizeUnlocked(1), true);
 assert.equal(isBatchSizeUnlocked(2), true);
 assert.equal(isBatchSizeUnlocked(3, { totalRolls: 99_999 }), false);
@@ -39,7 +39,7 @@ assert.match(migration, /revoke all on function public\.claim_equipment_roll_bat
 
 assert.match(edge, /batchCooldownMs\(singleCooldownMs, batchExecution\.batchSize\)/);
 assert.match(edge, /export function batchCooldownMs\(/);
-assert.match(edge, /size >= 1 && size <= 4/);
+assert.match(edge, /size >= 1 && size <= 100/);
 assert.match(edge, /for \(let batchIndex = 0; batchIndex < batchSize; batchIndex \+= 1\)/);
 assert.match(edge, /genuineRoll: Number\(batchExecution\.firstGenuineRoll\) \+ batchIndex/);
 assert.match(edge, /batchExecution\.requestStartedAt/);

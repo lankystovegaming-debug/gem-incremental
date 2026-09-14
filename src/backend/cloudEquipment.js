@@ -22,6 +22,8 @@ export async function loadCloudEquipment() {
         weight_luck_bonus,
         weight_multiplier_bonus,
         mutation_chance_bonus,
+        roll_bulk_bonus,
+        pet_luck_bonus,
         enchant_id,
         enchant_grade,
         enchant_state,

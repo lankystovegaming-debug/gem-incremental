@@ -69,6 +69,12 @@ consumables.push({ id: "plastic-bag", name: "Plastic Bag", family: "material", t
   material: true, effectValue: 0, marketReferencePrice: 0.10, shop: { purchasable: false, price: null } });
 
 consumables.push({id:'relic-potion',name:'Relic Potion',family:'relic',tier:1,durationMs:60000,effectValue:1.5,description:'Normal secondary bonus portions ×1.5 for 60 seconds. Excavator-exclusive.',shop:{purchasable:false,price:null}});
+consumables.push(
+  {id:'pet-luck-treat',name:'Pet Luck Treat',family:'petLuck',tier:1,durationMs:null,effectValue:0.25,description:'Adds +0.25 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}},
+  {id:'enchanted-pet-toy',name:'Enchanted Pet Toy',family:'petLuck',tier:2,durationMs:null,effectValue:0.75,description:'Adds +0.75 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}},
+  {id:'celestial-pet-charm',name:'Celestial Pet Charm',family:'petLuck',tier:3,durationMs:null,effectValue:2,description:'Adds +2 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}},
+  {id:'mythic-pet-whistle',name:'Mythic Pet Whistle',family:'petLuck',tier:4,durationMs:null,effectValue:5,description:'Adds +5 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}}
+);
 
 export function getConsumableById(id) {
   return consumables.find((item) => item.id === id) ?? null;

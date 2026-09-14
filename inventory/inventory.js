@@ -1324,7 +1324,8 @@ const POTION_STATS = {
   luck: "Luck",
   rollSpeed: "Roll speed",
   weightLuck: "Weight luck",
-  weightMultiplier: "Weight multiplier"
+  weightMultiplier: "Weight multiplier",
+  petLuck: "Pet Luck"
 };
 
 const POTION_NUMERALS = ["", "I", "II", "III", "IV"];
@@ -1378,7 +1379,8 @@ function startBoostTicker() {
 
     // Do not rebuild potion cards every second: rebuilding destroys focused number inputs.
     document.querySelectorAll(".active-boost__time[data-expires]").forEach((node) => {
-      node.textContent = formatRemaining(node.dataset.expires);
+      const boost = state.boosts.find((item) => item.expires_at === node.dataset.expires);
+      node.textContent = boost?.family === "petLuck" ? "Until pet roll" : formatRemaining(node.dataset.expires);
     });
 
     if (!live) {
@@ -1409,7 +1411,7 @@ function renderActiveBoosts() {
             (boost) => `
               <span class="active-boost">
                 <strong>${boost.family === "relic" ? "Secondary bonuses ×1.5" : `+${Math.round(Number(boost.effect_value)*100)}% ${escapeHtml(POTION_STATS[boost.family] ?? boost.family)}`}</strong>
-                <span class="active-boost__time" data-expires="${escapeHtml(boost.expires_at)}">${formatRemaining(boost.expires_at)}</span>
+                <span class="active-boost__time" data-expires="${escapeHtml(boost.expires_at)}">${boost.family === "petLuck" ? "Until pet roll" : formatRemaining(boost.expires_at)}</span>
               </span>
             `
           )

@@ -150,7 +150,7 @@ const globalCashToggle = document.getElementById("globalCashToggle");
 const cashGraphToggle = document.getElementById("cashGraphToggle");
 const gemRealismRange = document.getElementById("gemRealismRange");
 const gemRealismValue = document.getElementById("gemRealismValue");
-let batchAccess = { genuineRolls: 0, hasCelestialPickaxe: false };
+let batchAccess = { genuineRolls: 0, hasCelestialPickaxe: false, rollBulk: 0 };
 
 
 
@@ -247,7 +247,8 @@ Promise.all([
 ]).then(([settings, player, equipment]) => {
   batchAccess = {
     genuineRolls: Number(player?.equipment_genuine_rolls ?? 0),
-    hasCelestialPickaxe: (equipment ?? []).some((item) => item.equipment_id === "celestial-pickaxe")
+    hasCelestialPickaxe: (equipment ?? []).some((item) => item.equipment_id === "celestial-pickaxe"),
+    rollBulk: (equipment ?? []).reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.roll_bulk_bonus ?? 0) || 0)), 0)
   };
   paintSettings(settings);
 }).catch(error => notify.error("Settings unavailable", error.message));

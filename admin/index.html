@@ -67,6 +67,8 @@
       <button class="admin-tab-btn is-active" type="button" data-admin-tab="search">Search</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="economy">Economy</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="content">Content &amp; events</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="equipment">Equipment</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="pets">Pets</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="appeals">Appeals</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="alerts">Alerts</button>
@@ -698,6 +700,60 @@
     </section>
 
   
+
+    <section class="card" id="equipmentAdminPanel" hidden>
+      <div class="panel-heading">
+        <div>
+          <h2>Equipment</h2>
+          <p class="page-head__sub">Add new equipment without hard-coding it. Roll Speed and Roll Bulk are separate choices so late-game speed does not have to keep climbing.</p>
+        </div>
+        <button class="btn" id="equipmentAdminRefresh" type="button">Refresh</button>
+      </div>
+      <div class="admin-control" style="gap:10px;flex-wrap:wrap">
+        <input id="equipmentAdminId" placeholder="Unique ID, e.g. quantum-gauntlet">
+        <input id="equipmentAdminName" placeholder="Display name">
+        <select id="equipmentAdminCategory" class="select">
+          <option value="pickaxe">Pickaxe</option><option value="clover">Clover</option>
+          <option value="lantern">Lantern</option><option value="boots">Boots</option><option value="bag">Bag</option><option value="petGear">Pet Gear</option>
+        </select>
+        <input id="equipmentAdminTier" type="number" min="1" value="20" placeholder="Tier">
+      </div>
+      <div class="admin-control" style="gap:10px;flex-wrap:wrap;margin-top:10px">
+        <select id="equipmentAdminBoostMode" class="select">
+          <option value="rollBulk">Boost Roll Bulk</option>
+          <option value="rollSpeed">Boost Roll Speed</option>
+          <option value="petLuck">Boost Pet Luck</option>
+        </select>
+        <input id="equipmentAdminBoostValue" type="number" min="0" step="0.01" value="1" placeholder="Boost value">
+        <input id="equipmentAdminMoney" type="number" min="0" step="0.01" value="0" placeholder="Craft cost">
+        <input id="equipmentAdminRequirements" class="admin-input--wide" placeholder='Requirements JSON, e.g. [{"type":"gem-count","gem":"Chronite","amount":5}]'>
+      </div>
+      <textarea id="equipmentAdminDescription" class="admin-textarea" rows="2" placeholder="Equipment description"></textarea>
+      <label class="toggle-field"><input id="equipmentAdminEnabled" type="checkbox" checked><span>Enabled / craftable</span></label>
+      <button class="btn btn--primary" id="equipmentAdminSave" type="button">Save equipment</button>
+      <div id="equipmentAdminList" class="admin-event-list"></div>
+    </section>
+
+    <section class="card" id="petsAdminPanel" hidden>
+      <div class="panel-heading">
+        <div>
+          <h2>Pets</h2>
+          <p class="page-head__sub">Pet inventory is intentionally not enabled yet. Every enabled pet starts at 1 / 100,000,000 and uses Pet Luck only — normal gem Luck does not affect it.</p>
+        </div>
+        <button class="btn" id="petsAdminRefresh" type="button">Refresh</button>
+      </div>
+      <div class="admin-control" style="gap:10px;flex-wrap:wrap">
+        <input id="petAdminId" placeholder="Unique ID, e.g. void-phoenix">
+        <input id="petAdminName" placeholder="Pet name">
+        <input id="petAdminChance" type="number" min="1" step="1" value="100000000" placeholder="1 in chance">
+        <label><input id="petAdminEnabled" type="checkbox"> Enabled for rolls</label>
+      </div>
+      <textarea id="petAdminStats" class="admin-textarea" rows="4" placeholder='{"luck":5,"rollSpeed":0.75,"mutationLuck":4,"weightLuck":2,"weightMultiplier":2}'></textarea>
+      <textarea id="petAdminDescription" class="admin-textarea" rows="2" placeholder="Pet description"></textarea>
+      <button class="btn btn--primary" id="petAdminSave" type="button">Save pet</button>
+      <div id="petsAdminList" class="admin-event-list"></div>
+    </section>
+
     <section class="card" id="customCatalogPanel" hidden>
       <div class="panel-heading"><div><h2>Customizable potions, equipment & recipes</h2><p>Create/edit catalog entries and recipes from one admin screen. JSON config supports any future stats.</p></div><button class="btn" id="catalogRefresh" type="button">Refresh</button></div>
       <div class="admin-control" style="gap:10px;flex-wrap:wrap">

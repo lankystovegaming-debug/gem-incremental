@@ -43,7 +43,7 @@ const appealsRefresh = document.getElementById("appealsRefresh");
 function setFeatureLab(open) {
   if (!featureLab) return;
   featureLab.hidden = !open;
-  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-economy, .admin-ip-audit, .admin-appeals, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
+  document.querySelectorAll(".admin-search, .admin-announce, .admin-updates, .admin-codes, .admin-events, .admin-section-controls, .admin-mutation-events, .admin-analytics, .admin-shareholders, .admin-bank, .admin-economy, .admin-ip-audit, .admin-appeals, #equipmentAdminPanel, #petsAdminPanel, #searchResults, #playerPanel, #auditPanel").forEach((el) => {
     if (el) el.hidden = open;
   });
   featureLabButton?.classList.toggle("is-active", open);
@@ -2477,6 +2477,8 @@ const economyBreakdown = mountEconomy({
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
     economy: ["#economyPanel", "#analyticsPanel", "#shareholdersPanel", "#bankPanel"],
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
+    equipment: ["#equipmentAdminPanel"],
+    pets: ["#petsAdminPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
     appeals: ["#appealsPanel"],
     alerts: ["#alertsPanel"],
@@ -2580,6 +2582,88 @@ async function saveCustomCatalog(){
   const {error}=await supabase.rpc("admin_save_content_catalog",{p_content_type:type,p_content_key:key,p_name:name,p_enabled:document.getElementById("catalogEnabled").checked,p_config:config});
   if(error)notify.error("Save failed",error.message);else{notify.success("Saved",name);loadCustomCatalog();}
 }
+
+async function loadEquipmentAdmin() {
+  const list=document.getElementById("equipmentAdminList"); if(!list) return;
+  const {data,error}=await supabase.from("admin_content_catalog").select("*").eq("content_type","equipment").order("name");
+  if(error){list.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
+  list.innerHTML=(data||[]).map(r=>{
+    const c=r.config||{};
+    const mode=c.boostMode||"rollSpeed";
+    const value=c.boostValue??c[mode]??0;
+    return `<article class="admin-event"><strong>${escapeHtml(r.name)}</strong>
+      <span class="badge">${escapeHtml(c.category||"equipment")}</span>
+      <span class="badge">${escapeHtml(mode)} +${escapeHtml(String(value))}</span>
+      <span class="badge">${r.enabled?"Enabled":"Disabled"}</span>
+      <button class="btn btn--danger btn--sm" data-equipment-delete="${escapeHtml(r.content_key)}">Delete</button>
+    </article>`;
+  }).join("")||"<p>No admin-created equipment yet.</p>";
+  list.querySelectorAll("[data-equipment-delete]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Delete this admin-created equipment and its recipe?")) return;
+    const {error}=await supabase.rpc("admin_delete_equipment",{p_id:b.dataset.equipmentDelete});
+    if(error) notify.error("Delete failed",error.message); else {notify.success("Deleted","Equipment removed.");loadEquipmentAdmin();}
+  });
+}
+
+async function saveEquipmentAdmin() {
+  const id=document.getElementById("equipmentAdminId").value.trim();
+  const name=document.getElementById("equipmentAdminName").value.trim();
+  let requirements=[];
+  try { requirements=JSON.parse(document.getElementById("equipmentAdminRequirements").value||"[]"); }
+  catch { notify.error("Invalid requirements","Requirements must be valid JSON."); return; }
+  const {data,error}=await supabase.rpc("admin_save_equipment",{
+    p_id:id,p_name:name,p_category:document.getElementById("equipmentAdminCategory").value,
+    p_tier:Number(document.getElementById("equipmentAdminTier").value)||1,
+    p_boost_mode:document.getElementById("equipmentAdminBoostMode").value,
+    p_boost_value:Number(document.getElementById("equipmentAdminBoostValue").value)||0,
+    p_money_cost:Number(document.getElementById("equipmentAdminMoney").value)||0,
+    p_requirements:requirements,
+    p_description:document.getElementById("equipmentAdminDescription").value,
+    p_enabled:document.getElementById("equipmentAdminEnabled").checked
+  });
+  if(error) notify.error("Save failed",error.message);
+  else { notify.success("Equipment saved",name); loadEquipmentAdmin(); }
+}
+
+async function loadPetsAdmin() {
+  const list=document.getElementById("petsAdminList"); if(!list) return;
+  const {data,error}=await supabase.from("game_pets").select("*").order("name");
+  if(error){list.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
+  list.innerHTML=(data||[]).map(r=>`<article class="admin-event">
+    <strong>${escapeHtml(r.name)}</strong>
+    <span class="badge">1 / ${escapeHtml(String(r.chance_denominator))}</span>
+    <span class="badge">${r.affected_by_luck?"Normal Luck ON":"Normal Luck OFF"}</span>
+    <span class="badge">${r.enabled?"Enabled":"Disabled"}</span>
+    <code>${escapeHtml(JSON.stringify(r.stats||{}))}</code>
+    <button class="btn btn--danger btn--sm" data-pet-delete="${escapeHtml(r.id)}">Delete</button>
+  </article>`).join("")||"<p>No pets configured.</p>";
+  list.querySelectorAll("[data-pet-delete]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Delete this pet?"))return;
+    const {error}=await supabase.rpc("admin_delete_pet",{p_id:b.dataset.petDelete});
+    if(error)notify.error("Delete failed",error.message);else{notify.success("Pet deleted","");loadPetsAdmin();}
+  });
+}
+
+async function savePetAdmin() {
+  const id=document.getElementById("petAdminId").value.trim();
+  const name=document.getElementById("petAdminName").value.trim();
+  let stats={};
+  try { stats=JSON.parse(document.getElementById("petAdminStats").value||"{}"); }
+  catch { notify.error("Invalid stats","Pet stats must be valid JSON."); return; }
+  const {error}=await supabase.rpc("admin_save_pet",{
+    p_id:id,p_name:name,p_chance_denominator:Number(document.getElementById("petAdminChance").value)||100000000,
+    p_affected_by_luck:false,
+    p_stats:stats,p_description:document.getElementById("petAdminDescription").value,
+    p_enabled:document.getElementById("petAdminEnabled").checked
+  });
+  if(error)notify.error("Save failed",error.message);else{notify.success("Pet saved",name);loadPetsAdmin();}
+}
+
+document.getElementById("equipmentAdminRefresh")?.addEventListener("click",loadEquipmentAdmin);
+document.getElementById("equipmentAdminSave")?.addEventListener("click",saveEquipmentAdmin);
+document.getElementById("petsAdminRefresh")?.addEventListener("click",loadPetsAdmin);
+document.getElementById("petAdminSave")?.addEventListener("click",savePetAdmin);
+
 async function loadFeatureCatalog(){
   const list=document.getElementById("featureCatalogList");if(!list)return;
   const {data,error}=await supabase.from("admin_feature_catalog").select("*").order("category").order("name");
@@ -2591,4 +2675,4 @@ document.getElementById("catalogRefresh")?.addEventListener("click",loadCustomCa
 document.getElementById("catalogSave")?.addEventListener("click",saveCustomCatalog);
 document.getElementById("featureCatalogRefresh")?.addEventListener("click",loadFeatureCatalog);
 // Load when the content tab is opened (also harmless if called early).
-setTimeout(()=>{loadCustomCatalog();loadFeatureCatalog();},1000);
+setTimeout(()=>{loadCustomCatalog();loadFeatureCatalog();loadEquipmentAdmin();loadPetsAdmin();},1000);

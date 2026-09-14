@@ -7,14 +7,23 @@ export const BATCH_ROLL_OPTIONS = [
 
 export function normalizeUiBatchSize(value) {
   const size = Number(value);
-  return BATCH_ROLL_OPTIONS.some((option) => option.size === size) ? size : 1;
+  return Number.isSafeInteger(size) && size >= 1 && size <= 100 ? size : 1;
 }
 
-export function isBatchSizeUnlocked(size, { totalRolls = 0, hasCelestialPickaxe = false } = {}) {
+export function getEquipmentRollBulk(access = {}) {
+  return Math.max(0, Math.floor(Number(access.rollBulk ?? 0) || 0));
+}
+
+export function getMaximumBatchSize(access = {}) {
+  return Math.min(100, 4 + getEquipmentRollBulk(access));
+}
+
+export function isBatchSizeUnlocked(size, { totalRolls = 0, genuineRolls = totalRolls, hasCelestialPickaxe = false, rollBulk = 0 } = {}) {
   const normalized = normalizeUiBatchSize(size);
   if (normalized <= 2) return true;
-  if (normalized === 3) return Number(totalRolls) >= 100_000;
-  return Number(totalRolls) >= 500_000 && hasCelestialPickaxe === true;
+  if (normalized === 3) return Number(genuineRolls) >= 100_000;
+  if (normalized === 4) return Number(genuineRolls) >= 500_000 && hasCelestialPickaxe === true;
+  return Number(genuineRolls) >= 500_000 && hasCelestialPickaxe === true && normalized <= getMaximumBatchSize({ rollBulk });
 }
 
 export function batchRollResults(response) {
@@ -27,9 +36,17 @@ export function batchCooldown(response) {
 }
 
 export function renderBatchOptions(access = {}) {
-  return BATCH_ROLL_OPTIONS.map((option) => {
-    const unlocked = isBatchSizeUnlocked(option.size, access);
-    const suffix = unlocked ? `${option.baseCooldownSeconds}s base` : `Locked — ${option.requirement}`;
-    return `<option value="${option.size}" ${unlocked ? "" : "disabled"}>${option.label} · ${suffix}</option>`;
-  }).join("");
+  const max = getMaximumBatchSize(access);
+  const options = [];
+  for (let size = 1; size <= max; size++) {
+    const unlocked = isBatchSizeUnlocked(size, access);
+    let suffix = "base";
+    if (size === 1) suffix = "base";
+    else if (size === 2) suffix = "base";
+    else if (size === 3) suffix = "100,000 lifetime rolls";
+    else if (size === 4) suffix = "500,000 lifetime rolls + Celestial Pickaxe";
+    else suffix = `Roll Bulk +${size - 4}`;
+    options.push(`<option value="${size}" ${unlocked ? "" : "disabled"}>×${size} · ${suffix}</option>`);
+  }
+  return options.join("");
 }

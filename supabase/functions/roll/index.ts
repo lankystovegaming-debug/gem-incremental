@@ -133,7 +133,9 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.
  const wm=plastic?stats[4]+Number(plastic.weight_multiplier_bonus??1.55)*(1+Math.min(5,Math.max(0,Number(plastic.masterwork_level??0)))/100):stats[4]*secondary('bag','weight_multiplier_bonus');
- return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm};
+ const rollBulk = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.roll_bulk_bonus ?? 0), 0));
+ const petLuck = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.pet_luck_bonus ?? 0), 0));
+ return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm,rollBulk,petLuck};
 }
 
 // Called only after the server has accepted a genuine roll, before any gem RNG.
@@ -162,7 +164,7 @@ export const fortuneLuckFactor = (id,gem) => id==='fortune-pickaxe' && gem.affec
 
 export function normalizeRequestedBatchSize(value: unknown): number | null {
   const size = Number(value ?? 1);
-  return Number.isSafeInteger(size) && size >= 1 && size <= 4 ? size : null;
+  return Number.isSafeInteger(size) && size >= 1 && size <= 100 ? size : null;
 }
 
 export function batchCooldownMs(singleRollCooldownMs: number, batchSize: number): number {
@@ -1197,6 +1199,8 @@ type BatchExecution = {
   activeAdminEvent?: any | null;
   globalEventData?: any | null;
   guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
+  pets?: any[];
+  equipmentBonusRows?: any[];
 };
 
 async function executeSingleRoll(
@@ -1248,6 +1252,25 @@ async function executeSingleRoll(
         return jsonResponse({ error: "roll_context_unavailable" }, { status: 503 });
       }
 
+
+      // Load pet definitions and the two new equipment stat columns once per
+      // displayed batch. Pet definitions are server-controlled; no client
+      // payload can change pet odds.
+      if (batchExecution.pets === undefined) {
+        const { data: pets } = await ctx.supabaseAdmin
+          .from("game_pets")
+          .select("id,name,chance_denominator,affected_by_luck,enabled,stats")
+          .eq("enabled", true);
+        batchExecution.pets = Array.isArray(pets) ? pets : [];
+      }
+      if (batchExecution.equipmentBonusRows === undefined) {
+        const { data: equipmentBonusRows } = await ctx.supabaseAdmin
+          .from("player_equipment")
+          .select("id,equipment_id,roll_bulk_bonus,pet_luck_bonus")
+          .eq("player_id", playerId)
+          .eq("equipped", true);
+        batchExecution.equipmentBonusRows = Array.isArray(equipmentBonusRows) ? equipmentBonusRows : [];
+      }
 
       // =====================================================
       // LOAD PLAYER
@@ -1435,7 +1458,13 @@ async function executeSingleRoll(
       // LOAD EQUIPPED CLOUD EQUIPMENT
       // =====================================================
 
-      const equippedEquipment = Array.isArray(rollContext.equipment) ? rollContext.equipment : [];
+      const equipmentBonusById = new Map(
+        (batchExecution.equipmentBonusRows ?? []).map((row: any) => [String(row.id), row])
+      );
+      const equippedEquipment = (Array.isArray(rollContext.equipment) ? rollContext.equipment : []).map((item: any) => ({
+        ...item,
+        ...(equipmentBonusById.get(String(item.id)) ?? {})
+      }));
       const mineArtifacts = new Set<string>(
         (Array.isArray(rollContext.mineArtifacts) ? rollContext.mineArtifacts : []).map(String)
       );
@@ -1544,6 +1573,12 @@ async function executeSingleRoll(
       let rollSpeed = equipmentStats.rollSpeed;
       let weightLuck = equipmentStats.weightLuck;
       let weightMultiplier = equipmentStats.weightMultiplier;
+      let rollBulk = Number(equipmentStats.rollBulk ?? 0);
+      let petLuck = Number(equipmentStats.petLuck ?? 0);
+      const maxBatchFromStats = Math.min(100, 4 + Math.max(0, Math.floor(rollBulk)));
+      if (batchExecution.batchSize > maxBatchFromStats) {
+        return jsonResponse({ error: "invalid_batch_size", maximumBatchSize: maxBatchFromStats }, { status: 400 });
+      }
       let enchantLuck = 1;
       let guildLuck = 1;
       let specialLuck = 1;
@@ -1652,6 +1687,11 @@ async function executeSingleRoll(
 
           case "weightMultiplier":
             weightMultiplier +=
+              effectValue;
+            break;
+
+          case "petLuck":
+            petLuck +=
               effectValue;
             break;
         }
@@ -2192,6 +2232,30 @@ async function executeSingleRoll(
       const ancientRelicChanceMultiplier = !allIn && ancientRelicBoostRollsBefore > 0 ? 1.3 : 1;
 
       let gem = (equipmentContext.id === 'money-pickaxe' ? null : rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier)) ?? rollEquipmentGem();
+
+      // Pets use a separate luck layer. Normal Luck never affects this roll;
+      // only pet-luck equipment and the pet-luck boosts above can improve it.
+      // The default denominator is 1/100,000,000 and is admin-customizable.
+      const petLuckMultiplier = Math.max(1, 1 + Number(petLuck || 0));
+      let petDrop: any = null;
+      if (!allIn && buffsEnabled && Array.isArray(batchExecution.pets) && batchExecution.pets.length) {
+        const eligiblePets = batchExecution.pets.filter((pet: any) => {
+          const denominator = Number(pet.chance_denominator);
+          return pet?.enabled !== false && Number.isFinite(denominator) && denominator >= 1;
+        });
+        // Each enabled pet has its own independent configured chance.
+        // This keeps every pet individually rare while allowing multiple pet
+        // designs to coexist without changing ordinary gem Luck.
+        for (const pet of eligiblePets) {
+          const denominator = Number(pet.chance_denominator);
+          const chance = Math.min(1, petLuckMultiplier / denominator);
+          if (random01() < chance) {
+            petDrop = pet;
+            break;
+          }
+        }
+      }
+
       const relicDrop = isRelic(gem);
       const luckBasedGem = !relicDrop && gem.affectedByLuck !== false;
 
@@ -2824,6 +2888,24 @@ async function executeSingleRoll(
       if (equipmentCommitError) throw equipmentCommitError;
       breakneckGem = equipmentCommit?.bonus ?? null;
 
+      let petReward: any = null;
+      if (petDrop) {
+        try {
+          const { data: petClaim, error: petClaimError } = await ctx.supabaseAdmin.rpc("claim_pet_reward", {
+            p_player_id: playerId,
+            p_pet_id: String(petDrop.id)
+          });
+          if (petClaimError) throw petClaimError;
+          petReward = { ...petDrop, quantity: Number(petClaim?.quantity ?? 1) };
+          // A successful pet immediately consumes every stacked pet-luck boost.
+          batchExecution.activeBoosts = (batchExecution.activeBoosts ?? []).filter(
+            (boost: any) => boost.family !== "petLuck"
+          );
+        } catch (petError) {
+          console.error("[ROLL] Pet reward claim failed:", petError);
+        }
+      }
+
       const combinationKey = getMutationCombinationKey(mutationIds);
       const rollNumber = Number(player.total_rolls ?? 0) + 1;
       const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
@@ -2985,6 +3067,8 @@ async function executeSingleRoll(
         specimenId:
           (filterSale ? null : savedGem?.id) ??
           null,
+
+        pet: petReward,
 
         gem: {
           name:
