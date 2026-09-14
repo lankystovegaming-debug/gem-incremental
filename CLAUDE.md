@@ -68,6 +68,16 @@ Players start with an anonymous Supabase account (playable immediately). That br
 
 Auto Roll / Auto Sell / Auto Keep / Auto Craft are client-driven request loops (`src/ui/autoRoll.js`, `src/ui/globalAutomation.js`), but every individual roll, sale, deposit, and reward is still validated by the corresponding Edge Function/RPC — the client only decides *when* to ask.
 
+### Equipment overhaul
+
+`src/data/recipes.js` is not the raw catalogue: its default export is passed through `applyEquipmentOverhaul()` (`src/data/equipmentOverhaul.js`), which rebalances pickaxe stats, adds the secondary/specialist/late-game rows (clover, toys, lantern, boots, bag), and retires some items. Rewards use bonus keys `luck` / `rollSpeed` / `mutationChance` / `weightLuck` / `weightMultiplier`; "toys" is a `craftingTab`, not a category. `player_equipment` stores these as `*_bonus` columns (note `mutation_chance_bonus`, not `mutation_luck_bonus`), and two triggers govern writes: `normalize_overhauled_equipment` re-derives the bonus columns from the authoritative `game_recipes` row on every insert/update (so bonuses passed by a client are advisory for overhauled gear), and `guard_equipment_switch` serializes equip changes against the player's roll lease. Lanterns are deprecated — existing ones stay equippable but are filtered out of the craftable list.
+
+### Maintenance & admin command lines
+
+Two hidden consoles share the terminal widget in `src/ui/cli/` (`createCliTerminal` + a per-CLI command set; they share only the widget):
+- **Maintenance CLI** (`src/ui/devpanel.js`): opened by the key sequence ↑↑↓↓←←→→ on any page. Every command runs through the `dependency_improvement` Postgres RPC, gated server-side to the `code_improvement` allow-list (checked via `am_i_maintainer`) — the console renders nothing for non-maintainers, so the public code is harmless.
+- **Admin CLI** (`admin/adminCli.js`): a tab in the Admin Panel. Player/moderation/ops commands route through the `admin` Edge Function (`adminRequest` in `src/backend/cloudAdmin.js`) plus admin-gated `SECURITY DEFINER` RPCs (bans, IP audit, bank, guild roster, referrals, player roster) — the RPC path works without an admin Edge Function redeploy.
+
 ## Code style (from docs/CODE_STYLE.md)
 
 - Readable, conventional code — not minified one-liners.
@@ -85,7 +95,8 @@ Auto Roll / Auto Sell / Auto Keep / Auto Craft are client-driven request loops (
 - Never commit or expose the service-role key or other production secrets; `src/backend/supabase.js` only ever holds the public anon/publishable key by design.
 - Database changes go in `supabase/migrations/` (new timestamped file, don't edit old ones). Deploy Edge Functions only after any DB functions/columns they depend on exist remotely.
 - Deploy a function with: `supabase functions deploy <function-name> --project-ref <project-ref>`.
-- Before applying migrations, diff local vs. remote migration history first — this repo has received migrations from multiple branches, so remote history should not be repaired/rewritten without confirming the exact mismatch.
+- Before applying migrations, verify the **live schema** (columns, functions, triggers) — not just the migration-history table. This repo has received migrations from multiple branches, so the recorded version stamps do not match local filenames and the history table can look out of sync with what is actually deployed; never repair/rewrite remote history without confirming the exact mismatch.
+- When a migration does `create or replace` on a shared function (e.g. `dependency_improvement`, `craft_equipment_recipe`), it replaces the whole body — carry over every existing branch/action, don't just add yours. Check the deployed definition first (`pg_get_functiondef`).
 
 ## Contributing conventions
 
