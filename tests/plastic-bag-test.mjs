@@ -27,8 +27,8 @@ assert.match(shop, /Number\(offer\.price\) > 0 && Number\(offer\.price\) < 1 \? 
 const migration = read('../supabase/migrations/20260915010109_fix_plastic_bag_catalog.sql');
 assert.match(migration, /'plastic-bag',[\s\S]*?'material',[\s\S]*?0\.10/,
   'Plastic Bag is registered as a backend material and remains a 10¢ offer');
-assert.match(migration, /'material',[\s\S]*?0,[\s\S]*?1,[\s\S]*?1,[\s\S]*?false/,
-  'the inert material uses a constraint-safe neutral effect value');
+assert.match(migration, /'material',[\s\S]*?1,[\s\S]*?1,[\s\S]*?1,[\s\S]*?false/,
+  'the inert material uses constraint-safe tier, effect, and duration values');
 assert.match(migration, /purchasable = false/);
 assert.match(migration, /shop_price = null/);
 

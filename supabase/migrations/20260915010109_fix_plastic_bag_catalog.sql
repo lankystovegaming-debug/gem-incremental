@@ -17,7 +17,7 @@ values (
   'plastic-bag',
   'Plastic Bag',
   'material',
-  0,
+  1,
   1,
   1,
   false,
