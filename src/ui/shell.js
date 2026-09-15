@@ -98,6 +98,55 @@ const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "aucti
 const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
 const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
 
+// Explore stays useful as the game grows by grouping related destinations
+// instead of presenting one long, flat list. Feature-switched pages use the
+// same groups when they are enabled later in mountShell().
+const EXPLORE_GROUPS = [
+  {
+    id: "indexes",
+    label: "Indexes",
+    icon: icons.book,
+    pageIds: ["gem-index", "mutation-index", "collection-hall", "artifact-archives", "relic-vault"],
+    defaultOpen: true
+  },
+  {
+    id: "progress",
+    label: "Progress",
+    icon: icons.branch || icons.trophy,
+    pageIds: ["achievements", "quests", "bounties", "seasons", "research-tree"]
+  },
+  {
+    id: "community",
+    label: "Community",
+    icon: icons.users,
+    pageIds: ["leaderboards", "month-one", "guilds", "wars", "pvp", "world-bosses"]
+  },
+  {
+    id: "activities",
+    label: "Activities",
+    icon: icons.dice,
+    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events"]
+  },
+  {
+    id: "labs-economy",
+    label: "Labs & Economy",
+    icon: icons.flask || icons.coins,
+    pageIds: ["workbench", "bank", "gem-fusion", "enchanting-lab", "merchant-caravan", "global-cash-graph"]
+  },
+  {
+    id: "admin",
+    label: "Admin",
+    icon: icons.shield,
+    pageIds: ["admin"]
+  },
+  {
+    id: "other",
+    label: "More",
+    icon: icons.compass || icons.sparkle,
+    pageIds: []
+  }
+];
+
 async function loadEnabledSections() {
   try {
     const { data } = await supabase.functions.invoke("features", { body: { action: "sections" } });
@@ -170,7 +219,7 @@ export function mountShell({ page, base = "./" }) {
         </button>
         <div class="menu topbar-explore__menu" id="shellExploreMenu" hidden>
           <div class="menu__label">Explore</div>
-          ${EXPLORE_PAGES.map((item) => menuNavLink(item, page, base)).join("")}
+          ${renderExploreGroups(EXPLORE_PAGES, page, base)}
         </div>
       </div>
 
@@ -280,13 +329,12 @@ export function mountShell({ page, base = "./" }) {
       const existingLink = document.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
       if (enabled) {
         if (!existingLink) {
-          document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(item, page, base));
-          const link = document.querySelector("#shellExploreMenu .menu__item:last-child");
+          const link = appendExploreItem(item, page, base);
           if (link) link.dataset.settingLink = item.id;
           if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
         }
       } else {
-        existingLink?.remove();
+        removeExploreItem(existingLink);
       }
     }
   };
@@ -309,8 +357,7 @@ export function mountShell({ page, base = "./" }) {
         icon: item.icon
       };
       if (document.querySelector(`[data-section-link="${item.id}"]`)) return;
-      document.getElementById("shellExploreMenu")?.insertAdjacentHTML("beforeend", menuNavLink(configured, page, base));
-      const link = document.querySelector("#shellExploreMenu .menu__item:last-child");
+      const link = appendExploreItem(configured, page, base);
       if (link) link.dataset.sectionLink = item.id;
       if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
     };
@@ -525,10 +572,7 @@ export function mountShell({ page, base = "./" }) {
           return;
         }
 
-        document.getElementById("shellExploreMenu")?.insertAdjacentHTML(
-          "beforeend",
-          menuNavLink(adminPage, page, base)
-        );
+        appendExploreItem(adminPage, page, base);
         if (page === "admin") header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
       });
 
@@ -1596,12 +1640,84 @@ function navLink(item, activePage, base, className, short = false) {
   `;
 }
 
+function exploreGroupFor(item) {
+  return EXPLORE_GROUPS.find((group) => group.pageIds.includes(item.id))
+    ?? EXPLORE_GROUPS.find((group) => group.id === "other");
+}
+
+function renderExploreGroups(items, activePage, base) {
+  const hasActiveGroup = items.some((item) =>
+    item.id === activePage || item.match?.includes(activePage)
+  );
+
+  return EXPLORE_GROUPS.map((group) => {
+    const groupItems = items.filter((item) => exploreGroupFor(item)?.id === group.id);
+    const active = groupItems.some((item) => item.id === activePage || item.match?.includes(activePage));
+    const open = active || (group.defaultOpen && !hasActiveGroup);
+
+    return `
+      <details
+        class="topbar-explore__group"
+        data-explore-group="${group.id}"
+        ${groupItems.length ? "" : "hidden"}
+        ${open ? "open" : ""}
+      >
+        <summary class="topbar-explore__group-toggle">
+          ${group.icon}
+          <span>${escapeHtml(group.label)}</span>
+          <span class="topbar-explore__group-count" aria-label="${groupItems.length} destination${groupItems.length === 1 ? "" : "s"}">${groupItems.length}</span>
+          ${icons.chevronDown || ""}
+        </summary>
+        <div class="topbar-explore__group-items" data-explore-group-items="${group.id}">
+          ${groupItems.map((item) => menuNavLink(item, activePage, base)).join("")}
+        </div>
+      </details>
+    `;
+  }).join("");
+}
+
+function refreshExploreGroup(group) {
+  if (!group) return;
+  const count = group.querySelectorAll(".topbar-explore__item").length;
+  group.hidden = count === 0;
+  const badge = group.querySelector(".topbar-explore__group-count");
+  if (badge) {
+    badge.textContent = String(count);
+    badge.setAttribute("aria-label", `${count} destination${count === 1 ? "" : "s"}`);
+  }
+}
+
+function appendExploreItem(item, activePage, base) {
+  const groupDefinition = exploreGroupFor(item);
+  const group = document.querySelector(`#shellExploreMenu [data-explore-group="${groupDefinition.id}"]`);
+  const items = group?.querySelector(`[data-explore-group-items="${groupDefinition.id}"]`);
+  if (!group || !items) return null;
+
+  items.insertAdjacentHTML("beforeend", menuNavLink(item, activePage, base));
+  const link = items.lastElementChild;
+  refreshExploreGroup(group);
+  if (item.id === activePage || item.match?.includes(activePage)) {
+    group.closest("#shellExploreMenu")
+      ?.querySelectorAll(".topbar-explore__group")
+      .forEach((candidate) => { candidate.open = candidate === group; });
+  }
+  return link;
+}
+
+function removeExploreItem(link) {
+  if (!link) return;
+  const group = link.closest(".topbar-explore__group");
+  link.remove();
+  refreshExploreGroup(group);
+}
+
 function menuNavLink(item, activePage, base) {
   const active = item.id === activePage || (item.match?.includes(activePage) ?? false);
   const safeLabel = escapeHtml(item.label);
   return `
     <a
       class="menu__item topbar-explore__item"
+      data-page-id="${escapeHtml(item.id)}"
       href="${base}${item.href}"
       aria-label="${safeLabel}"
       title="${safeLabel}"
