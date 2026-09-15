@@ -239,7 +239,7 @@ begin
  preview:=jsonb_build_object('materials',materials,'history',req,'potions',jsonb_build_object(
    'legendary',coalesce(pot_legendary,0),'mythic',coalesce(pot_mythic,0)),
    'highestValue',coalesce((select jsonb_agg(to_jsonb(x)) from (
-     select id,gem_name,rarity,final_weight,value,round(final_weight/greatest(base_weight,0.000001),2) final_multiplier
+     select id,gem_name,rarity,final_weight,value,round((final_weight/greatest(base_weight,0.000001))::numeric,2) final_multiplier
      from public.inventory_gems where id=any(ids) order by value desc,id limit 20
    ) x),'[]'::jsonb),
    'expiresAt',now()+interval '15 minutes');
