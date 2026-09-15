@@ -35,6 +35,7 @@ assert.ok(applyEquipmentOverhaul([]).some(x=>x.id==='impossible-pickaxe'));
 const edge=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8');
 const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url),'utf8').trim();
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
+const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
 const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
 const profileUi=readFileSync(new URL('../user/profile.js',import.meta.url),'utf8');
@@ -58,4 +59,10 @@ assert.match(edge,/impossibleWorldFirst: player\.equipment_state\?\.impossibleWo
 assert.match(profileUi,/backgroundStyle === 'impossible' \? `<div class="impossible-profile-brand"/);
 assert.match(leaderboardUi,/userId === impossibleWorldFirstId/);
 assert.match(shardAsset,/<svg[^>]*viewBox="0 0 1200 600"/);
+for (const sql of [migration,roundRepair]) {
+  assert.match(sql,/round\(\(final_weight\/greatest\(base_weight,0\.000001\)\)::numeric,2\)/,
+    'two-place multiplier preview casts floating-point division to numeric');
+  assert.doesNotMatch(sql,/round\(final_weight\/greatest\(base_weight,0\.000001\),2\)/,
+    'PostgreSQL has no round(double precision, integer) overload');
+}
 console.log('Impossible Pickaxe rules, genuine counter, final stat integration, safe-review UI and singleton claim structure passed.');
