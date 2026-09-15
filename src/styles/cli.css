@@ -248,3 +248,39 @@
     height: calc(100vh - 16px);
   }
 }
+
+
+/* =========================================================
+   PLAYER CONSOLE — floating open button
+   ========================================================= */
+.player-cli-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3900;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--cli-border, #d5dbe3);
+  background: var(--cli-bar, #eef1f5);
+  color: var(--cli-text, #1b2430);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.player-cli-fab:hover { opacity: 1; transform: translateY(-1px); }
+
+:root[data-theme="dark"] .player-cli-fab { background: #111823; color: #d7e0ea; border-color: #223042; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .player-cli-fab { background: #111823; color: #d7e0ea; border-color: #223042; }
+}
+
+@media (max-width: 480px) {
+  .player-cli-fab { right: 10px; bottom: 10px; }
+}

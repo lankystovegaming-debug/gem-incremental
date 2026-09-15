@@ -32,6 +32,7 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
+import { initPlayerCli } from "./cli/playerCli.js";
 import { mountTour } from "./tour.js";
 import { mountDailyLogin } from "./dailyLogin.js";
 import { mountReferralPromo } from "./referralPromo.js";
@@ -791,6 +792,7 @@ export function mountShell({ page, base = "./" }) {
   reportOAuthErrorFromUrl();
 
   initDevPanel();
+  initPlayerCli();
 
 
   function applyWallet(amount) {
