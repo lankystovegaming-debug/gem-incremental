@@ -134,6 +134,10 @@ const view = {
   totalRolls: 0,
   genuineRolls: 0,
   hasCelestialPickaxe: false,
+  equippedPickaxe: null,
+  impossibleRolls: 0,
+  impossibleJoke: null,
+  impossibleJokeAt: null,
   ready: false
 };
 
@@ -310,6 +314,8 @@ async function refreshPlayerState() {
   view.capacity = playerState.inventory_capacity;
   view.totalRolls = playerState.total_rolls;
   view.genuineRolls = playerState.equipment_genuine_rolls;
+  view.impossibleRolls = Number(playerState.equipment_state?.rolls?.['impossible-pickaxe'] ?? 0);
+  view.equippedPickaxe = (equipment ?? []).find(item => item.category === 'pickaxe' && item.equipped)?.equipment_id ?? null;
   view.hasCelestialPickaxe = (equipment ?? []).some(
     (item) => item.equipment_id === "celestial-pickaxe"
   );
@@ -362,7 +368,7 @@ function showReady() {
   automationStats.status = getSettings().autoRoll ? "Auto roll active" : "Ready";
   renderAutomationPulse();
 
-  setButton({ mode: "", label: "Roll", disabled: false });
+  setButton({ mode: "", label: impossibleButtonJoke() ?? "Roll", disabled: false });
 
   rollButtonFill.style.transform = "scaleX(0)";
 
@@ -432,6 +438,26 @@ function stopCooldown() {
   }
 }
 
+const IMPOSSIBLE_JOKES = [
+  'No refunds.','Was it worth it?','Fortune was right there.',
+  'Surely this one.','$2.5 billion btw.','Congratulations?'
+];
+
+function impossibleButtonJoke() {
+  if (view.equippedPickaxe !== 'impossible-pickaxe') return null;
+  const size = Number(getSettings().batchSize ?? 1);
+  let target = null;
+  for (let offset = 1; offset <= size; offset += 1) {
+    if ((view.impossibleRolls + offset) % 67 === 0) { target = view.impossibleRolls + offset; break; }
+  }
+  if (target == null) return null;
+  if (view.impossibleJokeAt !== target) {
+    view.impossibleJokeAt = target;
+    view.impossibleJoke = IMPOSSIBLE_JOKES[Math.floor(Math.random() * IMPOSSIBLE_JOKES.length)];
+  }
+  return view.impossibleJoke;
+}
+
 
 // =========================================================
 // GEM REVEAL
@@ -467,7 +493,7 @@ function appendBatchResults(results, outcomes) {
 
     if (result?.houseEdge) {
       return `
-        <article class="batch-result batch-result--house-edge">
+        <article class="batch-result batch-result--house-edge${result.impossibleWorldFirst ? ' batch-result--impossible' : ''}">
           <div class="batch-result__art" aria-hidden="true">🎰</div>
           <div class="batch-result__copy">
             <span class="batch-result__index">${rollLabel}${counterLabel}</span>
@@ -480,7 +506,7 @@ function appendBatchResults(results, outcomes) {
 
     if (result?.pet) {
       return `
-        <article class="batch-result batch-result--pet">
+        <article class="batch-result batch-result--pet${result.impossibleWorldFirst ? ' batch-result--impossible' : ''}">
           <div class="batch-result__art" aria-hidden="true">🐾</div>
           <div class="batch-result__copy">
             <span class="batch-result__index">${rollLabel}${counterLabel}</span>
@@ -495,7 +521,7 @@ function appendBatchResults(results, outcomes) {
     const mutationIds = Array.isArray(result?.mutationIds) ? result.mutationIds : [];
     const outcome = outcomes.get(result);
     return `
-      <article class="batch-result tier-${tier.id}">
+      <article class="batch-result tier-${tier.id}${result.impossibleWorldFirst ? ' batch-result--impossible' : ''}">
         <div class="batch-result__art">${gemIconHtml(result.gem.name, "gem-icon--batch", mutationIds)}</div>
         <div class="batch-result__copy">
           <span class="batch-result__index">${rollLabel}${counterLabel}</span>
@@ -559,7 +585,8 @@ function renderRoll(data, outcome) {
     `tier-${tier.id}`,
     `visual-variant-${visualVariant}`,
     isEpicRollEffect ? "is-epic-roll" : "",
-    isUltraRare ? "is-ultra-rare" : ""
+    isUltraRare ? "is-ultra-rare" : "",
+    data.impossibleWorldFirst ? "is-impossible-world-first" : ""
   ].filter(Boolean).join(" ");
   gemStage.style.setProperty("--gem-hue", `${visualHue}`);
   gemStage.style.setProperty("--gem-speed", visualSpeed);
@@ -732,7 +759,7 @@ async function performRoll() {
 
   stopCooldown();
 
-  setButton({ mode: "rolling", label: "Rolling", disabled: true });
+  setButton({ mode: "rolling", label: impossibleButtonJoke() ?? "Rolling", disabled: true });
 
   const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
 
@@ -783,7 +810,7 @@ async function performRoll() {
 
     view.ready = true;
 
-    setButton({ mode: "", label: "Roll", disabled: false });
+    setButton({ mode: "", label: impossibleButtonJoke() ?? "Roll", disabled: false });
 
     return;
   }
@@ -812,6 +839,7 @@ async function performRoll() {
     view.capacity = result.inventory?.capacity ?? view.capacity;
     view.totalRolls = result.lifetimeStats?.totalRolls ?? view.totalRolls + 1;
     view.genuineRolls = result.equipmentPassives?.genuineRoll ?? view.genuineRolls + 1;
+    view.impossibleRolls = Number(result.equipmentPassives?.state?.rolls?.['impossible-pickaxe'] ?? view.impossibleRolls);
     automationStats.rolls += 1;
 
     if (result.houseEdge) {
@@ -845,7 +873,7 @@ async function performRoll() {
 
   let cinematicPromise = Promise.resolve();
   if (featured?.houseEdge) {
-    gemStage.className = "stage__display is-revealed";
+    gemStage.className = `stage__display is-revealed${featured.impossibleWorldFirst ? ' is-impossible-world-first' : ''}`;
     gemStage.innerHTML = '<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>';
   } else if (featured) {
     cinematicPromise = renderRoll(featured, outcomes.get(featured));

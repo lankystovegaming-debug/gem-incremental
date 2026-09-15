@@ -90,6 +90,13 @@
   background: var(--surface-hover);
 }
 
+.leaderboard-row--impossible { position:relative; overflow:hidden; border:1px solid #b780ff70; background:radial-gradient(circle at 15% 0,#9653ff24,transparent 45%),linear-gradient(105deg,#10071d,#171027 70%,#211428) !important; box-shadow:inset 0 0 22px #a65fff12,0 0 16px #8b4ad914; }
+.leaderboard-row--impossible::after { content:""; position:absolute; inset:0; pointer-events:none; opacity:.18; background:repeating-linear-gradient(115deg,transparent 0 44px,#e0bdff30 45px 46px,transparent 47px 79px); }
+.leaderboard-row--impossible > * { position:relative; z-index:1; }
+.impossible-world-first-label { flex:none; margin-left:5px; padding:3px 6px; border:1px solid #e5c56f66; border-radius:999px; color:#e9ca76; background:#e9ca760d; font-size:.58rem; font-weight:800; letter-spacing:.04em; white-space:nowrap; }
+@media (max-width:620px) { .impossible-world-first-label { display:none; } .leaderboard-row--impossible::after { opacity:.09; } }
+@media (prefers-reduced-motion:reduce) { .leaderboard-row--impossible { transition:none; } }
+
 @keyframes row-in {
   from { opacity: 0; transform: translateY(-4px); }
 }

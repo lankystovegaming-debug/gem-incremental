@@ -99,6 +99,7 @@ let activeLeaderboard =
 let avatarMap = {};
 let showcaseMap = {};
 let profileIdMap = {};
+let impossibleWorldFirstId = null;
 
 function showcasePins(username) {
   return showcasePinsHtml(showcaseMap[username]);
@@ -217,7 +218,7 @@ async function loadAvatars() {
     return;
   }
 
-  const [avatarResult, showcases, profileResult] = await Promise.all([
+  const [avatarResult, showcases, profileResult, impossibleResult] = await Promise.all([
     supabase.rpc("get_leaderboard_avatars", {
       p_usernames: [...names]
     }),
@@ -226,7 +227,9 @@ async function loadAvatars() {
 
     supabase.rpc("get_profile_ids_for_usernames", {
       p_usernames: [...names]
-    })
+    }),
+
+    supabase.from('impossible_pickaxe_world_first').select('player_id').eq('singleton', true).maybeSingle()
   ]);
 
   const {
@@ -253,6 +256,7 @@ async function loadAvatars() {
     typeof profileResult.data === "object"
       ? profileResult.data
       : {};
+  impossibleWorldFirstId = impossibleResult.error ? null : impossibleResult.data?.player_id ?? null;
 }
 
 
@@ -952,6 +956,16 @@ function wireProfileLinks() {
 
     if (!userId) {
       continue;
+    }
+
+    if (userId === impossibleWorldFirstId) {
+      const row = identity.closest('.leaderboard-row');
+      row?.classList.add('leaderboard-row--impossible');
+      if (row) row.title = 'Impossible — World First · awarded to first Impossible Pickaxe crafter';
+      const label = document.createElement('span');
+      label.className = 'impossible-world-first-label';
+      label.textContent = 'Impossible — World First';
+      identity.append(label);
     }
 
     const link = document.createElement("a");

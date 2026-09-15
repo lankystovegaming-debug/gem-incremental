@@ -102,8 +102,26 @@ export const supersizerRecipes=[
  ]),consumeMaterials:true,description:'The mining industry said this was excessive. We made it bigger.',
  reward:{id:'supersizer-pickaxe',name:'Supersizer Pickaxe',category:'pickaxe',tier:18,bonus:{...pickaxeBonus('supersizer-pickaxe'),finalSell:.25}}}
 ];
+export const impossibleRecipes=[{
+ ...pick('impossible-pickaxe','The Impossible Pickaxe',2500000000,[
+  {type:'impossible-safe-sacrifice',amount:1,label:'Reviewed shared sacrifice plan'},
+  {type:'consumable',consumableId:'legendary-potion',amount:50},
+  {type:'consumable',consumableId:'mythic-potion',amount:25},
+  lifetimeRolls(1000000),
+  history('impossibleLifetimeEarnings',5000000000,'Lifetime earnings'),
+  history('impossibleSpecialists',6,'Frozen specialist set owned'),
+  history('impossibleRareHeavy10m',10,'1/10M+ base rarity and 5×+ final/base weight'),
+  history('impossibleRareHeavy100m',1,'1/100M+ base rarity and 10×+ final/base weight'),
+  history('impossibleRare100m',10,'1/100M+ base-rarity genuine rolls'),
+  history('impossibleRare500m',1,'1/500M+ base-rarity genuine roll'),
+  history('impossibleOrdinaryMutations',50,'Ordinary mutations discovered'),
+  history('impossibleSpecialGems',10,'Distinct Special Gems discovered')
+ ],true),
+ manualReviewOnly:true,consumeMaterials:true,description:'Congratulations. Now explain why.',
+ reward:{id:'impossible-pickaxe',name:'The Impossible Pickaxe',category:'pickaxe',tier:19,bonus:pickaxeBonus('impossible-pickaxe')}
+}];
 export function applyEquipmentOverhaul(recipes) {
- const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes,...realityBedrockRecipes,...supersizerRecipes].map(r=>[r.id,r]));
+ const replacements=new Map([...secondaryRecipes,...specialistRecipes,...fiveItemRecipes,...realityBedrockRecipes,...supersizerRecipes,...impossibleRecipes].map(r=>[r.id,r]));
  const retired = new Set(['neutron-boots','spacetime-walkers','reality-breakers','singularity-vault','bottomless-singularity','event-horizon-vault','omnidimensional-vault']);
  const result=recipes.filter(r=>!replacements.has(r.id)&&!retired.has(r.id)).map(original=>{
   const r=structuredClone(original);
