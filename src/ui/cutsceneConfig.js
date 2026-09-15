@@ -1,56 +1,58 @@
 const FACET = Object.freeze({
-  id: "facet", duration: 3_000, theme: "facet", label: "FACET ANALYSIS",
-  beats: ["SPECIMEN ACQUIRED", "FACETS: RESOLVING", "STRUCTURE: CONFIRMED"]
+  id: "facet", duration: 4_000, theme: "facet", beats: [], revealAt: 0.55,
+  primitives: ["facets"]
 });
 const PRISM = Object.freeze({
-  id: "prism", duration: 5_500, theme: "prism", label: "PRISM ANALYSIS",
-  beats: ["SPECIMEN ACQUIRED", "REFRACTION: INCREASING", "SPECTRUM: LOCKED"]
+  id: "prism", duration: 6_500, theme: "prism", beats: [], revealAt: 0.68,
+  primitives: ["prism"]
 });
 
-const scene = (duration, theme, beats, extra = {}) => Object.freeze({
-  duration, theme, beats, label: "TRANSCENDENT SPECIMEN", ...extra
+const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
+  duration, theme, beats, revealAt: 0.78, primitives: [], ...extra
 });
 
-// The registry is deliberately keyed by normalized server identity. Rarity is
-// retained as a fallback boundary, never as a substitute for gem identity.
+// Text is deliberately sparse here. Each entry's primitives and theme carry the
+// scene; beats are only measurements, punchlines, or essential dramatic turns.
+// The registry is keyed by normalized server identity. Rarity remains a fallback
+// boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
-  "heart of xy": scene(10_000, "xy-heart", ["X COORDINATE: LOCKED", "Y COORDINATE: LOCKED", "HEARTBEAT DETECTED", "COLLISION: IMMINENT"]),
-  "xy gem": scene(10_000, "xy-heart", ["X COORDINATE: LOCKED", "Y COORDINATE: LOCKED", "HEARTBEAT DETECTED", "COLLISION: IMMINENT"]),
-  "potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite": scene(9_000, "buffer", ["IDENTIFYING SPECIMEN...", "IDENTIFICATION BUFFER EXCEEDED", "FORCING FULL IDENTIFIER"]),
-  "first light": scene(8_000, "sunrise", ["LIGHT LEVEL: 0.01%", "HORIZON SOURCE DETECTED", "FIRST RAYS ACQUIRED"], { quiet: true }),
-  noobium: scene(6_500, "noob", ["RUNNING SERIOUS ANALYSIS...", "NOOB DETECTED", "PRESENTATION QUALITY: BASIC"], { label: "NOOBIUM SCAN" }),
-  stishovite: scene(8_500, "pressure-one", ["PRESSURE: 10 GPa", "PRESSURE: 45 GPa", "DENSITY: INCREASING", "EXTREME PRESSURE I"]),
-  unobtainium: scene(7_500, "missing", ["LOCATING SPECIMEN...", "LOCATING SPECIMEN...", "SPECIMEN DOES NOT EXIST", "...WHAT?"]),
-  solarion: scene(8_500, "solar", ["STELLAR SEED DETECTED", "SOLAR ACTIVITY: RISING", "CORE COLLAPSE: CONTROLLED"]),
-  seifertite: scene(9_000, "pressure-two", ["PRESSURE: 120 GPa", "PRESSURE: 900 GPa", "PRESSURE: ███████", "LUCK: IRRELEVANT", "EXTREME PRESSURE II"]),
-  eventide: scene(9_000, "eventide", ["DAYLIGHT: FADING", "SPECTRUM: RED → VIOLET", "STARS: EMERGING"], { quiet: true }),
-  deadstar: scene(8_500, "deadstar", ["STELLAR OUTPUT: 12%", "STELLAR OUTPUT: 1%", "STELLAR OUTPUT: 0%", "EMBER SIGNAL: FAINT"], { quiet: true }),
-  tistarite: scene(8_500, "meteor", ["INCOMING OBJECT", "IMPACT: PAUSED", "OUTER LAYER: FRACTURED", "ORIGIN: NOT LOCAL"]),
-  infernite: scene(9_000, "inferno", ["TEMPERATURE: RISING", "THERMAL LIMIT EXCEEDED", "TEMPERATURE: ∞", "HEAT COLLAPSE: INWARD"]),
-  ascendentite: scene(9_000, "ascend", ["ALTITUDE: +10m", "+1km", "+100km", "TRACKING LIMIT EXCEEDED", "RETURN VECTOR: LOCKED"]),
-  allendeite: scene(9_000, "impact", ["INCOMING OBJECT", "GEOLOGICAL SHOCKWAVE", "EXCAVATING SPECIMEN", "ORIGIN: NOT LOCAL"]),
-  polaris: scene(8_500, "polaris", ["SEARCHING STAR FIELD", "REFERENCE POINT: FIXED", "CELESTIAL ROTATION: CONFIRMED"], { quiet: true }),
-  "the last gem": scene(8_000, "false-ending", ["CATALOG ANALYSIS COMPLETE", "COMPLETION: 100%", "Checking catalog...", "ADDITIONAL SPECIMENS DETECTED", "Apparently not."]),
-  panguite: scene(9_500, "primordial", ["SOLAR DUST: ASSEMBLING", "AGE: >4.5 BILLION YEARS", "ORIGIN: NOT LOCAL", "ORIGIN: PRIMORDIAL"]),
-  "yttrocolumbite-(y)": scene(9_000, "analysis", ["COMPOSITION: SCANNING", "STRUCTURE: SCANNING", "SPECTRAL PROFILE: SCANNING", "CLASSIFICATION COMPLETE", "CORRECTION: (Y)"]),
-  thalassa: scene(11_500, "ocean", ["DEPTH: -10m", "DEPTH: -200m", "DEPTH: -1000m", "DEPTH: -4000m", "LIGHT: 0%", "SIGNAL LOST"], { quiet: true }),
-  fluorotetraferriphlogopite: scene(7_500, "perfect-id", ["IDENTIFYING SPECIMEN...", "IDENTIFICATION CONFIDENCE: 100%", "FULL IDENTIFIER: STABLE"]),
-  hapkeite: scene(9_000, "lunar-impact", ["LUNAR SURFACE SWEEP", "REFLECTIVE INCLUSION FOUND", "EXPOSURE: IMPACT-ALTERED", "ORIGIN: NOT LOCAL"]),
-  edscottite: scene(10_500, "journey", ["TERRESTRIAL SOURCE: NONE", "EXTRATERRESTRIAL SOURCE: FOUND", "JOURNEY RECONSTRUCTION", "ATMOSPHERIC ENTRY", "ORIGIN: CONFIRMED"]),
-  "where gem": scene(8_500, "where", ["LOCATING SPECIMEN...", "404 SPECIMEN NOT FOUND", "SCANNING VIEWPORT...", "oh"], { randomAnchor: true }),
-  "last light": scene(9_000, "last-light", ["REMAINING LIGHT: 1.7%", "REMAINING LIGHT: 0.8%", "REMAINING LIGHT: 0.2%", "REMAINING LIGHT: 0.0%", "INTERNAL SOURCE DETECTED"], { quiet: true }),
-  armalcolite: scene(9_000, "lunar", ["SURFACE: DUST", "TERRESTRIAL ORIGIN: NEGATIVE", "LUNAR MATERIAL: CONFIRMED"]),
-  netherwrong: scene(10_500, "wrong", ["RESONANCE PATTERN: FAMILIAR", "SPECIMEN VALIDATION: VALID", "SPECIMEN VALIDATION: WRONG", "THIS IS WRONG."], { theatre: true }),
-  aurorite: scene(9_000, "aurora", ["SPECTRAL READING: VARIABLE", "SPECTRAL READING: UNSTABLE", "SCANNER: DISENGAGED"], { quiet: true }),
-  "reality fragment": scene(11_000, "reality", ["CONTAINMENT FAILURE", "REALITY COHERENCE: 81%", "REALITY COHERENCE: 54%", "REALITY COHERENCE: 17%", "REALITY COHERENCE: ERROR"], { theatre: true, lingeringCrack: true }),
-  tranquillityite: scene(10_000, "tranquillity", ["LUNAR HORIZON ACQUIRED", "SCANNER: STANDBY", "DISTURBANCE: NONE"], { quiet: true }),
-  "ton 618": scene(12_000, "black-hole", ["UNEXPECTED GRAVITATIONAL FIELD", "GRAVITATIONAL FIELD: INCREASING", "MASS: ????????", "EVENT HORIZON: COMPLETE"], { theatre: true, quiet: true }),
-  "cat ore": scene(10_000, "cat", ["CRITICAL ENERGY", "MAXIMUM DANGER", "ENTITY APPROACHING", "PLEASE STOP", "meow"]),
-  "tonalite-trondhjemite-granodiorite": scene(12_000, "master-analysis", ["FACET: PASS", "PRISM: PASS", "RESONANCE: PASS", "PRESSURE: PASS", "COMPOSITION: PASS", "ORIGIN: PASS", "REALITY: STABLE"]),
-  "almost secret": scene(10_500, "almost", ["COUNTING TOWARD SECRET THRESHOLD", "THRESHOLD: 1,000,000,000", "RESULT: 999,999,999", "DIFFERENCE: 1", "SECR—", "no.", "1 short."], { counter: true }),
-  "glitched gem": scene(12_500, "glitched-gem", ["QUARTZ · 1 in 2", "RESULT VALIDATION FAILED", "REVALIDATING...", "ROLL RESULT RECOVERED", "GLITCHED GEM", "ROLL RESULT CORRUPTED", "THIS RESULT SHOULD NOT EXIST"], { secret: true, theatre: true, fakeResult: true }),
-  finality: scene(12_000, "finality", ["FINAL SPECIMEN DETECTED", "FACET", "PRISM", "RESONANCE", "SPECIMEN ANALYSIS COMPLETE", "NO FURTHER SPECIMENS DETECTED", "ENDING SESSION", "GEM INCREMENTAL · Thank you for playing.", "The end.", "for this roll."], { secret: true, quiet: true, theatre: true }),
-  reminiscite: scene(17_000, "memory", ["FACET · PRISM · RESONANCE", "SUNRISE · PRESSURE · METEOR · DEADSTAR", "FIRE · ASCENSION · POLARIS · THALASSA", "404 · LAST LIGHT · NETHERWRONG · AURORA", "REALITY · LUNAR · TON 618 · CAT ORE", "999,999,999 · GLITCHED GEM · FINALITY", "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND", "Everything before led here."], { secret: true, quiet: true })
+  "heart of xy": scene(14_000, "xy-heart"),
+  "xy gem": scene(14_000, "xy-heart"),
+  "potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite": scene(12_000, "buffer", ["IDENTIFICATION BUFFER EXCEEDED"], { primitives: ["identifier"], textPosition: "center-low", beatStart: 0.55 }),
+  "first light": scene(12_000, "sunrise", [], { quiet: true, primitives: ["horizon", "star"] }),
+  noobium: scene(11_000, "noob", ["NOOB DETECTED"], { primitives: ["pixel"], textPosition: "center", beatStart: 0.48 }),
+  stishovite: scene(12_000, "pressure-one", ["10 GPa", "45 GPa"], { primitives: ["pressure"], textPosition: "specimen-right" }),
+  unobtainium: scene(11_500, "missing", ["SPECIMEN DOES NOT EXIST"], { primitives: ["search", "reticle"], textPosition: "center-low", beatStart: 0.6 }),
+  solarion: scene(12_000, "solar", [], { primitives: ["star", "orbit"] }),
+  seifertite: scene(13_000, "pressure-two", ["120 GPa", "900 GPa", "LUCK: IRRELEVANT"], { primitives: ["pressure"], textPosition: "specimen-right" }),
+  eventide: scene(12_000, "eventide", [], { quiet: true, primitives: ["horizon", "stars"] }),
+  deadstar: scene(12_500, "deadstar", [], { quiet: true, primitives: ["star", "embers"] }),
+  tistarite: scene(12_500, "meteor", ["ORIGIN: NOT LOCAL"], { primitives: ["meteor"], textPosition: "lower-right", beatStart: 0.58 }),
+  infernite: scene(13_500, "inferno", ["TEMPERATURE: ∞"], { primitives: ["fire", "heat"], textPosition: "center-low", beatStart: 0.58 }),
+  ascendentite: scene(13_000, "ascend", ["+10 m", "+1 km", "+100 km"], { primitives: ["ascent"], textPosition: "altitude" }),
+  allendeite: scene(13_000, "impact", ["ORIGIN: NOT LOCAL"], { primitives: ["meteor", "crater"], textPosition: "lower-right", beatStart: 0.58 }),
+  polaris: scene(12_500, "polaris", [], { quiet: true, primitives: ["star-trails"] }),
+  "the last gem": scene(12_000, "false-ending", ["100%", "Apparently not."], { primitives: ["catalogue"], textPosition: "center", beatStart: 0.32 }),
+  panguite: scene(13_500, "primordial", [">4.5 BILLION YEARS", "ORIGIN: PRIMORDIAL"], { primitives: ["dust", "orbit"], textPosition: "orbit" }),
+  "yttrocolumbite-(y)": scene(12_500, "analysis", ["CORRECTION: (Y)"], { primitives: ["slices", "reticle"], textPosition: "specimen-right", beatStart: 0.55 }),
+  thalassa: scene(15_000, "ocean", ["-10 m", "-1,000 m", "-4,000 m"], { quiet: true, primitives: ["water", "depth"], textPosition: "depth" }),
+  fluorotetraferriphlogopite: scene(11_500, "perfect-id", ["IDENTIFICATION CONFIDENCE: 100%"], { primitives: ["identifier"], textPosition: "center-low", beatStart: 0.55 }),
+  hapkeite: scene(13_000, "lunar-impact", ["ORIGIN: NOT LOCAL"], { primitives: ["lunar", "crater"], textPosition: "lower-right", beatStart: 0.58 }),
+  edscottite: scene(14_000, "journey", ["ORIGIN: CONFIRMED"], { primitives: ["journey", "meteor"], textPosition: "lower-right", beatStart: 0.58 }),
+  "where gem": scene(12_000, "where", ["404", "oh"], { primitives: ["search", "reticle"], textPosition: "where", randomAnchor: true }),
+  "last light": scene(13_000, "last-light", [], { quiet: true, primitives: ["horizon", "ember"] }),
+  armalcolite: scene(13_000, "lunar", ["LUNAR MATERIAL"], { primitives: ["lunar"], textPosition: "horizon", beatStart: 0.55 }),
+  netherwrong: scene(14_000, "wrong", ["THIS IS WRONG."], { theatre: true, primitives: ["wrong"], textPosition: "wrong", beatStart: 0.58 }),
+  aurorite: scene(13_000, "aurora", [], { quiet: true, primitives: ["aurora"] }),
+  "reality fragment": scene(15_000, "reality", ["CONTAINMENT FAILURE", "COHERENCE: ERROR"], { theatre: true, lingeringCrack: true, primitives: ["reality"], textPosition: "fracture" }),
+  tranquillityite: scene(14_000, "tranquillity", [], { quiet: true, primitives: ["lunar", "horizon"] }),
+  "ton 618": scene(16_000, "black-hole", ["MASS: ????????", "EVENT HORIZON"], { theatre: true, quiet: true, primitives: ["black-hole"], textPosition: "orbit" }),
+  "cat ore": scene(12_000, "cat", ["meow"], { primitives: ["cat"], textPosition: "center-low", beatStart: 0.63, revealAt: 0.72 }),
+  "tonalite-trondhjemite-granodiorite": scene(15_000, "master-analysis", ["FACET · PRISM · RESONANCE"], { primitives: ["master"], textPosition: "orbit", beatStart: 0.54 }),
+  "almost secret": scene(16_000, "almost", ["no.", "1 short."], { counter: true, counterDuration: 8_500, primitives: ["counter"], textPosition: "center", beatStart: 0.6, beatWindow: 0.12, revealAt: 0.84 }),
+  "glitched gem": scene(17_000, "glitched-gem", ["RESULT VALIDATION FAILED", "THIS RESULT SHOULD NOT EXIST"], { secret: true, theatre: true, fakeResult: true, primitives: ["glitch"], textPosition: "corrupt-ui", beatStart: 0.3, revealAt: 0.82 }),
+  finality: scene(16_000, "finality", ["The end.", "for this roll."], { secret: true, quiet: true, theatre: true, primitives: ["void"], textPosition: "center", beatStart: 0.58, revealAt: 0.83 }),
+  reminiscite: scene(20_000, "memory", ["MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"], { secret: true, quiet: true, primitives: ["memories"], textPosition: "center", beatStart: 0.64, beatWindow: 0.14, revealAt: 0.84 })
 });
 
 export function normalizeCutsceneName(value) {
@@ -66,16 +68,13 @@ export function getCutsceneDefinition({ rarity, gemName } = {}) {
   const value = Number(rarity) || 0;
   const name = normalizeCutsceneName(gemName);
   if (value >= 100_000_000) {
-    return BESPOKE_CUTSCENES[name] ?? scene(9_500, "transcendent", [
-      "SPECIMEN ACQUIRED", "ANALYSIS BEYOND CATALOG LIMITS", "IDENTITY: CONFIRMED"
-    ]);
+    return BESPOKE_CUTSCENES[name] ?? scene(13_000, "transcendent", [], { primitives: ["transcendent"] });
   }
   if (value >= 10_000_000) {
     const intensity = resonanceIntensity(value);
     return Object.freeze({
-      id: "resonance", theme: "resonance", label: "RESONANCE ANALYSIS",
-      duration: Math.round(8_000 + intensity * 2_000), intensity,
-      beats: ["THUM", "RESONANCE: BUILDING", "MINERAL LATTICE: VISIBLE", "STRUCTURAL LIGHT LEAK DETECTED"]
+      id: "resonance", theme: "resonance", duration: Math.round(11_000 + intensity * 2_000),
+      intensity, beats: [], revealAt: 0.78, primitives: ["resonance"]
     });
   }
   if (value >= 1_000_000) return PRISM;
@@ -86,8 +85,8 @@ export function getCutsceneDefinition({ rarity, gemName } = {}) {
 export function configuredCutsceneDuration({ rarity, gemName, mobile = false, reducedMotion = false } = {}) {
   const definition = getCutsceneDefinition({ rarity, gemName });
   if (!definition) return 0;
-  // Coarse-pointer devices get a little more reading time. Reduced motion
-  // shortens long holds while keeping every narrative beat present.
+  // Live and replay share this single duration source. Coarse-pointer devices
+  // receive a little more hold time; reduced motion preserves the story beats.
   let duration = definition.duration * (mobile ? 1.05 : 1);
   if (reducedMotion) duration = Math.max(3_000, duration * 0.72);
   return Math.round(duration);
