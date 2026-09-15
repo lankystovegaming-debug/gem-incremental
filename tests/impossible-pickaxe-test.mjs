@@ -36,6 +36,7 @@ const edge=readFileSync(new URL('../supabase/functions/roll/index.ts',import.met
 const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url),'utf8').trim();
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
+const depositWorkspace=readFileSync(new URL('../supabase/migrations/20260915061024_impossible_deposit_workspace.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
 const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
 const profileUi=readFileSync(new URL('../user/profile.js',import.meta.url),'utf8');
@@ -50,7 +51,7 @@ assert.match(migration,/'totalRolls',coalesce\(p\.total_rolls,0\)/);
 assert.doesNotMatch(migration,/impossibleLifetimeRolls[^]*equipment_genuine_rolls/);
 assert.match(migration,/on conflict\(singleton\) do nothing/);
 assert.match(migration,/cardinality\(plan\.specimen_ids\)/);
-assert.match(crafting,/I understand that all listed resources and every selected gem will be permanently consumed/);
+assert.match(crafting,/I approve consuming the listed potion and cash balances and using my permanently deposited pool/);
 assert.match(crafting,/WORLD FIRST BOUNTY —/);
 assert.match(appCss,/is-impossible-world-first::before[^}]*width:auto; height:auto;[^}]*transform:none;/,
   'world-first perimeter must reset the base roll bloom pseudo-element geometry');
@@ -59,6 +60,15 @@ assert.match(edge,/impossibleWorldFirst: player\.equipment_state\?\.impossibleWo
 assert.match(profileUi,/backgroundStyle === 'impossible' \? `<div class="impossible-profile-brand"/);
 assert.match(leaderboardUi,/userId === impossibleWorldFirstId/);
 assert.match(shardAsset,/<svg[^>]*viewBox="0 0 1200 600"/);
+assert.match(depositWorkspace,/deposit_impossible_pickaxe_gems/);
+assert.match(depositWorkspace,/p_recipe_id='impossible-pickaxe'[^]*deposit_specimen\(p_player_id,p_specimen,true\)/);
+assert.match(depositWorkspace,/consumeMaterials'='true'[^]*array_agg\(id\)[^]*depositedCount/,
+  'Impossible routing must preserve the latest set-based equipment bulk-deposit path');
+assert.match(depositWorkspace,/not coalesce\(museum_locked,false\)/,
+  'manual deposits must never consume Museum exhibits');
+assert.match(crafting,/Manual deposit/);
+assert.match(crafting,/Start Auto Craft/);
+assert.match(crafting,/permanently removed from inventory/);
 for (const sql of [migration,roundRepair]) {
   assert.match(sql,/round\(\(final_weight\/greatest\(base_weight,0\.000001\)\)::numeric,2\)/,
     'two-place multiplier preview casts floating-point division to numeric');

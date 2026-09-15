@@ -215,6 +215,26 @@
 .impossible-review__head { display:flex; justify-content:space-between; gap:18px; align-items:start; }
 .impossible-review__head h2 { margin:4px 0 0; }
 .impossible-review > p { color:var(--text-muted); }
+.impossible-workspace-modes { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:14px; margin:18px 0; }
+.impossible-workspace-mode { min-width:0; padding:14px; border:1px solid #b987ff4d; border-radius:14px; background:linear-gradient(145deg,#9b58ff0d,#e7bd5d08),var(--surface-sunken); }
+.impossible-workspace-mode summary { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:0 !important; list-style:none; }
+.impossible-workspace-mode summary::-webkit-details-marker { display:none; }
+.impossible-workspace-mode summary > span:first-child,.impossible-auto-mode > div { display:grid; gap:3px; }
+.impossible-workspace-mode small { color:var(--text-muted); font-size:.74rem; font-weight:400; }
+.impossible-auto-mode { display:grid; align-content:start; gap:12px; }
+.impossible-auto-ack { display:flex; align-items:flex-start; gap:8px; color:var(--text-muted); font-size:.78rem; }
+.impossible-deposit-search { display:flex; gap:8px; margin-top:14px; }
+.impossible-deposit-search .input { flex:1; min-width:0; }
+.impossible-deposit-toolbar,.impossible-deposit-pager { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; color:var(--text-muted); font-size:.76rem; }
+.impossible-deposit-list { display:grid; max-height:330px; overflow:auto; border-block:1px solid var(--border); }
+.impossible-deposit-gem { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+.impossible-deposit-gem:hover { background:#a766ff0b; }
+.impossible-deposit-gem > span { display:grid; min-width:0; }
+.impossible-deposit-gem small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.impossible-deposit-commit { display:grid; gap:10px; margin-top:10px; padding:12px; border:1px solid #e1b45752; border-radius:12px; background:#e1b45708; }
+.impossible-deposit-commit label { display:flex; align-items:flex-start; gap:8px; color:var(--text-muted); font-size:.78rem; }
+.impossible-final-review { display:flex; align-items:center; gap:12px; margin-top:18px; }
+.impossible-final-review small { color:var(--text-muted); }
 .impossible-review__totals { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; overflow:hidden; margin:18px 0; border:1px solid var(--border); border-radius:14px; background:var(--border); }
 .impossible-review__totals > div { display:grid; gap:5px; padding:12px; background:var(--surface-sunken); }
 .impossible-review__totals span { color:var(--text-faint); font-size:.72rem; text-transform:uppercase; }
@@ -235,9 +255,10 @@
 .impossible-review__blocked { padding:14px; border-radius:12px; background:color-mix(in srgb,var(--negative) 10%,transparent); color:var(--negative) !important; }
 @media (max-width:700px) {
   .impossible-review { padding:16px; }
+  .impossible-workspace-modes { grid-template-columns:1fr; }
   .impossible-review__totals,.impossible-review__checks { grid-template-columns:1fr 1fr; }
   .impossible-review__checks { grid-template-columns:1fr; }
-  .impossible-review__confirm { align-items:stretch; flex-direction:column; }
+  .impossible-review__confirm,.impossible-final-review { align-items:stretch; flex-direction:column; }
 }
 
 

@@ -18,6 +18,8 @@ import {
   setCloudAutoCraft,
   loadCloudConsumables,
   loadImpossiblePickaxeStatus,
+  loadImpossibleDepositCandidates,
+  depositImpossiblePickaxeGems,
   prepareImpossiblePickaxeCraft,
   craftImpossiblePickaxe
 } from "../src/backend/cloudCrafting.js";
@@ -184,7 +186,7 @@ function requirementKey(requirement, index) {
 function describeRequirement(requirement, value) {
   switch (requirement.type) {
     case 'impossible-safe-sacrifice':
-      return {label:'Shared sacrifice pool · review required',text:'Protected gems are never selected',fraction:0};
+      return {label:'Shared sacrifice pool · review required',text:`${formatCount(state.impossibleStatus?.preview?.materials?.selectedCount ?? 0)} deposited`,fraction:0};
     case 'equipment-history': {
       const have=Number(state.specialDiscoveries.batchHistory?.[requirement.metric]??0);
       return {label:requirement.label+' · historical, not consumed',text:`${formatCount(have)} / ${formatCount(requirement.amount)}`,fraction:ratio(have,requirement.amount)};
@@ -750,7 +752,7 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
           : `
             <div class="requirements">${requirementsHtml}</div>
             ${recipe.manualReviewOnly
-              ? '<p class="recipe-card__description impossible-warning">Nothing is consumed while reviewing. The planner selects the lowest-value unlocked gems it can, reserves separate 10 + 3 + 1 multiplier specimens, and lets shared specimens satisfy rarity/value/weight totals once. Lock anything you refuse to sacrifice before reviewing.</p>'
+              ? '<p class="recipe-card__description impossible-warning">Open the sacrifice workspace to deposit chosen inventory gems or send useful future rolls here with Auto Craft. Every deposited gem counts once and can satisfy every applicable shared-pool requirement.</p>'
               : recipe.consumeMaterials ? '<p class="recipe-card__description">Materials are consumed. Deposit all uses matching unlocked inventory gems; Auto Craft collects future rolls.</p>' : ""}
 
             <div class="recipe-cost">
@@ -794,7 +796,74 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
 // CARD ACTIONS
 // =========================================================
 
-function openImpossibleReview(result) {
+const IMPOSSIBLE_DEPOSIT_PAGE_SIZE = 50;
+
+async function renderImpossibleCandidates(dialog, offset = 0, search = '') {
+  const host = dialog.querySelector('#impossibleManualCandidates');
+  if (!host) return;
+  host.innerHTML = '<div class="skeleton skeleton--card"></div>';
+  const { data: gems, error, count } = await loadImpossibleDepositCandidates({
+    offset,
+    limit: IMPOSSIBLE_DEPOSIT_PAGE_SIZE,
+    search
+  });
+  if (!dialog.isConnected) return;
+  if (error) {
+    host.innerHTML = `<p class="impossible-review__blocked">${escapeHtml(error.message || 'Could not load inventory gems.')}</p>`;
+    return;
+  }
+  const pageEnd = Math.min(count, offset + gems.length);
+  const rows = gems.map((gem) => {
+    const multiplier = Number(gem.base_weight) > 0 ? Number(gem.final_weight) / Number(gem.base_weight) : 0;
+    return `<label class="impossible-deposit-gem">
+      <input type="checkbox" data-impossible-gem-id="${escapeHtml(String(gem.id))}">
+      <span><strong>${escapeHtml(gem.gem_name)}</strong><small>1 in ${formatCount(gem.rarity)} · ${formatWeight(gem.final_weight)} · ${formatCount(Number(multiplier.toFixed(2)))}×</small></span>
+      <strong>${formatMoney(gem.value)}</strong>
+    </label>`;
+  }).join('');
+  host.innerHTML = `
+    <form class="impossible-deposit-search"><input class="input" id="impossibleDepositSearch" value="${escapeHtml(search)}" placeholder="Search gem name"><button class="btn btn--sm" type="submit">Search</button></form>
+    <div class="impossible-deposit-toolbar"><label><input type="checkbox" id="impossibleSelectPage"> Select this page</label><span>${count ? `${formatCount(offset + 1)}–${formatCount(pageEnd)} of ${formatCount(count)}` : 'No eligible unlocked gems'}</span></div>
+    <div class="impossible-deposit-list">${rows || '<p>No matching unlocked gems.</p>'}</div>
+    <div class="impossible-deposit-pager"><button class="btn btn--sm" id="impossibleDepositPrev" ${offset <= 0 ? 'disabled' : ''}>Previous</button><button class="btn btn--sm" id="impossibleDepositNext" ${pageEnd >= count ? 'disabled' : ''}>Next</button></div>
+    <div class="impossible-deposit-commit">
+      <label><input type="checkbox" id="impossibleDepositAcknowledge"> I understand selected gems are permanently removed from inventory as soon as I deposit them.</label>
+      <button class="btn btn--danger" id="impossibleDepositSelected" disabled>Deposit selected gems</button>
+    </div>`;
+  const selected = () => [...host.querySelectorAll('[data-impossible-gem-id]:checked')];
+  const acknowledge = host.querySelector('#impossibleDepositAcknowledge');
+  const deposit = host.querySelector('#impossibleDepositSelected');
+  const syncDeposit = () => { deposit.disabled = !acknowledge.checked || selected().length === 0; };
+  host.querySelectorAll('[data-impossible-gem-id]').forEach(input => input.addEventListener('change', syncDeposit));
+  acknowledge.addEventListener('change', syncDeposit);
+  host.querySelector('#impossibleSelectPage')?.addEventListener('change', (event) => {
+    host.querySelectorAll('[data-impossible-gem-id]').forEach(input => { input.checked = event.currentTarget.checked; });
+    syncDeposit();
+  });
+  host.querySelector('.impossible-deposit-search')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    renderImpossibleCandidates(dialog, 0, host.querySelector('#impossibleDepositSearch').value);
+  });
+  host.querySelector('#impossibleDepositPrev')?.addEventListener('click', () => renderImpossibleCandidates(dialog, Math.max(0, offset - IMPOSSIBLE_DEPOSIT_PAGE_SIZE), search));
+  host.querySelector('#impossibleDepositNext')?.addEventListener('click', () => renderImpossibleCandidates(dialog, offset + IMPOSSIBLE_DEPOSIT_PAGE_SIZE, search));
+  deposit?.addEventListener('click', async () => {
+    const ids = selected().map(input => input.dataset.impossibleGemId);
+    deposit.disabled = true;
+    deposit.textContent = 'Depositing atomically…';
+    try {
+      const workspace = await depositImpossiblePickaxeGems(ids);
+      state.impossibleStatus = workspace;
+      notify.success('Gems deposited', `${formatCount(workspace.depositedCount ?? ids.length)} gems permanently added to the shared sacrifice pool.`);
+      openImpossibleReview(workspace, { openManual: true });
+    } catch (depositError) {
+      notify.error('Deposit failed safely', `${depositError.message}. No partial deposit was kept.`);
+      deposit.disabled = false;
+      deposit.textContent = 'Deposit selected gems';
+    }
+  });
+}
+
+function openImpossibleReview(result, { openManual = false } = {}) {
   document.getElementById('impossibleReviewDialog')?.remove();
   const preview = result?.preview ?? {};
   const material = preview.materials ?? {};
@@ -826,21 +895,76 @@ function openImpossibleReview(result) {
   dialog.id = 'impossibleReviewDialog';
   dialog.className = 'impossible-review';
   dialog.innerHTML = `
-    <form method="dialog" class="impossible-review__head"><div><span class="eyebrow">DESTRUCTIVE CRAFT REVIEW</span><h2>The Impossible Pickaxe</h2></div><button class="btn" value="cancel">Close</button></form>
-    <p>No item has been consumed. This plan expires in 15 minutes and becomes invalid if any selected gem changes, is sold, or is locked.</p>
+    <form method="dialog" class="impossible-review__head"><div><span class="eyebrow">SACRIFICE WORKSPACE</span><h2>The Impossible Pickaxe</h2></div><button class="btn" value="cancel">Close</button></form>
+    <p>Build the permanent shared sacrifice pool manually or with future rolls. Deposited gems count toward every applicable predicate, but each gem is deposited only once.</p>
+    <div class="impossible-workspace-modes">
+      <details class="impossible-workspace-mode" id="impossibleManualMode" ${openManual ? 'open' : ''}>
+        <summary><span><strong>Manual deposit</strong><small>Choose exact unlocked inventory gems in batches of up to 50.</small></span><span class="btn btn--sm">Browse inventory</span></summary>
+        <div id="impossibleManualCandidates"></div>
+      </details>
+      <section class="impossible-workspace-mode impossible-auto-mode">
+        <div><strong>Auto Craft</strong><small>Useful future rolls go straight into this pool. Gem Filter and bundle routing keep priority.</small></div>
+        <label class="impossible-auto-ack"><input type="checkbox" id="impossibleAutoAcknowledge" ${result?.autoCraft ? 'checked' : ''}> ${result?.autoCraft ? 'Auto Craft is active.' : 'I understand matching future rolls are deposited permanently.'}</label>
+        <button class="btn ${result?.autoCraft ? '' : 'btn--primary'}" id="impossibleAutoToggle" ${result?.autoCraft ? '' : 'disabled'}>${result?.autoCraft ? 'Stop Auto Craft' : 'Start Auto Craft'}</button>
+      </section>
+    </div>
     <div class="impossible-review__totals">
-      <div><span>Selected once</span><strong>${formatCount(material.selectedCount ?? 0)} gems</strong></div>
+      <div><span>Deposited once</span><strong>${formatCount(material.selectedCount ?? 0)} gems</strong></div>
       <div><span>Combined final weight</span><strong>${formatWeight(material.totalWeight ?? 0)}</strong></div>
       <div><span>Combined value</span><strong>${formatMoney(material.totalValue ?? 0)}</strong></div>
-      <div><span>Cash consumed</span><strong>${formatMoney(2500000000)}</strong></div>
+      <div><span>Cash due at final craft</span><strong>${formatMoney(2500000000)}</strong></div>
     </div>
     <div class="impossible-review__checks"><section><h3>Sacrifice pool</h3><ul>${rows.map(line).join('')}</ul></section><section><h3>Historical gates</h3><ul>${historical.map(line).join('')}</ul></section></div>
-    <details ${result?.ready ? '' : 'open'}><summary>20 highest-value selected specimens</summary>
+    <details ${result?.ready ? '' : 'open'}><summary>20 highest-value deposited specimens</summary>
       <div class="impossible-review__table"><table><thead><tr><th>Gem</th><th>Value</th><th>Weight</th><th>Final/base</th></tr></thead><tbody>${highValue || '<tr><td colspan="4">No complete plan yet.</td></tr>'}</tbody></table></div>
     </details>
-    ${result?.ready ? `<div class="impossible-review__confirm"><label><input type="checkbox" id="impossibleConfirm"> I understand that all listed resources and every selected gem will be permanently consumed.</label><button class="btn btn--primary" id="impossibleCraftConfirm" disabled>Consume and craft</button></div>` : `<p class="impossible-review__blocked">${escapeHtml(result?.message ?? 'Requirements are not complete.')} Protect gems with Inventory Lock, then return when every line is complete.</p>`}
+    <div class="impossible-final-review"><button class="btn" id="impossiblePrepareFinal">Refresh final sacrifice review</button><small>Creates a 15-minute final plan and pauses Impossible Auto Craft when every requirement is complete.</small></div>
+    ${result?.ready && result?.token ? `<div class="impossible-review__confirm"><label><input type="checkbox" id="impossibleConfirm"> I approve consuming the listed potion and cash balances and using my permanently deposited pool.</label><button class="btn btn--primary" id="impossibleCraftConfirm" disabled>Consume and craft</button></div>` : `<p class="impossible-review__blocked">${escapeHtml(result?.message ?? 'Deposit materials until every line is complete, then refresh the final review. Existing deposits remain credited.')}</p>`}
   `;
   document.body.append(dialog);
+  const manualMode = dialog.querySelector('#impossibleManualMode');
+  let candidatesLoaded = false;
+  const loadCandidates = () => {
+    if (manualMode?.open && !candidatesLoaded) {
+      candidatesLoaded = true;
+      renderImpossibleCandidates(dialog);
+    }
+  };
+  manualMode?.addEventListener('toggle', loadCandidates);
+  loadCandidates();
+  const autoAcknowledge = dialog.querySelector('#impossibleAutoAcknowledge');
+  const autoToggle = dialog.querySelector('#impossibleAutoToggle');
+  autoAcknowledge?.addEventListener('change', () => { if (!result?.autoCraft) autoToggle.disabled = !autoAcknowledge.checked; });
+  autoToggle?.addEventListener('click', async () => {
+    autoToggle.disabled = true;
+    autoToggle.textContent = result?.autoCraft ? 'Stopping…' : 'Starting…';
+    const { error } = await setCloudAutoCraft(result?.autoCraft ? null : 'impossible-pickaxe');
+    if (error) {
+      notify.error('Could not change Auto Craft', error.message);
+      autoToggle.disabled = false;
+      autoToggle.textContent = result?.autoCraft ? 'Stop Auto Craft' : 'Start Auto Craft';
+      return;
+    }
+    state.crafting.activeAutoCraftRecipeId = result?.autoCraft ? null : 'impossible-pickaxe';
+    const workspace = await loadImpossiblePickaxeStatus();
+    state.impossibleStatus = workspace;
+    notify.success(result?.autoCraft ? 'Auto Craft stopped' : 'Auto Craft started', result?.autoCraft ? 'New rolls will stay in inventory.' : 'Useful future rolls will feed the Impossible sacrifice pool.');
+    openImpossibleReview(workspace);
+    renderRecipes();
+  });
+  dialog.querySelector('#impossiblePrepareFinal')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = 'Checking authoritative totals…';
+    try {
+      const prepared = await prepareImpossiblePickaxeCraft();
+      openImpossibleReview(prepared);
+    } catch (prepareError) {
+      notify.error('Could not prepare plan', prepareError.message);
+      button.disabled = false;
+      button.textContent = 'Refresh final sacrifice review';
+    }
+  });
   const checkbox = dialog.querySelector('#impossibleConfirm');
   const confirm = dialog.querySelector('#impossibleCraftConfirm');
   checkbox?.addEventListener('change', () => { confirm.disabled = !checkbox.checked; });
@@ -936,9 +1060,13 @@ function wireRecipeCard(card) {
   card.querySelector('[data-action="review-impossible"]')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
     button.disabled = true;
-    button.textContent = 'Building safe plan…';
+    button.textContent = 'Opening workspace…';
     try {
-      openImpossibleReview(await prepareImpossiblePickaxeCraft());
+      let workspace = await loadImpossiblePickaxeStatus();
+      // Staged deployments may briefly have the original status response.
+      if (!workspace?.preview) workspace = await prepareImpossiblePickaxeCraft();
+      state.impossibleStatus = workspace;
+      openImpossibleReview(workspace);
     } catch (error) {
       notify.error('Could not prepare plan', error.message);
     } finally {

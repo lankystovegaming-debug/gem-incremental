@@ -124,6 +124,31 @@ export async function loadImpossiblePickaxeStatus() {
   return data;
 }
 
+export async function loadImpossibleDepositCandidates({ offset = 0, limit = 50, search = "" } = {}) {
+  let query = supabase
+    .from("inventory_gems")
+    .select("id,gem_name,rarity,base_weight,final_weight,value,locked,created_at", { count: "exact" })
+    .eq("locked", false)
+    .eq("museum_locked", false)
+    .not("gem_name", "in", '("Enchant Relic","Ancient Relic")')
+    .order("value", { ascending: true })
+    .order("id", { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  const term = String(search ?? "").trim();
+  if (term) query = query.ilike("gem_name", `%${term.replaceAll("%", "").replaceAll("_", "")}%`);
+  const { data, error, count } = await query;
+  return { data: data ?? [], error, count: Number(count ?? 0) };
+}
+
+export async function depositImpossiblePickaxeGems(gemIds) {
+  const { data, error } = await supabase.rpc("deposit_impossible_pickaxe_gems", {
+    p_gem_ids: gemIds
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function prepareImpossiblePickaxeCraft() {
   const { data, error } = await supabase.rpc("prepare_impossible_pickaxe_craft");
   if (error) throw error;
