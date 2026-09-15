@@ -143,7 +143,9 @@ function renderDailyShop() {
         <span class="badge ${offer.slot === 6 ? "badge--accent" : "badge--muted"}">Slot ${offer.slot}${offer.slot === 6 ? " · Rare" : ""}</span></div>
       <div><h2 class="potion-card__name">${escapeHtml(offer.name)}</h2><p class="potion-card__description">${escapeHtml(offer.description)}</p></div>
       <div class="potion-card__details"><span class="badge badge--positive">${formatCount(remaining)} remaining</span>${offer.refreshed && offer.slot >= 4 ? '<span class="badge badge--accent">Refreshed</span>' : ""}</div>
-      <div class="potion-card__purchase"><span class="potion-card__price">${formatMoney(offer.price)}</span>
+      <div class="potion-card__purchase"><span class="potion-card__price">${formatMoney(offer.price, {
+        decimalPlaces: Number(offer.price) > 0 && Number(offer.price) < 1 ? 2 : 0
+      })}</span>
         <button class="btn btn--primary" data-buy-daily="${offer.slot}" ${soldOut || !affordable ? "disabled" : ""}>${soldOut ? "Sold out" : affordable ? "Buy offer" : "Not enough money"}</button></div>
     </article>`;
   }).join("");
