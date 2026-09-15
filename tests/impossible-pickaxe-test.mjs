@@ -36,6 +36,7 @@ const edge=readFileSync(new URL('../supabase/functions/roll/index.ts',import.met
 const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url),'utf8').trim();
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
+const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
 assert.ok(edge.includes(rules),'optimized roll embeds the exact shared equipment rules');
 assert.match(edge,/luck \*= impossibleProc\.luck/);
 assert.match(edge,/mutationChanceMultiplier \*= impossibleProc\.mutationChance/);
@@ -47,4 +48,6 @@ assert.match(migration,/on conflict\(singleton\) do nothing/);
 assert.match(migration,/cardinality\(plan\.specimen_ids\)/);
 assert.match(crafting,/I understand that all listed resources and every selected gem will be permanently consumed/);
 assert.match(crafting,/WORLD FIRST BOUNTY —/);
+assert.match(appCss,/is-impossible-world-first::before[^}]*width:auto; height:auto;[^}]*transform:none;/,
+  'world-first perimeter must reset the base roll bloom pseudo-element geometry');
 console.log('Impossible Pickaxe rules, genuine counter, final stat integration, safe-review UI and singleton claim structure passed.');
