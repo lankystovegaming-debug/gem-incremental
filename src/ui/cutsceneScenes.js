@@ -7,9 +7,8 @@ import { getCutsceneDefinition, normalizeCutsceneName } from "./cutsceneConfig.j
 import {
   createLingeringCrack,
   createTheatricalUiClones,
-  energyMarkup,
-  environmentMarkup,
-  specimenReticleMarkup
+  scenePrimitivesMarkup,
+  specimenMarkup
 } from "./cutscenePrimitives.js";
 
 let stylesheetInjected = false;
@@ -93,6 +92,8 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   overlay.setAttribute("aria-label", `${gemName} cutscene`);
 
   const specimen = gemIconHtml(gemName, "gem-icon--cinematic", mutationIds);
+  const primitives = definition.primitives ?? [];
+  const hasCopy = definition.beats.length > 0 || definition.counter;
   const mutationLine = mutations.length
     ? `<div class="cs-reveal__mutations">${mutations.map((mutation) => escapeHtml(mutation.name)).join(" · ")}</div>`
     : "";
@@ -102,14 +103,12 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
       <div class="cs-fake-result__gem">${gemIconHtml("Quartz", "gem-icon--roll", [])}</div>
       <strong>Quartz</strong><span>Common · 1 in 2</span><small>Stored in inventory</small>
     </div>` : ""}
-    ${environmentMarkup()}
-    ${energyMarkup()}
-    ${specimenReticleMarkup(specimen)}
-    <div class="cs-scanner" aria-live="polite">
-      <div class="cs-scanner__label">${escapeHtml(definition.label)}</div>
-      <div class="cs-scanner__counter" aria-hidden="true"></div>
+    ${scenePrimitivesMarkup(primitives)}
+    ${specimenMarkup(specimen, { reticle: primitives.includes("reticle") })}
+    ${hasCopy ? `<div class="cs-copy cs-copy--${safeClass(definition.textPosition ?? "center-low")}" aria-live="polite">
+      <div class="cs-counter" aria-hidden="true"></div>
       ${definition.beats.map((beat, index) => `<div class="cs-beat" data-beat="${index}">${escapeHtml(beat)}</div>`).join("")}
-    </div>
+    </div>` : ""}
     <div class="cs-reveal">
       <div class="cs-reveal__gem">${specimen}</div>
       <div class="cs-reveal__tier">${definition.secret ? "SECRET" : escapeHtml(tier.name)}</div>
@@ -133,25 +132,29 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
     }, Math.max(0, duration * fraction)));
   };
   const beats = [...overlay.querySelectorAll(".cs-beat")];
-  const beatStart = definition.fakeResult ? 0.12 : 0.08;
-  const beatWindow = definition.secret ? 0.66 : 0.58;
+  const counterDuration = definition.counter
+    ? Math.min(9_000, duration * 0.68, Number(definition.counterDuration) || duration * 0.55)
+    : 0;
+  const beatStart = definition.counter
+    ? Math.max(definition.beatStart ?? 0.16, counterDuration / duration + 0.07)
+    : definition.beatStart ?? (definition.fakeResult ? 0.28 : 0.16);
+  const beatWindow = definition.beatWindow ?? Math.max(0.08, (definition.revealAt ?? 0.78) - beatStart - 0.08);
   beats.forEach((beat, index) => schedule(beatStart + (index / Math.max(1, beats.length)) * beatWindow, () => {
     beats.forEach((node) => node.classList.remove("is-current"));
     beat.classList.add("is-current");
     overlay.dataset.phase = `beat-${index}`;
   }));
-  schedule(definition.fakeResult ? 0.72 : 0.67, () => {
+  schedule(definition.revealAt ?? 0.78, () => {
     overlay.dataset.phase = "reveal";
     beats.forEach((node) => node.classList.remove("is-current"));
     overlay.querySelector(".cs-reveal")?.classList.add("is-visible");
   });
 
   if (definition.counter) {
-    const counter = overlay.querySelector(".cs-scanner__counter");
+    const counter = overlay.querySelector(".cs-counter");
     const startedAt = performance.now();
-    const countDuration = duration * 0.66;
     const timer = setInterval(() => {
-      const progress = Math.min(1, (performance.now() - startedAt) / countDuration);
+      const progress = Math.min(1, (performance.now() - startedAt) / counterDuration);
       // Ease out aggressively so the final nine values become readable.
       const eased = 1 - Math.pow(1 - progress, 5);
       const value = Math.min(999_999_999, Math.max(1, Math.floor(999_999_999 * eased)));
@@ -159,15 +162,26 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
       if (progress >= 1) clearInterval(timer);
     }, 40);
     intervals.push(timer);
-    schedule(0.67, () => {
+    schedule(counterDuration / duration, () => {
       counter.textContent = "1,000,000,000";
       counter.classList.add("is-carry");
     });
-    schedule(0.705, () => {
+    schedule(Math.min(0.72, counterDuration / duration + 0.045), () => {
       counter.textContent = "999,999,999";
       counter.classList.remove("is-carry");
     });
   }
+
+  const memories = [...overlay.querySelectorAll(".cs-memories [data-memory]")];
+  memories.forEach((memory, index) => schedule(0.045 + index * 0.029, () => {
+    memories.forEach((node) => node.classList.remove("is-current"));
+    memory.classList.add("is-current");
+    overlay.dataset.memory = memory.dataset.memory;
+  }));
+  if (memories.length) schedule(0.61, () => {
+    memories.forEach((node) => node.classList.remove("is-current"));
+    overlay.dataset.memory = "assemble";
+  });
 
   requestAnimationFrame(() => overlay.classList.add("is-playing"));
   return {

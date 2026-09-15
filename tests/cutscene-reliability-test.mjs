@@ -32,24 +32,41 @@ assert.equal(
 );
 
 assert.equal(cutsceneDuration({ rarity: 10_000, mobile: false, reducedMotion: false }), 0);
-assert.equal(cutsceneDuration({ rarity: 100_000, mobile: false, reducedMotion: false }), 3_000);
-assert.equal(cutsceneDuration({ rarity: 4_000_000, mobile: false, reducedMotion: false }), 5_500);
-assert.equal(cutsceneDuration({ rarity: 10_000_000, mobile: false, reducedMotion: false }), 8_000);
-assert.equal(cutsceneDuration({ rarity: 99_999_999, mobile: false, reducedMotion: false }), 10_000);
-assert.equal(cutsceneDuration({ rarity: 100_000_000, gemName: "Heart of Xy", mobile: false, reducedMotion: false }), 10_000);
-assert.equal(cutsceneDuration({ rarity: 6_242_026, gemName: "Ja-ore", mobile: false, reducedMotion: false }), 5_500);
-assert.equal(cutsceneDuration({ rarity: 250_000, gemName: "Glitched Ore", mobile: false, reducedMotion: false }), 3_000);
+assert.equal(cutsceneDuration({ rarity: 100_000, mobile: false, reducedMotion: false }), 4_000);
+assert.equal(cutsceneDuration({ rarity: 4_000_000, mobile: false, reducedMotion: false }), 6_500);
+assert.equal(cutsceneDuration({ rarity: 10_000_000, mobile: false, reducedMotion: false }), 11_000);
+assert.equal(cutsceneDuration({ rarity: 99_999_999, mobile: false, reducedMotion: false }), 13_000);
+assert.equal(cutsceneDuration({ rarity: 100_000_000, gemName: "Heart of Xy", mobile: false, reducedMotion: false }), 14_000);
+assert.equal(cutsceneDuration({ rarity: 6_242_026, gemName: "Ja-ore", mobile: false, reducedMotion: false }), 6_500);
+assert.equal(cutsceneDuration({ rarity: 250_000, gemName: "Glitched Ore", mobile: false, reducedMotion: false }), 4_000);
+assert.equal(cutsceneDuration({ rarity: 100_000, mobile: false, reducedMotion: true }), 3_000);
+assert.equal(cutsceneDuration({ rarity: 99_999_999, mobile: false, reducedMotion: true }), 9_360);
 assert.equal(getCutsceneDefinition({ rarity: 999_999 }).id, "facet");
 assert.equal(getCutsceneDefinition({ rarity: 1_000_000 }).id, "prism");
 assert.equal(getCutsceneDefinition({ rarity: 99_999_999 }).id, "resonance");
+assert.deepEqual(getCutsceneDefinition({ rarity: 999_999 }).beats, []);
+assert.deepEqual(getCutsceneDefinition({ rarity: 1_000_000 }).beats, []);
+assert.deepEqual(getCutsceneDefinition({ rarity: 99_999_999 }).beats, []);
 assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy" }).theme, "xy-heart");
 assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 37, "the 36 locked scenes plus the legacy XY alias must be registered");
+for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
+  assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
+  assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
+  if (definition.theme !== "xy-heart") {
+    assert.ok(definition.primitives.length > 0, `${name} must opt into a visual identity`);
+  }
+  assert.ok(definition.duration * (1 - definition.revealAt) >= 2_000, `${name} must leave a readable aftermath`);
+}
+assert.ok(
+  Object.values(BESPOKE_CUTSCENES).filter((definition) => definition.primitives.includes("reticle")).length <= 3,
+  "reticles must be an occasional scene primitive, not a cinematic watermark"
+);
 
 const previousMatchMedia = globalThis.matchMedia;
 globalThis.matchMedia = (query) => ({ matches: query.includes("pointer: coarse") });
 assert.equal(
   cutsceneDuration({ rarity: 100_000 }),
-  3_150,
+  4_200,
   "live and replay callers must share the same mobile viewport adjustment"
 );
 if (previousMatchMedia === undefined) delete globalThis.matchMedia;
@@ -153,9 +170,22 @@ assert.match(primitives, /cloneNode\(true\)/);
 assert.match(primitives, /node\.disabled = true/);
 assert.match(
   sceneStyles,
-  /data-phase="reveal"\] \.cs-reticle\s*\{[\s\S]*?visibility:\s*hidden/,
-  "the scanner specimen must retire before the final reveal gem appears"
+  /data-phase="reveal"\] \.cs-focus\s*\{[\s\S]*?visibility:\s*hidden/,
+  "the buildup specimen must retire before the final reveal gem appears"
 );
+assert.match(scenes, /primitives\.includes\("reticle"\)/);
+assert.doesNotMatch(scenes, /cs-scanner|scanner__label/);
+assert.doesNotMatch(config, /FACET ANALYSIS|PRISM ANALYSIS|RESONANCE ANALYSIS|SPECIMEN ACQUIRED/);
+assert.match(config, /counterDuration:\s*8_500/);
+assert.ok(BESPOKE_CUTSCENES["almost secret"].counterDuration <= 9_000);
+assert.match(scenes, /Math\.min\(9_000, duration \* 0\.68/);
+assert.match(scenes, /counterDuration \/ duration \+ 0\.07/);
+assert.deepEqual(BESPOKE_CUTSCENES.reminiscite.beats, [
+  "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"
+]);
+assert.match(primitives, /data-memory="sunrise"/);
+assert.match(primitives, /data-memory="black-hole"/);
+assert.match(primitives, /data-memory="glitch"/);
 assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
