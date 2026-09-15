@@ -458,6 +458,14 @@ function impossibleButtonJoke() {
   return view.impossibleJoke;
 }
 
+function impossibleWorldFirstBrand() {
+  return `<div class="impossible-roll-brand" aria-label="The Impossible — World First">
+    <span class="impossible-roll-brand__crown" aria-hidden="true">♔</span>
+    <span>THE IMPOSSIBLE</span><strong>WORLD FIRST</strong>
+  </div><span class="impossible-roll-quote impossible-roll-quote--left">Reality is just<br>another drop table.</span>
+  <span class="impossible-roll-quote impossible-roll-quote--right">Same game.<br>Different reality.</span>`;
+}
+
 
 // =========================================================
 // GEM REVEAL
@@ -611,6 +619,7 @@ function renderRoll(data, outcome) {
         <span class="epic-roll-effect__flash"></span>
       </div>
     ` : ""}
+    ${data.impossibleWorldFirst ? impossibleWorldFirstBrand() : ''}
     <div class="gem-reveal">
       <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll", mutationIds)}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
@@ -874,7 +883,7 @@ async function performRoll() {
   let cinematicPromise = Promise.resolve();
   if (featured?.houseEdge) {
     gemStage.className = `stage__display is-revealed${featured.impossibleWorldFirst ? ' is-impossible-world-first' : ''}`;
-    gemStage.innerHTML = '<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>';
+    gemStage.innerHTML = `${featured.impossibleWorldFirst ? impossibleWorldFirstBrand() : ''}<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>`;
   } else if (featured) {
     cinematicPromise = renderRoll(featured, outcomes.get(featured));
   }

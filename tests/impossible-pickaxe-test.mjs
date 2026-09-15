@@ -37,6 +37,9 @@ const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
 const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
+const profileUi=readFileSync(new URL('../user/profile.js',import.meta.url),'utf8');
+const leaderboardUi=readFileSync(new URL('../leaderboards/leaderboards.js',import.meta.url),'utf8');
+const shardAsset=readFileSync(new URL('../src/assets/impossible-shards.svg',import.meta.url),'utf8');
 assert.ok(edge.includes(rules),'optimized roll embeds the exact shared equipment rules');
 assert.match(edge,/luck \*= impossibleProc\.luck/);
 assert.match(edge,/mutationChanceMultiplier \*= impossibleProc\.mutationChance/);
@@ -50,4 +53,9 @@ assert.match(crafting,/I understand that all listed resources and every selected
 assert.match(crafting,/WORLD FIRST BOUNTY —/);
 assert.match(appCss,/is-impossible-world-first::before[^}]*width:auto; height:auto;[^}]*transform:none;/,
   'world-first perimeter must reset the base roll bloom pseudo-element geometry');
+assert.match(appCss,/impossible-shards\.svg/);
+assert.match(edge,/impossibleWorldFirst: player\.equipment_state\?\.impossibleWorldFirst === true/);
+assert.match(profileUi,/backgroundStyle === 'impossible' \? `<div class="impossible-profile-brand"/);
+assert.match(leaderboardUi,/userId === impossibleWorldFirstId/);
+assert.match(shardAsset,/<svg[^>]*viewBox="0 0 1200 600"/);
 console.log('Impossible Pickaxe rules, genuine counter, final stat integration, safe-review UI and singleton claim structure passed.');

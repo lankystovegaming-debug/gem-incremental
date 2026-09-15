@@ -964,7 +964,7 @@ function wireProfileLinks() {
       if (row) row.title = 'Impossible — World First · awarded to first Impossible Pickaxe crafter';
       const label = document.createElement('span');
       label.className = 'impossible-world-first-label';
-      label.textContent = 'Impossible — World First';
+      label.innerHTML = '<span aria-hidden="true">♔</span><span>WORLD FIRST</span>';
       identity.append(label);
     }
 

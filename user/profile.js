@@ -154,10 +154,14 @@ function renderHero(profile) {
   const role = roleForId(profile.id);
 
   const cosmetics = profile.cosmetics || {};
-  profileHero.dataset.background = cosmetics.background ? cosmeticStyle(cosmetics.background) : 'default';
-  document.querySelector('.profile-page').dataset.decor = cosmetics.decor ? cosmeticStyle(cosmetics.decor) : 'none';
+  const backgroundStyle = cosmetics.background ? cosmeticStyle(cosmetics.background) : 'default';
+  profileHero.dataset.background = backgroundStyle;
+  const profilePage = document.querySelector('.profile-page');
+  profilePage.dataset.decor = cosmetics.decor ? cosmeticStyle(cosmetics.decor) : 'none';
+  profilePage.classList.toggle('profile-page--impossible', backgroundStyle === 'impossible');
   profileHero.innerHTML = `
     <div class="profile-hero__glow" aria-hidden="true"></div>
+    ${backgroundStyle === 'impossible' ? `<div class="impossible-profile-brand" aria-label="The Impossible — World First"><span aria-hidden="true">♔</span><strong>THE IMPOSSIBLE</strong><small>WORLD FIRST</small><em>Reality is just another drop table.</em></div>` : ''}
 
     <div class="profile-hero__avatar" data-frame="${cosmetics.frame ? cosmeticStyle(cosmetics.frame) : 'none'}" title="${escapeHtml(cosmetics.frame?.name || '')}">
       ${avatarHtml(profile)}
