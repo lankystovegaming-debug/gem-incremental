@@ -5359,6 +5359,77 @@ input[type="radio"] {
 .cosmetic--prismatic, .cosmetic--mutation { --cosmetic-color: #d7a0f7; }
 .cosmetic--archive { --cosmetic-color: #b1cfbb; }
 .cosmetic--prismatic { background-image: linear-gradient(110deg,#edb96d16,#94deed26,#d493f726); animation: cosmetic-shimmer 5s ease-in-out infinite; }
+
+/* Permanent account treatment awarded to the singleton Impossible crafter. */
+.stage__display.is-impossible-world-first {
+  position:relative; isolation:isolate; overflow:hidden;
+  width:100%; max-width:100%; min-width:0;
+  min-height:clamp(420px,52vw,590px); padding:clamp(54px,7vw,84px) clamp(24px,8vw,100px) 38px;
+  border:1px solid #c779ffb8; border-radius:18px;
+  background:
+    radial-gradient(ellipse at 50% 31%,#f6ca7150 0,transparent 7%),
+    radial-gradient(ellipse at 50% 34%,#9b4cff45 0,transparent 22%),
+    radial-gradient(circle at 14% 22%,#6427a844 0,transparent 30%),
+    radial-gradient(circle at 84% 76%,#efb94a26 0,transparent 28%),
+    repeating-radial-gradient(circle at 48% 44%,transparent 0 38px,#bc7aff0a 39px 40px,transparent 41px 74px),
+    linear-gradient(145deg,#020108,#0c0418 47%,#05010b);
+  box-shadow:inset 0 0 100px #51208e55,inset 0 0 28px #f2c86b1a,0 0 38px #9d4fff38;
+}
+.stage__display.is-impossible-world-first::before {
+  content:""; position:absolute; inset:0; width:auto; height:auto; z-index:0; pointer-events:none; padding:2px;
+  transform:none; border-radius:inherit; opacity:1;
+  background:conic-gradient(from var(--impossible-angle,0deg),#6e2bd8,#fff0a6,#a845ff,#f6c65b,#6e2bd8);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+  transition:none; animation:impossible-perimeter 7s linear infinite;
+}
+.stage__display.is-impossible-world-first::after {
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.86;
+  background:url("/src/assets/impossible-shards.svg") center/100% 100% no-repeat,
+    repeating-linear-gradient(116deg,transparent 0 53px,#d8b8ff0d 54px 55px,transparent 56px 91px);
+  filter:drop-shadow(0 0 8px #9f50ff88); mix-blend-mode:screen;
+}
+.stage__display.is-impossible-world-first .gem-reveal,.stage__display.is-impossible-world-first .roll-action-status,.stage__display.is-impossible-world-first .batch-results { position:relative; z-index:2; }
+.stage__display.is-impossible-world-first .gem-reveal { width:min(650px,82%); }
+.stage__display.is-impossible-world-first .gem-reveal__art { position:relative; filter:drop-shadow(-4px 0 14px #8f4cffbb) drop-shadow(4px 0 16px #f0c6699c); }
+.stage__display.is-impossible-world-first .gem-reveal__art::after { content:""; position:absolute; inset:13% -18%; border:1px solid #efc86f9c; border-radius:50%; transform:rotate(-12deg); box-shadow:0 0 16px #e6b74d6b,inset 0 0 12px #a754ff52; pointer-events:none; }
+.stage__display.is-impossible-world-first .gem-reveal__name { font-family:Georgia,"Times New Roman",serif; font-weight:600; letter-spacing:.015em; color:#fff7e8; text-shadow:-2px 0 #5ce4ff78,2px 0 #ff52b87a,0 0 24px #c06cff88; }
+.stage__display.is-impossible-world-first .badge--tier { border-color:#edbd5e9c; color:#f2c970; background:#0a0612d9; box-shadow:0 0 16px #e7b9573b; }
+.stage__display.is-impossible-world-first .gem-reveal__chance { color:#cfc1e7; letter-spacing:.05em; }
+.stage__display.is-impossible-world-first .gem-reveal__facts { gap:12px; }
+.stage__display.is-impossible-world-first .gem-fact { position:relative; overflow:hidden; border-color:#d8a4ff70; background:linear-gradient(145deg,#b86cff18,#e9c46a12),#06020dce; box-shadow:inset 0 0 22px #a661ff17,0 0 13px #bd6bff1a; }
+.stage__display.is-impossible-world-first .gem-fact::after { content:""; position:absolute; inset:0; border-top:1px solid #f3ca70b0; border-bottom:1px solid #9b4cfb9c; pointer-events:none; }
+.stage__display.is-impossible-world-first .gem-fact__label { color:#ddcaee; letter-spacing:.15em; }
+.stage__display.is-impossible-world-first .roll-action-status { width:min(430px,86%); margin-inline:auto; border:1px solid #b96eff70; border-radius:999px; background:#080310d9; box-shadow:inset 0 0 18px #8f45e42e,0 0 14px #d8a3ff20; }
+.impossible-roll-brand { position:absolute; z-index:3; top:30px; right:34px; display:grid; justify-items:center; gap:2px; color:#f4d17e; font:700 .66rem var(--font-display); letter-spacing:.2em; text-align:center; text-shadow:0 0 13px #e4ad41a8; }
+.impossible-roll-brand__crown { font:400 2rem Georgia,serif; line-height:.8; }
+.impossible-roll-brand strong { padding-top:7px; border-top:1px solid #eac56870; font-size:.58rem; }
+.impossible-roll-quote { position:absolute; z-index:2; color:#ccb7eb; font:.64rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.12em; text-transform:uppercase; opacity:.76; }
+.impossible-roll-quote--left { top:31%; left:25px; }
+.impossible-roll-quote--right { right:25px; bottom:27%; text-align:right; }
+.batch-result--impossible { position:relative; isolation:isolate; overflow:hidden; border-color:#c67cff9c !important; background:radial-gradient(circle at 12% 20%,#a04cff38,transparent 35%),linear-gradient(145deg,#10051f,#030108) !important; box-shadow:inset 0 0 26px #9a55ff27,0 0 13px #ba65ff20; }
+.batch-result--impossible::before { content:""; position:absolute; inset:0; z-index:0; opacity:.78; background:url("/src/assets/impossible-shards.svg") center/100% 100% no-repeat; pointer-events:none; }
+.batch-result--impossible::after { content:"♔  WORLD FIRST"; position:absolute; z-index:2; top:7px; right:9px; color:#f0ca70; font:700 .53rem var(--font-display); letter-spacing:.1em; text-shadow:0 0 9px #e8b94d80; }
+.batch-result--impossible > * { position:relative; z-index:1; }
+@keyframes impossible-perimeter { to { --impossible-angle:360deg; filter:hue-rotate(18deg); } }
+@media (prefers-reduced-motion:reduce) { .stage__display.is-impossible-world-first::before { animation:none; } }
+@media (max-width:760px) {
+  .stage__display.is-impossible-world-first { min-height:390px; padding:58px 18px 28px; }
+  .stage__display.is-impossible-world-first::after { opacity:.56; }
+  .stage__display.is-impossible-world-first .gem-reveal { width:100%; }
+  .impossible-roll-brand { top:18px; right:20px; transform:scale(.82); transform-origin:top right; }
+  .impossible-roll-quote { display:none; }
+}
+@media (max-width:520px) { .stage__display.is-impossible-world-first { min-height:350px; box-shadow:inset 0 0 44px #7e3de738; } .stage__display.is-impossible-world-first::after { opacity:.4; } }
+@media (max-width:520px) {
+  .stage__display.is-impossible-world-first { width:min(100%,calc(100vw - 24px)); padding-inline:10px; }
+  .stage__display.is-impossible-world-first * { min-width:0; }
+  .stage__display.is-impossible-world-first .gem-reveal { width:100%; max-width:100%; overflow:hidden; }
+  .stage__display.is-impossible-world-first .gem-reveal__facts { width:min(100%,calc(100vw - 48px)); max-width:calc(100vw - 48px); grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+  .stage__display.is-impossible-world-first .gem-fact { min-width:0; padding-inline:4px; }
+  .stage__display.is-impossible-world-first .gem-fact__value { font-size:.76rem; }
+  .stage__display.is-impossible-world-first .roll-action-status { width:calc(100% - 12px); max-width:100%; }
+  .impossible-roll-brand { top:13px; right:10px; transform:scale(.62); }
+}
 .cosmetic__icon { flex: none; font-size: 1.1em; }
 .cosmetic small { display: block; margin-top: .4rem; color: var(--text-muted); font-size: .75rem; font-weight: 400; }
 @keyframes cosmetic-shimmer { 50% { box-shadow: 0 0 15px #d493f733; } }

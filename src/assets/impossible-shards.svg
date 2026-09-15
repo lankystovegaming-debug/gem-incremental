@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f7e8ff" stop-opacity=".9"/><stop offset=".28" stop-color="#b55cff" stop-opacity=".8"/><stop offset=".72" stop-color="#522078" stop-opacity=".48"/><stop offset="1" stop-color="#05010d" stop-opacity=".1"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#fff4bd" stop-opacity=".94"/><stop offset=".45" stop-color="#f0b84f" stop-opacity=".75"/><stop offset="1" stop-color="#6e2bd8" stop-opacity=".25"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g stroke="#eedbff" stroke-opacity=".58" stroke-width="1.4" filter="url(#glow)">
+    <path fill="url(#violet)" d="M0 0h118l-30 47-34 8-19 70L0 153z"/>
+    <path fill="url(#gold)" d="M14 0h55L45 39 24 74 0 93V18z"/>
+    <path fill="url(#violet)" d="M80 0h129l-51 24-18 46-48-19z"/>
+    <path fill="url(#violet)" d="M0 122l46-34 36 17-20 72-39 51L0 212z"/>
+    <path fill="url(#gold)" d="M0 415l30-50 35 61-12 84L0 548z"/>
+    <path fill="url(#violet)" d="M0 500l51-29 46 53-29 76H0z"/>
+    <path fill="url(#violet)" d="M55 600l31-91 55 20 37 71z"/>
+    <path fill="url(#gold)" d="M1200 0h-116l27 47 39 10 18 65 32 31z"/>
+    <path fill="url(#violet)" d="M1188 0h-72l22 38 27 32 35 21V12z"/>
+    <path fill="url(#violet)" d="M1121 0h-136l47 31 21 49 54-28z"/>
+    <path fill="url(#gold)" d="M1200 113l-47-24-31 27 21 64 36 42 21-17z"/>
+    <path fill="url(#violet)" d="M1200 407l-36-47-32 69 16 76 52 43z"/>
+    <path fill="url(#gold)" d="M1200 499l-48-29-47 55 31 75h64z"/>
+    <path fill="url(#violet)" d="M1144 600l-30-88-58 22-34 66z"/>
+    <path fill="url(#violet)" d="M279 0l38 0-14 45-36 27-13-40z"/>
+    <path fill="url(#gold)" d="M886 0l43 0-20 49-29 13-17-34z"/>
+    <path fill="url(#violet)" d="M298 600l43-68 34 68z"/>
+    <path fill="url(#gold)" d="M872 600l31-65 48 65z"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M0 3h1200M0 597h1200" stroke="#f4ca6c" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M3 0v600M1197 0v600" stroke="#b65dff" stroke-opacity=".75" stroke-width="2"/>
+    <path d="M96 66l71 41 57-25M1044 72l-58 41-55-30M71 490l75-49 66 35M1128 488l-73-48-62 39" stroke="#d7a5ff" stroke-opacity=".28"/>
+  </g>
+</svg>

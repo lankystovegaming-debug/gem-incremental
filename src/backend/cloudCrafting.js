@@ -117,3 +117,21 @@ export async function loadCloudConsumables() {
 
   return data ?? [];
 }
+export async function loadImpossiblePickaxeStatus() {
+  const { data, error } = await supabase.rpc("get_impossible_pickaxe_status");
+  if (error?.code === "42883") return null;
+  if (error) throw error;
+  return data;
+}
+
+export async function prepareImpossiblePickaxeCraft() {
+  const { data, error } = await supabase.rpc("prepare_impossible_pickaxe_craft");
+  if (error) throw error;
+  return data;
+}
+
+export async function craftImpossiblePickaxe(token) {
+  const { data, error } = await supabase.rpc("craft_impossible_pickaxe", { p_token: token });
+  if (error) throw error;
+  return data;
+}

@@ -429,12 +429,47 @@
 .profile-hero[data-background="prismatic"], .profile-hero[data-background="mutation"] { background: linear-gradient(120deg,#8d629523,#34798c23),var(--surface-raised); }
 .profile-hero[data-background="bronze"], .profile-hero[data-background="gold"] { background: radial-gradient(ellipse at top right,#ad77262b,transparent 70%),var(--surface-raised); }
 .profile-hero[data-background="stone"], .profile-hero[data-background="archive"] { background: linear-gradient(135deg,#99b9a41f,transparent),var(--surface-raised); }
+.profile-hero[data-background="impossible"] {
+  min-height:330px; isolation:isolate; border:1px solid #c578ffb8;
+  background:
+    radial-gradient(circle at 80% 55%,#b058ff28 0,transparent 25%),
+    radial-gradient(circle at 15% 80%,#7130c73d 0,transparent 31%),
+    linear-gradient(105deg,#030109 0,#0a0315 48%,#10041e 100%);
+  box-shadow:inset 0 0 90px #7b35d54a,inset 0 0 24px #efc76116,0 0 30px #8e4be033;
+}
+.profile-hero[data-background="impossible"]::after { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.9; background:url("/src/assets/impossible-shards.svg") center/100% 100% no-repeat; filter:drop-shadow(0 0 8px #9448ed91); }
+.profile-hero[data-background="impossible"] > :not(.profile-hero__glow) { position:relative; z-index:2; }
+.profile-hero[data-background="impossible"] .profile-hero__glow { width:230px; height:230px; right:72px; top:54px; z-index:1; border:1px solid #bc72ff52; border-radius:50%; background:radial-gradient(circle at 34% 27%,#6c328b 0,#190b2c 22%,#030107 60%,#0d0318 74%,#7c39cb 100%); filter:none; box-shadow:inset -24px -18px 40px #000,0 0 45px #a653ff70; }
+.profile-hero[data-background="impossible"] .profile-hero__glow::before,.profile-hero[data-background="impossible"] .profile-hero__glow::after { content:""; position:absolute; left:-54px; right:-54px; top:43%; height:34px; border:3px solid #d685ff9e; border-left-color:#f2c668;border-right-color:#f2c668;border-radius:50%; transform:rotate(-15deg); box-shadow:0 0 13px #a546ff,0 0 8px #edc15a; }
+.profile-hero[data-background="impossible"] .profile-hero__glow::after { inset:38% -68px auto; height:54px; border-width:1px; opacity:.55; transform:rotate(-15deg); }
+.profile-hero[data-background="impossible"] .profile-hero__avatar { border:3px solid #f0ca73; box-shadow:0 0 0 3px #b367ff73,-7px 0 24px #974dff70,7px 0 24px #e7c36c58; }
+.profile-hero[data-background="impossible"] h1 { max-width:62%; color:#f7f3ff; text-shadow:-2px 0 #a85fff85,2px 0 #65dfff4a,0 0 19px #a04ffb75; }
+.profile-hero[data-background="impossible"] .profile-collectible-title,.profile-hero[data-background="impossible"] .profile-badges,.profile-hero[data-background="impossible"] .profile-joined,.profile-hero[data-background="impossible"] .profile-actions { max-width:58%; }
+.impossible-profile-brand { position:absolute!important; z-index:3!important; top:27px; right:28px; display:grid; justify-items:center; gap:4px; width:220px; color:#efcf7c; text-align:center; letter-spacing:.2em; text-shadow:0 0 14px #dda53d8f; }
+.impossible-profile-brand > span { font:400 2.25rem/.8 Georgia,serif; }
+.impossible-profile-brand strong { font:600 .78rem var(--font-display); }
+.impossible-profile-brand small { width:100%; padding:7px 0; border-block:1px solid #e9c46b5c; font:700 .58rem var(--font-display); letter-spacing:.24em; }
+.impossible-profile-brand em { margin-top:5px; color:#c8aedf; font:.57rem/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.12em; text-transform:uppercase; }
+.profile-page--impossible .profile-stats { border-color:#b666ee73; background:#5d297466; box-shadow:0 0 20px #8032cc21; }
+.profile-page--impossible .profile-stat { background:linear-gradient(145deg,#120722e8,#07030dcf); }
+.profile-page--impossible .profile-stat__label { color:#bca5d0; }
+.profile-page--impossible .profile-stat__value { color:#f1eaff; text-shadow:0 0 10px #b260ff4d; }
 .showcase-gem { display: flex; flex-direction: column; text-align: center; min-height: 240px; padding: 24px 16px; gap: 14px; }
 .showcase-gem__icon { width: 100px; height: 100px; }
 .showcase-gem__label { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); overflow-wrap: anywhere; }
 .showcase-gem__details { justify-content: center; }
 .trophy-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .cosmetic--trophy { border-radius: 14px; padding: 18px; align-items: flex-start; }
+.cosmetic--impossible { --cosmetic-color:#d7adff; background:linear-gradient(120deg,#8e4bff1f,#e7c56b13),var(--surface-sunken); box-shadow:inset 0 0 16px #a55cff12; }
+@media (prefers-reduced-motion:reduce) { .profile-hero[data-background="impossible"] * { animation:none !important; } }
+@media (max-width:760px) {
+  .profile-hero[data-background="impossible"] { min-height:300px; }
+  .profile-hero[data-background="impossible"]::after { opacity:.58; }
+  .profile-hero[data-background="impossible"] .profile-hero__glow { width:165px; height:165px; right:-25px; top:90px; opacity:.65; }
+  .impossible-profile-brand { top:18px; right:16px; width:150px; transform:scale(.78); transform-origin:top right; }
+  .profile-hero[data-background="impossible"] h1,.profile-hero[data-background="impossible"] .profile-collectible-title,.profile-hero[data-background="impossible"] .profile-badges,.profile-hero[data-background="impossible"] .profile-joined,.profile-hero[data-background="impossible"] .profile-actions { max-width:100%; }
+}
+@media (max-width:500px) { .profile-hero[data-background="impossible"]::after { opacity:.42; } .impossible-profile-brand { display:none; } }
 .cosmetic--trophy .cosmetic__icon { font-size: 1.8rem; }
 .profile-page[data-decor="mutation"] > .profile-showcase, .profile-page[data-decor="mutation"] > .profile-trophies { border-color: #b993dd; box-shadow: inset 0 3px #89d2d360,inset 0 -3px #d993bb60; }
 .profile-page[data-decor="archive"] > .profile-showcase, .profile-page[data-decor="archive"] > .profile-trophies { border: 4px double #8da48b; background: linear-gradient(120deg,#9fae8c0d,transparent),var(--surface-raised); }

@@ -16,7 +16,10 @@ import {
   craftCloudRecipe,
   craftCloudConsumableRecipe,
   setCloudAutoCraft,
-  loadCloudConsumables
+  loadCloudConsumables,
+  loadImpossiblePickaxeStatus,
+  prepareImpossiblePickaxeCraft,
+  craftImpossiblePickaxe
 } from "../src/backend/cloudCrafting.js";
 import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "../src/backend/cloudEquipment.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
@@ -67,6 +70,7 @@ const state = {
   genuineRolls: 0,
   bestRareNaturalWeight100k: 0,
   bestRareNaturalWeight1m: 0,
+  impossibleStatus: null,
   category: "pickaxe",
   loading: true
 };
@@ -179,6 +183,8 @@ function requirementKey(requirement, index) {
 
 function describeRequirement(requirement, value) {
   switch (requirement.type) {
+    case 'impossible-safe-sacrifice':
+      return {label:'Shared sacrifice pool · review required',text:'Protected gems are never selected',fraction:0};
     case 'equipment-history': {
       const have=Number(state.specialDiscoveries.batchHistory?.[requirement.metric]??0);
       return {label:requirement.label+' · historical, not consumed',text:`${formatCount(have)} / ${formatCount(requirement.amount)}`,fraction:ratio(have,requirement.amount)};
@@ -581,6 +587,15 @@ function recipeCard(recipe) {
   const bonuses = formatReward(recipe);
   const pinned = pinnedRecipeIds().has(recipe.id);
   const passive = getEquipmentPassive(recipe.id);
+  const worldFirst = state.impossibleStatus?.worldFirst;
+  const impossibleBounty = recipe.id === 'impossible-pickaxe' ? `
+    <section class="impossible-bounty ${worldFirst ? 'is-claimed' : 'is-unclaimed'}">
+      <span class="eyebrow">WORLD FIRST BOUNTY — ${worldFirst ? 'CLAIMED' : 'UNCLAIMED'}</span>
+      ${worldFirst
+        ? `<strong>${escapeHtml(worldFirst.player_name || 'Unknown Player')}</strong><small>${escapeHtml(new Date(worldFirst.crafted_at).toLocaleString())}</small>`
+        : '<strong>One account. Forever.</strong>'}
+      <div><span>Impossible Profile Background</span><span>Impossible Leaderboard Frame</span><span>Impossible Roll Card</span></div>
+    </section>` : '';
 
   const requirementsHtml = recipe.requirements
     .map((requirement, index) => {
@@ -609,7 +624,7 @@ function recipeCard(recipe) {
         `;
       }
 
-      if (["consumable","potion-tier","special-discoveries","equipment-history"].includes(requirement.type)) {
+      if (["consumable","potion-tier","special-discoveries","equipment-history","impossible-safe-sacrifice"].includes(requirement.type)) {
         const complete = isRequirementComplete(
           state.crafting, recipe, requirement, index, equipmentContext()
         );
@@ -727,13 +742,16 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
           ` : ""}
         </div>
       ` : ""}
+      ${impossibleBounty}
 
       ${
         owned
           ? `<p class="recipe-card__owned">${icons.checkCircle} Crafted</p>`
           : `
             <div class="requirements">${requirementsHtml}</div>
-            ${recipe.consumeMaterials ? '<p class="recipe-card__description">Materials are consumed. Deposit all uses matching unlocked inventory gems; Auto Craft collects future rolls.</p>' : ""}
+            ${recipe.manualReviewOnly
+              ? '<p class="recipe-card__description impossible-warning">Nothing is consumed while reviewing. The planner selects the lowest-value unlocked gems it can, reserves separate 10 + 3 + 1 multiplier specimens, and lets shared specimens satisfy rarity/value/weight totals once. Lock anything you refuse to sacrifice before reviewing.</p>'
+              : recipe.consumeMaterials ? '<p class="recipe-card__description">Materials are consumed. Deposit all uses matching unlocked inventory gems; Auto Craft collects future rolls.</p>' : ""}
 
             <div class="recipe-cost">
               <span>Cost</span>
@@ -746,6 +764,9 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
             </div>
 
             <div class="recipe-card__actions">
+              ${recipe.manualReviewOnly ? `
+                <button class="btn btn--primary" data-action="review-impossible" type="button">Review sacrifice plan</button>
+              ` : `
               ${recipe.consumeMaterials ? '<button class="btn" data-action="deposit-all" type="button">Deposit all materials</button>' : ""}
               <button class="btn" data-action="auto" type="button">
                 ${icons.bolt}
@@ -760,6 +781,7 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
               >
                 Craft
               </button>
+              `}
             </div>
           `
       }
@@ -771,6 +793,77 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
 // =========================================================
 // CARD ACTIONS
 // =========================================================
+
+function openImpossibleReview(result) {
+  document.getElementById('impossibleReviewDialog')?.remove();
+  const preview = result?.preview ?? {};
+  const material = preview.materials ?? {};
+  const history = preview.history ?? {};
+  const rows = [
+    ['Common', material.common, 1000], ['Legendary', material.legendary, 67000],
+    ['Mythic', material.mythic, 30000], ['Exotic', material.exotic, 500],
+    ['Exalted', material.exalted, 30], ['Cosmic+', material.cosmicPlus, 15],
+    ['Separate ≥10× slots', Number(material.multiplier10 ?? 0) - Number(material.multiplier15 ?? 0), 10],
+    ['Separate ≥15× slots', Number(material.multiplier15 ?? 0) - Number(material.multiplier25 ?? 0), 3],
+    ['Separate ≥25× slot', material.multiplier25, 1],
+    ['Gem worth ≥$100M', material.value100m, 1], ['Gem weighing ≥5,000,000g', material.weight5m, 1]
+  ];
+  const historical = [
+    ['1/10M + 5× specimens',history.impossibleRareHeavy10m,10],
+    ['1/100M + 10× specimen',history.impossibleRareHeavy100m,1],
+    ['1/100M base-rarity rolls',history.impossibleRare100m,10],
+    ['1/500M base-rarity roll',history.impossibleRare500m,1],
+    ['Ordinary mutations',history.impossibleOrdinaryMutations,50],
+    ['Special Gems',history.impossibleSpecialGems,10],
+    ['Frozen specialists',history.impossibleSpecialists,6],
+    ['Lifetime rolls',history.totalRolls,1000000]
+  ];
+  const line = ([label, have, need]) => `<li class="${Number(have ?? 0) >= need ? 'is-met' : ''}"><span>${escapeHtml(label)}</span><strong>${formatCount(have ?? 0)} / ${formatCount(need)}</strong></li>`;
+  const highValue = (preview.highestValue ?? []).map(gem => `
+    <tr><td>${escapeHtml(gem.gem_name)}</td><td>${formatMoney(gem.value)}</td><td>${formatWeight(gem.final_weight)}</td><td>${formatCount(gem.final_multiplier)}×</td></tr>
+  `).join('');
+  const dialog = document.createElement('dialog');
+  dialog.id = 'impossibleReviewDialog';
+  dialog.className = 'impossible-review';
+  dialog.innerHTML = `
+    <form method="dialog" class="impossible-review__head"><div><span class="eyebrow">DESTRUCTIVE CRAFT REVIEW</span><h2>The Impossible Pickaxe</h2></div><button class="btn" value="cancel">Close</button></form>
+    <p>No item has been consumed. This plan expires in 15 minutes and becomes invalid if any selected gem changes, is sold, or is locked.</p>
+    <div class="impossible-review__totals">
+      <div><span>Selected once</span><strong>${formatCount(material.selectedCount ?? 0)} gems</strong></div>
+      <div><span>Combined final weight</span><strong>${formatWeight(material.totalWeight ?? 0)}</strong></div>
+      <div><span>Combined value</span><strong>${formatMoney(material.totalValue ?? 0)}</strong></div>
+      <div><span>Cash consumed</span><strong>${formatMoney(2500000000)}</strong></div>
+    </div>
+    <div class="impossible-review__checks"><section><h3>Sacrifice pool</h3><ul>${rows.map(line).join('')}</ul></section><section><h3>Historical gates</h3><ul>${historical.map(line).join('')}</ul></section></div>
+    <details ${result?.ready ? '' : 'open'}><summary>20 highest-value selected specimens</summary>
+      <div class="impossible-review__table"><table><thead><tr><th>Gem</th><th>Value</th><th>Weight</th><th>Final/base</th></tr></thead><tbody>${highValue || '<tr><td colspan="4">No complete plan yet.</td></tr>'}</tbody></table></div>
+    </details>
+    ${result?.ready ? `<div class="impossible-review__confirm"><label><input type="checkbox" id="impossibleConfirm"> I understand that all listed resources and every selected gem will be permanently consumed.</label><button class="btn btn--primary" id="impossibleCraftConfirm" disabled>Consume and craft</button></div>` : `<p class="impossible-review__blocked">${escapeHtml(result?.message ?? 'Requirements are not complete.')} Protect gems with Inventory Lock, then return when every line is complete.</p>`}
+  `;
+  document.body.append(dialog);
+  const checkbox = dialog.querySelector('#impossibleConfirm');
+  const confirm = dialog.querySelector('#impossibleCraftConfirm');
+  checkbox?.addEventListener('change', () => { confirm.disabled = !checkbox.checked; });
+  confirm?.addEventListener('click', async () => {
+    confirm.disabled = true;
+    confirm.textContent = 'Crafting atomically…';
+    try {
+      const crafted = await craftImpossiblePickaxe(result.token);
+      dialog.close();
+      dialog.remove();
+      notify.success(crafted.worldFirst ? 'WORLD FIRST — Impossible' : 'Crafted', crafted.worldFirst
+        ? 'The Impossible Pickaxe and all three permanent world-first cosmetics are yours.'
+        : 'The Impossible Pickaxe is now equipped.');
+      await refresh();
+    } catch (error) {
+      notify.error('Craft failed safely', `${error.message}. Nothing was partially consumed.`);
+      confirm.disabled = false;
+      confirm.textContent = 'Consume and craft';
+    }
+  });
+  dialog.addEventListener('close', () => dialog.remove(), {once:true});
+  dialog.showModal();
+}
 
 // Deposit matching gems into one requirement until it is either
 // complete or nothing more can be added. This keeps working whether
@@ -839,6 +932,20 @@ function wireRecipeCard(card) {
   if (!recipe) {
     return;
   }
+
+  card.querySelector('[data-action="review-impossible"]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = 'Building safe plan…';
+    try {
+      openImpossibleReview(await prepareImpossiblePickaxeCraft());
+    } catch (error) {
+      notify.error('Could not prepare plan', error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Review sacrifice plan';
+    }
+  });
 
   card.querySelector('[data-action="pin"]')?.addEventListener("click", () => togglePinnedRecipe(recipeId));
 
@@ -1137,17 +1244,23 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes, impossibleStatus] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
     loadCloudConsumables(),
     loadEquipmentOverhaulProgress(),
-    loadAdminEquipmentRecipes()
+    loadAdminEquipmentRecipes(),
+    loadImpossiblePickaxeStatus().catch(() => null)
   ]);
 
   state.loading = false;
   state.specialDiscoveries = overhaulProgress ?? {};
+  state.impossibleStatus = impossibleStatus;
+  state.specialDiscoveries.batchHistory = {
+    ...(state.specialDiscoveries.batchHistory ?? {}),
+    ...(impossibleStatus?.requirements ?? {})
+  };
   state.genuineRolls = overhaulProgress?.genuineRolls ?? 0;
 
   if (craftingState) {

@@ -24,6 +24,7 @@ export function gemFilterDecision(settings, specimen, discovered) {
 export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
+ 'impossible-pickaxe':[1,1,1,1,1],
  'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
@@ -81,7 +82,8 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
   realityShift:genuine&&id==='reality-shifter'&&(rolls+1)%500===0,
   foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
   supersizerBlessing:blessingActive,
-  supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20};
+  supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20,
+  impossible:genuine&&id==='impossible-pickaxe'&&random()<1/1000000};
  if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
  if(id==='toy-shovel'&&random()<1/67) {
@@ -100,6 +102,11 @@ export function supersizerSizeMutation(id,random=Math.random,genuine=true) {
 export function supersizerBlessingMultipliers(flags={}) {
  if(!flags.supersizerBlessing)return {luck:1,weightMultiplier:1,rollSpeed:1,finalSell:1};
  return {luck:flags.supersizerBlessedRoll?10000:2,weightMultiplier:2.25,rollSpeed:.75,finalSell:1.5};
+}
+export function impossibleProcMultipliers(flags={}) {
+ return flags.impossible
+  ? {luck:1000000,mutationChance:100,weightLuck:100,weightMultiplier:10}
+  : {luck:1,mutationChance:1,weightLuck:1,weightMultiplier:1};
 }
 export function specialChance(id,gem,state) {
  return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
@@ -1705,6 +1712,7 @@ async function executeSingleRoll(
 
       const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', player.equipment_state ?? {}, random01, true, now.getTime());
       const supersizerBlessing = supersizerBlessingMultipliers(equipmentContext.flags);
+      const impossibleProc = impossibleProcMultipliers(equipmentContext.flags);
       const relicActive = (activeBoosts ?? []).some((boost: any) => boost.family === 'relic');
       const equipmentStats = equipmentTotals(equippedEquipment ?? [], relicActive, equipmentContext.stats);
       let luck = equipmentStats.luck;
@@ -2165,6 +2173,7 @@ async function executeSingleRoll(
         }
         return jsonResponse({playerId,houseEdge:true,gem:null,specimenId:null,
           equipmentPassives:{genuineRoll,specialist:slotOutcome,state:lostState},
+          impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,
           lifetimeStats:{totalRolls:loss.total_rolls},cooldown:{nextRollAt:claimedNextRollAt.toISOString(),durationMs:cooldownMs}});
       }
 
@@ -2246,6 +2255,8 @@ async function executeSingleRoll(
       rollSpeed *= volcanicRollSpeedMultiplier;
       if (!buffsEnabled) { rollSpeed = 1; weightLuck = 1; weightMultiplier = 1; }
       if (buffsEnabled) weightMultiplier *= supersizerBlessing.weightMultiplier;
+      weightLuck *= impossibleProc.weightLuck;
+      weightMultiplier *= impossibleProc.weightMultiplier;
 
 
 
@@ -2359,6 +2370,11 @@ async function executeSingleRoll(
       if (buffsEnabled && supersizerBlessing.luck !== 1) {
         luck *= supersizerBlessing.luck;
         luckBreakdown.world *= supersizerBlessing.luck;
+        luckBreakdown.final = luck;
+      }
+      if (impossibleProc.luck !== 1) {
+        luck *= impossibleProc.luck;
+        luckBreakdown.world *= impossibleProc.luck;
         luckBreakdown.final = luck;
       }
       const uncappedLuck = luck;
@@ -2580,6 +2596,7 @@ async function executeSingleRoll(
 
       if (eternityRoll) mutationChanceMultiplier += 50;
       if(equipmentContext.id==='reality-shifter') mutationChanceMultiplier=0;
+      mutationChanceMultiplier *= impossibleProc.mutationChance;
       const mutations = relicDrop
         ? []
         : [...rollGemMutations(mutationChanceMultiplier, eventContext), ...exclusiveMutations(equipmentContext.id, random01, true, equipmentContext.flags), ...(supersizerSize ? [supersizerSize] : [])];
@@ -3383,6 +3400,8 @@ async function executeSingleRoll(
             consumed: resonanceEmpowered && luckBasedGem && gem.rarity < 100000
           } : null
         },
+
+        impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,
 
         bundle: bundleRoute,
 

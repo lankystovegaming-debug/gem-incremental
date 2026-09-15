@@ -125,6 +125,7 @@ export async function loadCloudPlayerState() {
       money,
       total_rolls,
       equipment_genuine_rolls,
+      equipment_state,
       best_rare_natural_weight_100k,
       best_rare_natural_weight_1m,
       next_roll_at
