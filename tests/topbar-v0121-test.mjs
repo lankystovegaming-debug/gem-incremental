@@ -9,7 +9,7 @@ assert.match(shell, /CORE_PAGE_IDS[^\n]+roll[^\n]+inventory[^\n]+crafting[^\n]+b
 assert.match(shell, /id: "expeditions", label: "Expeditions", short: "Exped\.", href: "expeditions\/", icon: icons\.map/);
 assert.match(shell, /shellExploreButton/);
 assert.match(shell, /shellExploreMenu/);
-assert.match(shell, /menuNavLink\(configured/);
+assert.match(shell, /appendExploreItem\(configured/);
 assert.match(shell, /tabbar\.innerHTML = CORE_PAGES/);
 assert.doesNotMatch(shell, /header\.querySelector\("\.nav"\)\?\.insertAdjacentHTML\("beforeend", navLink\(configured/);
 assert.match(styles, /\.topbar-explore__menu/);
