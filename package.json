@@ -15,7 +15,7 @@
     "pretest:late-game": "node tests/ban-appeals-test.mjs && node tests/ban-appeals-database-test.mjs",
     "test:late-game": "node tests/late-game-expansion-test.mjs && node tests/late-game-expansion-database-test.mjs",
     "test:month-one": "node tests/month-one-recap-test.mjs && node tests/month-one-client-test.mjs",
-    "test:equipment-overhaul": "node tests/equipment-overhaul-test.mjs && node tests/equipment-overhaul-database-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
+    "test:equipment-overhaul": "node tests/equipment-overhaul-test.mjs && node tests/equipment-overhaul-database-test.mjs && node tests/equipment-overhaul-handler-test.mjs && node tests/plastic-bag-test.mjs",
     "test:equipment-ui": "node tests/equipment-overhaul-ui-test.mjs",
     "test:bundles": "node tests/gameplay-bundles-test.mjs && node tests/gameplay-bundles-database-test.mjs",
     "test:bundles-ui": "node tests/gameplay-bundles-ui-test.mjs",

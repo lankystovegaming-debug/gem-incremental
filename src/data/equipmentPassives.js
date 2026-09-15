@@ -1,7 +1,7 @@
 export const EQUIPMENT_PASSIVES = {
   "event-horizon-vault": {"name": "Gravitational Storage", "description": "Every 100th genuine roll receives +25% final weight."},
   "omnidimensional-vault": {"name": "Conservation", "description": "Each ordinary gem-count deposit has a 10% chance to preserve its gem. Special specimens are always consumed."},
-  "plastic-shopping-bag": {"name": "Reusable / Bag for Life", "description": "12.5% Conservation. Every 67th genuine roll has a 1/67 chance of a harmless bagged cosmetic."},
+  "plastic-shopping-bag": {"name": "Reusable / Bag for Life", "description": "12.5% chance to preserve ordinary crafting materials when deposited. Every 67th genuine roll has a 1/67 chance of a harmless Bagged marker."},
   "neutron-boots": {"name": "Crushing Pressure", "description": "Natural ≥2× weight tails use 36% continuation."},
   "spacetime-walkers": {"name": "Heavy Step", "description": "Every 50th genuine roll adds 10 percentage points to the final ≥2× tail-entry chance."},
   "reality-breakers": {"name": "Reality Collapse", "description": "Every 100th genuine roll guarantees a ≥2× tail with 40% continuation."},
