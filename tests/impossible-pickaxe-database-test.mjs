@@ -6,6 +6,7 @@ const db=new PGlite();
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
 const depositWorkspace=readFileSync(new URL('../supabase/migrations/20260915061024_impossible_deposit_workspace.sql',import.meta.url),'utf8');
+const achievementAndBulkRepair=readFileSync(new URL('../supabase/migrations/20260915142654_restore_achievement_refresh_and_specimen_bulk_deposit.sql',import.meta.url),'utf8');
 const first='00000000-0000-4000-8000-000000000001';
 const later='00000000-0000-4000-8000-000000000002';
 const value=async(sql,args=[]) => (await db.query(sql,args)).rows[0]?.result;
@@ -33,6 +34,30 @@ create table public.player_cosmetic_loadouts(player_id uuid primary key,equipmen
 await db.exec(migration);
 await db.exec(roundRepair);
 await db.exec(depositWorkspace);
+await db.exec(achievementAndBulkRepair);
+
+assert.match(achievementAndBulkRepair,/perform public\.ensure_private_feature_progress\(p_player_id\);\s*perform public\.refresh_player_achievements_v013\(p_player_id\);/,
+  'achievement reads initialize and refresh progress before returning it');
+await db.exec(`
+create table public.private_feature_definitions(id uuid primary key,feature_kind text,enabled boolean,sort_order integer,metadata jsonb default '{}');
+create table public.private_feature_progress(player_id uuid,feature_id uuid,current_value numeric,completed boolean,reward_granted boolean default false,primary key(player_id,feature_id));
+create table public.player_achievement_profiles(player_id uuid primary key,achievement_points integer);
+create table public.player_achievement_milestones(player_id uuid,ap integer);
+create function public.achievement_milestones_v013() returns jsonb language sql immutable as $$select '[]'::jsonb$$;
+create function public.ensure_private_feature_progress(p_uid uuid) returns void language sql as $$
+  insert into public.private_feature_progress values(p_uid,'00000000-0000-4000-8000-000000000099',0,false,false) on conflict do nothing
+$$;
+create or replace function public.refresh_player_achievements_v013(p_uid uuid) returns void language plpgsql as $$begin
+  update public.private_feature_progress set current_value=5,completed=true where player_id=p_uid;
+  insert into public.player_achievement_profiles values(p_uid,100) on conflict(player_id) do update set achievement_points=excluded.achievement_points;
+end$$;
+insert into public.private_feature_definitions values('00000000-0000-4000-8000-000000000099','achievement',true,1,'{}');
+`);
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[first]);await db.exec('set role authenticated');
+const refreshedAchievements=await value('select get_player_achievements_v013($1) result',[first]);
+assert.equal(refreshedAchievements.progress[0].completed,true,'the getter returns progress written by its refresh call');
+assert.equal(Number(refreshedAchievements.summary.ap),100);
+await db.exec('reset role');
 
 async function seed(uid,name) {
   await db.query('insert into players values($1,$2,3000000000,1000000,5000000000,\'{}\')',[uid,name]);
@@ -83,6 +108,33 @@ await db.query(`insert into inventory_gems(player_id,gem_name,rarity,base_weight
   ($1,'Quartz',1,1,1,1),($1,'Quartz',1,1,1,1)`,[first]);
 const bulkDeposit=await value("select deposit_equipment_material($1,'bulk-regression-test',null,0) result",[first]);
 assert.equal(Number(bulkDeposit.depositedCount),2,'existing set-based equipment bulk deposits remain optimized');
+await db.exec(`insert into game_recipes values('specimen-bulk-regression-test','{
+  "equipmentOverhaul":true,"consumeMaterials":true,"requirements":[
+    {"id":"value-50m","type":"specimen-condition","minimumValue":50000000,"amount":1},
+    {"id":"value-10m","type":"specimen-condition","minimumValue":10000000,"amount":2},
+    {"id":"heavy-quartz","type":"specimen-condition","gem":"Quartz","minimumFinalWeight":1000,"amount":2}
+  ]}'::jsonb)`);
+await db.query(`insert into inventory_gems(player_id,gem_name,rarity,base_weight,final_weight,value,locked) values
+  ($1,'Cheap 10M',1,1,1,11000000,false),
+  ($1,'Cheap 12M',1,1,1,12000000,false),
+  ($1,'Precious 60M',1,1,1,60000000,false),
+  ($1,'Quartz',1,1,1000,1,false),
+  ($1,'Quartz',1,1,1500,1,false),
+  ($1,'Quartz',1,1,999,1,false),
+  ($1,'Quartz',1,1,2000,1,true)`,[first]);
+const value10mDeposit=await value("select deposit_equipment_material($1,'specimen-bulk-regression-test',null,1) result",[first]);
+assert.equal(Number(value10mDeposit.depositedCount),2,'manual specimen deposits accept minimumValue requirements');
+assert.equal(Number(value10mDeposit.progress['value-10m']),2);
+assert.equal(await value("select exists(select 1 from inventory_gems where player_id=$1 and gem_name='Precious 60M') result",[first]),true,
+  'the lower value requirement preserves a rarer specimen for the stricter requirement');
+const value50mDeposit=await value("select deposit_equipment_material($1,'specimen-bulk-regression-test',null,0) result",[first]);
+assert.equal(Number(value50mDeposit.depositedCount),1);
+assert.equal(Number(value50mDeposit.progress['value-50m']),1);
+const heavyDeposit=await value("select deposit_equipment_material($1,'specimen-bulk-regression-test',null,2) result",[first]);
+assert.equal(Number(heavyDeposit.depositedCount),2,'manual specimen deposits apply gem-name and minimumFinalWeight predicates');
+assert.equal(Number(heavyDeposit.progress['heavy-quartz']),2);
+assert.equal(await value("select count(*)::int result from inventory_gems where player_id=$1 and gem_name='Quartz'",[first]),2,
+  'ineligible and locked specimens are not consumed');
 await setCompleteDeposits(first); await asUser(first);
 const firstPlan=await value('select prepare_impossible_pickaxe_craft() result');
 assert.equal(firstPlan.ready,true);
