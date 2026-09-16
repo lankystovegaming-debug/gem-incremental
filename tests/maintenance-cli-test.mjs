@@ -35,9 +35,13 @@ assert.doesNotMatch(panel, /data-action=/);
 assert.doesNotMatch(panel, /id="devTarget"/);
 
 // Every maintenance command is present.
-for (const name of ["give", "set", "boost", "cooldown", "massroll", "players", "online", "gems", "potions", "equipment", "whoami"]) {
+for (const name of ["give", "set", "boost", "cooldown", "players", "online", "gems", "potions", "equipment", "whoami"]) {
   assert.match(panel, new RegExp(`name: "${name}"`), `missing command: ${name}`);
 }
+
+// Batch rolling was removed: no /massroll command and no roll loop helper.
+assert.doesNotMatch(panel, /name: "massroll"/);
+assert.doesNotMatch(panel, /async function massRoll\(/);
 
 // /give covers every grant type the old panel had.
 for (const token of ["money", "coins", "rolls", "slots", "rp", "gem", "potion", "equip"]) {

@@ -1,14 +1,12 @@
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
-import { invokeFunction } from "../backend/invoke.js";
-import { sellCloudGem } from "../backend/cloudInventory.js";
 import gems from "../data/gems.js";
 import { loadGemCatalog } from "../backend/gemCatalog.js";
 import consumables from "../data/consumables.js";
 import { equipmentCatalog } from "../data/recipes.js";
 import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
-import { formatMoney, formatCount, rarityLabel } from "./format.js";
+import { formatMoney, formatCount } from "./format.js";
 import { createCliTerminal } from "./cli/terminal.js";
 
 
@@ -91,8 +89,6 @@ function toggle() {
 
 
 function close() {
-  massRoll.cancelled = true;
-
   panel?.remove();
 
   panel = null;
@@ -540,37 +536,6 @@ function buildCommands(user) {
     }
   };
 
-  const massroll = {
-    name: "massroll",
-    group: "Tools",
-    usage: "/massroll <count>",
-    summary: "Roll and auto-sell many times on your own account.",
-    man: ["  Runs on your account only. Type /massroll stop is not needed — close the CLI (Esc) to cancel."],
-    async run(args, term) {
-      const total = Math.max(1, Math.min(100000, Math.floor(Number(args[0]) || 0)));
-
-      massRoll.cancelled = false;
-
-      term.printMuted(`Rolling ${formatCount(total)}…`);
-
-      const result = await massRoll(user.id, total, (done, summary) => {
-        if (done % 50 === 0) {
-          term.printMuted(`  ${formatCount(done)}/${formatCount(total)} · +${formatMoney(summary.earned)}`);
-        }
-      });
-
-      const rarest = result.rarest
-        ? `${result.rarest.name} (${rarityLabel(result.rarest.rarity)})`
-        : "none";
-
-      term.printSuccess(
-        `Done: ${formatCount(result.rolled)} rolls, +${formatMoney(result.earned)}. Rarest: ${rarest}.`
-      );
-
-      refreshIfSelf(true);
-    }
-  };
-
   const players = {
     name: "players",
     group: "Lookup",
@@ -684,7 +649,7 @@ function buildCommands(user) {
   };
 
   return [
-    give, set, boost, cooldown, massroll,
+    give, set, boost, cooldown,
     players, online, gemsCmd, potions, equipment, whoami
   ];
 }
@@ -779,63 +744,6 @@ async function setMaintenanceRarestGem(target, gem) {
   }
 
   return { ok: false, message: "The action could not be completed." };
-}
-
-
-// =========================================================
-// MASS ROLL
-// =========================================================
-
-async function massRoll(userId, total, onProgress) {
-  const summary = { rolled: 0, earned: 0, rarest: null };
-
-  for (let i = 0; i < total; i += 1) {
-    if (massRoll.cancelled) {
-      break;
-    }
-
-    await callDependency("timer", "", {});
-
-    const { data, error } = await invokeFunction("roll");
-
-    if (error) {
-      if (error.code === "inventory_full") {
-        notify.warning("Mass roll stopped", "Clear some inventory space first.");
-      } else {
-        notify.error("Mass roll stopped", error.message);
-      }
-
-      break;
-    }
-
-    if (!data) {
-      continue;
-    }
-
-    summary.rolled += 1;
-
-    const rarity = Number(data.gem?.rarity ?? 0);
-
-    if (!summary.rarest || rarity > summary.rarest.rarity) {
-      summary.rarest = { name: data.gem?.name ?? "Unknown", rarity };
-    }
-
-    if (data.specimenId != null && !data.autoCraft?.deposited) {
-      const { data: sale } = await sellCloudGem(data.specimenId);
-
-      if (sale) {
-        summary.earned += Number(sale.soldValue ?? 0);
-      }
-    }
-
-    if (i % 5 === 0 || i === total - 1) {
-      onProgress(summary.rolled, summary);
-    }
-  }
-
-  onProgress(summary.rolled, summary);
-
-  return summary;
 }
 
 
