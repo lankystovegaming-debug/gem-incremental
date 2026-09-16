@@ -58,6 +58,18 @@ assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Crystalline Singu
 assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Ontological Shard", mobile: false, reducedMotion: false }), 13_500);
 assert.equal(cutsceneDuration({ rarity: 345_000_000, gemName: "Blacksite Crystal", mobile: false, reducedMotion: false }), 14_500);
 assert.equal(cutsceneDuration({ rarity: 1_000_000_000, gemName: "Heart of the Deep", mobile: false, reducedMotion: false }), 17_000);
+const deepcoreScenes = [
+  "deepcore geode", "crystalline singularity", "ontological shard",
+  "blacksite crystal", "heart of the deep"
+].map((name) => BESPOKE_CUTSCENES[name]);
+assert.equal(new Set(deepcoreScenes.flatMap((definition) => definition.primitives)).size, 5, "every Deepcore discovery must own a unique cinematic primitive");
+assert.deepEqual(BESPOKE_CUTSCENES["heart of the deep"].primitives, ["deepcore-heart"], "the Heart must not remix earlier Deepcore or catalogue primitives");
+assert.equal(BESPOKE_CUTSCENES["heart of the deep"].theatre, false, "the Heart must not reuse or distort the surrounding game UI");
+assert.equal(new Set(deepcoreScenes.map((definition) => definition.textPosition)).size, 5, "Deepcore story copy must have scene-specific choreography");
+for (const definition of deepcoreScenes) {
+  assert.equal(definition.beats.length, 3, "Deepcore scenes use narrative beats rather than a repeated one-word card");
+  assert.ok(definition.beats.every((beat) => !/^(PRESSURE|CONVERGENCE|ABSENCE|REDACTED|HEARTBEAT)$/.test(beat)));
+}
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
   assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
@@ -182,6 +194,10 @@ assert.match(
   /data-phase="reveal"\] \.cs-focus\s*\{[\s\S]*?visibility:\s*hidden/,
   "the buildup specimen must retire before the final reveal gem appears"
 );
+for (const primitive of ["geode", "singularity", "absence", "blacksite", "heart"]) {
+  assert.match(primitives, new RegExp(`deepcore-${primitive}`));
+  assert.match(sceneStyles, new RegExp(`cs-dc-${primitive}`));
+}
 assert.match(scenes, /primitives\.includes\("reticle"\)/);
 assert.doesNotMatch(scenes, /cs-scanner|scanner__label/);
 assert.doesNotMatch(config, /FACET ANALYSIS|PRISM ANALYSIS|RESONANCE ANALYSIS|SPECIMEN ACQUIRED/);
