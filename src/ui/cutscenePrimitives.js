@@ -24,7 +24,6 @@ export function specimenMarkup(specimenHtml, { reticle = false } = {}) {
 }
 
 export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
-  "deepcore-pressure", "deepcore-convergence", "deepcore-absence", "deepcore-redacted", "deepcore-heartbeat",
   "xy-heart", "buffer", "sunrise", "noob", "pressure-one", "missing",
   "solar", "pressure-two", "eventide", "deadstar", "meteor", "inferno",
   "ascend", "impact", "polaris", "false-ending", "primordial", "analysis",

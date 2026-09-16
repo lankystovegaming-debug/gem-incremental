@@ -192,15 +192,22 @@ assert.match(scenes, /counterDuration \/ duration \+ 0\.07/);
 assert.deepEqual(BESPOKE_CUTSCENES.reminiscite.beats, [
   "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"
 ]);
+const deepcoreThemes = new Set([
+  "deepcore-pressure", "deepcore-convergence", "deepcore-absence",
+  "deepcore-redacted", "deepcore-heartbeat"
+]);
 const precedingCutsceneThemes = Array.from(new Set(
   Object.values(BESPOKE_CUTSCENES).map((definition) => definition.theme)
-)).filter((theme) => theme !== "memory");
+)).filter((theme) => theme !== "memory" && !deepcoreThemes.has(theme));
 assert.deepEqual(
   REMINISCITE_MEMORY_FRAMES,
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 41);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 36);
+for (const theme of deepcoreThemes) {
+  assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
+}
 assert.ok(REMINISCITE_MEMORY_FRAMES.includes("singular-sand"));
 assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
 assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);
