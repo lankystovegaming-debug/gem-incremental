@@ -173,12 +173,25 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   }
 
   const memories = [...overlay.querySelectorAll(".cs-memories [data-memory]")];
-  memories.forEach((memory, index) => schedule(0.045 + index * 0.029, () => {
-    memories.forEach((node) => node.classList.remove("is-current"));
-    memory.classList.add("is-current");
-    overlay.dataset.memory = memory.dataset.memory;
-  }));
-  if (memories.length) schedule(0.61, () => {
+  const memoryStart = 0.035;
+  const memoryEnd = 0.61;
+  // Let the first memories linger, then steadily accelerate into rapid recall.
+  const memoryWeights = memories.map((_, index) => {
+    const progress = memories.length > 1 ? index / (memories.length - 1) : 0;
+    return 2.5 * Math.pow(0.4 / 2.5, progress);
+  });
+  const memoryWeightTotal = memoryWeights.reduce((total, weight) => total + weight, 0);
+  let elapsedMemoryWeight = 0;
+  memories.forEach((memory, index) => {
+    const memoryProgress = memoryWeightTotal ? elapsedMemoryWeight / memoryWeightTotal : 0;
+    schedule(memoryStart + (memoryEnd - memoryStart) * memoryProgress, () => {
+      memories.forEach((node) => node.classList.remove("is-current"));
+      memory.classList.add("is-current");
+      overlay.dataset.memory = memory.dataset.memory;
+    });
+    elapsedMemoryWeight += memoryWeights[index];
+  });
+  if (memories.length) schedule(memoryEnd, () => {
     memories.forEach((node) => node.classList.remove("is-current"));
     overlay.dataset.memory = "assemble";
   });
