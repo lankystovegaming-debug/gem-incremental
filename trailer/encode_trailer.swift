@@ -32,8 +32,8 @@ func pixelBuffer(from image: CGImage, pool: CVPixelBufferPool, width: Int, heigh
         bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
     ) else { throw TrailerError.pixelBuffer }
     context.interpolationQuality = .high
-    context.translateBy(x: 0, y: CGFloat(height))
-    context.scaleBy(x: 1, y: -1)
+    // The BGRA pixel-buffer context already uses the orientation expected by
+    // AVAssetWriter. Applying a Core Graphics axis flip here mirrors the movie.
     context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
     return buffer
 }
@@ -110,6 +110,9 @@ struct TrailerEncoder {
         }
         input.markAsFinished()
         try await finish(writer)
+        // Frames are no longer needed once the silent H.264 stream is closed.
+        // Removing them here keeps enough headroom for the audio mux/export.
+        try? fm.removeItem(at: frameDirectory)
 
         let videoAsset = AVURLAsset(url: silentURL)
         let audioAsset = AVURLAsset(url: audioURL)
