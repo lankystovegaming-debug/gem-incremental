@@ -193,7 +193,8 @@ assert.deepEqual(
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
 assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 35);
-assert.match(scenes, /memoryStep = memories\.length \? \(memoryEnd - memoryStart\) \/ memories\.length/);
+assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
+assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);
 assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
