@@ -16,6 +16,19 @@
   overflow: hidden;
 }
 
+.stage__display.has-deepcore-roll-card .gem-reveal {
+  border: 1px solid color-mix(in srgb, #55e5ff 58%, var(--border));
+  box-shadow: 0 0 0 1px rgba(85,229,255,.12), 0 18px 60px rgba(14,77,103,.28);
+}
+.stage__display.has-deepcore-roll-card .gem-reveal::after {
+  content: "DEEPCORE PROJECT";
+  display: block;
+  margin-top: 12px;
+  color: #79e9ff;
+  font: 700 .68rem/1.2 ui-monospace, monospace;
+  letter-spacing: .18em;
+}
+
 
 /* ---------------------------------------------------------
    ACTIVE POTION EFFECTS HUD

@@ -16,6 +16,11 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
+  "deepcore geode": scene(12_500, "deepcore-pressure", ["PRESSURE"], { theatre: true, primitives: ["pressure"], textPosition: "center" }),
+  "crystalline singularity": scene(13_500, "deepcore-convergence", ["CONVERGENCE"], { theatre: true, primitives: ["prism", "orbit"], textPosition: "center" }),
+  "ontological shard": scene(13_500, "deepcore-absence", ["ABSENCE"], { theatre: true, quiet: true, primitives: ["void"], textPosition: "center" }),
+  "blacksite crystal": scene(14_500, "deepcore-redacted", ["REDACTED"], { theatre: true, primitives: ["glitch"], textPosition: "corrupt-ui" }),
+  "heart of the deep": scene(17_000, "deepcore-heartbeat", ["HEARTBEAT"], { theatre: true, quiet: true, primitives: ["pressure", "orbit"], textPosition: "center", revealAt: .84 }),
   "heart of xy": scene(14_000, "xy-heart"),
   "xy gem": scene(14_000, "xy-heart"),
   "potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite": scene(12_000, "buffer", ["IDENTIFICATION BUFFER EXCEEDED"], { primitives: ["identifier"], textPosition: "center-low", beatStart: 0.55 }),

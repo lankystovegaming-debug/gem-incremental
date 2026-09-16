@@ -65,6 +65,14 @@ consumables.push(
   }
 );
 
+consumables.push(
+  { id: "deepcore-catalyst", name: "Deepcore Catalyst", family: "weightLuck", tier: 4, durationMs: null, effectValue: .5, oneRoll: false, description: "×1.5 Weight Luck for the next 25 genuine rolls.", shop: { purchasable: false, price: null } },
+  { id: "pressurized-catalyst", name: "Pressurized Catalyst", family: "weightLuck", tier: 4, durationMs: 60_000, effectValue: 1, description: "×2 Weight Luck and ×1.15 Weight Multiplier for 60 seconds.", shop: { purchasable: false, price: null } },
+  { id: "seismic-potion", name: "Seismic Potion", family: "luck", tier: 4, durationMs: 60_000, effectValue: 4, description: "×5 Luck, ×2 mutation chance and ×1.25 Deepcore chance for 60 seconds.", shop: { purchasable: false, price: null } },
+  { id: "unstable-core", name: "Unstable Core", family: "luck", tier: 4, durationMs: null, effectValue: 25, oneRoll: false, description: "×25 Deepcore chance and ×5 Special chance for the next 10 genuine rolls.", shop: { purchasable: false, price: null } },
+  { id: "deepcore-crate", name: "Deepcore Crate", family: "material", tier: 1, material: true, effectValue: 0, description: "Contains one weighted Deepcore reward and an independent Roll Card chance.", shop: { purchasable: false, price: null } }
+);
+
 consumables.push({ id: "plastic-bag", name: "Plastic Bag", family: "material", tier: 0,
   material: true, effectValue: 0, marketReferencePrice: 0.10, shop: { purchasable: false, price: null } });
 

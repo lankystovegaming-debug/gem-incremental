@@ -63,6 +63,7 @@ const PAGES = [
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "mutation-index", label: "Mutation Index", short: "Mutations", href: "mutation-index/", icon: icons.sparkle },
   { id: "month-one", label: "Month One", short: "Month 1", href: "recap/month-1/", icon: icons.trophy },
+  { id: "limited-events", label: "Limited Events", short: "Events", href: "limited-events/", icon: icons.calendar },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
@@ -126,7 +127,7 @@ const EXPLORE_GROUPS = [
     id: "activities",
     label: "Activities",
     icon: icons.dice,
-    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events"]
+    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events", "limited-events"]
   },
   {
     id: "labs-economy",

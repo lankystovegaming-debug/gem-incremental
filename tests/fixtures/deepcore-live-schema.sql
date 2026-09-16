@@ -1,0 +1,12 @@
+create role anon; create role authenticated; create role service_role;
+create schema auth;
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}')$$;
+create table public.players(id uuid primary key,money numeric not null default 0,total_rolls bigint not null default 0,username text not null default 'Miner');
+create table public.inventory_gems(id bigint generated always as identity primary key,player_id uuid references players(id),gem_name text not null,rarity numeric not null default 1,base_weight numeric not null default 1,value_per_gram numeric not null default 1,rolled_weight_multiplier numeric not null default 1,rolled_weight numeric not null default 1,final_weight numeric not null default 1,value numeric not null default 1,mutation_ids text[] not null default '{}',locked boolean not null default false,museum_locked boolean not null default false);
+create table public.player_consumables(player_id uuid references players(id),consumable_id text not null,quantity integer not null default 0,updated_at timestamptz not null default now(),primary key(player_id,consumable_id));
+create table public.private_feature_gems(id uuid primary key,name text unique not null,rarity numeric not null,base_weight numeric not null,value_per_gram numeric not null,sort_order integer,enabled boolean,starts_at timestamptz,ends_at timestamptz,metadata jsonb,description text,hide_rarity_until_discovered boolean,availability_mode text,affected_by_luck boolean,special_gem boolean);
+create table public.game_consumables(id text primary key,name text,family text,tier integer,effect_value numeric,duration_seconds integer,purchasable boolean,shop_price numeric);
+create table public.cosmetic_definitions(id text primary key,name text,slots text[],description text,rarity text,visual_config jsonb,source text,enabled boolean default true);
+create table public.player_cosmetics(player_id uuid references players(id),cosmetic_id text references cosmetic_definitions(id),source text,source_key text,unlocked_at timestamptz default now(),primary key(player_id,cosmetic_id));
+insert into game_consumables(id,name) values('legendary-potion','Legendary Potion'),('mythic-potion','Mythic Potion'),('lucky-potion-4','Lucky Potion IV'),('speed-potion-4','Speed Potion IV'),('fortune-potion-4','Fortune Potion IV'),('mass-potion-4','Mass Potion IV');
