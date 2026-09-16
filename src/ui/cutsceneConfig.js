@@ -49,6 +49,7 @@ export const BESPOKE_CUTSCENES = Object.freeze({
   "ton 618": scene(16_000, "black-hole", ["MASS: ????????", "EVENT HORIZON"], { theatre: true, quiet: true, primitives: ["black-hole"], textPosition: "orbit" }),
   "cat ore": scene(12_000, "cat", ["meow"], { primitives: ["cat"], textPosition: "center-low", beatStart: 0.63, revealAt: 0.72 }),
   "tonalite-trondhjemite-granodiorite": scene(15_000, "master-analysis", ["FACET · PRISM · RESONANCE"], { primitives: ["master"], textPosition: "orbit", beatStart: 0.54 }),
+  "one singular grain of sand": scene(15_000, "singular-sand", ["ONE."], { primitives: ["sand"], textPosition: "center-low", beatStart: 0.67, revealAt: 0.82 }),
   "almost secret": scene(16_000, "almost", ["no.", "1 short."], { counter: true, counterDuration: 8_500, primitives: ["counter"], textPosition: "center", beatStart: 0.6, beatWindow: 0.12, revealAt: 0.84 }),
   "glitched gem": scene(17_000, "glitched-gem", ["RESULT VALIDATION FAILED", "THIS RESULT SHOULD NOT EXIST"], { secret: true, theatre: true, fakeResult: true, primitives: ["glitch"], textPosition: "corrupt-ui", beatStart: 0.3, revealAt: 0.82 }),
   finality: scene(16_000, "finality", ["The end.", "for this roll."], { secret: true, quiet: true, theatre: true, primitives: ["void"], textPosition: "center", beatStart: 0.58, revealAt: 0.83 }),

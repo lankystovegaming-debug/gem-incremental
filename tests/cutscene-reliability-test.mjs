@@ -49,7 +49,10 @@ assert.deepEqual(getCutsceneDefinition({ rarity: 999_999 }).beats, []);
 assert.deepEqual(getCutsceneDefinition({ rarity: 1_000_000 }).beats, []);
 assert.deepEqual(getCutsceneDefinition({ rarity: 99_999_999 }).beats, []);
 assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy" }).theme, "xy-heart");
-assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 37, "the 36 locked scenes plus the legacy XY alias must be registered");
+assert.equal(getCutsceneDefinition({ rarity: 666_666_666, gemName: "one singular grain of sand" }).theme, "singular-sand");
+assert.equal(cutsceneDuration({ rarity: 666_666_666, gemName: "one singular grain of sand", mobile: false, reducedMotion: false }), 15_000);
+assert.deepEqual(BESPOKE_CUTSCENES["one singular grain of sand"].primitives, ["sand"]);
+assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 38, "the 37 locked scenes plus the legacy XY alias must be registered");
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
   assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
@@ -192,7 +195,8 @@ assert.deepEqual(
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 35);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 36);
+assert.ok(REMINISCITE_MEMORY_FRAMES.includes("singular-sand"));
 assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
 assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);
 assert.match(config, /"glitched gem"/);

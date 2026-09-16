@@ -29,7 +29,7 @@ export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
   "ascend", "impact", "polaris", "false-ending", "primordial", "analysis",
   "ocean", "perfect-id", "lunar-impact", "journey", "where", "last-light",
   "lunar", "wrong", "aurora", "reality", "tranquillity", "black-hole",
-  "cat", "master-analysis", "almost", "glitched-gem", "finality"
+  "cat", "master-analysis", "singular-sand", "almost", "glitched-gem", "finality"
 ]);
 
 const primitiveMarkup = Object.freeze({
@@ -65,6 +65,7 @@ const primitiveMarkup = Object.freeze({
   "black-hole": `<div class="cs-black-hole"><i></i><i></i><i></i><b></b></div>`,
   cat: `<div class="cs-cat"><span class="cs-paw"></span><i></i><i></i></div>`,
   master: `<div class="cs-master"><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
+  sand: `<div class="cs-sand"><span class="cs-sand-haze"></span><span class="cs-dune cs-dune--far"></span><span class="cs-dune cs-dune--near"></span><span class="cs-sandfield"></span><span class="cs-sand-beam"></span><span class="cs-single-grain"></span></div>`,
   counter: `<div class="cs-counter-track"><i></i></div>`,
   glitch: `<div class="cs-glitch-tears"><i></i><i></i><i></i><i></i><i></i></div>`,
   void: `<span class="cs-final-line"></span>`,
