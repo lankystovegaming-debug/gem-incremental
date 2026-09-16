@@ -173,12 +173,15 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   }
 
   const memories = [...overlay.querySelectorAll(".cs-memories [data-memory]")];
-  memories.forEach((memory, index) => schedule(0.045 + index * 0.029, () => {
+  const memoryStart = 0.035;
+  const memoryEnd = 0.61;
+  const memoryStep = memories.length ? (memoryEnd - memoryStart) / memories.length : 0;
+  memories.forEach((memory, index) => schedule(memoryStart + index * memoryStep, () => {
     memories.forEach((node) => node.classList.remove("is-current"));
     memory.classList.add("is-current");
     overlay.dataset.memory = memory.dataset.memory;
   }));
-  if (memories.length) schedule(0.61, () => {
+  if (memories.length) schedule(memoryEnd, () => {
     memories.forEach((node) => node.classList.remove("is-current"));
     overlay.dataset.memory = "assemble";
   });

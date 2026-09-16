@@ -23,6 +23,15 @@ export function specimenMarkup(specimenHtml, { reticle = false } = {}) {
     </div>`;
 }
 
+export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
+  "xy-heart", "buffer", "sunrise", "noob", "pressure-one", "missing",
+  "solar", "pressure-two", "eventide", "deadstar", "meteor", "inferno",
+  "ascend", "impact", "polaris", "false-ending", "primordial", "analysis",
+  "ocean", "perfect-id", "lunar-impact", "journey", "where", "last-light",
+  "lunar", "wrong", "aurora", "reality", "tranquillity", "black-hole",
+  "cat", "master-analysis", "almost", "glitched-gem", "finality"
+]);
+
 const primitiveMarkup = Object.freeze({
   facets: `<div class="cs-facets"><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
   prism: `<div class="cs-prism"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
@@ -60,15 +69,9 @@ const primitiveMarkup = Object.freeze({
   glitch: `<div class="cs-glitch-tears"><i></i><i></i><i></i><i></i><i></i></div>`,
   void: `<span class="cs-final-line"></span>`,
   transcendent: `<div class="cs-transcendent"><i></i><i></i><i></i></div>`,
-  memories: `<div class="cs-memories">
-    <i data-memory="sunrise"></i><i data-memory="pressure"></i><i data-memory="meteor"></i>
-    <i data-memory="deadstar"></i><i data-memory="fire"></i><i data-memory="ascent"></i>
-    <i data-memory="polaris"></i><i data-memory="ocean"></i><i data-memory="404"></i>
-    <i data-memory="last-light"></i><i data-memory="wrong"></i><i data-memory="aurora"></i>
-    <i data-memory="reality"></i><i data-memory="lunar"></i><i data-memory="black-hole"></i>
-    <i data-memory="paw"></i><i data-memory="counter"></i><i data-memory="glitch"></i>
-    <i data-memory="finality"></i>
-  </div>`
+  memories: `<div class="cs-memories">${REMINISCITE_MEMORY_FRAMES
+    .map((theme) => `<i data-memory="${theme}"></i>`)
+    .join("")}</div>`
 });
 
 export function scenePrimitivesMarkup(primitives = []) {

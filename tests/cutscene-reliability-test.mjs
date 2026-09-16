@@ -11,6 +11,7 @@ import {
   BESPOKE_CUTSCENES,
   getCutsceneDefinition
 } from "../src/ui/cutsceneConfig.js";
+import { REMINISCITE_MEMORY_FRAMES } from "../src/ui/cutscenePrimitives.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -183,9 +184,16 @@ assert.match(scenes, /counterDuration \/ duration \+ 0\.07/);
 assert.deepEqual(BESPOKE_CUTSCENES.reminiscite.beats, [
   "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"
 ]);
-assert.match(primitives, /data-memory="sunrise"/);
-assert.match(primitives, /data-memory="black-hole"/);
-assert.match(primitives, /data-memory="glitch"/);
+const precedingCutsceneThemes = Array.from(new Set(
+  Object.values(BESPOKE_CUTSCENES).map((definition) => definition.theme)
+)).filter((theme) => theme !== "memory");
+assert.deepEqual(
+  REMINISCITE_MEMORY_FRAMES,
+  precedingCutsceneThemes,
+  "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
+);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 35);
+assert.match(scenes, /memoryStep = memories\.length \? \(memoryEnd - memoryStart\) \/ memories\.length/);
 assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
