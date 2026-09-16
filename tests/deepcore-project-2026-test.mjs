@@ -8,6 +8,7 @@ const roll=read("supabase/functions/roll/index.ts");
 const page=read("limited-events/deepcore/index.html");
 const client=read("limited-events/deepcore/deepcore.js");
 const cutscenes=read("src/ui/cutsceneConfig.js");
+const deployment=read("docs/deepcore-2026-deployment.md");
 
 assert.match(sql,/2026-09-20T00:00:00Z/); assert.match(sql,/2026-10-04T00:00:00Z/);
 assert.ok((sql.match(/2026-10-04T00:00:00Z/g)||[]).length>=12,"every limited catalog entry and the event share the hard expiry"); assert.match(roll,/deepcoreContext\?\.status !== "active"/);
@@ -16,6 +17,7 @@ assert.doesNotMatch(sql,/drop trigger if exists deepcore_track_(rolls|specimen)/
 assert.match(triggerSql,/deepcore_track_rolls/); assert.match(triggerSql,/deepcore_track_specimen/);
 assert.ok((triggerSql.match(/commit;/g)||[]).length>=2,"hot-table trigger locks must be released independently");
 assert.match(triggerSql,/set lock_timeout = '10s'/);
+assert.match(deployment,/20260916125715_install_deepcore_hot_table_triggers\.sql/);
 assert.match(sql,/for update/); assert.match(sql,/unique\(player_id,request_id\)/);
 assert.match(sql,/route_winner is not null/); assert.match(sql,/route_loser_snapshot/);
 assert.match(sql,/g\.locked or g\.museum_locked/); assert.match(sql,/p_objective='key'/);
