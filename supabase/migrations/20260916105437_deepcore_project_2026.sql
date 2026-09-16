@@ -389,9 +389,9 @@ begin
  if phase_three then perform deepcore_private.advance_state(); end if;
  return new;
 end $$;
-drop trigger if exists deepcore_track_rolls on public.players;
-create trigger deepcore_track_rolls after update of total_rolls on public.players for each row
- when(new.total_rolls>old.total_rolls) execute function deepcore_private.track_rolls();
+-- Installed by 20260916125715_install_deepcore_hot_table_triggers.sql.
+-- Keeping hot-table DDL outside this long transaction prevents a live roll
+-- from deadlocking across players and inventory_gems in the opposite order.
 
 create or replace function deepcore_private.track_specimen() returns trigger
 language plpgsql security definer set search_path='' as $$
@@ -419,8 +419,7 @@ begin
  if new.gem_name='Blacksite Crystal' then perform deepcore_private.grant_cosmetic(new.player_id,'deepcore-blacksite','discovery-blacksite'); end if;
  return new;
 end $$;
-drop trigger if exists deepcore_track_specimen on public.inventory_gems;
-create trigger deepcore_track_specimen after insert on public.inventory_gems for each row execute function deepcore_private.track_specimen();
+-- The inventory trigger is installed independently by the follow-up migration.
 
 create or replace function public.deepcore_contribute(p_amount numeric,p_target text,p_request_id uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
