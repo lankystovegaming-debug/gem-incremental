@@ -70,6 +70,41 @@ const primitiveMarkup = Object.freeze({
   glitch: `<div class="cs-glitch-tears"><i></i><i></i><i></i><i></i><i></i></div>`,
   void: `<span class="cs-final-line"></span>`,
   transcendent: `<div class="cs-transcendent"><i></i><i></i><i></i></div>`,
+  "deepcore-geode": `<div class="cs-dc-geode">
+    <div class="cs-dc-shaft"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="cs-dc-depth-line"></span><span class="cs-dc-drill-light"></span>
+    <div class="cs-dc-stone"><b></b><b></b><b></b><b></b><b></b></div>
+    <div class="cs-dc-bloom"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="cs-dc-debris"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>`,
+  "deepcore-singularity": `<div class="cs-dc-singularity">
+    <span class="cs-dc-gravity-grid"></span><span class="cs-dc-lens"></span>
+    <div class="cs-dc-shardfall"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="cs-dc-event-ring"><i></i><i></i><i></i><b></b></div><span class="cs-dc-singularity-core"></span>
+  </div>`,
+  "deepcore-absence": `<div class="cs-dc-absence">
+    <div class="cs-dc-presence-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="cs-dc-null-shard"></span><span class="cs-dc-null-shadow"></span>
+    <div class="cs-dc-erasure"><i></i><i></i><i></i><i></i><i></i></div>
+  </div>`,
+  "deepcore-blacksite": `<div class="cs-dc-blacksite">
+    <span class="cs-dc-feed"></span><span class="cs-dc-rec">REC</span><span class="cs-dc-timecode">06:██:██:14</span>
+    <div class="cs-dc-vault"><i></i><i></i><i></i><i></i><b></b></div>
+    <div class="cs-dc-redactions"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="cs-dc-feed-tears"><i></i><i></i><i></i><i></i></div>
+    <span class="cs-dc-classified">DEEPCORE // EYES ONLY // LEVEL █████</span>
+  </div>`,
+  "deepcore-heart": `<div class="cs-dc-heart">
+    <span class="cs-dc-deep-dark"></span>
+    <svg class="cs-dc-veins" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 104 C170 90 190 250 390 278 S455 310 500 300"/><path d="M1000 86 C790 105 825 238 610 280 S548 302 500 300"/>
+      <path d="M0 520 C180 500 260 375 420 338 S470 312 500 300"/><path d="M1000 548 C820 505 760 382 592 344 S535 312 500 300"/>
+      <path d="M245 0 C250 148 430 168 464 275"/><path d="M760 0 C735 155 590 170 536 275"/>
+    </svg>
+    <div class="cs-dc-heart-organ"><i></i><i></i><i></i><i></i><b></b><em></em></div>
+    <div class="cs-dc-heartwaves"><i></i><i></i><i></i><i></i></div>
+    <div class="cs-dc-blood-stars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>`,
   memories: `<div class="cs-memories">${REMINISCITE_MEMORY_FRAMES
     .map((theme) => `<i data-memory="${theme}"></i>`)
     .join("")}</div>`

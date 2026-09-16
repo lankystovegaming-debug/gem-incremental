@@ -16,6 +16,21 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
+  "deepcore geode": scene(12_500, "deepcore-pressure", [
+    "DEPTH 11,842 m", "LITHOSTATIC LOAD // 4.7 GPa", "THE ROCK OPENED FROM WITHIN"
+  ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82 }),
+  "crystalline singularity": scene(13_500, "deepcore-convergence", [
+    "LOCAL GRAVITY: INVERTED", "MASS → ∞  /  VOLUME → 0", "LIGHT HAS NOWHERE LEFT TO GO"
+  ], { theatre: true, primitives: ["deepcore-singularity"], textPosition: "deepcore-singularity", beatStart: .18, beatWindow: .48, revealAt: .84 }),
+  "ontological shard": scene(13_500, "deepcore-absence", [
+    "OBJECT REGISTERED", "OBJECT DENIED", "DISCOVERY RECORD:  [          ]"
+  ], { theatre: true, quiet: true, primitives: ["deepcore-absence"], textPosition: "deepcore-absence", beatStart: .16, beatWindow: .5, revealAt: .84 }),
+  "blacksite crystal": scene(14_500, "deepcore-redacted", [
+    "SITE 06 // CAMERA 4", "CONTAINMENT IS NOT EMPTY", "CLEARANCE REVOKED"
+  ], { theatre: true, primitives: ["deepcore-blacksite"], textPosition: "deepcore-blacksite", beatStart: .12, beatWindow: .56, revealAt: .85 }),
+  "heart of the deep": scene(17_000, "deepcore-heartbeat", [
+    "12,000 m BELOW THE LAST MAP", "SIGNAL SOURCE: BENEATH THE CORE", "IT HEARD YOU."
+  ], { theatre: false, quiet: true, primitives: ["deepcore-heart"], textPosition: "deepcore-heart", beatStart: .12, beatWindow: .58, revealAt: .88 }),
   "heart of xy": scene(14_000, "xy-heart"),
   "xy gem": scene(14_000, "xy-heart"),
   "potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite": scene(12_000, "buffer", ["IDENTIFICATION BUFFER EXCEEDED"], { primitives: ["identifier"], textPosition: "center-low", beatStart: 0.55 }),

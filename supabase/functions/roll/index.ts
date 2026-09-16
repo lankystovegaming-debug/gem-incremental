@@ -994,6 +994,12 @@ function isRelic(gem: { name?: string }) {
   return gem.name === "Enchant Relic" || gem.name === "Ancient Relic";
 }
 
+// Phase 5 is represented as 5.1/5.2-safe integer states in Postgres. Never
+// compare those values numerically: 51 would otherwise unlock Phase 6/Stretch.
+function deepcorePhaseOrder(phase: unknown) {
+  return ({ 1: 1, 2: 2, 3: 3, 4: 4, 51: 5, 52: 6, 6: 7, 7: 8 } as Record<number, number>)[Number(phase)] ?? 0;
+}
+
 function rollGemWithPickaxePassives(
   luck: number,
   discovered: Set<string>,
@@ -1016,7 +1022,10 @@ function rollGemWithPickaxePassives(
 
   for (const gem of rollable) {
     if (gem.affectedByLuck === false) {
-      if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) / gem.rarity, 1)) return gem;
+      const deepcoreSpecial = gem.specialGem === true
+        ? positive(eventContext?.deepcoreSpecialChanceMultiplier)
+        : 1;
+      if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) * deepcoreSpecial / gem.rarity, 1)) return gem;
       continue;
     }
     let gemLuck = Math.max(0.000001, luck) * (eventContext?.buffsDisabled ? 1 : fortuneLuckFactor(equipmentContext?.id, gem)) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
@@ -1025,6 +1034,12 @@ function rollGemWithPickaxePassives(
     if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
     if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
     if (eventContext && !eventContext.buffsDisabled) gemLuck *= eventGemLuckFactor(eventContext, gem);
+    if (gem.metadata?.deepcore_stage) {
+      gemLuck *= positive(eventContext?.deepcoreGemChanceMultiplier);
+      if (gem.name === "Heart of the Deep") {
+        gemLuck *= positive(eventContext?.deepcore?.heartMultiplier);
+      }
+    }
     gemLuck = capGemLuck(gemLuck, maxLuck);
     if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
   }
@@ -1243,6 +1258,7 @@ type BatchExecution = {
   guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
   pets?: any[];
   equipmentBonusRows?: any[];
+  deepcoreContext?: any | null;
   timing?: RollInvocationTiming;
 };
 
@@ -1396,6 +1412,27 @@ async function executeSingleRoll(
         console.error("Roll context load failed:", rollContextError);
         return jsonResponse({ error: "roll_context_unavailable" }, { status: 503 });
       }
+
+      if (batchExecution.deepcoreContext === undefined) {
+        const { data: deepcoreContext, error: deepcoreContextError } = await ctx.supabaseAdmin.rpc(
+          "deepcore_get_roll_context",
+          { p_player_id: playerId }
+        );
+        if (deepcoreContextError) {
+          // The event migration may not have been deployed yet. Ordinary
+          // rolling must remain available during a staged rollout.
+          console.warn("Deepcore roll context unavailable:", deepcoreContextError.message);
+          batchExecution.deepcoreContext = null;
+        } else {
+          batchExecution.deepcoreContext = deepcoreContext ?? null;
+        }
+      }
+      const deepcoreContext = batchExecution.deepcoreContext;
+      const deepcoreEffects = deepcoreContext?.effects ?? {};
+      const deepcoreChargeActive = (id: string) =>
+        Number(deepcoreEffects?.[id]?.rollsRemaining ?? 0) > batchIndex;
+      const deepcoreTimedActive = (id: string) =>
+        Date.parse(String(deepcoreEffects?.[id]?.expiresAt ?? "")) > now.getTime();
 
 
       // Load pet definitions and the two new equipment stat columns once per
@@ -1704,6 +1741,12 @@ async function executeSingleRoll(
       const activeGlobalEvent = normalizeGlobalEvent(globalEventData, now.getTime());
       const availabilityEventContext = buildEventRollContext(activeGlobalEvent, random01, now.getTime());
       const eventContext = allIn ? buildEventRollContext(null, random01, now.getTime()) : availabilityEventContext;
+      (eventContext as any).deepcore = deepcoreContext;
+      (eventContext as any).deepcoreGemChanceMultiplier =
+        (deepcoreTimedActive("seismic-potion") ? 1.25 : 1) *
+        (deepcoreChargeActive("unstable-core") ? 25 : 1);
+      (eventContext as any).deepcoreSpecialChanceMultiplier =
+        deepcoreChargeActive("unstable-core") ? 5 : 1;
 
 
       // =====================================================
@@ -1722,6 +1765,11 @@ async function executeSingleRoll(
       let weightMultiplier = equipmentStats.weightMultiplier;
       let rollBulk = Number(equipmentStats.rollBulk ?? 0);
       let petLuck = Number(equipmentStats.petLuck ?? 0);
+      if (!allIn && deepcoreChargeActive("deepcore-catalyst")) weightLuck *= 1.5;
+      if (!allIn && deepcoreTimedActive("pressurized-catalyst")) {
+        weightLuck *= 2;
+        weightMultiplier *= 1.15;
+      }
       const maxBatchFromStats = Math.min(100, 4 + Math.max(0, Math.floor(rollBulk)));
       if (batchExecution.batchSize > maxBatchFromStats) {
         return jsonResponse({ error: "invalid_batch_size", maximumBatchSize: maxBatchFromStats }, { status: 400 });
@@ -2313,7 +2361,14 @@ async function executeSingleRoll(
             timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode)),
             requiredEventKey: entry.required_event_key ? String(entry.required_event_key) : null,
             metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}
-          })).filter((entry: any) => eventGemIsEligible(availabilityEventContext, entry));
+          })).filter((entry: any) => eventGemIsEligible(availabilityEventContext, entry)).filter((entry: any) => {
+            const requiredStage = Number(entry.metadata?.deepcore_stage ?? 0);
+            if (!requiredStage) return true;
+            if (deepcoreContext?.status !== "active") return false;
+            if (deepcorePhaseOrder(deepcoreContext?.phase) < deepcorePhaseOrder(requiredStage)) return false;
+            const route = entry.metadata?.deepcore_route;
+            return !route || route === deepcoreContext?.routeWinner;
+          });
         } else if (configuredGemError) {
           console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
         }
@@ -2348,7 +2403,7 @@ async function executeSingleRoll(
         pickaxe: equipmentStats.pickaxe, clover: equipmentStats.clover,
         enchant: enchantLuck + (alignmentRoll ? 50 : 0), guild: guildLuck,
         research: researchNumber("luck_multiplier"), focused: focusedLuck,
-        flat: luck - equipmentStats.luck, special: specialLuck * slotOutcome.luck * (equipmentContext.flags.realityShift ? 400 : 1),
+        flat: luck - equipmentStats.luck, special: specialLuck * slotOutcome.luck * (equipmentContext.flags.realityShift ? 400 : 1) * (!allIn && deepcoreTimedActive("seismic-potion") ? 5 : 1),
         oneRoll: Number.isFinite(oneRollLuck) ? Math.max(0, oneRollLuck) : 0,
         world: eventContext.luckMultiplier * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1))
       });
@@ -2575,6 +2630,7 @@ async function executeSingleRoll(
       mutationChanceMultiplier *= crystalMutationMultiplier;
       mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
       mutationChanceMultiplier *= volcanicMutationMultiplier;
+      if (!allIn && deepcoreTimedActive("seismic-potion")) mutationChanceMultiplier *= 2;
 
       // Misty: ×2.5 mutation chance for the next 10 rolls. Re-triggering
       // Misty while active stacks the strength and refreshes the duration.
@@ -2738,8 +2794,20 @@ async function executeSingleRoll(
         { ...specimen, effectiveRarity },
         discoveredGemNames
       );
+      let deepcoreAutoContribution: any = null;
+      if (deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true) {
+        const { data: contribution, error: contributionError } = await ctx.supabaseAdmin.rpc(
+          "deepcore_auto_contribute_roll",
+          { p_player_id: playerId, p_specimen: specimen }
+        );
+        if (contributionError) console.error("Deepcore Auto Contribute failed:", contributionError);
+        else deepcoreAutoContribution = contribution;
+      }
+      const deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
       const bundleRouteStartedAt = timingNow(batchExecution);
-      const bundleRoutePromise = filterDecision.keep
+      const bundleRoutePromise = deepcoreDeposited
+        ? Promise.resolve({ data: { status: "deepcore", keepInInventory: false }, error: null })
+        : filterDecision.keep
         ? Promise.resolve({
           data: { status: "kept", keepInInventory: true, reason: filterDecision.reason },
           error: null
@@ -2763,7 +2831,7 @@ async function executeSingleRoll(
         console.error("Bundle routing failed:", bundleRouteError);
         return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
       }
-      const bundleDeposited = bundleRoute.status === "deposited";
+      const bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited;
       const bundleKeepInInventory = bundleRoute.keepInInventory === true;
 
       if (rollContext.activeAutoCraft && !bundleDeposited && !bundleKeepInInventory) {
@@ -3417,6 +3485,12 @@ async function executeSingleRoll(
 
           requirementIndex:
             autoCraftRequirementIndex
+        },
+
+        deepcore: {
+          autoContributed: deepcoreDeposited,
+          objective: deepcoreAutoContribution?.objective ?? null,
+          rollCard: deepcoreContext?.rollCard === true
         },
 
         lifetimeStats:

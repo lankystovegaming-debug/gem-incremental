@@ -52,7 +52,24 @@ assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy"
 assert.equal(getCutsceneDefinition({ rarity: 666_666_666, gemName: "one singular grain of sand" }).theme, "singular-sand");
 assert.equal(cutsceneDuration({ rarity: 666_666_666, gemName: "one singular grain of sand", mobile: false, reducedMotion: false }), 15_000);
 assert.deepEqual(BESPOKE_CUTSCENES["one singular grain of sand"].primitives, ["sand"]);
-assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 38, "the 37 locked scenes plus the legacy XY alias must be registered");
+assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 43, "the locked scenes, five Deepcore scenes, and legacy XY alias must be registered");
+assert.equal(cutsceneDuration({ rarity: 145_000_000, gemName: "Deepcore Geode", mobile: false, reducedMotion: false }), 12_500);
+assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Crystalline Singularity", mobile: false, reducedMotion: false }), 13_500);
+assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Ontological Shard", mobile: false, reducedMotion: false }), 13_500);
+assert.equal(cutsceneDuration({ rarity: 345_000_000, gemName: "Blacksite Crystal", mobile: false, reducedMotion: false }), 14_500);
+assert.equal(cutsceneDuration({ rarity: 1_000_000_000, gemName: "Heart of the Deep", mobile: false, reducedMotion: false }), 17_000);
+const deepcoreScenes = [
+  "deepcore geode", "crystalline singularity", "ontological shard",
+  "blacksite crystal", "heart of the deep"
+].map((name) => BESPOKE_CUTSCENES[name]);
+assert.equal(new Set(deepcoreScenes.flatMap((definition) => definition.primitives)).size, 5, "every Deepcore discovery must own a unique cinematic primitive");
+assert.deepEqual(BESPOKE_CUTSCENES["heart of the deep"].primitives, ["deepcore-heart"], "the Heart must not remix earlier Deepcore or catalogue primitives");
+assert.equal(BESPOKE_CUTSCENES["heart of the deep"].theatre, false, "the Heart must not reuse or distort the surrounding game UI");
+assert.equal(new Set(deepcoreScenes.map((definition) => definition.textPosition)).size, 5, "Deepcore story copy must have scene-specific choreography");
+for (const definition of deepcoreScenes) {
+  assert.equal(definition.beats.length, 3, "Deepcore scenes use narrative beats rather than a repeated one-word card");
+  assert.ok(definition.beats.every((beat) => !/^(PRESSURE|CONVERGENCE|ABSENCE|REDACTED|HEARTBEAT)$/.test(beat)));
+}
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
   assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
@@ -177,6 +194,10 @@ assert.match(
   /data-phase="reveal"\] \.cs-focus\s*\{[\s\S]*?visibility:\s*hidden/,
   "the buildup specimen must retire before the final reveal gem appears"
 );
+for (const primitive of ["geode", "singularity", "absence", "blacksite", "heart"]) {
+  assert.match(primitives, new RegExp(`deepcore-${primitive}`));
+  assert.match(sceneStyles, new RegExp(`cs-dc-${primitive}`));
+}
 assert.match(scenes, /primitives\.includes\("reticle"\)/);
 assert.doesNotMatch(scenes, /cs-scanner|scanner__label/);
 assert.doesNotMatch(config, /FACET ANALYSIS|PRISM ANALYSIS|RESONANCE ANALYSIS|SPECIMEN ACQUIRED/);
@@ -187,15 +208,22 @@ assert.match(scenes, /counterDuration \/ duration \+ 0\.07/);
 assert.deepEqual(BESPOKE_CUTSCENES.reminiscite.beats, [
   "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"
 ]);
+const deepcoreThemes = new Set([
+  "deepcore-pressure", "deepcore-convergence", "deepcore-absence",
+  "deepcore-redacted", "deepcore-heartbeat"
+]);
 const precedingCutsceneThemes = Array.from(new Set(
   Object.values(BESPOKE_CUTSCENES).map((definition) => definition.theme)
-)).filter((theme) => theme !== "memory");
+)).filter((theme) => theme !== "memory" && !deepcoreThemes.has(theme));
 assert.deepEqual(
   REMINISCITE_MEMORY_FRAMES,
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
 assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 36);
+for (const theme of deepcoreThemes) {
+  assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
+}
 assert.ok(REMINISCITE_MEMORY_FRAMES.includes("singular-sand"));
 assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
 assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);

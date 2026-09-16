@@ -594,6 +594,7 @@ function renderRoll(data, outcome) {
     `visual-variant-${visualVariant}`,
     isEpicRollEffect ? "is-epic-roll" : "",
     isUltraRare ? "is-ultra-rare" : "",
+    data.deepcore?.rollCard ? "has-deepcore-roll-card" : "",
     data.impossibleWorldFirst ? "is-impossible-world-first" : ""
   ].filter(Boolean).join(" ");
   gemStage.style.setProperty("--gem-hue", `${visualHue}`);
@@ -909,6 +910,14 @@ async function performRoll() {
 // Ambiguous Bundle matches and Crown candidates remain in inventory.
 // Only gems that remain in inventory can reach the Auto Sell rule.
 async function resolveOutcome(data) {
+  if (data.deepcore?.autoContributed) {
+    return {
+      type: "deepcore-contributed",
+      icon: "⛏",
+      text: `Auto-contributed to Deepcore · ${data.deepcore.objective}`,
+      note: "deepcore contribution"
+    };
+  }
   if (data.pet) {
     return {
       type: "pet",
