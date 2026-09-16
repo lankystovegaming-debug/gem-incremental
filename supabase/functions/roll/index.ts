@@ -3090,7 +3090,9 @@ async function executeSingleRoll(
             (extraMutations.length ? researchNumber('mutated_value_multiplier') * (1 + Math.min(5,extraMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0))) : 1) *
             crystalGemValueMultiplier * expeditionArtifactGemValueMultiplier * volcanicGemValueMultiplier *
             (extraWeight >= 2 ? crystalHeavyGemValueMultiplier : 1) * (mineArtifacts.has('bedrock-crown') ? 1.05 : 1) * eventContext.valueMultiplier,
-          luck_at_roll: capGemLuck(luckBreakdown.ordinary * luckBreakdown.world, maxLuck), locked: false
+          luck_at_roll: capGemLuck(luckBreakdown.ordinary * luckBreakdown.world, maxLuck),
+          roll_number: Number(player.total_rolls ?? 0) + 1,
+          locked: false
         };
       }
       const equipmentCommitStartedAt = timingNow(batchExecution);
