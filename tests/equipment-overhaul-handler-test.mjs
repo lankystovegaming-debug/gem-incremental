@@ -5,11 +5,14 @@ import {PICKAXE_STATS} from '../supabase/functions/roll/equipmentRules.js';
 const url=p=>new URL(p,import.meta.url).href;
 let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8')
  .replace(/import\s*\{\s*withSupabase\s*\}\s*from\s*"npm:@supabase\/server";/,'const withSupabase=(_options,handler)=>handler;')
+ .replace(/import\s*\{\s*Redis\s*\}\s*from\s*"npm:@upstash\/redis@1\.38\.4";/,'class Redis { constructor() {} }')
+ .replace(/import\s*\{\s*Ratelimit\s*\}\s*from\s*"npm:@upstash\/ratelimit@2\.1\.0";/,'class Ratelimit { static slidingWindow(){return null;} async limit(){return {success:true};} }')
  .replace('"./eventRules.ts"',JSON.stringify(url('../supabase/functions/roll/eventRules.ts')))
  .replace('"./equipmentRules.js"',JSON.stringify(url('../supabase/functions/roll/equipmentRules.js')));
 source=stripTypeScriptTypes(source);
 let forceProcs=false;
 const bg=[];globalThis.EdgeRuntime={waitUntil:p=>bg.push(p)};
+globalThis.Deno={env:{get:()=>''}};
 Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){a[0]=forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(new Error().stack)?0:2**31;return a;}},configurable:true});
 const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs;
