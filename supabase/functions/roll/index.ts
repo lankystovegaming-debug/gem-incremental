@@ -404,6 +404,23 @@ export function eventWeightLuckFactor(context: EventRollContext, gem: any): numb
 import {
   withSupabase
 } from "npm:@supabase/server";
+import { Redis } from "npm:@upstash/redis@1.38.4";
+import { Ratelimit } from "npm:@upstash/ratelimit@2.1.0";
+
+const ROLL_RATE_LIMIT_MAX_REQUESTS = 120;
+const ROLL_RATE_LIMIT_WINDOW_SECONDS = 10;
+const ROLL_RATE_LIMIT_BAN_REASON =
+  "Automated permanent ban: roll request rate limit exceeded.";
+const rollRateLimitRedis = new Redis({
+  url: Deno.env.get("UPSTASH_REDIS_REST_URL"),
+  token: Deno.env.get("UPSTASH_REDIS_REST_TOKEN")
+});
+const rollRequestRateLimit = new Ratelimit({
+  redis: rollRateLimitRedis,
+  limiter: Ratelimit.slidingWindow(ROLL_RATE_LIMIT_MAX_REQUESTS, "10 s"),
+  prefix: "ratelimit:roll",
+  analytics: false
+});
 
 // =========================================================
 // PROGRESSION / ACHIEVEMENT ENGINE (INLINE FOR SUPABASE DASHBOARD DEPLOY)
@@ -521,6 +538,64 @@ function jsonResponse(body: any, init: ResponseInit = {}) {
       ...(init.headers ?? {})
     }
   });
+}
+
+export async function enforceRollRequestRateLimit(ctx: any): Promise<Response | null> {
+  const playerId = ctx.userClaims?.id ?? ctx.userClaims?.sub ?? ctx.jwtClaims?.sub;
+  if (!playerId) {
+    return jsonResponse({ error: "Could not identify player." }, { status: 401 });
+  }
+
+  let result;
+  try {
+    result = await rollRequestRateLimit.limit(playerId);
+  } catch (error) {
+    console.error("Roll request rate limit check failed:", error);
+    return jsonResponse(
+      {
+        error: "rate_limit_unavailable",
+        message: "Rolling is temporarily unavailable. Please try again shortly."
+      },
+      { status: 503 }
+    );
+  }
+
+  if (result.success) return null;
+
+  const { data: ban, error: banError } = await ctx.supabaseAdmin.rpc(
+    "apply_roll_rate_limit_permanent_ban",
+    {
+      p_player_id: playerId,
+      p_limit: ROLL_RATE_LIMIT_MAX_REQUESTS,
+      p_window_seconds: ROLL_RATE_LIMIT_WINDOW_SECONDS
+    }
+  );
+
+  if (banError || !ban) {
+    console.error("Automatic roll rate-limit ban failed:", banError);
+    return jsonResponse(
+      {
+        error: "rate_limit_ban_failed",
+        message: "Rolling is temporarily unavailable."
+      },
+      { status: 503 }
+    );
+  }
+
+  console.warn("Automatic permanent roll rate-limit ban applied", {
+    playerId,
+    limit: result.limit,
+    reset: result.reset
+  });
+
+  return jsonResponse(
+    {
+      error: "banned",
+      bannedUntil: ban.bannedUntil,
+      reason: ban.reason ?? ROLL_RATE_LIMIT_BAN_REASON
+    },
+    { status: 403 }
+  );
 }
 
 type VersionedCatalogCache = { version: number; data: any[] };
@@ -3530,6 +3605,9 @@ export default {
       if (req.method === "OPTIONS") {
         return new Response("ok", { status: 200, headers: corsHeaders });
       }
+
+      const rateLimitResponse = await enforceRollRequestRateLimit(ctx);
+      if (rateLimitResponse) return rateLimitResponse;
 
       const timingSampled = shouldSampleRollTiming();
       const invocationTimingStartedAt = timingSampled ? performance.now() : 0;
