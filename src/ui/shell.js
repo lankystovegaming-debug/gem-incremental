@@ -65,6 +65,7 @@ const PAGES = [
   { id: "month-one", label: "Month One", short: "Month 1", href: "recap/month-1/", icon: icons.trophy },
   { id: "limited-events", label: "Limited Events", short: "Events", href: "limited-events/", icon: icons.calendar },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
+  { id: "roll-counts", label: "Roll Counts", short: "Rolls", href: "roll-counts/", icon: icons.dice },
   { id: "admin", label: "Admin", short: "Admin", href: "admin/", icon: icons.shield, adminOnly: true },
   { id: "achievements", label: "Achievements", short: "Achieve", href: "achievements/", icon: icons.trophy, sectionId: "achievements" },
   { id: "quests", label: "Quests", short: "Quests", href: "quests/", icon: icons.quest, sectionId: "quests" },
@@ -121,7 +122,7 @@ const EXPLORE_GROUPS = [
     id: "community",
     label: "Community",
     icon: icons.users,
-    pageIds: ["leaderboards", "month-one", "guilds", "wars", "pvp", "world-bosses"]
+    pageIds: ["leaderboards", "roll-counts", "month-one", "guilds", "wars", "pvp", "world-bosses"]
   },
   {
     id: "activities",
