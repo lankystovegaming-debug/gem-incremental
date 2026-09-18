@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Watch Gem Incremental's all-time roll leader climb in real time.">
+
+  <title>Live Roll Count · Gem Incremental</title>
+
+  <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+  <link rel="preload" as="font" type="font/woff2" href="../src/assets/fonts/exo2-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="../src/styles/app.css">
+  <link rel="stylesheet" href="./roll-counts.css">
+
+  <script>
+    (function () {
+      try {
+        var mode = localStorage.getItem("gemIncremental.theme.mode");
+        var accent = localStorage.getItem("gemIncremental.theme.accent");
+        var allowedModes = ["light", "dark", "neon", "gradient", "ocean", "forest", "sunset", "ice", "aurora", "graphite"];
+
+        if (allowedModes.indexOf(mode) !== -1) {
+          document.documentElement.setAttribute("data-theme", mode);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+
+        document.documentElement.setAttribute(
+          "data-accent",
+          ["indigo", "emerald", "amber", "rose", "cyan"].indexOf(accent) !== -1 ? accent : "indigo"
+        );
+      } catch (error) {
+        /* localStorage unavailable — defaults apply. */
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <main class="app-main roll-counts-page">
+    <div class="page-head roll-counts-head">
+      <div class="page-head__title">
+        <span class="eyebrow">Live leaderboard</span>
+        <h1>Roll Count</h1>
+        <p class="page-head__sub">Every roll. One champion. Watch the all-time leader keep climbing.</p>
+      </div>
+
+      <a class="btn btn--ghost" href="../leaderboards/">Full leaderboards</a>
+    </div>
+
+    <section class="counter-stage" aria-labelledby="counterHeading">
+      <div class="counter-stage__glow" aria-hidden="true"></div>
+      <div class="counter-stage__grid" aria-hidden="true"></div>
+
+      <div class="live-pill">
+        <span class="live-pill__dot" aria-hidden="true"></span>
+        Live roll total
+      </div>
+
+      <a class="champion" id="champion" href="../leaderboards/">
+        <div class="champion__avatar" id="championAvatar" aria-hidden="true">
+          <span>?</span>
+        </div>
+        <div class="champion__copy">
+          <span class="champion__rank">#1 highest roller</span>
+          <h2 id="counterHeading">Finding the current leader…</h2>
+        </div>
+      </a>
+
+      <div class="roll-counter" id="rollCounter" aria-hidden="true">
+        <span class="roll-counter__loading">—</span>
+      </div>
+      <p class="sr-only" id="rollCounterAnnouncement" aria-live="polite"></p>
+
+      <div class="counter-caption">
+        <span>Total lifetime rolls</span>
+        <span class="counter-caption__divider" aria-hidden="true"></span>
+        <span id="refreshLabel">Connecting…</span>
+      </div>
+
+      <div class="counter-status" id="counterStatus" role="status"></div>
+    </section>
+
+    <section class="counter-details" aria-label="About this counter">
+      <article class="detail-card">
+        <span class="detail-card__icon" aria-hidden="true">◆</span>
+        <div>
+          <h2>Server verified</h2>
+          <p>The count comes from the same authoritative data as the in-game leaderboard.</p>
+        </div>
+      </article>
+
+      <article class="detail-card">
+        <span class="detail-card__icon" aria-hidden="true">↻</span>
+        <div>
+          <h2>Always catching up</h2>
+          <p>The display checks for a new leader and roll total every 30 seconds.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module">
+    import { mountShell } from "../src/ui/shell.js";
+    import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+
+    const shell = mountShell({ page: "roll-counts", base: "../" });
+
+    loadCloudPlayerState().then((state) => {
+      if (state) {
+        shell.setWallet(state.money);
+      }
+    });
+  </script>
+  <script type="module" src="./roll-counts.js"></script>
+</body>
+</html>
