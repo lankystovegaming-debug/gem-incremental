@@ -40,18 +40,18 @@ assert.match(roll, /p_lease_id: rollLeaseId/);
 assert.doesNotMatch(roll, /next_roll_at\.is\.null,next_roll_at\.lte/);
 
 const backgroundBlock = roll.match(
-  /const backgroundPostCommitPromise = Promise\.all\(\[[\s\S]*?else EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\);/,
+  /const consolidatedBackgroundPromise = [\s\S]*?else registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\);/,
 )?.[0] ?? '';
 const responseBlock = roll.match(
   /const \[\s*lifetimeStats,[\s\S]*?globalEventRollPromise\s*\n\s*\]\);/,
 )?.[0] ?? '';
 
 assert.ok(backgroundBlock, 'Roll should register post-commit background work');
-assert.match(backgroundBlock, /progressionPromise/);
-assert.match(backgroundBlock, /bestRollHistoryPromise/);
-assert.match(backgroundBlock, /consumeBoostPromise/);
-assert.doesNotMatch(backgroundBlock, /lifetimeStatsPromise,/);
-assert.doesNotMatch(backgroundBlock, /mutationCombinationPromise/);
+assert.match(backgroundBlock, /p_phase: "background"/);
+assert.match(backgroundBlock, /roll_finish_bookkeeping_background_ms/);
+assert.match(backgroundBlock, /registerRollWaitUntil/);
+assert.match(backgroundBlock, /lifetimeStatsPromise/);
+assert.match(backgroundBlock, /mutationCombinationPromise/);
 
 assert.ok(responseBlock, 'Roll should retain a small response-critical wait set');
 assert.match(responseBlock, /lifetimeStatsPromise/);

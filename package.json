@@ -38,6 +38,7 @@
     "test:mobile-p0-p1": "node tests/mobile-p0-p1-ui-test.mjs",
     "test:cutscenes": "node tests/cutscene-reliability-test.mjs",
     "test:deepcore": "node tests/deepcore-project-2026-test.mjs",
+    "test:deep-sea": "node tests/deep-sea-event-test.mjs && node tests/deep-sea-database-test.mjs",
     "test:stacked-relics": "node tests/stacked-relic-balances-test.mjs"
   },
   "devDependencies": {

@@ -47,6 +47,9 @@ assert.equal(rarityTier(99999999).id, "cosmic");
 assert.equal(rarityTier(100000000).id, "transcendent");
 assert.equal(rarityTier(999999999).id, "transcendent");
 assert.equal(rarityTier(1000000000).id, "secret");
+assert.equal(rarityTier(2000,"The Bottom").id, "anomalous");
+assert.equal(rarityTier(100,"Hadopelagic").id, "anomalous");
+assert.equal(rarityTier(2000,"Anything Else").id, "legendary");
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),

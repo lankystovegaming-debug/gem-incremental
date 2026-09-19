@@ -52,7 +52,7 @@ assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy"
 assert.equal(getCutsceneDefinition({ rarity: 666_666_666, gemName: "one singular grain of sand" }).theme, "singular-sand");
 assert.equal(cutsceneDuration({ rarity: 666_666_666, gemName: "one singular grain of sand", mobile: false, reducedMotion: false }), 15_000);
 assert.deepEqual(BESPOKE_CUTSCENES["one singular grain of sand"].primitives, ["sand"]);
-assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 43, "the locked scenes, five Deepcore scenes, and legacy XY alias must be registered");
+assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 56, "the locked scenes, Deepcore and Deep Sea scenes, and legacy XY alias must be registered");
 assert.equal(cutsceneDuration({ rarity: 145_000_000, gemName: "Deepcore Geode", mobile: false, reducedMotion: false }), 12_500);
 assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Crystalline Singularity", mobile: false, reducedMotion: false }), 13_500);
 assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Ontological Shard", mobile: false, reducedMotion: false }), 13_500);
@@ -71,13 +71,28 @@ for (const definition of deepcoreScenes) {
   assert.ok(definition.beats.every((beat) => !/^(PRESSURE|CONVERGENCE|ABSENCE|REDACTED|HEARTBEAT)$/.test(beat)));
 }
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
-  assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
+  const isDeepSea = definition.theme.startsWith("deep-sea-");
+  assert.ok(definition.duration >= (isDeepSea ? 4_000 : 11_000) && definition.duration <= 20_000, `${name} must retain appropriate pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
   if (definition.theme !== "xy-heart") {
     assert.ok(definition.primitives.length > 0, `${name} must opt into a visual identity`);
   }
-  assert.ok(definition.duration * (1 - definition.revealAt) >= 2_000, `${name} must leave a readable aftermath`);
+  assert.ok(definition.duration * (1 - definition.revealAt) >= (isDeepSea && definition.duration < 8_000 ? 1_200 : 2_000), `${name} must leave a readable aftermath`);
 }
+const deepSeaScenes = [
+  "prismarine fragment", "ancient coin", "pearl", "pearl of the sea", "nautilii",
+  "sunken treasure", "abyssal coral", "trenchstone", "coral", "leviathan scale",
+  "heart of the sea", "neptune's tear", "soul of the sea god"
+].map((name) => BESPOKE_CUTSCENES[name]);
+assert.equal(new Set(deepSeaScenes.map((definition) => definition.primitives.join(","))).size, deepSeaScenes.length, "every Deep Sea discovery must own a unique visual primitive");
+assert.ok(deepSeaScenes.slice(0, 6).reduce((total, definition) => total + definition.beats.length, 0) <= 1, "early Deep Sea discoveries must stay visually simple and text-light");
+assert.ok(deepSeaScenes.every((definition) => definition.focus === false), "Deep Sea scenes must not reuse the centered pre-reveal specimen");
+assert.ok(deepSeaScenes.every((definition) => definition.worldExitAt < definition.revealAt), "Deep Sea world assets must exit before the result card");
+const deepSeaFinales = deepSeaScenes.slice(-4);
+assert.equal(new Set(deepSeaFinales.map((definition) => definition.cameraMotion)).size, 4, "the four rarest Deep Sea scenes need distinct camera movement");
+assert.ok(deepSeaScenes.slice(1).every((definition) => definition.revealPosition === "center"), "Ancient Coin onward must finish on a centred gem reveal");
+assert.equal(BESPOKE_CUTSCENES["neptune's tear"].secret, true, "Neptune's Tear must reveal as a secret");
+assert.equal(BESPOKE_CUTSCENES["soul of the sea god"].revealPosition, "center", "the final Deep Sea gem must reveal at centre stage");
 assert.ok(
   Object.values(BESPOKE_CUTSCENES).filter((definition) => definition.primitives.includes("reticle")).length <= 3,
   "reticles must be an occasional scene primitive, not a cinematic watermark"
@@ -220,7 +235,7 @@ assert.deepEqual(
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 36);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 49);
 for (const theme of deepcoreThemes) {
   assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
 }

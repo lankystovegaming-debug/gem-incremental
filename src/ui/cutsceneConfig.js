@@ -16,6 +16,19 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
+  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"upper-right",revealAt:.66,worldExitAt:.63}),
+  "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"center",revealAt:.67,worldExitAt:.64}),
+  pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"center",revealAt:.68,worldExitAt:.65}),
+  "pearl of the sea": scene(5_800,"deep-sea-grand-pearl",[],{focus:false,quiet:true,primitives:["sea-grand-shell"],revealPosition:"center",revealAt:.72,worldExitAt:.69}),
+  nautilii: scene(5_800,"deep-sea-nautilus",[],{focus:false,quiet:true,primitives:["sea-nautilus"],revealPosition:"center",revealAt:.72,worldExitAt:.69}),
+  "sunken treasure": scene(7_500,"deep-sea-treasure",["VESSEL LOCATED"],{focus:false,primitives:["sea-wreck"],textPosition:"upper-left",revealPosition:"center",revealAt:.76,worldExitAt:.73}),
+  "abyssal coral": scene(10_500,"deep-sea-coral",[],{focus:false,quiet:true,primitives:["sea-bleaching-reef"],revealPosition:"center",revealAt:.8,worldExitAt:.77}),
+  trenchstone: scene(11_500,"deep-sea-trench",["−6,000 m","PRESSURE // CRITICAL"],{focus:false,theatre:true,primitives:["sea-trench-descent"],textPosition:"depth-hud",revealPosition:"center",revealAt:.82,worldExitAt:.79}),
+  coral: scene(12_000,"deep-sea-golden-coral",[],{focus:false,theatre:true,primitives:["sea-golden-reef"],revealPosition:"center",revealAt:.83,worldExitAt:.8}),
+  "leviathan scale": scene(13_000,"deep-sea-leviathan",["DO NOT LOOK UP"],{focus:false,theatre:true,quiet:true,cameraMotion:"track",primitives:["sea-leviathan-pass"],textPosition:"lower-right",revealPosition:"center",revealAt:.84,worldExitAt:.81}),
+  "heart of the sea": scene(14_500,"deep-sea-heart",[],{focus:false,theatre:true,quiet:true,cameraMotion:"plunge",primitives:["sea-heart-impact"],revealPosition:"center",revealAt:.86,worldExitAt:.83}),
+  "neptune's tear": scene(16_000,"deep-sea-neptune",["A GOD'S TEAR DOES NOT DRY"],{focus:false,secret:true,theatre:true,cameraMotion:"dolly",primitives:["sea-neptune-palace"],textPosition:"upper-right",revealPosition:"center",revealAt:.875,worldExitAt:.845}),
+  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"center",revealAt:.888,worldExitAt:.858}),
   "deepcore geode": scene(12_500, "deepcore-pressure", [
     "DEPTH 11,842 m", "LITHOSTATIC LOAD // 4.7 GPa", "THE ROCK OPENED FROM WITHIN"
   ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82 }),
@@ -83,8 +96,9 @@ export function resonanceIntensity(rarity) {
 export function getCutsceneDefinition({ rarity, gemName } = {}) {
   const value = Number(rarity) || 0;
   const name = normalizeCutsceneName(gemName);
+  if (BESPOKE_CUTSCENES[name]) return BESPOKE_CUTSCENES[name];
   if (value >= 100_000_000) {
-    return BESPOKE_CUTSCENES[name] ?? scene(13_000, "transcendent", [], { primitives: ["transcendent"] });
+    return scene(13_000, "transcendent", [], { primitives: ["transcendent"] });
   }
   if (value >= 10_000_000) {
     const intensity = resonanceIntensity(value);

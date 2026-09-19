@@ -22,6 +22,7 @@ export function gemFilterDecision(settings, specimen, discovered) {
 
 // Pure rules shared with the browser. Only the server supplies RNG and saved state.
 export const PICKAXE_STATS = {
+ 'neptune':[30,.7,1.5,1.2,1.2],
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'impossible-pickaxe':[1,1,1,1,1],
@@ -1123,6 +1124,20 @@ function rollGemWithPickaxePassives(
   return pool[pool.length - 1];
 }
 
+export function rollDeepSeaGem(catalog: any[], luck: number, rarityDivisor = 1, random = Math.random) {
+  const ordered = (catalog ?? []).map((row: any) => ({
+    name: String(row.name), rarity: Number(row.rarity), baseWeight: Number(row.base_weight),
+    valuePerGram: Number(row.value_per_gram), affectedByLuck: true,
+    metadata: { deepSea: true, description: row.description }
+  })).sort((a: any, b: any) => b.rarity - a.rarity);
+  const water = ordered.find((gem: any) => gem.name === "Water") ?? { name:"Water",rarity:1,baseWeight:1000,valuePerGram:0.00000324,affectedByLuck:true,metadata:{deepSea:true} };
+  for (const gem of ordered) {
+    if (gem.name === "Water") continue;
+    if (random() < Math.min(1, Math.max(0, luck) * Math.max(1, rarityDivisor) / gem.rarity)) return gem;
+  }
+  return water;
+}
+
 
 // =========================================================
 // MUTATION RNG
@@ -1322,6 +1337,8 @@ export function getLateGameFinalWeightFactor(
 
 type BatchExecution = {
   batchSize: number;
+  pool: "normal" | "deep_sea";
+  abyssalPotion: boolean;
   requestStartedAt: Date;
   leaseId?: string;
   firstGenuineRoll?: number;
@@ -1334,6 +1351,7 @@ type BatchExecution = {
   pets?: any[];
   equipmentBonusRows?: any[];
   deepcoreContext?: any | null;
+  deepSeaContext?: any | null;
   timing?: RollInvocationTiming;
 };
 
@@ -1464,9 +1482,9 @@ async function executeSingleRoll(
         );
       }
 
-      // A displayed batch is one effectively-simultaneous action. Every
-      // timed availability/buff check uses this shared request-start instant.
-      const now = batchExecution.requestStartedAt;
+      // Deep Sea enforces the event boundary for every committed subroll.
+      // Ordinary displayed batches retain their effectively-simultaneous time.
+      const now = batchExecution.pool === "deep_sea" ? new Date() : batchExecution.requestStartedAt;
 
       // One service-only RPC supplies the full authoritative pre-roll
       // snapshot. Catalog rows are returned only when their trigger-maintained
@@ -1508,6 +1526,19 @@ async function executeSingleRoll(
         Number(deepcoreEffects?.[id]?.rollsRemaining ?? 0) > batchIndex;
       const deepcoreTimedActive = (id: string) =>
         Date.parse(String(deepcoreEffects?.[id]?.expiresAt ?? "")) > now.getTime();
+
+      let deepSeaContext = batchExecution.deepSeaContext;
+      if (batchExecution.pool === "deep_sea" || deepSeaContext === undefined) {
+        const { data, error } = await ctx.supabaseAdmin.rpc("deep_sea_get_roll_context", { p_player_id: playerId });
+        if (error) {
+          if (batchExecution.pool === "deep_sea") return jsonResponse({ error:"deep_sea_unavailable", message:error.message }, { status:503 });
+          deepSeaContext = null;
+        } else deepSeaContext = data;
+        if (batchExecution.pool !== "deep_sea") batchExecution.deepSeaContext = deepSeaContext;
+      }
+      if (batchExecution.pool === "deep_sea" && deepSeaContext?.phase !== "active") {
+        return jsonResponse({ error:"deep_sea_event_ended", phase:deepSeaContext?.phase ?? "unavailable" }, { status:409 });
+      }
 
 
       // Load pet definitions and the two new equipment stat columns once per
@@ -1553,6 +1584,9 @@ async function executeSingleRoll(
             status: 400
           }
         );
+      }
+      if (batchExecution.pool === "deep_sea" && Number(player.money ?? 0) < 5) {
+        return jsonResponse({ error:"insufficient_funds", required:5 }, { status:409 });
       }
 
       // =====================================================
@@ -1684,11 +1718,11 @@ async function executeSingleRoll(
 
 
       if (
-        currentInventoryCount >=
-        effectiveInventoryCapacity ||
-        (batchIndex === 0 &&
-          batchExecution.batchSize > 1 &&
-          currentInventoryCount + batchExecution.batchSize > effectiveInventoryCapacity)
+        batchExecution.pool !== "deep_sea" && (
+          currentInventoryCount >= effectiveInventoryCapacity ||
+          (batchIndex === 0 && batchExecution.batchSize > 1 &&
+            currentInventoryCount + batchExecution.batchSize > effectiveInventoryCapacity)
+        )
       ) {
         return jsonResponse(
           {
@@ -1840,6 +1874,11 @@ async function executeSingleRoll(
       let weightMultiplier = equipmentStats.weightMultiplier;
       let rollBulk = Number(equipmentStats.rollBulk ?? 0);
       let petLuck = Number(equipmentStats.petLuck ?? 0);
+      const deepSeaDiverActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.diver_until ?? "")) > now.getTime();
+      const deepSeaTidalActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.tidal_rush_until ?? "")) > now.getTime();
+      const deepSeaPressureActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.pressure_until ?? "")) > now.getTime();
+      if (buffsEnabled && deepSeaTidalActive) rollSpeed *= 1.5;
+      if (buffsEnabled && deepSeaPressureActive) { weightLuck *= 2; weightMultiplier *= 1.5; }
       if (!allIn && deepcoreChargeActive("deepcore-catalyst")) weightLuck *= 1.5;
       if (!allIn && deepcoreTimedActive("pressurized-catalyst")) {
         weightLuck *= 2;
@@ -2507,12 +2546,39 @@ async function executeSingleRoll(
         luckBreakdown.world *= impossibleProc.luck;
         luckBreakdown.final = luck;
       }
+      if (buffsEnabled && deepSeaDiverActive) {
+        luck *= 1.5;
+        luckBreakdown.world *= 1.5;
+        luckBreakdown.final = luck;
+      }
+      let abyssalExclusiveGem: any = null;
+      if (batchExecution.abyssalPotion) {
+        if (random01() < 1 / 2000) abyssalExclusiveGem = { name:"The Bottom",rarity:2000,baseWeight:11000,valuePerGram:100000,affectedByLuck:false,metadata:{abyssalPotion:true,exclusive:true} };
+        else if (random01() < 1 / 100) abyssalExclusiveGem = { name:"Hadopelagic",rarity:100,baseWeight:6000,valuePerGram:850,affectedByLuck:false,metadata:{abyssalPotion:true,exclusive:true} };
+        else {
+          luck += 100000;
+          luckBreakdown.oneRoll += 100000;
+          luckBreakdown.final = luck;
+        }
+      }
       const uncappedLuck = luck;
       const maxLuck = sanitizeMaxLuck(rollSettings.maxLuck);
       luck = capGemLuck(luck, maxLuck);
       Object.assign(luckBreakdown, {maxLuck, used:luck});
       const announcedLuck = luck;
-      const rollEquipmentGem = () => rollGemWithPickaxePassives(
+      if (batchExecution.pool === "normal" && deepSeaContext?.state?.legacy_gem_name) {
+        const legacy = (deepSeaContext.gems ?? []).find((row: any) => row.name === deepSeaContext.state.legacy_gem_name);
+        if (legacy && !gems.some((row: any) => row.name === legacy.name)) gems = [...gems, {
+          name: String(legacy.name), rarity: Number(legacy.rarity), baseWeight: Number(legacy.base_weight),
+          valuePerGram: Number(legacy.value_per_gram), affectedByLuck: true, metadata: { deepSeaLegacy: true }
+        }];
+      }
+      const neptuneDeepSeaDivisor = equipmentContext.id === "neptune"
+        ? (Number(deepSeaContext?.state?.offering_charges ?? 0) > 0 ? 20 : 10)
+        : 1;
+      const rollEquipmentGem = () => batchExecution.pool === "deep_sea"
+        ? rollDeepSeaGem(deepSeaContext?.gems ?? [], luck, neptuneDeepSeaDivisor, random01)
+        : rollGemWithPickaxePassives(
         uncappedLuck,
         discoveredGemNames,
         buffsEnabled ? geologistMultiplier : 1,
@@ -2530,7 +2596,7 @@ async function executeSingleRoll(
       const allRelicChanceMultiplier = !allIn && enchantedRelicBoostRollsBefore > 0 ? 1.1 : 1;
       const ancientRelicChanceMultiplier = !allIn && ancientRelicBoostRollsBefore > 0 ? 1.3 : 1;
 
-      let gem = (equipmentContext.id === 'money-pickaxe' ? null : rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier)) ?? rollEquipmentGem();
+      let gem = abyssalExclusiveGem ?? ((batchExecution.pool === "normal" && equipmentContext.id !== 'money-pickaxe' ? rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier) : null) ?? rollEquipmentGem());
 
       // Pets use a separate luck layer. Normal Luck never affects this roll;
       // only pet-luck equipment and the pet-luck boosts above can improve it.
@@ -2789,10 +2855,12 @@ async function executeSingleRoll(
       }
 
       if (
-        nextMistyRolls !== mistyBoostRollsBefore ||
-        nextMistyStacks !== mistyBoostStacksBefore ||
-        nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
-        nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
+        batchExecution.pool !== "deep_sea" && (
+          nextMistyRolls !== mistyBoostRollsBefore ||
+          nextMistyStacks !== mistyBoostStacksBefore ||
+          nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
+          nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
+        )
       ) {
         recordRollPhase(batchExecution, batchIndex, "rng_js_ms", rngJsStartedAt);
         const { error: mutationEffectStateError } = await ctx.supabaseAdmin
@@ -2869,8 +2937,37 @@ async function executeSingleRoll(
         { ...specimen, effectiveRarity },
         discoveredGemNames
       );
+      if (batchExecution.abyssalPotion) {
+        const { error } = await ctx.supabaseAdmin.rpc("deep_sea_consume_abyssal", { p_player_id:playerId });
+        if (error) return jsonResponse({ error:String(error.message).includes("not_owned") ? "not_owned" : "abyssal_consume_failed" }, { status:409 });
+      }
+      let deepSeaCommit: any = null;
+      const deepSeaFirstDiscovery = batchExecution.pool === "deep_sea" && !discoveredGemNames.has(gem.name);
+      const neptuneNeeds = new Set((deepSeaContext?.neptuneNeeded ?? []).map(String));
+      const depthsNeeds = new Set((deepSeaContext?.depthsNeeded ?? []).map(String));
+      const deepSeaPotentialFeed = batchExecution.pool === "deep_sea" && !deepSeaFirstDiscovery && (
+        (deepSeaContext?.state?.neptune_auto_feed === true && neptuneNeeds.has(gem.name)) ||
+        (deepSeaContext?.state?.depths_auto_feed === true && depthsNeeds.has(gem.name))
+      );
+      const commitDeepSea = async (inventoryRequired: boolean) => {
+        if (batchExecution.pool !== "deep_sea" || deepSeaCommit) return deepSeaCommit;
+        const { data, error } = await ctx.supabaseAdmin.rpc("deep_sea_commit_roll", {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_specimen: specimen, p_neptune: equipmentContext.id === "neptune", p_inventory_required: inventoryRequired
+        });
+        if (error) {
+          const code = String(error.message ?? "deep_sea_commit_failed").match(/[a-z][a-z0-9_]+/)?.[0] ?? "deep_sea_commit_failed";
+          throw Object.assign(new Error(code), { deepSeaCode: code });
+        }
+        deepSeaCommit = data;
+        return data;
+      };
+      if (deepSeaPotentialFeed) {
+        try { await commitDeepSea(false); }
+        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
+      }
       let deepcoreAutoContribution: any = null;
-      if (deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true) {
+      if (batchExecution.pool === "normal" && deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true) {
         const { data: contribution, error: contributionError } = await ctx.supabaseAdmin.rpc(
           "deepcore_auto_contribute_roll",
           { p_player_id: playerId, p_specimen: specimen }
@@ -2879,9 +2976,10 @@ async function executeSingleRoll(
         else deepcoreAutoContribution = contribution;
       }
       const deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
+      const deepSeaDeposited = deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
       const bundleRouteStartedAt = timingNow(batchExecution);
-      const bundleRoutePromise = deepcoreDeposited
-        ? Promise.resolve({ data: { status: "deepcore", keepInInventory: false }, error: null })
+      const bundleRoutePromise = deepcoreDeposited || deepSeaDeposited
+        ? Promise.resolve({ data: { status: deepSeaDeposited ? "deep-sea" : "deepcore", keepInInventory: false }, error: null })
         : filterDecision.keep
         ? Promise.resolve({
           data: { status: "kept", keepInInventory: true, reason: filterDecision.reason },
@@ -2906,7 +3004,7 @@ async function executeSingleRoll(
         console.error("Bundle routing failed:", bundleRouteError);
         return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
       }
-      const bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited;
+      const bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited || deepSeaDeposited;
       const bundleKeepInInventory = bundleRoute.keepInInventory === true;
 
       if (rollContext.activeAutoCraft && !bundleDeposited && !bundleKeepInInventory) {
@@ -2927,6 +3025,22 @@ async function executeSingleRoll(
           autoCraftRecipeId = autoCraftResult.recipeId ?? null;
           autoCraftRequirementIndex = autoCraftResult.requirementIndex ?? null;
         }
+      }
+
+      if (batchExecution.pool === "deep_sea" && !deepSeaCommit) {
+        const inventoryRequired = !bundleDeposited && (!autoDeposited || autoConserved) && !relicDrop;
+        try { await commitDeepSea(inventoryRequired); }
+        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
+      }
+      if (batchExecution.pool === "deep_sea" && (
+        nextMistyRolls !== mistyBoostRollsBefore || nextMistyStacks !== mistyBoostStacksBefore ||
+        nextAncientRelicRolls !== ancientRelicBoostRollsBefore || nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
+      )) {
+        const { error } = await ctx.supabaseAdmin.from("players").update({
+          misty_mutation_boost_rolls:nextMistyRolls, misty_mutation_boost_stacks:nextMistyStacks,
+          ancient_relic_boost_rolls:nextAncientRelicRolls, enchanted_relic_boost_rolls:nextEnchantedRelicRolls
+        }).eq("id",playerId);
+        if (error) console.error("Deep Sea mutation effect persistence failed:",error);
       }
 
 
@@ -3567,6 +3681,15 @@ async function executeSingleRoll(
           objective: deepcoreAutoContribution?.objective ?? null,
           rollCard: deepcoreContext?.rollCard === true
         },
+        deepSea: batchExecution.pool === "deep_sea" ? {
+          pool: "deep_sea",
+          tideTokensAwarded: Number(deepSeaCommit?.awarded ?? 0),
+          tideTokens: Number(deepSeaCommit?.tideTokens ?? 0),
+          autoFed: deepSeaCommit?.fed ?? null,
+          depthStep: Number(deepSeaCommit?.depthStep ?? deepSeaContext?.state?.depth_step ?? 0),
+          firstDiscoveryProtected: deepSeaCommit?.firstDiscovery === true,
+          offeringConsumed: deepSeaCommit?.offeringConsumed === true
+        } : null,
 
         lifetimeStats:
           lifetimeStats ??
@@ -3623,9 +3746,14 @@ export default {
       if (batchSize == null) {
         return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
       }
+      const pool = requestBody?.pool === "deep_sea" ? "deep_sea" : "normal";
+      const abyssalPotion = requestBody?.abyssalPotion === true;
+      if (abyssalPotion && (batchSize !== 1 || pool !== "normal")) return jsonResponse({ error:"invalid_abyssal_roll" }, { status:400 });
 
       const execution: BatchExecution = {
         batchSize,
+        pool,
+        abyssalPotion,
         requestStartedAt: new Date(),
         timing: timingSampled ? createRollInvocationTiming(invocationTimingStartedAt) : undefined
       };

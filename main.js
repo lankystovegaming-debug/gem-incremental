@@ -525,7 +525,7 @@ function appendBatchResults(results, outcomes) {
       `;
     }
 
-    const tier = rarityTier(Number(result?.gem?.rarity ?? 0));
+    const tier = rarityTier(Number(result?.gem?.rarity ?? 0), result?.gem?.name);
     const mutationIds = Array.isArray(result?.mutationIds) ? result.mutationIds : [];
     const outcome = outcomes.get(result);
     return `
@@ -556,7 +556,7 @@ function appendBatchResults(results, outcomes) {
 }
 
 function renderRoll(data, outcome) {
-  const tier = rarityTier(data.gem.rarity);
+  const tier = rarityTier(data.gem.rarity, data.gem.name);
   const rarity = Number(data.gem.rarity ?? 0);
   const isRelic = data.gem.dropType === "relic";
   const settings = getSettings();
@@ -674,7 +674,7 @@ function renderRoll(data, outcome) {
 }
 
 function addHistory(data, note) {
-  const tier = rarityTier(data.gem.rarity);
+  const tier = rarityTier(data.gem.rarity, data.gem.name);
   const liveMutations = Array.isArray(data?.mutations)
     ? data.mutations.filter((mutation) => mutation?.id)
     : (data?.mutation?.id ? [data.mutation] : []);
@@ -771,7 +771,7 @@ async function performRoll() {
 
   setButton({ mode: "rolling", label: impossibleButtonJoke() ?? "Rolling", disabled: true });
 
-  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
+  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
 
   rollInFlight = false;
 
@@ -780,6 +780,13 @@ async function performRoll() {
   // -------------------------------------------------------
 
   if (error) {
+    if (error.code === "deep_sea_event_ended" || error.details?.cause?.error === "deep_sea_event_ended") {
+      const wasAutoRolling = getSettings().autoRoll;
+      await updateSettings({ autoRoll: false, rollPool: "normal" });
+      if (wasAutoRolling) notify.warning("The tide has receded", "Deep Sea Auto Roll stopped and your roll pool returned to Normal.");
+      showReady();
+      return;
+    }
     if (error.code === "cooldown" && error.details?.nextRollAt) {
       startCooldown(new Date(error.details.nextRollAt).getTime());
 
@@ -863,7 +870,7 @@ async function performRoll() {
     automationStats.earned += Number(outcome?.soldValue ?? 0);
     if (outcome?.type === "auto-sold") automationStats.sold += 1;
     else if (["auto-kept", "kept"].includes(outcome?.type)) automationStats.kept += 1;
-    recordSessionRoll(result, { ...outcome, tier: rarityTier(result.gem.rarity).id });
+    recordSessionRoll(result, { ...outcome, tier: rarityTier(result.gem.rarity, result.gem.name).id });
     addHistory(result, outcome.note);
 
     // Every result announces independently; batching must not collapse rare
@@ -950,7 +957,7 @@ async function resolveOutcome(data) {
     };
   }
 
-  const tier = rarityTier(data.gem.rarity);
+  const tier = rarityTier(data.gem.rarity, data.gem.name);
 
   if (!data.gemFilter && shouldAutoKeep(data)) {
     return {

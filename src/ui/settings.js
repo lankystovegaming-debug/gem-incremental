@@ -37,6 +37,7 @@ export const GEM_REALISM_LEVELS = [
 const DEFAULTS = {
   maxLuck: null,
   batchSize: 1,
+  rollPool: "normal",
   autoRoll: false,
   autoSell: false,
   enableBuffs: true, discoveryKeep: true, discoveryKeepRarity: 10000, gemFilter: {},
@@ -72,7 +73,8 @@ function isLegacyUnknownSetting(error) {
 }
 
 async function persistSettingsPatch(patch) {
-  const { contentFilterLevel, ...qolPatch } = patch;
+  const { contentFilterLevel, rollPool, ...qolPatch } = patch;
+  const localPatch = rollPool === undefined ? {} : { rollPool };
   let result = { data: state, error: null };
   const keys = Object.keys(qolPatch);
   const hasNavigationSettings = keys.some(key => NAVIGATION_SETTING_KEYS.has(key));
@@ -102,7 +104,9 @@ async function persistSettingsPatch(patch) {
     result.data = { ...(result.data ?? state), ...localNavigation };
   }
 
-  if (result.error || contentFilterLevel === undefined) return result;
+  if (result.error) return result;
+  result.data = { ...(result.data ?? state), ...localPatch };
+  if (contentFilterLevel === undefined) return result;
 
   const moderationResult = await supabase.rpc('update_content_filter_level', {
     p_level: normalizeContentFilterLevel(contentFilterLevel)
@@ -116,11 +120,12 @@ async function persistSettingsPatch(patch) {
       || /could not find the function|does not exist/i.test(String(moderationResult.error.message ?? ''));
     if (!missingFunction) return moderationResult;
     return {
-      data: { ...(result.data ?? state), contentFilterLevel: normalizeContentFilterLevel(contentFilterLevel) },
+      data: { ...result.data, contentFilterLevel: normalizeContentFilterLevel(contentFilterLevel) },
       error: null
     };
   }
 
+  moderationResult.data = { ...(moderationResult.data ?? result.data), ...localPatch };
   return moderationResult;
 }
 
@@ -175,6 +180,7 @@ function sanitise(value) {
     ...value,
     maxLuck: sanitizeMaxLuck(value.maxLuck),
     batchSize: normalizeUiBatchSize(value.batchSize),
+    rollPool: value.rollPool === "deep_sea" ? "deep_sea" : "normal",
     enableBuffs: value.enableBuffs !== false,
     discoveryKeep: value.discoveryKeep !== false,
     discoveryKeepRarity: Math.min(Number.MAX_SAFE_INTEGER, Math.max(1, Math.floor(Number(value.discoveryKeepRarity) || 10000))),

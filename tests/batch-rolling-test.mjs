@@ -49,7 +49,7 @@ assert.match(edge, /if \(batchExecution\.batchSize > 1\) await backgroundPostCom
 assert.match(edge, /claim_equipment_roll_batch/);
 assert.match(edge, /finally \{[\s\S]*release_server_roll/);
 assert.match(settings, /batchSize: normalizeUiBatchSize/);
-assert.match(main, /invokeFunction\("roll", \{ batchSize: getSettings\(\)\.batchSize \}\)/);
+assert.match(main, /invokeFunction\("roll", \{ batchSize: getSettings\(\)\.batchSize, pool: getSettings\(\)\.rollPool \}\)/);
 assert.match(main, /totalRolls: view\.totalRolls/);
 assert.match(main, /appendBatchResults\(results, outcomes\)/);
 assert.match(main, /All \$\{results\.length\} batch results/);

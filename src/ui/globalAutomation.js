@@ -136,7 +136,7 @@ async function processRoll(data) {
   if (!data) return;
 
   let outcome = "Stored in inventory";
-  let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0)).id };
+  let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0), data.gem?.name).id };
   if (data.bundle?.status === "deposited") {
     outcome = "Contributed to your Collection";
     sessionOutcome.type = "bundle-contributed";
@@ -187,8 +187,14 @@ async function run() {
       return;
     }
 
-    const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
+    const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
     if (error) {
+      if (error.code === "deep_sea_event_ended" || error.details?.cause?.error === "deep_sea_event_ended") {
+        const wasAutoRolling = getSettings().autoRoll;
+        await updateSettings({ autoRoll: false, rollPool: "normal" });
+        if (wasAutoRolling) notify.warning("The tide has receded", "Deep Sea Auto Roll stopped and your roll pool returned to Normal.");
+        return;
+      }
       if (error.code === "cooldown" && error.details?.nextRollAt) {
         schedule(Math.max(80, new Date(error.details.nextRollAt).getTime() - Date.now() + 40));
         return;
