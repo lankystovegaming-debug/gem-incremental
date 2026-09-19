@@ -22,9 +22,14 @@ assert.match(css, /prefers-reduced-motion: reduce/);
 assert.match(shell, /id: "roll-counts"/);
 
 // Global roll counter sits above the top roller's count and is fed by a
-// dedicated aggregate RPC.
+// dedicated aggregate RPC, polled on its own faster cadence and animated with
+// the same flip renderer as the top-roller counter.
 assert.match(html, /id="globalRollCount"/);
 assert.match(client, /supabase\.rpc\("get_global_roll_count"\)/);
+assert.match(client, /GLOBAL_REFRESH_INTERVAL_MS = 3_000/);
+assert.match(client, /globalTimer = window\.setInterval\(refreshGlobalCount, GLOBAL_REFRESH_INTERVAL_MS\)/);
+assert.match(client, /renderFlipDigits\(globalRollCount,/);
+assert.match(client, /renderFlipDigits\(rollCounter,/);
 assert.match(migration, /create or replace function public\.get_global_roll_count\(\)/);
 assert.match(migration, /grant execute on function public\.get_global_roll_count\(\) to anon, authenticated/);
 
