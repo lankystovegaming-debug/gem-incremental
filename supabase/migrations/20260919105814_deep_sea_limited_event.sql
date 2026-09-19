@@ -43,6 +43,12 @@ insert into public.deep_sea_gems(name,rarity,base_weight,value_per_gram,descript
 ('Neptune''s Tear',1000000000,50,2500000,'A single tear said to have fallen from Neptune himself. Even outside the ocean, it never seems to dry.',17),
 ('Soul of the Sea God',2500000000,2500,100000,'The depths fall silent around it. You have found something the ocean was never supposed to surrender.',18);
 
+-- Keep this disabled: it is an internal eligibility key for potion-only gems,
+-- not an event that the global scheduler may select.
+insert into public.global_event_definitions(event_key,name,icon,tier,duration_seconds,selection_weight,description,enabled,config)
+values('abyssal_potion','Abyssal Potion','🌊','legendary',60,1,'Internal eligibility key for gems obtainable only from an Abyssal Potion.',false,'{"internalTrigger":true}'::jsonb)
+on conflict(event_key) do update set name=excluded.name,description=excluded.description,enabled=false,config=excluded.config;
+
 insert into public.private_feature_gems(name,rarity,base_weight,value_per_gram,sort_order,enabled,metadata,description,affected_by_luck,special_gem,required_event_key)
 values
 ('Hadopelagic',100,6000,850,9398,true,'{"abyssalPotionExclusive":true}','Light has never reached this place. Neither were you supposed to. Obtained exclusively from an Abyssal Potion.',false,true,'abyssal_potion'),
