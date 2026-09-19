@@ -2357,8 +2357,13 @@ const ALERT_LABELS = {
   bank_deposit: "Bank deposit",
   admin_grant: "Admin grant",
   gain_spike: "Gain spike",
-  activity_burst: "Activity burst"
+  activity_burst: "Activity burst",
+  income_velocity: "Income velocity",
+  shared_ip_inflow: "Shared-IP inflow",
+  new_account_windfall: "New-account windfall"
 };
+
+let latestAlertsData = null;
 
 function alertWhen(iso) {
   if (!iso) return "—";
@@ -2392,25 +2397,78 @@ async function loadAlerts() {
     return;
   }
 
-  const alerts = data?.alerts ?? [];
+  latestAlertsData = data ?? {};
+  renderAlerts(latestAlertsData, { hours, minAmount });
+}
+
+function renderAlerts(data, { hours, minAmount }) {
+  const content = document.getElementById("alertsContent");
+  const summary = document.getElementById("alertsSummary");
+  if (!content) return;
+
+  const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+  const stats = data?.summary ?? {};
+  const severity = document.getElementById("alertsSeverity")?.value ?? "all";
+  const search = (document.getElementById("alertsSearch")?.value ?? "").trim().toLowerCase();
+  const filteredAlerts = alerts.filter((alert) => {
+    if (severity !== "all" && alert.severity !== severity) return false;
+    if (!search) return true;
+    return [alert.username, alert.ip, alert.type, alert.category, alert.subcategory]
+      .some((value) => String(value ?? "").toLowerCase().includes(search));
+  });
+
   if (summary) {
     summary.textContent =
-      `${formatCount(alerts.length)} alert${alerts.length === 1 ? "" : "s"} in the last ${hours}h · ` +
-      `${formatMoney(data?.totalInflow ?? 0)} total inflow`;
+      `${formatCount(stats.totalAlerts ?? alerts.length)} signal${(stats.totalAlerts ?? alerts.length) === 1 ? "" : "s"} in the last ${hours}h · ` +
+      `${formatMoney(data?.totalInflow ?? 0)} inflow · ${formatMoney(data?.totalOutflow ?? 0)} outflow`;
   }
 
-  if (!alerts.length) {
-    content.innerHTML = `<div class="empty"><p class="empty__title">No alerts</p><p>Nothing unusual in the last ${hours} hours above ${escapeHtml(formatMoney(minAmount))}.</p></div>`;
-    return;
-  }
+  const cards = [
+    ["Signals", stats.totalAlerts ?? alerts.length, "Review leads in this window"],
+    ["Critical / high", `${stats.critical ?? 0} / ${stats.high ?? 0}`, "Prioritize before medium signals"],
+    ["Players flagged", stats.uniquePlayers ?? 0, "Distinct accounts with a player signal"],
+    ["IPs involved", stats.uniqueIps ?? 0, "Shared networks need human review"]
+  ].map(([label, value, help]) => {
+    const displayValue = typeof value === "number" ? formatCount(value) : String(value);
+    return `<div class="admin-alert-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue)}</strong><small>${escapeHtml(help)}</small></div>`;
+  }).join("");
 
-  const rows = alerts.map((alert) => {
+  const timeline = Array.isArray(data?.timeline) ? data.timeline : [];
+  const maximumInflow = Math.max(1, ...timeline.map((point) => Number(point.inflow) || 0));
+  const timelineMarkup = timeline.length
+    ? timeline.slice(-24).map((point) => {
+      const amount = Number(point.inflow) || 0;
+      const height = Math.max(5, Math.round((amount / maximumInflow) * 100));
+      const label = new Date(point.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const title = `${label}: ${formatMoney(amount)} inflow, ${formatCount(point.events ?? 0)} events`;
+      return `<div class="admin-alert-bar" title="${escapeHtml(title)}"><i style="height:${height}%"></i><span>${escapeHtml(label)}</span></div>`;
+    }).join("")
+    : '<p class="admin-alerts-empty-note">No economy activity in this window.</p>';
+
+  const topPlayers = Array.isArray(data?.topPlayers) ? data.topPlayers : [];
+  const topPlayersMarkup = topPlayers.length
+    ? topPlayers.map((player) => `
+      <tr>
+        <td>${escapeHtml(player.username ?? "—")}</td>
+        <td>${escapeHtml(player.ip ?? "—")}</td>
+        <td class="admin-alert-amount">${escapeHtml(formatMoney(player.inflow ?? 0))}</td>
+        <td class="admin-alert-amount">${escapeHtml(formatMoney(player.net ?? 0))}</td>
+        <td>${escapeHtml(formatCount(player.events ?? 0))}</td>
+        <td>${player.playerId ? `<button class="btn btn--small" type="button" data-alert-inspect="${escapeHtml(player.playerId)}">Inspect</button>` : "—"}</td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="6">No player activity in this window.</td></tr>';
+
+  const rows = filteredAlerts.map((alert) => {
     const magnitude = alert.amount != null
       ? formatMoney(alert.amount)
       : `${formatCount(alert.events ?? 0)} events`;
     const detail = [
       alert.category ? escapeHtml(String(alert.category)) : null,
-      alert.events != null && alert.amount != null ? `${formatCount(alert.events)} events` : null
+      alert.subcategory ? escapeHtml(String(alert.subcategory)) : null,
+      alert.accounts != null ? `${formatCount(alert.accounts)} accounts` : null,
+      alert.events != null && alert.amount != null ? `${formatCount(alert.events)} events` : null,
+      alert.firstSeenAt ? `first seen ${escapeHtml(alertWhen(alert.firstSeenAt))}` : null
     ].filter(Boolean).join(" · ");
 
     return `
@@ -2422,16 +2480,24 @@ async function loadAlerts() {
         <td class="admin-alert-amount">${escapeHtml(magnitude)}</td>
         <td>${detail || "—"}</td>
         <td title="${escapeHtml(alert.at ?? "")}">${escapeHtml(alertWhen(alert.at))}</td>
+        <td>${alert.playerId ? `<button class="btn btn--small" type="button" data-alert-inspect="${escapeHtml(alert.playerId)}">Inspect</button>` : "—"}</td>
       </tr>`;
   }).join("");
 
   content.innerHTML = `
+    <div class="admin-alerts-disclaimer">Signals are evidence to review, not proof of cheating. Shared-IP matches can be legitimate households, schools, or mobile networks.</div>
+    <div class="admin-alert-stats">${cards}</div>
+    <div class="admin-alerts-analytics">
+      <section class="admin-alert-analytics-card"><h3>Hourly inflow</h3><div class="admin-alert-chart">${timelineMarkup}</div></section>
+      <section class="admin-alert-analytics-card"><h3>Highest inflow players</h3><div class="admin-table-wrap"><table class="admin-table admin-alerts-top-table"><thead><tr><th>Player</th><th>IP</th><th>Inflow</th><th>Net</th><th>Events</th><th></th></tr></thead><tbody>${topPlayersMarkup}</tbody></table></div></section>
+    </div>
+    <div class="admin-alerts-list-head"><h3>Investigation queue</h3><span>${escapeHtml(formatCount(filteredAlerts.length))} of ${escapeHtml(formatCount(alerts.length))} signal${alerts.length === 1 ? "" : "s"}</span></div>
     <div class="admin-table-wrap">
       <table class="admin-table admin-alerts-table">
         <thead>
-          <tr><th>Severity</th><th>Type</th><th>Player</th><th>IP</th><th>Amount</th><th>Detail</th><th>When</th></tr>
+          <tr><th>Severity</th><th>Signal</th><th>Player</th><th>IP</th><th>Amount</th><th>Detail</th><th>When</th><th></th></tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${rows || `<tr><td colspan="8">No signals match the current filters. Nothing unusual in the last ${escapeHtml(String(hours))} hours above ${escapeHtml(formatMoney(minAmount))}.</td></tr>`}</tbody>
       </table>
     </div>`;
 }
@@ -2442,6 +2508,20 @@ for (const id of ["alertsHours", "alertsMinAmount"]) {
     if (event.key === "Enter") loadAlerts();
   });
 }
+for (const id of ["alertsSeverity", "alertsSearch"]) {
+  document.getElementById(id)?.addEventListener(id === "alertsSearch" ? "input" : "change", () => {
+    if (!latestAlertsData) return;
+    const hours = Math.max(1, Math.min(168, Math.trunc(Number(document.getElementById("alertsHours")?.value) || 24)));
+    const minAmount = Math.max(1, Number(document.getElementById("alertsMinAmount")?.value) || 100000000);
+    renderAlerts(latestAlertsData, { hours, minAmount });
+  });
+}
+document.getElementById("alertsContent")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-alert-inspect]");
+  if (!button?.dataset.alertInspect) return;
+  window.showAdminTab?.("search");
+  inspectPlayer(button.dataset.alertInspect);
+});
 
 
 // =========================================================
