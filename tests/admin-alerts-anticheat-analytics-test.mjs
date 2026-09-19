@@ -48,6 +48,10 @@ await db.exec(`
 `);
 
 await db.exec(migration);
+await db.exec(readFileSync(
+  new URL("../supabase/migrations/20260919110000_admin_alerts_query_performance.sql", import.meta.url),
+  "utf8"
+));
 await db.query("select set_config('request.jwt.claim.sub', $1, false)", [adminId]);
 
 const raw = (await db.query("select public.admin_get_activity_alerts($1, $2) as result", [24, 100])).rows[0].result;
@@ -57,6 +61,7 @@ assert.ok(Array.isArray(result.timeline), "response must include hourly activity
 assert.ok(Array.isArray(result.topPlayers), "response must include prioritised player analytics");
 assert.ok(result.summary.totalAlerts >= 1);
 assert.ok(result.totalInflow > 0, "inflow must not be netted against withdrawals");
+assert.equal(result.sampled, false, "small windows should retain every event");
 assert.ok(result.topPlayers.some((player) => player.playerId === playerOne));
 
 const alertTypes = new Set(result.alerts.map((alert) => alert.type));
