@@ -2420,7 +2420,8 @@ function renderAlerts(data, { hours, minAmount }) {
   if (summary) {
     summary.textContent =
       `${formatCount(stats.totalAlerts ?? alerts.length)} signal${(stats.totalAlerts ?? alerts.length) === 1 ? "" : "s"} in the last ${hours}h · ` +
-      `${formatMoney(data?.totalInflow ?? 0)} inflow · ${formatMoney(data?.totalOutflow ?? 0)} outflow`;
+      `${formatMoney(data?.totalInflow ?? 0)} inflow · ${formatMoney(data?.totalOutflow ?? 0)} outflow` +
+      (data?.sampled ? ` · latest ${formatCount(data.sampleLimit)} events sampled` : "");
   }
 
   const cards = [
@@ -2485,7 +2486,7 @@ function renderAlerts(data, { hours, minAmount }) {
   }).join("");
 
   content.innerHTML = `
-    <div class="admin-alerts-disclaimer">Signals are evidence to review, not proof of cheating. Shared-IP matches can be legitimate households, schools, or mobile networks.</div>
+    <div class="admin-alerts-disclaimer">Signals are evidence to review, not proof of cheating. Shared-IP matches can be legitimate households, schools, or mobile networks.${data?.sampled ? ` This busy window was safely analyzed from its latest ${escapeHtml(formatCount(data.sampleLimit))} events.` : ""}</div>
     <div class="admin-alert-stats">${cards}</div>
     <div class="admin-alerts-analytics">
       <section class="admin-alert-analytics-card"><h3>Hourly inflow</h3><div class="admin-alert-chart">${timelineMarkup}</div></section>
