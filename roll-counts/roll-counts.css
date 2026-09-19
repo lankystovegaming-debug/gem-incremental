@@ -221,8 +221,8 @@
 .counter-digit {
   position: relative;
   display: inline-grid;
-  width: 0.6em;
-  height: 1.05em;
+  width: 0.8em;
+  height: 1.1em;
   place-items: center;
   overflow: hidden;
 }
