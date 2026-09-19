@@ -916,6 +916,17 @@ a:hover {
   }
 }
 
+/* Shared clarity layer: a slightly stronger rhythm for every screen without
+   prescribing a destination's gameplay layout. */
+.page-head__title { max-width: 76ch; }
+.page-head__sub { max-width: 68ch; line-height: 1.55; }
+.card { box-shadow: var(--shadow-sm); }
+.btn { min-height: 42px; font-weight: 700; letter-spacing: .005em; }
+.btn--primary { box-shadow: 0 5px 14px -8px color-mix(in srgb, var(--accent) 85%, transparent); }
+@media (min-width: 721px) {
+  .page-head { margin-bottom: clamp(18px, 3vw, 30px); }
+}
+
 
 /* ---------- Showcase pins (3 favourite gems next to a name) ---------- */
 
