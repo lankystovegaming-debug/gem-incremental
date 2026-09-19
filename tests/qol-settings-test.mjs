@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const saved=new Map([['gemIncremental.settings',JSON.stringify({autoSell:true,autoSellTier:'mythic',autoKeepEffectiveRarity:234567})]]);
 globalThis.localStorage={getItem:k=>saved.get(k)??null,setItem:(k,v)=>saved.set(k,v)};
-let cloud={},inFlight=0,maxInFlight=0,fail=false,notices=[];
+let cloud={},inFlight=0,maxInFlight=0,fail=false,rejectNavigation=true,notices=[];
 globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options.detail;}};
 globalThis.window={addEventListener(){},dispatchEvent(event){notices.push(event)}};
 globalThis.__backend={
@@ -11,6 +11,9 @@ globalThis.__backend={
   assert.equal(name,'update_qol_settings');inFlight++;maxInFlight=Math.max(maxInFlight,inFlight);
   await new Promise(r=>setTimeout(r,5));inFlight--;
   if(fail){fail=false;return {data:null,error:{message:'offline'}};}
+  if(rejectNavigation && Object.keys(p_patch).some(key=>['topBarMain','topBarExploreHidden'].includes(key))){
+    return {data:null,error:{code:'P0001',message:'unknown_setting'}};
+  }
   cloud={...cloud,...p_patch,gemFilter:{...cloud.gemFilter,...p_patch.gemFilter}};
   return {data:structuredClone(cloud),error:null};
  }
@@ -25,7 +28,12 @@ const store=await import('data:text/javascript;base64,'+Buffer.from(source).toSt
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
 assert.equal(cloud.legacyAutoSell,true);assert.equal(cloud.legacyAutoSellTier,'mythic');assert.equal(cloud.autoKeepEffectiveRarity,234567);
 assert.ok(store.getSettings().topBarMain.includes('minigames'),'default navigation must preserve the existing Minigames tab');
+assert.equal('topBarMain' in cloud,false,'legacy database fallback keeps navigation local');
 assert.equal(store.getSettings().enableBuffs,true);
+await store.updateSettings({topBarMain:['roll','minigames']});
+assert.deepEqual(store.getSettings().topBarMain,['roll','minigames']);
+assert.equal('topBarMain' in cloud,false);
+rejectNavigation=false;
 await Promise.all([store.updateSettings({gemFilter:{Quartz:'KEEP'}}),store.updateSettings({enableBuffs:false}),store.updateSettings({gemFilter:{Diamond:'SELL'}})]);
 assert.equal(maxInFlight,1);assert.deepEqual(store.getSettings().gemFilter,{Quartz:'KEEP',Diamond:'SELL'});assert.equal(store.getSettings().enableBuffs,false);
 fail=true;await assert.rejects(()=>store.updateSettings({enableBuffs:true}));assert.equal(store.getSettings().enableBuffs,false);assert.equal(notices.at(-1).type,'gem:settings-error');
