@@ -109,6 +109,30 @@
   animation: live-pulse 2s infinite;
 }
 
+.global-counter {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.global-counter__label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.global-counter__value {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 6vw, 3.6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
 .champion {
   display: flex;
   align-items: center;
@@ -197,30 +221,10 @@
 .counter-digit {
   position: relative;
   display: inline-grid;
-  width: 0.77em;
-  height: 1.14em;
+  width: 0.6em;
+  height: 1.05em;
   place-items: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border-strong) 85%, var(--accent));
-  border-radius: clamp(7px, 1.2vw, 14px);
-  background:
-    linear-gradient(to bottom, rgb(255 255 255 / 0.045), transparent 45%),
-    var(--surface-sunken);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    inset 0 -1px 0 rgb(0 0 0 / 0.25),
-    0 12px 28px -18px rgb(0 0 0 / 0.8);
-}
-
-.counter-digit::after {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  right: 0;
-  left: 0;
-  height: 1px;
-  background: rgb(255 255 255 / 0.045);
-  content: "";
 }
 
 .counter-digit__number {
@@ -287,49 +291,6 @@
   color: var(--negative);
 }
 
-.counter-details {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin-top: var(--space-4);
-}
-
-.detail-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.detail-card__icon {
-  display: grid;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 11px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 900;
-}
-
-.detail-card h2 {
-  margin: 1px 0 5px;
-  font-family: var(--font-display);
-  font-size: 0.92rem;
-}
-
-.detail-card p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-
 @keyframes live-pulse {
   70% {
     box-shadow: 0 0 0 8px transparent;
@@ -384,10 +345,6 @@
     min-height: 470px;
     border-radius: 22px;
   }
-
-  .counter-details {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 460px) {
@@ -399,10 +356,6 @@
   .roll-counter {
     gap: 2px;
     font-size: clamp(2rem, 11vw, 3.2rem);
-  }
-
-  .counter-digit {
-    border-radius: 6px;
   }
 
   .counter-caption__divider {
