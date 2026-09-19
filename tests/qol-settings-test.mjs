@@ -7,7 +7,12 @@ globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detai
 globalThis.window={addEventListener(){},dispatchEvent(event){notices.push(event)}};
 globalThis.__backend={
  from(){return {select(){return this},eq(){return this},async maybeSingle(){return {data:{settings:structuredClone(cloud)},error:null}}}},
- async rpc(name,{p_patch}){
+ async rpc(name,args){
+  if(name==='update_content_filter_level'){
+   cloud={...cloud,contentFilterLevel:args.p_level};
+   return {data:structuredClone(cloud),error:null};
+  }
+  const {p_patch}=args;
   assert.equal(name,'update_qol_settings');inFlight++;maxInFlight=Math.max(maxInFlight,inFlight);
   await new Promise(r=>setTimeout(r,5));inFlight--;
   if(fail){fail=false;return {data:null,error:{message:'offline'}};}
@@ -23,10 +28,12 @@ const source=readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8
 .replace('import { ensurePlayerAuth } from "../backend/auth.js";','const ensurePlayerAuth=async()=>({id:"test"});')
 .replace("'../../supabase/functions/roll/equipmentRules.js'",JSON.stringify(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url).href))
 .replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href))
-.replace('"../logic/batchRolling.js"',JSON.stringify(new URL('../src/logic/batchRolling.js',import.meta.url).href));
+.replace('"../logic/batchRolling.js"',JSON.stringify(new URL('../src/logic/batchRolling.js',import.meta.url).href))
+.replace('"../logic/contentModeration.js"',JSON.stringify(new URL('../src/logic/contentModeration.js',import.meta.url).href));
 const store=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
 assert.equal(cloud.legacyAutoSell,true);assert.equal(cloud.legacyAutoSellTier,'mythic');assert.equal(cloud.autoKeepEffectiveRarity,234567);
+assert.equal(cloud.contentFilterLevel,'standard');
 assert.ok(store.getSettings().topBarMain.includes('minigames'),'default navigation must preserve the existing Minigames tab');
 assert.equal('topBarMain' in cloud,false,'legacy database fallback keeps navigation local');
 assert.equal(store.getSettings().enableBuffs,true);
@@ -34,6 +41,7 @@ await store.updateSettings({topBarMain:['roll','minigames']});
 assert.deepEqual(store.getSettings().topBarMain,['roll','minigames']);
 assert.equal('topBarMain' in cloud,false);
 rejectNavigation=false;
+await store.updateSettings({contentFilterLevel:'strict'});assert.equal(store.getSettings().contentFilterLevel,'strict');
 await Promise.all([store.updateSettings({gemFilter:{Quartz:'KEEP'}}),store.updateSettings({enableBuffs:false}),store.updateSettings({gemFilter:{Diamond:'SELL'}})]);
 assert.equal(maxInFlight,1);assert.deepEqual(store.getSettings().gemFilter,{Quartz:'KEEP',Diamond:'SELL'});assert.equal(store.getSettings().enableBuffs,false);
 fail=true;await assert.rejects(()=>store.updateSettings({enableBuffs:true}));assert.equal(store.getSettings().enableBuffs,false);assert.equal(notices.at(-1).type,'gem:settings-error');

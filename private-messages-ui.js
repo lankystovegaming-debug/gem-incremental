@@ -8,6 +8,8 @@ import {
   subscribeToPrivateMessages,
   unsubscribeFromPrivateMessages
 } from "./src/backend/privateMessages.js";
+import { getSettings } from "./src/ui/settings.js";
+import { moderatePlayerText } from "./src/logic/contentModeration.js";
 
 const searchInput = document.querySelector("#dmPlayerSearch");
 const searchResults = document.querySelector("#dmSearchResults");
@@ -79,7 +81,7 @@ if (
 
     item.innerHTML = `
       <div class="dm-message__bubble">
-        <div class="dm-message__text">${escapeHtml(message.message)}</div>
+        <div class="dm-message__text">${escapeHtml(moderatePlayerText(message.message, getSettings().contentFilterLevel))}</div>
         <time class="dm-message__time" datetime="${escapeHtml(message.created_at)}">
           ${escapeHtml(formatTime(message.created_at))}
         </time>
@@ -116,7 +118,7 @@ if (
       button.innerHTML = `
         <span class="dm-conversation__body">
           <strong>${escapeHtml(conversation.username)}</strong>
-          <span>${escapeHtml(conversation.lastMessage || "")}</span>
+          <span>${escapeHtml(moderatePlayerText(conversation.lastMessage || "", getSettings().contentFilterLevel))}</span>
         </span>
         <span class="dm-conversation__meta">
           <time>${escapeHtml(formatTime(conversation.lastMessageAt))}</time>
@@ -279,7 +281,10 @@ if (
     sendEl.disabled = true;
 
     try {
-      const message = await sendPrivateMessage(selectedPlayer.id, text);
+      const message = await sendPrivateMessage(
+        selectedPlayer.id,
+        moderatePlayerText(text, getSettings().contentFilterLevel)
+      );
 
       inputEl.value = "";
 
