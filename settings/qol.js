@@ -19,6 +19,7 @@ function matching() {
 function paint() {
  const s = getSettings();
  for (const key of ['enableBuffs','discoveryKeep']) el(key).checked = s[key];
+ el('contentFilterLevel').value = s.contentFilterLevel;
  el('maxLuck').value = s.maxLuck ?? '';
  el('discoveryKeepRarity').value = s.discoveryKeepRarity;
  el('legacyFilterNotice').textContent = s.legacyAutoSell ? `Your old Auto Sell rule (${s.legacyAutoSellTier} and below) is preserved for gems without an individual rule, including future discoveries. Choose DEFAULT on a gem to clear its inherited SELL rule.` : '';
@@ -39,12 +40,13 @@ function paint() {
 }
 async function save(patch) {
  if(busy)return;busy=true;paint();
- document.querySelectorAll('#gemFilterRows button, #enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck').forEach(e=>e.disabled=true);
+ document.querySelectorAll('#gemFilterRows button, #enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck, #contentFilterLevel').forEach(e=>e.disabled=true);
  try { await updateSettings(patch); }
  catch(error) { notify.error('Settings were not saved',error.message); }
- finally { busy=false; paint();document.querySelectorAll('#enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck').forEach(e=>e.disabled=false); }
+ finally { busy=false; paint();document.querySelectorAll('#enableBuffs, #discoveryKeep, #discoveryKeepRarity, #maxLuck, #contentFilterLevel').forEach(e=>e.disabled=false); }
 }
 for (const key of ['enableBuffs','discoveryKeep']) el(key).addEventListener('change',()=>save({[key]:el(key).checked}));
+el('contentFilterLevel').addEventListener('change',()=>save({contentFilterLevel:el('contentFilterLevel').value}));
 el('maxLuck').addEventListener('change',()=>{
  if(!el('maxLuck').reportValidity())return;
  save({maxLuck:el('maxLuck').value.trim()===''?null:Number(el('maxLuck').value)});

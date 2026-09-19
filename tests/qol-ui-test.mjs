@@ -30,6 +30,7 @@ try {
    if(name==='player_settings')data={settings};
    if(name==='get_qol_gem_catalog')data=args?gems.slice(args.start,args.end+1):gems;
    if(name==='update_qol_settings'){settings={...settings,...args.p_patch,gemFilter:{...settings.gemFilter,...args.p_patch.gemFilter}};if(args.p_patch.clearLegacyAutoSell)settings.legacyAutoSell=false;data=settings;}
+   if(name==='update_content_filter_level'){settings={...settings,contentFilterLevel:args.p_level};data=settings;}
    if(name==='player_equipment_loadouts')data=loadouts;
    if(name==='player_equipment')data=equipment;
    if(name==='equipment_loadout'){
@@ -55,6 +56,7 @@ try {
  await page.waitForFunction(()=>!document.getElementById('maxLuck').disabled);assert.equal(settings.maxLuck,null);
 
  await page.getByText('Enable Buffs',{exact:true}).click();await page.waitForFunction(()=>!document.getElementById('enableBuffs').disabled);assert.equal(settings.enableBuffs,false);
+ await page.locator('#contentFilterLevel').selectOption('strict');await page.waitForFunction(()=>!document.getElementById('contentFilterLevel').disabled);assert.equal(settings.contentFilterLevel,'strict');
  await page.locator('[data-gem="Gem 0000"][data-direct-rule="SELL"]').click();await page.waitForFunction(()=>!document.querySelector('[data-direct-rule]').disabled);assert.equal(settings.gemFilter['Gem 0000'],'SELL');
  await page.locator('#gemFilterSearch').fill('Gem 10');await page.locator('#gemFilterBulkMode').click();await page.locator('#gemFilterSelectAll').check();
  await page.locator('#gemFilterBulk').selectOption('KEEP');await page.locator('#gemFilterApply').click();await page.waitForFunction(()=>!document.getElementById('gemFilterApply').disabled);
