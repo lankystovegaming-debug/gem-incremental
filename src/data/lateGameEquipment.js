@@ -3,7 +3,7 @@
 const tiers = [
   ['Legendary', 1000, 9999], ['Mythic', 10000, 99999],
   ['Exotic', 100000, 999999], ['Exalted', 1000000, 9999999],
-  ['Cosmic', 10000000, 99999999], ['Anomalous', 100000000, 999999999], ['Anomalous+', 1000000000, Number.MAX_SAFE_INTEGER]
+  ['Cosmic', 10000000, 99999999], ['Transcendent', 100000000, 999999999]
 ];
 
 function equipment(id, name, category, tier, previous, bonus, moneyCost, rolls, counts, specimens) {

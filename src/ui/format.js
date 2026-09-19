@@ -16,19 +16,17 @@ const RARITY_TIERS = [
   { id: "exotic",       name: "Exotic",       max: 1000000 },
   { id: "exalted",      name: "Exalted",      max: 10000000 },
   { id: "cosmic",       name: "Cosmic",       max: 100000000 },
-  { id: "anomalous",    name: "Anomalous",    max: 1000000000 },
-  { id: "anomalous-plus", name: "Anomalous+", max: Infinity }
+  { id: "transcendent", name: "Transcendent", max: 1000000000 },
+  { id: "secret",       name: "Secret",       max: Infinity }
 ];
-const TRANSCENDENT_TIER = Object.freeze({ id: "transcendent", name: "Transcendent", max: Infinity });
-const DEEP_SEA_TRANSCENDENT_GEMS = new Set([
-  "coral", "leviathan scale", "heart of the sea", "neptune's tear"
-]);
+const ANOMALOUS_TIER = Object.freeze({ id: "anomalous", name: "Anomalous", max: Infinity });
+const ABYSSAL_POTION_EXCLUSIVES = new Set(["the bottom", "hadopelagic"]);
 
 
 export function rarityTier(rarity, gemName = "") {
   const value = Number(rarity ?? 0);
-  if (DEEP_SEA_TRANSCENDENT_GEMS.has(String(gemName).trim().toLowerCase())) {
-    return TRANSCENDENT_TIER;
+  if (ABYSSAL_POTION_EXCLUSIVES.has(String(gemName).trim().toLowerCase())) {
+    return ANOMALOUS_TIER;
   }
 
   return (
