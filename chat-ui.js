@@ -25,6 +25,8 @@ import {
   CHAT_CHANCE_THRESHOLD,
   EFFECTIVE_CHAT_CHANCE_THRESHOLD
 } from "./src/logic/chances.js";
+import { getSettings } from "./src/ui/settings.js";
+import { moderatePlayerText } from "./src/logic/contentModeration.js";
 
 const messagesEl = document.querySelector("#chatMessages");
 const emptyEl = document.querySelector("#chatEmpty");
@@ -847,7 +849,7 @@ if (messagesEl && formEl && inputEl) {
         </div>
 
         <div class="chat-message__text">
-          ${isSystem ? systemMessageHtml(message) : escapeHtml(message.message)}
+          ${isSystem ? systemMessageHtml(message) : escapeHtml(moderatePlayerText(message.message, getSettings().contentFilterLevel))}
         </div>
       </div>
     `;
@@ -890,7 +892,7 @@ if (messagesEl && formEl && inputEl) {
 
     // Anything that is not /msg username message is a global message.
     if (!command) {
-      await sendChatMessage(text);
+      await sendChatMessage(moderatePlayerText(text, getSettings().contentFilterLevel));
       return "global";
     }
 
@@ -906,7 +908,7 @@ if (messagesEl && formEl && inputEl) {
 
     const privateMessage = await sendPrivateMessage(
       target.id,
-      command.message
+      moderatePlayerText(command.message, getSettings().contentFilterLevel)
     );
 
     // Render immediately. The realtime INSERT is deduplicated by the same ID.

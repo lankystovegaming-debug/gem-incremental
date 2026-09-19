@@ -3,6 +3,7 @@ import { GEM_MUTATIONS } from "../data/mutations.js";
 import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { normalizeUiBatchSize } from "../logic/batchRolling.js";
+import { normalizeContentFilterLevel } from "../logic/contentModeration.js";
 
 // =========================================================
 // GAMEPLAY SETTINGS
@@ -52,6 +53,7 @@ const DEFAULTS = {
   // chart of the economy over time).
   cashGraph: false,
   gemRealism: "classic",
+  contentFilterLevel: "standard",
   // Navigation preference: these are the items kept directly in the main
   // top bar. Everything else stays in Explore. The defaults intentionally
   // preserve the existing navigation exactly.
@@ -71,39 +73,60 @@ function isLegacyUnknownSetting(error) {
 }
 
 async function persistSettingsPatch(patch) {
-  const localPool = Object.hasOwn(patch, 'rollPool') ? { rollPool: patch.rollPool } : {};
-  const cloudPatch = Object.fromEntries(Object.entries(patch).filter(([key]) => key !== 'rollPool'));
-  if (!Object.keys(cloudPatch).length) return { data: { ...state, ...localPool }, error: null };
-  let result = await supabase.rpc('update_qol_settings', { p_patch: cloudPatch });
-  const keys = Object.keys(patch);
+  const { contentFilterLevel, rollPool, ...qolPatch } = patch;
+  const localPatch = rollPool === undefined ? {} : { rollPool };
+  let result = { data: state, error: null };
+  const keys = Object.keys(qolPatch);
   const hasNavigationSettings = keys.some(key => NAVIGATION_SETTING_KEYS.has(key));
 
-  if (!result.error || !hasNavigationSettings || !isLegacyUnknownSetting(result.error)) {
-    if (!result.error && Object.keys(localPool).length) result.data = { ...(result.data ?? state), ...localPool };
-    return result;
+  if (keys.length) {
+    result = await supabase.rpc('update_qol_settings', { p_patch: qolPatch });
   }
 
-  // During a rolling deploy, an older database function may not yet know the
-  // navigation keys. Preserve them on this device and still save every setting
-  // the deployed function does understand.
-  const compatiblePatch = Object.fromEntries(
-    Object.entries(patch).filter(([key]) => !NAVIGATION_SETTING_KEYS.has(key))
-  );
-  const localNavigation = Object.fromEntries(
-    Object.entries(patch).filter(([key]) => NAVIGATION_SETTING_KEYS.has(key))
-  );
+  if (result.error && hasNavigationSettings && isLegacyUnknownSetting(result.error)) {
+    // During a rolling deploy, an older database function may not yet know the
+    // navigation keys. Preserve them on this device and still save every setting
+    // the deployed function does understand.
+    const compatiblePatch = Object.fromEntries(
+      Object.entries(qolPatch).filter(([key]) => !NAVIGATION_SETTING_KEYS.has(key))
+    );
+    const localNavigation = Object.fromEntries(
+      Object.entries(qolPatch).filter(([key]) => NAVIGATION_SETTING_KEYS.has(key))
+    );
 
-  if (Object.keys(compatiblePatch).length) {
-    result = await supabase.rpc('update_qol_settings', { p_patch: compatiblePatch });
-    if (result.error) return result;
-  } else {
-    result = { data: state, error: null };
+    if (Object.keys(compatiblePatch).length) {
+      result = await supabase.rpc('update_qol_settings', { p_patch: compatiblePatch });
+      if (result.error) return result;
+    } else {
+      result = { data: state, error: null };
+    }
+
+    result.data = { ...(result.data ?? state), ...localNavigation };
   }
 
-  return {
-    data: { ...(result.data ?? state), ...localNavigation },
-    error: null
-  };
+  if (result.error) return result;
+  result.data = { ...(result.data ?? state), ...localPatch };
+  if (contentFilterLevel === undefined) return result;
+
+  const moderationResult = await supabase.rpc('update_content_filter_level', {
+    p_level: normalizeContentFilterLevel(contentFilterLevel)
+  });
+
+  if (moderationResult.error) {
+    // Keep the preference usable on this device while a database migration is
+    // still rolling out. Other failures remain visible to the player.
+    const missingFunction = moderationResult.error.code === 'PGRST202'
+      || moderationResult.error.code === '42883'
+      || /could not find the function|does not exist/i.test(String(moderationResult.error.message ?? ''));
+    if (!missingFunction) return moderationResult;
+    return {
+      data: { ...result.data, contentFilterLevel: normalizeContentFilterLevel(contentFilterLevel) },
+      error: null
+    };
+  }
+
+  moderationResult.data = { ...(moderationResult.data ?? result.data), ...localPatch };
+  return moderationResult;
 }
 
 export function hydrateSettingsFromCloud() {
@@ -114,7 +137,7 @@ export function hydrateSettingsFromCloud() {
     if (error) throw error;
     const cloud = data?.settings ?? {};
     const importPatch = {};
-    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism','topBarMain','topBarExploreHidden']) {
+    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism','contentFilterLevel','topBarMain','topBarExploreHidden']) {
       if (!(key in cloud)) importPatch[key] = state[key];
     }
     if (cloud.legacyAutoSell == null) {
@@ -185,6 +208,7 @@ function sanitise(value) {
     gemRealism: GEM_REALISM_LEVELS.some((entry) => entry.id === value.gemRealism)
       ? value.gemRealism
       : DEFAULTS.gemRealism,
+    contentFilterLevel: normalizeContentFilterLevel(value.contentFilterLevel),
     topBarMain: Array.isArray(value.topBarMain)
       ? [...new Set(value.topBarMain.map(String))].slice(0, 12)
       : [...DEFAULTS.topBarMain],

@@ -263,7 +263,21 @@
         </div>
         <input class="input setting-number" id="cutsceneMinimumRarity" type="number" min="100000" step="1000" inputmode="numeric" aria-label="Cutscene minimum rarity">
       </div><p>Rare-roll announcements are available in the chat’s Rare Rolls tab.</p></section>
-<section class="card setting-group" aria-labelledby="chatHeading"><h2 id="chatHeading">Chat</h2><label class="setting">Chat layout <select id="qolChatLayout" class="select"><option value="floating">Floating</option><option value="side-right">Right sidebar</option><option value="side-left">Left sidebar</option></select></label><p>Chat size can be adjusted by dragging the chat panel’s resize handle.</p></section>
+<section class="card setting-group" aria-labelledby="chatHeading">
+  <h2 id="chatHeading">Chat</h2>
+  <div class="setting">
+    <div class="setting__text">
+      <label class="setting__title" for="contentFilterLevel">Content filter</label>
+      <span class="setting__sub">Standard masks severe language. Strict also masks common profanity and insults. Filtering is always on.</span>
+    </div>
+    <select id="contentFilterLevel" class="select" aria-label="Content filter level">
+      <option value="standard">Standard</option>
+      <option value="strict">Strict</option>
+    </select>
+  </div>
+  <label class="setting">Chat layout <select id="qolChatLayout" class="select"><option value="floating">Floating</option><option value="side-right">Right sidebar</option><option value="side-left">Left sidebar</option></select></label>
+  <p>Chat size can be adjusted by dragging the chat panel’s resize handle.</p>
+</section>
 <section class="card setting-group" aria-labelledby="accountHeading">
       <div class="setting-group__head">
         <span id="accountIcon"></span>
