@@ -2510,6 +2510,8 @@ const economyBreakdown = mountEconomy({
       if (typeof loadIpAudit === "function") loadIpAudit();
       if (typeof loadReferrals === "function") loadReferrals();
     },
+    equipment: () => loadEquipmentAdmin(),
+    pets: () => loadPetsAdmin(),
     alerts: () => (typeof loadAlerts === "function" ? loadAlerts() : null),
     cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") }),
     workbench: () => loadWorkbenchAdmin(),
@@ -2769,5 +2771,7 @@ async function loadFeatureCatalog(){
 document.getElementById("catalogRefresh")?.addEventListener("click",loadCustomCatalog);
 document.getElementById("catalogSave")?.addEventListener("click",saveCustomCatalog);
 document.getElementById("featureCatalogRefresh")?.addEventListener("click",loadFeatureCatalog);
-// Load when the content tab is opened (also harmless if called early).
-setTimeout(()=>{loadCustomCatalog();loadFeatureCatalog();loadEquipmentAdmin();loadPetsAdmin();},1000);
+// Prime the content catalogs after authentication. Equipment and Pets are
+// loaded lazily when their tabs open so a rolling database deploy does not
+// generate missing-RPC errors on every Admin page visit.
+setTimeout(()=>{loadCustomCatalog();loadFeatureCatalog();},1000);

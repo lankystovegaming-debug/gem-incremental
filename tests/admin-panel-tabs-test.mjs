@@ -30,6 +30,9 @@ assert.match(js, /page\.hidden = tab !== name/);
 assert.doesNotMatch(js, /adminFeatureLab["']\]/);
 // Heavy panels load only when their tab is first opened.
 assert.match(js, /const LAZY = \{[\s\S]*loadAnalytics[\s\S]*loadIpAudit/);
+assert.match(js, /equipment: \(\) => loadEquipmentAdmin\(\)/);
+assert.match(js, /pets: \(\) => loadPetsAdmin\(\)/);
+assert.doesNotMatch(js, /setTimeout\(\(\)=>\{[^}]*loadEquipmentAdmin/);
 assert.match(js, /if \(!loaded\.has\(name\) && LAZY\[name\]\)/);
 // Only tabs accepted by admin_set_equipment_tab are submitted. Legacy tabs
 // remain permanently available and Limited Time remains fixed on.

@@ -62,6 +62,45 @@ const DEFAULTS = {
 let state = load();
 let hydration;
 let saveQueue = Promise.resolve();
+
+const NAVIGATION_SETTING_KEYS = new Set(['topBarMain', 'topBarExploreHidden']);
+
+function isLegacyUnknownSetting(error) {
+  return error?.code === 'P0001' && String(error?.message ?? '').includes('unknown_setting');
+}
+
+async function persistSettingsPatch(patch) {
+  let result = await supabase.rpc('update_qol_settings', { p_patch: patch });
+  const keys = Object.keys(patch);
+  const hasNavigationSettings = keys.some(key => NAVIGATION_SETTING_KEYS.has(key));
+
+  if (!result.error || !hasNavigationSettings || !isLegacyUnknownSetting(result.error)) {
+    return result;
+  }
+
+  // During a rolling deploy, an older database function may not yet know the
+  // navigation keys. Preserve them on this device and still save every setting
+  // the deployed function does understand.
+  const compatiblePatch = Object.fromEntries(
+    Object.entries(patch).filter(([key]) => !NAVIGATION_SETTING_KEYS.has(key))
+  );
+  const localNavigation = Object.fromEntries(
+    Object.entries(patch).filter(([key]) => NAVIGATION_SETTING_KEYS.has(key))
+  );
+
+  if (Object.keys(compatiblePatch).length) {
+    result = await supabase.rpc('update_qol_settings', { p_patch: compatiblePatch });
+    if (result.error) return result;
+  } else {
+    result = { data: state, error: null };
+  }
+
+  return {
+    data: { ...(result.data ?? state), ...localNavigation },
+    error: null
+  };
+}
+
 export function hydrateSettingsFromCloud() {
   return hydration ??= (async () => {
     const user = await ensurePlayerAuth();
@@ -78,7 +117,7 @@ export function hydrateSettingsFromCloud() {
       importPatch.legacyAutoSell = cloud.autoSell ?? state.autoSell;
     }
     if (Object.keys(importPatch).length) {
-      const { data: migrated, error: migrationError } = await supabase.rpc('update_qol_settings', { p_patch: importPatch });
+      const { data: migrated, error: migrationError } = await persistSettingsPatch(importPatch);
       if (migrationError) throw migrationError;
       Object.assign(cloud, migrated);
     }
@@ -158,7 +197,7 @@ export function getSettings() {
 export function updateSettings(patch) {
   const operation = saveQueue.catch(() => {}).then(async () => {
     await hydrateSettingsFromCloud();
-    const { data, error } = await supabase.rpc('update_qol_settings', { p_patch: patch });
+    const { data, error } = await persistSettingsPatch(patch);
     if (error) throw error;
     state = sanitise({ ...DEFAULTS, ...data });
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
