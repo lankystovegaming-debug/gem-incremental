@@ -36,6 +36,7 @@ export const GEM_REALISM_LEVELS = [
 const DEFAULTS = {
   maxLuck: null,
   batchSize: 1,
+  rollPool: "normal",
   autoRoll: false,
   autoSell: false,
   enableBuffs: true, discoveryKeep: true, discoveryKeepRarity: 10000, gemFilter: {},
@@ -70,11 +71,15 @@ function isLegacyUnknownSetting(error) {
 }
 
 async function persistSettingsPatch(patch) {
-  let result = await supabase.rpc('update_qol_settings', { p_patch: patch });
+  const localPool = Object.hasOwn(patch, 'rollPool') ? { rollPool: patch.rollPool } : {};
+  const cloudPatch = Object.fromEntries(Object.entries(patch).filter(([key]) => key !== 'rollPool'));
+  if (!Object.keys(cloudPatch).length) return { data: { ...state, ...localPool }, error: null };
+  let result = await supabase.rpc('update_qol_settings', { p_patch: cloudPatch });
   const keys = Object.keys(patch);
   const hasNavigationSettings = keys.some(key => NAVIGATION_SETTING_KEYS.has(key));
 
   if (!result.error || !hasNavigationSettings || !isLegacyUnknownSetting(result.error)) {
+    if (!result.error && Object.keys(localPool).length) result.data = { ...(result.data ?? state), ...localPool };
     return result;
   }
 
@@ -152,6 +157,7 @@ function sanitise(value) {
     ...value,
     maxLuck: sanitizeMaxLuck(value.maxLuck),
     batchSize: normalizeUiBatchSize(value.batchSize),
+    rollPool: value.rollPool === "deep_sea" ? "deep_sea" : "normal",
     enableBuffs: value.enableBuffs !== false,
     discoveryKeep: value.discoveryKeep !== false,
     discoveryKeepRarity: Math.min(Number.MAX_SAFE_INTEGER, Math.max(1, Math.floor(Number(value.discoveryKeepRarity) || 10000))),

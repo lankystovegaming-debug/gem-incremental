@@ -771,7 +771,7 @@ async function performRoll() {
 
   setButton({ mode: "rolling", label: impossibleButtonJoke() ?? "Rolling", disabled: true });
 
-  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize });
+  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
 
   rollInFlight = false;
 
@@ -780,6 +780,13 @@ async function performRoll() {
   // -------------------------------------------------------
 
   if (error) {
+    if (error.code === "deep_sea_event_ended" || error.details?.cause?.error === "deep_sea_event_ended") {
+      const wasAutoRolling = getSettings().autoRoll;
+      await updateSettings({ autoRoll: false, rollPool: "normal" });
+      if (wasAutoRolling) notify.warning("The tide has receded", "Deep Sea Auto Roll stopped and your roll pool returned to Normal.");
+      showReady();
+      return;
+    }
     if (error.code === "cooldown" && error.details?.nextRollAt) {
       startCooldown(new Date(error.details.nextRollAt).getTime());
 

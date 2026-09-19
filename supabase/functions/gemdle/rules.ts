@@ -103,7 +103,7 @@ export function rollMutations(catalog: any[], gem: any, rawEvent: any, now: Date
 }
 export function badges(gem: any, weight: number, mutations: any[]) {
   const result: string[] = [];
-  for (const [threshold, name] of [[1e9, "Secret"], [1e8, "Transcendent"], [1e7, "Cosmic"], [1e6, "Exalted"]] as const) {
+  for (const [threshold, name] of [[1e9, "Anomalous+"], [1e8, "Anomalous"], [1e7, "Cosmic"], [1e6, "Exalted"]] as const) {
     if (Number(gem.rarity) >= threshold) { result.push(name); break; }
   }
   for (const [threshold, name] of [[10, "Titanic"], [8, "Colossal"], [5, "Extreme"], [3, "Massive"], [2, "Heavy"]] as const) {

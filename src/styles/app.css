@@ -1235,6 +1235,8 @@ a.btn--icon[aria-current="page"] {
 .tier-exalted    { --tier: var(--rarity-exalted); }
 .tier-cosmic     { --tier: var(--rarity-cosmic); }
 .tier-transcendent { --tier: var(--rarity-transcendent); }
+.tier-anomalous { --tier: #a855f7; }
+.tier-anomalous-plus { --tier: #fff1fb; }
 .tier-unknown    { --tier: var(--text-faint); }
 
 .badge--tier {

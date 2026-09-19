@@ -58,7 +58,7 @@ test('successful mutations alone contribute; stack factor is constant .35 and re
   assert.equal(s.contributions.mutations,1);
 });
 test('badge thresholds, share privacy and escaping', () => {
-  assert.deepEqual(badges(gem('X',1e9),10,[{normal_rarity:10000},{normal_rarity:15}]),['Secret','Titanic','Double Mutation','Rare Mutation']);
+  assert.deepEqual(badges(gem('X',1e9),10,[{normal_rarity:10000},{normal_rarity:15}]),['Anomalous+','Titanic','Double Mutation','Rare Mutation']);
   const s=generateResult([gem('X',10)],[],null,now,()=>.5);
   const text=shareText({gemdle_date:'2026-09-04',player_id:'PRIVATE',specimen:s});
   assert.ok(!text.includes('PRIVATE'));assert.ok(text.includes('No Mutation'));

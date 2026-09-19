@@ -44,9 +44,9 @@ assert.equal(rarityTier(1000000).id, "exalted");
 assert.equal(rarityTier(9999999).id, "exalted");
 assert.equal(rarityTier(10000000).id, "cosmic");
 assert.equal(rarityTier(99999999).id, "cosmic");
-assert.equal(rarityTier(100000000).id, "transcendent");
-assert.equal(rarityTier(999999999).id, "transcendent");
-assert.equal(rarityTier(1000000000).id, "secret");
+assert.equal(rarityTier(100000000).id, "anomalous");
+assert.equal(rarityTier(999999999).id, "anomalous");
+assert.equal(rarityTier(1000000000).id, "anomalous-plus");
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),

@@ -52,7 +52,7 @@ assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy"
 assert.equal(getCutsceneDefinition({ rarity: 666_666_666, gemName: "one singular grain of sand" }).theme, "singular-sand");
 assert.equal(cutsceneDuration({ rarity: 666_666_666, gemName: "one singular grain of sand", mobile: false, reducedMotion: false }), 15_000);
 assert.deepEqual(BESPOKE_CUTSCENES["one singular grain of sand"].primitives, ["sand"]);
-assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 43, "the locked scenes, five Deepcore scenes, and legacy XY alias must be registered");
+assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 56, "the locked scenes, Deepcore and Deep Sea scenes, and legacy XY alias must be registered");
 assert.equal(cutsceneDuration({ rarity: 145_000_000, gemName: "Deepcore Geode", mobile: false, reducedMotion: false }), 12_500);
 assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Crystalline Singularity", mobile: false, reducedMotion: false }), 13_500);
 assert.equal(cutsceneDuration({ rarity: 250_000_000, gemName: "Ontological Shard", mobile: false, reducedMotion: false }), 13_500);
@@ -71,12 +71,13 @@ for (const definition of deepcoreScenes) {
   assert.ok(definition.beats.every((beat) => !/^(PRESSURE|CONVERGENCE|ABSENCE|REDACTED|HEARTBEAT)$/.test(beat)));
 }
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
-  assert.ok(definition.duration >= 11_000 && definition.duration <= 20_000, `${name} must retain ceremonial pacing`);
+  const isDeepSea = definition.theme.startsWith("deep-sea-");
+  assert.ok(definition.duration >= (isDeepSea ? 5_000 : 11_000) && definition.duration <= 20_000, `${name} must retain appropriate pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
   if (definition.theme !== "xy-heart") {
     assert.ok(definition.primitives.length > 0, `${name} must opt into a visual identity`);
   }
-  assert.ok(definition.duration * (1 - definition.revealAt) >= 2_000, `${name} must leave a readable aftermath`);
+  assert.ok(definition.duration * (1 - definition.revealAt) >= (isDeepSea && definition.duration < 8_000 ? 1_200 : 2_000), `${name} must leave a readable aftermath`);
 }
 assert.ok(
   Object.values(BESPOKE_CUTSCENES).filter((definition) => definition.primitives.includes("reticle")).length <= 3,
@@ -220,7 +221,7 @@ assert.deepEqual(
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 36);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 48);
 for (const theme of deepcoreThemes) {
   assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
 }

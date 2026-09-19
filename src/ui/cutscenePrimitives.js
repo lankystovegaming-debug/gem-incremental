@@ -24,6 +24,9 @@ export function specimenMarkup(specimenHtml, { reticle = false } = {}) {
 }
 
 export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
+  "deep-sea-shard", "deep-sea-coin", "deep-sea-pearl", "deep-sea-nautilus",
+  "deep-sea-treasure", "deep-sea-coral", "deep-sea-trench", "deep-sea-golden-coral",
+  "deep-sea-leviathan", "deep-sea-heart", "deep-sea-neptune", "deep-sea-soul",
   "xy-heart", "buffer", "sunrise", "noob", "pressure-one", "missing",
   "solar", "pressure-two", "eventide", "deadstar", "meteor", "inferno",
   "ascend", "impact", "polaris", "false-ending", "primordial", "analysis",
@@ -55,6 +58,17 @@ const primitiveMarkup = Object.freeze({
   dust: `<span class="cs-dust"></span>`,
   slices: `<div class="cs-slices"><i></i><i></i><i></i><i></i><i></i></div>`,
   water: `<div class="cs-ocean"><span class="cs-water"></span><span class="cs-bubbles"></span><span class="cs-shadow"></span></div>`,
+  "sea-shard": `<span class="cs-sea-object cs-sea-shard"></span>`,
+  "sea-coin": `<div class="cs-sea-hook"><i></i><b></b></div>`,
+  "sea-shell": `<div class="cs-sea-shell"><i></i><b></b></div>`,
+  "sea-nautilus": `<div class="cs-sea-nautilus"><i></i></div>`,
+  "sea-chest": `<div class="cs-sea-chest"><i></i><b></b></div>`,
+  "sea-reef": `<div class="cs-sea-reef"><i></i><i></i><i></i><i></i></div>`,
+  "sea-trench": `<span class="cs-sea-trench"></span>`,
+  "sea-leviathan": `<div class="cs-sea-leviathan"><i></i><b></b></div>`,
+  "sea-heart": `<div class="cs-sea-heart"><i></i><b></b></div>`,
+  "sea-neptune": `<div class="cs-sea-neptune"><i></i><b></b><em></em></div>`,
+  "sea-soul": `<div class="cs-sea-soul"><i></i><b></b></div>`,
   depth: `<span class="cs-depth-line"></span>`,
   identifier: `<div class="cs-identifier"><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
   lunar: `<div class="cs-lunar-world"><span class="cs-landscape"></span><i></i><i></i><i></i></div>`,
