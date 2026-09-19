@@ -13,6 +13,7 @@ create table public.player_research_effects(player_id uuid primary key reference
 create table public.cosmetic_definitions(id text primary key,name text,slots text[],description text,rarity text,visual_config jsonb,source text,legacy_after timestamptz,enabled boolean default true);
 create table public.player_cosmetics(player_id uuid references public.players(id),cosmetic_id text references public.cosmetic_definitions(id),earned_at timestamptz default now(),source text,source_key text,primary key(player_id,cosmetic_id));
 create table public.global_event_definitions(event_key text primary key,name text,icon text,tier text,duration_seconds int,selection_weight numeric,description text,config jsonb,definition_version int default 1,enabled boolean,created_at timestamptz default now(),updated_at timestamptz default now());
+alter table public.private_feature_gems add constraint private_feature_gems_required_event_key_fkey foreign key(required_event_key) references public.global_event_definitions(event_key);
 `);
 await db.exec(await readFile(new URL("../supabase/migrations/20260919105814_deep_sea_limited_event.sql",import.meta.url),"utf8"));
 const gems=await db.query("select count(*)::int n from public.deep_sea_gems");
@@ -26,6 +27,8 @@ where n.nspname='deep_sea_private' and c.relname='roll_commits'
 `);
 if(privateSecurity.rows[0]?.relrowsecurity!==true)throw new Error("Private roll commits must have RLS enabled");
 if(privateSecurity.rows[0]?.anon_select||privateSecurity.rows[0]?.authenticated_select)throw new Error("Client roles must not have direct roll commit access");
+const abyssalEvent=await db.query("select enabled,config->>'internalTrigger' internal_trigger from public.global_event_definitions where event_key='abyssal_potion'");
+if(abyssalEvent.rows[0]?.enabled!==false||abyssalEvent.rows[0]?.internal_trigger!=="true")throw new Error("Abyssal Potion eligibility key must exist and remain scheduler-disabled");
 const totals=await db.query("select gem_name,sum(quantity)::int total from public.deep_sea_depth_requirements group by gem_name order by gem_name");
 if(totals.rows.reduce((n,row)=>n+row.total,0)!==74137)throw new Error("Depth requirements total changed");
 console.log("Deep Sea migration applies cleanly to the live-schema fixture.");
