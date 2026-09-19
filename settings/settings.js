@@ -47,6 +47,37 @@ document.getElementById("aboutIcon").innerHTML = icons.keyboard;
 
 
 // =========================================================
+// TOP BAR NAVIGATION
+// =========================================================
+const NAV_ITEMS = [
+  ["roll","Roll"],["inventory","Inventory"],["crafting","Crafting"],["boosts","Shop"],
+  ["auctions","Market"],["expeditions","Expeditions"],["gem-index","Gem Index"],
+  ["mutation-index","Mutation Index"],["month-one","Month One"],["limited-events","Limited Events"],
+  ["leaderboards","Leaderboards"],["roll-counts","Roll Counts"],["achievements","Achievements"],
+  ["quests","Quests"],["guilds","Guilds"],["islands","Islands"],["workbench","Workbench [BETA]"],
+  ["dungeons","Dungeons"],["minigames","Minigames"],["gemdle","Gemdle"],["wars","Player Wars"],
+  ["pvp","PvP"],["world-bosses","World Bosses"],["relic-vault","Relic Vault"],["bank","Bank"],
+  ["seasons","Seasons"],["bounties","Bounty Board"],["treasure-expeditions","Treasure Expeditions"],
+  ["artifact-archives","Artifact Archives"],["gem-fusion","Gem Fusion Lab"],["enchanting-lab","Enchanting Lab"],
+  ["collection-hall","Collection Hall"],["mining-events","Mining Events"],["merchant-caravan","Merchant Caravan"],
+  ["research-tree","Research Tree"],["admin","Admin"]
+];
+const CORE_DEFAULT = ["roll","inventory","crafting","boosts","auctions","expeditions"];
+function renderNavigationCustomizer(){
+  const mount=document.getElementById("topBarNavigationList"); if(!mount)return;
+  const settings=getSettings(); const selected=new Set(settings.topBarMain||CORE_DEFAULT);
+  mount.innerHTML=NAV_ITEMS.map(([id,label])=>{
+    const forcedExplore=id==="limited-events";
+    const checked=selected.has(id)&&!forcedExplore;
+    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${escapeHtml(label)}</span><span class="setting__sub">${forcedExplore?"Always in Explore":"Main top bar"}</span></span><span class="setting__control"><input type="checkbox" data-topbar-nav="${id}" ${checked?"checked":""} ${forcedExplore?"disabled":""}></span></label>`;
+  }).join("");
+  mount.querySelectorAll("[data-topbar-nav]").forEach(cb=>cb.addEventListener("change",async()=>{
+    const main=[...mount.querySelectorAll("[data-topbar-nav]:checked")].map(x=>x.dataset.topbarNav);
+    await updateSettings({topBarMain:main,topBarExploreHidden:[]});
+  }));
+}
+
+// =========================================================
 // APPEARANCE
 // =========================================================
 
@@ -133,6 +164,8 @@ fontPicker.addEventListener("click", (event) => {
 onThemeChange(renderAppearance);
 
 renderAppearance();
+renderNavigationCustomizer();
+onSettingsChange(renderNavigationCustomizer);
 
 
 // =========================================================

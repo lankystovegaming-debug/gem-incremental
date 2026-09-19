@@ -98,8 +98,21 @@ const PAGES = [
 
 const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
 const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
-const CORE_PAGES = PUBLIC_PAGES.filter((item) => CORE_PAGE_IDS.has(item.id));
-const EXPLORE_PAGES = PUBLIC_PAGES.filter((item) => !CORE_PAGE_IDS.has(item.id));
+const DEFAULT_TOP_BAR_IDS = ["roll","inventory","crafting","boosts","auctions","expeditions"];
+function getNavigationPages(){
+  const settings=getSettings();
+  const configured=Array.isArray(settings.topBarMain) && settings.topBarMain.length ? settings.topBarMain : DEFAULT_TOP_BAR_IDS;
+  const wanted=new Set(configured);
+  if(window.__gemIsAdmin===true && configured.length===DEFAULT_TOP_BAR_IDS.length && DEFAULT_TOP_BAR_IDS.every((id,i)=>configured[i]===id)) wanted.add("admin");
+  return PAGES.filter(item=>{
+    if(item.adminOnly) return wanted.has(item.id) && window.__gemIsAdmin === true;
+    return !item.privateOnly && !item.sectionId && !item.settingGated && wanted.has(item.id);
+  });
+}
+function getExplorePages(){
+  const main=new Set(getNavigationPages().map(x=>x.id));
+  return PUBLIC_PAGES.filter(item=>!main.has(item.id) || item.id==="limited-events");
+}
 
 // Explore stays useful as the game grows by grouping related destinations
 // instead of presenting one long, flat list. Feature-switched pages use the
@@ -158,11 +171,13 @@ async function loadEnabledSections() {
     // players. Keep the explicit flag here too so the shell never exposes a
     // private section if a stale/older endpoint returns it.
     const isAdmin = data?.isAdmin === true;
-    return new Map(
+    const map = new Map(
       sections
         .filter((section) => section.admin_only !== true || isAdmin)
         .map((section) => [section.id, section])
     );
+    map.__isAdmin = isAdmin;
+    return map;
   } catch {
     return new Map();
   }
@@ -203,7 +218,7 @@ export function mountShell({ page, base = "./" }) {
       </a>
 
       <nav class="nav" aria-label="Primary">
-        ${CORE_PAGES.map((item) => navLink(item, page, base, "nav__link")).join("")}
+        ${getNavigationPages().map((item) => navLink(item, page, base, "nav__link")).join("")}
       </nav>
 
       <div class="topbar-explore" id="shellExploreAnchor">
@@ -214,7 +229,7 @@ export function mountShell({ page, base = "./" }) {
           aria-haspopup="true"
           aria-expanded="false"
           aria-controls="shellExploreMenu"
-          ${EXPLORE_PAGES.some((item) => item.id === page) ? 'aria-current="page"' : ""}
+          ${getExplorePages().some((item) => item.id === page) ? 'aria-current="page"' : ""}
         >
           ${icons.compass || icons.sparkle}
           <span>Explore</span>
@@ -222,7 +237,7 @@ export function mountShell({ page, base = "./" }) {
         </button>
         <div class="menu topbar-explore__menu" id="shellExploreMenu" hidden>
           <div class="menu__label">Explore</div>
-          ${renderExploreGroups(EXPLORE_PAGES, page, base)}
+          ${renderExploreGroups(getExplorePages(), page, base)}
         </div>
       </div>
 
@@ -312,11 +327,20 @@ export function mountShell({ page, base = "./" }) {
   tabbar.className = "tabbar";
   tabbar.setAttribute("aria-label", "Primary");
 
-  tabbar.innerHTML = CORE_PAGES.map((item) =>
+  tabbar.innerHTML = getNavigationPages().map((item) =>
     navLink(item, page, base, "tabbar__link", true)
   ).join("");
 
   document.body.appendChild(tabbar);
+
+  const rerenderPrimaryNavigation=()=>{
+    const nav=header.querySelector(".nav");
+    if(nav) nav.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"nav__link")).join("");
+    tabbar.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"tabbar__link",true)).join("");
+    const exploreMenu=header.querySelector("#shellExploreMenu");
+    if(exploreMenu) exploreMenu.innerHTML=`<div class="menu__label">Explore</div>${renderExploreGroups(getExplorePages(),page,base)}`;
+  };
+  onSettingsChange(rerenderPrimaryNavigation);
 
   // Client-setting-gated pages (e.g. the Cash Market graph) are shown or
   // hidden purely from the device settings, with no server round-trip, and
@@ -347,6 +371,8 @@ export function mountShell({ page, base = "./" }) {
   // Site feature switches are controlled from Upcoming. Feature pages and
   // their top-bar links remain hidden until an authorized user enables them.
   loadEnabledSections().then((sectionMap) => {
+    window.__gemIsAdmin = sectionMap?.__isAdmin === true;
+    rerenderPrimaryNavigation();
     const add = (item) => {
       const section = sectionMap.get(item.sectionId);
       if (!section?.enabled) return;

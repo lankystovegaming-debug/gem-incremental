@@ -18,6 +18,8 @@ let animationFrame = 0;
 let stageTimer = null;
 let stageTwoClicks = [];
 let stageTwoBeat = 0;
+let stageTwoBeatMsCurrent = 720;
+const STAGE_NAMES = {1:"Precision Strike",2:"Rhythm Sync",3:"Stability Control"};
 let stageTwoStart = 0;
 let stageTwoBeatMs = 900;
 
@@ -142,8 +144,9 @@ function runStageOne() {
 
   const frame = (now) => {
     const seconds = (now - start) / 1000;
-    const cycle = Math.floor(seconds * 1.5);
-    const progress = (seconds * 1.5) % 1;
+    const speed = 1.15 + Math.min(0.9, Number(session?.stage_score_boost || 0));
+    const cycle = Math.floor(seconds * speed);
+    const progress = (seconds * speed) % 1;
     const normalized = cycle % 2 === 0 ? progress : 1 - progress;
 
     target.style.left = `${normalized * width}px`;
@@ -162,8 +165,8 @@ function runStageTwo(now = performance.now()) {
 
   if (!stageTwoStart) stageTwoStart = now;
   const elapsed = now - stageTwoStart;
-  const beatElapsed = elapsed % stageTwoBeatMs;
-  const phase = beatElapsed / stageTwoBeatMs;
+  const beatElapsed = elapsed % stageTwoBeatMsCurrent;
+  const phase = beatElapsed / stageTwoBeatMsCurrent;
   const pingPong = phase <= 0.5 ? phase * 2 : (1 - phase) * 2;
   const position = 0.08 + pingPong * 0.84;
 
@@ -187,7 +190,7 @@ function startStage() {
   stopAnimation();
 
   const stage = Number(session?.stage || 1);
-  $("stageLabel").textContent = `Stage ${stage} / 3`;
+  $("stageLabel").textContent = `Stage ${stage} / 3 · ${STAGE_NAMES[stage] || "Forge Test"}`;
   $("stageStatus").textContent = "";
   $("strike").disabled = false;
 
@@ -195,6 +198,7 @@ function startStage() {
     // A fresh stage always starts a deterministic three-beat sequence.
     stageTwoClicks = [];
     stageTwoBeat = 0;
+    stageTwoBeatMsCurrent = 560 + Math.floor(Math.random()*360);
     stageTwoStart = performance.now();
   }
   $("strike").textContent = stage === 2 ? "SYNC" : "STRIKE";
@@ -226,7 +230,9 @@ async function submitStage(score) {
 
     session = result.session;
 
-    $("stageStatus").textContent = `Timing score: ${(score * 100).toFixed(0)}%`;
+    const pct = score * 100;
+    const grade = pct >= 95 ? "Perfect" : pct >= 82 ? "Excellent" : pct >= 65 ? "Great" : pct >= 45 ? "Good" : "Miss";
+    $("stageStatus").textContent = `${grade} · ${pct.toFixed(0)}%`;
 
     if (result.stage <= 3) {
       stageTimer = setTimeout(startStage, 500);
@@ -323,3 +329,7 @@ function showResult(result) {
 $("again").addEventListener("click", () => window.location.reload());
 
 load();
+
+document.addEventListener("keydown",(event)=>{
+  if((event.key===" "||event.key==="Enter") && !$("strike")?.disabled && !$("minigame")?.hidden){ event.preventDefault(); $("strike").click(); }
+});
