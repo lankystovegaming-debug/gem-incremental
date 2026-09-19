@@ -2,6 +2,7 @@ import { supabase } from "../src/backend/supabase.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 
 const REFRESH_INTERVAL_MS = 15_000;
+const GLOBAL_REFRESH_INTERVAL_MS = 3_000;
 const DIGIT_ANIMATION_MS = 620;
 
 const champion = document.getElementById("champion");
@@ -19,48 +20,18 @@ let currentUsername = "";
 let nextRefreshAt = 0;
 let refreshTimer = null;
 let countdownTimer = null;
+let globalTimer = null;
 let refreshInFlight = false;
+let globalInFlight = false;
 
 function formatCount(value) {
   return Math.max(0, Number(value) || 0).toLocaleString("en-US");
 }
 
-function renderGlobalCount(value) {
-  const total = Math.max(0, Number(value) || 0);
-
-  if (total === currentGlobalCount) {
-    return;
-  }
-
-  currentGlobalCount = total;
-  globalRollCount.textContent = formatCount(total);
-}
-
-async function refreshGlobalCount() {
-  try {
-    const { data, error } = await supabase.rpc("get_global_roll_count");
-
-    if (error) {
-      throw error;
-    }
-
-    renderGlobalCount(data);
-  } catch (error) {
-    console.error("Global roll count refresh failed:", error);
-
-    if (currentGlobalCount == null) {
-      globalRollCount.textContent = "—";
-    }
-  }
-}
-
-function setStatus(message, isError = false) {
-  counterStatus.textContent = message;
-  counterStatus.classList.toggle("error", isError);
-}
-
-function renderCounter(nextCount) {
-  const previousCount = currentCount;
+// Builds the flip-style digit readout into `target`, animating only the
+// digits that changed between `previousCount` and `nextCount`. Shared by the
+// top-roller counter and the global counter so both animate identically.
+function renderFlipDigits(target, previousCount, nextCount, announcement) {
   const nextText = formatCount(nextCount);
   const nextDigitCount = nextText.replaceAll(",", "").length;
   const previousDigits = String(previousCount == null ? 0 : previousCount)
@@ -107,12 +78,14 @@ function renderCounter(nextCount) {
     fragment.append(digit);
   });
 
-  rollCounter.replaceChildren(fragment);
-  currentCount = nextCount;
-  rollCounterAnnouncement.textContent = `${formatCount(nextCount)} total lifetime rolls`;
+  target.replaceChildren(fragment);
+
+  if (announcement) {
+    announcement.textContent = `${formatCount(nextCount)} total lifetime rolls`;
+  }
 
   window.setTimeout(() => {
-    for (const digit of rollCounter.querySelectorAll(".counter-digit")) {
+    for (const digit of target.querySelectorAll(".counter-digit")) {
       const finalNumber = digit.querySelector(".counter-digit__number--next");
 
       if (finalNumber) {
@@ -124,6 +97,53 @@ function renderCounter(nextCount) {
       digit.classList.remove("is-changing", "is-decreasing");
     }
   }, DIGIT_ANIMATION_MS + 500);
+}
+
+function renderGlobalCount(value) {
+  const total = Math.max(0, Number(value) || 0);
+
+  if (total === currentGlobalCount) {
+    return;
+  }
+
+  renderFlipDigits(globalRollCount, currentGlobalCount, total, null);
+  currentGlobalCount = total;
+}
+
+async function refreshGlobalCount() {
+  if (globalInFlight || document.hidden) {
+    return;
+  }
+
+  globalInFlight = true;
+
+  try {
+    const { data, error } = await supabase.rpc("get_global_roll_count");
+
+    if (error) {
+      throw error;
+    }
+
+    renderGlobalCount(data);
+  } catch (error) {
+    console.error("Global roll count refresh failed:", error);
+
+    if (currentGlobalCount == null) {
+      globalRollCount.textContent = "—";
+    }
+  } finally {
+    globalInFlight = false;
+  }
+}
+
+function setStatus(message, isError = false) {
+  counterStatus.textContent = message;
+  counterStatus.classList.toggle("error", isError);
+}
+
+function renderCounter(nextCount) {
+  renderFlipDigits(rollCounter, currentCount, nextCount, rollCounterAnnouncement);
+  currentCount = nextCount;
 }
 
 function setChampion(username, avatarUrl, profileId) {
@@ -189,7 +209,6 @@ async function refreshCounter() {
   refreshInFlight = true;
   setStatus("");
   refreshLabel.textContent = currentCount == null ? "Connecting…" : "Checking now…";
-  refreshGlobalCount();
 
   try {
     const { data, error } = await supabase.functions.invoke("leaderboards");
@@ -233,13 +252,16 @@ async function refreshCounter() {
 function scheduleRefreshes() {
   window.clearInterval(refreshTimer);
   window.clearInterval(countdownTimer);
+  window.clearInterval(globalTimer);
   refreshTimer = window.setInterval(refreshCounter, REFRESH_INTERVAL_MS);
   countdownTimer = window.setInterval(updateRefreshLabel, 1_000);
+  globalTimer = window.setInterval(refreshGlobalCount, GLOBAL_REFRESH_INTERVAL_MS);
 }
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     refreshCounter();
+    refreshGlobalCount();
   }
 });
 
@@ -253,6 +275,7 @@ async function startRollCounter() {
   }
 
   await refreshCounter();
+  refreshGlobalCount();
   scheduleRefreshes();
 }
 
