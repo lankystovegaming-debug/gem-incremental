@@ -5,6 +5,8 @@ import { DEEP_SEA_GEMS, DEEP_SEA_TIMES, DEPTHS_REWARDS, NEPTUNE_RECIPE, NEPTUNE_
 const sql=readFileSync(new URL("../supabase/migrations/20260919105814_deep_sea_limited_event.sql",import.meta.url),"utf8");
 const roll=readFileSync(new URL("../supabase/functions/roll/index.ts",import.meta.url),"utf8");
 const page=readFileSync(new URL("../limited-events/deep-sea/deep-sea.js",import.meta.url),"utf8");
+const eventsIndex=readFileSync(new URL("../limited-events/index.html",import.meta.url),"utf8");
+const eventsListing=readFileSync(new URL("../limited-events/limited-events.js",import.meta.url),"utf8");
 const cutscenes=readFileSync(new URL("../src/ui/cutsceneConfig.js",import.meta.url),"utf8");
 const cutsceneRenderer=readFileSync(new URL("../src/ui/cutsceneScenes.js",import.meta.url),"utf8");
 const cutsceneStyles=readFileSync(new URL("../src/ui/cutsceneScenes.css",import.meta.url),"utf8");
@@ -30,6 +32,10 @@ assert.match(roll,/batchExecution\.pool === "deep_sea" \? new Date\(\)/);
 assert.match(roll,/random01\(\) < 1 \/ 2000[^]*random01\(\) < 1 \/ 100/);
 assert.match(roll,/luck \+= 100000/);
 assert.match(page,/Stop Auto Roll before changing pools/);
+assert.match(eventsIndex,/href="\.\/deep-sea\/"/);
+assert.ok(eventsIndex.indexOf("Deepcore Project")<eventsIndex.indexOf("<h2>Deep Sea<\/h2>"),"Deep Sea card must follow Deepcore");
+assert.match(eventsListing,/deepSeaStatus/);
+assert.doesNotMatch(eventsListing,/grid\.innerHTML/);
 for(const gem of ["prismarine fragment","ancient coin","pearl of the sea","sunken treasure","abyssal coral","trenchstone","leviathan scale","heart of the sea","neptune's tear","soul of the sea god"]){assert.ok(cutscenes.includes(gem),`missing ${gem} cutscene`);}
 for(const token of ["cs-camera--track","cs-camera--plunge","cs-camera--dolly","cs-camera--surge","worldExitAt","revealPosition"]){assert.ok((cutscenes+cutsceneRenderer+cutsceneStyles).includes(token),`missing cinematic behavior ${token}`);}
 assert.match(cutsceneRenderer,/definition\.focus === false/);
