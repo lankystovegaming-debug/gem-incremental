@@ -27,6 +27,8 @@ assert.match(indexHtml, /data-admin-tab="alerts"/);
 assert.match(indexHtml, /id="alertsPanel"/);
 assert.match(indexHtml, /id="alertsHours"/);
 assert.match(indexHtml, /id="alertsMinAmount"/);
+assert.match(indexHtml, /id="alertsSeverity"/);
+assert.match(indexHtml, /id="alertsSearch"/);
 assert.match(indexHtml, /id="alertsContent"/);
 
 assert.match(adminJs, /async function loadAlerts\(\)/);
@@ -37,6 +39,11 @@ assert.match(adminJs, /alerts: \(\) => \(typeof loadAlerts === "function"/);
 assert.match(adminJs, /alert\.username/);
 assert.match(adminJs, /alert\.ip/);
 assert.match(adminJs, /alertWhen\(/);
+assert.match(adminJs, /income_velocity/);
+assert.match(adminJs, /shared_ip_inflow/);
+assert.match(adminJs, /new_account_windfall/);
+assert.match(adminJs, /data-alert-inspect/);
+assert.match(adminJs, /topPlayers/);
 
 // --- CLI: /alerts command ---
 assert.match(cli, /name: "alerts"/);
