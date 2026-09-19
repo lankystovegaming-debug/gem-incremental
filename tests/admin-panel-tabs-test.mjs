@@ -31,6 +31,14 @@ assert.doesNotMatch(js, /adminFeatureLab["']\]/);
 // Heavy panels load only when their tab is first opened.
 assert.match(js, /const LAZY = \{[\s\S]*loadAnalytics[\s\S]*loadIpAudit/);
 assert.match(js, /if \(!loaded\.has\(name\) && LAZY\[name\]\)/);
+// Only tabs accepted by admin_set_equipment_tab are submitted. Legacy tabs
+// remain permanently available and Limited Time remains fixed on.
+assert.match(js, /const tabs=\["armory","weapons"\]/);
+assert.doesNotMatch(js, /data\.equipmentTab==="limited-time"/);
+// datetime-local fields must use local calendar components. Slicing an ISO
+// timestamp would shift schedules whenever an admin edits outside UTC.
+assert.match(js, /function toLocalDatetimeInput\(value\)/);
+assert.doesNotMatch(js, /toISOString\(\)\.slice\(0,16\)/);
 // Reveals only once admin access is verified (Feature Lab button enabled).
 assert.match(js, /MutationObserver/);
 assert.match(js, /attributeFilter: \["disabled"\]/);

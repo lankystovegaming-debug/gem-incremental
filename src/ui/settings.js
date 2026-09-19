@@ -54,7 +54,7 @@ const DEFAULTS = {
   // Navigation preference: these are the items kept directly in the main
   // top bar. Everything else stays in Explore. The defaults intentionally
   // preserve the existing navigation exactly.
-  topBarMain: ["roll","inventory","crafting","boosts","auctions","expeditions","admin"],
+  topBarMain: ["roll","inventory","crafting","boosts","auctions","expeditions","minigames","admin"],
   topBarExploreHidden: []
 };
 

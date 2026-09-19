@@ -2692,15 +2692,16 @@ async function loadWorkbenchAdmin(){
     <label>Excellent<input id="wbExcellent" type="number" step=".01" value="${c.quality_excellent??1.2}"></label>
     <label>Masterwork<input id="wbMasterwork" type="number" step=".01" value="${c.quality_masterwork??1.3}"></label>
   </div></div>`;
-  const tabs=["pickaxe","clover","toys","lantern","boots","bag","petGear","limited-time","armory","weapons"];
-  const labels={pickaxe:"Pickaxes",clover:"Clovers",toys:"Toys",lantern:"Lanterns",boots:"Boots",bag:"Bags",petGear:"Pet Gear","limited-time":"Limited Time",armory:"Armory",weapons:"Weapons"};
-  const {data:sectionRows}=await supabase.rpc("admin_list_equipment_tabs");
+  const tabs=["armory","weapons"];
+  const labels={armory:"Armory",weapons:"Weapons"};
+  const {data:sectionRows,error:sectionError}=await supabase.rpc("admin_list_equipment_tabs");
+  if(sectionError){document.getElementById("equipmentTabControls").innerHTML=`<p>${escapeHtml(sectionError.message)}</p>`;return;}
   const byId=Object.fromEntries((sectionRows||[]).map(x=>[x.id,x]));
   document.getElementById("equipmentTabControls").innerHTML=tabs.map(id=>{
     const key=`equipment-${id}`;
     const row=byId[key];
-    const enabled=id==="limited-time" ? true : (row?.enabled ?? !["armory","weapons"].includes(id));
-    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${labels[id]}</span><span class="setting__sub">${["armory","weapons"].includes(id)?"Future combat tab":"Available"}</span></span><span class="setting__control"><input type="checkbox" data-equipment-tab="${id}" ${enabled?"checked":""}></span></label>`;
+    const enabled=row?.enabled === true;
+    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${labels[id]}</span><span class="setting__sub">Future combat tab</span></span><span class="setting__control"><input type="checkbox" data-equipment-tab="${id}" ${enabled?"checked":""}></span></label>`;
   }).join("");
 }
 async function saveWorkbenchAdmin(){
@@ -2714,7 +2715,6 @@ async function saveWorkbenchAdmin(){
   const {error}=await supabase.rpc("admin_save_workbench_config",{p_config:config});
   if(error){notify.error("Workbench save failed",error.message);return;}
   for(const cb of document.querySelectorAll("[data-equipment-tab]")){
-    if(cb.dataset.equipmentTab==="limited-time") continue;
     const {error:e}=await supabase.rpc("admin_set_equipment_tab",{p_tab:cb.dataset.equipmentTab,p_enabled:cb.checked});
     if(e){notify.error("Equipment tab update failed",e.message);return;}
   }
@@ -2722,6 +2722,14 @@ async function saveWorkbenchAdmin(){
   loadWorkbenchAdmin();
 }
 document.getElementById("workbenchAdminSave")?.addEventListener("click",saveWorkbenchAdmin);
+
+function toLocalDatetimeInput(value){
+  if(!value)return "";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "";
+  const pad=part=>String(part).padStart(2,"0");
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 async function loadLimitedEventsAdmin(){
   const {data,error}=await supabase.rpc("admin_list_limited_events");
@@ -2731,8 +2739,8 @@ async function loadLimitedEventsAdmin(){
   list?.querySelectorAll("[data-limited-edit]").forEach(b=>b.onclick=()=>{
     const e=(data||[]).find(x=>x.id===b.dataset.limitedEdit); if(!e)return;
     document.getElementById("limitedEventId").value=e.id;document.getElementById("limitedEventName").value=e.name;document.getElementById("limitedEventIntro").value=e.introduction||"";document.getElementById("limitedEventEnabled").checked=!!e.enabled;
-    document.getElementById("limitedEventStart").value=e.starts_at?new Date(e.starts_at).toISOString().slice(0,16):"";
-    document.getElementById("limitedEventEnd").value=e.ends_at?new Date(e.ends_at).toISOString().slice(0,16):"";
+    document.getElementById("limitedEventStart").value=toLocalDatetimeInput(e.starts_at);
+    document.getElementById("limitedEventEnd").value=toLocalDatetimeInput(e.ends_at);
     const c=e.config||{};const p=c.presentation||{};
     document.getElementById("limitedEventBg").value=p.backgroundColor||"#071923";document.getElementById("limitedEventBgImage").value=p.backgroundImage||"";document.getElementById("limitedEventFont").value=p.fontFamily||"system-ui, sans-serif";document.getElementById("limitedEventWeight").value=p.fontWeight??600;document.getElementById("limitedEventSize").value=p.fontSize||"16px";
     document.getElementById("limitedEventCurrencies").value=JSON.stringify(c.currencies||[],null,2);document.getElementById("limitedEventEquipment").value=JSON.stringify({items:c.equipment||[],crafting:c.crafting||[]},null,2);document.getElementById("limitedEventConfig").value=JSON.stringify(c,null,2);

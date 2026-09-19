@@ -24,6 +24,7 @@ const source=readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8
 const store=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
 assert.equal(cloud.legacyAutoSell,true);assert.equal(cloud.legacyAutoSellTier,'mythic');assert.equal(cloud.autoKeepEffectiveRarity,234567);
+assert.ok(store.getSettings().topBarMain.includes('minigames'),'default navigation must preserve the existing Minigames tab');
 assert.equal(store.getSettings().enableBuffs,true);
 await Promise.all([store.updateSettings({gemFilter:{Quartz:'KEEP'}}),store.updateSettings({enableBuffs:false}),store.updateSettings({gemFilter:{Diamond:'SELL'}})]);
 assert.equal(maxInFlight,1);assert.deepEqual(store.getSettings().gemFilter,{Quartz:'KEEP',Diamond:'SELL'});assert.equal(store.getSettings().enableBuffs,false);

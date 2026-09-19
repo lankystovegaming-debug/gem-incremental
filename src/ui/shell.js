@@ -91,27 +91,49 @@ const PAGES = [
   { id: "merchant-caravan", label: "Merchant Caravan", short: "Caravan", href: "merchant-caravan/", icon: icons.caravan, sectionId: "merchant-caravan" },
   { id: "research-tree", label: "Research Tree", short: "Research", href: "research-tree/", icon: icons.branch, sectionId: "research-tree" },
   // Client-only page: shown only when the "Global cash graph" device
-  // setting is on. Not server-gated, so it lives outside PUBLIC_PAGES
-  // and the section loader.
+  // setting is on.
   { id: "global-cash-graph", label: "Cash Market", short: "Market", href: "global-cash-graph/", icon: icons.chart, settingGated: "cashGraph" }
 ];
 
-const PUBLIC_PAGES = PAGES.filter((item) => !item.adminOnly && !item.privateOnly && !item.sectionId && !item.settingGated);
 const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
-const DEFAULT_TOP_BAR_IDS = ["roll","inventory","crafting","boosts","auctions","expeditions"];
+const DEFAULT_TOP_BAR_IDS = [...CORE_PAGE_IDS];
+let enabledSectionMap = new Map();
+let shellIsAdmin = false;
+
+function configuredNavigationPage(item) {
+  const section = item.sectionId ? enabledSectionMap.get(item.sectionId) : null;
+  if (!section) return item;
+  return {
+    ...item,
+    label: section.label || item.label,
+    short: section.short_label || section.label || item.short
+  };
+}
+
+function isNavigationPageAvailable(item, settings) {
+  if (item.adminOnly) return shellIsAdmin;
+  if (item.privateOnly) return false;
+  if (item.sectionId) return enabledSectionMap.get(item.sectionId)?.enabled === true;
+  if (item.settingGated) return Boolean(settings[item.settingGated]);
+  return true;
+}
+
 function getNavigationPages(){
   const settings=getSettings();
   const configured=Array.isArray(settings.topBarMain) && settings.topBarMain.length ? settings.topBarMain : DEFAULT_TOP_BAR_IDS;
   const wanted=new Set(configured);
-  if(window.__gemIsAdmin===true && configured.length===DEFAULT_TOP_BAR_IDS.length && DEFAULT_TOP_BAR_IDS.every((id,i)=>configured[i]===id)) wanted.add("admin");
-  return PAGES.filter(item=>{
-    if(item.adminOnly) return wanted.has(item.id) && window.__gemIsAdmin === true;
-    return !item.privateOnly && !item.sectionId && !item.settingGated && wanted.has(item.id);
-  });
+  if(shellIsAdmin && configured.length===DEFAULT_TOP_BAR_IDS.length && DEFAULT_TOP_BAR_IDS.every((id,i)=>configured[i]===id)) wanted.add("admin");
+  return PAGES
+    .filter(item=>item.id!=="limited-events" && !item.settingGated && wanted.has(item.id) && isNavigationPageAvailable(item,settings))
+    .map(configuredNavigationPage);
 }
 function getExplorePages(){
+  const settings=getSettings();
   const main=new Set(getNavigationPages().map(x=>x.id));
-  return PUBLIC_PAGES.filter(item=>!main.has(item.id) || item.id==="limited-events");
+  return PAGES
+    .filter(item=>isNavigationPageAvailable(item,settings))
+    .filter(item=>!main.has(item.id) || item.id==="limited-events")
+    .map(configuredNavigationPage);
 }
 
 // Explore stays useful as the game grows by grouping related destinations
@@ -337,60 +359,19 @@ export function mountShell({ page, base = "./" }) {
     const nav=header.querySelector(".nav");
     if(nav) nav.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"nav__link")).join("");
     tabbar.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"tabbar__link",true)).join("");
-    const exploreMenu=header.querySelector("#shellExploreMenu");
+    // The menu is portaled to <body> later in mountShell, so settings and
+    // feature updates must resolve it from the document rather than header.
+    const exploreMenu=document.getElementById("shellExploreMenu");
     if(exploreMenu) exploreMenu.innerHTML=`<div class="menu__label">Explore</div>${renderExploreGroups(getExplorePages(),page,base)}`;
   };
   onSettingsChange(rerenderPrimaryNavigation);
 
-  // Client-setting-gated pages (e.g. the Cash Market graph) are shown or
-  // hidden purely from the device settings, with no server round-trip, and
-  // update live when the toggle changes on this or another tab.
-  const syncSettingGatedNav = () => {
-    const settings = getSettings();
-    for (const item of PAGES.filter((page) => page.settingGated)) {
-      const enabled = Boolean(settings[item.settingGated]);
-      // The Explore menu is portaled to <body> (see below), so it is no longer
-      // inside <header>. Query it globally — scoping to `header` here would make
-      // the "already present?" check always miss and append a duplicate on every
-      // settings change.
-      const existingLink = document.querySelector(`#shellExploreMenu [data-setting-link="${item.id}"]`);
-      if (enabled) {
-        if (!existingLink) {
-          const link = appendExploreItem(item, page, base);
-          if (link) link.dataset.settingLink = item.id;
-          if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
-        }
-      } else {
-        removeExploreItem(existingLink);
-      }
-    }
-  };
-  syncSettingGatedNav();
-  onSettingsChange(syncSettingGatedNav);
-
   // Site feature switches are controlled from Upcoming. Feature pages and
   // their top-bar links remain hidden until an authorized user enables them.
   loadEnabledSections().then((sectionMap) => {
-    window.__gemIsAdmin = sectionMap?.__isAdmin === true;
+    enabledSectionMap = sectionMap;
+    shellIsAdmin = sectionMap?.__isAdmin === true;
     rerenderPrimaryNavigation();
-    const add = (item) => {
-      const section = sectionMap.get(item.sectionId);
-      if (!section?.enabled) return;
-      const configured = {
-        ...item,
-        label: section.label || item.label,
-        short: section.short_label || section.label || item.short,
-        // Section configuration controls availability and wording, but uses the
-        // purpose-built navigation icon. This prevents a generic configured gem
-        // symbol from making every Explore destination look identical.
-        icon: item.icon
-      };
-      if (document.querySelector(`[data-section-link="${item.id}"]`)) return;
-      const link = appendExploreItem(configured, page, base);
-      if (link) link.dataset.sectionLink = item.id;
-      if (item.id === page) header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
-    };
-    PAGES.filter(x => x.sectionId).forEach(add);
     const mainSections = {"roll-stage":"section-roll-stage","summary":"section-summary","automation":"section-automation","session-history":"section-session-history"};
     for (const [settingId, elementId] of Object.entries(mainSections)) {
       if (sectionMap.has(settingId) && sectionMap.get(settingId)?.enabled === false) {
@@ -601,7 +582,8 @@ export function mountShell({ page, base = "./" }) {
           return;
         }
 
-        appendExploreItem(adminPage, page, base);
+        shellIsAdmin = true;
+        rerenderPrimaryNavigation();
         if (page === "admin") header.querySelector("#shellExploreButton")?.setAttribute("aria-current", "page");
       });
 
@@ -1704,41 +1686,6 @@ function renderExploreGroups(items, activePage, base) {
       </details>
     `;
   }).join("");
-}
-
-function refreshExploreGroup(group) {
-  if (!group) return;
-  const count = group.querySelectorAll(".topbar-explore__item").length;
-  group.hidden = count === 0;
-  const badge = group.querySelector(".topbar-explore__group-count");
-  if (badge) {
-    badge.textContent = String(count);
-    badge.setAttribute("aria-label", `${count} destination${count === 1 ? "" : "s"}`);
-  }
-}
-
-function appendExploreItem(item, activePage, base) {
-  const groupDefinition = exploreGroupFor(item);
-  const group = document.querySelector(`#shellExploreMenu [data-explore-group="${groupDefinition.id}"]`);
-  const items = group?.querySelector(`[data-explore-group-items="${groupDefinition.id}"]`);
-  if (!group || !items) return null;
-
-  items.insertAdjacentHTML("beforeend", menuNavLink(item, activePage, base));
-  const link = items.lastElementChild;
-  refreshExploreGroup(group);
-  if (item.id === activePage || item.match?.includes(activePage)) {
-    group.closest("#shellExploreMenu")
-      ?.querySelectorAll(".topbar-explore__group")
-      .forEach((candidate) => { candidate.open = candidate === group; });
-  }
-  return link;
-}
-
-function removeExploreItem(link) {
-  if (!link) return;
-  const group = link.closest(".topbar-explore__group");
-  link.remove();
-  refreshExploreGroup(group);
 }
 
 function menuNavLink(item, activePage, base) {

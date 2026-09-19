@@ -62,7 +62,7 @@ const NAV_ITEMS = [
   ["collection-hall","Collection Hall"],["mining-events","Mining Events"],["merchant-caravan","Merchant Caravan"],
   ["research-tree","Research Tree"],["admin","Admin"]
 ];
-const CORE_DEFAULT = ["roll","inventory","crafting","boosts","auctions","expeditions"];
+const CORE_DEFAULT = ["roll","inventory","crafting","boosts","auctions","expeditions","minigames"];
 function renderNavigationCustomizer(){
   const mount=document.getElementById("topBarNavigationList"); if(!mount)return;
   const settings=getSettings(); const selected=new Set(settings.topBarMain||CORE_DEFAULT);
