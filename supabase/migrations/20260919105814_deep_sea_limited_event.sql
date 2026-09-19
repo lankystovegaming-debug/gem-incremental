@@ -115,6 +115,8 @@ create table public.player_deep_sea_purchases (
 create table deep_sea_private.roll_commits (
  player_id uuid not null, run_id text not null, lease_id uuid not null, genuine_roll bigint not null, result jsonb not null, committed_at timestamptz not null default clock_timestamp(), primary key(player_id,run_id,lease_id,genuine_roll)
 );
+alter table deep_sea_private.roll_commits enable row level security;
+revoke all on table deep_sea_private.roll_commits from public,anon,authenticated;
 
 alter table public.player_deep_sea_state enable row level security;
 alter table public.player_deep_sea_progress enable row level security;

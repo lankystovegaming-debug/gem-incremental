@@ -17,6 +17,15 @@ create table public.global_event_definitions(event_key text primary key,name tex
 await db.exec(await readFile(new URL("../supabase/migrations/20260919105814_deep_sea_limited_event.sql",import.meta.url),"utf8"));
 const gems=await db.query("select count(*)::int n from public.deep_sea_gems");
 if(gems.rows[0].n!==19)throw new Error("Deep Sea catalog was not seeded");
+const privateSecurity=await db.query(`
+select c.relrowsecurity,
+       has_table_privilege('anon','deep_sea_private.roll_commits','select') anon_select,
+       has_table_privilege('authenticated','deep_sea_private.roll_commits','select') authenticated_select
+from pg_class c join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='deep_sea_private' and c.relname='roll_commits'
+`);
+if(privateSecurity.rows[0]?.relrowsecurity!==true)throw new Error("Private roll commits must have RLS enabled");
+if(privateSecurity.rows[0]?.anon_select||privateSecurity.rows[0]?.authenticated_select)throw new Error("Client roles must not have direct roll commit access");
 const totals=await db.query("select gem_name,sum(quantity)::int total from public.deep_sea_depth_requirements group by gem_name order by gem_name");
 if(totals.rows.reduce((n,row)=>n+row.total,0)!==74137)throw new Error("Depth requirements total changed");
 console.log("Deep Sea migration applies cleanly to the live-schema fixture.");
