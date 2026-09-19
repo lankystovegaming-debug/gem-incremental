@@ -69,6 +69,8 @@
       <button class="admin-tab-btn" type="button" data-admin-tab="content">Content &amp; events</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="equipment">Equipment</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="pets">Pets</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="workbench">Workbench</button>
+      <button class="admin-tab-btn" type="button" data-admin-tab="limited-events">Limited Time</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="appeals">Appeals</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="alerts">Alerts</button>
@@ -714,7 +716,7 @@
         <input id="equipmentAdminName" placeholder="Display name">
         <select id="equipmentAdminCategory" class="select">
           <option value="pickaxe">Pickaxe</option><option value="clover">Clover</option>
-          <option value="lantern">Lantern</option><option value="boots">Boots</option><option value="bag">Bag</option><option value="petGear">Pet Gear</option>
+          <option value="lantern">Lantern</option><option value="boots">Boots</option><option value="bag">Bag</option><option value="petGear">Pet Gear</option><option value="limited-time">Limited Time</option><option value="armory">Armory</option><option value="weapons">Weapons</option>
         </select>
         <input id="equipmentAdminTier" type="number" min="1" value="20" placeholder="Tier">
       </div>
@@ -752,6 +754,42 @@
       <textarea id="petAdminDescription" class="admin-textarea" rows="2" placeholder="Pet description"></textarea>
       <button class="btn btn--primary" id="petAdminSave" type="button">Save pet</button>
       <div id="petsAdminList" class="admin-event-list"></div>
+    </section>
+
+
+    <section class="card" id="workbenchAdminPanel" hidden>
+      <div class="panel-heading"><div><h2>Workbench</h2><p class="page-head__sub">Design the future forge-style equipment system. It is OFF and unavailable to players until you enable it here.</p></div></div>
+      <div id="workbenchAdminConfig"></div>
+      <div class="editor-section">
+        <h3>Equipment tabs</h3>
+        <p class="mini-note">Current tabs remain enabled. Armory and Weapons start disabled. Limited Time is always available as an event destination and is not placed in the main top bar.</p>
+        <div id="equipmentTabControls" class="admin-event-list"></div>
+      </div>
+      <button class="btn btn--primary" id="workbenchAdminSave" type="button">Save Workbench</button>
+    </section>
+
+    <section class="card" id="limitedEventsAdminPanel" hidden>
+      <div class="panel-heading"><div><h2>Limited Time</h2><p class="page-head__sub">Start and fully configure temporary events. Limited Time stays in Explore and cannot be moved into the main top bar.</p></div><button class="btn" id="limitedEventRefresh" type="button">Refresh</button></div>
+      <div class="admin-control" style="gap:10px;flex-wrap:wrap">
+        <input id="limitedEventId" placeholder="Event ID, e.g. deep-sea">
+        <input id="limitedEventName" placeholder="Event name">
+        <input id="limitedEventStart" type="datetime-local">
+        <input id="limitedEventEnd" type="datetime-local">
+        <label><input id="limitedEventEnabled" type="checkbox"> Active / visible</label>
+      </div>
+      <textarea id="limitedEventIntro" class="admin-textarea" rows="3" placeholder="Event introduction"></textarea>
+      <div class="editor-section"><h3>Presentation</h3><div class="form-grid">
+        <label>Background color<input id="limitedEventBg" value="#071923"></label>
+        <label>Background image URL<input id="limitedEventBgImage"></label>
+        <label>Font family<input id="limitedEventFont" value="system-ui, sans-serif"></label>
+        <label>Font weight<input id="limitedEventWeight" type="number" value="600"></label>
+        <label>Font size<input id="limitedEventSize" value="16px"></label>
+      </div></div>
+      <div class="editor-section"><h3>Currencies</h3><textarea id="limitedEventCurrencies" class="admin-textarea" rows="4" placeholder='[{"id":"tide-tokens","name":"Tide Tokens","symbol":"TT","starting":0}]'></textarea></div>
+      <div class="editor-section"><h3>Equipment & crafting</h3><p class="mini-note">Use JSON to define boosts, special effects, recipes, minimum total rolls, special weight and mutated specimens. Every equipment category is accepted, including disabled tabs.</p><textarea id="limitedEventEquipment" class="admin-textarea" rows="12" placeholder='{"items":[],"crafting":[]}'></textarea></div>
+      <div class="editor-section"><h3>Full event configuration</h3><textarea id="limitedEventConfig" class="admin-textarea" rows="12" placeholder='{"pool":"deep-sea","rewards":[],"rules":{}}'></textarea></div>
+      <div class="admin-button-row"><button class="btn btn--primary" id="limitedEventSave">Save event</button><button class="btn btn--danger" id="limitedEventDelete">Delete event</button></div>
+      <div id="limitedEventsList" class="admin-event-list"></div>
     </section>
 
     <section class="card" id="customCatalogPanel" hidden>

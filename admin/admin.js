@@ -2479,6 +2479,8 @@ const economyBreakdown = mountEconomy({
     content: ["#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     equipment: ["#equipmentAdminPanel"],
     pets: ["#petsAdminPanel"],
+    workbench: ["#workbenchAdminPanel"],
+    "limited-events": ["#limitedEventsAdminPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
     appeals: ["#appealsPanel"],
     alerts: ["#alertsPanel"],
@@ -2509,7 +2511,9 @@ const economyBreakdown = mountEconomy({
       if (typeof loadReferrals === "function") loadReferrals();
     },
     alerts: () => (typeof loadAlerts === "function" ? loadAlerts() : null),
-    cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") })
+    cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") }),
+    workbench: () => loadWorkbenchAdmin(),
+    "limited-events": () => loadLimitedEventsAdmin()
   };
   const loaded = new Set();
   let active = "search";
@@ -2585,7 +2589,7 @@ async function saveCustomCatalog(){
 
 async function loadEquipmentAdmin() {
   const list=document.getElementById("equipmentAdminList"); if(!list) return;
-  const {data,error}=await supabase.from("admin_content_catalog").select("*").eq("content_type","equipment").order("name");
+  const {data,error}=await supabase.rpc("admin_list_equipment");
   if(error){list.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
   list.innerHTML=(data||[]).map(r=>{
     const c=r.config||{};
@@ -2627,7 +2631,7 @@ async function saveEquipmentAdmin() {
 
 async function loadPetsAdmin() {
   const list=document.getElementById("petsAdminList"); if(!list) return;
-  const {data,error}=await supabase.from("game_pets").select("*").order("name");
+  const {data,error}=await supabase.rpc("admin_list_pets");
   if(error){list.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
   list.innerHTML=(data||[]).map(r=>`<article class="admin-event">
     <strong>${escapeHtml(r.name)}</strong>
@@ -2663,6 +2667,97 @@ document.getElementById("equipmentAdminRefresh")?.addEventListener("click",loadE
 document.getElementById("equipmentAdminSave")?.addEventListener("click",saveEquipmentAdmin);
 document.getElementById("petsAdminRefresh")?.addEventListener("click",loadPetsAdmin);
 document.getElementById("petAdminSave")?.addEventListener("click",savePetAdmin);
+
+
+async function loadWorkbenchAdmin(){
+  const mount=document.getElementById("workbenchAdminConfig");
+  if(!mount)return;
+  const {data,error}=await supabase.rpc("admin_get_workbench_config");
+  if(error){mount.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
+  const c=data||{};
+  mount.innerHTML=`<div class="form-grid">
+    <label class="toggle-field"><input id="wbEnabled" type="checkbox" ${c.enabled?"checked":""}><span>Workbench enabled</span></label>
+    <label>Display name<input id="wbName" value="${escapeHtml(c.display_name||"Workbench")}"></label>
+    <label>Minimum gems<input id="wbMin" type="number" value="${c.min_materials??3}"></label>
+    <label>Maximum gems<input id="wbMax" type="number" value="${c.max_materials??50}"></label>
+    <label>Seconds per stage<input id="wbTime" type="number" step=".5" value="${c.stage_time_seconds??8}"></label>
+    <label>Minor trait threshold<input id="wbMinor" type="number" step=".01" value="${c.trait_threshold_minor??.1}"></label>
+    <label>Full trait threshold<input id="wbFull" type="number" step=".01" value="${c.trait_threshold_full??.3}"></label>
+  </div>
+  <div class="editor-section"><h3>Quality multipliers</h3><div class="form-grid">
+    <label>Broken<input id="wbBroken" type="number" step=".01" value="${c.quality_broken??.65}"></label>
+    <label>Poor<input id="wbPoor" type="number" step=".01" value="${c.quality_poor??.8}"></label>
+    <label>Average<input id="wbAverage" type="number" step=".01" value="${c.quality_average??1}"></label>
+    <label>Good<input id="wbGood" type="number" step=".01" value="${c.quality_good??1.1}"></label>
+    <label>Excellent<input id="wbExcellent" type="number" step=".01" value="${c.quality_excellent??1.2}"></label>
+    <label>Masterwork<input id="wbMasterwork" type="number" step=".01" value="${c.quality_masterwork??1.3}"></label>
+  </div></div>`;
+  const tabs=["armory","weapons"];
+  const labels={armory:"Armory",weapons:"Weapons"};
+  const {data:sectionRows,error:sectionError}=await supabase.rpc("admin_list_equipment_tabs");
+  if(sectionError){document.getElementById("equipmentTabControls").innerHTML=`<p>${escapeHtml(sectionError.message)}</p>`;return;}
+  const byId=Object.fromEntries((sectionRows||[]).map(x=>[x.id,x]));
+  document.getElementById("equipmentTabControls").innerHTML=tabs.map(id=>{
+    const key=`equipment-${id}`;
+    const row=byId[key];
+    const enabled=row?.enabled === true;
+    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${labels[id]}</span><span class="setting__sub">Future combat tab</span></span><span class="setting__control"><input type="checkbox" data-equipment-tab="${id}" ${enabled?"checked":""}></span></label>`;
+  }).join("");
+}
+async function saveWorkbenchAdmin(){
+  const config={
+    enabled:document.getElementById("wbEnabled").checked,
+    display_name:document.getElementById("wbName").value.trim(),
+    min_materials:Number(document.getElementById("wbMin").value)||3,max_materials:Number(document.getElementById("wbMax").value)||50,
+    stage_time_seconds:Number(document.getElementById("wbTime").value)||8,trait_threshold_minor:Number(document.getElementById("wbMinor").value)||.1,trait_threshold_full:Number(document.getElementById("wbFull").value)||.3,
+    quality_broken:Number(document.getElementById("wbBroken").value)||.65,quality_poor:Number(document.getElementById("wbPoor").value)||.8,quality_average:Number(document.getElementById("wbAverage").value)||1,quality_good:Number(document.getElementById("wbGood").value)||1.1,quality_excellent:Number(document.getElementById("wbExcellent").value)||1.2,quality_masterwork:Number(document.getElementById("wbMasterwork").value)||1.3
+  };
+  const {error}=await supabase.rpc("admin_save_workbench_config",{p_config:config});
+  if(error){notify.error("Workbench save failed",error.message);return;}
+  for(const cb of document.querySelectorAll("[data-equipment-tab]")){
+    const {error:e}=await supabase.rpc("admin_set_equipment_tab",{p_tab:cb.dataset.equipmentTab,p_enabled:cb.checked});
+    if(e){notify.error("Equipment tab update failed",e.message);return;}
+  }
+  notify.success("Workbench saved","Workbench remains disabled unless you enabled it.");
+  loadWorkbenchAdmin();
+}
+document.getElementById("workbenchAdminSave")?.addEventListener("click",saveWorkbenchAdmin);
+
+function toLocalDatetimeInput(value){
+  if(!value)return "";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "";
+  const pad=part=>String(part).padStart(2,"0");
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+async function loadLimitedEventsAdmin(){
+  const {data,error}=await supabase.rpc("admin_list_limited_events");
+  const list=document.getElementById("limitedEventsList");
+  if(error){if(list)list.innerHTML=`<p>${escapeHtml(error.message)}</p>`;return;}
+  if(list)list.innerHTML=(data||[]).map(e=>`<article class="admin-event"><strong>${escapeHtml(e.name)}</strong><span class="badge">${e.enabled?"Active":"Disabled"}</span><span class="badge">${e.starts_at?new Date(e.starts_at).toLocaleString():"Unscheduled"} → ${e.ends_at?new Date(e.ends_at).toLocaleString():"No end"}</span><button class="btn btn--sm" data-limited-edit="${escapeHtml(e.id)}">Edit</button></article>`).join("")||"<p>No limited events.</p>";
+  list?.querySelectorAll("[data-limited-edit]").forEach(b=>b.onclick=()=>{
+    const e=(data||[]).find(x=>x.id===b.dataset.limitedEdit); if(!e)return;
+    document.getElementById("limitedEventId").value=e.id;document.getElementById("limitedEventName").value=e.name;document.getElementById("limitedEventIntro").value=e.introduction||"";document.getElementById("limitedEventEnabled").checked=!!e.enabled;
+    document.getElementById("limitedEventStart").value=toLocalDatetimeInput(e.starts_at);
+    document.getElementById("limitedEventEnd").value=toLocalDatetimeInput(e.ends_at);
+    const c=e.config||{};const p=c.presentation||{};
+    document.getElementById("limitedEventBg").value=p.backgroundColor||"#071923";document.getElementById("limitedEventBgImage").value=p.backgroundImage||"";document.getElementById("limitedEventFont").value=p.fontFamily||"system-ui, sans-serif";document.getElementById("limitedEventWeight").value=p.fontWeight??600;document.getElementById("limitedEventSize").value=p.fontSize||"16px";
+    document.getElementById("limitedEventCurrencies").value=JSON.stringify(c.currencies||[],null,2);document.getElementById("limitedEventEquipment").value=JSON.stringify({items:c.equipment||[],crafting:c.crafting||[]},null,2);document.getElementById("limitedEventConfig").value=JSON.stringify(c,null,2);
+  });
+}
+async function saveLimitedEventAdmin(){
+  const id=document.getElementById("limitedEventId").value.trim(),name=document.getElementById("limitedEventName").value.trim();
+  let config={};try{config=JSON.parse(document.getElementById("limitedEventConfig").value||"{}")}catch{notify.error("Invalid event config","Use valid JSON.");return}
+  try{const eq=JSON.parse(document.getElementById("limitedEventEquipment").value||"{}");config.equipment=eq.items||[];config.crafting=eq.crafting||[];config.currencies=JSON.parse(document.getElementById("limitedEventCurrencies").value||"[]");}catch{notify.error("Invalid event JSON","Currencies/equipment must be valid JSON.");return}
+  config.presentation={...(config.presentation||{}),backgroundColor:document.getElementById("limitedEventBg").value,backgroundImage:document.getElementById("limitedEventBgImage").value,fontFamily:document.getElementById("limitedEventFont").value,fontWeight:Number(document.getElementById("limitedEventWeight").value)||600,fontSize:document.getElementById("limitedEventSize").value};
+  const {error}=await supabase.rpc("admin_save_limited_event",{p_id:id,p_name:name,p_introduction:document.getElementById("limitedEventIntro").value,p_enabled:document.getElementById("limitedEventEnabled").checked,p_starts_at:document.getElementById("limitedEventStart").value?new Date(document.getElementById("limitedEventStart").value).toISOString():null,p_ends_at:document.getElementById("limitedEventEnd").value?new Date(document.getElementById("limitedEventEnd").value).toISOString():null,p_config:config});
+  if(error)notify.error("Event save failed",error.message);else{notify.success("Limited event saved",name);loadLimitedEventsAdmin();}
+}
+async function deleteLimitedEventAdmin(){const id=document.getElementById("limitedEventId").value.trim();if(!id)return;if(!confirm("Delete this limited event?"))return;const {error}=await supabase.rpc("admin_delete_limited_event",{p_id:id});if(error)notify.error("Delete failed",error.message);else{notify.success("Deleted","");loadLimitedEventsAdmin();}}
+document.getElementById("limitedEventRefresh")?.addEventListener("click",loadLimitedEventsAdmin);
+document.getElementById("limitedEventSave")?.addEventListener("click",saveLimitedEventAdmin);
+document.getElementById("limitedEventDelete")?.addEventListener("click",deleteLimitedEventAdmin);
 
 async function loadFeatureCatalog(){
   const list=document.getElementById("featureCatalogList");if(!list)return;

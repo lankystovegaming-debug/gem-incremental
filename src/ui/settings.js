@@ -50,7 +50,12 @@ const DEFAULTS = {
   // Off by default: unlocks the Global Cash graph page (stock-style
   // chart of the economy over time).
   cashGraph: false,
-  gemRealism: "classic"
+  gemRealism: "classic",
+  // Navigation preference: these are the items kept directly in the main
+  // top bar. Everything else stays in Explore. The defaults intentionally
+  // preserve the existing navigation exactly.
+  topBarMain: ["roll","inventory","crafting","boosts","auctions","expeditions","minigames","admin"],
+  topBarExploreHidden: []
 };
 
 
@@ -65,7 +70,7 @@ export function hydrateSettingsFromCloud() {
     if (error) throw error;
     const cloud = data?.settings ?? {};
     const importPatch = {};
-    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism']) {
+    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism','topBarMain','topBarExploreHidden']) {
       if (!(key in cloud)) importPatch[key] = state[key];
     }
     if (cloud.legacyAutoSell == null) {
@@ -134,7 +139,13 @@ function sanitise(value) {
 
     gemRealism: GEM_REALISM_LEVELS.some((entry) => entry.id === value.gemRealism)
       ? value.gemRealism
-      : DEFAULTS.gemRealism
+      : DEFAULTS.gemRealism,
+    topBarMain: Array.isArray(value.topBarMain)
+      ? [...new Set(value.topBarMain.map(String))].slice(0, 12)
+      : [...DEFAULTS.topBarMain],
+    topBarExploreHidden: Array.isArray(value.topBarExploreHidden)
+      ? [...new Set(value.topBarExploreHidden.map(String))].slice(0, 40)
+      : []
   };
 }
 

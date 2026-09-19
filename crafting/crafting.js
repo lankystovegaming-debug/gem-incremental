@@ -10,6 +10,7 @@ import {
 } from "../src/logic/crafting.js";
 
 import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { supabase } from "../src/backend/supabase.js";
 import {
   loadCloudCraftingState,
   manuallyDepositCloudRequirement,
@@ -54,6 +55,22 @@ const autoBanner = document.getElementById("autoCraftBanner");
 const autoBannerName = document.getElementById("autoCraftName");
 const autoBannerClear = document.getElementById("autoCraftClear");
 const craftingNext = document.getElementById("craftingNext");
+const EQUIPMENT_TAB_SECTION_IDS = {
+  "limited-time":"equipment-limited-time",
+  armory:"equipment-armory",
+  weapons:"equipment-weapons"
+};
+async function applyEquipmentTabVisibility(){
+  const {data}=await supabase.from("game_section_settings").select("id,enabled").in("id",Object.values(EQUIPMENT_TAB_SECTION_IDS));
+  const map=Object.fromEntries((data||[]).map(x=>[x.id,!!x.enabled]));
+  document.querySelectorAll("[data-category]").forEach(tab=>{
+    const cat=tab.dataset.category;
+    const sid=EQUIPMENT_TAB_SECTION_IDS[cat];
+    if(!sid)return;
+    tab.hidden= sid==="equipment-limited-time" ? false : !(map[sid]===true);
+  });
+}
+
 
 document.getElementById("autoCraftIcon").innerHTML = icons.bolt;
 
@@ -1414,6 +1431,7 @@ async function refresh() {
     state.consumables = consumables;
   }
 
+  await applyEquipmentTabVisibility();
   renderRecipes();
 }
 

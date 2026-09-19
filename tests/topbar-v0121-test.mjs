@@ -9,8 +9,13 @@ assert.match(shell, /CORE_PAGE_IDS[^\n]+roll[^\n]+inventory[^\n]+crafting[^\n]+b
 assert.match(shell, /id: "expeditions", label: "Expeditions", short: "Exped\.", href: "expeditions\/", icon: icons\.map/);
 assert.match(shell, /shellExploreButton/);
 assert.match(shell, /shellExploreMenu/);
-assert.match(shell, /appendExploreItem\(configured/);
-assert.match(shell, /tabbar\.innerHTML = CORE_PAGES/);
+assert.match(shell, /function getNavigationPages\(\)/);
+assert.match(shell, /DEFAULT_TOP_BAR_IDS = \[\.\.\.CORE_PAGE_IDS\]/);
+assert.match(shell, /enabledSectionMap\.get\(item\.sectionId\)\?\.enabled === true/);
+assert.match(shell, /\.filter\(item=>item\.id!=="limited-events"/);
+assert.match(shell, /tabbar\.innerHTML = getNavigationPages\(\)\.map/);
+assert.match(shell, /const exploreMenu=document\.getElementById\("shellExploreMenu"\)/);
+assert.match(shell, /enabledSectionMap = sectionMap;[\s\S]*rerenderPrimaryNavigation\(\)/);
 assert.doesNotMatch(shell, /header\.querySelector\("\.nav"\)\?\.insertAdjacentHTML\("beforeend", navLink\(configured/);
 assert.match(styles, /\.topbar-explore__menu/);
 assert.match(updates, /v0\.12\.1/);
