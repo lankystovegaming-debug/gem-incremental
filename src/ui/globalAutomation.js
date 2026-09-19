@@ -136,7 +136,7 @@ async function processRoll(data) {
   if (!data) return;
 
   let outcome = "Stored in inventory";
-  let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0)).id };
+  let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0), data.gem?.name).id };
   if (data.bundle?.status === "deposited") {
     outcome = "Contributed to your Collection";
     sessionOutcome.type = "bundle-contributed";

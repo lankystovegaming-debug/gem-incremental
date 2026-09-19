@@ -223,7 +223,7 @@ function renderSummary() {
 function renderTierBreakdown(entries) {
   const tiers = new Map();
   for (const entry of entries) {
-    const tier = rarityTier(entry.gem.rarity);
+    const tier = rarityTier(entry.gem.rarity, entry.gem.name);
     const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
     bucket.total += 1;
     if (discoveredRecord(entry)) bucket.found += 1;
@@ -258,7 +258,7 @@ function mutationNameHtml(ids) {
 }
 
 function gemCard(entry) {
-  const tier = rarityTier(entry.gem.rarity);
+  const tier = rarityTier(entry.gem.rarity, entry.gem.name);
   const record = discoveredRecord(entry);
   const secretLocked = isSecretUndiscovered(entry);
 
@@ -357,7 +357,7 @@ function renderList() {
 
   const bands = new Map();
   for (const entry of list) {
-    const tier = rarityTier(entry.gem.rarity);
+    const tier = rarityTier(entry.gem.rarity, entry.gem.name);
     if (!bands.has(tier.id)) bands.set(tier.id, { tier, entries: [] });
     bands.get(tier.id).entries.push(entry);
   }
@@ -386,7 +386,7 @@ gemList.addEventListener("toggle", (event) => {
   if (band.open) {
     expandedBands.add(id);
     if (container && !container.childElementCount) {
-      const entries = visibleEntries().filter((entry) => rarityTier(entry.gem.rarity).id === id);
+      const entries = visibleEntries().filter((entry) => rarityTier(entry.gem.rarity, entry.gem.name).id === id);
       container.innerHTML = entries.map(gemCard).join("");
     }
   } else {

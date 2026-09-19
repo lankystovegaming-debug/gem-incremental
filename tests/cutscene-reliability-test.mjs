@@ -91,6 +91,7 @@ assert.ok(deepSeaScenes.every((definition) => definition.worldExitAt < definitio
 const deepSeaFinales = deepSeaScenes.slice(-4);
 assert.equal(new Set(deepSeaFinales.map((definition) => definition.cameraMotion)).size, 4, "the four rarest Deep Sea scenes need distinct camera movement");
 assert.equal(new Set(deepSeaFinales.map((definition) => definition.revealPosition)).size, 4, "the four rarest Deep Sea reveals need distinct framing");
+assert.equal(BESPOKE_CUTSCENES["soul of the sea god"].revealPosition, "center", "the final Deep Sea gem must reveal at centre stage");
 assert.ok(
   Object.values(BESPOKE_CUTSCENES).filter((definition) => definition.primitives.includes("reticle")).length <= 3,
   "reticles must be an occasional scene primitive, not a cinematic watermark"

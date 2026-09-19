@@ -28,7 +28,7 @@ export const BESPOKE_CUTSCENES = Object.freeze({
   "leviathan scale": scene(13_000,"deep-sea-leviathan",["DO NOT LOOK UP"],{focus:false,theatre:true,quiet:true,cameraMotion:"track",primitives:["sea-leviathan-pass"],textPosition:"lower-right",revealPosition:"lower-right",revealAt:.84,worldExitAt:.81}),
   "heart of the sea": scene(14_500,"deep-sea-heart",[],{focus:false,theatre:true,quiet:true,cameraMotion:"plunge",primitives:["sea-heart-impact"],revealPosition:"right",revealAt:.86,worldExitAt:.83}),
   "neptune's tear": scene(16_000,"deep-sea-neptune",["A GOD'S TEAR DOES NOT DRY"],{focus:false,theatre:true,cameraMotion:"dolly",primitives:["sea-neptune-palace"],textPosition:"upper-right",revealPosition:"left",revealAt:.875,worldExitAt:.845}),
-  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"upper-right",revealAt:.888,worldExitAt:.858}),
+  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"center",revealAt:.888,worldExitAt:.858}),
   "deepcore geode": scene(12_500, "deepcore-pressure", [
     "DEPTH 11,842 m", "LITHOSTATIC LOAD // 4.7 GPa", "THE ROCK OPENED FROM WITHIN"
   ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82 }),

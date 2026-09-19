@@ -192,7 +192,7 @@ function mutationsOf(gem) {
 }
 
 function gemVisual(gem) {
-  const tier = rarityTier(gem.rarity);
+  const tier = rarityTier(gem.rarity, gem.gem_name);
   const mutations = mutationsOf(gem);
   return `
     <div class="auction-gem tier-${tier.id}${mutations.map((m) => ` mutation-${m.id}`).join("")}">
@@ -224,7 +224,7 @@ function lotVisual(auction) {
 
   const count = Number(auction.item_count ?? lot.length);
   const gemRows = gemItems.map((gem) => {
-    const tier = rarityTier(gem.rarity);
+    const tier = rarityTier(gem.rarity, gem.gem_name);
     const muts = mutationsOf(gem);
     return `<li class="lot-item tier-${tier.id}">
       <span class="lot-item__name">${muts.length ? muts.map((m) => escapeHtml(m.name)).join(" ") + " " : ""}${gemNameHtml(gem.gem_name, escapeHtml)}</span>

@@ -47,6 +47,9 @@ assert.equal(rarityTier(99999999).id, "cosmic");
 assert.equal(rarityTier(100000000).id, "anomalous");
 assert.equal(rarityTier(999999999).id, "anomalous");
 assert.equal(rarityTier(1000000000).id, "anomalous-plus");
+for (const [name, rarity] of [["Coral",125000000],["Leviathan Scale",250000000],["Heart of the Sea",500000000],["Neptune's Tear",1000000000]]) {
+  assert.equal(rarityTier(rarity, name).id, "transcendent", `${name} keeps its event-defined tier`);
+}
 
 const rollSource = readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),

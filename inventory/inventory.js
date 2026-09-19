@@ -371,7 +371,7 @@ function visibleGems() {
       return false;
     }
 
-    if (gemRarity.value !== "all" && rarityTier(gem.rarity).id !== gemRarity.value) return false;
+    if (gemRarity.value !== "all" && rarityTier(gem.rarity, gem.gem_name).id !== gemRarity.value) return false;
     const ids = Array.isArray(gem.mutation_ids) ? gem.mutation_ids : (Array.isArray(gem.mutations) ? gem.mutations : []);
     if (gemKind?.value === "custom" && !Boolean(gem.custom || gem.is_custom || gem.gem_type === "custom")) return false;
     if (gemKind?.value === "standard" && Boolean(gem.custom || gem.is_custom || gem.gem_type === "custom")) return false;
@@ -561,7 +561,7 @@ function applySavedFilter(value) {
 function gemCard(gem) {
   if (isRelic(gem)) return relicCard(gem);
 
-  const tier = rarityTier(gem.rarity);
+  const tier = rarityTier(gem.rarity, gem.gem_name);
   const mutationIds = Array.isArray(gem.mutation_ids) && gem.mutation_ids.length
     ? gem.mutation_ids
     : (gem.mutation_id ? [gem.mutation_id] : []);

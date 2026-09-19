@@ -68,7 +68,7 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   const definition = getCutsceneDefinition({ rarity: gem.rarity, gemName });
   const mutationIds = mutationIdsFor(data);
   const mutations = mutationIds.map((id) => getGemMutation(id)).filter(Boolean);
-  const tier = rarityTier(gem.rarity);
+  const tier = rarityTier(gem.rarity, gemName);
   const [anchorX, anchorY] = definition.randomAnchor ? randomSafeAnchor() : ["50%", "50%"];
   const hue = [...gemName].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0) % 360;
 
