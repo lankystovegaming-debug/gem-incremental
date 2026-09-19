@@ -16,19 +16,19 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
-  "prismarine fragment": scene(5_000,"deep-sea-shard",["A SHARD BREAKS FREE","ASCENDING"],{primitives:["water","depth","sea-shard"],revealAt:.72}),
-  "ancient coin": scene(5_000,"deep-sea-coin",["THE HOOK CATCHES","SOMETHING OLD"],{primitives:["water","depth","sea-coin"],revealAt:.72}),
-  pearl: scene(5_000,"deep-sea-pearl",["THE SHELL OPENS"],{primitives:["water","sea-shell"],revealAt:.7}),
-  "pearl of the sea": scene(6_500,"deep-sea-pearl",["A BLUE SHELL RISES","LIGHT FROM WITHIN"],{primitives:["water","depth","sea-shell"],revealAt:.75}),
-  nautilii: scene(6_000,"deep-sea-nautilus",["AN ANCIENT CURRENT","CARRIES IT TO YOU"],{quiet:true,primitives:["water","sea-nautilus"],revealAt:.74}),
-  "sunken treasure": scene(7_000,"deep-sea-treasure",["VESSEL LOCATED","THE CHEST OPENS"],{primitives:["water","depth","sea-chest"],revealAt:.76}),
-  "abyssal coral": scene(10_500,"deep-sea-coral",["THE REEF LOSES ITS COLOUR","ONE BRANCH BREAKS FREE"],{quiet:true,primitives:["water","depth","sea-reef"],revealAt:.8}),
-  trenchstone: scene(11_500,"deep-sea-trench",["-6,000 m","PRESSURE: RISING","THE TRENCH ANSWERS"],{theatre:true,primitives:["water","depth","pressure","sea-trench"],revealAt:.82}),
-  coral: scene(12_000,"deep-sea-golden-coral",["THE REEF TURNS GOLD","EVERYTHING ELSE FADES","ONE LIGHT ASCENDS"],{theatre:true,primitives:["water","depth","sea-reef"],revealAt:.83}),
-  "leviathan scale": scene(13_000,"deep-sea-leviathan",["A SHADOW CROSSES THE OCEAN","DO NOT LOOK UP","A SINGLE SCALE DESCENDS"],{theatre:true,quiet:true,primitives:["water","depth","sea-leviathan"],revealAt:.84}),
-  "heart of the sea": scene(14_500,"deep-sea-heart",["SURFACE LIGHT: LOST","IMPACT","THUMP"],{theatre:true,quiet:true,primitives:["water","depth","pressure","sea-heart"],revealAt:.86}),
-  "neptune's tear": scene(16_000,"deep-sea-neptune",["THE PALACE CRACKS","ALL THE LITTER ANGERS AND SADDENS NEPTUNE.","A GOD'S TEAR DOES NOT DRY"],{theatre:true,primitives:["water","depth","sea-neptune"],revealAt:.875}),
-  "soul of the sea god": scene(18_000,"deep-sea-soul",["NEPTUNE HAS AWAKENED.","THE SHOCKWAVE REACHES THE SURFACE","THE BUBBLE CRACKS"],{secret:true,theatre:true,quiet:true,primitives:["water","depth","pressure","sea-soul"],revealAt:.888}),
+  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"upper-right",revealAt:.66,worldExitAt:.63}),
+  "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"lower-left",revealAt:.67,worldExitAt:.64}),
+  pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"right",revealAt:.68,worldExitAt:.65}),
+  "pearl of the sea": scene(5_800,"deep-sea-grand-pearl",[],{focus:false,quiet:true,primitives:["sea-grand-shell"],revealPosition:"left",revealAt:.72,worldExitAt:.69}),
+  nautilii: scene(5_800,"deep-sea-nautilus",[],{focus:false,quiet:true,primitives:["sea-nautilus"],revealPosition:"lower-right",revealAt:.72,worldExitAt:.69}),
+  "sunken treasure": scene(7_500,"deep-sea-treasure",["VESSEL LOCATED"],{focus:false,primitives:["sea-wreck"],textPosition:"upper-left",revealPosition:"right",revealAt:.76,worldExitAt:.73}),
+  "abyssal coral": scene(10_500,"deep-sea-coral",[],{focus:false,quiet:true,primitives:["sea-bleaching-reef"],revealPosition:"upper-left",revealAt:.8,worldExitAt:.77}),
+  trenchstone: scene(11_500,"deep-sea-trench",["−6,000 m","PRESSURE // CRITICAL"],{focus:false,theatre:true,primitives:["sea-trench-descent"],textPosition:"depth-hud",revealPosition:"bottom",revealAt:.82,worldExitAt:.79}),
+  coral: scene(12_000,"deep-sea-golden-coral",[],{focus:false,theatre:true,primitives:["sea-golden-reef"],revealPosition:"left",revealAt:.83,worldExitAt:.8}),
+  "leviathan scale": scene(13_000,"deep-sea-leviathan",["DO NOT LOOK UP"],{focus:false,theatre:true,quiet:true,cameraMotion:"track",primitives:["sea-leviathan-pass"],textPosition:"lower-right",revealPosition:"lower-right",revealAt:.84,worldExitAt:.81}),
+  "heart of the sea": scene(14_500,"deep-sea-heart",[],{focus:false,theatre:true,quiet:true,cameraMotion:"plunge",primitives:["sea-heart-impact"],revealPosition:"right",revealAt:.86,worldExitAt:.83}),
+  "neptune's tear": scene(16_000,"deep-sea-neptune",["A GOD'S TEAR DOES NOT DRY"],{focus:false,theatre:true,cameraMotion:"dolly",primitives:["sea-neptune-palace"],textPosition:"upper-right",revealPosition:"left",revealAt:.875,worldExitAt:.845}),
+  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"upper-right",revealAt:.888,worldExitAt:.858}),
   "deepcore geode": scene(12_500, "deepcore-pressure", [
     "DEPTH 11,842 m", "LITHOSTATIC LOAD // 4.7 GPa", "THE ROCK OPENED FROM WITHIN"
   ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82 }),

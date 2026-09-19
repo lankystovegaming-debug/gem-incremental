@@ -6,6 +6,8 @@ const sql=readFileSync(new URL("../supabase/migrations/20260919105814_deep_sea_l
 const roll=readFileSync(new URL("../supabase/functions/roll/index.ts",import.meta.url),"utf8");
 const page=readFileSync(new URL("../limited-events/deep-sea/deep-sea.js",import.meta.url),"utf8");
 const cutscenes=readFileSync(new URL("../src/ui/cutsceneConfig.js",import.meta.url),"utf8");
+const cutsceneRenderer=readFileSync(new URL("../src/ui/cutsceneScenes.js",import.meta.url),"utf8");
+const cutsceneStyles=readFileSync(new URL("../src/ui/cutsceneScenes.css",import.meta.url),"utf8");
 
 assert.equal(DEEP_SEA_GEMS.length,19);
 assert.deepEqual(DEEP_SEA_GEMS.at(0),Object.freeze({...DEEP_SEA_GEMS.at(0)}));
@@ -29,6 +31,10 @@ assert.match(roll,/random01\(\) < 1 \/ 2000[^]*random01\(\) < 1 \/ 100/);
 assert.match(roll,/luck \+= 100000/);
 assert.match(page,/Stop Auto Roll before changing pools/);
 for(const gem of ["prismarine fragment","ancient coin","pearl of the sea","sunken treasure","abyssal coral","trenchstone","leviathan scale","heart of the sea","neptune's tear","soul of the sea god"]){assert.ok(cutscenes.includes(gem),`missing ${gem} cutscene`);}
+for(const token of ["cs-camera--track","cs-camera--plunge","cs-camera--dolly","cs-camera--surge","worldExitAt","revealPosition"]){assert.ok((cutscenes+cutsceneRenderer+cutsceneStyles).includes(token),`missing cinematic behavior ${token}`);}
+assert.match(cutsceneRenderer,/definition\.focus === false/);
+assert.match(cutsceneRenderer,/\.cs-camera-stage[^]*is-exiting/);
+assert.match(cutsceneRenderer,/label === "Impossible" && gem\.rarity > 0/);
 
 const requirementBlock=sql.match(/insert into public\.deep_sea_depth_requirements\(step,gem_name,quantity\) values([^;]+);/s)?.[1]??"";
 const totals={};

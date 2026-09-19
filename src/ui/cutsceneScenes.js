@@ -40,9 +40,10 @@ function mutationIdsFor(data) {
 
 function chanceFor(data, gem, mutationIds, replay) {
   try {
-    return replay
+    const label = replay
       ? chanceLabelForResult(gem.name, mutationIds)
       : chanceLabelForRollResult(data, gem, mutationIds);
+    return label === "Impossible" && gem.rarity > 0 ? rarityLabel(gem.rarity) : label;
   } catch {
     return rarityLabel(gem.rarity);
   }
@@ -75,6 +76,7 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   overlay.id = "ultra-cutscene-overlay";
   overlay.className = [
     "cutscene-v5", `cs--${safeClass(definition.theme)}`,
+    definition.cameraMotion ? `cs-camera--${safeClass(definition.cameraMotion)}` : "",
     definition.secret ? "cs--secret" : "cs--catalogued",
     definition.quiet ? "cs--quiet" : "",
     replay ? "cs--replay" : "",
@@ -98,18 +100,20 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
     ? `<div class="cs-reveal__mutations">${mutations.map((mutation) => escapeHtml(mutation.name)).join(" · ")}</div>`
     : "";
   overlay.innerHTML = `
-    <div class="cs-backdrop"></div>
+    <div class="cs-camera-stage">
+      <div class="cs-backdrop"></div>
     ${definition.fakeResult ? `<div class="cs-fake-result">
       <div class="cs-fake-result__gem">${gemIconHtml("Quartz", "gem-icon--roll", [])}</div>
       <strong>Quartz</strong><span>Common · 1 in 2</span><small>Stored in inventory</small>
     </div>` : ""}
-    ${scenePrimitivesMarkup(primitives)}
-    ${specimenMarkup(specimen, { reticle: primitives.includes("reticle") })}
+      ${scenePrimitivesMarkup(primitives)}
+      ${definition.focus === false ? "" : specimenMarkup(specimen, { reticle: primitives.includes("reticle") })}
+    </div>
     ${hasCopy ? `<div class="cs-copy cs-copy--${safeClass(definition.textPosition ?? "center-low")}" aria-live="polite">
       <div class="cs-counter" aria-hidden="true"></div>
       ${definition.beats.map((beat, index) => `<div class="cs-beat" data-beat="${index}">${escapeHtml(beat)}</div>`).join("")}
     </div>` : ""}
-    <div class="cs-reveal">
+    <div class="cs-reveal cs-reveal--${safeClass(definition.revealPosition ?? "center")}">
       <div class="cs-reveal__gem">${specimen}</div>
       <div class="cs-reveal__tier">${definition.secret ? "SECRET" : escapeHtml(tier.name)}</div>
       <h2 class="cs-reveal__name">${gemNameHtml(gemName, escapeHtml)}</h2>
@@ -144,7 +148,12 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
     beat.classList.add("is-current");
     overlay.dataset.phase = `beat-${index}`;
   }));
-  schedule(definition.revealAt ?? 0.78, () => {
+  const revealAt = definition.revealAt ?? 0.78;
+  schedule(definition.worldExitAt ?? Math.max(0, revealAt - 0.04), () => {
+    overlay.querySelector(".cs-camera-stage")?.classList.add("is-exiting");
+    overlay.querySelector(".cs-copy")?.classList.add("is-exiting");
+  });
+  schedule(revealAt, () => {
     overlay.dataset.phase = "reveal";
     beats.forEach((node) => node.classList.remove("is-current"));
     overlay.querySelector(".cs-reveal")?.classList.add("is-visible");
