@@ -1,7 +1,7 @@
 import { supabase } from "../src/backend/supabase.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 15_000;
 const DIGIT_ANIMATION_MS = 620;
 
 const champion = document.getElementById("champion");
@@ -11,8 +11,10 @@ const rollCounter = document.getElementById("rollCounter");
 const rollCounterAnnouncement = document.getElementById("rollCounterAnnouncement");
 const refreshLabel = document.getElementById("refreshLabel");
 const counterStatus = document.getElementById("counterStatus");
+const globalRollCount = document.getElementById("globalRollCount");
 
 let currentCount = null;
+let currentGlobalCount = null;
 let currentUsername = "";
 let nextRefreshAt = 0;
 let refreshTimer = null;
@@ -21,6 +23,35 @@ let refreshInFlight = false;
 
 function formatCount(value) {
   return Math.max(0, Number(value) || 0).toLocaleString("en-US");
+}
+
+function renderGlobalCount(value) {
+  const total = Math.max(0, Number(value) || 0);
+
+  if (total === currentGlobalCount) {
+    return;
+  }
+
+  currentGlobalCount = total;
+  globalRollCount.textContent = formatCount(total);
+}
+
+async function refreshGlobalCount() {
+  try {
+    const { data, error } = await supabase.rpc("get_global_roll_count");
+
+    if (error) {
+      throw error;
+    }
+
+    renderGlobalCount(data);
+  } catch (error) {
+    console.error("Global roll count refresh failed:", error);
+
+    if (currentGlobalCount == null) {
+      globalRollCount.textContent = "—";
+    }
+  }
 }
 
 function setStatus(message, isError = false) {
@@ -158,6 +189,7 @@ async function refreshCounter() {
   refreshInFlight = true;
   setStatus("");
   refreshLabel.textContent = currentCount == null ? "Connecting…" : "Checking now…";
+  refreshGlobalCount();
 
   try {
     const { data, error } = await supabase.functions.invoke("leaderboards");

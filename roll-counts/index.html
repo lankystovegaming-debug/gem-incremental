@@ -59,6 +59,11 @@
         Live roll total
       </div>
 
+      <div class="global-counter">
+        <span class="global-counter__label">Rolls across the whole game</span>
+        <div class="global-counter__value" id="globalRollCount">—</div>
+      </div>
+
       <a class="champion" id="champion" href="../leaderboards/">
         <div class="champion__avatar" id="championAvatar" aria-hidden="true">
           <span>?</span>
@@ -81,24 +86,6 @@
       </div>
 
       <div class="counter-status" id="counterStatus" role="status"></div>
-    </section>
-
-    <section class="counter-details" aria-label="About this counter">
-      <article class="detail-card">
-        <span class="detail-card__icon" aria-hidden="true">◆</span>
-        <div>
-          <h2>Server verified</h2>
-          <p>The count comes from the same authoritative data as the in-game leaderboard.</p>
-        </div>
-      </article>
-
-      <article class="detail-card">
-        <span class="detail-card__icon" aria-hidden="true">↻</span>
-        <div>
-          <h2>Always catching up</h2>
-          <p>The display checks for a new leader and roll total every 30 seconds.</p>
-        </div>
-      </article>
     </section>
   </main>
 
