@@ -55,12 +55,16 @@ assert.equal(settings.shouldAutoKeep({
   mutationIds: ["gilded"]
 }), false);
 
+const chanceLogic = fs.readFileSync(
+  new URL("../src/logic/chances.js", import.meta.url),
+  "utf8"
+);
+assert.match(chanceLogic, /EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000_000/);
 const rollFunction = fs.readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),
   "utf8"
 );
-assert.match(rollFunction, /effectiveRarity\s*>=\s*50_000_000/);
-assert.match(rollFunction, /effective_rarity:\s*effectiveRarity/);
+assert.match(rollFunction, /effectiveRarity,/);
 assert.doesNotMatch(
   rollFunction,
   /const effectiveRarity\s*=\s*Math\.max\([^\n]*mutationMultiplier/

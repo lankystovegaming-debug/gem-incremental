@@ -11,14 +11,14 @@ const migration = readFileSync(
 
 const effectiveThresholdMigration = readFileSync(
   new URL(
-    "../supabase/migrations/20260908025114_raise_effective_chat_threshold_to_50m.sql",
+    "../supabase/migrations/20260920031734_raise_mutation_announcement_threshold_to_1b.sql",
     import.meta.url
   ),
   "utf8"
 );
 
-const rollFunction = readFileSync(
-  new URL("../supabase/functions/roll/index.ts", import.meta.url),
+const chanceLogic = readFileSync(
+  new URL("../src/logic/chances.js", import.meta.url),
   "utf8"
 );
 
@@ -36,11 +36,14 @@ assert.match(migration, /v_effective_rarity >= 100000000/);
 assert.match(migration, /'history',\s*v_history_id/);
 assert.match(migration, /on conflict \(source_type, source_id\).*do nothing/s);
 assert.match(migration, /'rareChatEventId', v_rare_event_id/);
-assert.match(effectiveThresholdMigration, /coalesce\(new\.effective_rarity, 0\) >= 50000000/);
-assert.match(effectiveThresholdMigration, /v_effective_rarity >= 50000000/);
-assert.match(effectiveThresholdMigration, /create trigger persist_rare_roll_chat_event/);
-assert.match(effectiveThresholdMigration, /coalesce\(effective_rarity, 0\) < 50000000/);
-assert.match(rollFunction, /effectiveRarity\s*>=\s*50_000_000/);
-assert.match(chatBackend, /EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 50_000_000/);
+assert.match(effectiveThresholdMigration, /cardinality\(coalesce\(new\.mutation_ids/);
+assert.match(effectiveThresholdMigration, /coalesce\(new\.effective_rarity, 0\) >= 1000000000/);
+assert.match(effectiveThresholdMigration, /after insert or update of rarity, effective_rarity, mutation_ids/);
+assert.match(effectiveThresholdMigration, /v_effective_rarity >= 1000000000/);
+assert.match(effectiveThresholdMigration, /not v_has_mutations and new\.rarity >= 1000000/);
+assert.match(effectiveThresholdMigration, /coalesce\(effective_rarity, 0\) < 1000000000/);
+assert.match(chanceLogic, /EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000_000/);
+assert.match(chatBackend, /EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 1_000_000_000/);
+assert.match(chatBackend, /mutationIds\.length > 0\s*\? effectiveRarity >= EFFECTIVE_ANNOUNCEMENT_THRESHOLD\s*:\s*rarity >= BASE_ANNOUNCEMENT_THRESHOLD/);
 
 console.log("Rare-roll chat event persistence checks passed.");
