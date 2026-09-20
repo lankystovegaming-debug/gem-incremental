@@ -76,8 +76,8 @@ body{
 .app-main{width:min(900px,calc(100% - 32px));margin:0 auto;padding:clamp(64px,10vh,110px) 0 80px}
 .error-card{text-align:center}
 .error-code{
-  margin:0;font-family:var(--font-display);font-size:clamp(6rem,18vw,12rem);line-height:.9;
-  letter-spacing:-.045em;color:var(--text);text-shadow:0 0 40px var(--accent-soft);
+  margin:0;font-family:var(--font-display);font-size:clamp(2.5rem,8vw,6rem);line-height:1.08;
+  letter-spacing:-.035em;color:var(--text);text-shadow:0 0 40px var(--accent-soft);text-wrap:balance;
 }
 .error-title{margin:26px 0 0;font-size:clamp(1.35rem,3vw,2rem);font-weight:700}
 .error-message{margin:10px auto 0;max-width:580px;color:var(--text-muted);font-size:1rem;line-height:1.6}
@@ -98,5 +98,5 @@ body{
   .wallet{display:none}.app-main{width:min(100% - 24px,900px);padding-top:72px}
 }
 @media(max-width:480px){
-  .account-btn__name{display:none}.topbar__tools{margin-left:auto}.error-code{font-size:clamp(5rem,25vw,8rem)}
+  .account-btn__name{display:none}.topbar__tools{margin-left:auto}.error-code{font-size:clamp(2.25rem,11vw,3.5rem)}
 }
