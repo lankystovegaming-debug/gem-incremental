@@ -1492,6 +1492,24 @@ const recipes = [
     ],
     moneyCost: 200000,
     reward: { type: "consumable", id: "mass-potion-4", name: "Mass Potion IV", family: "weightMultiplier", tier: 4, amount: 1, effectValue: 0.50 }
+  },
+  {
+    id: "money-up-potion", name: "Money Up Potion", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-1", amount: 5 },
+      { type: "consumable", consumableId: "fortune-potion-1", amount: 5 }
+    ],
+    moneyCost: 5000,
+    reward: { type: "consumable", id: "money-up-potion", name: "Money Up Potion", family: "gemValue", tier: 1, amount: 1, effectValue: 1.5 }
+  },
+  {
+    id: "money-up-potion-2", name: "Money Up Potion II", category: "potion",
+    requirements: [
+      { type: "consumable", consumableId: "lucky-potion-2", amount: 5 },
+      { type: "consumable", consumableId: "fortune-potion-2", amount: 5 }
+    ],
+    moneyCost: 25000,
+    reward: { type: "consumable", id: "money-up-potion-2", name: "Money Up Potion II", family: "gemValue", tier: 2, amount: 1, effectValue: 2 }
   }
 ];
 

@@ -108,7 +108,8 @@ export default {
     const [{ data: newMoney, error: sellError }, { data: sellMultiplier, error: multiplierError }] = await Promise.all([
       ctx.supabaseAdmin.rpc("sell_inventory_gem", {
         p_player_id: playerId,
-        p_specimen_id: specimenId
+        p_specimen_id: specimenId,
+        p_source: "manual"
       }),
       ctx.supabaseAdmin.rpc("equipment_gem_sell_multiplier", { p_player_id: playerId })
     ]);
