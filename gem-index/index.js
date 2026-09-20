@@ -156,11 +156,26 @@ function discoveredRecord(entry) {
   return state.combinations[entry.key] ?? null;
 }
 
+function isSecretGem(gem) {
+  return Number(gem.rarity) >= 10_000_000 || gem.hideRarityUntilDiscovered === true;
+}
+
+function hasDiscoveredGem(gemName) {
+  return Object.values(state.combinations).some((record) => record.gemName === gemName);
+}
+
 function isSecretUndiscovered(entry) {
   // The live Supabase catalog is authoritative. Enforce the threshold from
   // the rarity itself so legacy rows cannot leak before their backfill lands.
   if (Number(entry.gem.rarity) < 10_000_000 && !entry.gem.hideRarityUntilDiscovered) return false;
-  return !Object.values(state.combinations).some((record) => record.gemName === entry.gem.name);
+  return !hasDiscoveredGem(entry.gem.name);
+}
+
+function displayedAsDiscovered(entry) {
+  if (discoveredRecord(entry)) return true;
+  // A secret gem's identity is permanently revealed by any mutation
+  // combination. The selected combination can still remain unrolled.
+  return selectedCombination() !== null && isSecretGem(entry.gem) && hasDiscoveredGem(entry.gem.name);
 }
 
 function dailyAvailabilityLabel(gem) {
@@ -194,7 +209,7 @@ function renderSummary() {
 
   if (selected.length && !selected.includes("none")) {
     const entries = catalogGems.map((gem) => makeEntry(gem, selected));
-    const discovered = entries.filter((entry) => discoveredRecord(entry)).length;
+    const discovered = entries.filter(displayedAsDiscovered).length;
     const total = entries.length;
     discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
     discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
@@ -204,7 +219,7 @@ function renderSummary() {
 
   if (selected.includes("none")) {
     const entries = catalogGems.map((gem) => makeEntry(gem, []));
-    const discovered = entries.filter((entry) => discoveredRecord(entry)).length;
+    const discovered = entries.filter(displayedAsDiscovered).length;
     const total = entries.length;
     discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
     discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
@@ -226,7 +241,7 @@ function renderTierBreakdown(entries) {
     const tier = rarityTier(entry.gem.rarity, entry.gem.name);
     const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
     bucket.total += 1;
-    if (discoveredRecord(entry)) bucket.found += 1;
+    if (displayedAsDiscovered(entry)) bucket.found += 1;
     tiers.set(tier.id, bucket);
   }
   tierBreakdown.innerHTML = [...tiers.values()].map((bucket) => `
@@ -261,6 +276,19 @@ function gemCard(entry) {
   const tier = rarityTier(entry.gem.rarity, entry.gem.name);
   const record = discoveredRecord(entry);
   const secretLocked = isSecretUndiscovered(entry);
+
+  if (!record && isSecretGem(entry.gem) && !secretLocked) {
+    const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
+    const gemStyle = getGemStyle(entry.gem.name);
+    return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
+      <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+      <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
+      <p class="index-card__hidden">Gem discovered; this exact mutation combination has not been found yet.</p>
+      ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
+      ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
+      <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">Not yet</span></div></div>
+    </article>`;
+  }
 
   if (!record) {
     return `<article class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}">
@@ -301,8 +329,9 @@ function visibleEntries() {
     const comboLabel = mutationCombinationLabel(entry.mutationIds).toLowerCase();
     const name = entry.gem.name.toLowerCase();
     if (query && !name.includes(query) && !comboLabel.includes(query)) return false;
-    if (gemFilter.value === "discovered" && !record) return false;
-    if (gemFilter.value === "undiscovered" && record) return false;
+    const discovered = displayedAsDiscovered(entry);
+    if (gemFilter.value === "discovered" && !discovered) return false;
+    if (gemFilter.value === "undiscovered" && discovered) return false;
     if (selected !== null && entry.combinationKey !== selected) return false;
     return true;
   });
@@ -367,7 +396,7 @@ function renderList() {
 
   gemList.innerHTML = [...bands.entries()].map(([id, band]) => {
     const open = autoReveal || expandedBands.has(id);
-    const found = band.entries.filter((entry) => discoveredRecord(entry)).length;
+    const found = band.entries.filter(displayedAsDiscovered).length;
     return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}>
       <summary class="index-band__summary">
         <span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} discovered</small></span>
