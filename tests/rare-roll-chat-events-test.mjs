@@ -11,7 +11,7 @@ const migration = readFileSync(
 
 const effectiveThresholdMigration = readFileSync(
   new URL(
-    "../supabase/migrations/20260920031734_raise_mutation_announcement_threshold_to_1b.sql",
+    "../supabase/migrations/20260920235514_move_rare_rolls_out_of_chat.sql",
     import.meta.url
   ),
   "utf8"
@@ -22,8 +22,8 @@ const chanceLogic = readFileSync(
   "utf8"
 );
 
-const chatBackend = readFileSync(
-  new URL("../src/backend/chat.js", import.meta.url),
+const rareRollBackend = readFileSync(
+  new URL("../src/backend/rareRolls.js", import.meta.url),
   "utf8"
 );
 
@@ -40,10 +40,11 @@ assert.match(effectiveThresholdMigration, /cardinality\(coalesce\(new\.mutation_
 assert.match(effectiveThresholdMigration, /coalesce\(new\.effective_rarity, 0\) >= 1000000000/);
 assert.match(effectiveThresholdMigration, /after insert or update of rarity, effective_rarity, mutation_ids/);
 assert.match(effectiveThresholdMigration, /v_effective_rarity >= 1000000000/);
-assert.match(effectiveThresholdMigration, /not v_has_mutations and new\.rarity >= 1000000/);
+assert.match(effectiveThresholdMigration, /not v_has_mutations and new\.rarity >= 100000000/);
 assert.match(effectiveThresholdMigration, /coalesce\(effective_rarity, 0\) < 1000000000/);
-assert.match(chanceLogic, /EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000_000/);
-assert.match(chatBackend, /EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 1_000_000_000/);
-assert.match(chatBackend, /mutationIds\.length > 0\s*\? effectiveRarity >= EFFECTIVE_ANNOUNCEMENT_THRESHOLD\s*:\s*rarity >= BASE_ANNOUNCEMENT_THRESHOLD/);
+assert.match(chanceLogic, /RARE_ROLL_EFFECTIVE_THRESHOLD = 1_000_000_000/);
+assert.match(chanceLogic, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
+assert.match(rareRollBackend, /RARE_ROLL_EFFECTIVE_THRESHOLD/);
+assert.match(rareRollBackend, /row\.kind === "mutation"\s*\? row\.effectiveRarity >= RARE_ROLL_EFFECTIVE_THRESHOLD\s*:\s*row\.rarity >= RARE_ROLL_BASE_THRESHOLD/);
 
 console.log("Rare-roll chat event persistence checks passed.");

@@ -36,6 +36,7 @@ import {
 } from "./src/ui/cutsceneController.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
+import { initRareRollsCard } from "./src/ui/rareRollsCard.js";
 import { chanceLabelForRollResult } from "./src/logic/chances.js";
 import {
   getSettings,
@@ -58,6 +59,7 @@ import {
 
 
 const shell = mountShell({ page: "roll", base: "./" });
+initRareRollsCard();
 
 // Capture an inbound ?ref=CODE, attribute a fresh account to it, and settle
 // any pending referral reward. Fire-and-forget so it never delays the page.

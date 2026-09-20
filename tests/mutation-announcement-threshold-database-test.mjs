@@ -55,24 +55,24 @@ await db.exec(`
 `);
 
 const migration = readFileSync(
-  new URL("../supabase/migrations/20260920031734_raise_mutation_announcement_threshold_to_1b.sql", import.meta.url),
+  new URL("../supabase/migrations/20260920235514_move_rare_rolls_out_of_chat.sql", import.meta.url),
   "utf8"
 );
 await db.exec(migration);
 
 await db.exec(`
   insert into global_chat_announcements(rarity,effective_rarity,mutation_ids) values
-    (1000000,1000000,'{}'),
-    (999999,999999,'{}'),
-    (1000000,999999999,'{sub-billion}'),
+    (100000000,100000000,'{}'),
+    (99999999,99999999,'{}'),
+    (100000000,999999999,'{sub-billion}'),
     (100,1000000000,'{billion}');
 `);
 let rows = await db.query("select rarity,effective_rarity,mutation_ids from global_chat_announcements order by id");
-assert.deepEqual(rows.rows.map((row) => Number(row.effective_rarity)), [1_000_000, 1_000_000_000]);
+assert.deepEqual(rows.rows.map((row) => Number(row.effective_rarity)), [100_000_000, 1_000_000_000]);
 
 await db.exec(`
   insert into global_chat_announcements(rarity,effective_rarity,mutation_ids)
-  values (1000000,1000000,'{}');
+  values (100000000,100000000,'{}');
   update global_chat_announcements
   set mutation_ids='{sub-billion}', effective_rarity=999999999
   where id=(select max(id) from global_chat_announcements);
@@ -83,8 +83,8 @@ assert.equal(rows.rows[0].count, 2, "attaching a sub-billion mutation must remov
 const playerId = "00000000-0000-0000-0000-000000000001";
 await db.query(`
   insert into best_roll_history(player_id,username,gem_name,rarity,mutation_ids) values
-    ($1,'Tester','Natural',1000000,'{}'),
-    ($1,'Tester','Too common',1000000,'{sub-billion}'),
+    ($1,'Tester','Natural',100000000,'{}'),
+    ($1,'Tester','Too common',1000000,'{}'),
     ($1,'Tester','Mutated',1000000,'{billion}')
 `, [playerId]);
 rows = await db.query("select gem_name from rare_roll_chat_events order by source_id");

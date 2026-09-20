@@ -655,6 +655,48 @@ a:hover {
   max-width: 760px;
 }
 
+.rare-rolls {
+  margin-bottom: var(--space-5);
+  padding: clamp(18px, 3vw, 26px);
+  overflow: hidden;
+}
+
+.rare-rolls__header,
+.rare-rolls__group-head,
+.rare-roll {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.rare-rolls__header { margin-bottom: var(--space-4); }
+.rare-rolls__header h2 { margin: 3px 0 0; }
+.rare-rolls__header p { max-width: 310px; margin: 0; color: var(--text-muted); text-align: right; font-size: .88rem; }
+.rare-rolls__eyebrow { color: var(--accent); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.rare-rolls__live-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 10px var(--positive); }
+.rare-rolls__columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.rare-rolls__group { min-width: 0; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--surface-raised) 80%, transparent); }
+.rare-rolls__group-head { padding-bottom: var(--space-2); border-bottom: 1px solid var(--border); }
+.rare-rolls__group-head h3 { margin: 0; font-size: .95rem; }
+.rare-rolls__group-head span { color: var(--accent); font-size: .75rem; font-weight: 800; }
+.rare-rolls__list { display: grid; }
+.rare-roll { padding: 11px 0; border-bottom: 1px solid var(--border); }
+.rare-roll:last-child { border-bottom: 0; padding-bottom: 0; }
+.rare-roll__copy { display: grid; min-width: 0; gap: 2px; }
+.rare-roll__copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.rare-roll__player, .rare-roll__odds time { color: var(--text-muted); font-size: .72rem; }
+.rare-roll__mutations { color: var(--accent); }
+.rare-roll__odds { display: grid; flex: none; gap: 2px; text-align: right; }
+.rare-roll__odds strong { font-size: .76rem; }
+.rare-rolls__empty { margin: var(--space-3) 0 0; color: var(--text-muted); font-size: .8rem; }
+
+@media (max-width: 640px) {
+  .rare-rolls__header { align-items: flex-start; }
+  .rare-rolls__header p { display: none; }
+  .rare-rolls__columns { grid-template-columns: 1fr; }
+}
+
 .page-head {
   display: flex;
   flex-wrap: wrap;
