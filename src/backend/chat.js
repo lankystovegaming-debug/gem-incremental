@@ -3,7 +3,7 @@ import { supabase } from "./supabase.js";
 const CHAT_CHANNEL = "global-chat";
 const MAX_MESSAGE_LENGTH = 500;
 const BASE_ANNOUNCEMENT_THRESHOLD = 1_000_000;
-const EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 50_000_000;
+const EFFECTIVE_ANNOUNCEMENT_THRESHOLD = 1_000_000_000;
 
 let chatChannel = null;
 
@@ -276,8 +276,9 @@ export async function loadChatMessages(limit = 50) {
       const effectiveRarity = rarity * mutationChanceProductFromCatalog(mutationIds, mutationCatalog);
       // Natural base rarity and mutation-driven effective rarity use separate
       // thresholds so common gems do not flood global chat.
-      return rarity >= BASE_ANNOUNCEMENT_THRESHOLD ||
-        (mutationIds.length > 0 && effectiveRarity >= EFFECTIVE_ANNOUNCEMENT_THRESHOLD);
+      return mutationIds.length > 0
+        ? effectiveRarity >= EFFECTIVE_ANNOUNCEMENT_THRESHOLD
+        : rarity >= BASE_ANNOUNCEMENT_THRESHOLD;
     })
     .filter((row) => !nearAnnouncement(row, announcements))
     .filter((row) => {

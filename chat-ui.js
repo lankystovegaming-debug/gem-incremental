@@ -538,10 +538,11 @@ if (messagesEl && formEl && inputEl) {
   function chatChanceIsRareEnough(message) {
     const baseRarity = Number(message?.rarity ?? 0);
     const mutationIds = chatMutationIds(message);
-    // Naturally rare gems announce at 1 in 1,000,000+. A lower base gem may
-    // announce only when its mutation combination reaches 1 in 50,000,000.
-    if (Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD) return true;
-    if (mutationIds.length === 0) return false;
+    // Unmutated gems announce at 1 in 1,000,000+. Any mutated result uses the
+    // stricter effective-rarity threshold, regardless of its base rarity.
+    if (mutationIds.length === 0) {
+      return Number.isFinite(baseRarity) && baseRarity >= CHAT_CHANCE_THRESHOLD;
+    }
     const storedEffective = Number(message?.effective_rarity);
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       return storedEffective >= EFFECTIVE_CHAT_CHANCE_THRESHOLD;
@@ -642,10 +643,9 @@ if (messagesEl && formEl && inputEl) {
       return null;
     }
 
-    // Base gems at/above 1 in 1,000,000 already have a persisted server
-    // announcement. Do not create a second local copy for those rolls.
-    // Local announcements are only for mutation combinations that become
-    // rare enough while the base gem itself is still below the threshold.
+    // Base gems at/above 1 in 1,000,000 have a persisted server announcement
+    // when their mutated effective rarity qualifies. Do not create a second
+    // local copy for those rolls.
     if (Number(data.gem.rarity ?? 0) >= CHAT_CHANCE_THRESHOLD) {
       return null;
     }
