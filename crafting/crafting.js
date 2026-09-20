@@ -1106,7 +1106,21 @@ function wireRecipeCard(card) {
         : state.crafting.activeAutoCraftRecipeId === recipeId;
 
       if (isConsumableRecipe(recipe)) {
-        setAutoPotionRecipeId(enabled ? null : recipeId);
+        if (enabled) {
+          setAutoPotionRecipeId(null);
+        } else {
+          // Potions and equipment share one Auto Craft slot. Turning a
+          // potion on clears any active equipment auto-craft so the two
+          // cannot run simultaneously.
+          const cleared = await setCloudAutoCraft(null);
+          if (cleared.error) {
+            notify.error("Could not change Auto Craft", cleared.error.message);
+            button.disabled = false;
+            return;
+          }
+          state.crafting.activeAutoCraftRecipeId = null;
+          setAutoPotionRecipeId(recipeId);
+        }
 
         notify.success(
           enabled ? "Auto Craft off" : "Auto Craft on",
@@ -1129,12 +1143,28 @@ function wireRecipeCard(card) {
         return;
       }
 
+      let clearedPotion = false;
+      if (!enabled && getAutoPotionRecipeId()) {
+        // Equipment and potions share one Auto Craft slot. Turning
+        // equipment on stops any active potion auto-craft.
+        setAutoPotionRecipeId(null);
+        if (potionAutoTimer) {
+          clearInterval(potionAutoTimer);
+          potionAutoTimer = null;
+        }
+        clearedPotion = true;
+      }
+
       notify.success(
         enabled ? "Auto Craft off" : "Auto Craft on",
         enabled
           ? "Rolled gems stay in your inventory."
           : `New gems will feed ${recipe.name}.`
       );
+
+      if (clearedPotion) {
+        notify.info("Potion auto-craft stopped", "Only one Auto Craft can run at a time.");
+      }
 
       await refresh();
     });
@@ -1246,15 +1276,16 @@ function wireRecipeCard(card) {
 autoBannerClear.addEventListener("click", async () => {
   autoBannerClear.disabled = true;
 
-  const potionId = getAutoPotionRecipeId();
-  let error = null;
-
-  if (potionId) {
-    setAutoPotionRecipeId(null);
-  } else {
-    const result = await setCloudAutoCraft(null);
-    error = result.error;
+  // Clear both slots. Only one should be set at a time, but clearing
+  // both guarantees the banner reflects a clean state.
+  setAutoPotionRecipeId(null);
+  if (potionAutoTimer) {
+    clearInterval(potionAutoTimer);
+    potionAutoTimer = null;
   }
+
+  const result = await setCloudAutoCraft(null);
+  const error = result.error;
 
   autoBannerClear.disabled = false;
 
