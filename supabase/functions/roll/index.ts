@@ -3528,12 +3528,14 @@ async function executeSingleRoll(
       let filterSale: any = null;
       if (filterDecision.sell && savedGem && !bundleKeepInInventory && !autoDeposited && !autoConserved) {
         const { data: money, error: saleError } = await ctx.supabaseAdmin.rpc('sell_inventory_gem', {
-          p_player_id: playerId, p_specimen_id: savedGem.id
+          p_player_id: playerId, p_specimen_id: savedGem.id, p_source: 'auto'
         });
         const supersizerSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? 1.25 : 1;
         const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' && Date.parse(String(equipmentOutcome.state.supersizerBlessingUntil ?? '')) > Date.now() ? 1.5 : 1;
         const artifactSellMultiplier = mineArtifacts.has('foreman-seal') ? 1.03 : 1;
-        if (!saleError) { filterSale = { sold: true, soldValue: value * supersizerSellMultiplier * blessingSellMultiplier * artifactSellMultiplier, money }; inventoryCountWithDuplicate -= 1; }
+        const gemValueBoost = (activeBoosts ?? []).find((b: any) => b.family === 'gemValue');
+        const autoSellMultiplier = gemValueBoost ? Number(gemValueBoost.effect_value ?? 1) : 1;
+        if (!saleError) { filterSale = { sold: true, soldValue: value * supersizerSellMultiplier * blessingSellMultiplier * artifactSellMultiplier * autoSellMultiplier, money }; inventoryCountWithDuplicate -= 1; }
         else console.error('Gem Filter sale failed; specimen retained:', saleError);
       }
 

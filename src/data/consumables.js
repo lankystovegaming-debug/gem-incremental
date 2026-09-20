@@ -93,6 +93,11 @@ consumables.push(
   { id: "deepcore-crate", name: "Deepcore Crate", family: "material", tier: 1, material: true, effectValue: 0, description: "Contains one weighted Deepcore reward and an independent Roll Card chance.", shop: { purchasable: false, price: null } }
 );
 
+consumables.push(
+  { id: "money-up-potion", name: "Money Up Potion", family: "gemValue", tier: 1, durationMs: 60_000, effectValue: 1.5, description: "×1.5 Auto Sell value for 60 seconds.", shop: { purchasable: false, price: null } },
+  { id: "money-up-potion-2", name: "Money Up Potion II", family: "gemValue", tier: 2, durationMs: 60_000, effectValue: 2, description: "×2 Auto Sell value for 60 seconds.", shop: { purchasable: false, price: null } }
+);
+
 consumables.push({ id: "plastic-bag", name: "Plastic Bag", family: "material", tier: 0,
   material: true, effectValue: 0, marketReferencePrice: 0.10, shop: { purchasable: false, price: null } });
 
