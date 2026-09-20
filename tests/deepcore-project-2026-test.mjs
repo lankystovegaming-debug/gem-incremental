@@ -34,6 +34,7 @@ assert.match(client,/status==="preview"/); assert.match(sql,/Asia\/Singapore/);
 assert.match(client,/legendary_sacrificed/); assert.match(client,/50,000 Legendary specimens/);
 assert.match(client,/mythic_sacrificed/); assert.match(client,/5,000 Mythic specimens/); assert.match(client,/heavy_specimen_met/);
 assert.match(page,/phaseObjectives/);
+assert.match(client,/sacrificed_value/); assert.match(client,/Sacrificed specimen value/); assert.match(client,/maximumSignificantDigits: 5/);
 assert.match(client,/setInterval\(refreshRequirements,30_000\)/); assert.match(client,/document\.hidden/); assert.match(client,/snapshotVersion/);
 for(const reward of ["Deepcore Catalyst","Pressurized Catalyst","Seismic Potion","Unstable Core"]) assert.match(client,new RegExp(reward));
 assert.match(page,/Placing on both boards grants both packages/); assert.match(client,/remaining consumables and Deepcore Crates are still usable/);
