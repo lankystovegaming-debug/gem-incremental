@@ -288,6 +288,9 @@ export function mountShell({ page, base = "./" }) {
             <div class="menu__label">Quick links</div>
             <a class="menu__item" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
             <a class="menu__item" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
+            <button class="menu__item shell-quick-nav-trigger" type="button" data-more-action="quicknav">
+              ${icons.compass || icons.sparkle}<span>Quick navigation</span><kbd>Ctrl K</kbd>
+            </button>
             <a class="menu__item" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
             <button class="menu__item" type="button" data-more-action="howto">
               ${icons.book}<span>How to play</span>
@@ -407,6 +410,7 @@ export function mountShell({ page, base = "./" }) {
   // First-run guided tour: spotlights the roll button, wallet and nav for new
   // players (shows once), and reopenable from More -> How to play.
   mountTour({ base, page });
+  mountQuickNavigation({ base, page });
 
   // Daily login streak: prompts once a day when a reward is claimable.
   mountDailyLogin();
@@ -1704,6 +1708,130 @@ function menuNavLink(item, activePage, base) {
       <span>${safeLabel}</span>
     </a>
   `;
+}
+
+// =========================================================
+// QUICK NAVIGATION
+//
+// The shell has many destinations, but a permanent mega-menu would make the
+// play surface even busier. This is an on-demand, keyboard-friendly page
+// finder that only includes destinations currently available to the player.
+// =========================================================
+
+function navigationDestinations() {
+  const mainIds = new Set(getNavigationPages().map((item) => item.id));
+  const destinations = new Map();
+
+  for (const item of [...getNavigationPages(), ...getExplorePages()]) {
+    destinations.set(item.id, {
+      ...item,
+      area: mainIds.has(item.id) ? "Main navigation" : (exploreGroupFor(item)?.label ?? "Explore")
+    });
+  }
+  return [...destinations.values()];
+}
+
+function mountQuickNavigation({ base, page }) {
+  let palette = null;
+  let searchInput = null;
+  let activeIndex = 0;
+  let matching = [];
+
+  const close = () => {
+    palette?.remove();
+    palette = null;
+    searchInput = null;
+  };
+
+  const drawResults = () => {
+    if (!palette || !searchInput) return;
+    const term = searchInput.value.trim().toLocaleLowerCase();
+    matching = navigationDestinations().filter((item) =>
+      `${item.label} ${item.short} ${item.area}`.toLocaleLowerCase().includes(term)
+    );
+    activeIndex = Math.min(activeIndex, Math.max(0, matching.length - 1));
+    const results = palette.querySelector("[data-quick-nav-results]");
+    const empty = palette.querySelector("[data-quick-nav-empty]");
+    if (!results || !empty) return;
+    results.innerHTML = matching.map((item, index) => `
+      <button class="quick-nav__item ${index === activeIndex ? "is-active" : ""}" type="button" data-quick-nav-index="${index}">
+        <span class="quick-nav__item-icon" aria-hidden="true">${item.icon}</span>
+        <span class="quick-nav__item-copy"><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.area)}</small></span>
+        ${item.id === page ? '<span class="quick-nav__current">Here</span>' : ""}
+      </button>
+    `).join("");
+    empty.hidden = matching.length > 0;
+  };
+
+  const goTo = (item) => {
+    if (!item) return;
+    window.location.assign(`${base}${item.href}`);
+  };
+
+  const open = () => {
+    if (palette) {
+      searchInput?.focus();
+      return;
+    }
+    activeIndex = 0;
+    palette = document.createElement("div");
+    palette.className = "quick-nav";
+    palette.innerHTML = `
+      <div class="quick-nav__backdrop" data-quick-nav-close></div>
+      <section class="quick-nav__dialog" role="dialog" aria-modal="true" aria-labelledby="quickNavTitle">
+        <div class="quick-nav__head">
+          <span class="quick-nav__icon">${icons.compass || icons.sparkle}</span>
+          <label class="quick-nav__search-wrap" for="quickNavSearch">
+            <span class="visually-hidden">Find a page</span>
+            <input id="quickNavSearch" class="quick-nav__search" type="search" autocomplete="off" placeholder="Find a page…" />
+          </label>
+          <button class="btn btn--ghost btn--sm" type="button" data-quick-nav-close>Close <kbd>Esc</kbd></button>
+        </div>
+        <div class="quick-nav__title-row"><h2 id="quickNavTitle">Where do you want to go?</h2><span>Use ↑ ↓ then Enter</span></div>
+        <div class="quick-nav__results" data-quick-nav-results></div>
+        <p class="quick-nav__empty" data-quick-nav-empty hidden>No available pages match that search.</p>
+      </section>
+    `;
+    document.body.append(palette);
+    searchInput = palette.querySelector("#quickNavSearch");
+    drawResults();
+    searchInput?.focus();
+
+    palette.addEventListener("click", (event) => {
+      if (event.target.closest("[data-quick-nav-close]")) {
+        close();
+        return;
+      }
+      const button = event.target.closest("[data-quick-nav-index]");
+      if (button) goTo(matching[Number(button.dataset.quickNavIndex)]);
+    });
+    searchInput?.addEventListener("input", () => {
+      activeIndex = 0;
+      drawResults();
+    });
+    searchInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        if (!matching.length) return;
+        activeIndex = (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + matching.length) % matching.length;
+        drawResults();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        goTo(matching[activeIndex]);
+      }
+    });
+  };
+
+  document.querySelector('[data-more-action="quicknav"]')?.addEventListener("click", open);
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      open();
+    }
+  });
 }
 
 
