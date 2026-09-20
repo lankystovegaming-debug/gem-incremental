@@ -114,6 +114,22 @@ function setAutoPotionRecipeId(recipeId) {
   } catch {}
 }
 
+function stopPotionAutoCraft() {
+  const wasActive = Boolean(getAutoPotionRecipeId());
+  setAutoPotionRecipeId(null);
+  if (potionAutoTimer) {
+    clearInterval(potionAutoTimer);
+    potionAutoTimer = null;
+  }
+  return wasActive;
+}
+
+async function setEquipmentAutoCraft(recipeId) {
+  const result = await setCloudAutoCraft(recipeId);
+  const clearedPotion = !result.error && recipeId ? stopPotionAutoCraft() : false;
+  return { ...result, clearedPotion };
+}
+
 function pinnedRecipeIds() {
   try { return new Set(JSON.parse(localStorage.getItem(PINNED_RECIPE_STORAGE_KEY) || "[]")); }
   catch { return new Set(); }
@@ -955,7 +971,7 @@ function openImpossibleReview(result, { openManual = false } = {}) {
   autoToggle?.addEventListener('click', async () => {
     autoToggle.disabled = true;
     autoToggle.textContent = result?.autoCraft ? 'Stopping…' : 'Starting…';
-    const { error } = await setCloudAutoCraft(result?.autoCraft ? null : 'impossible-pickaxe');
+    const { error, clearedPotion } = await setEquipmentAutoCraft(result?.autoCraft ? null : 'impossible-pickaxe');
     if (error) {
       notify.error('Could not change Auto Craft', error.message);
       autoToggle.disabled = false;
@@ -966,6 +982,7 @@ function openImpossibleReview(result, { openManual = false } = {}) {
     const workspace = await loadImpossiblePickaxeStatus();
     state.impossibleStatus = workspace;
     notify.success(result?.autoCraft ? 'Auto Craft stopped' : 'Auto Craft started', result?.autoCraft ? 'New rolls will stay in inventory.' : 'Useful future rolls will feed the Impossible sacrifice pool.');
+    if (clearedPotion) notify.info('Potion auto-craft stopped', 'Only one Auto Craft can run at a time.');
     openImpossibleReview(workspace);
     renderRecipes();
   });
@@ -1135,24 +1152,12 @@ function wireRecipeCard(card) {
         return;
       }
 
-      const { error } = await setCloudAutoCraft(enabled ? null : recipeId);
+      const { error, clearedPotion } = await setEquipmentAutoCraft(enabled ? null : recipeId);
 
       if (error) {
         notify.error("Could not change Auto Craft", error.message);
         button.disabled = false;
         return;
-      }
-
-      let clearedPotion = false;
-      if (!enabled && getAutoPotionRecipeId()) {
-        // Equipment and potions share one Auto Craft slot. Turning
-        // equipment on stops any active potion auto-craft.
-        setAutoPotionRecipeId(null);
-        if (potionAutoTimer) {
-          clearInterval(potionAutoTimer);
-          potionAutoTimer = null;
-        }
-        clearedPotion = true;
       }
 
       notify.success(
@@ -1278,11 +1283,7 @@ autoBannerClear.addEventListener("click", async () => {
 
   // Clear both slots. Only one should be set at a time, but clearing
   // both guarantees the banner reflects a clean state.
-  setAutoPotionRecipeId(null);
-  if (potionAutoTimer) {
-    clearInterval(potionAutoTimer);
-    potionAutoTimer = null;
-  }
+  stopPotionAutoCraft();
 
   const result = await setCloudAutoCraft(null);
   const error = result.error;
