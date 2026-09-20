@@ -4,6 +4,7 @@ import { PGlite } from "@electric-sql/pglite";
 const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),"utf8");
 const sql=read("supabase/migrations/20260916105437_deepcore_project_2026.sql");
 const triggerSql=read("supabase/migrations/20260916125715_install_deepcore_hot_table_triggers.sql");
+const leaderboardRewardSql=read("supabase/migrations/20260920035123_add_deepcore_leaderboard_consumable_rewards.sql");
 const roll=read("supabase/functions/roll/index.ts");
 const page=read("limited-events/deepcore/index.html");
 const client=read("limited-events/deepcore/deepcore.js");
@@ -18,6 +19,9 @@ assert.match(triggerSql,/deepcore_track_rolls/); assert.match(triggerSql,/deepco
 assert.ok((triggerSql.match(/commit;/g)||[]).length>=2,"hot-table trigger locks must be released independently");
 assert.match(triggerSql,/set lock_timeout = '10s'/);
 assert.match(deployment,/20260916125715_install_deepcore_hot_table_triggers\.sql/);
+assert.match(deployment,/20260920035123_add_deepcore_leaderboard_consumable_rewards\.sql/);
+assert.match(leaderboardRewardSql,/\(1,10,6,3,1\)/); assert.match(leaderboardRewardSql,/\(5,4,2,1,0\)/);
+assert.match(leaderboardRewardSql,/deepcore_leaderboard_reward_grants/);
 assert.match(sql,/for update/); assert.match(sql,/unique\(player_id,request_id\)/);
 assert.match(sql,/route_winner is not null/); assert.match(sql,/route_loser_snapshot/);
 assert.match(sql,/g\.locked or g\.museum_locked/); assert.match(sql,/p_objective='key'/);
@@ -27,12 +31,15 @@ for(const id of ["lucky-potion-4","speed-potion-4","fortune-potion-4","mass-poti
 assert.match(roll,/deepcore_get_roll_context/); assert.match(roll,/deepcore_auto_contribute_roll/); assert.match(roll,/deepcorePhaseOrder/);
 assert.match(page,/Overview/); assert.match(page,/Quests/); assert.match(page,/Supply Shop/); assert.match(page,/Consumables/); assert.match(page,/Leaderboards/); assert.match(page,/Project Log/);
 assert.match(client,/status==="preview"/); assert.match(sql,/Asia\/Singapore/);
+for(const reward of ["Deepcore Catalyst","Pressurized Catalyst","Seismic Potion","Unstable Core"]) assert.match(client,new RegExp(reward));
+assert.match(page,/Placing on both boards grants both packages/); assert.match(client,/remaining consumables and Deepcore Crates are still usable/);
 assert.match(cutscenes,/deepcore-pressure/); assert.match(cutscenes,/deepcore-heartbeat/);
 
 const db=new PGlite();
 await db.exec(read("tests/fixtures/deepcore-live-schema.sql"));
 await db.exec(sql);
 await db.exec(triggerSql);
+await db.exec(leaderboardRewardSql);
 const one=async(q,args=[])=>(await db.query(q,args)).rows[0];
 assert.equal((await one("select deepcore_private.status('2026-09-19T23:59:59.999Z') status")).status,"preview");
 assert.equal((await one("select deepcore_private.status('2026-09-20T00:00:00Z') status")).status,"active");
@@ -94,5 +101,41 @@ await db.exec("select deepcore_private.advance_state()");
 assert.equal(Number((await one("select count(*) count from deepcore_rewards where reward_key like 'stretch-%'")).count),5,"stretch reconciliation is idempotent");
 
 assert.equal((await one("select has_function_privilege('authenticated','public.deepcore_get_roll_context(uuid)','EXECUTE') allowed")).allowed,false);
+
+// Freeze five players into the same rank on both boards. Each board awards its
+// package independently, so every expected quantity below is doubled.
+await db.query("update deepcore_players set actual_funding=0,effective_funding=0 where player_id=$1",[uid]);
+const finalists=Array.from({length:5},(_,i)=>`00000000-0000-0000-0000-00000000001${i+1}`);
+for(let i=0;i<finalists.length;i++){
+ await db.query("insert into players(id,username) values($1,$2)",[finalists[i],`Finalist ${i+1}`]);
+ await db.query("insert into deepcore_players(player_id,actual_funding,effective_funding) values($1,$2,$2)",[finalists[i],500-i*10]);
+}
+await db.exec("update deepcore_event_state set ends_at=now()-interval '1 second',archived_at=null");
+await db.query("select get_deepcore_snapshot()");
+assert.equal((await one("select deepcore_private.status() status")).status,"archived");
+assert.equal(Number((await one("select count(*) count from deepcore_leaderboard_reward_grants")).count),10,"both Top-5 boards receive one ledgered grant per placement");
+const expected=[[20,12,6,2],[16,10,4,2],[12,8,4,0],[10,6,2,0],[8,4,2,0]];
+for(let i=0;i<finalists.length;i++){
+ const rows=(await db.query("select consumable_id,quantity from player_consumables where player_id=$1 and consumable_id in ('deepcore-catalyst','pressurized-catalyst','seismic-potion','unstable-core')",[finalists[i]])).rows;
+ const owned=Object.fromEntries(rows.map(r=>[r.consumable_id,Number(r.quantity)]));
+ assert.deepEqual([owned["deepcore-catalyst"]||0,owned["pressurized-catalyst"]||0,owned["seismic-potion"]||0,owned["unstable-core"]||0],expected[i],`rank ${i+1} receives both leaderboard packages`);
+}
+await db.query("select get_deepcore_snapshot()");
+assert.equal(Number((await one("select quantity from player_consumables where player_id=$1 and consumable_id='deepcore-catalyst'",[finalists[0]])).quantity),20,"archive retries cannot duplicate leaderboard rewards");
+
+// Archival closes purchases and event-gem availability, but owned effects and
+// crates deliberately remain usable as permanent limited inventory.
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[finalists[4]]);
+await db.query("select deepcore_use_consumable('seismic-potion',$1)",["50000000-0000-0000-0000-000000000001"]);
+assert.equal(Number((await one("select quantity from player_consumables where player_id=$1 and consumable_id='seismic-potion'",[finalists[4]])).quantity),1);
+assert.ok((await one("select expires_at from deepcore_player_effects where player_id=$1 and effect_id='seismic-potion'",[finalists[4]])).expires_at,"archived consumables still activate");
+await assert.rejects(()=>db.query("select deepcore_buy_consumable('deepcore-catalyst',1,$1)",["60000000-0000-0000-0000-000000000001"]),/deepcore_not_active/);
+await db.query("select deepcore_private.grant_consumable($1,'deepcore-crate',1)",[finalists[4]]);
+await db.query("select deepcore_open_crate($1)",["70000000-0000-0000-0000-000000000001"]);
+assert.equal(Number((await one("select count(*) count from deepcore_crate_openings where player_id=$1",[finalists[4]])).count),1,"archived Deepcore Crates still open");
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[finalists[0]]);
+await db.query("select deepcore_use_consumable('unstable-core',$1)",["80000000-0000-0000-0000-000000000001"]);
+await db.query("update players set total_rolls=total_rolls+4 where id=$1",[finalists[0]]);
+assert.equal(Number((await one("select rolls_remaining from deepcore_player_effects where player_id=$1 and effect_id='unstable-core'",[finalists[0]])).rolls_remaining),6,"archived roll-count consumables still deplete on genuine rolls");
 await db.close();
-console.log("Deepcore schedule, migration, atomicity, batch counting, eligibility, rewards, UI and cutscene checks passed.");
+console.log("Deepcore schedule, migration, atomicity, batch counting, eligibility, leaderboard rewards, archive use, UI and cutscene checks passed.");
