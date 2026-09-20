@@ -96,6 +96,7 @@ update players set roll_lease_expires_at=null;
 `);
 await db.exec(read('../supabase/migrations/20260909023444_five_item_equipment_batch.sql'));
 await db.exec(read('../supabase/migrations/20260909100058_serious_pickaxe_desirability_rebalance.sql'));
+await db.exec(read('../supabase/migrations/20260920093246_keep_specialist_pickaxes_stored_after_crafting.sql'));
 assert.equal((await q("select chance from game_mutations where id='balanced' and enabled"))[0].chance,'20');
 let history=(await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory;
 assert.equal(history.raw5m,3);assert.equal(history.raw10m,1);
@@ -106,8 +107,11 @@ const fund=async r=>{
  await q('insert into crafting_progress values($1,$2,$3,now()) on conflict(player_id,recipe_id) do update set progress=excluded.progress',[uid,r.id,progress]);
 };
 for(const recipe of fiveItemRecipes)await fund(recipe);
+const equippedBeforeSpecialist=(await q("select equipment_id from player_equipment where player_id=$1 and category='pickaxe' and equipped",[uid]))[0].equipment_id;
 await q("select craft_equipment_recipe('fortune-pickaxe')");
 assert.equal((await q("select luck_bonus from player_equipment where equipment_id='fortune-pickaxe'"))[0].luck_bonus,34);
+assert.equal((await q("select equipped from player_equipment where equipment_id='fortune-pickaxe'"))[0].equipped,false);
+assert.equal((await q("select equipped from player_equipment where equipment_id=$1",[equippedBeforeSpecialist]))[0].equipped,true);
 await assert.rejects(()=>q("select craft_equipment_recipe('all-in-pickaxe')"),/requirements_not_met/);
 for(const id of ['empyrean-pickaxe','eternity-pickaxe']) await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,$2,'pickaxe',15,$2,false) on conflict(player_id,equipment_id) do update set equipped=false",[uid,id]);
 // Historical ownership survives loss/consumption of the item; Celestial and Toys do not count.
@@ -119,6 +123,7 @@ await assert.rejects(()=>q("select craft_equipment_recipe('money-pickaxe')"),/re
 await q("update players set equipment_state=jsonb_set(equipment_state,'{batchHistory,heavy5}','250') where id=$1",[uid]);
 await q("select craft_equipment_recipe('money-pickaxe')");
 assert.equal((await q("select weight_multiplier_bonus from player_equipment where equipment_id='money-pickaxe'"))[0].weight_multiplier_bonus,199);
+assert.equal((await q("select equipped from player_equipment where equipment_id='money-pickaxe'"))[0].equipped,true);
 assert.equal((await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory.heavy5,250);
 assert.equal((await q('select lifetime_earnings from players where id=$1',[uid]))[0].lifetime_earnings,'1000000000');
 await q("select craft_equipment_recipe('all-rounder-toy')");
