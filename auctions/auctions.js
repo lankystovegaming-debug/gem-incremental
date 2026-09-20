@@ -112,8 +112,10 @@ function renderFeePreviews() {
     ? `Allowed offer: ${formatMoney(range.minimum)}–${formatMoney(range.maximum)} (25%–400% of base value).`
     : "Choose a gem to see its allowed offer range.";
 
-  const minimum = selectedLotMinimumPrice();
-  sellPriceMinimum.textContent = `Minimum allowed: ${formatMoney(minimum)} (25% of this lot's reference value).`;
+  const listingRange = selectedLotPriceRange();
+  sellPriceMinimum.textContent = listingRange
+    ? `Allowed listing: ${formatMoney(listingRange.minimum)}–${formatMoney(listingRange.maximum)} (25%–100× this lot's reference value).`
+    : "Choose items to see the allowed listing range.";
 }
 
 function selectedOrderPriceRange() {
@@ -123,15 +125,21 @@ function selectedOrderPriceRange() {
   return { minimum: Math.ceil(baseValue * 0.25), maximum: Math.floor(baseValue * 4) };
 }
 
-function selectedLotMinimumPrice() {
+function selectedLotPriceRange() {
   let referenceValue = 0;
   for (const id of state.lot.gems) {
     referenceValue += Math.max(0, Number(state.gems.find((gem) => gem.id === id)?.value) || 0);
   }
   for (const [cid, qty] of state.lot.potions) {
-    referenceValue += Math.max(0, Number(getConsumableById(cid)?.marketReferencePrice) || 0) * qty;
+    const consumableValue = getConsumableById(cid)?.marketReferencePrice;
+    if (!Number.isFinite(consumableValue)) return null;
+    referenceValue += consumableValue * qty;
   }
-  return Math.max(1, Math.ceil(referenceValue * 0.25));
+  if (state.lot.gems.size === 0 && state.lot.potions.size === 0) return null;
+  return {
+    minimum: Math.max(1, Math.ceil(referenceValue * 0.25)),
+    maximum: Math.floor(referenceValue * 100)
+  };
 }
 
 
@@ -643,9 +651,16 @@ listButton.addEventListener("click", async () => {
   const price = Math.floor(Number(sellPrice.value));
   const hours = Number(sellDuration.value);
   if (!Number.isFinite(price) || price < 1) { notify.error("Invalid price", "Enter at least $1."); return; }
-  const minimumPrice = selectedLotMinimumPrice();
-  if (price < minimumPrice) {
-    notify.error("Price below minimum", `This lot must be listed for at least ${formatMoney(minimumPrice)}.`);
+  const listingRange = selectedLotPriceRange();
+  if (!listingRange) {
+    notify.error("Cannot price this lot", "One of these consumables does not have a market reference value yet.");
+    return;
+  }
+  if (price < listingRange.minimum || price > listingRange.maximum) {
+    notify.error(
+      "Price outside allowed range",
+      `List this lot between ${formatMoney(listingRange.minimum)} and ${formatMoney(listingRange.maximum)}.`
+    );
     return;
   }
   const feeRate = saleFeeRate(price, hours);

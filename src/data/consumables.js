@@ -1,23 +1,43 @@
 const POTION_DURATION_MS = 60 * 1000;
 
-const MARKET_REFERENCE_PRICES = {
-  "lucky-potion-1": 200,
-  "speed-potion-1": 150,
-  "fortune-potion-1": 200,
-  "mass-potion-1": 300,
+export const MARKET_REFERENCE_PRICES = Object.freeze({
+  "lucky-potion-1": 100,
+  "speed-potion-1": 100,
+  "fortune-potion-1": 100,
+  "mass-potion-1": 100,
   "lucky-potion-2": 40000,
-  "speed-potion-2": 30000,
+  "speed-potion-2": 40000,
   "fortune-potion-2": 40000,
-  "mass-potion-2": 60000,
-  "lucky-potion-3": 175000,
-  "speed-potion-3": 125000,
-  "fortune-potion-3": 175000,
-  "mass-potion-3": 250000,
+  "mass-potion-2": 40000,
+  "lucky-potion-3": 150000,
+  "speed-potion-3": 150000,
+  "fortune-potion-3": 150000,
+  "mass-potion-3": 150000,
   "lucky-potion-4": 500000,
-  "speed-potion-4": 400000,
+  "speed-potion-4": 500000,
   "fortune-potion-4": 500000,
-  "mass-potion-4": 750000
-};
+  "mass-potion-4": 500000,
+  "legendary-potion": 3000000,
+  "mythic-potion": 15000000,
+  "relic-potion": 50000,
+  "seismic-potion": 1750000,
+  "unstable-core": 10000000,
+  "deepcore-catalyst": 300000,
+  "pressurized-catalyst": 2500000,
+  "deepcore-crate": 3000000,
+  "diver": 1000000,
+  "tidal-rush": 1250000,
+  "pressure": 12500000,
+  "offering": 3000000,
+  "treasure-tonic": 2500000,
+  "supply-crate": 4000000,
+  "abyssal-potion": 60000000,
+  "pet-luck-treat": 500000,
+  "enchanted-pet-toy": 2000000,
+  "celestial-pet-charm": 7500000,
+  "mythic-pet-whistle": 20000000,
+  "plastic-bag": 0.10
+});
 
 const consumables = [
   ["lucky", "Lucky", "luck", [0.10, 0.25, 0.50, 0.75], 200],
@@ -83,6 +103,20 @@ consumables.push(
   {id:'celestial-pet-charm',name:'Celestial Pet Charm',family:'petLuck',tier:3,durationMs:null,effectValue:2,description:'Adds +2 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}},
   {id:'mythic-pet-whistle',name:'Mythic Pet Whistle',family:'petLuck',tier:4,durationMs:null,effectValue:5,description:'Adds +5 Pet Luck. Stays active until you successfully roll a pet.',shop:{purchasable:false,price:null}}
 );
+
+consumables.push(
+  {id:'diver',name:'Diver',family:'luck',tier:4,durationMs:300000,effectValue:0.5,event:'deep-sea',description:'Boosts Deep Sea Luck for 5 minutes.',shop:{purchasable:false,price:null}},
+  {id:'tidal-rush',name:'Tidal Rush',family:'rollSpeed',tier:4,durationMs:300000,effectValue:0.5,event:'deep-sea',description:'Boosts Deep Sea roll speed for 5 minutes.',shop:{purchasable:false,price:null}},
+  {id:'pressure',name:'Pressure Flask',family:'weightLuck',tier:4,durationMs:300000,effectValue:1,event:'deep-sea',description:'Boosts Deep Sea Weight Luck and Weight Multiplier for 5 minutes.',shop:{purchasable:false,price:null}},
+  {id:'offering',name:'Offering to Neptune',family:'material',tier:4,durationMs:null,effectValue:1,event:'deep-sea',description:'Empowers one Neptune roll.',shop:{purchasable:false,price:null}},
+  {id:'treasure-tonic',name:'Treasure Tonic',family:'material',tier:4,durationMs:null,effectValue:100,event:'deep-sea',description:'Doubles Tide Tokens for 100 rolls.',shop:{purchasable:false,price:null}},
+  {id:'supply-crate',name:'Deep Sea Supply Crate',family:'material',tier:4,durationMs:null,effectValue:1,event:'deep-sea',description:'Contains a guaranteed bundle of Deep Sea supplies.',shop:{purchasable:false,price:null}},
+  {id:'abyssal-potion',name:'Abyssal Potion',family:'material',tier:4,durationMs:null,effectValue:1,event:'deep-sea',description:'Unlocks an Abyssal roll.',shop:{purchasable:false,price:null}}
+);
+
+for (const consumable of consumables) {
+  consumable.marketReferencePrice = MARKET_REFERENCE_PRICES[consumable.id];
+}
 
 export function getConsumableById(id) {
   return consumables.find((item) => item.id === id) ?? null;

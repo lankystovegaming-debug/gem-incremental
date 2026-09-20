@@ -26,7 +26,9 @@ const CREATE_MESSAGES = {
   empty_lot: "Add at least one item to the lot first.",
   lot_too_large: "A lot can hold at most 25 different items.",
   not_auctionable: "That item cannot be listed.",
-  price_below_lot_minimum: "The listing price is below 25% of the lot's reference value."
+  consumable_not_market_priced: "That consumable does not have a market reference value yet.",
+  price_below_lot_minimum: "The listing price is below 25% of the lot's reference value.",
+  price_above_lot_maximum: "The listing price is above 100× the lot's reference value."
 };
 
 const BUY_MESSAGES = {
