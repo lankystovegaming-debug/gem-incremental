@@ -31,6 +31,9 @@ for(const id of ["lucky-potion-4","speed-potion-4","fortune-potion-4","mass-poti
 assert.match(roll,/deepcore_get_roll_context/); assert.match(roll,/deepcore_auto_contribute_roll/); assert.match(roll,/deepcorePhaseOrder/);
 assert.match(page,/Overview/); assert.match(page,/Quests/); assert.match(page,/Supply Shop/); assert.match(page,/Consumables/); assert.match(page,/Leaderboards/); assert.match(page,/Project Log/);
 assert.match(client,/status==="preview"/); assert.match(sql,/Asia\/Singapore/);
+assert.match(client,/legendary_sacrificed/); assert.match(client,/50,000 Legendary specimens/);
+assert.match(client,/mythic_sacrificed/); assert.match(client,/5,000 Mythic specimens/); assert.match(client,/heavy_specimen_met/);
+assert.match(page,/phaseObjectives/);
 for(const reward of ["Deepcore Catalyst","Pressurized Catalyst","Seismic Potion","Unstable Core"]) assert.match(client,new RegExp(reward));
 assert.match(page,/Placing on both boards grants both packages/); assert.match(client,/remaining consumables and Deepcore Crates are still usable/);
 assert.match(cutscenes,/deepcore-pressure/); assert.match(cutscenes,/deepcore-heartbeat/);
