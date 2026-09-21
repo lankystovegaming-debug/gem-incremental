@@ -59,7 +59,7 @@ const chanceLogic = fs.readFileSync(
   new URL("../src/logic/chances.js", import.meta.url),
   "utf8"
 );
-assert.match(chanceLogic, /RARE_ROLL_EFFECTIVE_THRESHOLD = 1_000_000_000/);
+assert.match(chanceLogic, /RARE_ROLL_EFFECTIVE_THRESHOLD = 10_000_000_000/);
 assert.match(chanceLogic, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
 const rollFunction = fs.readFileSync(
   new URL("../supabase/functions/roll/index.ts", import.meta.url),

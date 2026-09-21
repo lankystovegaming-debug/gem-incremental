@@ -7,18 +7,18 @@ const chat = read("../src/backend/chat.js");
 const rareRolls = read("../src/backend/rareRolls.js");
 const shell = read("../src/ui/shell.js");
 const chances = read("../src/logic/chances.js");
-const migration = read("../supabase/migrations/20260920235514_move_rare_rolls_out_of_chat.sql");
+const migration = read("../supabase/migrations/20260921020918_raise_mutation_rare_roll_cutoff_to_10b.sql");
 
 assert.ok(page.indexOf('id="rareRollsCard"') < page.indexOf('id="section-roll-stage"'));
 assert.match(page, /Base rarity[\s\S]*1 in 100M\+/);
-assert.match(page, /Mutation effective[\s\S]*1 in 1B\+/);
+assert.match(page, /Mutation effective[\s\S]*1 in 10B\+/);
 assert.doesNotMatch(chat, /global_chat_announcements|get_rare_roll_chat_history/);
 assert.doesNotMatch(shell, /chatTabRare|chatRareBadge|>Rare Rolls</);
 assert.match(rareRolls, /table: "global_chat_announcements"/);
 assert.match(rareRolls, /kind: ids\.length \? "mutation" : "base"/);
 assert.match(chances, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
-assert.match(chances, /RARE_ROLL_EFFECTIVE_THRESHOLD = 1_000_000_000/);
+assert.match(chances, /RARE_ROLL_EFFECTIVE_THRESHOLD = 10_000_000_000/);
 assert.match(migration, /not v_has_mutations and new\.rarity >= 100000000/);
-assert.match(migration, /v_has_mutations and v_effective_rarity >= 1000000000/);
+assert.match(migration, /v_has_mutations and v_effective_rarity >= 10000000000/);
 
 console.log("Rare Rolls card separation checks passed.");

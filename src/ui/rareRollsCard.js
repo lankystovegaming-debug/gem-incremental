@@ -46,7 +46,7 @@ export function initRareRollsCard() {
     try {
       const rows = await loadRareRolls();
       renderList(baseList, rows.filter((row) => row.kind === "base"), "No 1-in-100M+ base discoveries yet.");
-      renderList(mutationList, rows.filter((row) => row.kind === "mutation"), "No 1-in-1B+ mutation discoveries yet.");
+      renderList(mutationList, rows.filter((row) => row.kind === "mutation"), "No 1-in-10B+ mutation discoveries yet.");
     } catch (error) {
       console.error("[RARE ROLLS] Could not load discoveries:", error);
       renderList(baseList, [], "Rare rolls are temporarily unavailable.");
