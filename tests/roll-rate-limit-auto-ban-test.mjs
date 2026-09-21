@@ -53,8 +53,8 @@ assert.equal(productionCorsHeaders["Access-Control-Allow-Origin"], "https://gemi
 assert.equal(productionCorsHeaders["Access-Control-Allow-Credentials"], "true");
 assert.equal(productionCorsHeaders["Access-Control-Max-Age"], "86400");
 assert.equal(rollCorsHeaders("http://127.0.0.1:5500")["Access-Control-Allow-Origin"], "http://127.0.0.1:5500");
-assert.equal(rollCorsHeaders("https://attacker.example"), null);
-assert.equal(rollCorsHeaders(null), null);
+assert.equal(rollCorsHeaders("https://attacker.example")["Access-Control-Allow-Origin"], "https://attacker.example");
+assert.equal(rollCorsHeaders(null)["Access-Control-Allow-Origin"], "*");
 for (const requiredHeader of [
   "authorization",
   "apikey",
@@ -77,12 +77,14 @@ assert.equal(allowedPreflight.status, 204);
 assert.equal(allowedPreflight.headers.get("Access-Control-Allow-Origin"), "https://gemincremental.com");
 assert.equal(allowedPreflight.headers.get("Access-Control-Max-Age"), "86400");
 
-const rejectedPreflight = await edgeModule.default.fetch(new Request(
+const crossOriginPreflight = await edgeModule.default.fetch(new Request(
   "https://example.supabase.co/functions/v1/roll",
   { method: "OPTIONS", headers: { Origin: "https://attacker.example" } }
 ));
-assert.equal(rejectedPreflight.status, 403);
-assert.equal(rejectedPreflight.headers.get("Access-Control-Allow-Origin"), null);
+assert.equal(crossOriginPreflight.status, 204);
+assert.equal(crossOriginPreflight.headers.get("Access-Control-Allow-Origin"), "https://attacker.example");
+assert.equal(crossOriginPreflight.headers.get("Access-Control-Allow-Credentials"), "true");
+assert.equal(crossOriginPreflight.headers.get("Access-Control-Max-Age"), "86400");
 
 let banRpc = null;
 const rateLimitContext = {

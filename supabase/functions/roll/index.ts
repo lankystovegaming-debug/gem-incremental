@@ -530,13 +530,6 @@ async function grantRewards(supabaseAdmin: any, playerId: string, rewards: any[]
 // CORS
 // =========================================================
 
-const ROLL_ALLOWED_ORIGINS = new Set([
-  "https://gemincremental.com",
-  "https://www.gemincremental.com",
-  "http://127.0.0.1:5500",
-  "http://localhost:5500"
-]);
-
 const rollCorsBaseHeaders = {
   "Access-Control-Allow-Credentials": "true",
   "Access-Control-Allow-Headers":
@@ -546,25 +539,20 @@ const rollCorsBaseHeaders = {
   "Vary": "Origin"
 };
 
-export function rollCorsHeaders(origin: string | null): Record<string, string> | null {
-  if (!origin || !ROLL_ALLOWED_ORIGINS.has(origin)) return null;
+export function rollCorsHeaders(origin: string | null): Record<string, string> {
   return {
     ...rollCorsBaseHeaders,
-    // Credentialed requests cannot use a wildcard origin. Echoing only an
-    // allow-listed origin lets browsers cache one preflight, then send the
-    // authenticated POST requests through the player limiter and ban path.
-    "Access-Control-Allow-Origin": origin
+    // CORS is not authentication: callers still need a valid user JWT. Echo
+    // the browser's origin so credentialed preflights succeed and are cached;
+    // the authenticated POST can then reach the player limiter and ban path.
+    "Access-Control-Allow-Origin": origin ?? "*"
   };
 }
 
 function withRollCors(response: Response, origin: string | null): Response {
   const headers = new Headers(response.headers);
   const corsHeaders = rollCorsHeaders(origin);
-  if (corsHeaders) {
-    for (const [name, value] of Object.entries(corsHeaders)) headers.set(name, value);
-  } else {
-    headers.set("Vary", "Origin");
-  }
+  for (const [name, value] of Object.entries(corsHeaders)) headers.set(name, value);
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -3906,9 +3894,6 @@ export default {
     const origin = req.headers.get("Origin");
     if (req.method === "OPTIONS") {
       const headers = rollCorsHeaders(origin);
-      if (!headers) {
-        return new Response(null, { status: 403, headers: { "Vary": "Origin" } });
-      }
       return new Response(null, { status: 204, headers });
     }
 
