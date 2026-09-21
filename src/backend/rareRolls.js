@@ -69,33 +69,17 @@ function qualifies(row) {
 
 export async function loadRareRolls(limit = 30) {
   const safeLimit = Math.min(100, Math.max(1, Number(limit) || 30));
-  const [announcements, history, catalog] = await Promise.all([
-    supabase
-      .from("global_chat_announcements")
-      .select("id, player_id, gem_name, rarity, effective_rarity, mutation_ids, created_at")
-      .order("created_at", { ascending: false })
-      .limit(safeLimit),
+  const [history, catalog] = await Promise.all([
     supabase.rpc("get_rare_roll_chat_history", { p_limit: safeLimit * 2 }),
     mutationCatalog()
   ]);
-  if (announcements.error) throw announcements.error;
+  if (history.error) throw history.error;
 
-  const announcementRows = announcements.data ?? [];
-  const historyRows = history.error ? [] : (history.data ?? []);
-  const profiles = await profilesFor([
-    ...announcementRows.map((row) => row.player_id),
-    ...historyRows.map((row) => row.player_id)
-  ]);
-  const current = announcementRows.map((row) => normalize(row, profiles, catalog));
-  const recovered = historyRows
-    .map((row) => normalize(row, profiles, catalog, true))
-    .filter((row) => !current.some((entry) =>
-      entry.playerId === row.playerId &&
-      entry.gemName === row.gemName &&
-      Math.abs(new Date(entry.createdAt) - new Date(row.createdAt)) <= 5000
-    ));
+  const historyRows = history.data ?? [];
+  const profiles = await profilesFor(historyRows.map((row) => row.player_id));
+  const genuineRolls = historyRows.map((row) => normalize(row, profiles, catalog, true));
 
-  return [...current, ...recovered]
+  return genuineRolls
     .filter(qualifies)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, safeLimit);
