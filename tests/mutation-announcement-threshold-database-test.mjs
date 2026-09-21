@@ -37,7 +37,7 @@ await db.exec(`
   create function get_mutation_chance_product(ids text[])
   returns numeric language sql immutable as $$
     select case
-      when 'billion' = any(ids) then 1000
+      when 'ten-billion' = any(ids) then 10000
       when 'sub-billion' = any(ids) then 999
       else 1
     end
@@ -65,10 +65,10 @@ await db.exec(`
     (100000000,100000000,'{}'),
     (99999999,99999999,'{}'),
     (100000000,999999999,'{sub-billion}'),
-    (100,1000000000,'{billion}');
+    (100,10000000000,'{ten-billion}');
 `);
 let rows = await db.query("select rarity,effective_rarity,mutation_ids from global_chat_announcements order by id");
-assert.deepEqual(rows.rows.map((row) => Number(row.effective_rarity)), [100_000_000, 1_000_000_000]);
+assert.deepEqual(rows.rows.map((row) => Number(row.effective_rarity)), [100_000_000, 10_000_000_000]);
 
 await db.exec(`
   insert into global_chat_announcements(rarity,effective_rarity,mutation_ids)
@@ -85,7 +85,7 @@ await db.query(`
   insert into best_roll_history(player_id,username,gem_name,rarity,mutation_ids) values
     ($1,'Tester','Natural',100000000,'{}'),
     ($1,'Tester','Too common',1000000,'{}'),
-    ($1,'Tester','Mutated',1000000,'{billion}')
+    ($1,'Tester','Mutated',1000000,'{ten-billion}')
 `, [playerId]);
 rows = await db.query("select gem_name from rare_roll_chat_events order by source_id");
 assert.deepEqual(rows.rows.map((row) => row.gem_name), ["Natural", "Mutated"]);
