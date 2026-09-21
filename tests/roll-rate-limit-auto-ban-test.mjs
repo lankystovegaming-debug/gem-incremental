@@ -20,6 +20,8 @@ assert.match(edge, /await rollRequestRateLimit\.limit\(playerId\)/);
 assert.match(edge, /"apply_roll_rate_limit_permanent_ban"/);
 assert.match(edge, /const rateLimitResponse = await enforceRollRequestRateLimit\(ctx\)/);
 assert.match(edge, /if \(rateLimitResponse\) return rateLimitResponse/);
+assert.match(edge, /cors: "disabled"/);
+assert.match(edge, /if \(req\.method === "OPTIONS"\)/);
 
 const rateLimitCheckIndex = edge.indexOf("const rateLimitResponse = await enforceRollRequestRateLimit(ctx)");
 const bodyParseIndex = edge.indexOf("requestBody = await req.json()", rateLimitCheckIndex);
@@ -41,9 +43,46 @@ let executableEdge = edge
     "class Ratelimit { static slidingWindow(){return null;} async limit(){const result=globalThis.__rollRateLimitResult;if(result instanceof Error)throw result;return result;} }"
   );
 executableEdge = stripTypeScriptTypes(executableEdge);
-const { enforceRollRequestRateLimit } = await import(
+const edgeModule = await import(
   `data:text/javascript;base64,${Buffer.from(executableEdge).toString("base64")}`
 );
+const { rollCorsHeaders, enforceRollRequestRateLimit } = edgeModule;
+
+const productionCorsHeaders = rollCorsHeaders("https://gemincremental.com");
+assert.equal(productionCorsHeaders["Access-Control-Allow-Origin"], "https://gemincremental.com");
+assert.equal(productionCorsHeaders["Access-Control-Allow-Credentials"], "true");
+assert.equal(productionCorsHeaders["Access-Control-Max-Age"], "86400");
+assert.equal(rollCorsHeaders("http://127.0.0.1:5500")["Access-Control-Allow-Origin"], "http://127.0.0.1:5500");
+assert.equal(rollCorsHeaders("https://attacker.example"), null);
+assert.equal(rollCorsHeaders(null), null);
+for (const requiredHeader of [
+  "authorization",
+  "apikey",
+  "content-type",
+  "priority",
+  "x-client-info",
+  "x-retry-count",
+  "traceparent",
+  "tracestate",
+  "baggage"
+]) {
+  assert.ok(productionCorsHeaders["Access-Control-Allow-Headers"].includes(requiredHeader));
+}
+
+const allowedPreflight = await edgeModule.default.fetch(new Request(
+  "https://example.supabase.co/functions/v1/roll",
+  { method: "OPTIONS", headers: { Origin: "https://gemincremental.com" } }
+));
+assert.equal(allowedPreflight.status, 204);
+assert.equal(allowedPreflight.headers.get("Access-Control-Allow-Origin"), "https://gemincremental.com");
+assert.equal(allowedPreflight.headers.get("Access-Control-Max-Age"), "86400");
+
+const rejectedPreflight = await edgeModule.default.fetch(new Request(
+  "https://example.supabase.co/functions/v1/roll",
+  { method: "OPTIONS", headers: { Origin: "https://attacker.example" } }
+));
+assert.equal(rejectedPreflight.status, 403);
+assert.equal(rejectedPreflight.headers.get("Access-Control-Allow-Origin"), null);
 
 let banRpc = null;
 const rateLimitContext = {
@@ -76,8 +115,18 @@ assert.deepEqual(banRpc.args, {
   p_window_seconds: 10
 });
 
+banRpc = null;
+globalThis.__rollRateLimitResult = new Error("the cached ban should bypass redis");
+const cachedBanResponse = await enforceRollRequestRateLimit(rateLimitContext);
+assert.equal(cachedBanResponse.status, 403);
+assert.equal((await cachedBanResponse.json()).error, "banned");
+assert.equal(banRpc, null);
+
 globalThis.__rollRateLimitResult = new Error("redis unavailable");
-const unavailableResponse = await enforceRollRequestRateLimit(rateLimitContext);
+const unavailableResponse = await enforceRollRequestRateLimit({
+  ...rateLimitContext,
+  userClaims: { id: "00000000-0000-0000-0000-000000000099" }
+});
 assert.equal(unavailableResponse.status, 503);
 assert.equal((await unavailableResponse.json()).error, "rate_limit_unavailable");
 

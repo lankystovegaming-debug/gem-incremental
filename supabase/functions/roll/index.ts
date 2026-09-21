@@ -410,8 +410,14 @@ import { Ratelimit } from "npm:@upstash/ratelimit@2.1.0";
 
 const ROLL_RATE_LIMIT_MAX_REQUESTS = 120;
 const ROLL_RATE_LIMIT_WINDOW_SECONDS = 10;
+const ROLL_RATE_LIMIT_BAN_CACHE_MS = 30_000;
 const ROLL_RATE_LIMIT_BAN_REASON =
   "Automated permanent ban: roll request rate limit exceeded.";
+const rollRateLimitBanCache = new Map<string, {
+  bannedUntil: string;
+  reason: string;
+  cacheUntil: number;
+}>();
 const rollRateLimitRedis = new Redis({
   url: Deno.env.get("UPSTASH_REDIS_REST_URL"),
   token: Deno.env.get("UPSTASH_REDIS_REST_TOKEN")
@@ -524,18 +530,53 @@ async function grantRewards(supabaseAdmin: any, playerId: string, rewards: any[]
 // CORS
 // =========================================================
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
+const ROLL_ALLOWED_ORIGINS = new Set([
+  "https://gemincremental.com",
+  "https://www.gemincremental.com",
+  "http://127.0.0.1:5500",
+  "http://localhost:5500"
+]);
+
+const rollCorsBaseHeaders = {
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, priority, x-retry-count, traceparent, tracestate, baggage",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin"
 };
+
+export function rollCorsHeaders(origin: string | null): Record<string, string> | null {
+  if (!origin || !ROLL_ALLOWED_ORIGINS.has(origin)) return null;
+  return {
+    ...rollCorsBaseHeaders,
+    // Credentialed requests cannot use a wildcard origin. Echoing only an
+    // allow-listed origin lets browsers cache one preflight, then send the
+    // authenticated POST requests through the player limiter and ban path.
+    "Access-Control-Allow-Origin": origin
+  };
+}
+
+function withRollCors(response: Response, origin: string | null): Response {
+  const headers = new Headers(response.headers);
+  const corsHeaders = rollCorsHeaders(origin);
+  if (corsHeaders) {
+    for (const [name, value] of Object.entries(corsHeaders)) headers.set(name, value);
+  } else {
+    headers.set("Vary", "Origin");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
 
 function jsonResponse(body: any, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...corsHeaders,
       ...(init.headers ?? {})
     }
   });
@@ -546,6 +587,19 @@ export async function enforceRollRequestRateLimit(ctx: any): Promise<Response | 
   if (!playerId) {
     return jsonResponse({ error: "Could not identify player." }, { status: 401 });
   }
+
+  const cachedBan = rollRateLimitBanCache.get(playerId);
+  if (cachedBan && cachedBan.cacheUntil > Date.now()) {
+    return jsonResponse(
+      {
+        error: "banned",
+        bannedUntil: cachedBan.bannedUntil,
+        reason: cachedBan.reason
+      },
+      { status: 403 }
+    );
+  }
+  if (cachedBan) rollRateLimitBanCache.delete(playerId);
 
   let result;
   try {
@@ -589,11 +643,19 @@ export async function enforceRollRequestRateLimit(ctx: any): Promise<Response | 
     reset: result.reset
   });
 
+  const bannedUntil = String(ban.bannedUntil);
+  const reason = String(ban.reason ?? ROLL_RATE_LIMIT_BAN_REASON);
+  rollRateLimitBanCache.set(playerId, {
+    bannedUntil,
+    reason,
+    cacheUntil: Date.now() + ROLL_RATE_LIMIT_BAN_CACHE_MS
+  });
+
   return jsonResponse(
     {
       error: "banned",
-      bannedUntil: ban.bannedUntil,
-      reason: ban.reason ?? ROLL_RATE_LIMIT_BAN_REASON
+      bannedUntil,
+      reason
     },
     { status: 403 }
   );
@@ -3721,16 +3783,14 @@ async function executeSingleRoll(
       });
 }
 
-export default {
-  fetch: withSupabase(
-    {
-      auth: "user"
-    },
-    async (req, ctx) => {
-      if (req.method === "OPTIONS") {
-        return new Response("ok", { status: 200, headers: corsHeaders });
-      }
-
+const authenticatedRollHandler = withSupabase(
+  {
+    auth: "user",
+    // Handle preflights outside the Supabase wrapper. Otherwise its automatic
+    // 204 response bypasses both this function and the player rate limiter.
+    cors: "disabled"
+  },
+  async (req, ctx) => {
       const rateLimitResponse = await enforceRollRequestRateLimit(ctx);
       if (rateLimitResponse) return rateLimitResponse;
 
@@ -3838,6 +3898,20 @@ export default {
           nextRollAt: execution.nextRollAt
         }
       });
+  }
+);
+
+export default {
+  async fetch(req: Request) {
+    const origin = req.headers.get("Origin");
+    if (req.method === "OPTIONS") {
+      const headers = rollCorsHeaders(origin);
+      if (!headers) {
+        return new Response(null, { status: 403, headers: { "Vary": "Origin" } });
+      }
+      return new Response(null, { status: 204, headers });
     }
-  )
+
+    return withRollCors(await authenticatedRollHandler(req), origin);
+  }
 };
