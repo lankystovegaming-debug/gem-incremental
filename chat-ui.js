@@ -957,18 +957,9 @@ if (messagesEl && formEl && inputEl) {
         loadUnreadPrivateMessageCount()
       ]);
 
-      clearLocalRareRollsOlderThan();
-
-      // If the server has not yet recovered a mutation-only announcement,
-      // restore the player's own qualifying local roll instead of losing it
-      // simply because the page was refreshed.
-      const persistedRareRolls = loadPersistedLocalRareRolls().filter(
-        (row) => !row.roller_id || row.roller_id === currentUserId
-      );
-
       messagesEl.innerHTML = "";
 
-      const merged = [...globalMessages, ...persistedRareRolls, ...privateMessages]
+      const merged = [...globalMessages, ...privateMessages]
         .sort(
           (a, b) =>
             new Date(a.created_at).getTime() -
@@ -1038,10 +1029,6 @@ if (messagesEl && formEl && inputEl) {
   }
 
   applyChatLayout();
-
-  window.addEventListener("gem:roll-complete", (event) => {
-    receiveLocalRoll(event.detail);
-  });
 
   fabEl?.addEventListener("click", () => {
     setChatOpen(!isChatOpen());

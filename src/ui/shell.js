@@ -1358,7 +1358,6 @@ function mountGlobalChat() {
 
         <div class="chat-tabs" role="tablist" aria-label="Chat channels">
           <button class="chat-tab is-active" id="chatTabGeneral" type="button" role="tab" aria-selected="true" data-chat-tab="general">General <span class="chat-tab__badge hidden" id="chatGeneralBadge"></span></button>
-          <button class="chat-tab" id="chatTabRare" type="button" role="tab" aria-selected="false" data-chat-tab="rare">Rare Rolls <span class="chat-tab__badge hidden" id="chatRareBadge"></span></button>
         </div>
 
         <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-label="Chat messages">

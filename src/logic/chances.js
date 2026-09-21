@@ -16,8 +16,12 @@ export function formatHugeInteger(value) {
 }
 
 export const BASE_ROLL_LUCK = 1;
-export const CHAT_CHANCE_THRESHOLD = 1_000_000;
-export const EFFECTIVE_CHAT_CHANCE_THRESHOLD = 1_000_000_000;
+export const RARE_ROLL_BASE_THRESHOLD = 100_000_000;
+export const RARE_ROLL_EFFECTIVE_THRESHOLD = 1_000_000_000;
+// Kept as aliases for older cached clients. Rare rolls now live on the roll
+// page rather than in chat.
+export const CHAT_CHANCE_THRESHOLD = RARE_ROLL_BASE_THRESHOLD;
+export const EFFECTIVE_CHAT_CHANCE_THRESHOLD = RARE_ROLL_EFFECTIVE_THRESHOLD;
 
 // Player-facing odds intentionally use the configured 1 / rarity chance.
 // Player/equipment/potion modifiers are ignored here.

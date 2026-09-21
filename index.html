@@ -49,6 +49,36 @@
 
 <body>
   <main class="app-main app-main--narrow">
+    <section class="card rare-rolls" id="rareRollsCard" aria-labelledby="rareRollsHeading">
+      <div class="rare-rolls__header">
+        <div>
+          <span class="rare-rolls__eyebrow"><span class="rare-rolls__live-dot" aria-hidden="true"></span>Live discoveries</span>
+          <h2 id="rareRollsHeading">Rare rolls</h2>
+        </div>
+        <p>Exceptional finds from every player, kept separate from chat.</p>
+      </div>
+      <div class="rare-rolls__columns">
+        <section class="rare-rolls__group" aria-labelledby="rareRollsBaseHeading">
+          <div class="rare-rolls__group-head">
+            <h3 id="rareRollsBaseHeading">Base rarity</h3>
+            <span>1 in 100M+</span>
+          </div>
+          <div class="rare-rolls__list" id="rareRollsBaseList" aria-live="polite">
+            <p class="rare-rolls__empty">Loading discoveries…</p>
+          </div>
+        </section>
+        <section class="rare-rolls__group" aria-labelledby="rareRollsMutationHeading">
+          <div class="rare-rolls__group-head">
+            <h3 id="rareRollsMutationHeading">Mutation effective</h3>
+            <span>1 in 1B+</span>
+          </div>
+          <div class="rare-rolls__list" id="rareRollsMutationList" aria-live="polite">
+            <p class="rare-rolls__empty">Loading discoveries…</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
     <!-- ================= ROLL STAGE ================= -->
 
     <section class="stage card" id="section-roll-stage" aria-labelledby="stageHeading">
