@@ -44,7 +44,9 @@ assert.match(edge, /for \(let batchIndex = 0; batchIndex < batchSize; batchIndex
 assert.match(edge, /genuineRoll: Number\(batchExecution\.firstGenuineRoll\) \+ batchIndex/);
 assert.match(edge, /batchExecution\.requestStartedAt/);
 assert.match(edge, /roll_prepare_context/);
-assert.match(edge, /const activeBoosts = batchExecution\.activeBoosts[\s\S]*rollContext\.activeBoosts/);
+assert.match(edge, /const activeBoosts = Array\.isArray\(rollContext\.activeBoosts\)/);
+assert.match(edge, /roll_begin_batch_subroll/);
+assert.match(edge, /p_include_background: batchExecution\.batchSize > 1/);
 assert.match(edge, /if \(batchExecution\.batchSize > 1\) await backgroundPostCommitPromise/);
 assert.match(edge, /claim_equipment_roll_batch/);
 assert.match(edge, /finally \{[\s\S]*release_server_roll/);
