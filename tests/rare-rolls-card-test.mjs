@@ -9,6 +9,7 @@ const shell = read("../src/ui/shell.js");
 const chances = read("../src/logic/chances.js");
 const migration = read("../supabase/migrations/20260921020918_raise_mutation_rare_roll_cutoff_to_10b.sql");
 const marketExclusionMigration = read("../supabase/migrations/20260921021800_exclude_market_gems_from_rare_rolls.sql");
+const baseDetailsMigration = read("../supabase/migrations/20260921023523_add_base_rare_roll_luck_and_serial.sql");
 
 assert.ok(page.indexOf('id="rareRollsCard"') < page.indexOf('id="section-roll-stage"'));
 assert.match(page, /Base rarity[\s\S]*1 in 100M\+/);
@@ -29,5 +30,7 @@ assert.match(migration, /not v_has_mutations and new\.rarity >= 100000000/);
 assert.match(migration, /v_has_mutations and v_effective_rarity >= 10000000000/);
 assert.match(marketExclusionMigration, /from public\.rare_roll_chat_events e/);
 assert.doesNotMatch(marketExclusionMigration, /inventory_gems|inventory_rows|union all/i);
+assert.match(baseDetailsMigration, /luck_at_roll numeric/);
+assert.match(baseDetailsMigration, /serial_number bigint/);
 
 console.log("Rare Rolls card separation checks passed.");

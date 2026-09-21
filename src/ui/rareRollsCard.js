@@ -19,10 +19,14 @@ function age(value) {
 function rowHtml(row) {
   const mutationNames = row.mutations.map((mutation) => mutation.name).join(" · ");
   const denominator = row.kind === "mutation" ? row.effectiveRarity : row.rarity;
+  const baseDetails = row.kind === "base"
+    ? `<span class="rare-roll__details">${row.serialNumber == null ? "" : `<span>Serial #${escapeHtml(Math.round(row.serialNumber).toLocaleString("en-US"))}</span>`}${row.luckAtRoll == null ? "" : `<span>${escapeHtml(row.luckAtRoll.toLocaleString("en-US", { maximumFractionDigits: 2 }))}× Luck</span>`}</span>`
+    : "";
   return `<article class="rare-roll">
     <div class="rare-roll__copy">
       <span class="rare-roll__player">${escapeHtml(row.username)}</span>
       <strong>${mutationNames ? `<span class="rare-roll__mutations">${escapeHtml(mutationNames)}</span> ` : ""}${gemNameHtml(row.gemName, escapeHtml)}</strong>
+      ${baseDetails}
     </div>
     <div class="rare-roll__odds"><strong>${escapeHtml(odds(denominator))}</strong><time datetime="${escapeHtml(row.createdAt)}">${escapeHtml(age(row.createdAt))}</time></div>
   </article>`;
