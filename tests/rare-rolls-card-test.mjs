@@ -7,7 +7,7 @@ const chat = read("../src/backend/chat.js");
 const rareRolls = read("../src/backend/rareRolls.js");
 const shell = read("../src/ui/shell.js");
 const chances = read("../src/logic/chances.js");
-const migration = read("../supabase/migrations/20260920235514_move_rare_rolls_out_of_chat.sql");
+const migration = read("../supabase/migrations/20260921020918_raise_mutation_rare_roll_cutoff_to_10b.sql");
 
 assert.ok(page.indexOf('id="rareRollsCard"') < page.indexOf('id="section-roll-stage"'));
 assert.match(page, /Base rarity[\s\S]*1 in 100M\+/);

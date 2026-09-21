@@ -1,6 +1,5 @@
--- Rare-roll activity now powers the roll-page discovery card rather than
--- global chat. Natural gems require 1/100m base rarity; mutated specimens
--- continue to require 1/1b effective rarity.
+-- Raise mutation-effective Rare Rolls from 1/1b to 1/10b. Natural base
+-- discoveries retain their 1/100m threshold.
 
 create or replace function public.filter_global_roll_announcements()
 returns trigger
@@ -9,7 +8,7 @@ set search_path = ''
 as $function$
 begin
   if cardinality(coalesce(new.mutation_ids, '{}'::text[])) > 0 then
-    if coalesce(new.effective_rarity, 0) >= 1000000000 then return new; end if;
+    if coalesce(new.effective_rarity, 0) >= 10000000000 then return new; end if;
   elsif coalesce(new.rarity, 0) >= 100000000 then
     return new;
   end if;
@@ -36,7 +35,7 @@ declare
 begin
   v_has_mutations := cardinality(coalesce(new.mutation_ids, '{}'::text[])) > 0;
   v_effective_rarity := greatest(1, new.rarity * public.get_mutation_chance_product(coalesce(new.mutation_ids, '{}'::text[])));
-  if (v_has_mutations and v_effective_rarity >= 1000000000)
+  if (v_has_mutations and v_effective_rarity >= 10000000000)
      or (not v_has_mutations and new.rarity >= 100000000) then
     insert into public.rare_roll_chat_events (
       source_type, source_id, player_id, username, gem_name, rarity,
@@ -53,9 +52,9 @@ $function$;
 revoke all on function public.persist_rare_roll_chat_event() from public;
 
 delete from public.global_chat_announcements
-where (cardinality(coalesce(mutation_ids, '{}'::text[])) > 0 and coalesce(effective_rarity, 0) < 1000000000)
-   or (cardinality(coalesce(mutation_ids, '{}'::text[])) = 0 and coalesce(rarity, 0) < 100000000);
+where cardinality(coalesce(mutation_ids, '{}'::text[])) > 0
+  and coalesce(effective_rarity, 0) < 10000000000;
 
 delete from public.rare_roll_chat_events
-where (cardinality(coalesce(mutation_ids, '{}'::text[])) > 0 and coalesce(effective_rarity, 0) < 1000000000)
-   or (cardinality(coalesce(mutation_ids, '{}'::text[])) = 0 and coalesce(rarity, 0) < 100000000);
+where cardinality(coalesce(mutation_ids, '{}'::text[])) > 0
+  and coalesce(effective_rarity, 0) < 10000000000;

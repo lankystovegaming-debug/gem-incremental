@@ -11,7 +11,7 @@ const migration = readFileSync(
 
 const effectiveThresholdMigration = readFileSync(
   new URL(
-    "../supabase/migrations/20260920235514_move_rare_rolls_out_of_chat.sql",
+    "../supabase/migrations/20260921020918_raise_mutation_rare_roll_cutoff_to_10b.sql",
     import.meta.url
   ),
   "utf8"
