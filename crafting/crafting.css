@@ -238,6 +238,7 @@
 .impossible-review__totals { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; overflow:hidden; margin:18px 0; border:1px solid var(--border); border-radius:14px; background:var(--border); }
 .impossible-review__totals > div { display:grid; gap:5px; padding:12px; background:var(--surface-sunken); }
 .impossible-review__totals span { color:var(--text-faint); font-size:.72rem; text-transform:uppercase; }
+.impossible-review__totals small { color:var(--text-muted); font-size:.7rem; }
 .impossible-review__checks { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .impossible-review__checks section { padding:14px; border:1px solid var(--border); border-radius:14px; background:var(--surface-sunken); }
 .impossible-review__checks h3 { margin:0 0 10px; }
