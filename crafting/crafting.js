@@ -830,7 +830,7 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
 // =========================================================
 
 const IMPOSSIBLE_DEPOSIT_PAGE_SIZE = 50;
-const IMPOSSIBLE_TOTAL_WEIGHT_REQUIRED = 1_000_000_000;
+const IMPOSSIBLE_TOTAL_WEIGHT_REQUIRED = 500_000_000;
 const IMPOSSIBLE_TOTAL_VALUE_REQUIRED = 1_000_000_000;
 
 async function renderImpossibleCandidates(dialog, offset = 0, search = '') {

@@ -6,6 +6,7 @@ const db=new PGlite();
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
 const depositWorkspace=readFileSync(new URL('../supabase/migrations/20260915061024_impossible_deposit_workspace.sql',import.meta.url),'utf8');
+const reducedCombinedWeight=readFileSync(new URL('../supabase/migrations/20260921052841_reduce_impossible_combined_weight.sql',import.meta.url),'utf8');
 const achievementAndBulkRepair=readFileSync(new URL('../supabase/migrations/20260915142654_restore_achievement_refresh_and_specimen_bulk_deposit.sql',import.meta.url),'utf8');
 const first='00000000-0000-4000-8000-000000000001';
 const later='00000000-0000-4000-8000-000000000002';
@@ -34,6 +35,7 @@ create table public.player_cosmetic_loadouts(player_id uuid primary key,equipmen
 await db.exec(migration);
 await db.exec(roundRepair);
 await db.exec(depositWorkspace);
+await db.exec(reducedCombinedWeight);
 await db.exec(achievementAndBulkRepair);
 
 assert.match(achievementAndBulkRepair,/perform public\.ensure_private_feature_progress\(p_player_id\);\s*perform public\.refresh_player_achievements_v013\(p_player_id\);/,
@@ -77,7 +79,7 @@ async function seed(uid,name) {
 }
 
 const completeMaterials={selectedCount:98545,common:1000,legendary:67000,mythic:30000,exotic:500,exalted:30,cosmicPlus:15,
-  multiplier10:14,multiplier15:4,multiplier25:1,value100m:1,weight5m:1,totalWeight:1000000000,totalValue:1000000000,
+  multiplier10:14,multiplier15:4,multiplier25:1,value100m:1,weight5m:1,totalWeight:500000000,totalValue:1000000000,
   highestValue:[{id:1,gem_name:'Committed Cosmic',rarity:10000000,final_weight:5000000,value:100000000,final_multiplier:25}]};
 async function setCompleteDeposits(uid) {
   await db.query(`insert into crafting_progress(player_id,recipe_id,progress) values($1,'impossible-pickaxe',$2)
@@ -153,7 +155,12 @@ const autoDeposit=await value(`select deposit_equipment_material($1,'impossible-
   '{"gem_name":"Auto Cosmic","rarity":10000000,"base_weight":200000,"final_weight":5000000,"value":100000000}'::jsonb,null) result`,[later]);
 assert.equal(autoDeposit.deposited,true,'optimized roll Auto Craft helper routes useful Impossible specimens');
 assert.equal(autoDeposit.preserved,false);
-await reset(); await setCompleteDeposits(later); await asUser(later);
+await reset(); await setCompleteDeposits(later);
+const unnecessaryWeightDeposit=await value(`select deposit_equipment_material($1,'impossible-pickaxe',
+  '{"gem_name":"Ordinary Overflow","rarity":500,"base_weight":1,"final_weight":1,"value":1}'::jsonb,null) result`,[later]);
+assert.equal(unnecessaryWeightDeposit.deposited,false,'Auto Craft stops treating aggregate weight as incomplete at 500M g');
+assert.equal(unnecessaryWeightDeposit.reason,'not_needed');
+await asUser(later);
 let laterPlan=await value('select prepare_impossible_pickaxe_craft() result');
 assert.equal(laterPlan.ready,true);
 await reset();
