@@ -16,6 +16,12 @@ assert.match(page, /Mutation effective[\s\S]*1 in 10B\+/);
 assert.doesNotMatch(chat, /global_chat_announcements|get_rare_roll_chat_history/);
 assert.doesNotMatch(shell, /chatTabRare|chatRareBadge|>Rare Rolls</);
 assert.match(rareRolls, /table: "global_chat_announcements"/);
+const loadFunction = rareRolls.slice(
+  rareRolls.indexOf("export async function loadRareRolls"),
+  rareRolls.indexOf("export function subscribeToRareRolls")
+);
+assert.match(loadFunction, /get_rare_roll_chat_history/);
+assert.doesNotMatch(loadFunction, /\.from\("global_chat_announcements"\)/);
 assert.match(rareRolls, /kind: ids\.length \? "mutation" : "base"/);
 assert.match(chances, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
 assert.match(chances, /RARE_ROLL_EFFECTIVE_THRESHOLD = 10_000_000_000/);
