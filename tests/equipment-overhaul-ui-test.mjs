@@ -26,7 +26,7 @@ await impossibleCard.getByRole('button',{name:'Review sacrifice plan'}).click();
 const impossibleDialog=page.locator('#impossibleReviewDialog');
 await impossibleDialog.getByText('Manual deposit',{exact:true}).waitFor();
 assert.equal(await impossibleDialog.getByRole('button',{name:'Start Auto Craft'}).count(),1);
-assert.equal(await impossibleDialog.getByText('Requirement: 1,000,000,000.00g',{exact:true}).count(),1);
+assert.equal(await impossibleDialog.getByText('Requirement: 500,000,000.00g',{exact:true}).count(),1);
 assert.equal(await impossibleDialog.getByText('Requirement: $1,000,000,000',{exact:true}).count(),1);
 await impossibleDialog.getByText('Manual deposit',{exact:true}).click();
 await impossibleDialog.getByText('Quartz',{exact:true}).waitFor();

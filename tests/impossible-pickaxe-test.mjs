@@ -37,6 +37,7 @@ const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',
 const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impossible_pickaxe.sql',import.meta.url),'utf8');
 const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
 const depositWorkspace=readFileSync(new URL('../supabase/migrations/20260915061024_impossible_deposit_workspace.sql',import.meta.url),'utf8');
+const reducedCombinedWeight=readFileSync(new URL('../supabase/migrations/20260921052841_reduce_impossible_combined_weight.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
 const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
 const profileUi=readFileSync(new URL('../user/profile.js',import.meta.url),'utf8');
@@ -66,6 +67,8 @@ assert.match(depositWorkspace,/consumeMaterials'='true'[^]*array_agg\(id\)[^]*de
   'Impossible routing must preserve the latest set-based equipment bulk-deposit path');
 assert.match(depositWorkspace,/not coalesce\(museum_locked,false\)/,
   'manual deposits must never consume Museum exhibits');
+assert.match(reducedCombinedWeight,/totalWeight'\)::numeric,0\)>=500000000/);
+assert.match(reducedCombinedWeight,/totalWeight'\)::numeric,0\)<500000000/);
 assert.match(crafting,/Manual deposit/);
 assert.match(crafting,/Start Auto Craft/);
 assert.match(crafting,/permanently removed from inventory/);
