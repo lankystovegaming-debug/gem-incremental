@@ -57,6 +57,8 @@ function normalize(row, profiles, catalog, recovered = false) {
     mutationIds: ids,
     mutations: details.map((entry) => ({ id: String(entry.id), name: entry.name })),
     kind: ids.length ? "mutation" : "base",
+    luckAtRoll: row?.luck_at_roll == null ? null : Number(row.luck_at_roll),
+    serialNumber: row?.serial_number == null ? null : Number(row.serial_number),
     createdAt: row.created_at
   };
 }
