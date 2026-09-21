@@ -1394,7 +1394,6 @@ type BatchExecution = {
   firstGenuineRoll?: number;
   nextRollAt?: string;
   cooldownMs?: number;
-  activeBoosts?: any[];
   activeAdminEvent?: any | null;
   globalEventData?: any | null;
   guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
@@ -1402,6 +1401,7 @@ type BatchExecution = {
   equipmentBonusRows?: any[];
   deepcoreContext?: any | null;
   deepSeaContext?: any | null;
+  initialRollContext?: any;
   timing?: RollInvocationTiming;
 };
 
@@ -1536,19 +1536,39 @@ async function executeSingleRoll(
       // Ordinary displayed batches retain their effectively-simultaneous time.
       const now = batchExecution.pool === "deep_sea" ? new Date() : batchExecution.requestStartedAt;
 
-      // One service-only RPC supplies the full authoritative pre-roll
-      // snapshot. Catalog rows are returned only when their trigger-maintained
-      // version differs from the warm isolate's cached version.
+      // The first subroll loads the complete authoritative snapshot. Later
+      // subrolls reuse batch-stable fields and combine their changing-state
+      // refresh with the serialized Mythic Surge claim in one RPC.
       const prepareContextStartedAt = timingNow(batchExecution);
-      const { data: rollContext, error: rollContextError } = await ctx.supabaseAdmin.rpc(
-        "roll_prepare_context",
-        {
+      let rollContext: any;
+      let rollContextError: any = null;
+      let preclaimedMythicSurge: any = null;
+      if (batchIndex === 0) {
+        const result = await ctx.supabaseAdmin.rpc("roll_prepare_context", {
           p_player_id: playerId,
           p_now: now.toISOString(),
           p_gem_catalog_version: gemCatalogCache?.version ?? null,
           p_mutation_catalog_version: mutationCatalogCache?.version ?? null
+        });
+        rollContext = result.data;
+        rollContextError = result.error;
+        if (rollContext) batchExecution.initialRollContext = structuredClone(rollContext);
+      } else {
+        const result = await ctx.supabaseAdmin.rpc("roll_begin_batch_subroll", {
+          p_player_id: playerId,
+          p_lease_id: batchExecution.leaseId,
+          p_genuine_roll: Number(batchExecution.firstGenuineRoll) + batchIndex,
+          p_now: now.toISOString()
+        });
+        rollContextError = result.error;
+        if (result.data?.context) {
+          rollContext = {
+            ...(batchExecution.initialRollContext ?? {}),
+            ...result.data.context
+          };
+          preclaimedMythicSurge = result.data.mythicSurge ?? null;
         }
-      );
+      }
       recordRollPhase(batchExecution, batchIndex, "roll_prepare_context_ms", prepareContextStartedAt);
 
       if (rollContextError || !rollContext) {
@@ -1859,12 +1879,9 @@ async function executeSingleRoll(
       // LOAD ACTIVE PLAYER BOOSTS
       // =====================================================
 
-      const activeBoosts = batchExecution.activeBoosts ?? (
-        Array.isArray(rollContext.activeBoosts) ? rollContext.activeBoosts : []
-      );
-      if (batchExecution.activeBoosts === undefined) {
-        batchExecution.activeBoosts = structuredClone(activeBoosts);
-      }
+      const activeBoosts = Array.isArray(rollContext.activeBoosts)
+        ? rollContext.activeBoosts
+        : [];
 
 
       // =====================================================
@@ -2389,21 +2406,13 @@ async function executeSingleRoll(
           lifetimeStats:{totalRolls:loss.total_rolls},cooldown:{nextRollAt:claimedNextRollAt.toISOString(),durationMs:cooldownMs}});
       }
 
-      // Advance Mythic Surge only after the authoritative lease accepts this
-      // request as a genuine roll. The RPC serializes the shared guild counter.
-      let mythicSurge: any = null;
-      try {
-        const { data: surgeResult, error: surgeError } = await ctx.supabaseAdmin.rpc(
-          "claim_guild_mythic_surge",
-          { p_player_id: playerId }
-        );
-        if (surgeError) throw surgeError;
-        mythicSurge = surgeResult ?? null;
-        if (!allIn && mythicSurge?.boosted === true) specialLuck *= 2;
-      } catch (surgeError) {
-        // A shop deployment mismatch must not strand an already-claimed roll.
-        console.error("Guild Mythic Surge claim failed:", surgeError);
-      }
+      // The first surge was claimed atomically with the lease; later ones were
+      // claimed by roll_begin_batch_subroll after the prior roll committed.
+      // There is no standalone PostgREST round trip on the roll hot path.
+      const mythicSurge = batchIndex === 0
+        ? rollClaim.mythicSurge ?? null
+        : preclaimedMythicSurge;
+      if (!allIn && mythicSurge?.boosted === true) specialLuck *= 2;
 
       // One-roll Luck and world effects are applied only after all special mechanics.
       rollSpeed *= eventContext.rollSpeedMultiplier;
@@ -2892,6 +2901,7 @@ async function executeSingleRoll(
       let nextMistyStacks = nextMistyRolls > 0 ? mistyBoostStacksBefore : 0;
       let nextAncientRelicRolls = Math.max(0, ancientRelicBoostRollsBefore - 1);
       let nextEnchantedRelicRolls = Math.max(0, enchantedRelicBoostRollsBefore - 1);
+      const playerPatch: Record<string, unknown> = {};
 
       if (rolledMutationIdsSet.has("misty")) {
         nextMistyStacks = (mistyBoostRollsBefore > 0 ? mistyBoostStacksBefore : 0) + 1;
@@ -2905,27 +2915,17 @@ async function executeSingleRoll(
       }
 
       if (
-        batchExecution.pool !== "deep_sea" && (
-          nextMistyRolls !== mistyBoostRollsBefore ||
-          nextMistyStacks !== mistyBoostStacksBefore ||
-          nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
-          nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
-        )
+        nextMistyRolls !== mistyBoostRollsBefore ||
+        nextMistyStacks !== mistyBoostStacksBefore ||
+        nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
+        nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
       ) {
-        recordRollPhase(batchExecution, batchIndex, "rng_js_ms", rngJsStartedAt);
-        const { error: mutationEffectStateError } = await ctx.supabaseAdmin
-          .from("players")
-          .update({
-            misty_mutation_boost_rolls: nextMistyRolls,
-            misty_mutation_boost_stacks: nextMistyStacks,
-            ancient_relic_boost_rolls: nextAncientRelicRolls,
-            enchanted_relic_boost_rolls: nextEnchantedRelicRolls
-          })
-          .eq("id", playerId);
-        if (mutationEffectStateError) {
-          console.error("Mutation temporary effect persistence failed:", mutationEffectStateError);
-        }
-        rngJsStartedAt = timingNow(batchExecution);
+        Object.assign(playerPatch, {
+          misty_mutation_boost_rolls: nextMistyRolls,
+          misty_mutation_boost_stacks: nextMistyStacks,
+          ancient_relic_boost_rolls: nextAncientRelicRolls,
+          enchanted_relic_boost_rolls: nextEnchantedRelicRolls
+        });
       }
 
       const researchMutationValue = mutations.length
@@ -3082,18 +3082,6 @@ async function executeSingleRoll(
         try { await commitDeepSea(inventoryRequired); }
         catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
       }
-      if (batchExecution.pool === "deep_sea" && (
-        nextMistyRolls !== mistyBoostRollsBefore || nextMistyStacks !== mistyBoostStacksBefore ||
-        nextAncientRelicRolls !== ancientRelicBoostRollsBefore || nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
-      )) {
-        const { error } = await ctx.supabaseAdmin.from("players").update({
-          misty_mutation_boost_rolls:nextMistyRolls, misty_mutation_boost_stacks:nextMistyStacks,
-          ancient_relic_boost_rolls:nextAncientRelicRolls, enchanted_relic_boost_rolls:nextEnchantedRelicRolls
-        }).eq("id",playerId);
-        if (error) console.error("Deep Sea mutation effect persistence failed:",error);
-      }
-
-
       // =====================================================
       // SAVE TO INVENTORY IF NOT AUTO-DEPOSITED
       // =====================================================
@@ -3331,11 +3319,7 @@ async function executeSingleRoll(
           : resonanceEmpowered
             ? 0
             : Math.min(100, resonanceBeforeRoll + 1);
-        const { error: resonanceError } = await ctx.supabaseAdmin
-          .from("players")
-          .update({ rarity_resonance: rarityResonance })
-          .eq("id", playerId);
-        if (resonanceError) console.error("Rarity Resonance persistence failed:", resonanceError);
+        playerPatch.rarity_resonance = rarityResonance;
       }
 
       const progressionStateUpdate: Record<string, unknown> = {};
@@ -3353,15 +3337,7 @@ async function executeSingleRoll(
           Number(veinHunterDuplicate?.rolled_weight_multiplier ?? 0)
         );
       }
-      if (Object.keys(progressionStateUpdate).length) {
-        const { error: progressionStateError } = await ctx.supabaseAdmin
-          .from("players")
-          .update(progressionStateUpdate)
-          .eq("id", playerId);
-        if (progressionStateError) {
-          console.error("Late-game equipment state persistence failed:", progressionStateError);
-        }
-      }
+      Object.assign(playerPatch, progressionStateUpdate);
 
       const equipmentOutcome = finishEquipmentRoll(equipmentContext, {
         naturalWeight: relicDrop ? null : rolledWeightMultiplier, gem: relicDrop ? null : gem,
@@ -3402,39 +3378,12 @@ async function executeSingleRoll(
           locked: false
         };
       }
-      const equipmentCommitStartedAt = timingNow(batchExecution);
-      const { data: equipmentCommit, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('commit_equipment_roll', {
-        p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
-        p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
-        p_capacity: effectiveInventoryCapacity
-      });
-      recordRollPhase(batchExecution, batchIndex, "commit_equipment_roll_ms", equipmentCommitStartedAt);
-      if (equipmentCommitError) throw equipmentCommitError;
-      breakneckGem = equipmentCommit?.bonus ?? null;
-
-      let petReward: any = null;
-      if (petDrop) {
-        try {
-          const { data: petClaim, error: petClaimError } = await ctx.supabaseAdmin.rpc("claim_pet_reward", {
-            p_player_id: playerId,
-            p_pet_id: String(petDrop.id)
-          });
-          if (petClaimError) throw petClaimError;
-          petReward = { ...petDrop, quantity: Number(petClaim?.quantity ?? 1) };
-          // A successful pet immediately consumes every stacked pet-luck boost.
-          batchExecution.activeBoosts = (batchExecution.activeBoosts ?? []).filter(
-            (boost: any) => boost.family !== "petLuck"
-          );
-        } catch (petError) {
-          console.error("[ROLL] Pet reward claim failed:", petError);
-        }
-      }
 
       const combinationKey = getMutationCombinationKey(mutationIds);
       const rollNumber = Number(player.total_rolls ?? 0) + 1;
       const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
       const boostTiers = Object.fromEntries(
-        (activeBoosts ?? []).map((boost) => [boost.family, Number(boost.tier ?? 0)])
+        activeBoosts.map((boost) => [boost.family, Number(boost.tier ?? 0)])
       );
       const progressPayload = {
         gemName: gem.name,
@@ -3458,7 +3407,7 @@ async function executeSingleRoll(
         finalWeight: relicDrop ? 0 : finalWeight,
         displayedValue: relicDrop ? 0 : value,
         mutationIds: relicDrop ? [] : mutationIds,
-        boostFamilies: (activeBoosts ?? []).map((boost) => boost.family),
+        boostFamilies: activeBoosts.map((boost) => boost.family),
         boostTiers,
         relicName: relicDrop ? gem.name : null
       };
@@ -3495,21 +3444,45 @@ async function executeSingleRoll(
         progressPayload,
         expeditionPayload
       };
-      const criticalBookkeepingStartedAt = timingNow(batchExecution);
-      const criticalBookkeepingPromise = ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
-        p_player_id: playerId,
-        p_phase: "critical",
-        p_payload: bookkeepingPayload
-      }).then(({ data, error }: any) => {
-        recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_critical_ms", criticalBookkeepingStartedAt);
-        if (error) {
-          console.error("Critical roll bookkeeping failed:", error);
-          return {};
-        }
-        if (data?.errors?.length) console.warn("Critical roll bookkeeping partial failures:", data.errors);
-        return data ?? {};
+
+      const equipmentCommitStartedAt = timingNow(batchExecution);
+      const { data: equipmentCommit, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('commit_equipment_roll', {
+        p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+        p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+        p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+        p_bookkeeping: bookkeepingPayload,
+        p_include_background: batchExecution.batchSize > 1
       });
-      const consolidatedBackgroundPromise = criticalBookkeepingPromise.then(() => {
+      recordRollPhase(batchExecution, batchIndex, "commit_equipment_roll_ms", equipmentCommitStartedAt);
+      recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_critical_ms", equipmentCommitStartedAt);
+      if (batchExecution.batchSize > 1) {
+        recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", equipmentCommitStartedAt);
+      }
+      if (equipmentCommitError) throw equipmentCommitError;
+      breakneckGem = equipmentCommit?.bonus ?? null;
+
+      let petReward: any = null;
+      if (petDrop) {
+        try {
+          const { data: petClaim, error: petClaimError } = await ctx.supabaseAdmin.rpc("claim_pet_reward", {
+            p_player_id: playerId,
+            p_pet_id: String(petDrop.id)
+          });
+          if (petClaimError) throw petClaimError;
+          petReward = { ...petDrop, quantity: Number(petClaim?.quantity ?? 1) };
+        } catch (petError) {
+          console.error("[ROLL] Pet reward claim failed:", petError);
+        }
+      }
+
+      const criticalBookkeeping = equipmentCommit?.bookkeeping ?? {};
+      if (criticalBookkeeping?.errors?.length) {
+        console.warn("Critical roll bookkeeping partial failures:", criticalBookkeeping.errors);
+      }
+      const criticalBookkeepingPromise = Promise.resolve(criticalBookkeeping);
+      const consolidatedBackgroundPromise = batchExecution.batchSize > 1
+        ? Promise.resolve({ data: equipmentCommit?.backgroundBookkeeping ?? {}, error: null })
+        : (() => {
         const backgroundBookkeepingStartedAt = timingNow(batchExecution);
         return ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
           p_player_id: playerId,
@@ -3519,7 +3492,8 @@ async function executeSingleRoll(
           recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", backgroundBookkeepingStartedAt);
           return result;
         });
-      }).then(({ data, error }: any) => {
+      })();
+      const checkedBackgroundPromise = consolidatedBackgroundPromise.then(({ data, error }: any) => {
         if (error) console.error("Background roll bookkeeping failed:", error);
         else if (data?.errors?.length) console.warn("Background roll bookkeeping partial failures:", data.errors);
       });
@@ -3540,7 +3514,7 @@ async function executeSingleRoll(
       // The specimen is already committed. Ordinary single rolls keep the
       // best-effort phase off the response path; batches await it so state used
       // by the next item (including potion charges) is current.
-      const backgroundPostCommitPromise = consolidatedBackgroundPromise
+      const backgroundPostCommitPromise = checkedBackgroundPromise
         .then(() => undefined)
         .catch((error) => {
           console.error("Background roll bookkeeping crashed:", error);

@@ -22,6 +22,10 @@ const autoCraftHotPath = readFileSync(
   new URL("../supabase/migrations/20260913233627_optimize_roll_autocraft_hot_path.sql", import.meta.url),
   "utf8"
 );
+const phase5HotPath = readFileSync(
+  new URL("../supabase/migrations/20260921052803_phase5_roll_hot_path_optimization.sql", import.meta.url),
+  "utf8"
+);
 const edge = readFileSync(new URL("../supabase/functions/roll/index.ts", import.meta.url), "utf8");
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 
@@ -31,13 +35,14 @@ await db.exec(`
   create role service_role;
 
   create table players (
-    id uuid primary key, username text, next_roll_at timestamptz, inventory_capacity integer default 0,
+    id uuid primary key, username text, money numeric default 0, next_roll_at timestamptz, inventory_capacity integer default 0,
     total_rolls bigint default 0, mutation_luck numeric default 1, rarity_resonance numeric default 0,
     equipment_state jsonb default '{}', gravitational_surge_progress integer default 0,
     gravitational_surge_ready boolean default false, bag_compression_progress integer default 0,
     best_rare_natural_weight_100k numeric default 0, best_rare_natural_weight_1m numeric default 0,
     misty_mutation_boost_rolls integer default 0, misty_mutation_boost_stacks integer default 0,
-    ancient_relic_boost_rolls integer default 0, enchanted_relic_boost_rolls integer default 0
+    ancient_relic_boost_rolls integer default 0, enchanted_relic_boost_rolls integer default 0,
+    roll_lease_id uuid, equipment_genuine_rolls bigint default 0, equipment_state_roll bigint default 0
   );
   create table player_research_effects (player_id uuid primary key, inventory_bonus integer default 0);
   create table user_roll_luck_rarity_mult (player_id uuid primary key, active_until timestamptz, note text);
@@ -117,11 +122,14 @@ await db.exec(migration);
 await db.exec(contextColumnFix);
 await db.exec(serviceRoleAuthFix);
 await db.exec(autoCraftHotPath);
+await db.exec(phase5HotPath);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_finish_bookkeeping(uuid,text,jsonb)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('service_role','public.roll_prepare_context(uuid,timestamptz,bigint,bigint)','execute') allowed")).allowed, true);
 assert.equal((await one("select has_function_privilege('authenticated','public.roll_autocraft_deposit(uuid,jsonb)','execute') allowed")).allowed, false);
 assert.equal((await one("select has_function_privilege('service_role','public.roll_autocraft_deposit(uuid,jsonb)','execute') allowed")).allowed, true);
+assert.equal((await one("select has_function_privilege('authenticated','public.roll_refresh_context(uuid,timestamptz)','execute') allowed")).allowed, false);
+assert.equal((await one("select has_function_privilege('service_role','public.roll_begin_batch_subroll(uuid,uuid,bigint,timestamptz)','execute') allowed")).allowed, true);
 await db.exec(`
   select set_config('request.jwt.claim.role', 'service_role', false);
   insert into players(id,username,inventory_capacity) values ('${uid}','Miner',4);
@@ -171,6 +179,45 @@ assert.equal(initial.activeAdminEvent.mutation_chance_bonus, undefined, "stale a
 assert.equal(initial.gemCatalog.length, 1);
 assert.equal(initial.mutationCatalog.length, 1);
 
+const refreshed = (await one("select roll_refresh_context($1,now()) context", [uid])).context;
+assert.equal(refreshed.player.username, "Miner");
+assert.equal(Number(refreshed.inventoryCount), 1);
+assert.equal(refreshed.activeAutoCraft, "mass-recipe");
+assert.equal(refreshed.catalogVersions, undefined, "batch-stable catalogs are not retransmitted");
+
+const leaseId = "00000000-0000-0000-0000-000000000099";
+await db.query("update players set roll_lease_id=$2 where id=$1", [uid, leaseId]);
+const begun = (await one(
+  "select roll_begin_batch_subroll($1,$2,1,now()) result", [uid, leaseId]
+)).result;
+assert.equal(begun.context.player.username, "Miner");
+assert.deepEqual(begun.mythicSurge, {});
+
+const consolidatedCommit = (await one(
+  "select commit_equipment_roll($1,$2,1,$3,null,null,4,$4,$5,false) result",
+  [
+    uid,
+    leaseId,
+    { rolls: { test: 1 } },
+    { rarity_resonance: 12, misty_mutation_boost_rolls: 9, misty_mutation_boost_stacks: 4 },
+    {
+      username: "Miner", gemName: "Quartz", rarity: 1, effectiveRarity: 1,
+      finalWeight: 1, value: 1, rolledWeightMultiplier: 1, mutationIds: [],
+      mutationMultipliers: {}, mutationMultiplier: 1, combinationKey: "none",
+      rawLuck: 1, baseLuck: 1, announcedLuck: 1, rollNumber: 1,
+      relic: false, progressPayload: {}, expeditionPayload: {}
+    }
+  ]
+)).result;
+assert.equal(Number(consolidatedCommit.bookkeeping.lifetimeStats.totalRolls), 7);
+const committedPlayer = await one(
+  "select equipment_state_roll,rarity_resonance,misty_mutation_boost_rolls from players where id=$1",
+  [uid]
+);
+assert.equal(Number(committedPlayer.equipment_state_roll), 1);
+assert.equal(Number(committedPlayer.rarity_resonance), 12);
+assert.equal(Number(committedPlayer.misty_mutation_boost_rolls), 9);
+
 const warm = (await one("select roll_prepare_context($1,now(),$2,$3) context", [
   uid, initial.catalogVersions.gems, initial.catalogVersions.mutations
 ])).context;
@@ -185,6 +232,8 @@ assert.equal(Number(invalidated.mutationCatalog[0].multiplier), 3, "catalog muta
 await db.exec("set role authenticated");
 await assert.rejects(() => db.query("select roll_prepare_context($1,now(),null,null)", [uid]), /permission denied/);
 await assert.rejects(() => db.query("select roll_finish_bookkeeping($1,'background','{}'::jsonb)", [uid]), /permission denied/);
+await assert.rejects(() => db.query("select roll_refresh_context($1,now())", [uid]), /permission denied/);
+await assert.rejects(() => db.query("select roll_begin_batch_subroll($1,$2,1,now())", [uid, leaseId]), /permission denied/);
 await db.exec("reset role");
 
 await db.exec("set role service_role");
@@ -244,7 +293,9 @@ assert.equal(Number((await one("select count(*) count from roll_weight_history w
 assert.equal(Number((await one("select min(final_weight) minimum from roll_weight_history where player_id=$1", [uid])).minimum), 1);
 
 assert.match(edge, /currentInventoryCount \+ batchExecution\.batchSize > effectiveInventoryCapacity/, "x4 preflight reserves every required slot");
-assert.match(edge, /roll_finish_bookkeeping[\s\S]*p_phase: "critical"/);
+assert.match(edge, /commit_equipment_roll[\s\S]*p_bookkeeping: bookkeepingPayload/);
+assert.doesNotMatch(edge, /supabaseAdmin\.rpc\("claim_guild_mythic_surge"/);
+assert.doesNotMatch(edge, /roll_finish_bookkeeping[\s\S]*p_phase: "critical"/);
 assert.match(edge, /roll_finish_bookkeeping[\s\S]*p_phase: "background"/);
 assert.match(edge, /roll_autocraft_deposit/);
 assert.doesNotMatch(edge, /player_crafting|game_recipes|crafting_progress|apply_autocraft_progress|deposit_equipment_material/);

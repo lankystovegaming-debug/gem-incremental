@@ -4,7 +4,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {PICKAXE_STATS} from '../supabase/functions/roll/equipmentRules.js';
 const url=p=>new URL(p,import.meta.url).href;
 let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8')
- .replace(/import\s*\{\s*withSupabase\s*\}\s*from\s*"npm:@supabase\/server";/,'const withSupabase=(_options,handler)=>handler;')
+ .replace(/import\s*\{\s*withSupabase\s*\}\s*from\s*"npm:@supabase\/server";/,'const withSupabase=(_options,handler)=>(req)=>handler(req,globalThis.__rollTestCtx);')
  .replace(/import\s*\{\s*Redis\s*\}\s*from\s*"npm:@upstash\/redis@1\.38\.4";/,'class Redis { constructor() {} }')
  .replace(/import\s*\{\s*Ratelimit\s*\}\s*from\s*"npm:@upstash\/ratelimit@2\.1\.0";/,'class Ratelimit { static slidingWindow(){return null;} async limit(){return {success:true};} }')
  .replace('"./eventRules.ts"',JSON.stringify(url('../supabase/functions/roll/eventRules.ts')))
@@ -14,7 +14,7 @@ let forceProcs=false, forceLoss=false;
 const bg=[];globalThis.EdgeRuntime={waitUntil:p=>bg.push(p)};
 globalThis.Deno={env:{get:()=>''}};
 Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){a[0]=forceLoss && /jackpotRoll/.test(new Error().stack)?0:forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(new Error().stack)?0:2**31;return a;}},configurable:true});
-const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source+'\n//# sourceURL=roll-handler-under-test.mjs').toString('base64'));
 let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs,rpcCalls;
 let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false};
 const uid='00000000-0000-0000-0000-000000000001';
@@ -35,18 +35,20 @@ class Query {
   return Promise.resolve({data,error:null,count}).then(resolve,reject);
  }
 }
+const rollContext=()=>({
+ player,ban:null,inventoryCount:0,activeAutoCraft:craftActive?'craft':null,equipment,mineArtifacts:[],
+ qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
+ activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
+ expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
+ catalogVersions:{gems:1,mutations:1},
+ gemCatalog:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
+ mutationCatalog:[{id:'polished',name:'Polished',chance:100,multiplier:1.5},{id:'shifted',name:'Shifted',chance:5,multiplier:35}]
+});
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
  rpcs.push(name);rpcCalls.push({name,args:structuredClone(args)});
  if(name==='sell_inventory_gem' && saleFailure)return {data:null,error:{message:"sale_failed"}};
- if(name==='roll_prepare_context')return {data:{
-  player,ban:null,inventoryCount:0,activeAutoCraft:craftActive?'craft':null,equipment,mineArtifacts:[],
-  qol:{settings:qolSettings,discoveries:['Test gem']},activeBoosts:boosts,oneRollBoost:oneRoll,
-  activeAdminEvent:admin,globalEvent:null,crystalEffects:{luckBonus:2,finalLuckMultiplier:3},
-  expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
-  catalogVersions:{gems:1,mutations:1},
-  gemCatalog:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
-  mutationCatalog:[{id:'polished',name:'Polished',chance:100,multiplier:1.5},{id:'shifted',name:'Shifted',chance:5,multiplier:35}]
- },error:null};
+ if(name==='roll_prepare_context')return {data:rollContext(),error:null};
+ if(name==='roll_begin_batch_subroll')return {data:{context:rollContext(),mythicSurge:{active:false,boosted:false,progress:0}},error:null};
  if(name==='roll_finish_bookkeeping'){
   if(args.p_phase==='critical'){
    player.total_rolls+=1;
@@ -56,8 +58,13 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
   return {data:{errors:[]},error:null};
  }
  const responses={roll_autocraft_deposit:craftResponse,qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},sell_inventory_gem:123,bundle_route_roll:bundleResponse,crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
-  claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString()},record_server_roll:{total_rolls:5001}};
- if(name==='commit_equipment_roll'){commits.push(args);player.equipment_state=structuredClone(args.p_state);return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null},error:null};}
+  claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString(),mythicSurge:{active:false,boosted:false,progress:0}},record_server_roll:{total_rolls:5001}};
+ if(name==='commit_equipment_roll'){
+  commits.push(args);player.equipment_state=structuredClone(args.p_state);Object.assign(player,args.p_player_patch);
+  player.total_rolls+=1;
+  if(args.p_include_background&&args.p_bookkeeping.consumeOneRollCharge)oneRoll=null;
+  return {data:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null,bookkeeping:{lifetimeStats:{total_rolls:player.total_rolls},mutationCombination:{},guildPoints:null,globalEventProgress:null,errors:[]},backgroundBookkeeping:args.p_include_background?{errors:[]}:null},error:null};
+ }
  if(name==='commit_jackpot_loss'){player.equipment_state=structuredClone(args.p_state);player.total_rolls+=1;return {data:{total_rolls:player.total_rolls},error:null};}
  if(name==='record_server_roll'){player.total_rolls+=1;return {data:{total_rolls:player.total_rolls},error:null};}
  if(name==='spend_one_roll_charge'){oneRoll=null;return {data:0,error:null};}
@@ -69,7 +76,8 @@ async function run(id,state={},enchant=null,batchSize=1) {
  equipment=[{id:1,equipment_id:id,category:'pickaxe',enchant_id:enchant,enchant_state:{rolls:6},enchant_grade:'normal'},
  {id:2,category:'clover',luck_bonus:.1},{id:3,category:'lantern',mutation_chance_bonus:.25},{id:4,category:'boots',weight_luck_bonus:.15},{id:5,category:'bag',weight_multiplier_bonus:.15}];
  boosts=[{family:'luck',effect_value:7}];oneRoll={effect_value:1000,charges:1,consumable_id:'mythic-potion'};admin={luck_bonus:5,luck_multiplier:2,roll_speed_bonus:.1,roll_speed_multiplier:3,weight_luck_bonus:.2,weight_luck_multiplier:2,weight_multiplier_bonus:.3,weight_multiplier_multiplier:2,mutation_luck_bonus:.2,mutation_luck_multiplier:2};
- const response=await handler.fetch(new Request('http://local/roll',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({batchSize})}),{userClaims:{id:uid},supabase:client,supabaseAdmin:client});
+ globalThis.__rollTestCtx={userClaims:{id:uid},supabase:client,supabaseAdmin:client};
+ const response=await handler.fetch(new Request('http://local/roll',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({batchSize})}));
  const result=await response.json();await Promise.all(bg.splice(0));assert.equal(response.status,200,JSON.stringify(result));return result;
 }
 
@@ -144,11 +152,14 @@ assert.ok(batch.results[0].luckAtRoll>batch.results[1].luckAtRoll);
 assert.equal(player.total_rolls,5004);
 assert.equal(rpcs.filter(name=>name==='claim_equipment_roll_batch').length,1);
 assert.equal(rpcs.filter(name=>name==='commit_equipment_roll').length,4);
-assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='critical').length,4);
-assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='background'&&call.args.p_payload.consumeOneRollCharge).length,1);
-const progressCalls=rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='background');
-assert.deepEqual(progressCalls.map(call=>call.args.p_payload.progressPayload.usedOneRollPotion),[true,false,false,false]);
-assert.deepEqual(progressCalls.map(call=>call.args.p_payload.progressPayload.usedMythicPotion),[true,false,false,false]);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_prepare_context').length,1);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_begin_batch_subroll').length,3);
+assert.equal(rpcCalls.filter(call=>call.name==='claim_guild_mythic_surge').length,0);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='critical').length,0);
+assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='background').length,0);
+assert.equal(commits.filter(call=>call.p_include_background).length,4);
+assert.deepEqual(commits.map(call=>call.p_bookkeeping.progressPayload.usedOneRollPotion),[true,false,false,false]);
+assert.deepEqual(commits.map(call=>call.p_bookkeeping.progressPayload.usedMythicPotion),[true,false,false,false]);
 near(batch.cooldown.durationMs,batch.results[0].cooldown.durationMs);
 console.log('Optimized handler batch: one Mythic-boosted roll, three ordinary rolls, one spent charge, four counters and state commits passed.');
 
