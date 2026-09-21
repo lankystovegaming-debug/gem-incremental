@@ -830,6 +830,8 @@ ${PICKAXE_SPECIALTIES[recipe.id] ? `<p class="equipment-specialty"><strong>Best 
 // =========================================================
 
 const IMPOSSIBLE_DEPOSIT_PAGE_SIZE = 50;
+const IMPOSSIBLE_TOTAL_WEIGHT_REQUIRED = 1_000_000_000;
+const IMPOSSIBLE_TOTAL_VALUE_REQUIRED = 1_000_000_000;
 
 async function renderImpossibleCandidates(dialog, offset = 0, search = '') {
   const host = dialog.querySelector('#impossibleManualCandidates');
@@ -943,8 +945,8 @@ function openImpossibleReview(result, { openManual = false } = {}) {
     </div>
     <div class="impossible-review__totals">
       <div><span>Deposited once</span><strong>${formatCount(material.selectedCount ?? 0)} gems</strong></div>
-      <div><span>Combined final weight</span><strong>${formatWeight(material.totalWeight ?? 0)}</strong></div>
-      <div><span>Combined value</span><strong>${formatMoney(material.totalValue ?? 0)}</strong></div>
+      <div><span>Combined final weight</span><strong>${formatWeight(material.totalWeight ?? 0)}</strong><small>Requirement: ${formatWeight(IMPOSSIBLE_TOTAL_WEIGHT_REQUIRED)}</small></div>
+      <div><span>Combined value</span><strong>${formatMoney(material.totalValue ?? 0)}</strong><small>Requirement: ${formatMoney(IMPOSSIBLE_TOTAL_VALUE_REQUIRED)}</small></div>
       <div><span>Cash due at final craft</span><strong>${formatMoney(2500000000)}</strong></div>
     </div>
     <div class="impossible-review__checks"><section><h3>Sacrifice pool</h3><ul>${rows.map(line).join('')}</ul></section><section><h3>Historical gates</h3><ul>${historical.map(line).join('')}</ul></section></div>
