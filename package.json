@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "test:events": "node tests/global-random-events-test.mjs",
+    "test:pending-gems": "node --test tests/pending-gems-test.mjs && node tests/pending-gems-database-test.mjs",
     "test:money-up-potion": "node tests/money-up-potion-database-test.mjs",
     "test:admin-alerts": "node tests/admin-activity-alerts-test.mjs && node tests/admin-alerts-anticheat-analytics-test.mjs",
     "test:expedition-ui": "node tests/expedition-console-ux-test.mjs",

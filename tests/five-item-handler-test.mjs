@@ -7,6 +7,7 @@ let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.met
  .replace(/import\s*\{\s*withSupabase\s*\}\s*from\s*"npm:@supabase\/server";/,'const withSupabase=(_options,handler)=>(req)=>handler(req,globalThis.__rollTestCtx);')
  .replace(/import\s*\{\s*Redis\s*\}\s*from\s*"npm:@upstash\/redis@1\.38\.4";/,'class Redis { constructor() {} }')
  .replace(/import\s*\{\s*Ratelimit\s*\}\s*from\s*"npm:@upstash\/ratelimit@2\.1\.0";/,'class Ratelimit { static slidingWindow(){return null;} async limit(){return {success:true};} }')
+ .replace('"./availabilityRules.ts"',JSON.stringify(url('../supabase/functions/roll/availabilityRules.ts')))
  .replace('"./eventRules.ts"',JSON.stringify(url('../supabase/functions/roll/eventRules.ts')))
  .replace('"./equipmentRules.js"',JSON.stringify(url('../supabase/functions/roll/equipmentRules.js')));
 source=stripTypeScriptTypes(source);

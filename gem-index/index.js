@@ -116,7 +116,24 @@ function exactEntryChance(entry) {
 function entryChanceLabel(entry) {
   const probability = exactEntryChance(entry);
   if (!Number.isFinite(probability) || probability <= 0) return "Impossible";
-  return `1 in ${Math.max(1, Math.round(1 / probability)).toLocaleString("en-US")}`;
+  const chance = `1 in ${Math.max(1, Math.round(1 / probability)).toLocaleString("en-US")}`;
+  return entry.gem.metadata?.sourceExclusive === true
+    ? `${chance} raw per ${entry.gem.metadata.sourceLabel || "exclusive source"}`
+    : chance;
+}
+
+function catalogRarityLabel(gem) {
+  if (gem.metadata?.rarityClass === "anomalous") {
+    return `Anomalous · ${rarityLabel(gem.metadata.rawChanceDenominator || gem.rarity)} raw`;
+  }
+  return rarityLabel(gem.rarity);
+}
+
+function acquisitionLabel(gem) {
+  if (gem.metadata?.sourceExclusive === true) {
+    return `${gem.metadata.sourceLabel || "Source"} exclusive · unaffected by Luck`;
+  }
+  return gem.affectedByLuck === false ? "Flat chance · unaffected by Luck" : "";
 }
 
 function makeEntry(gem, mutationIds) {
@@ -179,12 +196,21 @@ function displayedAsDiscovered(entry) {
 }
 
 function dailyAvailabilityLabel(gem) {
-  if (!["daily", "date_range_daily"].includes(gem.availabilityMode) || !gem.dailyStartTime || !gem.dailyEndTime) return "";
-  const source = `${String(gem.dailyStartTime).slice(0,5)}–${String(gem.dailyEndTime).slice(0,5)} ${gem.availabilityTimezone || "Asia/Singapore"}`;
-  if ((gem.availabilityTimezone || "Asia/Singapore") !== "Asia/Singapore") return `Available daily: ${source}`;
+  if (!["daily", "date_range_daily"].includes(gem.availabilityMode)) return "";
+  const configured = Array.isArray(gem.dailyTimeWindows)
+    ? gem.dailyTimeWindows.filter((window) => window?.start && window?.end)
+    : [];
+  const windows = configured.length
+    ? configured
+    : (gem.dailyStartTime && gem.dailyEndTime ? [{ start: gem.dailyStartTime, end: gem.dailyEndTime }] : []);
+  if (!windows.length) return "";
+  const zone = gem.availabilityTimezone || "Asia/Singapore";
+  const source = windows.map((window) => `${String(window.start).slice(0,5)}–${String(window.end).slice(0,5)}`).join(" and ");
+  if (zone !== "Asia/Singapore") return `Available daily: ${source} ${zone}`;
   const makeDate = (value) => { const [hour, minute] = String(value).split(":").map(Number); return new Date(Date.UTC(2026,0,1,hour-8,minute)); };
   const format = (value) => makeDate(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return `Available daily: ${format(gem.dailyStartTime)}–${format(gem.dailyEndTime)} your time (${source})`;
+  const local = windows.map((window) => `${format(window.start)}–${format(window.end)}`).join(" and ");
+  return `Available daily: ${local} your time (${source} ${zone})`;
 }
 
 function selectedCombination() {
@@ -281,10 +307,10 @@ function gemCard(entry) {
     const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
     const gemStyle = getGemStyle(entry.gem.name);
     return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
-      <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+      <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${escapeHtml(catalogRarityLabel(entry.gem))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
       <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
       <p class="index-card__hidden">Gem discovered; this exact mutation combination has not been found yet.</p>
-      ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
+      ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
       ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
       <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">Not yet</span></div></div>
     </article>`;
@@ -294,7 +320,7 @@ function gemCard(entry) {
     return `<article class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}">
       <div class="index-card__head"><div><div class="index-card__name">???</div><div class="index-card__rarity">${escapeHtml(mutationCombinationLabel(entry.mutationIds))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
       <p class="index-card__hidden">${secretLocked ? "This secret gem is hidden until discovered." : "Roll this exact gem / mutation combination to reveal its entry."}</p>
-      ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
+      ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
       ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
       <div class="index-card__chance"><span class="index-card__key">Actual chance</span><span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span></div>
     </article>`;
@@ -310,9 +336,9 @@ function gemCard(entry) {
   const gemStyle = getGemStyle(entry.gem.name);
 
   return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
-    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${rarityLabel(entry.gem.rarity)}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${escapeHtml(catalogRarityLabel(entry.gem))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
     <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
-    ${entry.gem.affectedByLuck === false ? `<p class="index-card__availability">Flat chance · unaffected by Luck</p>` : ""}
+    ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
     ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
     <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
@@ -687,7 +713,7 @@ async function refresh() {
       console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
       privateGemsResult = await supabase
         .from("private_feature_gems")
-        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,availability_timezone")
+        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,daily_time_windows,availability_timezone")
         .eq("enabled", true)
         .order("multiplier", { ascending: true })
         .order("rarity", { ascending: true });
@@ -721,6 +747,11 @@ async function refresh() {
             bundled?.description ||
             ""
           ),
+
+          metadata:
+            gem.metadata && typeof gem.metadata === "object"
+              ? gem.metadata
+              : {},
       
           hideRarityUntilDiscovered:
             gem.hide_rarity_until_discovered === true ||
@@ -731,6 +762,9 @@ async function refresh() {
           availabilityMode: String(gem.availability_mode || "always"),
           dailyStartTime: gem.daily_start_time,
           dailyEndTime: gem.daily_end_time,
+          dailyTimeWindows: Array.isArray(gem.daily_time_windows)
+            ? gem.daily_time_windows
+            : null,
           availabilityTimezone: String(
             gem.availability_timezone || "Asia/Singapore"
           )

@@ -1,3 +1,5 @@
+import { gemTimeAvailable, mythicPotionExclusiveGem } from "./availabilityRules.ts";
+
 // QOL_RULES_START
 export function gemFilterDecision(settings, specimen, discovered) {
  const name = specimen.gem_name;
@@ -2510,21 +2512,10 @@ async function executeSingleRoll(
             );
           }
 
-          const timeAvailable = (entry: any) => {
-            if (entry.starts_at && Date.parse(entry.starts_at) > now.getTime()) return false;
-            if (entry.ends_at && Date.parse(entry.ends_at) <= now.getTime()) return false;
-            if (!["daily", "date_range_daily"].includes(String(entry.availability_mode))) return true;
-            if (!entry.daily_start_time || !entry.daily_end_time) return false;
-            try {
-              const parts = new Intl.DateTimeFormat("en-GB", { timeZone: String(entry.availability_timezone || "Asia/Singapore"), hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
-              const hour = Number(parts.find((part) => part.type === "hour")?.value || 0);
-              const minute = Number(parts.find((part) => part.type === "minute")?.value || 0);
-              const parse = (value: string) => { const [h, m] = String(value).split(":").map(Number); return h * 60 + m; };
-              const current = hour * 60 + minute, start = parse(entry.daily_start_time), end = parse(entry.daily_end_time);
-              return start === end || (start < end ? current >= start && current < end : current >= start || current < end);
-            } catch { return false; }
-          };
-          gems = configuredGems.filter(timeAvailable).map((entry: any) => ({
+          gems = configuredGems
+            .filter((entry: any) => gemTimeAvailable(entry, now))
+            .filter((entry: any) => entry.metadata?.sourceExclusive !== true)
+            .map((entry: any) => ({
             name: String(entry.name),
             rarity: Number(entry.rarity),
             baseWeight: Number(entry.base_weight),
@@ -2620,6 +2611,10 @@ async function executeSingleRoll(
           luckBreakdown.final = luck;
         }
       }
+      const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
+      const mythicExclusiveGem = !abyssalExclusiveGem && batchExecution.pool === "normal" && !allIn && buffsEnabled && oneRollLuck > 0
+        ? mythicPotionExclusiveGem(usedOneRollConsumable, random01)
+        : null;
       const uncappedLuck = luck;
       const maxLuck = sanitizeMaxLuck(rollSettings.maxLuck);
       luck = capGemLuck(luck, maxLuck);
@@ -2655,7 +2650,7 @@ async function executeSingleRoll(
       const allRelicChanceMultiplier = !allIn && enchantedRelicBoostRollsBefore > 0 ? 1.1 : 1;
       const ancientRelicChanceMultiplier = !allIn && ancientRelicBoostRollsBefore > 0 ? 1.3 : 1;
 
-      let gem = abyssalExclusiveGem ?? ((batchExecution.pool === "normal" && equipmentContext.id !== 'money-pickaxe' ? rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier) : null) ?? rollEquipmentGem());
+      let gem = abyssalExclusiveGem ?? mythicExclusiveGem ?? ((batchExecution.pool === "normal" && equipmentContext.id !== 'money-pickaxe' ? rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier) : null) ?? rollEquipmentGem());
 
       // Pets use a separate luck layer. Normal Luck never affects this roll;
       // only pet-luck equipment and the pet-luck boosts above can improve it.
@@ -2685,7 +2680,7 @@ async function executeSingleRoll(
 
       // Lucky Break keeps the rarer result.
       if (
-        buffsEnabled && !relicDrop && enchantId === "lucky_break" &&
+        buffsEnabled && !relicDrop && !mythicExclusiveGem && enchantId === "lucky_break" &&
         random01() < (enchantGrade === "ancient" ? 0.10 : 0.05)
       ) {
         const candidate = rollEquipmentGem();
@@ -2694,7 +2689,7 @@ async function executeSingleRoll(
 
       // Second Chance compares only base rarity; weight and mutations are
       // generated exactly once for the winner.
-      if (buffsEnabled && !relicDrop && eventContext.secondChance) {
+      if (buffsEnabled && !relicDrop && !mythicExclusiveGem && eventContext.secondChance) {
         const candidate = rollEquipmentGem();
         if (candidate.rarity > gem.rarity) gem = candidate;
       }
@@ -3381,7 +3376,6 @@ async function executeSingleRoll(
 
       const combinationKey = getMutationCombinationKey(mutationIds);
       const rollNumber = Number(player.total_rolls ?? 0) + 1;
-      const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
       const boostTiers = Object.fromEntries(
         activeBoosts.map((boost) => [boost.family, Number(boost.tier ?? 0)])
       );

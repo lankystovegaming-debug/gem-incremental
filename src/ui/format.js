@@ -20,12 +20,12 @@ const RARITY_TIERS = [
   { id: "secret",       name: "Secret",       max: Infinity }
 ];
 const ANOMALOUS_TIER = Object.freeze({ id: "anomalous", name: "Anomalous", max: Infinity });
-const ABYSSAL_POTION_EXCLUSIVES = new Set(["the bottom", "hadopelagic"]);
+const SOURCE_EXCLUSIVE_ANOMALOUS_GEMS = new Set(["the bottom", "hadopelagic", "zephyrion"]);
 
 
 export function rarityTier(rarity, gemName = "") {
   const value = Number(rarity ?? 0);
-  if (ABYSSAL_POTION_EXCLUSIVES.has(String(gemName).trim().toLowerCase())) {
+  if (SOURCE_EXCLUSIVE_ANOMALOUS_GEMS.has(String(gemName).trim().toLowerCase())) {
     return ANOMALOUS_TIER;
   }
 

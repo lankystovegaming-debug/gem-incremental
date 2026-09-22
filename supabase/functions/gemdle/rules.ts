@@ -1,4 +1,5 @@
 import { buildEventRollContext, eventGemIsEligible, normalizeGlobalEvent } from "../roll/eventRules.ts";
+import { gemTimeAvailable } from "../roll/availabilityRules.ts";
 
 export type Random = () => number;
 export const random01: Random = () => {
@@ -34,18 +35,8 @@ export function gemEligible(gem: any, now: Date) {
   if (gem.enabled === false || !(Number(gem.rarity) >= 10) || !Number.isFinite(Number(gem.rarity))) return false;
   if (!(Number(gem.base_weight) > 0) || !Number.isFinite(Number(gem.base_weight))) return false;
   const meta = gem.metadata ?? {};
-  if (/seriali copenhageni/i.test(gem.name) || meta.serialDependent || meta.requiresSerial || meta.serial_dependent) return false;
-  if (gem.starts_at && !(now.getTime() >= Date.parse(gem.starts_at))) return false;
-  if (gem.ends_at && !(now.getTime() < Date.parse(gem.ends_at))) return false;
-  if (["daily", "date_range_daily"].includes(gem.availability_mode)) {
-    const parse = (s: string) => { const [h, m, sec = 0] = String(s).split(":").map(Number); return h * 3600 + m * 60 + sec; };
-    const start = parse(gem.daily_start_time), end = parse(gem.daily_end_time);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-    const sgt = new Date(now.getTime() + 8 * 3600000);
-    const clock = sgt.getUTCHours() * 3600 + sgt.getUTCMinutes() * 60 + sgt.getUTCSeconds();
-    if (!(start === end || (start < end ? clock >= start && clock < end : clock >= start || clock < end))) return false;
-  }
-  return true;
+  if (/seriali copenhageni/i.test(gem.name) || meta.serialDependent || meta.requiresSerial || meta.serial_dependent || meta.sourceExclusive) return false;
+  return gemTimeAvailable(gem, now);
 }
 
 export function selectionProbabilities(pool: any[]) {
@@ -103,7 +94,7 @@ export function rollMutations(catalog: any[], gem: any, rawEvent: any, now: Date
 }
 export function badges(gem: any, weight: number, mutations: any[]) {
   const result: string[] = [];
-  if (["The Bottom", "Hadopelagic"].includes(String(gem.name))) result.push("Anomalous");
+  if (["The Bottom", "Hadopelagic", "Zephyrion"].includes(String(gem.name))) result.push("Anomalous");
   else for (const [threshold, name] of [[1e9, "Secret"], [1e8, "Transcendent"], [1e7, "Cosmic"], [1e6, "Exalted"]] as const) {
     if (Number(gem.rarity) >= threshold) { result.push(name); break; }
   }
