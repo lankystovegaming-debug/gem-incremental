@@ -2,7 +2,7 @@
 -- obtainment rolls. Treat their explicit catalog class as globally rare and
 -- display them with base-rarity discoveries.
 
-update public.game_gems
+update public.private_feature_gems
 set metadata = coalesce(metadata, '{}'::jsonb) || '{"rarityClass":"anomalous"}'::jsonb
 where lower(name) in ('the bottom', 'hadopelagic', 'zephyrion');
 
@@ -17,7 +17,7 @@ select
   greatest(1, h.rarity * public.get_mutation_chance_product(coalesce(h.mutation_ids, '{}'::text[]))),
   coalesce(h.mutation_ids, '{}'::text[]), h.base_luck, h.created_at
 from public.best_roll_history h
-join public.game_gems g on lower(g.name) = lower(h.gem_name)
+join public.private_feature_gems g on lower(g.name) = lower(h.gem_name)
 where lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous'
 on conflict (source_type, source_id) where source_id is not null do nothing;
 
@@ -36,7 +36,7 @@ begin
   v_effective_rarity := greatest(1, new.rarity * public.get_mutation_chance_product(coalesce(new.mutation_ids, '{}'::text[])));
   select exists (
     select 1
-    from public.game_gems g
+    from public.private_feature_gems g
     where lower(g.name) = lower(new.gem_name)
       and lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous'
   ) into v_is_anomalous;
@@ -101,7 +101,7 @@ as $function$
     e.created_at
   from public.rare_roll_chat_events e
   left join public.player_titles t on t.player_id = e.player_id
-  left join public.game_gems g on lower(g.name) = lower(e.gem_name)
+  left join public.private_feature_gems g on lower(g.name) = lower(e.gem_name)
   left join public.best_roll_history h
     on e.source_type = 'history' and h.id = e.source_id
   where lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous'
