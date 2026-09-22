@@ -31,6 +31,10 @@ globalThis.Deno = { env: { get: () => "test" } };
 globalThis.__rollRateLimitResult = { success: true, limit: 120, reset: Date.now() + 10_000 };
 let executableEdge = edge
   .replace(
+    /import\s*\{\s*gemTimeAvailable,\s*mythicPotionExclusiveGem\s*\}\s*from\s*"\.\/availabilityRules\.ts";/,
+    "const gemTimeAvailable=()=>true;const mythicPotionExclusiveGem=()=>null;"
+  )
+  .replace(
     /import\s*\{\s*withSupabase\s*\}\s*from\s*"npm:@supabase\/server";/,
     "const withSupabase=(_options,handler)=>handler;"
   )

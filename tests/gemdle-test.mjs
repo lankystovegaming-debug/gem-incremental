@@ -32,6 +32,10 @@ test('rarity floor, serial exclusion, date ranges and overnight second-accurate 
   assert.equal(gemEligible(g,new Date('2026-09-04T20:00:00Z')),false);
   assert.equal(gemEligible({...g,daily_start_time:null},now),false);
   assert.equal(gemEligible(gem('Expired',100,{ends_at:now.toISOString()}),now),false);
+  const aurorium=gem('Aurorium',300000000,{availability_mode:'daily',daily_start_time:'05:00:00',daily_end_time:'07:00:00',daily_time_windows:[{start:'05:00',end:'07:00'},{start:'17:00',end:'19:00'}]});
+  assert.equal(gemEligible(aurorium,new Date('2026-09-04T09:00:00Z')),true);
+  assert.equal(gemEligible(aurorium,new Date('2026-09-04T08:00:00Z')),false);
+  assert.equal(gemEligible(gem('Zephyrion',1000,{metadata:{sourceExclusive:true}}),now),false);
 });
 test('actual rarest-first probability includes failure mass and excludes flat fallback', () => {
   const rows=selectionProbabilities([gem('Normal',100),gem('Flat',10,{affected_by_luck:false})]);
@@ -60,6 +64,7 @@ test('successful mutations alone contribute; stack factor is constant .35 and re
 test('badge thresholds, share privacy and escaping', () => {
   assert.deepEqual(badges(gem('X',1e9),10,[{normal_rarity:10000},{normal_rarity:15}]),['Secret','Titanic','Double Mutation','Rare Mutation']);
   assert.deepEqual(badges(gem('The Bottom',2000),1,[]),['Anomalous']);
+  assert.deepEqual(badges(gem('Zephyrion',1000),1,[]),['Anomalous']);
   const s=generateResult([gem('X',10)],[],null,now,()=>.5);
   const text=shareText({gemdle_date:'2026-09-04',player_id:'PRIVATE',specimen:s});
   assert.ok(!text.includes('PRIVATE'));assert.ok(text.includes('No Mutation'));
