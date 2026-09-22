@@ -46,6 +46,9 @@ function normalize(row, profiles, catalog, recovered = false) {
     Math.max(1, rarity)
   );
   const effectiveRarity = Number(row?.effective_rarity) || calculatedEffective;
+  const kind = rarity >= RARE_ROLL_BASE_THRESHOLD
+    ? "base"
+    : (ids.length ? "mutation" : "base");
   const profile = profiles[row?.player_id] ?? {};
   return {
     id: `${recovered ? "history" : "announcement"}-${row.id}`,
@@ -56,7 +59,7 @@ function normalize(row, profiles, catalog, recovered = false) {
     effectiveRarity,
     mutationIds: ids,
     mutations: details.map((entry) => ({ id: String(entry.id), name: entry.name })),
-    kind: ids.length ? "mutation" : "base",
+    kind,
     luckAtRoll: row?.luck_at_roll == null ? null : Number(row.luck_at_roll),
     serialNumber: row?.serial_number == null ? null : Number(row.serial_number),
     createdAt: row.created_at
