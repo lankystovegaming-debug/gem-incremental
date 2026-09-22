@@ -2,6 +2,13 @@
 -- carries mutations. Mutation-effective rarity is only the fallback category
 -- for gems below the base-rarity threshold.
 
+-- Keep the catalog classification authoritative for source-exclusive gems.
+-- The named rows predate rarityClass metadata, so this also upgrades them for
+-- every other catalog consumer.
+update public.game_gems
+set metadata = coalesce(metadata, '{}'::jsonb) || '{"rarityClass":"anomalous"}'::jsonb
+where lower(name) in ('the bottom', 'hadopelagic', 'zephyrion');
+
 create or replace function public.persist_rare_roll_chat_event()
 returns trigger
 language plpgsql
@@ -11,11 +18,19 @@ as $function$
 declare
   v_effective_rarity numeric;
   v_has_mutations boolean;
+  v_is_anomalous boolean;
 begin
   v_has_mutations := cardinality(coalesce(new.mutation_ids, '{}'::text[])) > 0;
   v_effective_rarity := greatest(1, new.rarity * public.get_mutation_chance_product(coalesce(new.mutation_ids, '{}'::text[])));
+  select exists (
+    select 1
+    from public.game_gems g
+    where lower(g.name) = lower(new.gem_name)
+      and lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous'
+  ) into v_is_anomalous;
 
-  if new.rarity >= 100000000
+  if v_is_anomalous
+     or new.rarity >= 100000000
      or (new.rarity < 100000000 and v_has_mutations and v_effective_rarity >= 10000000000) then
     insert into public.rare_roll_chat_events (
       source_type, source_id, player_id, username, gem_name, rarity,
@@ -43,6 +58,7 @@ returns table(
   rarity numeric,
   effective_rarity numeric,
   mutation_ids text[],
+  rarity_class text,
   base_luck numeric,
   luck_at_roll numeric,
   serial_number bigint,
@@ -63,15 +79,21 @@ as $function$
     e.rarity,
     e.effective_rarity,
     e.mutation_ids,
+    case
+      when lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous' then 'anomalous'
+      else null
+    end as rarity_class,
     e.base_luck,
     h.raw_luck as luck_at_roll,
     h.serial_number,
     e.created_at
   from public.rare_roll_chat_events e
   left join public.player_titles t on t.player_id = e.player_id
+  left join public.game_gems g on lower(g.name) = lower(e.gem_name)
   left join public.best_roll_history h
     on e.source_type = 'history' and h.id = e.source_id
-  where e.rarity >= 100000000
+  where lower(coalesce(g.metadata->>'rarityClass', '')) = 'anomalous'
+     or e.rarity >= 100000000
      or (
        e.rarity < 100000000
        and cardinality(coalesce(e.mutation_ids, '{}'::text[])) > 0

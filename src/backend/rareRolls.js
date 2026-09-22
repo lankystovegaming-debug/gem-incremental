@@ -46,7 +46,8 @@ function normalize(row, profiles, catalog, recovered = false) {
     Math.max(1, rarity)
   );
   const effectiveRarity = Number(row?.effective_rarity) || calculatedEffective;
-  const kind = rarity >= RARE_ROLL_BASE_THRESHOLD
+  const isAnomalous = String(row?.rarity_class ?? "").toLowerCase() === "anomalous";
+  const kind = isAnomalous || rarity >= RARE_ROLL_BASE_THRESHOLD
     ? "base"
     : (ids.length ? "mutation" : "base");
   const profile = profiles[row?.player_id] ?? {};
@@ -59,6 +60,7 @@ function normalize(row, profiles, catalog, recovered = false) {
     effectiveRarity,
     mutationIds: ids,
     mutations: details.map((entry) => ({ id: String(entry.id), name: entry.name })),
+    isAnomalous,
     kind,
     luckAtRoll: row?.luck_at_roll == null ? null : Number(row.luck_at_roll),
     serialNumber: row?.serial_number == null ? null : Number(row.serial_number),
@@ -69,7 +71,7 @@ function normalize(row, profiles, catalog, recovered = false) {
 function qualifies(row) {
   return row.kind === "mutation"
     ? row.effectiveRarity >= RARE_ROLL_EFFECTIVE_THRESHOLD
-    : row.rarity >= RARE_ROLL_BASE_THRESHOLD;
+    : row.isAnomalous || row.rarity >= RARE_ROLL_BASE_THRESHOLD;
 }
 
 export async function loadRareRolls(limit = 30) {
