@@ -4,7 +4,8 @@ import { PGlite } from "@electric-sql/pglite";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const backend = read("../src/backend/rareRolls.js");
-const migration = read("../supabase/migrations/20260922090920_prioritize_base_rare_rolls.sql");
+const baseMigration = read("../supabase/migrations/20260922090920_prioritize_base_rare_rolls.sql");
+const migration = read("../supabase/migrations/20260922141158_announce_anomalous_rare_rolls.sql");
 
 assert.match(
   backend,
@@ -22,6 +23,7 @@ assert.match(migration, /revoke all on function public\.persist_rare_roll_chat_e
 assert.match(migration, /grant execute on function public\.get_rare_roll_chat_history\(integer\) to anon, authenticated/);
 assert.match(migration, /lower\(coalesce\(g\.metadata->>'rarityClass', ''\)\) = 'anomalous'/);
 assert.match(migration, /if v_is_anomalous[\s\S]*?or new\.rarity >= 100000000/);
+assert.match(migration, /from public\.best_roll_history h[\s\S]*?join public\.game_gems g[\s\S]*?on conflict \(source_type, source_id\)/);
 
 const classify = ({ rarity, mutationIds, rarityClass = "" }) => rarityClass === "anomalous" || rarity >= 100_000_000
   ? "base"
@@ -75,7 +77,8 @@ await db.exec(`
   );
   insert into public.game_gems(name, metadata) values
     ('Ordinary Gem', '{}'::jsonb),
-    ('Anomalous Find', '{"rarityClass":"anomalous"}'::jsonb);
+    ('Anomalous Find', '{"rarityClass":"anomalous"}'::jsonb),
+    ('Future Anomalous', '{"rarityClass":"anomalous"}'::jsonb);
   create function public.get_mutation_chance_product(ids text[])
   returns numeric language sql immutable as $$
     select case
@@ -90,6 +93,11 @@ await db.exec(`
   after insert on public.best_roll_history
   for each row execute function public.persist_rare_roll_chat_event();
 `);
+await db.exec(baseMigration);
+await db.query(`
+  insert into public.best_roll_history(player_id, username, gem_name, rarity, mutation_ids)
+  values ($1, 'Tester', 'Anomalous Find', 100, '{}')
+`, ["00000000-0000-0000-0000-000000000001"]);
 await db.exec(migration);
 
 const playerId = "00000000-0000-0000-0000-000000000001";
@@ -98,7 +106,7 @@ await db.query(`
     ($1, 'Tester', 'Rare mutated base', 100000000, '{fifty}'),
     ($1, 'Tester', 'Mutation effective', 50000000, '{two-hundred}'),
     ($1, 'Tester', 'Not rare enough', 50000000, '{fifty}'),
-    ($1, 'Tester', 'Anomalous Find', 100, '{}')
+    ($1, 'Tester', 'Future Anomalous', 1000, '{}')
 `, [playerId]);
 
 const events = await db.query(`
@@ -106,10 +114,11 @@ const events = await db.query(`
   from public.get_rare_roll_chat_history(100)
   order by id
 `);
-assert.deepEqual(events.rows.map((row) => row.gem_name), ["Rare mutated base", "Mutation effective", "Anomalous Find"]);
-assert.equal(Number(events.rows[0].rarity), 100_000_000);
-assert.equal(Number(events.rows[0].effective_rarity), 5_000_000_000);
-assert.equal(events.rows[2].rarity_class, "anomalous");
+assert.deepEqual(events.rows.map((row) => row.gem_name), ["Anomalous Find", "Rare mutated base", "Mutation effective", "Future Anomalous"]);
+assert.equal(events.rows[0].rarity_class, "anomalous");
+assert.equal(Number(events.rows[1].rarity), 100_000_000);
+assert.equal(Number(events.rows[1].effective_rarity), 5_000_000_000);
+assert.equal(events.rows[3].rarity_class, "anomalous");
 
 await db.close();
 
