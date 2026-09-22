@@ -23,7 +23,7 @@ const loadFunction = rareRolls.slice(
 );
 assert.match(loadFunction, /get_rare_roll_chat_history/);
 assert.doesNotMatch(loadFunction, /\.from\("global_chat_announcements"\)/);
-assert.match(rareRolls, /kind: ids\.length \? "mutation" : "base"/);
+assert.match(rareRolls, /const kind = rarity >= RARE_ROLL_BASE_THRESHOLD/);
 assert.match(chances, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
 assert.match(chances, /RARE_ROLL_EFFECTIVE_THRESHOLD = 10_000_000_000/);
 assert.match(migration, /not v_has_mutations and new\.rarity >= 100000000/);
