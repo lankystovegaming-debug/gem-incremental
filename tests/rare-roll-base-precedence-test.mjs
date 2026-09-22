@@ -23,7 +23,8 @@ assert.match(migration, /revoke all on function public\.persist_rare_roll_chat_e
 assert.match(migration, /grant execute on function public\.get_rare_roll_chat_history\(integer\) to anon, authenticated/);
 assert.match(migration, /lower\(coalesce\(g\.metadata->>'rarityClass', ''\)\) = 'anomalous'/);
 assert.match(migration, /if v_is_anomalous[\s\S]*?or new\.rarity >= 100000000/);
-assert.match(migration, /from public\.best_roll_history h[\s\S]*?join public\.game_gems g[\s\S]*?on conflict \(source_type, source_id\)/);
+assert.match(migration, /from public\.best_roll_history h[\s\S]*?join public\.private_feature_gems g[\s\S]*?on conflict \(source_type, source_id\)/);
+assert.doesNotMatch(migration, /public\.game_gems/);
 
 const classify = ({ rarity, mutationIds, rarityClass = "" }) => rarityClass === "anomalous" || rarity >= 100_000_000
   ? "base"
@@ -71,11 +72,11 @@ await db.exec(`
     title text,
     color text
   );
-  create table public.game_gems (
+  create table public.private_feature_gems (
     name text primary key,
     metadata jsonb
   );
-  insert into public.game_gems(name, metadata) values
+  insert into public.private_feature_gems(name, metadata) values
     ('Ordinary Gem', '{}'::jsonb),
     ('Anomalous Find', '{"rarityClass":"anomalous"}'::jsonb),
     ('Future Anomalous', '{"rarityClass":"anomalous"}'::jsonb);
