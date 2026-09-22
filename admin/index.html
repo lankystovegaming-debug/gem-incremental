@@ -76,7 +76,6 @@
       <button class="admin-tab-btn" type="button" data-admin-tab="limited-events">Limited Time</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="community">Community</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="appeals">Appeals</button>
-      <button class="admin-tab-btn" type="button" data-admin-tab="alerts">Alerts</button>
       <button class="admin-tab-btn" type="button" data-admin-tab="cli">CLI</button>
     </nav>
 
@@ -381,40 +380,6 @@
     <section id="searchResults" class="admin-results"></section>
     <section id="playerPanel" class="hidden"></section>
     <section id="auditPanel" class="hidden"></section>
-
-    <section class="card admin-alerts" id="alertsPanel" hidden>
-      <div class="admin-section-head">
-        <div>
-          <h2>Activity alerts</h2>
-          <p class="page-head__sub" id="alertsSummary">Review-only anti-cheat signals and economy analytics. Alerts help investigation; they never take automatic action against a player.</p>
-        </div>
-        <div class="admin-section-head__tools">
-          <label class="field field--inline">
-            <span>Window (hrs)</span>
-            <input id="alertsHours" class="input" type="number" min="1" max="168" step="1" value="24">
-          </label>
-          <label class="field field--inline">
-            <span>Min amount</span>
-            <input id="alertsMinAmount" class="input" type="number" min="1" step="1000000" value="100000000">
-          </label>
-          <label class="field field--inline">
-            <span>Severity</span>
-            <select id="alertsSeverity" class="input" aria-label="Alert severity">
-              <option value="all">All</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-            </select>
-          </label>
-          <label class="field field--inline">
-            <span>Find player or IP</span>
-            <input id="alertsSearch" class="input" type="search" maxlength="120" placeholder="Name, IP, signal">
-          </label>
-          <button class="btn" id="alertsRefresh" type="button">Refresh</button>
-        </div>
-      </div>
-      <div id="alertsContent" class="admin-alerts-content"></div>
-    </section>
 
     <section class="card admin-cli" id="cliPanel" hidden>
       <div class="admin-section-head">

@@ -2344,188 +2344,6 @@ appealsContent?.addEventListener("click", (event) => {
 
 
 // =========================================================
-// ACTIVITY ALERTS
-//
-// Surfaces unusual money movement (cash spikes, bank deposits, admin
-// grants, gain spikes, activity bursts) from the economy_cash_ledger,
-// each with who / when / IP. Read-only; all detection runs server-side
-// in the admin_get_activity_alerts RPC.
-// =========================================================
-
-const ALERT_LABELS = {
-  cash_spike: "Cash spike",
-  bank_deposit: "Bank deposit",
-  admin_grant: "Admin grant",
-  gain_spike: "Gain spike",
-  activity_burst: "Activity burst",
-  income_velocity: "Income velocity",
-  shared_ip_inflow: "Shared-IP inflow",
-  new_account_windfall: "New-account windfall"
-};
-
-let latestAlertsData = null;
-
-function alertWhen(iso) {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (mins < 60) return `${mins}m ago`;
-  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
-  return new Date(iso).toLocaleString();
-}
-
-async function loadAlerts() {
-  const panel = document.getElementById("alertsPanel");
-  const content = document.getElementById("alertsContent");
-  const summary = document.getElementById("alertsSummary");
-  if (!panel || !content) return;
-
-  panel.hidden = false;
-  content.innerHTML = '<div class="skeleton" style="height:180px"></div>';
-
-  const hours = Math.max(1, Math.min(168, Math.trunc(Number(document.getElementById("alertsHours")?.value) || 24)));
-  const minAmount = Math.max(1, Number(document.getElementById("alertsMinAmount")?.value) || 100000000);
-
-  const { data, error } = await supabase.rpc("admin_get_activity_alerts", {
-    p_hours: hours,
-    p_min_amount: minAmount
-  });
-
-  if (error) {
-    content.innerHTML = `<div class="empty"><p class="empty__title">Could not load alerts</p><p>${escapeHtml(error.message)}</p></div>`;
-    notify.error("Alerts failed", error.message);
-    return;
-  }
-
-  latestAlertsData = data ?? {};
-  renderAlerts(latestAlertsData, { hours, minAmount });
-}
-
-function renderAlerts(data, { hours, minAmount }) {
-  const content = document.getElementById("alertsContent");
-  const summary = document.getElementById("alertsSummary");
-  if (!content) return;
-
-  const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
-  const stats = data?.summary ?? {};
-  const severity = document.getElementById("alertsSeverity")?.value ?? "all";
-  const search = (document.getElementById("alertsSearch")?.value ?? "").trim().toLowerCase();
-  const filteredAlerts = alerts.filter((alert) => {
-    if (severity !== "all" && alert.severity !== severity) return false;
-    if (!search) return true;
-    return [alert.username, alert.ip, alert.type, alert.category, alert.subcategory]
-      .some((value) => String(value ?? "").toLowerCase().includes(search));
-  });
-
-  if (summary) {
-    summary.textContent =
-      `${formatCount(stats.totalAlerts ?? alerts.length)} signal${(stats.totalAlerts ?? alerts.length) === 1 ? "" : "s"} in the last ${hours}h · ` +
-      `${formatMoney(data?.totalInflow ?? 0)} inflow · ${formatMoney(data?.totalOutflow ?? 0)} outflow` +
-      (data?.sampled ? ` · latest ${formatCount(data.sampleLimit)} events sampled` : "");
-  }
-
-  const cards = [
-    ["Signals", stats.totalAlerts ?? alerts.length, "Review leads in this window"],
-    ["Critical / high", `${stats.critical ?? 0} / ${stats.high ?? 0}`, "Prioritize before medium signals"],
-    ["Players flagged", stats.uniquePlayers ?? 0, "Distinct accounts with a player signal"],
-    ["IPs involved", stats.uniqueIps ?? 0, "Shared networks need human review"]
-  ].map(([label, value, help]) => {
-    const displayValue = typeof value === "number" ? formatCount(value) : String(value);
-    return `<div class="admin-alert-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue)}</strong><small>${escapeHtml(help)}</small></div>`;
-  }).join("");
-
-  const timeline = Array.isArray(data?.timeline) ? data.timeline : [];
-  const maximumInflow = Math.max(1, ...timeline.map((point) => Number(point.inflow) || 0));
-  const timelineMarkup = timeline.length
-    ? timeline.slice(-24).map((point) => {
-      const amount = Number(point.inflow) || 0;
-      const height = Math.max(5, Math.round((amount / maximumInflow) * 100));
-      const label = new Date(point.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const title = `${label}: ${formatMoney(amount)} inflow, ${formatCount(point.events ?? 0)} events`;
-      return `<div class="admin-alert-bar" title="${escapeHtml(title)}"><i style="height:${height}%"></i><span>${escapeHtml(label)}</span></div>`;
-    }).join("")
-    : '<p class="admin-alerts-empty-note">No economy activity in this window.</p>';
-
-  const topPlayers = Array.isArray(data?.topPlayers) ? data.topPlayers : [];
-  const topPlayersMarkup = topPlayers.length
-    ? topPlayers.map((player) => `
-      <tr>
-        <td>${escapeHtml(player.username ?? "—")}</td>
-        <td>${escapeHtml(player.ip ?? "—")}</td>
-        <td class="admin-alert-amount">${escapeHtml(formatMoney(player.inflow ?? 0))}</td>
-        <td class="admin-alert-amount">${escapeHtml(formatMoney(player.net ?? 0))}</td>
-        <td>${escapeHtml(formatCount(player.events ?? 0))}</td>
-        <td>${player.playerId ? `<button class="btn btn--small" type="button" data-alert-inspect="${escapeHtml(player.playerId)}">Inspect</button>` : "—"}</td>
-      </tr>
-    `).join("")
-    : '<tr><td colspan="6">No player activity in this window.</td></tr>';
-
-  const rows = filteredAlerts.map((alert) => {
-    const magnitude = alert.amount != null
-      ? formatMoney(alert.amount)
-      : `${formatCount(alert.events ?? 0)} events`;
-    const detail = [
-      alert.category ? escapeHtml(String(alert.category)) : null,
-      alert.subcategory ? escapeHtml(String(alert.subcategory)) : null,
-      alert.accounts != null ? `${formatCount(alert.accounts)} accounts` : null,
-      alert.events != null && alert.amount != null ? `${formatCount(alert.events)} events` : null,
-      alert.firstSeenAt ? `first seen ${escapeHtml(alertWhen(alert.firstSeenAt))}` : null
-    ].filter(Boolean).join(" · ");
-
-    return `
-      <tr class="admin-alert-row admin-alert-row--${escapeHtml(alert.severity ?? "medium")}">
-        <td><span class="admin-alert-sev admin-alert-sev--${escapeHtml(alert.severity ?? "medium")}">${escapeHtml((alert.severity ?? "medium").toUpperCase())}</span></td>
-        <td>${escapeHtml(ALERT_LABELS[alert.type] ?? alert.type ?? "—")}</td>
-        <td>${escapeHtml(alert.username ?? "—")}</td>
-        <td>${escapeHtml(alert.ip ?? "—")}</td>
-        <td class="admin-alert-amount">${escapeHtml(magnitude)}</td>
-        <td>${detail || "—"}</td>
-        <td title="${escapeHtml(alert.at ?? "")}">${escapeHtml(alertWhen(alert.at))}</td>
-        <td>${alert.playerId ? `<button class="btn btn--small" type="button" data-alert-inspect="${escapeHtml(alert.playerId)}">Inspect</button>` : "—"}</td>
-      </tr>`;
-  }).join("");
-
-  content.innerHTML = `
-    <div class="admin-alerts-disclaimer">Signals are evidence to review, not proof of cheating. Shared-IP matches can be legitimate households, schools, or mobile networks.${data?.sampled ? ` This busy window was safely analyzed from its latest ${escapeHtml(formatCount(data.sampleLimit))} events.` : ""}</div>
-    <div class="admin-alert-stats">${cards}</div>
-    <div class="admin-alerts-analytics">
-      <section class="admin-alert-analytics-card"><h3>Hourly inflow</h3><div class="admin-alert-chart">${timelineMarkup}</div></section>
-      <section class="admin-alert-analytics-card"><h3>Highest inflow players</h3><div class="admin-table-wrap"><table class="admin-table admin-alerts-top-table"><thead><tr><th>Player</th><th>IP</th><th>Inflow</th><th>Net</th><th>Events</th><th></th></tr></thead><tbody>${topPlayersMarkup}</tbody></table></div></section>
-    </div>
-    <div class="admin-alerts-list-head"><h3>Investigation queue</h3><span>${escapeHtml(formatCount(filteredAlerts.length))} of ${escapeHtml(formatCount(alerts.length))} signal${alerts.length === 1 ? "" : "s"}</span></div>
-    <div class="admin-table-wrap">
-      <table class="admin-table admin-alerts-table">
-        <thead>
-          <tr><th>Severity</th><th>Signal</th><th>Player</th><th>IP</th><th>Amount</th><th>Detail</th><th>When</th><th></th></tr>
-        </thead>
-        <tbody>${rows || `<tr><td colspan="8">No signals match the current filters. Nothing unusual in the last ${escapeHtml(String(hours))} hours above ${escapeHtml(formatMoney(minAmount))}.</td></tr>`}</tbody>
-      </table>
-    </div>`;
-}
-
-document.getElementById("alertsRefresh")?.addEventListener("click", loadAlerts);
-for (const id of ["alertsHours", "alertsMinAmount"]) {
-  document.getElementById(id)?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") loadAlerts();
-  });
-}
-for (const id of ["alertsSeverity", "alertsSearch"]) {
-  document.getElementById(id)?.addEventListener(id === "alertsSearch" ? "input" : "change", () => {
-    if (!latestAlertsData) return;
-    const hours = Math.max(1, Math.min(168, Math.trunc(Number(document.getElementById("alertsHours")?.value) || 24)));
-    const minAmount = Math.max(1, Number(document.getElementById("alertsMinAmount")?.value) || 100000000);
-    renderAlerts(latestAlertsData, { hours, minAmount });
-  });
-}
-document.getElementById("alertsContent")?.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-alert-inspect]");
-  if (!button?.dataset.alertInspect) return;
-  window.showAdminTab?.("search");
-  inspectPlayer(button.dataset.alertInspect);
-});
-
-
-// =========================================================
 // ADMIN TAB NAVIGATION
 //
 // Groups the admin panels into top-level tabs so the page is a set of
@@ -2564,7 +2382,6 @@ const economyBreakdown = mountEconomy({
     "limited-events": ["#limitedEventsAdminPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
     appeals: ["#appealsPanel"],
-    alerts: ["#alertsPanel"],
     cli: ["#cliPanel"]
   };
 
@@ -2593,7 +2410,6 @@ const economyBreakdown = mountEconomy({
     },
     equipment: () => loadEquipmentAdmin(),
     pets: () => loadPetsAdmin(),
-    alerts: () => (typeof loadAlerts === "function" ? loadAlerts() : null),
     cli: () => mountAdminCli({ mount: document.getElementById("cliPanel") }),
     workbench: () => loadWorkbenchAdmin(),
     "limited-events": () => loadLimitedEventsAdmin()
