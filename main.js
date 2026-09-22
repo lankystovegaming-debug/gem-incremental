@@ -562,6 +562,11 @@ function renderRoll(data, outcome) {
   const rarity = Number(data.gem.rarity ?? 0);
   const isRelic = data.gem.dropType === "relic";
   const settings = getSettings();
+  const baseWeight = Number(data?.gem?.baseWeight ?? data?.gem?.base_weight);
+  const finalWeight = Number(data?.finalWeight ?? data?.final_weight);
+  const finalWeightMultiplier = Number.isFinite(baseWeight) && baseWeight > 0 && Number.isFinite(finalWeight)
+    ? finalWeight / baseWeight
+    : Number(data?.weightMultiplier ?? 0);
 
   // Every non-relic roll gets the normal roll-effect. A full cutscene is
   // reserved for gems strictly rarer than the player-selected 1-in-N
@@ -633,7 +638,7 @@ function renderRoll(data, outcome) {
       <p class="gem-reveal__chance num">${isRelic ? `Flat chance: 1 in ${formatCount(data.gem.name === "Ancient Relic" ? 1500 : 250)} · unaffected by Luck` : `Actual chance: ${escapeHtml(chanceLabelForRollResult(data, data.gem, mutationIds))}`}</p>
       ${isRelic ? '<p class="gem-reveal__outcome">This relic was added to your stacked balance. Use it on an equipped pickaxe in Inventory.</p>' : `<div class="gem-reveal__facts">
         <div class="gem-fact"><span class="gem-fact__label">Weight</span><span class="gem-fact__value">${formatWeight(data.finalWeight)}</span></div>
-        <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(data.weightMultiplier)}</span></div>
+        <div class="gem-fact"><span class="gem-fact__label">Multiplier</span><span class="gem-fact__value">${formatMultiplier(finalWeightMultiplier)}</span></div>
         <div class="gem-fact"><span class="gem-fact__label">Value</span><span class="gem-fact__value">${formatGemValue(data.value)}</span></div>
       </div>`}
     </div>
