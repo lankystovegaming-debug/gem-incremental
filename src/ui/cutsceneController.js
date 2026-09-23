@@ -1,4 +1,9 @@
-import { configuredCutsceneDuration, getCutsceneDefinition } from "./cutsceneConfig.js";
+import {
+  BESPOKE_CUTSCENES,
+  configuredCutsceneDuration,
+  getCutsceneDefinition,
+  normalizeCutsceneName
+} from "./cutsceneConfig.js";
 
 const MOBILE_QUERY = "(max-width: 700px), (pointer: coarse)";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -12,15 +17,16 @@ export function prefersReducedCutsceneMotion() {
   return globalThis.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false;
 }
 
-export function isCutsceneEligible({ rarity, threshold, dropType } = {}) {
+export function isCutsceneEligible({ rarity, threshold, dropType, gemName } = {}) {
   const rarityValue = Number(rarity ?? 0);
   const thresholdValue = Number(threshold ?? 100_000);
+  const hasExplicitScene = Boolean(BESPOKE_CUTSCENES[normalizeCutsceneName(gemName)]);
 
   return dropType !== "relic"
     && Number.isFinite(rarityValue)
     && Number.isFinite(thresholdValue)
-    && rarityValue > thresholdValue
-    && getCutsceneDefinition({ rarity: rarityValue }) !== null;
+    && (hasExplicitScene || rarityValue >= thresholdValue)
+    && getCutsceneDefinition({ rarity: rarityValue, gemName }) !== null;
 }
 
 export function cutsceneDuration({
@@ -39,14 +45,14 @@ export class CutsceneController {
     return this.#active !== null;
   }
 
-  interrupt() {
+  interrupt(reason = "interrupted") {
     if (!this.#active) return false;
-    this.#finish(this.#active.token, { immediate: true, interrupted: true });
+    this.#finish(this.#active.token, { immediate: true, interrupted: true, reason });
     return true;
   }
 
-  play({ duration, render, onCleanup, fadeOutMs = FADE_OUT_MS }) {
-    this.interrupt();
+  play({ duration, render, onCleanup, fadeOutMs = FADE_OUT_MS, controls = {} }) {
+    this.interrupt("replaced");
 
     const durationMs = Math.max(0, Number(duration) || 0);
     const token = Symbol("cutscene");
@@ -62,6 +68,7 @@ export class CutsceneController {
       onCleanup,
       renderCleanup: null,
       keydownHandler: null,
+      previousFocus: globalThis.document?.activeElement ?? null,
       fadeOutMs: Math.max(0, Number(fadeOutMs) || 0)
     };
     globalThis.document?.querySelectorAll?.(
@@ -73,11 +80,8 @@ export class CutsceneController {
     this.#active.keydownHandler = (event) => {
       if (event.key === "Escape") {
         event.preventDefault?.();
-        this.interrupt();
-        return;
+        this.interrupt("skipped");
       }
-      event.preventDefault?.();
-      event.stopImmediatePropagation?.();
     };
     globalThis.addEventListener?.("keydown", this.#active.keydownHandler, true);
 
@@ -89,8 +93,9 @@ export class CutsceneController {
       } else {
         this.#active.overlay = rendered;
       }
+      this.#mountControls(this.#active, controls);
     } catch (error) {
-      this.#finish(token, { immediate: true, interrupted: true });
+      this.#finish(token, { immediate: true, interrupted: true, reason: "render-error" });
       throw error;
     }
 
@@ -98,7 +103,30 @@ export class CutsceneController {
     return promise;
   }
 
-  #finish(token, { immediate = false, interrupted = false } = {}) {
+  #mountControls(active, controls) {
+    if (!active.overlay?.appendChild || !globalThis.document?.createElement) return;
+    const toolbar = globalThis.document.createElement("div");
+    toolbar.className = "cutscene-controls";
+    toolbar.setAttribute("role", "group");
+    toolbar.setAttribute("aria-label", "Cutscene controls");
+
+    const status = globalThis.document.createElement("span");
+    status.className = "cutscene-controls__status";
+    status.textContent = controls.status ?? "Cutscene";
+
+    const skip = globalThis.document.createElement("button");
+    skip.type = "button";
+    skip.className = "cutscene-controls__skip";
+    skip.textContent = controls.skipLabel ?? "Skip";
+    skip.setAttribute("aria-label", controls.skipAriaLabel ?? "Skip cutscene");
+    skip.addEventListener("click", () => this.interrupt("skipped"), { once: true });
+
+    toolbar.append(status, skip);
+    active.overlay.appendChild(toolbar);
+    queueMicrotask(() => skip.focus?.({ preventScroll: true }));
+  }
+
+  #finish(token, { immediate = false, interrupted = false, reason = interrupted ? "interrupted" : "completed" } = {}) {
     const active = this.#active;
     if (!active || active.token !== token) return;
 
@@ -113,11 +141,12 @@ export class CutsceneController {
       globalThis.document?.documentElement?.classList?.remove("is-cinematic-active");
       globalThis.document?.documentElement?.removeAttribute?.("aria-busy");
       globalThis.removeEventListener?.("keydown", active.keydownHandler, true);
-      try { active.renderCleanup?.({ interrupted }); }
+      try { active.renderCleanup?.({ interrupted, reason }); }
       catch (error) { console.error("Cutscene renderer cleanup failed:", error); }
-      try { active.onCleanup?.({ interrupted }); }
+      try { active.onCleanup?.({ interrupted, reason }); }
       catch (error) { console.error("Cutscene stage cleanup failed:", error); }
-      active.resolve({ interrupted });
+      if (active.previousFocus?.isConnected) active.previousFocus.focus?.({ preventScroll: true });
+      active.resolve({ interrupted, reason });
     };
 
     if (immediate || active.fadeOutMs === 0) complete();
@@ -126,5 +155,5 @@ export class CutsceneController {
 }
 
 export const cutsceneController = new CutsceneController();
-globalThis.addEventListener?.("pagehide", () => cutsceneController.interrupt());
-globalThis.addEventListener?.("beforeunload", () => cutsceneController.interrupt());
+globalThis.addEventListener?.("pagehide", () => cutsceneController.interrupt("navigation"));
+globalThis.addEventListener?.("beforeunload", () => cutsceneController.interrupt("navigation"));

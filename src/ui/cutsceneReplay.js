@@ -14,9 +14,10 @@ export function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) 
   const rarity = Number(gem?.rarity ?? 0);
   const threshold = getSettings().cutsceneMinimumRarity;
 
-  if (!isCutsceneEligible({ rarity, threshold, dropType: gem?.dropType })) {
+  if (!isCutsceneEligible({ rarity, gemName: gem?.name, threshold, dropType: gem?.dropType })) {
     return Promise.resolve({ played: false });
   }
+  if (cutsceneController.isActive) return Promise.resolve({ played: false, busy: true });
 
   const ids = Array.from(new Set([
     ...(Array.isArray(mutationIds) ? mutationIds : []),

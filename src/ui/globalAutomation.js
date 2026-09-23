@@ -7,6 +7,7 @@ import { notify, toast } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
 import { batchCooldown, batchRollResults } from "../logic/batchRolling.js";
 import { isCutsceneEligible } from "./cutsceneController.js";
+import { globalCutsceneQueue } from "./globalCutscenes.js";
 
 // One browser-wide automation lease prevents two tabs from continuously
 // racing each other. The server cooldown remains the final authority.
@@ -99,7 +100,7 @@ function isActiveMinigame() {
 }
 
 function isNotableRoll(data) {
-  const rarity = Number(data?.effectiveRarity ?? data?.gem?.rarity ?? 0);
+  const rarity = Number(data?.gem?.rarity ?? 0);
   const mutationCount = Array.isArray(data?.mutations)
     ? data.mutations.length
     : Array.isArray(data?.mutationIds)
@@ -107,6 +108,7 @@ function isNotableRoll(data) {
       : Number(Boolean(data?.mutation?.id));
   return isCutsceneEligible({
     rarity,
+    gemName: data?.gem?.name,
     threshold: Math.max(100000, Number(getSettings().cutsceneMinimumRarity) || 100000),
     dropType: data?.gem?.dropType
   })
@@ -187,7 +189,12 @@ async function run() {
       return;
     }
 
-    const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
+    let { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
+    if (error?.code === "batch_incomplete" && Array.isArray(error.details?.results) && error.details.results.length) {
+      data = { ...error.details, results: error.details.results };
+      error = null;
+      notify.warning("Batch partially completed", "Committed rolls were kept and their reveals are queued.");
+    }
     if (error) {
       if (error.code === "deep_sea_event_ended" || error.details?.cause?.error === "deep_sea_event_ended") {
         const wasAutoRolling = getSettings().autoRoll;
@@ -212,7 +219,10 @@ async function run() {
       return;
     }
 
-    for (const result of batchRollResults(data)) await processRoll(result);
+    const results = batchRollResults(data);
+    globalCutsceneQueue.enqueueBatch(results);
+    for (const result of results) await processRoll(result);
+    await globalCutsceneQueue.whenIdle();
     const cooldown = batchCooldown(data);
     const nextRoll = cooldown?.nextRollAt ? new Date(cooldown.nextRollAt).getTime() : Date.now() + 2500;
     schedule(Math.max(80, nextRoll - Date.now() + 30));

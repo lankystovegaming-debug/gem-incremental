@@ -259,13 +259,28 @@
       <p class="setting__sub">Choose which destinations stay in the main top bar. Everything else remains available under Explore. Limited Time is always kept in Explore. Your current navigation is the default.</p>
       <div id="topBarNavigationList" class="navigation-customizer"></div>
     </section>
-<section class="card setting-group" aria-labelledby="notificationsHeading"><h2 id="notificationsHeading">Notifications & reveals</h2><div class="setting">
+<section class="card setting-group" aria-labelledby="notificationsHeading"><h2 id="notificationsHeading">Notifications & reveals</h2>
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Rare gem cutscenes</span>
+          <span class="setting__sub">Play qualifying full-screen reveals anywhere in the game.</span>
+        </span>
+        <span class="setting__control"><input type="checkbox" id="cutscenesEnabledToggle"><span class="switch__track"></span></span>
+      </label>
+      <label class="setting switch">
+        <span class="setting__text">
+          <span class="setting__title">Skip previously seen cutscenes</span>
+          <span class="setting__sub">After a gem's reveal has played or been skipped once, do not show it automatically again on this device.</span>
+        </span>
+        <span class="setting__control"><input type="checkbox" id="skipSeenCutscenesToggle"><span class="switch__track"></span></span>
+      </label>
+      <div class="setting">
         <div class="setting__text">
           <label class="setting__title" for="cutsceneMinimumRarity">Cutscene minimum rarity</label>
-          <span class="setting__sub">Show a full-screen cutscene only when the roll is rarer than 1 in this value. Minimum is 100,000.</span>
+          <span class="setting__sub">Show a full-screen cutscene when the base gem rarity is at least 1 in this value. Minimum is 100,000. Explicit event and story reveals use their authored cutscene tier.</span>
         </div>
         <input class="input setting-number" id="cutsceneMinimumRarity" type="number" min="100000" step="1000" inputmode="numeric" aria-label="Cutscene minimum rarity">
-      </div><p>Rare-roll announcements are available in the chat’s Rare Rolls tab.</p></section>
+      </div><p>Every cutscene also has a visible Skip button and supports Escape. Rare-roll announcements are available in the chat’s Rare Rolls tab.</p></section>
 <section class="card setting-group" aria-labelledby="chatHeading">
   <h2 id="chatHeading">Chat</h2>
   <div class="setting">

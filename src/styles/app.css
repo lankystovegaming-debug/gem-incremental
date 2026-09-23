@@ -960,6 +960,54 @@ a:hover {
   }
 }
 
+/* Shared full-screen reveal controls. These live in the application stylesheet
+   so bespoke and generic cutscenes receive the same accessible mobile UI. */
+.cutscene-controls {
+  position: fixed;
+  z-index: 2147483647;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 13px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 999px;
+  background: rgba(5, 7, 15, .82);
+  color: #fff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .35);
+  font: 600 .78rem/1.2 var(--font-body, system-ui, sans-serif);
+  letter-spacing: .02em;
+  backdrop-filter: blur(12px);
+}
+.cutscene-controls__status { opacity: .78; }
+.cutscene-controls__skip {
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.cutscene-controls__skip:hover,
+.cutscene-controls__skip:focus-visible {
+  border-color: rgba(255, 255, 255, .8);
+  background: rgba(255, 255, 255, .22);
+  outline: 2px solid rgba(255, 255, 255, .72);
+  outline-offset: 2px;
+}
+@media (max-width: 520px) {
+  .cutscene-controls {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-left));
+    justify-content: space-between;
+  }
+}
+
 /* Shared clarity layer: a slightly stronger rhythm for every screen without
    prescribing a destination's gameplay layout. */
 .page-head__title { max-width: 76ch; }
