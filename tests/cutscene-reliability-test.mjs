@@ -261,15 +261,24 @@ const precedingCutsceneThemes = Array.from(new Set(
   Object.values(BESPOKE_CUTSCENES)
     .filter((definition) => definition.includeInReminiscite !== false)
     .map((definition) => definition.theme)
-)).filter((theme) => theme !== "memory" && !deepcoreThemes.has(theme));
+)).filter((theme) => theme !== "memory");
 assert.deepEqual(
   REMINISCITE_MEMORY_FRAMES,
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 58);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 45);
 for (const theme of deepcoreThemes) {
   assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
+}
+const limitedEventThemes = new Set([
+  "deep-sea-shard", "deep-sea-coin", "deep-sea-pearl", "deep-sea-grand-pearl", "deep-sea-nautilus",
+  "deep-sea-treasure", "deep-sea-coral", "deep-sea-trench", "deep-sea-golden-coral",
+  "deep-sea-leviathan", "deep-sea-heart", "deep-sea-neptune", "deep-sea-soul",
+  ...deepcoreThemes
+]);
+for (const theme of limitedEventThemes) {
+  assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must not appear in permanent-gem memories`);
 }
 assert.ok(REMINISCITE_MEMORY_FRAMES.includes("singular-sand"));
 for (const [, theme] of draftMaterialScenes) {

@@ -24,9 +24,6 @@ export function specimenMarkup(specimenHtml, { reticle = false } = {}) {
 }
 
 export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
-  "deep-sea-shard", "deep-sea-coin", "deep-sea-pearl", "deep-sea-grand-pearl", "deep-sea-nautilus",
-  "deep-sea-treasure", "deep-sea-coral", "deep-sea-trench", "deep-sea-golden-coral",
-  "deep-sea-leviathan", "deep-sea-heart", "deep-sea-neptune", "deep-sea-soul",
   "xy-heart", "touch-grass", "asterism", "seraphite", "aurorium", "false-vacuum",
   "serpentite", "sutoronchiumushahouhoakinseki", "heat-death", "zephyrion",
   "buffer", "sunrise", "noob", "pressure-one", "missing",
