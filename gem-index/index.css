@@ -6,6 +6,11 @@
   margin-bottom: var(--space-4);
 }
 
+.index-refresh[aria-busy="true"] {
+  opacity: .65;
+  pointer-events: none;
+}
+
 .discovery__bar {
   margin-bottom: var(--space-4);
 }
@@ -110,6 +115,10 @@
 .index-card--locked {
   border-style: dashed;
   background: transparent;
+}
+
+.index-card--locked .index-card__head {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .index-card--locked::before {
@@ -352,6 +361,8 @@
 .index-band__count { color:var(--text-muted); font-size:.74rem; white-space:nowrap; }
 .index-band__grid { padding:0 12px 12px; }
 .index-band:not([open]) .index-band__grid { display:none; }
+.index-band__more { grid-column:1 / -1; justify-self:center; min-width:12rem; }
+.index-error { grid-column:1 / -1; }
 
 @media (max-width: 720px) {
   .index-filters {
@@ -369,6 +380,7 @@
   .index-band__summary { min-height:56px; }
   .index-band__summary > span:first-child { align-items:flex-start; flex-direction:column; gap:1px; }
   .index-band__grid { grid-template-columns:1fr; padding:0 8px 8px; }
+  .index-refresh { min-height:40px; }
 }
 
 .index-card__chance {

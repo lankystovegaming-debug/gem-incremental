@@ -17,7 +17,7 @@ assert.match(privateFeatures, /affected_by_luck: body\.affected_by_luck !== fals
 assert.match(roll, /gem\.affectedByLuck === false/);
 assert.match(roll, /\? 1 \/ gem\.rarity/);
 assert.match(gemIndex, /Flat chance · unaffected by Luck/);
-assert.match(gemIndex, /affectedByLuck: gem\.affected_by_luck !== false/);
+assert.match(gemIndex, /affectedByLuck: row\.affected_by_luck !== false/);
 assert.match(migration, /affected_by_luck boolean not null default true/);
 assert.match(migration, /drop function if exists public\.get_public_gem_catalog\(\)/);
 

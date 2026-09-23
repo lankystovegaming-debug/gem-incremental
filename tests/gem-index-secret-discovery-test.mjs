@@ -1,27 +1,25 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { indexCombinationRecords } from "../src/logic/gemIndex.js";
 
 const source = readFileSync(new URL("../gem-index/index.js", import.meta.url), "utf8");
+const indexed = indexCombinationRecords([{
+  gem_name: "Secret Gem",
+  combination_key: "polished+gilded",
+  mutation_ids: ["gilded", "polished"],
+  total_found: 1
+}]);
 
-assert.match(
-  source,
-  /function hasDiscoveredGem\(gemName\)[\s\S]*record\.gemName === gemName/,
-  "secret gem discovery must be based on any recorded mutation combination"
-);
-assert.match(
-  source,
-  /!record && isSecretGem\(entry\.gem\) && !secretLocked[\s\S]*Gem discovered; this exact mutation combination has not been found yet\./,
-  "a discovered secret gem must reveal its identity even when the selected combination is unrolled"
-);
-assert.match(
-  source,
-  /<span class="index-card__key">Combination found<\/span><span class="index-card__val">Not yet<\/span>/,
-  "the revealed card must not attribute another mutation combination's totals to the selected combination"
-);
-assert.match(
-  source,
-  /function displayedAsDiscovered\(entry\)[\s\S]*isSecretGem\(entry\.gem\) && hasDiscoveredGem\(entry\.gem\.name\)/,
-  "tier and filter discovery state must agree with the revealed secret card"
-);
+assert.equal(indexed.discoveredGemNames.has("Secret Gem"), true,
+  "any exact combination must reveal the gem identity");
+assert.equal(indexed.combinations.has("Secret Gem::gilded+polished"), true,
+  "exact discovery must use the canonical combination key");
+assert.match(source, /function identityDiscovered\(entry\)[\s\S]*state\.discoveredGemNames\.has/);
+assert.match(source, /function exactCombinationDiscovered\(entry\)[\s\S]*discoveredRecord\(entry\)/);
+assert.match(source, /Gem identified; this exact mutation combination has not been found\./);
+assert.match(source, /isSecretLocked\(entry\) \? UNKNOWN_TIER/,
+  "a locked secret must not leak its rarity band");
+assert.match(source, /const searchableName = identityDiscovered\(entry\) \? entry\.gem\.name\.toLowerCase\(\) : ""/,
+  "search must not reveal locked names");
 
 console.log("Gem Index secret discovery checks passed.");
