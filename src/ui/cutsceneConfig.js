@@ -16,36 +16,45 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
-  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"upper-right",revealAt:.66,worldExitAt:.63}),
-  "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"center",revealAt:.67,worldExitAt:.64}),
-  pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"center",revealAt:.68,worldExitAt:.65}),
-  "pearl of the sea": scene(5_800,"deep-sea-grand-pearl",[],{focus:false,quiet:true,primitives:["sea-grand-shell"],revealPosition:"center",revealAt:.72,worldExitAt:.69}),
-  nautilii: scene(5_800,"deep-sea-nautilus",[],{focus:false,quiet:true,primitives:["sea-nautilus"],revealPosition:"center",revealAt:.72,worldExitAt:.69}),
-  "sunken treasure": scene(7_500,"deep-sea-treasure",["VESSEL LOCATED"],{focus:false,primitives:["sea-wreck"],textPosition:"upper-left",revealPosition:"center",revealAt:.76,worldExitAt:.73}),
-  "abyssal coral": scene(10_500,"deep-sea-coral",[],{focus:false,quiet:true,primitives:["sea-bleaching-reef"],revealPosition:"center",revealAt:.8,worldExitAt:.77}),
-  trenchstone: scene(11_500,"deep-sea-trench",["−6,000 m","PRESSURE // CRITICAL"],{focus:false,theatre:true,primitives:["sea-trench-descent"],textPosition:"depth-hud",revealPosition:"center",revealAt:.82,worldExitAt:.79}),
-  coral: scene(12_000,"deep-sea-golden-coral",[],{focus:false,theatre:true,primitives:["sea-golden-reef"],revealPosition:"center",revealAt:.83,worldExitAt:.8}),
-  "leviathan scale": scene(13_000,"deep-sea-leviathan",["DO NOT LOOK UP"],{focus:false,theatre:true,quiet:true,cameraMotion:"track",primitives:["sea-leviathan-pass"],textPosition:"lower-right",revealPosition:"center",revealAt:.84,worldExitAt:.81}),
-  "heart of the sea": scene(14_500,"deep-sea-heart",[],{focus:false,theatre:true,quiet:true,cameraMotion:"plunge",primitives:["sea-heart-impact"],revealPosition:"center",revealAt:.86,worldExitAt:.83}),
-  "neptune's tear": scene(16_000,"deep-sea-neptune",["A GOD'S TEAR DOES NOT DRY"],{focus:false,secret:true,theatre:true,cameraMotion:"dolly",primitives:["sea-neptune-palace"],textPosition:"upper-right",revealPosition:"center",revealAt:.875,worldExitAt:.845}),
-  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"center",revealAt:.888,worldExitAt:.858}),
+  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"upper-right",revealAt:.66,worldExitAt:.63,includeInReminiscite:false}),
+  "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"center",revealAt:.67,worldExitAt:.64,includeInReminiscite:false}),
+  pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"center",revealAt:.68,worldExitAt:.65,includeInReminiscite:false}),
+  "pearl of the sea": scene(5_800,"deep-sea-grand-pearl",[],{focus:false,quiet:true,primitives:["sea-grand-shell"],revealPosition:"center",revealAt:.72,worldExitAt:.69,includeInReminiscite:false}),
+  nautilii: scene(5_800,"deep-sea-nautilus",[],{focus:false,quiet:true,primitives:["sea-nautilus"],revealPosition:"center",revealAt:.72,worldExitAt:.69,includeInReminiscite:false}),
+  "sunken treasure": scene(7_500,"deep-sea-treasure",["VESSEL LOCATED"],{focus:false,primitives:["sea-wreck"],textPosition:"upper-left",revealPosition:"center",revealAt:.76,worldExitAt:.73,includeInReminiscite:false}),
+  "abyssal coral": scene(10_500,"deep-sea-coral",[],{focus:false,quiet:true,primitives:["sea-bleaching-reef"],revealPosition:"center",revealAt:.8,worldExitAt:.77,includeInReminiscite:false}),
+  trenchstone: scene(11_500,"deep-sea-trench",["−6,000 m","PRESSURE // CRITICAL"],{focus:false,theatre:true,primitives:["sea-trench-descent"],textPosition:"depth-hud",revealPosition:"center",revealAt:.82,worldExitAt:.79,includeInReminiscite:false}),
+  coral: scene(12_000,"deep-sea-golden-coral",[],{focus:false,theatre:true,primitives:["sea-golden-reef"],revealPosition:"center",revealAt:.83,worldExitAt:.8,includeInReminiscite:false}),
+  "leviathan scale": scene(13_000,"deep-sea-leviathan",["DO NOT LOOK UP"],{focus:false,theatre:true,quiet:true,cameraMotion:"track",primitives:["sea-leviathan-pass"],textPosition:"lower-right",revealPosition:"center",revealAt:.84,worldExitAt:.81,includeInReminiscite:false}),
+  "heart of the sea": scene(14_500,"deep-sea-heart",[],{focus:false,theatre:true,quiet:true,cameraMotion:"plunge",primitives:["sea-heart-impact"],revealPosition:"center",revealAt:.86,worldExitAt:.83,includeInReminiscite:false}),
+  "neptune's tear": scene(16_000,"deep-sea-neptune",["A GOD'S TEAR DOES NOT DRY"],{focus:false,secret:true,theatre:true,cameraMotion:"dolly",primitives:["sea-neptune-palace"],textPosition:"upper-right",revealPosition:"center",revealAt:.875,worldExitAt:.845,includeInReminiscite:false}),
+  "soul of the sea god": scene(18_000,"deep-sea-soul",[],{focus:false,secret:true,theatre:true,quiet:true,cameraMotion:"surge",primitives:["sea-soul-awakening"],revealPosition:"center",revealAt:.888,worldExitAt:.858,includeInReminiscite:false}),
   "deepcore geode": scene(12_500, "deepcore-pressure", [
     "DEPTH 11,842 m", "LITHOSTATIC LOAD // 4.7 GPa", "THE ROCK OPENED FROM WITHIN"
-  ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82 }),
+  ], { theatre: true, primitives: ["deepcore-geode"], textPosition: "deepcore-descent", beatStart: .15, beatWindow: .52, revealAt: .82, includeInReminiscite: false }),
   "crystalline singularity": scene(13_500, "deepcore-convergence", [
     "LOCAL GRAVITY: INVERTED", "MASS → ∞  /  VOLUME → 0", "LIGHT HAS NOWHERE LEFT TO GO"
-  ], { theatre: true, primitives: ["deepcore-singularity"], textPosition: "deepcore-singularity", beatStart: .18, beatWindow: .48, revealAt: .84 }),
+  ], { theatre: true, primitives: ["deepcore-singularity"], textPosition: "deepcore-singularity", beatStart: .18, beatWindow: .48, revealAt: .84, includeInReminiscite: false }),
   "ontological shard": scene(13_500, "deepcore-absence", [
     "OBJECT REGISTERED", "OBJECT DENIED", "DISCOVERY RECORD:  [          ]"
-  ], { theatre: true, quiet: true, primitives: ["deepcore-absence"], textPosition: "deepcore-absence", beatStart: .16, beatWindow: .5, revealAt: .84 }),
+  ], { theatre: true, quiet: true, primitives: ["deepcore-absence"], textPosition: "deepcore-absence", beatStart: .16, beatWindow: .5, revealAt: .84, includeInReminiscite: false }),
   "blacksite crystal": scene(14_500, "deepcore-redacted", [
     "SITE 06 // CAMERA 4", "CONTAINMENT IS NOT EMPTY", "CLEARANCE REVOKED"
-  ], { theatre: true, primitives: ["deepcore-blacksite"], textPosition: "deepcore-blacksite", beatStart: .12, beatWindow: .56, revealAt: .85 }),
+  ], { theatre: true, primitives: ["deepcore-blacksite"], textPosition: "deepcore-blacksite", beatStart: .12, beatWindow: .56, revealAt: .85, includeInReminiscite: false }),
   "heart of the deep": scene(17_000, "deepcore-heartbeat", [
     "12,000 m BELOW THE LAST MAP", "SIGNAL SOURCE: BENEATH THE CORE", "IT HEARD YOU."
-  ], { theatre: false, quiet: true, primitives: ["deepcore-heart"], textPosition: "deepcore-heart", beatStart: .12, beatWindow: .58, revealAt: .88 }),
+  ], { theatre: false, quiet: true, primitives: ["deepcore-heart"], textPosition: "deepcore-heart", beatStart: .12, beatWindow: .58, revealAt: .88, includeInReminiscite: false }),
   "heart of xy": scene(14_000, "xy-heart"),
   "xy gem": scene(14_000, "xy-heart"),
+  "touch grass": scene(12_500, "touch-grass", [], { focus: false, primitives: ["touch-grass"], revealAt: 0.82, includeInReminiscite: true }),
+  asterism: scene(13_000, "asterism", [], { focus: false, quiet: true, primitives: ["asterism"], revealAt: 0.83, includeInReminiscite: true }),
+  seraphite: scene(14_000, "seraphite", [], { focus: false, quiet: true, primitives: ["seraphite"], revealAt: 0.84, includeInReminiscite: true }),
+  aurorium: scene(14_000, "aurorium", [], { focus: false, quiet: true, primitives: ["aurorium"], revealAt: 0.84, includeInReminiscite: true }),
+  "false vacuum": scene(15_500, "false-vacuum", ["VACUUM DECAY"], { focus: false, quiet: true, primitives: ["false-vacuum"], textPosition: "vacuum-orbit", beatStart: 0.57, revealAt: 0.85, includeInReminiscite: true }),
+  serpentite: scene(14_000, "serpentite", [], { focus: false, primitives: ["serpentite"], revealAt: 0.84, includeInReminiscite: true }),
+  sutoronchiumushahouhoakinseki: scene(15_000, "sutoronchiumushahouhoakinseki", [], { focus: false, quiet: true, primitives: ["sutoronchiumushahouhoakinseki"], revealAt: 0.84, includeInReminiscite: true }),
+  "heat death": scene(18_000, "heat-death", ["ΔT → 0"], { focus: false, quiet: true, primitives: ["heat-death"], textPosition: "heat-death", beatStart: 0.68, revealAt: 0.88, includeInReminiscite: true }),
+  zephyrion: scene(15_500, "zephyrion", ["SOURCE: MYTHIC POTION"], { focus: false, primitives: ["zephyrion"], textPosition: "zephyrion", beatStart: 0.62, revealAt: 0.86, includeInReminiscite: true }),
   "potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite": scene(12_000, "buffer", ["IDENTIFICATION BUFFER EXCEEDED"], { primitives: ["identifier"], textPosition: "center-low", beatStart: 0.55 }),
   "first light": scene(12_000, "sunrise", [], { quiet: true, primitives: ["horizon", "star"] }),
   noobium: scene(11_000, "noob", ["NOOB DETECTED"], { primitives: ["pixel"], textPosition: "center", beatStart: 0.48 }),
