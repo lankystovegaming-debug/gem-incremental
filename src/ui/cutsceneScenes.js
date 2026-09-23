@@ -182,7 +182,7 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   }
 
   const memories = [...overlay.querySelectorAll(".cs-memories [data-memory]")];
-  const memoryStart = 0.035;
+  const memoryStart = 0.025;
   const memoryEnd = 0.61;
   // Let the first memories linger, then steadily accelerate into rapid recall.
   const memoryWeights = memories.map((_, index) => {

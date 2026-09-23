@@ -277,6 +277,7 @@ for (const [, theme] of draftMaterialScenes) {
 }
 assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
 assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);
+assert.match(scenes, /const memoryStart = 0\.025/, "Reminiscite must begin visible recall after about 0.5 seconds");
 assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
