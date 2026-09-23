@@ -79,7 +79,7 @@ for (const [name, theme, duration] of draftMaterialScenes) {
   assert.equal(definition.theme, theme, `${name} must route to its bespoke scene`);
   assert.equal(definition.duration, duration, `${name} must retain its ceremonial pacing`);
   assert.equal(definition.focus, false, `${name} must not fall back to the generic centered specimen`);
-  assert.equal(definition.includeInReminiscite, false, `${name} must stay out of Reminiscite until its cutscene is approved`);
+  assert.equal(definition.includeInReminiscite, true, `${name} must contribute one approved frame to Reminiscite`);
   assert.deepEqual(definition.primitives, [theme], `${name} must own a unique scene primitive`);
 }
 assert.equal(isCutsceneEligible({ rarity: 1_000, gemName: "Zephyrion", threshold: 100_000 }), true, "Zephyrion must retain its source-exclusive bespoke reveal below the generic threshold");
@@ -252,6 +252,7 @@ assert.match(scenes, /counterDuration \/ duration \+ 0\.07/);
 assert.deepEqual(BESPOKE_CUTSCENES.reminiscite.beats, [
   "MEMORY INDEX COMPLETE", "SEARCHING FOR CURRENT SPECIMEN...", "NO MATCH FOUND"
 ]);
+assert.equal(BESPOKE_CUTSCENES.reminiscite.duration, 20_000, "adding approved memories must not lengthen Reminiscite");
 const deepcoreThemes = new Set([
   "deepcore-pressure", "deepcore-convergence", "deepcore-absence",
   "deepcore-redacted", "deepcore-heartbeat"
@@ -266,13 +267,13 @@ assert.deepEqual(
   precedingCutsceneThemes,
   "Reminiscite must preserve one standout frame from every preceding 100M+ cutscene"
 );
-assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 49);
+assert.equal(new Set(REMINISCITE_MEMORY_FRAMES).size, 58);
 for (const theme of deepcoreThemes) {
   assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must remain exclusive to Deepcore`);
 }
 assert.ok(REMINISCITE_MEMORY_FRAMES.includes("singular-sand"));
 for (const [, theme] of draftMaterialScenes) {
-  assert.equal(REMINISCITE_MEMORY_FRAMES.includes(theme), false, `${theme} must not enter Reminiscite before approval`);
+  assert.equal(REMINISCITE_MEMORY_FRAMES.filter((frame) => frame === theme).length, 1, `${theme} must contribute exactly one standout memory frame`);
 }
 assert.match(scenes, /2\.5 \* Math\.pow\(0\.4 \/ 2\.5, progress\)/);
 assert.match(scenes, /elapsedMemoryWeight \/ memoryWeightTotal/);
