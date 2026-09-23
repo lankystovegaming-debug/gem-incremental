@@ -45,6 +45,8 @@ const DEFAULTS = {
   autoKeep: true,
   autoKeepEffectiveRarity: 1_000_000,
   rollAnimations: true,
+  cutscenesEnabled: true,
+  skipSeenCutscenes: false,
   cutsceneMinimumRarity: 100000,
   // Off by default: a small side counter showing the sum of every
   // player's lifetime earnings ("global cash").
@@ -66,7 +68,12 @@ let state = load();
 let hydration;
 let saveQueue = Promise.resolve();
 
-const NAVIGATION_SETTING_KEYS = new Set(['topBarMain', 'topBarExploreHidden']);
+const ROLLING_DEPLOY_SETTING_KEYS = new Set([
+  'topBarMain',
+  'topBarExploreHidden',
+  'cutscenesEnabled',
+  'skipSeenCutscenes'
+]);
 
 function isLegacyUnknownSetting(error) {
   return error?.code === 'P0001' && String(error?.message ?? '').includes('unknown_setting');
@@ -77,21 +84,21 @@ async function persistSettingsPatch(patch) {
   const localPatch = rollPool === undefined ? {} : { rollPool };
   let result = { data: state, error: null };
   const keys = Object.keys(qolPatch);
-  const hasNavigationSettings = keys.some(key => NAVIGATION_SETTING_KEYS.has(key));
+  const hasRollingDeploySettings = keys.some(key => ROLLING_DEPLOY_SETTING_KEYS.has(key));
 
   if (keys.length) {
     result = await supabase.rpc('update_qol_settings', { p_patch: qolPatch });
   }
 
-  if (result.error && hasNavigationSettings && isLegacyUnknownSetting(result.error)) {
+  if (result.error && hasRollingDeploySettings && isLegacyUnknownSetting(result.error)) {
     // During a rolling deploy, an older database function may not yet know the
     // navigation keys. Preserve them on this device and still save every setting
     // the deployed function does understand.
     const compatiblePatch = Object.fromEntries(
-      Object.entries(qolPatch).filter(([key]) => !NAVIGATION_SETTING_KEYS.has(key))
+      Object.entries(qolPatch).filter(([key]) => !ROLLING_DEPLOY_SETTING_KEYS.has(key))
     );
-    const localNavigation = Object.fromEntries(
-      Object.entries(qolPatch).filter(([key]) => NAVIGATION_SETTING_KEYS.has(key))
+    const localRollingDeploySettings = Object.fromEntries(
+      Object.entries(qolPatch).filter(([key]) => ROLLING_DEPLOY_SETTING_KEYS.has(key))
     );
 
     if (Object.keys(compatiblePatch).length) {
@@ -101,7 +108,7 @@ async function persistSettingsPatch(patch) {
       result = { data: state, error: null };
     }
 
-    result.data = { ...(result.data ?? state), ...localNavigation };
+    result.data = { ...(result.data ?? state), ...localRollingDeploySettings };
   }
 
   if (result.error) return result;
@@ -137,7 +144,7 @@ export function hydrateSettingsFromCloud() {
     if (error) throw error;
     const cloud = data?.settings ?? {};
     const importPatch = {};
-    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism','contentFilterLevel','topBarMain','topBarExploreHidden']) {
+    for (const key of ['autoRoll','batchSize','autoKeep','autoKeepEffectiveRarity','rollAnimations','cutscenesEnabled','skipSeenCutscenes','cutsceneMinimumRarity','globalCash','cashGraph','gemRealism','contentFilterLevel','topBarMain','topBarExploreHidden']) {
       if (!(key in cloud)) importPatch[key] = state[key];
     }
     if (cloud.legacyAutoSell == null) {
@@ -199,6 +206,8 @@ function sanitise(value) {
     ),
 
     rollAnimations: value.rollAnimations !== false,
+    cutscenesEnabled: value.cutscenesEnabled !== false,
+    skipSeenCutscenes: Boolean(value.skipSeenCutscenes),
 
     cutsceneMinimumRarity: Math.max(100000, Math.floor(Number(value.cutsceneMinimumRarity) || DEFAULTS.cutsceneMinimumRarity)),
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const saved=new Map([['gemIncremental.settings',JSON.stringify({autoSell:true,autoSellTier:'mythic',autoKeepEffectiveRarity:234567})]]);
 globalThis.localStorage={getItem:k=>saved.get(k)??null,setItem:(k,v)=>saved.set(k,v)};
-let cloud={},inFlight=0,maxInFlight=0,fail=false,rejectNavigation=true,notices=[];
+let cloud={},inFlight=0,maxInFlight=0,fail=false,rejectRollingDeploy=true,notices=[];
 globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options.detail;}};
 globalThis.window={addEventListener(){},dispatchEvent(event){notices.push(event)}};
 globalThis.__backend={
@@ -16,7 +16,7 @@ globalThis.__backend={
   assert.equal(name,'update_qol_settings');inFlight++;maxInFlight=Math.max(maxInFlight,inFlight);
   await new Promise(r=>setTimeout(r,5));inFlight--;
   if(fail){fail=false;return {data:null,error:{message:'offline'}};}
-  if(rejectNavigation && Object.keys(p_patch).some(key=>['topBarMain','topBarExploreHidden'].includes(key))){
+  if(rejectRollingDeploy && Object.keys(p_patch).some(key=>['topBarMain','topBarExploreHidden','cutscenesEnabled','skipSeenCutscenes'].includes(key))){
     return {data:null,error:{code:'P0001',message:'unknown_setting'}};
   }
   cloud={...cloud,...p_patch,gemFilter:{...cloud.gemFilter,...p_patch.gemFilter}};
@@ -37,10 +37,17 @@ assert.equal(cloud.contentFilterLevel,'standard');
 assert.ok(store.getSettings().topBarMain.includes('minigames'),'default navigation must preserve the existing Minigames tab');
 assert.equal('topBarMain' in cloud,false,'legacy database fallback keeps navigation local');
 assert.equal(store.getSettings().enableBuffs,true);
+assert.equal(store.getSettings().cutscenesEnabled,true);
+assert.equal(store.getSettings().skipSeenCutscenes,false);
 await store.updateSettings({topBarMain:['roll','minigames']});
 assert.deepEqual(store.getSettings().topBarMain,['roll','minigames']);
 assert.equal('topBarMain' in cloud,false);
-rejectNavigation=false;
+await store.updateSettings({skipSeenCutscenes:true});
+assert.equal(store.getSettings().skipSeenCutscenes,true);
+assert.equal('skipSeenCutscenes' in cloud,false,'legacy database fallback keeps new cutscene preferences local');
+rejectRollingDeploy=false;
+await store.updateSettings({cutscenesEnabled:false});
+assert.equal(cloud.cutscenesEnabled,false,'deployed databases cloud-sync cutscene preferences');
 await store.updateSettings({contentFilterLevel:'strict'});assert.equal(store.getSettings().contentFilterLevel,'strict');
 await Promise.all([store.updateSettings({gemFilter:{Quartz:'KEEP'}}),store.updateSettings({enableBuffs:false}),store.updateSettings({gemFilter:{Diamond:'SELL'}})]);
 assert.equal(maxInFlight,1);assert.deepEqual(store.getSettings().gemFilter,{Quartz:'KEEP',Diamond:'SELL'});assert.equal(store.getSettings().enableBuffs,false);

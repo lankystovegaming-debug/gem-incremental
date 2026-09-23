@@ -39,6 +39,7 @@ import { mountReferralPromo } from "./referralPromo.js";
 import { initGlobalCash } from "./globalCash.js";
 import { startActivityHeartbeat } from "./activityHeartbeat.js";
 import { getSettings, onSettingsChange } from "./settings.js";
+import { initGlobalCutscenes } from "./globalCutscenes.js";
 
 
 // =========================================================
@@ -227,6 +228,9 @@ export function mountShell({ page, base = "./" }) {
   // Start presence reporting once for the entire application. It is silent
   // when the account is not authenticated and never blocks page rendering.
   startActivityHeartbeat();
+  // Rare reveals are an application-shell concern: rolls can complete while
+  // the player is on any page, so every route mounts the same durable queue.
+  initGlobalCutscenes();
 
   const header = document.createElement("header");
 

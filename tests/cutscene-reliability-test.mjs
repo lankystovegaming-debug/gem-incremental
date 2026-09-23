@@ -12,14 +12,19 @@ import {
   getCutsceneDefinition
 } from "../src/ui/cutsceneConfig.js";
 import { REMINISCITE_MEMORY_FRAMES } from "../src/ui/cutscenePrimitives.js";
+import {
+  compareCutsceneItems,
+  createCutsceneQueueItem,
+  cutsceneQueueKey
+} from "../src/ui/cutsceneQueueModel.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 assert.equal(
   isCutsceneEligible({ rarity: 100_000, threshold: 100_000 }),
-  false,
-  "a roll exactly equal to the configured threshold must not trigger"
+  true,
+  "a roll equal to the configured threshold must trigger"
 );
 assert.equal(
   isCutsceneEligible({ rarity: 100_001, threshold: 100_000 }),
@@ -30,6 +35,11 @@ assert.equal(
   isCutsceneEligible({ rarity: 1_000_000, threshold: 100_000, dropType: "relic" }),
   false,
   "flat-chance relics must remain outside gem cutscenes"
+);
+assert.equal(
+  isCutsceneEligible({ rarity: 2_000, gemName: "Prismarine Fragment", threshold: 100_000 }),
+  true,
+  "an explicitly authored source/event reveal must not be discarded by a generic rarity threshold"
 );
 
 assert.equal(cutsceneDuration({ rarity: 10_000, mobile: false, reducedMotion: false }), 0);
@@ -145,7 +155,7 @@ try {
   assert.equal(controller.isActive, true, "the shared lock must engage while a cutscene is active");
   assert.equal(classes.has("is-cinematic-active"), true, "the document input/scroll lock must engage");
   assert.equal(controller.interrupt(), true, "an active cutscene must be interruptible");
-  assert.deepEqual(await first, { interrupted: true });
+  assert.deepEqual(await first, { interrupted: true, reason: "interrupted" });
   assert.equal(controller.isActive, false, "interrupting must release the shared lock");
   assert.equal(classes.has("is-cinematic-active"), false, "interrupting must release the document lock");
   assert.equal(removed, 1, "interrupting must remove the active overlay");
@@ -153,7 +163,7 @@ try {
   assert.equal(renderCleaned, 1, "interrupting must run renderer cleanup exactly once");
 
   const second = controller.play({ duration: 1, fadeOutMs: 0, render: () => overlay });
-  assert.deepEqual(await second, { interrupted: false });
+  assert.deepEqual(await second, { interrupted: false, reason: "completed" });
   assert.equal(controller.isActive, false, "normal completion must release the shared lock");
 } finally {
   if (previousDocument === undefined) delete globalThis.document;
@@ -163,6 +173,8 @@ try {
 const main = source("main.js");
 const replay = source("src/ui/cutsceneReplay.js");
 const automation = source("src/ui/globalAutomation.js");
+const globalCutscenes = source("src/ui/globalCutscenes.js");
+const shell = source("src/ui/shell.js");
 const scenes = source("src/ui/cutsceneScenes.js");
 const config = source("src/ui/cutsceneConfig.js");
 const primitives = source("src/ui/cutscenePrimitives.js");
@@ -175,22 +187,19 @@ assert.match(automation, /isCutsceneEligible\(\{/);
 assert.doesNotMatch(automation, /rarity\s*>=\s*Math\.max\([^\n]*cutsceneMinimumRarity/);
 assert.doesNotMatch(main, /function cinematicDuration/);
 assert.doesNotMatch(replay, /function durationForRarity/);
-assert.match(main, /return cutsceneController\.play\(\{/);
 assert.match(replay, /return cutsceneController\.play\(\{/);
-assert.match(main, /renderCutscene\(data, duration\)/);
+assert.match(globalCutscenes, /renderCutscene\(item\.result, duration\)/);
 assert.match(replay, /renderCutscene\(replayData, duration, \{ replay: true \}\)/);
-assert.match(main, /if \(rollInFlight \|\| cutsceneController\.isActive \|\| !view\.ready\)/);
-assert.match(main, /!getSettings\(\)\.autoRoll \|\|[\s\S]*cutsceneController\.isActive/);
-assert.match(main, /queueMicrotask\(\(\) => \{[\s\S]*!cutsceneController\.isActive/);
-assert.ok(
-  main.indexOf("if (isUltraRare)") < main.indexOf("if (!settings.rollAnimations)"),
-  "eligible cutscenes must be handled before the ordinary roll-animation preference"
-);
-assert.match(
-  main.slice(main.indexOf("if (isUltraRare)"), main.indexOf("if (!settings.rollAnimations)")),
-  /if \(settings\.rollAnimations\) \{[\s\S]*classList\.add\("is-animating"/,
-  "ordinary roll-stage animation classes must still honor their own setting"
-);
+assert.match(main, /if \(rollInFlight \|\| globalCutsceneQueue\.isBusy \|\| !view\.ready\)/);
+assert.match(main, /globalCutsceneQueue\.enqueueBatch\(announcedResults\)/);
+assert.match(main, /await globalCutsceneQueue\.whenIdle\(\)/);
+assert.match(automation, /globalCutsceneQueue\.enqueueBatch\(results\)/);
+assert.match(shell, /initGlobalCutscenes\(\)/);
+assert.match(globalCutscenes, /window\.addEventListener\("gem:roll-complete"/);
+assert.match(globalCutscenes, /gemIncremental\.cutsceneQueue\.v1/);
+assert.match(globalCutscenes, /result\.reason === "navigation"/);
+assert.match(globalCutscenes, /skipSeenCutscenes/);
+assert.match(source("src/styles/app.css"), /\.cutscene-controls__skip/);
 assert.match(main, /class="roll-action-status" role="status"/);
 assert.doesNotMatch(main, /function buildUltraCutscene/);
 assert.doesNotMatch(
@@ -246,5 +255,21 @@ assert.match(config, /"glitched gem"/);
 assert.match(config, /finality:/);
 assert.match(config, /reminiscite:/);
 assert.doesNotMatch(replay, /buildJaOreCutscene|buildGlitchedOreCutscene/);
+
+const rare = createCutsceneQueueItem({
+  specimenId: "rare-1",
+  gem: { name: "Solarion", rarity: 100_000_000 },
+  effectiveRarity: 100_000_000,
+  lifetimeStats: { totalRolls: 42 }
+}, 1);
+const mutatedCommon = createCutsceneQueueItem({
+  specimenId: "common-1",
+  gem: { name: "Quartz", rarity: 100_000 },
+  effectiveRarity: 9_000_000_000,
+  lifetimeStats: { totalRolls: 43 }
+}, 1);
+assert.equal(cutsceneQueueKey(rare.result), "specimen:rare-1", "committed specimen ids must provide idempotent queue keys");
+assert.equal(compareCutsceneItems(rare, mutatedCommon) < 0, true, "batch priority must use base reveal rarity before displayed/effective rarity");
+assert.equal(createCutsceneQueueItem(rare.result).result.specimenId, "rare-1", "the queued reveal must retain the committed specimen snapshot");
 
 console.log("cutscene reliability tests passed");

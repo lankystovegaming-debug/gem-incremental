@@ -178,6 +178,8 @@ const autoKeepToggle = document.getElementById("autoKeepToggle");
 const autoKeepRarity = document.getElementById("autoKeepRarity");
 const autoKeepRarityRow = document.getElementById("autoKeepRarityRow");
 const animationsToggle = document.getElementById("animationsToggle");
+const cutscenesEnabledToggle = document.getElementById("cutscenesEnabledToggle");
+const skipSeenCutscenesToggle = document.getElementById("skipSeenCutscenesToggle");
 const cutsceneMinimumRarity = document.getElementById("cutsceneMinimumRarity");
 const globalCashToggle = document.getElementById("globalCashToggle");
 const cashGraphToggle = document.getElementById("cashGraphToggle");
@@ -201,6 +203,8 @@ function paintSettings(settings) {
   if (autoKeepRarity) autoKeepRarity.value = settings.autoKeepEffectiveRarity;
   if (autoKeepRarityRow) autoKeepRarityRow.classList.toggle("setting--muted", !settings.autoKeep);
   animationsToggle.checked = settings.rollAnimations;
+  if (cutscenesEnabledToggle) cutscenesEnabledToggle.checked = settings.cutscenesEnabled;
+  if (skipSeenCutscenesToggle) skipSeenCutscenesToggle.checked = settings.skipSeenCutscenes;
   cutsceneMinimumRarity.value = settings.cutsceneMinimumRarity;
   if (globalCashToggle) globalCashToggle.checked = settings.globalCash;
   if (cashGraphToggle) cashGraphToggle.checked = settings.cashGraph;
@@ -253,6 +257,14 @@ if (autoKeepRarity) autoKeepRarity.addEventListener("change", () => {
 
 animationsToggle.addEventListener("change", () =>
   updateSettings({ rollAnimations: animationsToggle.checked })
+);
+
+cutscenesEnabledToggle?.addEventListener("change", () =>
+  updateSettings({ cutscenesEnabled: cutscenesEnabledToggle.checked })
+);
+
+skipSeenCutscenesToggle?.addEventListener("change", () =>
+  updateSettings({ skipSeenCutscenes: skipSeenCutscenesToggle.checked })
 );
 
 if (globalCashToggle) globalCashToggle.addEventListener("change", () =>

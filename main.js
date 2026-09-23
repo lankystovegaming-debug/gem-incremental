@@ -28,12 +28,8 @@ import { initReferral } from "./src/ui/referralBootstrap.js";
 import { icons } from "./src/ui/icons.js";
 import { notify } from "./src/ui/toast.js";
 import { gemNameHtml, gemIconHtml } from "./src/ui/gemStyle.js";
-import { renderCutscene } from "./src/ui/cutsceneScenes.js";
-import {
-  cutsceneController,
-  cutsceneDuration,
-  isCutsceneEligible
-} from "./src/ui/cutsceneController.js";
+import { isCutsceneEligible } from "./src/ui/cutsceneController.js";
+import { globalCutsceneQueue } from "./src/ui/globalCutscenes.js";
 import { getGemMutation } from "./src/data/mutations.js";
 import { clearSessionInsights, getSessionInsights, recordSessionRoll } from "./src/ui/sessionInsights.js";
 import { initRareRollsCard } from "./src/ui/rareRollsCard.js";
@@ -569,11 +565,12 @@ function renderRoll(data, outcome) {
     : Number(data?.weightMultiplier ?? 0);
 
   // Every non-relic roll gets the normal roll-effect. A full cutscene is
-  // reserved for gems strictly rarer than the player-selected 1-in-N
-  // threshold. Relics never trigger either — their odds ignore Luck, so
-  // they get a plain reveal.
+  // reserved for gems meeting the player-selected base-rarity threshold or
+  // an explicitly authored event/story reveal. Relics never trigger either —
+  // their odds ignore Luck, so they get a plain reveal.
   const isUltraRare = isCutsceneEligible({
     rarity,
+    gemName: data.gem.name,
     threshold: settings.cutsceneMinimumRarity,
     dropType: data.gem.dropType
   });
@@ -647,25 +644,6 @@ function renderRoll(data, outcome) {
       <span class="roll-action-status__outcome">${outcome.icon}${escapeHtml(outcome.text)}</span>
     </div>
   `;
-
-  if (isUltraRare) {
-    const duration = cutsceneDuration({ rarity, gemName });
-    if (settings.rollAnimations) {
-      gemStage.classList.add("is-animating", "is-big", "is-cinematic");
-      gemStage.style.setProperty("--cinematic-duration", `${duration}ms`);
-    }
-
-    return cutsceneController.play({
-      duration,
-      render: () => renderCutscene(data, duration),
-      onCleanup: () => {
-        gemStage.classList.remove("is-animating", "is-big", "is-cinematic", "is-ultra-rare");
-        gemStage.style.removeProperty("--cinematic-duration");
-        gemStage.style.removeProperty("--gem-hue");
-        gemStage.style.removeProperty("--gem-speed");
-      }
-    });
-  }
 
   if (!settings.rollAnimations) return Promise.resolve();
   gemStage.classList.add("is-animating");
@@ -768,7 +746,7 @@ renderSessionInsights();
 // =========================================================
 
 async function performRoll() {
-  if (rollInFlight || cutsceneController.isActive || !view.ready) {
+  if (rollInFlight || globalCutsceneQueue.isBusy || !view.ready) {
     return;
   }
 
@@ -778,13 +756,19 @@ async function performRoll() {
 
   setButton({ mode: "rolling", label: impossibleButtonJoke() ?? "Rolling", disabled: true });
 
-  const { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
+  let { data, error } = await invokeFunction("roll", { batchSize: getSettings().batchSize, pool: getSettings().rollPool });
 
   rollInFlight = false;
 
   // -------------------------------------------------------
   // ERRORS
   // -------------------------------------------------------
+
+  if (error?.code === "batch_incomplete" && Array.isArray(error.details?.results) && error.details.results.length) {
+    data = { ...error.details, results: error.details.results };
+    error = null;
+    notify.warning("Batch partially completed", "Committed rolls were kept and their results are shown below.");
+  }
 
   if (error) {
     if (error.code === "deep_sea_event_ended" || error.details?.cause?.error === "deep_sea_event_ended") {
@@ -853,6 +837,7 @@ async function performRoll() {
 
   const results = batchRollResults(data);
   const outcomes = new Map();
+  const announcedResults = [];
   let featured = null;
 
   for (const result of results) {
@@ -882,10 +867,18 @@ async function performRoll() {
 
     // Every result announces independently; batching must not collapse rare
     // chat/progression events into one representative specimen.
-    window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: result }));
+    announcedResults.push(result);
     if (!featured || Number(result.effectiveRarity ?? 0) >= Number(featured.effectiveRarity ?? 0)) {
       featured = result;
     }
+  }
+
+  // Enqueue the complete committed batch before announcing individual results.
+  // This gives the global service every eligible specimen at once so priority
+  // is deterministic and no result is collapsed into the featured card.
+  globalCutsceneQueue.enqueueBatch(announcedResults);
+  for (const result of announcedResults) {
+    window.dispatchEvent(new CustomEvent("gem:roll-complete", { detail: result }));
   }
 
   renderEffects();
@@ -895,12 +888,11 @@ async function performRoll() {
   renderSummary();
   paintSettings(getSettings());
 
-  let cinematicPromise = Promise.resolve();
   if (featured?.houseEdge) {
     gemStage.className = `stage__display is-revealed${featured.impossibleWorldFirst ? ' is-impossible-world-first' : ''}`;
     gemStage.innerHTML = `${featured.impossibleWorldFirst ? impossibleWorldFirstBrand() : ''}<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>`;
   } else if (featured) {
-    cinematicPromise = renderRoll(featured, outcomes.get(featured));
+    renderRoll(featured, outcomes.get(featured));
   }
   appendBatchResults(results, outcomes);
 
@@ -912,7 +904,7 @@ async function performRoll() {
   // Keep the roll locked for the entire eligible cinematic. If the server
   // cooldown is shorter, its timer will wait for the cinematic lock before
   // allowing the next roll.
-  await cinematicPromise;
+  await globalCutsceneQueue.whenIdle();
 
   if (!cooldownTimer) {
     showReady();
@@ -1140,7 +1132,7 @@ function maybeAutoRoll() {
     !getSettings().autoRoll ||
     !view.ready ||
     rollInFlight ||
-    cutsceneController.isActive
+    globalCutsceneQueue.isBusy
   ) {
     return;
   }
@@ -1153,7 +1145,7 @@ function maybeAutoRoll() {
   // Fire the next roll as soon as the server cooldown ends. The old 350ms
   // artificial delay made auto-roll feel noticeably laggy.
   queueMicrotask(() => {
-    if (getSettings().autoRoll && view.ready && !rollInFlight && !cutsceneController.isActive) {
+    if (getSettings().autoRoll && view.ready && !rollInFlight && !globalCutsceneQueue.isBusy) {
       performRoll();
     }
   });
