@@ -71,8 +71,8 @@ const draftMaterialScenes = [
   ["false vacuum", "false-vacuum", 15_500],
   ["serpentite", "serpentite", 14_000],
   ["sutoronchiumushahouhoakinseki", "sutoronchiumushahouhoakinseki", 15_000],
-  ["heat death", "heat-death", 17_000],
-  ["zephyrion", "zephyrion", 14_000]
+  ["heat death", "heat-death", 18_000],
+  ["zephyrion", "zephyrion", 15_500]
 ];
 for (const [name, theme, duration] of draftMaterialScenes) {
   const definition = BESPOKE_CUTSCENES[name];
