@@ -6,6 +6,7 @@ export const GEM_MUTATIONS = Object.freeze({
   'supersizer-colossal': Object.freeze({id:'supersizer-colossal',name:'Colossal',chance:10000,multiplier:10,exclusive:true,description:'Supersizer only: ×10 weight and ×10 value.'}),
   'supersizer-titanic': Object.freeze({id:'supersizer-titanic',name:'Titanic',chance:100000,multiplier:20,exclusive:true,description:'Supersizer only: ×20 weight and ×20 value.'}),
   'supersizer-gargantuan': Object.freeze({id:'supersizer-gargantuan',name:'Gargantuan',chance:1000000,multiplier:25,exclusive:true,description:'Supersizer only: ×25 weight and ×25 value; starts Gargantuan’s Blessing after the roll.'}),
+  tryhard: Object.freeze({id:'tryhard',name:'Tryhard',chance:2000,multiplier:10,exclusive:true,description:'All-In Pickaxe only: flat 1/2,000 chance per genuine roll, unaffected by Mutation Chance and stackable with ordinary mutations.',icon:'🎯',color:'#ff7043'}),
   shifted: Object.freeze({id:'shifted',name:'Shifted',chance:5,multiplier:35,exclusive:true,description:'Reality Shift: 20% on every 500th genuine Reality Shifter roll.'}),
   'balanced': Object.freeze({id:'balanced',name:'Balanced',chance:20,multiplier:1.2,exclusive:true}),
   'ascended': Object.freeze({id:'ascended',name:'Ascended',chance:400,multiplier:2,exclusive:true}),

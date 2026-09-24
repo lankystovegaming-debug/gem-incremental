@@ -116,6 +116,7 @@ export function specialChance(id,gem,state) {
 }
 export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
  if(!genuine) return [];
+ if(id==='all-in-pickaxe') return random()<1/2000?[{id:'tryhard',name:'Tryhard',chance:1/2000,multiplier:10}]:[];
  if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
  if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
@@ -1216,7 +1217,7 @@ function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
   const safeMultiplier = Math.max(0, Number.isFinite(Number(chanceMultiplier)) ? Number(chanceMultiplier) : 1);
 
   return gemMutations.flatMap((mutation) => {
-    if(['balanced','shifted'].includes(mutation.id)||mutation.id.startsWith('supersizer-')) return []; // Equipment-exclusive even if added to the admin catalog.
+    if(['balanced','shifted','tryhard'].includes(mutation.id)||mutation.id.startsWith('supersizer-')) return []; // Equipment-exclusive even if added to the admin catalog.
     const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
     if (eventFactor <= 0) return [];
     const chance = Math.min(mutation.chance * safeMultiplier * eventFactor, 1);

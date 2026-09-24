@@ -46,6 +46,16 @@ await db.exec(`
     weight_multiplier_bonus double precision not null default 0
   );
   create table equipment_ownership_history (player_id uuid not null, equipment_id text not null);
+  create table game_mutations (
+    id text primary key,
+    name text,
+    chance numeric,
+    multiplier numeric,
+    description text,
+    icon text,
+    color text,
+    enabled boolean
+  );
   create table game_recipes (id text primary key, recipe jsonb not null);
   create table crafting_progress (
     player_id uuid not null,

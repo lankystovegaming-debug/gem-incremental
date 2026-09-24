@@ -11,10 +11,10 @@ let source=readFileSync(new URL('../supabase/functions/roll/index.ts',import.met
  .replace('"./eventRules.ts"',JSON.stringify(url('../supabase/functions/roll/eventRules.ts')))
  .replace('"./equipmentRules.js"',JSON.stringify(url('../supabase/functions/roll/equipmentRules.js')));
 source=stripTypeScriptTypes(source);
-let forceProcs=false, forceLoss=false;
+let forceProcs=false, forceOrdinaryProcs=false, forceLoss=false;
 const bg=[];globalThis.EdgeRuntime={waitUntil:p=>bg.push(p)};
 globalThis.Deno={env:{get:()=>''}};
-Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){a[0]=forceLoss && /jackpotRoll/.test(new Error().stack)?0:forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(new Error().stack)?0:2**31;return a;}},configurable:true});
+Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){const stack=new Error().stack;a[0]=forceLoss && /jackpotRoll/.test(stack)?0:forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(stack)?0:forceOrdinaryProcs && /rollGemMutations/.test(stack)?0:2**31;return a;}},configurable:true});
 const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source+'\n//# sourceURL=roll-handler-under-test.mjs').toString('base64'));
 let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs,rpcCalls;
 let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false};
@@ -88,6 +88,12 @@ near(result.luckAtRoll,1010);near(result.finalStats.rollSpeed,1.29);near(result.
 near(saved.mutation_chance_multiplier,.7);near(result.value,saved.final_weight*2*saved.mutation_multiplier);
 assert.ok(!rpcs.includes('spend_one_roll_charge'));assert.equal(commits.length,1);
 forceProcs=true;
+forceOrdinaryProcs=true;
+result=await run('all-in-pickaxe');
+assert.deepEqual(saved.mutation_ids.sort(),['polished','tryhard']);
+near(saved.mutation_multipliers.tryhard,10);near(saved.mutation_multipliers.polished,1.5);
+near(saved.mutation_multiplier,15);near(result.value,saved.final_weight*2*15);
+forceOrdinaryProcs=false;
 result=await run('all-rounder-toy');assert.ok(saved.mutation_ids.includes('balanced'));near(saved.mutation_multipliers.balanced,1.2);assert.equal(result.effectiveRarityExact,'200000000');
 forceProcs=false;
 for(const settings of [{discoveryKeep:false},{enableBuffs:false,discoveryKeep:false}]) {

@@ -99,6 +99,7 @@ await db.exec(read('../supabase/migrations/20260909100058_serious_pickaxe_desira
 await db.exec(read('../supabase/migrations/20260920093246_keep_specialist_pickaxes_stored_after_crafting.sql'));
 await db.exec(read('../supabase/migrations/20260924092958_rework_all_in_pickaxe.sql'));
 assert.equal((await q("select chance from game_mutations where id='balanced' and enabled"))[0].chance,'20');
+assert.deepEqual((await q("select chance,multiplier from game_mutations where id='tryhard' and enabled"))[0],{chance:'2000',multiplier:'10'});
 let history=(await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory;
 assert.equal(history.raw5m,3);assert.equal(history.raw10m,3);
 const plasticAfterBatch=(await q("select recipe from game_recipes where id='plastic-shopping-bag'"))[0].recipe;delete plasticAfterBatch.craftingTab;assert.deepEqual(plasticAfterBatch,plasticBefore);

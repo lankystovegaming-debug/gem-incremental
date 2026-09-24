@@ -32,6 +32,7 @@ assert.deepEqual(PICKAXE_STATS["all-in-pickaxe"], [500, 0.33, 0.15, 0.15, 0.15])
 assert.match(allInMigration, /"moneyCost":500000000/);
 assert.match(allInMigration, /roll_speed_bonus=-0\.67/);
 assert.match(allInMigration, /"rolls":100000/);
+assert.match(allInMigration, /'tryhard','Tryhard',2000,10/);
 assert.match(counterFix, /select total_rolls\s+into v_total_rolls/);
 assert.match(counterFix, /p_batch_size = 3 and v_total_rolls >= 100000/);
 assert.match(counterFix, /p_batch_size = 4 and v_total_rolls >= 500000 and v_has_celestial/);

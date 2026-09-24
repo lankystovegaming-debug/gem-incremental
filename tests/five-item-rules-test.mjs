@@ -17,9 +17,14 @@ assert.equal(jackpotRoll('jackpot-slot',1,draw([1,1,.007699])).houseEdge,true);
 assert.equal(exclusiveMutations('all-rounder-toy',()=>.04999)[0].id,'balanced');
 assert.deepEqual(exclusiveMutations('all-rounder-toy',()=>.05),[]);
 assert.deepEqual(exclusiveMutations('all-rounder-toy',()=>0,false),[]);
+assert.deepEqual(exclusiveMutations('all-in-pickaxe',()=>.0005),[]);
+assert.deepEqual(exclusiveMutations('fortune-pickaxe',()=>0),[]);
+assert.deepEqual(exclusiveMutations('all-in-pickaxe',()=>0,false),[]);
+assert.deepEqual(exclusiveMutations('all-in-pickaxe',()=>.0004999),[{id:'tryhard',name:'Tryhard',chance:1/2000,multiplier:10}]);
 const saved={rolls:{'jackpot-slot':776},batchHistory:{raw5m:3,heavy5:250}};
 assert.deepEqual(finishEquipmentRoll(prepareEquipmentRoll('jackpot-slot',saved),{genuine:false}).state,saved);
 assert.equal(getGemMutation('balanced').multiplier,1.2);
+assert.deepEqual({chance:getGemMutation('tryhard').chance,multiplier:getGemMutation('tryhard').multiplier},{chance:2000,multiplier:10});
 const rows=[{category:'pickaxe',equipment_id:'all-in-pickaxe',masterwork_level:5},...['clover','boots','lantern','bag'].map(category=>({category,equipment_id:category==='bag'?'plastic-shopping-bag':category,luck_bonus:999,weight_luck_bonus:999,mutation_chance_bonus:999,weight_multiplier_bonus:999}))];
 assert.deepEqual(equipmentTotals(rows,true),{pickaxe:500,clover:1,luck:500,rollSpeed:.33,mutation:.15,weightLuck:.15,weightMultiplier:.15});
 const allInRecipe=fiveItemRecipes.find(recipe=>recipe.id==='all-in-pickaxe');
@@ -28,7 +33,6 @@ assert.deepEqual(allInRecipe.requirements.map(requirement=>requirement.amount??r
 assert.equal(allInRecipe.requirements.find(requirement=>requirement.type==='lifetime-rolls').rolls,100_000);
 assert.ok(isRequirementComplete({progress:{}},allInRecipe,allInRecipe.requirements[5],5,{totalRolls:100_000}));
 assert.ok(!isRequirementComplete({progress:{}},allInRecipe,allInRecipe.requirements[5],5,{totalRolls:99_999}));
-assert.deepEqual(exclusiveMutations('all-in-pickaxe',()=>0),[]);
 assert.equal(fiveItemRecipes.length,5);
 for(const recipe of fiveItemRecipes) {
  assert.ok(!recipe.requirements.some(r=>r.type==='equipment'));
