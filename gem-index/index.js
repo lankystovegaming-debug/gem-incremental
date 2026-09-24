@@ -34,16 +34,19 @@ byId("searchIcon").innerHTML = icons.search;
 const STORAGE_KEY = "gemIncremental.gemIndex.view.v2";
 const CODE_ONLY_MUTATIONS = new Set(["ascended", "silly-small", "silly-large", "happy"]);
 const PAGE_SIZE = 1000;
-const BAND_PAGE_SIZE = 120;
-const UNKNOWN_TIER = Object.freeze({ id: "unknown", name: "Unknown" });
+const BAND_PAGE_SIZE = 24;
+const RARITY_BAND_ORDER = Object.freeze([
+  "common", "uncommon", "rare", "epic", "legendary", "mythic", "exotic",
+  "exalted", "cosmic", "transcendent", "secret", "anomalous"
+]);
 
 let mutationList = [];
 let mutationById = new Map();
 let catalogGems = [];
 let refreshInFlight = null;
-let realtimeChannel = null;
 let lastRefreshAt = 0;
 let entriesCache = null;
+let renderedBands = new Map();
 const expandedBands = new Set();
 const bandLimits = new Map();
 
@@ -106,7 +109,7 @@ function isSecretLocked(entry) {
 }
 
 function displayTier(entry) {
-  return isSecretLocked(entry) ? UNKNOWN_TIER : rarityTier(entry.gem.rarity, entry.gem.name);
+  return rarityTier(entry.gem.rarity, entry.gem.name);
 }
 
 async function loadCombinations(playerId) {
@@ -393,12 +396,14 @@ function renderTierBreakdown(entries) {
   const tiers = new Map();
   for (const entry of entries) {
     const tier = displayTier(entry);
-    const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
+    const bucket = tiers.get(tier.id) ?? { id: tier.id, name: tier.name, found: 0, total: 0 };
     bucket.total += 1;
     if (exactCombinationDiscovered(entry)) bucket.found += 1;
     tiers.set(tier.id, bucket);
   }
-  tierBreakdown.innerHTML = [...tiers.values()].map((bucket) =>
+  tierBreakdown.innerHTML = [...tiers.values()]
+    .sort((a, b) => RARITY_BAND_ORDER.indexOf(a.id) - RARITY_BAND_ORDER.indexOf(b.id))
+    .map((bucket) =>
     `<div class="tier-stat"><span class="tier-stat__name">${escapeHtml(bucket.name)}</span><span class="tier-stat__value">${formatCount(bucket.found)} / ${formatCount(bucket.total)}</span></div>`
   ).join("");
 }
@@ -451,6 +456,28 @@ function renderMutationTabs() {
   }).join("");
 }
 
+function orderedRarityBands(bands) {
+  const ascending = RARITY_BAND_ORDER.filter((id) => bands.has(id));
+  const ids = gemSort.value === "rarity-desc"
+    ? ["secret", "anomalous", ...ascending.filter((id) => !["secret", "anomalous"].includes(id)).reverse()]
+    : ascending;
+  return new Map(ids.filter((id) => bands.has(id)).map((id) => [id, bands.get(id)]));
+}
+
+function bandContentHtml(id, band) {
+  const limit = bandLimits.get(id) ?? BAND_PAGE_SIZE;
+  const shown = band.entries.slice(0, limit);
+  const remaining = band.entries.length - shown.length;
+  return `${shown.map(gemCard).join("")}${remaining > 0 ? `<button class="button index-band__more" type="button" data-show-more="${escapeHtml(id)}">Show ${formatCount(Math.min(BAND_PAGE_SIZE, remaining))} more</button>` : ""}`;
+}
+
+function renderBandContents(element, id) {
+  const band = renderedBands.get(id);
+  const grid = element?.querySelector(".index-band__grid");
+  if (!band || !grid) return;
+  grid.innerHTML = bandContentHtml(id, band);
+}
+
 function renderList() {
   if (state.loading) {
     gemList.innerHTML = '<div class="skeleton skeleton--card"></div>'.repeat(4);
@@ -478,14 +505,14 @@ function renderList() {
       bands.get(tier.id).entries.push(entry);
     }
   }
-  if (!expandedBands.size) expandedBands.add(bands.keys().next().value);
-  gemList.innerHTML = [...bands.entries()].map(([id, band]) => {
+  renderedBands = ["name", "found"].includes(gemSort.value) ? bands : orderedRarityBands(bands);
+  if (![...renderedBands.keys()].some((id) => expandedBands.has(id))) {
+    expandedBands.add(renderedBands.keys().next().value);
+  }
+  gemList.innerHTML = [...renderedBands.entries()].map(([id, band]) => {
     const open = expandedBands.has(id);
     const found = band.entries.filter(exactCombinationDiscovered).length;
-    const limit = bandLimits.get(id) ?? BAND_PAGE_SIZE;
-    const shown = open ? band.entries.slice(0, limit) : [];
-    const remaining = band.entries.length - shown.length;
-    return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}><summary class="index-band__summary"><span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} exact combinations found</small></span><span class="index-band__count">${formatCount(band.entries.length)} cards</span></summary><div class="index-band__grid grid grid--cards">${shown.map(gemCard).join("")}${open && remaining > 0 ? `<button class="button index-band__more" type="button" data-show-more="${escapeHtml(id)}">Show ${formatCount(Math.min(BAND_PAGE_SIZE, remaining))} more</button>` : ""}</div></details>`;
+    return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}><summary class="index-band__summary"><span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} exact combinations found</small></span><span class="index-band__count">${formatCount(band.entries.length)} cards</span></summary><div class="index-band__grid grid grid--cards">${open ? bandContentHtml(id, band) : ""}</div></details>`;
   }).join("");
 }
 
@@ -546,11 +573,15 @@ mutationTabs.addEventListener("click", (event) => {
 
 gemList.addEventListener("toggle", (event) => {
   const band = event.target.closest?.("[data-tier-band]");
-  if (!band || event.target !== band) return;
-  if (band.open) expandedBands.add(band.dataset.tierBand);
-  else expandedBands.delete(band.dataset.tierBand);
+  if (!band || event.target !== band || !band.isConnected || !gemList.contains(band)) return;
+  if (band.open) {
+    expandedBands.add(band.dataset.tierBand);
+    renderBandContents(band, band.dataset.tierBand);
+  } else {
+    expandedBands.delete(band.dataset.tierBand);
+    band.querySelector(".index-band__grid")?.replaceChildren();
+  }
   saveView();
-  renderList();
 }, true);
 
 gemList.addEventListener("click", async (event) => {
@@ -562,7 +593,7 @@ gemList.addEventListener("click", async (event) => {
   if (more) {
     const id = more.dataset.showMore;
     bandLimits.set(id, (bandLimits.get(id) ?? BAND_PAGE_SIZE) + BAND_PAGE_SIZE);
-    renderList();
+    renderBandContents(more.closest("[data-tier-band]"), id);
     return;
   }
   const button = event.target.closest("[data-replay-gem]");
@@ -594,18 +625,6 @@ gemFilter.addEventListener("change", () => scheduleRender({ reset: true }));
 gemSort.addEventListener("change", () => scheduleRender({ reset: true }));
 refreshButton?.addEventListener("click", () => refresh({ force: true }));
 
-function subscribeToDiscoveries(playerId) {
-  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-  realtimeChannel = supabase.channel(`gem-index:${playerId}`)
-    .on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "player_gem_mutation_combinations",
-      filter: `player_id=eq.${playerId}`
-    }, () => refresh({ force: true, quiet: true }))
-    .subscribe();
-}
-
 async function refresh({ force = false, quiet = false } = {}) {
   if (refreshInFlight) return refreshInFlight;
   if (!force && Date.now() - lastRefreshAt < 10_000) return;
@@ -619,7 +638,6 @@ async function refresh({ force = false, quiet = false } = {}) {
     try {
       const user = await ensurePlayerAuth();
       if (!user) throw new Error("Could not sign in to load your discoveries.");
-      const playerChanged = state.playerId !== user.id;
       state.playerId = user.id;
       const [discoveries, playerState, gems, mutations] = await Promise.all([
         loadCombinations(user.id),
@@ -635,7 +653,6 @@ async function refresh({ force = false, quiet = false } = {}) {
       state.selectedMutations = new Set(
         [...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id))
       );
-      if (playerChanged) subscribeToDiscoveries(user.id);
       if (playerState) shell.setWallet(playerState.money);
       state.error = null;
       lastRefreshAt = Date.now();
@@ -661,14 +678,6 @@ renderList();
 renderMutationTabs();
 renderSelectedMutationSummary();
 refresh({ force: true });
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) refresh({ force: true, quiet: true });
-});
-window.addEventListener("focus", () => refresh({ quiet: true }));
-window.addEventListener("online", () => refresh({ force: true, quiet: true }));
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) refresh({ quiet: true });
-});
 supabase.auth.onAuthStateChange((_event, session) => {
   if (session?.user?.id && session.user.id !== state.playerId) refresh({ force: true });
 });
