@@ -2,6 +2,7 @@ import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
 import { escapeHtml } from "../src/ui/format.js";
+import { GEM_MUTATIONS } from "../src/data/mutations.js";
 
 mountShell({ page: "mutation-index", base: "../" });
 
@@ -39,17 +40,36 @@ function normalizeCatalog(payload) {
   });
 }
 
+function withCodeOnlyMutations(rows) {
+  const merged = new Map(rows.map((mutation) => [mutation.id, mutation]));
+  for (const id of ["ascended", "silly-small", "silly-large", "happy"]) {
+    const mutation = GEM_MUTATIONS[id];
+    if (!mutation || merged.has(id)) continue;
+    merged.set(id, {
+      id,
+      name: mutation.name,
+      chance: mutation.chance,
+      multiplier: mutation.multiplier,
+      description: mutation.description ?? "Equipment-exclusive mutation.",
+      credit: mutation.descriptionCredit ?? "",
+      icon: mutation.icon ?? "✦",
+      color: mutation.color ?? "#8b5cf6"
+    });
+  }
+  return [...merged.values()];
+}
+
 async function loadCatalog() {
   const failures = [];
   for (const name of ["get_gem_index_mutation_catalog_v3", "get_public_mutation_catalog", "get_gem_index_mutation_catalog", "get_public_mutation_catalog_json", "get_public_mutation_catalog_all"]) {
     const { data, error } = await supabase.rpc(name);
     const rows = error ? [] : normalizeCatalog(data);
-    if (rows.length) return rows;
+    if (rows.length) return withCodeOnlyMutations(rows);
     failures.push(error?.message ?? `${name} returned no rows`);
   }
   const { data, error } = await supabase.from("game_mutations").select("id,name,chance,multiplier,description,description_credit,icon,color").eq("enabled", true);
   const rows = error ? [] : normalizeCatalog(data);
-  if (rows.length) return rows;
+  if (rows.length) return withCodeOnlyMutations(rows);
   throw new Error(error?.message ?? failures[0] ?? "Mutation catalog unavailable");
 }
 

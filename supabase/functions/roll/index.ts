@@ -1226,15 +1226,9 @@ function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
 
 
 function getMutationCombinationKey(mutationIds: string[]) {
-  const order = new Map(
-    gemMutations.map((mutation, index) => [mutation.id, index])
-  );
-
   const sortedIds = Array.from(
-    new Set(mutationIds.map((id) => String(id)))
-  ).sort(
-    (a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999)
-  );
+    new Set(mutationIds.map((id) => String(id).trim().toLowerCase()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
 
   return sortedIds.length ? sortedIds.join("+") : "none";
 }

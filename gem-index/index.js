@@ -1,4 +1,4 @@
-import gems from "../src/data/gems.js";
+import bundledGems from "../src/data/gems.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
@@ -11,785 +11,664 @@ import { replayGemCutscene } from "../src/ui/cutsceneReplay.js";
 import { isCutsceneEligible } from "../src/ui/cutsceneController.js";
 import { getSettings } from "../src/ui/settings.js";
 import { rarityTier, rarityLabel, formatMoney, formatWeight, formatCount, escapeHtml } from "../src/ui/format.js";
-import { exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
+import {
+  availabilityState, canonicalMutationIds, canonicalMutationKey, dailyWindows,
+  indexCombinationRecords, mutationCombinationIsObtainable, mutationSourceLabel,
+  rawCombinationDenominator
+} from "../src/logic/gemIndex.js";
 
 const shell = mountShell({ page: "gem-index", base: "../" });
-const gemList = document.getElementById("gemList");
-const mutationTabs = document.getElementById("mutationTabs");
-const discoveryCount = document.getElementById("discoveryCount");
-const discoveryMeter = document.getElementById("discoveryMeter");
-const tierBreakdown = document.getElementById("tierBreakdown");
-const gemSearch = document.getElementById("gemSearch");
-const gemFilter = document.getElementById("gemFilter");
-const gemSort = document.getElementById("gemSort");
-const selectedMutationSummary = document.getElementById("selectedMutationSummary");
+const byId = (id) => document.getElementById(id);
+const gemList = byId("gemList");
+const mutationTabs = byId("mutationTabs");
+const discoveryCount = byId("discoveryCount");
+const discoveryMeter = byId("discoveryMeter");
+const tierBreakdown = byId("tierBreakdown");
+const gemSearch = byId("gemSearch");
+const gemFilter = byId("gemFilter");
+const gemSort = byId("gemSort");
+const selectedMutationSummary = byId("selectedMutationSummary");
+const refreshButton = byId("refreshIndex");
+byId("searchIcon").innerHTML = icons.search;
 
-document.getElementById("searchIcon").innerHTML = icons.search;
+const STORAGE_KEY = "gemIncremental.gemIndex.view.v2";
+const CODE_ONLY_MUTATIONS = new Set(["ascended", "silly-small", "silly-large", "happy"]);
+const PAGE_SIZE = 1000;
+const BAND_PAGE_SIZE = 120;
+const UNKNOWN_TIER = Object.freeze({ id: "unknown", name: "Unknown" });
 
-let mutationList = Object.values(GEM_MUTATIONS);
-let mutationById = new Map(mutationList.map((mutation) => [mutation.id, mutation]));
-let mutationOrder = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
-let catalogGems = [...gems];
-let indexEntries = [];
-let loadedPlayerId = null;
+let mutationList = [];
+let mutationById = new Map();
+let catalogGems = [];
 let refreshInFlight = null;
+let realtimeChannel = null;
+let lastRefreshAt = 0;
+let entriesCache = null;
 const expandedBands = new Set();
+const bandLimits = new Map();
 
 const state = {
-  index: {},
-  combinations: {},
+  combinations: new Map(),
+  discoveredGemNames: new Set(),
   selectedMutations: new Set(["none"]),
-  loading: true
+  loading: true,
+  error: null,
+  playerId: null
 };
 
 function rebuildMutationMaps() {
   mutationById = new Map(mutationList.map((mutation) => [mutation.id, mutation]));
-  mutationOrder = new Map(mutationList.map((mutation, index) => [mutation.id, index]));
+  entriesCache = null;
 }
 
 function normalizeMutationIds(ids = []) {
-  return Array.from(new Set((Array.isArray(ids) ? ids : [])
-    .map((id) => String(id ?? "").trim().toLowerCase())
-    .filter((id) => mutationById.has(id))))
-    .sort((a, b) => (mutationOrder.get(a) ?? 9999) - (mutationOrder.get(b) ?? 9999));
+  return canonicalMutationIds(ids, mutationById);
 }
 
-function mutationCombinationKey(ids = []) {
+function combinationLabel(ids = []) {
   const normalized = normalizeMutationIds(ids);
-  return normalized.length ? normalized.join("+") : "none";
+  return normalized.length
+    ? normalized.map((id) => mutationById.get(id)?.name ?? id).join(" + ")
+    : "No Mutation";
 }
 
-function mutationCombinationLabel(ids = []) {
-  const normalized = normalizeMutationIds(ids);
-  if (!normalized.length) return "No Mutation";
-  return normalized.map((id) => mutationById.get(id)?.name ?? id).join(" + ");
-}
-
-function comboKey(gemName, combinationKey) {
-  return `${gemName}::${combinationKey}`;
-}
-
-async function loadCombinations(playerId) {
-  const pageSize = 1000;
-  const data = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data: page, error } = await supabase
-      .from("player_gem_mutation_combinations")
-      .select("id,gem_name,combination_key,mutation_ids,mutation_multipliers,total_found,highest_value,first_discovered_at")
-      .eq("player_id", playerId)
-      .order("id", { ascending: true })
-      .range(from, from + pageSize - 1);
-
-    if (error) {
-      console.error("Failed to load mutation combination index:", error);
-      return null;
-    }
-    data.push(...(page ?? []));
-    if ((page?.length ?? 0) < pageSize) break;
-  }
-
-  const result = {};
-  for (const entry of data) {
-    const ids = normalizeMutationIds(entry.mutation_ids ?? []);
-    const key = comboKey(entry.gem_name, entry.combination_key || mutationCombinationKey(ids));
-    result[key] = {
-      gemName: entry.gem_name,
-      combinationKey: entry.combination_key || mutationCombinationKey(ids),
-      mutationIds: ids,
-      mutationMultipliers: entry.mutation_multipliers && typeof entry.mutation_multipliers === "object" ? entry.mutation_multipliers : {},
-      totalFound: Number(entry.total_found ?? 0),
-      highestValue: Number(entry.highest_value ?? 0),
-      firstDiscoveredAt: entry.first_discovered_at
-    };
-  }
-  return result;
-}
-
-function exactEntryChance(entry) {
-  const gemProbability = Number(entry.gem.rarity) > 0 ? 1 / Number(entry.gem.rarity) : 0;
-  return entry.mutationIds.reduce((probability, id) => {
-    const chance = Number(mutationById.get(id)?.chance ?? 0);
-    return probability * (chance > 0 ? Math.min(1, 1 / chance) : 0);
-  }, gemProbability);
-}
-
-function entryChanceLabel(entry) {
-  const probability = exactEntryChance(entry);
-  if (!Number.isFinite(probability) || probability <= 0) return "Impossible";
-  const chance = `1 in ${Math.max(1, Math.round(1 / probability)).toLocaleString("en-US")}`;
-  return entry.gem.metadata?.sourceExclusive === true
-    ? `${chance} raw per ${entry.gem.metadata.sourceLabel || "exclusive source"}`
-    : chance;
-}
-
-function catalogRarityLabel(gem) {
-  if (gem.metadata?.rarityClass === "anomalous") {
-    return `Anomalous · ${rarityLabel(gem.metadata.rawChanceDenominator || gem.rarity)} raw`;
-  }
-  return rarityLabel(gem.rarity);
-}
-
-function acquisitionLabel(gem) {
-  if (gem.metadata?.sourceExclusive === true) {
-    return `${gem.metadata.sourceLabel || "Source"} exclusive · unaffected by Luck`;
-  }
-  return gem.affectedByLuck === false ? "Flat chance · unaffected by Luck" : "";
+function comboKey(gemName, mutationIds = []) {
+  return `${gemName}::${canonicalMutationKey(mutationIds)}`;
 }
 
 function makeEntry(gem, mutationIds) {
   const ids = normalizeMutationIds(mutationIds);
-  const combinationKey = mutationCombinationKey(ids);
-  return { gem, mutationIds: ids, combinationKey, key: comboKey(gem.name, combinationKey) };
+  return { gem, mutationIds: ids, combinationKey: canonicalMutationKey(ids), key: comboKey(gem.name, ids) };
 }
 
-/*
- * Never materialize the power-set of mutations. Admins can add arbitrary
- * mutations, and 12 mutations already produce 4,096 combinations per gem.
- * The index now materializes only the currently selected exact combination.
- * "All" shows base gems plus each single mutation; multi-mutation combinations
- * are available by selecting multiple tabs.
- */
-function entriesForView() {
-  const selected = [...state.selectedMutations].filter((id) => id !== "none");
-
-  if (selected.length) {
-    return catalogGems.map((gem) => makeEntry(gem, selected));
-  }
-
-  if (state.selectedMutations.has("none")) {
-    return catalogGems.map((gem) => makeEntry(gem, []));
-  }
-
-  // "All" is deliberately bounded: base + each single mutation. This keeps
-  // the page fast even when admins add many custom mutations.
-  const entries = catalogGems.map((gem) => makeEntry(gem, []));
-  for (const mutation of mutationList) {
-    for (const gem of catalogGems) entries.push(makeEntry(gem, [mutation.id]));
-  }
-  return entries;
+function selectedMutationIds() {
+  return [...state.selectedMutations].filter((id) => id !== "none");
 }
 
 function discoveredRecord(entry) {
-  return state.combinations[entry.key] ?? null;
+  return state.combinations.get(entry.key) ?? null;
+}
+
+function identityDiscovered(entry) {
+  return state.discoveredGemNames.has(entry.gem.name);
+}
+
+function exactCombinationDiscovered(entry) {
+  return Boolean(discoveredRecord(entry));
 }
 
 function isSecretGem(gem) {
   return Number(gem.rarity) >= 10_000_000 || gem.hideRarityUntilDiscovered === true;
 }
 
-function hasDiscoveredGem(gemName) {
-  return Object.values(state.combinations).some((record) => record.gemName === gemName);
+function isSecretLocked(entry) {
+  return isSecretGem(entry.gem) && !identityDiscovered(entry);
 }
 
-function isSecretUndiscovered(entry) {
-  // The live Supabase catalog is authoritative. Enforce the threshold from
-  // the rarity itself so legacy rows cannot leak before their backfill lands.
-  if (Number(entry.gem.rarity) < 10_000_000 && !entry.gem.hideRarityUntilDiscovered) return false;
-  return !hasDiscoveredGem(entry.gem.name);
+function displayTier(entry) {
+  return isSecretLocked(entry) ? UNKNOWN_TIER : rarityTier(entry.gem.rarity, entry.gem.name);
 }
 
-function displayedAsDiscovered(entry) {
-  if (discoveredRecord(entry)) return true;
-  // A secret gem's identity is permanently revealed by any mutation
-  // combination. The selected combination can still remain unrolled.
-  return selectedCombination() !== null && isSecretGem(entry.gem) && hasDiscoveredGem(entry.gem.name);
-}
-
-function dailyAvailabilityLabel(gem) {
-  if (!["daily", "date_range_daily"].includes(gem.availabilityMode)) return "";
-  const configured = Array.isArray(gem.dailyTimeWindows)
-    ? gem.dailyTimeWindows.filter((window) => window?.start && window?.end)
-    : [];
-  const windows = configured.length
-    ? configured
-    : (gem.dailyStartTime && gem.dailyEndTime ? [{ start: gem.dailyStartTime, end: gem.dailyEndTime }] : []);
-  if (!windows.length) return "";
-  const zone = gem.availabilityTimezone || "Asia/Singapore";
-  const source = windows.map((window) => `${String(window.start).slice(0,5)}–${String(window.end).slice(0,5)}`).join(" and ");
-  if (zone !== "Asia/Singapore") return `Available daily: ${source} ${zone}`;
-  const makeDate = (value) => { const [hour, minute] = String(value).split(":").map(Number); return new Date(Date.UTC(2026,0,1,hour-8,minute)); };
-  const format = (value) => makeDate(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const local = windows.map((window) => `${format(window.start)}–${format(window.end)}`).join(" and ");
-  return `Available daily: ${local} your time (${source} ${zone})`;
-}
-
-function selectedCombination() {
-  const selected = [...state.selectedMutations];
-  if (!selected.length) return null;
-  if (selected.includes("none")) return "none";
-  return mutationCombinationKey(selected);
-}
-
-function renderSummary() {
-  const selected = [...state.selectedMutations];
-  const mutationCount = mutationList.length;
-  const combinationCount = (() => {
-    const n = 1n << BigInt(mutationCount);
-    const raw = n.toString();
-    if (raw.length <= 15) return Number(raw).toLocaleString("en-US");
-    const suffixes=["K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","UDc","DDc","TDc","QtDc","QnDc","SxDc","SpDc","OcDc","NoDc","Vg","UVg","DVg","TVg"];
-    const exp=raw.length-1, group=Math.floor(exp/3), unit=suffixes[group-1]||`e${exp}`;
-    const lead=exp-group*3+1, sig=raw.slice(0,3), whole=sig.slice(0,lead), frac=sig.slice(lead).replace(/0+$/,"");
-    return unit.startsWith("e") ? `${sig[0]}.${sig.slice(1)}${unit}` : `${whole}${frac?"."+frac:""}${unit}`;
-  })();
-
-  if (selected.length && !selected.includes("none")) {
-    const entries = catalogGems.map((gem) => makeEntry(gem, selected));
-    const discovered = entries.filter(displayedAsDiscovered).length;
-    const total = entries.length;
-    discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
-    discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
-    renderTierBreakdown(entries);
-    return;
+async function loadCombinations(playerId) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("player_gem_mutation_combinations")
+      .select("id,gem_name,combination_key,mutation_ids,mutation_multipliers,total_found,highest_value,first_discovered_at,last_discovered_at")
+      .eq("player_id", playerId)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`Discovery history could not be loaded: ${error.message}`);
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < PAGE_SIZE) break;
   }
-
-  if (selected.includes("none")) {
-    const entries = catalogGems.map((gem) => makeEntry(gem, []));
-    const discovered = entries.filter(displayedAsDiscovered).length;
-    const total = entries.length;
-    discoveryCount.textContent = `${formatCount(discovered)} / ${formatCount(total)} gems discovered`;
-    discoveryMeter.style.width = `${total ? (discovered / total) * 100 : 0}%`;
-    renderTierBreakdown(entries);
-    return;
-  }
-
-  // All view: calculate the full theoretical total without creating it.
-  const total = catalogGems.length * Math.pow(2, mutationCount);
-  const discovered = Object.values(state.combinations).filter((record) => catalogGems.some((gem) => gem.name === record.gemName)).length;
-  discoveryCount.textContent = `${formatCount(discovered)} / ${mutationCount >= 52 ? combinationCount : formatCount(total)} combinations discovered`;
-  discoveryMeter.style.width = `${total ? Math.min(100, (discovered / total) * 100) : 0}%`;
-  renderTierBreakdown(catalogGems.map((gem) => makeEntry(gem, [])));
+  return indexCombinationRecords(rows);
 }
 
-function renderTierBreakdown(entries) {
-  const tiers = new Map();
-  for (const entry of entries) {
-    const tier = rarityTier(entry.gem.rarity, entry.gem.name);
-    const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
-    bucket.total += 1;
-    if (displayedAsDiscovered(entry)) bucket.found += 1;
-    tiers.set(tier.id, bucket);
+function unwrapRows(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data.flatMap(unwrapRows);
+  if (typeof data === "string") {
+    try { return unwrapRows(JSON.parse(data)); } catch { return []; }
   }
-  tierBreakdown.innerHTML = [...tiers.values()].map((bucket) => `
-    <div class="tier-stat">
-      <span class="tier-stat__name">${escapeHtml(bucket.name)}</span>
-      <span class="tier-stat__value">${formatCount(bucket.found)} / ${formatCount(bucket.total)}</span>
-    </div>
-  `).join("");
+  if (typeof data !== "object") return [];
+  for (const key of ["mutations", "rows", "data", "result", "catalog", "items"]) {
+    if (Object.hasOwn(data, key)) {
+      const rows = unwrapRows(data[key]);
+      if (rows.length) return rows;
+    }
+  }
+  if ("id" in data && "name" in data) return [data];
+  return Object.values(data).flatMap(unwrapRows);
 }
 
-function renderSelectedMutationSummary() {
-  const selected = [...state.selectedMutations];
-  if (!selected.length) {
-    selectedMutationSummary.textContent = "Showing the fast All view: base gems + single mutations. Custom mutations from the live catalog are included. Select multiple mutation tabs for an exact combination.";
-    return;
+function normalizeMutationCatalog(rows, { live = true } = {}) {
+  const merged = new Map();
+  const bundled = Object.values(GEM_MUTATIONS);
+  for (const mutation of bundled) {
+    if (!live || CODE_ONLY_MUTATIONS.has(mutation.id)) merged.set(mutation.id, mutation);
   }
-  selectedMutationSummary.textContent = selected.includes("none")
-    ? "Showing exact combination: No Mutation"
-    : `Showing exact combination: ${mutationCombinationLabel(selected)}`;
+  for (const row of unwrapRows(rows)) {
+    const id = String(row?.id ?? "").trim().toLowerCase();
+    const name = String(row?.name ?? "").trim();
+    const chance = Number(row?.chance);
+    const multiplier = Number(row?.multiplier);
+    if (!id || !name || !Number.isFinite(chance) || chance <= 0 ||
+        !Number.isFinite(multiplier) || multiplier <= 0 || row.enabled === false) continue;
+    merged.set(id, {
+      id, name, chance, multiplier,
+      description: String(row.description ?? ""),
+      descriptionCredit: String(row.description_credit ?? ""),
+      icon: String(row.icon ?? "✦"),
+      color: String(row.color ?? "#9fdcff"),
+      codeOnly: CODE_ONLY_MUTATIONS.has(id)
+    });
+  }
+  return [...merged.values()].sort((a, b) =>
+    a.multiplier - b.multiplier || a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
+  );
+}
+
+async function loadMutationCatalog() {
+  const errors = [];
+  for (const rpcName of [
+    "get_gem_index_mutation_catalog_v3", "get_public_mutation_catalog",
+    "get_gem_index_mutation_catalog", "get_public_mutation_catalog_json",
+    "get_public_mutation_catalog_all"
+  ]) {
+    const { data, error } = await supabase.rpc(rpcName);
+    const rows = error ? [] : unwrapRows(data);
+    if (rows.length) return normalizeMutationCatalog(rows);
+    errors.push(error?.message ?? `${rpcName} returned no rows`);
+  }
+  const direct = await supabase
+    .from("game_mutations")
+    .select("id,name,chance,multiplier,description,description_credit,icon,color,enabled")
+    .eq("enabled", true)
+    .order("multiplier", { ascending: true })
+    .order("name", { ascending: true });
+  if (!direct.error && direct.data?.length) return normalizeMutationCatalog(direct.data);
+  console.warn("[Gem Index] live mutation catalog unavailable", [...errors, direct.error?.message]);
+  return normalizeMutationCatalog([], { live: false });
+}
+
+function normalizeGem(row) {
+  const bundled = bundledGems.find((gem) => gem.name === row.name);
+  const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  return {
+    title: String(row.title || metadata.title || bundled?.title || ""),
+    name: String(row.name),
+    rarity: Number(row.rarity),
+    baseWeight: Number(row.base_weight),
+    valuePerGram: Number(row.value_per_gram),
+    description: String(row.description || metadata.description || bundled?.description || ""),
+    metadata,
+    hideRarityUntilDiscovered:
+      row.hide_rarity_until_discovered === true || metadata.hideRarityUntilDiscovered === true,
+    affectedByLuck: row.affected_by_luck !== false,
+    specialGem: row.special_gem === true,
+    availabilityMode: String(row.availability_mode || "always"),
+    requiredEventKey: row.required_event_key ? String(row.required_event_key) : null,
+    startsAt: row.starts_at ?? null,
+    endsAt: row.ends_at ?? null,
+    dailyStartTime: row.daily_start_time ?? null,
+    dailyEndTime: row.daily_end_time ?? null,
+    dailyTimeWindows: Array.isArray(row.daily_time_windows) ? row.daily_time_windows : null,
+    availabilityTimezone: String(row.availability_timezone || "Asia/Singapore"),
+    sortOrder: Number(row.sort_order ?? 0)
+  };
+}
+
+async function loadGemCatalog() {
+  for (const rpcName of ["get_public_gem_index_catalog", "get_public_gem_catalog"]) {
+    const result = await supabase.rpc(rpcName);
+    if (!result.error && Array.isArray(result.data)) return result.data.map(normalizeGem);
+    if (result.error) console.warn(`[Gem Index] ${rpcName} unavailable:`, result.error.message);
+  }
+  const direct = await supabase
+    .from("private_feature_gems")
+    .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,special_gem,enabled,sort_order,starts_at,ends_at,availability_mode,daily_start_time,daily_end_time,daily_time_windows,availability_timezone,required_event_key")
+    .eq("enabled", true)
+    .order("sort_order", { ascending: true })
+    .order("rarity", { ascending: false });
+  if (direct.error) throw new Error(`Gem catalog could not be loaded: ${direct.error.message}`);
+  return (direct.data ?? []).map(normalizeGem);
+}
+
+function entriesForView() {
+  const signature = [...state.selectedMutations].sort().join("|");
+  if (entriesCache?.signature === signature) return entriesCache.entries;
+  const selected = selectedMutationIds();
+  let entries;
+  if (selected.length) {
+    entries = mutationCombinationIsObtainable(selected)
+      ? catalogGems.map((gem) => makeEntry(gem, selected))
+      : [];
+  } else if (state.selectedMutations.has("none")) {
+    entries = catalogGems.map((gem) => makeEntry(gem, []));
+  } else {
+    entries = [
+      ...catalogGems.map((gem) => makeEntry(gem, [])),
+      ...mutationList.flatMap((mutation) => catalogGems.map((gem) => makeEntry(gem, [mutation.id])))
+    ];
+  }
+  entriesCache = { signature, entries };
+  return entries;
+}
+
+function catalogRarityLabel(gem) {
+  return gem.metadata?.rarityClass === "anomalous"
+    ? `Anomalous · ${rarityLabel(gem.metadata.rawChanceDenominator || gem.rarity)} raw`
+    : rarityLabel(gem.rarity);
+}
+
+function rawChanceLabel(entry) {
+  const denominator = rawCombinationDenominator(entry.gem.rarity, entry.mutationIds, mutationById);
+  return denominator ? `1 in ${denominator.toLocaleString("en-US")} raw` : "Condition-dependent";
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+    : "";
+}
+
+function availabilityLabels(gem) {
+  const labels = [];
+  const status = availabilityState(gem);
+  const statusText = {
+    available: "Available now",
+    closed: "Outside its daily window",
+    upcoming: "Upcoming",
+    expired: "Historical · no longer rollable",
+    conditional: "Event-dependent"
+  }[status];
+  if (statusText) labels.push(statusText);
+  if (["daily", "date_range_daily"].includes(gem.availabilityMode)) {
+    const windows = dailyWindows(gem)
+      .map((window) => `${String(window.start).slice(0, 5)}–${String(window.end).slice(0, 5)}`)
+      .join(" and ");
+    if (windows) labels.push(`Daily: ${windows} ${gem.availabilityTimezone}`);
+  }
+  if (gem.startsAt || gem.endsAt) {
+    labels.push(`${gem.startsAt ? `Starts ${formatDate(gem.startsAt)}` : ""}${gem.startsAt && gem.endsAt ? " · " : ""}${gem.endsAt ? `Ends ${formatDate(gem.endsAt)}` : ""}`);
+  }
+  if (gem.availabilityMode === "global_event" || gem.requiredEventKey) {
+    labels.push(`Requires global event${gem.requiredEventKey ? `: ${gem.requiredEventKey.replaceAll("_", " ")}` : ""}`);
+  }
+  if (gem.metadata?.deepcore_stage) {
+    labels.push(`Deepcore phase ${String(gem.metadata.deepcore_stage).replace(/^5([12])$/, "5.$1")}${gem.metadata.deepcore_route ? ` · ${gem.metadata.deepcore_route} route` : ""}`);
+  }
+  if (gem.metadata?.sourceExclusive) labels.push(`${gem.metadata.sourceLabel || "Special source"} exclusive`);
+  if (gem.metadata?.abyssalPotionExclusive) labels.push("Abyssal Potion exclusive");
+  const biome = gem.metadata?.requiredBiome ?? gem.metadata?.biome;
+  if (biome) labels.push(`Biome: ${String(biome)}`);
+  if (gem.affectedByLuck === false) labels.push("Flat chance · unaffected by Luck");
+  return labels;
 }
 
 function mutationNameHtml(ids) {
   const normalized = normalizeMutationIds(ids);
-  if (!normalized.length) return `<span class="index-no-mutation">No Mutation</span>`;
+  if (!normalized.length) return '<span class="index-no-mutation">No Mutation</span>';
   return `<div class="index-card__mutations" aria-label="Mutations">${normalized.map((id) => {
     const mutation = mutationById.get(id);
     return `<span class="mutation-name-effect mutation-name-effect--${escapeHtml(id)}" style="--mutation-color:${escapeHtml(mutation?.color || "#9fdcff")}"><span class="mutation-name-effect__fx" aria-hidden="true"></span><span class="mutation-name-effect__text">${escapeHtml(mutation?.name || id)}</span></span>`;
   }).join("")}</div>`;
 }
 
-function gemCard(entry) {
-  const tier = rarityTier(entry.gem.rarity, entry.gem.name);
-  const record = discoveredRecord(entry);
-  const secretLocked = isSecretUndiscovered(entry);
+function availabilityHtml(gem) {
+  return availabilityLabels(gem)
+    .map((label) => `<p class="index-card__availability">${escapeHtml(label)}</p>`)
+    .join("");
+}
 
-  if (!record && isSecretGem(entry.gem) && !secretLocked) {
-    const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
-    const gemStyle = getGemStyle(entry.gem.name);
-    return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
-      <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${escapeHtml(catalogRarityLabel(entry.gem))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
-      <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
-      <p class="index-card__hidden">Gem discovered; this exact mutation combination has not been found yet.</p>
-      ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
-      ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
-      <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">Not yet</span></div></div>
-    </article>`;
-  }
-
-  if (!record) {
-    return `<article class="index-card index-card--locked${secretLocked ? " index-card--secret" : ""} tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}">
-      <div class="index-card__head"><div><div class="index-card__name">???</div><div class="index-card__rarity">${escapeHtml(mutationCombinationLabel(entry.mutationIds))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
-      <p class="index-card__hidden">${secretLocked ? "This secret gem is hidden until discovered." : "Roll this exact gem / mutation combination to reveal its entry."}</p>
-      ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
-      ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
-      <div class="index-card__chance"><span class="index-card__key">Actual chance</span><span class="index-card__val">${secretLocked ? "Unknown" : escapeHtml(entryChanceLabel(entry))}</span></div>
-    </article>`;
-  }
-
-  const replayable = isCutsceneEligible({
+function revealedCard(entry, record) {
+  const tier = displayTier(entry);
+  const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
+  const style = getGemStyle(entry.gem.name);
+  const replayable = record && isCutsceneEligible({
     rarity: entry.gem.rarity,
     threshold: getSettings().cutsceneMinimumRarity,
     dropType: entry.gem.dropType
   });
-  const baseValue = Number(entry.gem.baseWeight) * Number(entry.gem.valuePerGram);
-  const replayAttrs = entry.mutationIds.length ? ` data-replay-mutations="${escapeHtml(entry.mutationIds.join(","))}"` : "";
-  const gemStyle = getGemStyle(entry.gem.name);
-
-  return `<article class="index-card tier-${tier.id}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(gemStyle.color)};--gem-glow:${escapeHtml(gemStyle.glow || "transparent")}">
-    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title || "")}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${escapeHtml(catalogRarityLabel(entry.gem))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
-    <p class="index-card__desc">${escapeHtml(entry.gem.description ?? "No description available.")}</p>
-    ${acquisitionLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(acquisitionLabel(entry.gem))}</p>` : ""}
-    ${dailyAvailabilityLabel(entry.gem) ? `<p class="index-card__availability">${escapeHtml(dailyAvailabilityLabel(entry.gem))}</p>` : ""}
-    <div class="index-card__rows"><div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div><div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div><div class="index-card__row"><span class="index-card__key">Actual chance</span><span class="index-card__val">${escapeHtml(entryChanceLabel(entry))}</span></div><div class="index-card__row"><span class="index-card__key">Combination found</span><span class="index-card__val">${formatCount(record.totalFound)}</span></div><div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div></div>
+  const replayAttrs = entry.mutationIds.length
+    ? ` data-replay-mutations="${escapeHtml(entry.mutationIds.join(","))}"`
+    : "";
+  return `<article class="index-card tier-${escapeHtml(tier.id)}" data-combination="${escapeHtml(entry.combinationKey)}" style="--gem-bg:${escapeHtml(style.color)};--gem-glow:${escapeHtml(style.glow || "transparent")}">
+    <div class="index-card__head"><div class="index-card__gem-icon">${gemIconHtml(entry.gem.name, "gem-icon--index", entry.mutationIds)}</div><div class="index-card__title-block"><div class="index-card__gem-title">${escapeHtml(entry.gem.title)}</div><div class="index-card__name">${gemNameHtml(entry.gem.name, escapeHtml)}</div>${mutationNameHtml(entry.mutationIds)}<div class="index-card__rarity">${escapeHtml(catalogRarityLabel(entry.gem))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+    <p class="index-card__desc">${escapeHtml(entry.gem.description || "No description available.")}</p>
+    ${record ? "" : '<p class="index-card__hidden">Gem identified; this exact mutation combination has not been found.</p>'}
+    ${availabilityHtml(entry.gem)}
+    ${mutationSourceLabel(entry.mutationIds) ? `<p class="index-card__availability">${escapeHtml(mutationSourceLabel(entry.mutationIds))}</p>` : ""}
+    <div class="index-card__rows">
+      <div class="index-card__row"><span class="index-card__key">Base weight</span><span class="index-card__val">${formatWeight(entry.gem.baseWeight)}</span></div>
+      <div class="index-card__row"><span class="index-card__key">Base value</span><span class="index-card__val">${formatMoney(baseValue)}</span></div>
+      <div class="index-card__row"><span class="index-card__key">Base/raw chance</span><span class="index-card__val">${escapeHtml(rawChanceLabel(entry))}</span></div>
+      <div class="index-card__row"><span class="index-card__key">Exact combination found</span><span class="index-card__val">${record ? formatCount(record.totalFound) : "Not yet"}</span></div>
+      ${record ? `<div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div><div class="index-card__row"><span class="index-card__key">First discovered</span><span class="index-card__val">${escapeHtml(formatDate(record.firstDiscoveredAt))}</span></div><div class="index-card__row"><span class="index-card__key">Last discovered</span><span class="index-card__val">${escapeHtml(formatDate(record.lastDiscoveredAt))}</span></div>` : ""}
+    </div>
     ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
+  </article>`;
+}
+
+function gemCard(entry) {
+  const record = discoveredRecord(entry);
+  if (identityDiscovered(entry)) return revealedCard(entry, record);
+  const secret = isSecretLocked(entry);
+  const tier = displayTier(entry);
+  return `<article class="index-card index-card--locked${secret ? " index-card--secret" : ""} tier-${escapeHtml(tier.id)}" data-combination="${escapeHtml(entry.combinationKey)}">
+    <div class="index-card__head"><div><div class="index-card__name">???</div><div class="index-card__rarity">${escapeHtml(combinationLabel(entry.mutationIds))}</div></div><span class="badge badge--tier">${escapeHtml(tier.name)}</span></div>
+    <p class="index-card__hidden">${secret ? "This secret gem is hidden until discovered." : "Discover this gem to reveal its index entry."}</p>
+    ${secret ? "" : availabilityHtml(entry.gem)}
+    <div class="index-card__chance"><span class="index-card__key">Base/raw chance</span><span class="index-card__val">${secret ? "Unknown" : escapeHtml(rawChanceLabel(entry))}</span></div>
   </article>`;
 }
 
 function visibleEntries() {
   const query = gemSearch.value.trim().toLowerCase();
-  const selected = selectedCombination();
-  const entries = entriesForView();
-
-  const filtered = entries.filter((entry) => {
+  const filtered = entriesForView().filter((entry) => {
     const record = discoveredRecord(entry);
-    const comboLabel = mutationCombinationLabel(entry.mutationIds).toLowerCase();
-    const name = entry.gem.name.toLowerCase();
-    if (query && !name.includes(query) && !comboLabel.includes(query)) return false;
-    const discovered = displayedAsDiscovered(entry);
-    if (gemFilter.value === "discovered" && !discovered) return false;
-    if (gemFilter.value === "undiscovered" && discovered) return false;
-    if (selected !== null && entry.combinationKey !== selected) return false;
+    const searchableName = identityDiscovered(entry) ? entry.gem.name.toLowerCase() : "";
+    const combo = combinationLabel(entry.mutationIds).toLowerCase();
+    if (query && !searchableName.includes(query) && !combo.includes(query)) return false;
+    if (gemFilter.value === "discovered" && !record) return false;
+    if (gemFilter.value === "undiscovered" && record) return false;
     return true;
   });
-
-  const sorters = {
+  const sorter = {
     rarity: (a, b) => Number(a.gem.rarity) - Number(b.gem.rarity),
     "rarity-desc": (a, b) => Number(b.gem.rarity) - Number(a.gem.rarity),
     name: (a, b) => a.gem.name.localeCompare(b.gem.name),
-    found: (a, b) => (discoveredRecord(b)?.totalFound ?? 0) - (discoveredRecord(a)?.totalFound ?? 0) || Number(a.gem.rarity) - Number(b.gem.rarity)
-  };
+    found: (a, b) => (discoveredRecord(b)?.totalFound ?? 0) -
+      (discoveredRecord(a)?.totalFound ?? 0) || Number(a.gem.rarity) - Number(b.gem.rarity)
+  }[gemSort.value] ?? ((a, b) => Number(a.gem.rarity) - Number(b.gem.rarity));
+  return filtered.sort((a, b) =>
+    sorter(a, b) || a.combinationKey.localeCompare(b.combinationKey) || a.gem.name.localeCompare(b.gem.name)
+  );
+}
 
-  return filtered.sort((a, b) => {
-    const ad = normalizeMutationIds(a.mutationIds);
-    const bd = normalizeMutationIds(b.mutationIds);
-    if (ad.length !== bd.length) return ad.length - bd.length;
-    for (let i = 0; i < ad.length; i += 1) {
-      const delta = (mutationOrder.get(ad[i]) ?? 9999) - (mutationOrder.get(bd[i]) ?? 9999);
-      if (delta) return delta;
-    }
-    return (sorters[gemSort.value] ?? sorters.rarity)(a, b) || a.gem.name.localeCompare(b.gem.name);
-  });
+function renderTierBreakdown(entries) {
+  const tiers = new Map();
+  for (const entry of entries) {
+    const tier = displayTier(entry);
+    const bucket = tiers.get(tier.id) ?? { name: tier.name, found: 0, total: 0 };
+    bucket.total += 1;
+    if (exactCombinationDiscovered(entry)) bucket.found += 1;
+    tiers.set(tier.id, bucket);
+  }
+  tierBreakdown.innerHTML = [...tiers.values()].map((bucket) =>
+    `<div class="tier-stat"><span class="tier-stat__name">${escapeHtml(bucket.name)}</span><span class="tier-stat__value">${formatCount(bucket.found)} / ${formatCount(bucket.total)}</span></div>`
+  ).join("");
+}
+
+function renderSummary() {
+  const selected = selectedMutationIds();
+  const exactView = state.selectedMutations.has("none") || selected.length > 0;
+  if (selected.length && !mutationCombinationIsObtainable(selected)) {
+    discoveryCount.textContent = "That mutation combination cannot be obtained";
+    discoveryMeter.style.width = "0%";
+    tierBreakdown.replaceChildren();
+    return;
+  }
+  if (exactView) {
+    const entries = entriesForView();
+    const found = entries.filter(exactCombinationDiscovered).length;
+    discoveryCount.textContent = `${formatCount(found)} / ${formatCount(entries.length)} exact combinations discovered`;
+    discoveryMeter.style.width = `${entries.length ? found / entries.length * 100 : 0}%`;
+    renderTierBreakdown(entries);
+    return;
+  }
+  const identified = catalogGems.filter((gem) => state.discoveredGemNames.has(gem.name)).length;
+  discoveryCount.textContent = `${formatCount(state.combinations.size)} exact combinations across ${formatCount(identified)} / ${formatCount(catalogGems.length)} identified gems`;
+  discoveryMeter.style.width = `${catalogGems.length ? identified / catalogGems.length * 100 : 0}%`;
+  renderTierBreakdown(catalogGems.map((gem) => makeEntry(gem, [])));
+}
+
+function renderSelectedMutationSummary() {
+  const selected = selectedMutationIds();
+  if (!state.selectedMutations.size) {
+    selectedMutationSummary.textContent =
+      "All overview: identified gems and saved exact combinations. Cards are limited to base and single-mutation entries.";
+  } else if (state.selectedMutations.has("none")) {
+    selectedMutationSummary.textContent = "Exact combination: No Mutation";
+  } else if (!mutationCombinationIsObtainable(selected)) {
+    selectedMutationSummary.textContent =
+      "This selection combines mutations that cannot occur on the same roll.";
+  } else {
+    const source = mutationSourceLabel(selected);
+    selectedMutationSummary.textContent =
+      `Exact combination: ${combinationLabel(selected)}${source ? ` · ${source}` : ""}`;
+  }
 }
 
 function renderMutationTabs() {
-  const tabs = [
-    { id: "all", name: "All", special: true },
-    { id: "none", name: "No Mutation", special: true },
-    ...mutationList.map((mutation) => ({ id: mutation.id, name: mutation.name, special: false, mutation }))
-  ];
-
+  const tabs = [{ id: "all", name: "All" }, { id: "none", name: "No Mutation" }, ...mutationList];
   mutationTabs.innerHTML = tabs.map((tab) => {
-    const active = tab.id === "all"
-      ? state.selectedMutations.size === 0
-      : state.selectedMutations.has(tab.id);
-    const mutation = tab.mutation ?? mutationById.get(tab.id);
-    const customBadge = "";
-
-    return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}"${mutation ? ` style="--mutation-color:${escapeHtml(mutation.color || "#9fdcff")}"` : ""}>${mutation?.icon ? `<span class="mutation-tab__icon" aria-hidden="true">${escapeHtml(mutation.icon)}</span>` : ""}<span>${escapeHtml(tab.name)}</span>${customBadge}</button>`;
+    const active = tab.id === "all" ? state.selectedMutations.size === 0 : state.selectedMutations.has(tab.id);
+    return `<button type="button" class="mutation-tab mutation-tab--${escapeHtml(tab.id)}${active ? " is-active" : ""}" data-mutation-filter="${escapeHtml(tab.id)}" aria-pressed="${active}" style="--mutation-color:${escapeHtml(tab.color || "#9fdcff")}">${tab.icon ? `<span class="mutation-tab__icon" aria-hidden="true">${escapeHtml(tab.icon)}</span>` : ""}<span>${escapeHtml(tab.name)}</span></button>`;
   }).join("");
 }
 
 function renderList() {
   if (state.loading) {
-    gemList.innerHTML = '<div class="skeleton skeleton--card"></div>'.repeat(6);
+    gemList.innerHTML = '<div class="skeleton skeleton--card"></div>'.repeat(4);
+    return;
+  }
+  if (state.error) {
+    gemList.innerHTML = `<div class="empty index-error"><p class="empty__title">Gem Index unavailable</p><p>${escapeHtml(state.error)}</p><button class="button" type="button" data-retry-index>Retry</button></div>`;
     return;
   }
   const list = visibleEntries();
   if (!list.length) {
-    gemList.innerHTML = `<div class="empty" style="grid-column:1/-1">${icons.search}<p class="empty__title">Nothing matches</p><p>Try a different search or mutation filter.</p></div>`;
+    const impossible = selectedMutationIds().length &&
+      !mutationCombinationIsObtainable(selectedMutationIds());
+    gemList.innerHTML = `<div class="empty">${icons.search}<p class="empty__title">${impossible ? "Impossible combination" : "Nothing matches"}</p><p>${impossible ? "These mutations require incompatible equipment or are mutually exclusive." : "Try a different search or filter."}</p></div>`;
     return;
   }
-
   const bands = new Map();
-  for (const entry of list) {
-    const tier = rarityTier(entry.gem.rarity, entry.gem.name);
-    if (!bands.has(tier.id)) bands.set(tier.id, { tier, entries: [] });
-    bands.get(tier.id).entries.push(entry);
+  if (["name", "found"].includes(gemSort.value)) {
+    const label = gemSort.value === "name" ? "All gems A–Z" : "Most found";
+    bands.set("sorted", { tier: { id: "sorted", name: label }, entries: list });
+  } else {
+    for (const entry of list) {
+      const tier = displayTier(entry);
+      if (!bands.has(tier.id)) bands.set(tier.id, { tier, entries: [] });
+      bands.get(tier.id).entries.push(entry);
+    }
   }
-
-  const autoReveal = gemSearch.value.trim() !== "" || gemFilter.value !== "all";
-  if (!autoReveal && expandedBands.size === 0) expandedBands.add(bands.keys().next().value);
-
+  if (!expandedBands.size) expandedBands.add(bands.keys().next().value);
   gemList.innerHTML = [...bands.entries()].map(([id, band]) => {
-    const open = autoReveal || expandedBands.has(id);
-    const found = band.entries.filter(displayedAsDiscovered).length;
-    return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}>
-      <summary class="index-band__summary">
-        <span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} discovered</small></span>
-        <span class="index-band__count">${formatCount(band.entries.length)} cards</span>
-      </summary>
-      <div class="index-band__grid grid grid--cards">${open ? band.entries.map(gemCard).join("") : ""}</div>
-    </details>`;
+    const open = expandedBands.has(id);
+    const found = band.entries.filter(exactCombinationDiscovered).length;
+    const limit = bandLimits.get(id) ?? BAND_PAGE_SIZE;
+    const shown = open ? band.entries.slice(0, limit) : [];
+    const remaining = band.entries.length - shown.length;
+    return `<details class="index-band tier-${escapeHtml(id)}" data-tier-band="${escapeHtml(id)}" ${open ? "open" : ""}><summary class="index-band__summary"><span><strong>${escapeHtml(band.tier.name)}</strong><small>${formatCount(found)} exact combinations found</small></span><span class="index-band__count">${formatCount(band.entries.length)} cards</span></summary><div class="index-band__grid grid grid--cards">${shown.map(gemCard).join("")}${open && remaining > 0 ? `<button class="button index-band__more" type="button" data-show-more="${escapeHtml(id)}">Show ${formatCount(Math.min(BAND_PAGE_SIZE, remaining))} more</button>` : ""}</div></details>`;
   }).join("");
 }
 
-gemList.addEventListener("toggle", (event) => {
-  const band = event.target.closest?.("[data-tier-band]");
-  if (!band || event.target !== band) return;
-  const id = band.dataset.tierBand;
-  const container = band.querySelector(".index-band__grid");
-  if (band.open) {
-    expandedBands.add(id);
-    if (container && !container.childElementCount) {
-      const entries = visibleEntries().filter((entry) => rarityTier(entry.gem.rarity, entry.gem.name).id === id);
-      container.innerHTML = entries.map(gemCard).join("");
-    }
-  } else {
-    expandedBands.delete(id);
-    if (container) container.replaceChildren();
-  }
-}, true);
+function saveView() {
+  const payload = {
+    selected: [...state.selectedMutations],
+    filter: gemFilter.value,
+    sort: gemSort.value,
+    expanded: [...expandedBands]
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch {}
+  const url = new URL(location.href);
+  const selected = [...state.selectedMutations];
+  url.searchParams.set("mutations", selected.length ? selected.join(",") : "all");
+  url.searchParams.set("filter", gemFilter.value);
+  url.searchParams.set("sort", gemSort.value);
+  history.replaceState(null, "", url);
+}
+
+function restoreView() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch {}
+  const url = new URL(location.href);
+  const selectedText = url.searchParams.get("mutations");
+  const selected = selectedText === "all"
+    ? []
+    : selectedText ? selectedText.split(",") : saved.selected;
+  if (Array.isArray(selected)) state.selectedMutations = new Set(selected.map(String));
+  gemFilter.value = url.searchParams.get("filter") || saved.filter || "all";
+  gemSort.value = url.searchParams.get("sort") || saved.sort || "rarity";
+  if (Array.isArray(saved.expanded)) saved.expanded.forEach((id) => expandedBands.add(String(id)));
+}
+
+function resetViewRendering() {
+  entriesCache = null;
+  expandedBands.clear();
+  bandLimits.clear();
+}
 
 mutationTabs.addEventListener("click", (event) => {
   const button = event.target.closest("[data-mutation-filter]");
   if (!button) return;
   const id = button.dataset.mutationFilter;
-  if (id === "all") {
-    state.selectedMutations.clear();
-  } else if (id === "none") {
-    state.selectedMutations.clear();
-    state.selectedMutations.add("none");
-  } else {
+  if (id === "all") state.selectedMutations.clear();
+  else if (id === "none") state.selectedMutations = new Set(["none"]);
+  else {
     state.selectedMutations.delete("none");
     if (state.selectedMutations.has(id)) state.selectedMutations.delete(id);
     else state.selectedMutations.add(id);
   }
-  expandedBands.clear();
+  resetViewRendering();
+  saveView();
   renderMutationTabs();
   renderSelectedMutationSummary();
   renderSummary();
   renderList();
 });
 
+gemList.addEventListener("toggle", (event) => {
+  const band = event.target.closest?.("[data-tier-band]");
+  if (!band || event.target !== band) return;
+  if (band.open) expandedBands.add(band.dataset.tierBand);
+  else expandedBands.delete(band.dataset.tierBand);
+  saveView();
+  renderList();
+}, true);
+
 gemList.addEventListener("click", async (event) => {
+  if (event.target.closest("[data-retry-index]")) {
+    await refresh({ force: true });
+    return;
+  }
+  const more = event.target.closest("[data-show-more]");
+  if (more) {
+    const id = more.dataset.showMore;
+    bandLimits.set(id, (bandLimits.get(id) ?? BAND_PAGE_SIZE) + BAND_PAGE_SIZE);
+    renderList();
+    return;
+  }
   const button = event.target.closest("[data-replay-gem]");
   if (!button) return;
   const gem = catalogGems.find((entry) => entry.name === button.dataset.replayGem);
   if (!gem) return;
-  const mutationIds = (button.dataset.replayMutations ?? "").split(",").filter(Boolean);
   button.disabled = true;
-  try { await replayGemCutscene({ gem, mutationIds }); }
-  finally { button.disabled = false; }
+  try {
+    await replayGemCutscene({
+      gem,
+      mutationIds: (button.dataset.replayMutations ?? "").split(",").filter(Boolean)
+    });
+  } finally {
+    button.disabled = false;
+  }
 });
 
-let filterRenderTimer = null;
-function scheduleListRender() {
-  clearTimeout(filterRenderTimer);
-  filterRenderTimer = setTimeout(renderList, 80);
-}
-for (const control of [gemSearch, gemFilter, gemSort]) {
-  control.addEventListener("input", scheduleListRender);
-  control.addEventListener("change", scheduleListRender);
-}
-gemSort.addEventListener("change", () => expandedBands.clear());
-
-function normalizeLiveMutationCatalog(rows) {
-  const builtInById = new Map(
-    Object.values(GEM_MUTATIONS).map((mutation, index) => [
-      String(mutation.id).toLowerCase(),
-      {
-        ...mutation,
-        icon: mutation.icon ?? "✦",
-        color: mutation.color ?? "#9fdcff",
-        isCustom: false,
-        isLive: false
-      }
-    ])
-  );
-
-  const sourceRows = mutationRowsFromRpc(rows);
-
-  for (const row of sourceRows) {
-    const id = String(row?.id ?? "").trim().toLowerCase();
-    const name = String(row?.name ?? "").trim();
-    const chance = Number(row?.chance);
-    const multiplier = Number(row?.multiplier);
-
-    // Do not let a malformed admin row poison the whole catalog.
-    if (!id || !name || !Number.isFinite(chance) || chance <= 0 ||
-        !Number.isFinite(multiplier) || multiplier <= 0) continue;
-
-    const isBuiltIn = Object.prototype.hasOwnProperty.call(GEM_MUTATIONS, id);
-
-    builtInById.set(id, {
-      id,
-      name,
-      chance,
-      multiplier,
-      description: String(row?.description ?? ""),
-      icon: String(row?.icon ?? "✦"),
-      color: String(row?.color ?? "#9fdcff"),
-      descriptionCredit: String(row?.description_credit ?? "").trim(),
-      isCustom: !isBuiltIn,
-      isLive: true,
-      enabled: row?.enabled !== false
-    });
-  }
-
-  return [...builtInById.values()]
-    .filter((mutation) => mutation.enabled !== false)
-    .sort((a, b) =>
-      Number(a.multiplier) - Number(b.multiplier) || a.name.localeCompare(b.name) ||
-      a.id.localeCompare(b.id)
-    );
-}
-
-function mutationRowsFromRpc(data) {
-  if (!data) return [];
-
-  if (Array.isArray(data)) {
-    return data.flatMap((value) => mutationRowsFromRpc(value));
-  }
-
-  if (typeof data === "string") {
-    const text = data.trim();
-    if (!text) return [];
-    try {
-      return mutationRowsFromRpc(JSON.parse(text));
-    } catch {
-      return [];
-    }
-  }
-
-  if (typeof data !== "object") return [];
-
-  // JSON/JSONB RPCs can arrive wrapped by PostgREST, a proxy, or an Edge
-  // Function. Keep unwrapping until actual mutation rows are found.
-  for (const key of ["mutations", "rows", "data", "result", "catalog", "items"]) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      const rows = mutationRowsFromRpc(data[key]);
-      if (rows.length) return rows;
-    }
-  }
-
-  if ("id" in data && "name" in data) return [data];
-
-  const nested = [];
-  for (const value of Object.values(data)) {
-    const rows = mutationRowsFromRpc(value);
-    if (rows.length) nested.push(...rows);
-  }
-  return nested;
-}
-
-function mergeLiveMutationRows(...sources) {
-  const merged = new Map();
-
-  for (const source of sources) {
-    for (const row of mutationRowsFromRpc(source)) {
-      const id = String(row?.id ?? "").trim().toLowerCase();
-      if (!id) continue;
-
-      // Prefer the most complete/latest source, but never discard a custom
-      // mutation merely because an older RPC returned the bundled five.
-      const previous = merged.get(id);
-      merged.set(id, previous ? { ...previous, ...row } : row);
-    }
-  }
-
-  return [...merged.values()];
-}
-
-async function loadLiveMutationCatalog() {
-  const sources = [];
-  const errors = [];
-
-  // v3 deliberately has a new name and a minimal column set. This avoids
-  // older deployments whose game_mutations table/RPC is missing updated_at.
-  for (const rpcName of [
-    "get_gem_index_mutation_catalog_v3",
-    "get_gem_index_mutation_catalog",
-    "get_public_mutation_catalog_json",
-    "get_public_mutation_catalog_all",
-    "get_public_mutation_catalog"
-  ]) {
-    try {
-      const result = await supabase.rpc(rpcName);
-      if (!result.error && result.data != null) {
-        const rows = mutationRowsFromRpc(result.data);
-        if (rows.length) sources.push(rows);
-      } else if (result.error) {
-        errors.push(`${rpcName}: ${result.error.message}`);
-      }
-    } catch (error) {
-      errors.push(`${rpcName}: ${error?.message || error}`);
-    }
-  }
-
-  // Direct read is intentionally requested with only the columns required by
-  // the Gem Index. A stale schema must not make the whole catalog disappear.
-  for (const selectClause of [
-    "id,name,chance,multiplier,description,description_credit,icon,color,enabled",
-    "*"
-  ]) {
-    try {
-      const direct = await supabase
-        .from("game_mutations")
-        .select(selectClause)
-        .order("multiplier", { ascending: true })
-        .order("name", { ascending: true });
-
-      if (!direct.error && Array.isArray(direct.data) && direct.data.length) {
-        sources.push(direct.data);
-        break;
-      }
-      if (direct.error) errors.push(`game_mutations: ${direct.error.message}`);
-    } catch (error) {
-      errors.push(`game_mutations: ${error?.message || error}`);
-    }
-  }
-
-  const mergedRows = mergeLiveMutationRows(...sources);
-  const catalog = normalizeLiveMutationCatalog(mergedRows);
-
-  // Five bundled mutations is NOT considered proof that the live catalog
-  // worked. If a live source returned custom rows, they must survive.
-  const liveCustomCount = catalog.filter((mutation) => mutation.isCustom).length;
-  if (liveCustomCount > 0) {
-    console.info(`[Gem Index] loaded ${liveCustomCount} admin-created mutation(s)`, catalog.filter((m) => m.isCustom).map((m) => m.id));
-  } else if (sources.length) {
-    console.info("[Gem Index] live catalog loaded; no custom mutations were returned");
-  } else {
-    console.warn("[Gem Index] all live mutation sources failed", errors);
-  }
-
-  if (catalog.length > 0) return catalog;
-
-  throw new Error(
-    errors.length
-      ? `No live mutation catalog source was available: ${errors[0]}`
-      : "No live mutation catalog source was available."
-  );
-}
-
-async function refresh() {
-  if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = (async () => {
-    const user = await ensurePlayerAuth();
-    if (!user) {
-      state.loading = false;
-      discoveryCount.textContent = "Could not sign you in. Refresh to try again.";
-      notify.error("Sign-in failed", "The game could not reach your account.");
-      return;
-    }
-    loadedPlayerId = user.id;
-
-    const [combinations, playerState, privateGemsRpcResult] = await Promise.all([
-      loadCombinations(user.id),
-      loadCloudPlayerState(),
-      supabase.rpc("get_public_gem_catalog")
-    ]);
-
-    // RPCs are the primary path because they remain readable even when a
-    // project has an older/misconfigured RLS policy. Direct catalog reads are
-    // retained as a compatibility fallback for partially migrated projects.
-    let privateGemsResult = privateGemsRpcResult;
-    let mutationCatalogResult = null;
-    try {
-      mutationList = await loadLiveMutationCatalog();
-      rebuildMutationMaps();
-      state.selectedMutations = new Set([...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id)));
-      if (!state.selectedMutations.size) state.selectedMutations.add("none");
-    } catch (error) {
-      // Keep the page usable if the database migration has not been deployed,
-      // but make the failure visible in the console instead of pretending the
-      // five bundled mutations are the live admin catalog.
-      console.error("[Gem Index] LIVE mutation catalog failed:", error);
-      mutationList = normalizeLiveMutationCatalog([]);
-      rebuildMutationMaps();
-    }
-
-    if (privateGemsResult.error) {
-      console.warn("Public gem catalog RPC unavailable; trying direct catalog read:", privateGemsResult.error.message);
-      privateGemsResult = await supabase
-        .from("private_feature_gems")
-        .select("id,title,name,rarity,base_weight,value_per_gram,description,metadata,hide_rarity_until_discovered,affected_by_luck,enabled,sort_order,starts_at,ends_at,updated_at,availability_mode,daily_start_time,daily_end_time,daily_time_windows,availability_timezone")
-        .eq("enabled", true)
-        .order("multiplier", { ascending: true })
-        .order("rarity", { ascending: true });
-    }
-    if (combinations) state.combinations = combinations;
-
-    if (!privateGemsResult.error && Array.isArray(privateGemsResult.data)) {
-      const bundledByName = new Map(
-        gems.map((gem) => [gem.name, gem])
-      );
-      catalogGems = privateGemsResult.data.map((gem) => {
-        const bundled = bundledByName.get(gem.name);
-      
-        return {
-          title: String(
-            gem.title ||
-            gem.metadata?.title ||
-            bundled?.title ||
-            ""
-          ),
-      
-          name: String(gem.name),
-      
-          rarity: Number(gem.rarity),
-          baseWeight: Number(gem.base_weight),
-          valuePerGram: Number(gem.value_per_gram),
-      
-          description: String(
-            gem.description ||
-            gem.metadata?.description ||
-            bundled?.description ||
-            ""
-          ),
-
-          metadata:
-            gem.metadata && typeof gem.metadata === "object"
-              ? gem.metadata
-              : {},
-      
-          hideRarityUntilDiscovered:
-            gem.hide_rarity_until_discovered === true ||
-            gem.metadata?.hideRarityUntilDiscovered === true,
-      
-          affectedByLuck: gem.affected_by_luck !== false,
-      
-          availabilityMode: String(gem.availability_mode || "always"),
-          dailyStartTime: gem.daily_start_time,
-          dailyEndTime: gem.daily_end_time,
-          dailyTimeWindows: Array.isArray(gem.daily_time_windows)
-            ? gem.daily_time_windows
-            : null,
-          availabilityTimezone: String(
-            gem.availability_timezone || "Asia/Singapore"
-          )
-        };
-      });
-    } else if (privateGemsResult.error) {
-      console.warn(
-        "Live gem catalog unavailable; using bundled gems:",
-        privateGemsResult.error.message
-      );
-      catalogGems = [...gems];
-    }
-
-    state.loading = false;
-    if (playerState) shell.setWallet(playerState.money);
-    renderSummary();
-    renderMutationTabs();
-    renderSelectedMutationSummary();
+let renderTimer = null;
+function scheduleRender({ reset = false } = {}) {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => {
+    if (reset) resetViewRendering();
+    saveView();
     renderList();
+  }, 100);
+}
+gemSearch.addEventListener("input", () => scheduleRender());
+gemFilter.addEventListener("change", () => scheduleRender({ reset: true }));
+gemSort.addEventListener("change", () => scheduleRender({ reset: true }));
+refreshButton?.addEventListener("click", () => refresh({ force: true }));
+
+function subscribeToDiscoveries(playerId) {
+  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+  realtimeChannel = supabase.channel(`gem-index:${playerId}`)
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "player_gem_mutation_combinations",
+      filter: `player_id=eq.${playerId}`
+    }, () => refresh({ force: true, quiet: true }))
+    .subscribe();
+}
+
+async function refresh({ force = false, quiet = false } = {}) {
+  if (refreshInFlight) return refreshInFlight;
+  if (!force && Date.now() - lastRefreshAt < 10_000) return;
+  refreshInFlight = (async () => {
+    if (!quiet) {
+      state.loading = true;
+      state.error = null;
+      refreshButton?.setAttribute("aria-busy", "true");
+      renderList();
+    }
+    try {
+      const user = await ensurePlayerAuth();
+      if (!user) throw new Error("Could not sign in to load your discoveries.");
+      const playerChanged = state.playerId !== user.id;
+      state.playerId = user.id;
+      const [discoveries, playerState, gems, mutations] = await Promise.all([
+        loadCombinations(user.id),
+        loadCloudPlayerState(),
+        loadGemCatalog(),
+        loadMutationCatalog()
+      ]);
+      state.combinations = discoveries.combinations;
+      state.discoveredGemNames = discoveries.discoveredGemNames;
+      catalogGems = gems;
+      mutationList = mutations;
+      rebuildMutationMaps();
+      state.selectedMutations = new Set(
+        [...state.selectedMutations].filter((id) => id === "none" || mutationById.has(id))
+      );
+      if (playerChanged) subscribeToDiscoveries(user.id);
+      if (playerState) shell.setWallet(playerState.money);
+      state.error = null;
+      lastRefreshAt = Date.now();
+    } catch (error) {
+      console.error("Gem Index refresh failed:", error);
+      const message = error?.message || "The index could not be loaded.";
+      if (!quiet || !catalogGems.length) state.error = message;
+      if (!quiet) notify.error("Gem Index unavailable", message);
+    } finally {
+      state.loading = false;
+      refreshButton?.removeAttribute("aria-busy");
+      renderMutationTabs();
+      renderSelectedMutationSummary();
+      renderSummary();
+      renderList();
+    }
   })().finally(() => { refreshInFlight = null; });
   return refreshInFlight;
 }
 
-window.addEventListener("pageshow", (event) => { if (event.persisted) refresh(); });
+restoreView();
 renderList();
 renderMutationTabs();
 renderSelectedMutationSummary();
-refresh();
+refresh({ force: true });
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) refresh({ force: true, quiet: true });
+});
+window.addEventListener("focus", () => refresh({ quiet: true }));
+window.addEventListener("online", () => refresh({ force: true, quiet: true }));
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refresh({ quiet: true });
+});
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user?.id && session.user.id !== state.playerId) refresh({ force: true });
+});
