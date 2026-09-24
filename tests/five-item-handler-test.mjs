@@ -84,8 +84,8 @@ async function run(id,state={},enchant=null,batchSize=1) {
 
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
 let result=await run('all-in-pickaxe',{},'deep_strike');
-near(result.luckAtRoll,510);near(result.finalStats.rollSpeed,1.05);near(result.finalStats.weightLuck,.6);near(result.finalStats.weightMultiplier,.8);
-near(saved.mutation_chance_multiplier,.6);near(result.value,saved.final_weight*2*saved.mutation_multiplier);
+near(result.luckAtRoll,1010);near(result.finalStats.rollSpeed,1.29);near(result.finalStats.weightLuck,.7);near(result.finalStats.weightMultiplier,.9);
+near(saved.mutation_chance_multiplier,.7);near(result.value,saved.final_weight*2*saved.mutation_multiplier);
 assert.ok(!rpcs.includes('spend_one_roll_charge'));assert.equal(commits.length,1);
 forceProcs=true;
 result=await run('all-rounder-toy');assert.ok(saved.mutation_ids.includes('balanced'));near(saved.mutation_multipliers.balanced,1.2);assert.equal(result.effectiveRarityExact,'200000000');
@@ -135,10 +135,10 @@ qolSettings={discoveryKeep:false,maxLuck:7};forceProcs=true;
 const cappedShift=await run('reality-shifter',{rolls:{'reality-shifter':499}});
 assert.equal(cappedShift.luckAtRoll,7);assert.deepEqual(saved.mutation_ids,['shifted']);
 qolSettings={discoveryKeep:false,maxLuck:1};forceProcs=false;
-result=await run('all-in-pickaxe');assert.equal(result.finalStats.luck,1);assert.equal(result.finalStats.uncappedLuck,510);
-near(result.finalStats.rollSpeed,1.05);assert.equal(result.gem.flatChanceMultiplier,4);
+result=await run('all-in-pickaxe');assert.equal(result.finalStats.luck,1);assert.equal(result.finalStats.uncappedLuck,1010);
+near(result.finalStats.rollSpeed,1.29);assert.equal(result.gem.flatChanceMultiplier,4);
 for(const invalid of [-1,'NaN','Infinity',false,{},1e100]) {
- qolSettings={discoveryKeep:false,maxLuck:invalid};result=await run('all-in-pickaxe');assert.equal(result.luckAtRoll,510);
+ qolSettings={discoveryKeep:false,maxLuck:invalid};result=await run('all-in-pickaxe');assert.equal(result.luckAtRoll,1010);
 }
 console.log('Reality/Bedrock optimized handler: exclusive zero-mutation bypass, 499/500/501, authoritative Luck order, burst state, capped low-tier acquisition, independent stats and All-In passed.');
 
@@ -163,6 +163,17 @@ assert.deepEqual(commits.map(call=>call.p_bookkeeping.progressPayload.usedOneRol
 assert.deepEqual(commits.map(call=>call.p_bookkeeping.progressPayload.usedMythicPotion),[true,false,false,false]);
 near(batch.cooldown.durationMs,batch.results[0].cooldown.durationMs);
 console.log('Optimized handler batch: one Mythic-boosted roll, three ordinary rolls, one spent charge, four counters and state commits passed.');
+
+const allInBatch=await run('all-in-pickaxe',{},'deep_strike',4);
+assert.equal(allInBatch.results.length,4);
+for(const entry of allInBatch.results) {
+ near(entry.luckAtRoll,1010);near(entry.finalStats.rollSpeed,1.29);
+ near(entry.finalStats.weightLuck,.7);near(entry.finalStats.weightMultiplier,.9);
+ assert.equal(entry.gem.flatChanceMultiplier,4);
+}
+assert.deepEqual(allInBatch.results.map(entry=>entry.luckBreakdown.oneRoll),[0,0,0,0]);
+assert.equal(rpcs.filter(name=>name==='commit_equipment_roll').length,4);
+console.log('Optimized handler All-In batch: approved stats, restrictions and 4× flat chance apply independently to every subroll.');
 
 forceLoss=true;
 const lossBatch=await run('jackpot-slot',{},null,4);

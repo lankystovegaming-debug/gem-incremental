@@ -12,6 +12,10 @@ const counterFix = readFileSync(
   new URL("../supabase/migrations/20260913100304_fix_total_roll_crafting_and_batch_unlocks.sql", import.meta.url),
   "utf8"
 );
+const allInRework = readFileSync(
+  new URL("../supabase/migrations/20260924092958_rework_all_in_pickaxe.sql", import.meta.url),
+  "utf8"
+);
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0];
 
 await db.exec(`
@@ -35,7 +39,11 @@ await db.exec(`
     player_id uuid not null,
     equipment_id text not null,
     equipped boolean not null default false,
-    roll_speed_bonus double precision not null default 0
+    luck_bonus double precision not null default 0,
+    roll_speed_bonus double precision not null default 0,
+    mutation_chance_bonus double precision not null default 0,
+    weight_luck_bonus double precision not null default 0,
+    weight_multiplier_bonus double precision not null default 0
   );
   create table equipment_ownership_history (player_id uuid not null, equipment_id text not null);
   create table game_recipes (id text primary key, recipe jsonb not null);
@@ -75,12 +83,14 @@ await db.exec(`
 `);
 await db.exec(migration);
 await db.exec(counterFix);
+await db.exec(allInRework);
 
-assert.equal((await one("select recipe->'requirements'->0->>'type' type from game_recipes where id='all-in-pickaxe'")).type, "lifetime-rolls");
-assert.equal((await one("select progress#>>'{_equipment_recipe,requirements,0,type}' type from crafting_progress where recipe_id='all-in-pickaxe'")).type, "lifetime-rolls");
+assert.equal(Number((await one("select recipe->>'moneyCost' cost from game_recipes where id='all-in-pickaxe'")).cost), 500_000_000);
+assert.equal((await one("select recipe#>>'{requirements,5,type}' type from game_recipes where id='all-in-pickaxe'")).type, "lifetime-rolls");
+assert.equal((await one("select progress#>>'{_equipment_recipe,requirements,5,type}' type from crafting_progress where recipe_id='all-in-pickaxe'")).type, "lifetime-rolls");
 
-assert.equal(Number((await one("select recipe->'reward'->'bonus'->>'rollSpeed' speed from game_recipes where id='all-in-pickaxe'")).speed), -0.75);
-assert.equal((await one("select roll_speed_bonus speed from player_equipment where equipment_id='all-in-pickaxe'")).speed, -0.75);
+assert.equal(Number((await one("select recipe->'reward'->'bonus'->>'rollSpeed' speed from game_recipes where id='all-in-pickaxe'")).speed), -0.67);
+assert.equal((await one("select roll_speed_bonus speed from player_equipment where equipment_id='all-in-pickaxe'")).speed, -0.67);
 assert.equal(Number((await one("select update_qol_settings('{\"batchSize\":4}') result")).result.batchSize), 4);
 for (const value of [0, 5, 1.5, "2", true, null]) {
   await assert.rejects(
