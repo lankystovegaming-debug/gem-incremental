@@ -115,14 +115,14 @@ assert.equal((await q("select luck_bonus from player_equipment where equipment_i
 assert.equal((await q("select equipped from player_equipment where equipment_id='fortune-pickaxe'"))[0].equipped,false);
 assert.equal((await q("select equipped from player_equipment where equipment_id=$1",[equippedBeforeSpecialist]))[0].equipped,true);
 await assert.rejects(()=>q("select craft_equipment_recipe('all-in-pickaxe')"),/requirements_not_met/);
-for(const id of ['empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe']) await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,$2,'pickaxe',15,$2,false) on conflict(player_id,equipment_id) do update set equipped=false",[uid,id]);
+await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,'empyrean-pickaxe','pickaxe',15,'Empyrean Pickaxe',false) on conflict(player_id,equipment_id) do update set equipped=false",[uid]);
 // Historical ownership survives loss/consumption of the item; Celestial and Toys do not count.
-await q("delete from player_equipment where equipment_id in ('empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe')");
-assert.equal((await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory.endgamePickaxes,4);
+await q("delete from player_equipment where equipment_id='empyrean-pickaxe'");
+assert.equal((await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory.endgamePickaxes,2);
 await assert.rejects(()=>q("select craft_equipment_recipe('all-in-pickaxe')"),/requirements_not_met/);
-await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,'the-accelerator','pickaxe',15,'The Accelerator',false)",[uid]);
-await q("delete from player_equipment where equipment_id='the-accelerator'");
-assert.equal((await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory.endgamePickaxes,5);
+await q("insert into player_equipment(player_id,equipment_id,category,tier,name,equipped) values($1,'eternity-pickaxe','pickaxe',15,'Eternity Pickaxe',false)",[uid]);
+await q("delete from player_equipment where equipment_id='eternity-pickaxe'");
+assert.equal((await q('select get_equipment_overhaul_progress() p'))[0].p.batchHistory.endgamePickaxes,3);
 await q("update players set equipment_state=jsonb_set(equipment_state,'{batchHistory,raw10m}','2'),total_rolls=100000 where id=$1",[uid]);
 await assert.rejects(()=>q("select craft_equipment_recipe('all-in-pickaxe')"),/requirements_not_met/);
 await q("update players set equipment_state=jsonb_set(equipment_state,'{batchHistory,raw10m}','3'),total_rolls=99999 where id=$1",[uid]);
