@@ -38,6 +38,7 @@ const migration=readFileSync(new URL('../supabase/migrations/20260915020842_impo
 const roundRepair=readFileSync(new URL('../supabase/migrations/20260915055647_fix_impossible_preview_round_type.sql',import.meta.url),'utf8');
 const depositWorkspace=readFileSync(new URL('../supabase/migrations/20260915061024_impossible_deposit_workspace.sql',import.meta.url),'utf8');
 const reducedCombinedWeight=readFileSync(new URL('../supabase/migrations/20260921052841_reduce_impossible_combined_weight.sql',import.meta.url),'utf8');
+const allInRework=readFileSync(new URL('../supabase/migrations/20260924092958_rework_all_in_pickaxe.sql',import.meta.url),'utf8');
 const crafting=readFileSync(new URL('../crafting/crafting.js',import.meta.url),'utf8');
 const appCss=readFileSync(new URL('../src/styles/app.css',import.meta.url),'utf8');
 const profileUi=readFileSync(new URL('../user/profile.js',import.meta.url),'utf8');
@@ -50,6 +51,7 @@ assert.match(edge,/weightLuck \*= impossibleProc\.weightLuck/);
 assert.match(edge,/weightMultiplier \*= impossibleProc\.weightMultiplier/);
 assert.match(migration,/'totalRolls',coalesce\(p\.total_rolls,0\)/);
 assert.doesNotMatch(migration,/impossibleLifetimeRolls[^]*equipment_genuine_rolls/);
+assert.match(allInRework,/'balanced','shifted','tryhard'/);
 assert.match(migration,/on conflict\(singleton\) do nothing/);
 assert.match(migration,/cardinality\(plan\.specimen_ids\)/);
 assert.match(crafting,/I approve consuming the listed potion and cash balances and using my permanently deposited pool/);

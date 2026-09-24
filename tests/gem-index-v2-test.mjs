@@ -33,8 +33,10 @@ assert.equal(records.combinations.get("Ruby::gilded+polished").firstDiscoveredAt
 assert.equal(mutationCombinationIsObtainable(["shifted", "polished"]), false);
 assert.equal(mutationCombinationIsObtainable(["balanced", "ascended"]), false);
 assert.equal(mutationCombinationIsObtainable(["supersizer-small", "supersizer-big"]), false);
+assert.equal(mutationCombinationIsObtainable(["tryhard", "polished"]), true);
 assert.equal(mutationCombinationIsObtainable(["polished", "gilded"]), true);
 assert.equal(mutationSourceLabel(["happy"]), "Silly Fun Happy Pickaxe only");
+assert.equal(mutationSourceLabel(["tryhard", "polished"]), "All-In Pickaxe only");
 assert.equal(rawCombinationDenominator(100, ["gilded"], new Map([["gilded", { chance: 500 }]])), 50000);
 
 const dailyGem = { availabilityMode: "daily", dailyStartTime: "20:00", dailyEndTime: "06:00", availabilityTimezone: "UTC" };
@@ -49,6 +51,7 @@ assert.match(migration, /where gem\.enabled = true/);
 assert.doesNotMatch(migration.slice(migration.indexOf("get_public_gem_index_catalog")), /now\(\).*starts_at|ends_at.*now\(\)/,
   "historical enabled gems must remain in the index catalog");
 assert.match(roll, /new Set\(mutationIds\.map\(\(id\) => String\(id\)\.trim\(\)\.toLowerCase\(\)\)\.filter\(Boolean\)\)/u);
+assert.match(roll, /\['balanced','shifted','tryhard'\]\.includes\(mutation\.id\)/);
 assert.match(roll, /Number\(player\.total_rolls \?\? 0\) \+ 1/);
 assert.doesNotMatch(roll.slice(roll.indexOf("const rollNumber"), roll.indexOf("const rollNumber") + 200), /equipment_genuine_rolls/);
 assert.doesNotMatch(page, /Math\.pow\(2|2 \*\*/);

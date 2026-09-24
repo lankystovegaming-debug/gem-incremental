@@ -12,6 +12,7 @@ import { PICKAXE_STATS } from "../supabase/functions/roll/equipmentRules.js";
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const edge = read("../supabase/functions/roll/index.ts");
 const migration = read("../supabase/migrations/20260913033312_batch_rolling_and_all_in_balance.sql");
+const allInMigration = read("../supabase/migrations/20260924092958_rework_all_in_pickaxe.sql");
 const counterFix = read("../supabase/migrations/20260913100304_fix_total_roll_crafting_and_batch_unlocks.sql");
 const settings = read("../src/ui/settings.js");
 const main = read("../main.js");
@@ -27,9 +28,11 @@ assert.equal(isBatchSizeUnlocked(4, { totalRolls: 500_000, hasCelestialPickaxe: 
 assert.deepEqual(batchRollResults({ results: [{ id: 1 }, { id: 2 }] }).map((result) => result.id), [1, 2]);
 assert.equal(batchCooldown({ results: [{ cooldown: { durationMs: 5000 } }] }).durationMs, 5000);
 
-assert.equal(PICKAXE_STATS["all-in-pickaxe"][1], 0.25);
-assert.match(migration, /roll_speed_bonus = -0\.75/);
-assert.match(migration, /\{reward,bonus,rollSpeed\}.*-0\.75/s);
+assert.deepEqual(PICKAXE_STATS["all-in-pickaxe"], [500, 0.33, 0.15, 0.15, 0.15]);
+assert.match(allInMigration, /"moneyCost":500000000/);
+assert.match(allInMigration, /roll_speed_bonus=-0\.67/);
+assert.match(allInMigration, /"rolls":100000/);
+assert.match(allInMigration, /'tryhard','Tryhard',2000,10/);
 assert.match(counterFix, /select total_rolls\s+into v_total_rolls/);
 assert.match(counterFix, /p_batch_size = 3 and v_total_rolls >= 100000/);
 assert.match(counterFix, /p_batch_size = 4 and v_total_rolls >= 500000 and v_has_celestial/);

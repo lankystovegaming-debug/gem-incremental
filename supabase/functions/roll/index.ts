@@ -28,7 +28,7 @@ export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'impossible-pickaxe':[1,1,1,1,1],
- 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
  'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
@@ -116,6 +116,7 @@ export function specialChance(id,gem,state) {
 }
 export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
  if(!genuine) return [];
+ if(id==='all-in-pickaxe') return random()<1/2000?[{id:'tryhard',name:'Tryhard',chance:1/2000,multiplier:10}]:[];
  if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
  if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
@@ -173,7 +174,7 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const pick=equipment.find(e=>e.category==='pickaxe');
  const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
  const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
- if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.25,mutation:.1,weightLuck:.1,weightMultiplier:.1};
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:500,clover:1,luck:500,rollSpeed:.33,mutation:.15,weightLuck:.15,weightMultiplier:.15};
  const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.
@@ -1216,7 +1217,7 @@ function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
   const safeMultiplier = Math.max(0, Number.isFinite(Number(chanceMultiplier)) ? Number(chanceMultiplier) : 1);
 
   return gemMutations.flatMap((mutation) => {
-    if(['balanced','shifted'].includes(mutation.id)||mutation.id.startsWith('supersizer-')) return []; // Equipment-exclusive even if added to the admin catalog.
+    if(['balanced','shifted','tryhard'].includes(mutation.id)||mutation.id.startsWith('supersizer-')) return []; // Equipment-exclusive even if added to the admin catalog.
     const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
     if (eventFactor <= 0) return [];
     const chance = Math.min(mutation.chance * safeMultiplier * eventFactor, 1);
@@ -2209,7 +2210,7 @@ async function executeSingleRoll(
       // already been persisted by claim_server_roll.
       const adminRollSpeedBonus = Number(activeAdminEvent?.roll_speed_bonus ?? 0);
       const adminRollSpeedMultiplier = Number(activeAdminEvent?.roll_speed_multiplier ?? 1);
-      if(allIn) { rollSpeed=.25; weightLuck=.1; weightMultiplier=.1; enchantLuck=1; guildLuck=1; specialLuck=1; luck=250; baseLuck=250; }
+      if(allIn) { rollSpeed=.33; weightLuck=.15; weightMultiplier=.15; enchantLuck=1; guildLuck=1; specialLuck=1; luck=500; baseLuck=500; }
       const effectiveRollSpeed = buffsEnabled ? (
         rollSpeed * eventContext.rollSpeedMultiplier +
         (Number.isFinite(adminRollSpeedBonus) ? adminRollSpeedBonus : 0)
@@ -2576,9 +2577,9 @@ async function executeSingleRoll(
         Object.assign(luckBreakdown, { base:1, personal:1, ordinary:1, oneRoll:0, world:1, final:1 });
       }
       if(allIn && buffsEnabled) {
-        baseLuck=250;
-        luck=(250+Number(activeAdminEvent?.luck_bonus??0))*Math.max(.000001,Number(activeAdminEvent?.luck_multiplier??1));
-        Object.assign(luckBreakdown,{base:250,personal:1,flat:0,special:1,ordinary:250,oneRoll:0,world:luck/250,final:luck});
+        baseLuck=500;
+        luck=(500+Number(activeAdminEvent?.luck_bonus??0))*Math.max(.000001,Number(activeAdminEvent?.luck_multiplier??1));
+        Object.assign(luckBreakdown,{base:500,personal:1,flat:0,special:1,ordinary:500,oneRoll:0,world:luck/500,final:luck});
       }
       if (buffsEnabled && supersizerBlessing.luck !== 1) {
         luck *= supersizerBlessing.luck;
@@ -2827,7 +2828,7 @@ async function executeSingleRoll(
         mutationChanceMultiplier *= Math.pow(2.5, mistyBoostStacksBefore);
       }
 
-      if(allIn) mutationChanceMultiplier=.1;
+      if(allIn) mutationChanceMultiplier=.15;
       // Global admin mutation-luck events apply after personal mutation luck
       // and all permanent equipment passives.
       if (activeAdminEvent) {

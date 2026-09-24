@@ -4,7 +4,7 @@ export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'impossible-pickaxe':[1,1,1,1,1],
- 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[250,.25,.1,.1,.1],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
  'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
  'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
@@ -92,6 +92,7 @@ export function specialChance(id,gem,state) {
 }
 export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
  if(!genuine) return [];
+ if(id==='all-in-pickaxe') return random()<1/2000?[{id:'tryhard',name:'Tryhard',chance:1/2000,multiplier:10}]:[];
  if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
  if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
  if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
@@ -149,7 +150,7 @@ export function equipmentTotals(equipment=[],relic=false,override=null) {
  const pick=equipment.find(e=>e.category==='pickaxe');
  const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
  const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
- if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:250,clover:1,luck:250,rollSpeed:.25,mutation:.1,weightLuck:.1,weightMultiplier:.1};
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:500,clover:1,luck:500,rollSpeed:.33,mutation:.15,weightLuck:.15,weightMultiplier:.15};
  const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
  const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
  // Plastic's old additive bonus/masterwork behavior is deliberately retained.

@@ -1,4 +1,5 @@
 const EQUIPMENT_MUTATION_FAMILIES = Object.freeze({
+  tryhard: "all-in-pickaxe",
   shifted: "reality-shifter",
   balanced: "all-rounder-toy",
   ascended: "empyrean-pickaxe",
@@ -45,6 +46,7 @@ export function mutationSourceLabel(ids = []) {
   const normalized = canonicalMutationIds(ids);
   const family = normalized.map((id) => EQUIPMENT_MUTATION_FAMILIES[id]).find(Boolean);
   const labels = {
+    "all-in-pickaxe": "All-In Pickaxe only",
     "reality-shifter": "Reality Shifter only",
     "all-rounder-toy": "All-Rounder Toy only",
     "empyrean-pickaxe": "Empyrean Pickaxe only",
