@@ -1,5 +1,5 @@
 import { supabase } from '../src/backend/supabase.js';
-import { getSettings, updateSettings, hydrateSettingsFromCloud, onSettingsChange } from '../src/ui/settings.js';
+import { getSettings, updateSettings, hydrateSettingsFromCloud, isSignedOutError, onSettingsChange } from '../src/ui/settings.js';
 import { escapeHtml } from '../src/ui/format.js';
 import { notify } from '../src/ui/toast.js';
 const el = id => document.getElementById(id);
@@ -79,7 +79,7 @@ try {
   if(error)throw error;gems.push(...(data??[]));if(!data||data.length<500)break;
  }
  paint();
-} catch(error){el('gemFilterStatus').textContent=`Could not load settings: ${error.message}. Refresh to retry.`;}
+} catch(error){el('gemFilterStatus').textContent=isSignedOutError(error)?'Log in to set up your Gem Filter.':`Could not load settings: ${error.message}. Refresh to retry.`;}
 
 const chatLayoutKey = 'gem.chat.layout.v1';
 try { el('qolChatLayout').value = JSON.parse(localStorage.getItem(chatLayoutKey) || '{}').layout || 'floating'; } catch {}

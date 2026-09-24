@@ -33,7 +33,7 @@ await page.route("**/src/ui/shell.js", (r) =>
   }),
 );
 await page.route("**/src/backend/auth.js", (r) =>
-  r.fulfill({ contentType: "text/javascript", body: "export async function ensurePlayerAuth(){return {id:'test-player'}}" }),
+  r.fulfill({ contentType: "text/javascript", body: "export async function ensurePlayerAuth(){return {id:'test-player'}}export function isSignInRequired(){return false}export const SIGN_IN_REQUIRED_MESSAGE='Log in or create a free account to start playing.';" }),
 );
 await page.route("**/src/backend/supabase.js", (r) =>
   r.fulfill({

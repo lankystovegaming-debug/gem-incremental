@@ -3,7 +3,9 @@ import {
 } from "../src/backend/supabase.js";
 
 import {
-  ensurePlayerAuth
+  ensurePlayerAuth,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
 } from "../src/backend/auth.js";
 
 import { gemNameHtml } from "../src/ui/gemStyle.js";
@@ -1302,8 +1304,10 @@ async function startLeaderboards() {
 
   if (!user) {
     setStatus(
-      "Could not sign you in. Refresh to try again.",
-      true
+      isSignInRequired()
+        ? SIGN_IN_REQUIRED_MESSAGE
+        : "Could not sign you in. Refresh to try again.",
+      !isSignInRequired()
     );
 
     return;

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const [cli, shell, css] = await Promise.all([
+const [cli, shell, appCss] = await Promise.all([
   readFile(new URL("../src/ui/cli/playerCli.js", import.meta.url), "utf8"),
   readFile(new URL("../src/ui/shell.js", import.meta.url), "utf8"),
-  readFile(new URL("../src/styles/cli.css", import.meta.url), "utf8")
+  readFile(new URL("../src/styles/app.css", import.meta.url), "utf8")
 ]);
 
 // Built on the shared terminal widget, exported init used by the shell.
@@ -49,9 +49,10 @@ assert.match(cli, /function mountButton\(\)/);
 // Safety: it must NOT be gated to maintainers/admins (it's for normal players).
 assert.doesNotMatch(cli, /am_i_maintainer|adminRequest|code_improvement/);
 
-// Wired into the shell (loads on every page) and styled.
-assert.match(shell, /import \{ initPlayerCli \} from "\.\/cli\/playerCli\.js"/);
+// Wired into the shell (loads on every page) and styled by the always-loaded
+// app stylesheet — cli.css only loads once a console opens.
+assert.match(shell, /import \{ initPlayerCli, togglePlayerCli \} from "\.\/cli\/playerCli\.js"/);
 assert.match(shell, /initPlayerCli\(\);/);
-assert.match(css, /\.player-cli-fab/);
+assert.match(appCss, /\.player-cli-fab \{/);
 
 console.log("player-cli checks passed");

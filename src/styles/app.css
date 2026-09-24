@@ -96,6 +96,9 @@
 
   --radius-sm: 8px;
   --radius: 12px;
+  /* Used across page stylesheets; without it those corners fell back
+     to square. */
+  --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
 
@@ -5577,5 +5580,307 @@ input[type="radio"] {
   .topbar [role="button"] {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+
+/* =========================================================
+   UI REFRESH — SHELL, ROLL LAYOUT AND SMALL SCREENS
+
+   The last layer in the cascade, so it deliberately settles
+   rules the earlier polish passes left fighting each other.
+   ========================================================= */
+
+/* ---------- Top bar: measured, never scrolling ---------- */
+
+.topbar__inner {
+  max-width: 1600px;
+}
+
+/* shell.js drops the wordmark, then the Explore/More labels, then the
+   link labels when the labelled links do not fit (.topbar--no-wordmark,
+   .topbar--tight, .topbar--compact — each step keeps the earlier ones).
+   A scrollbar is never shown; in the extreme case (a long custom bar on
+   a small laptop) the links still scroll by trackpad or touch. */
+.nav {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 781px) {
+  /* The links take only the room they need so Explore sits right after
+     them; the spacer pushes the tools to the far edge. The nav still
+     shrinks when space runs out, which is what shell.js measures. */
+  .nav {
+    flex: 0 1 auto;
+  }
+
+  .topbar__spacer {
+    flex: 1 1 0;
+  }
+
+  .topbar:not(.topbar--compact) .nav > .nav__link {
+    width: auto;
+    padding-inline: 10px;
+  }
+
+  .topbar:not(.topbar--compact) .nav > .nav__link span {
+    display: inline;
+  }
+
+  .topbar:not(.topbar--no-wordmark) .brand span:not(.brand__mark) {
+    display: inline;
+  }
+
+  .topbar--no-wordmark .brand span:not(.brand__mark),
+  .topbar--tight .topbar-explore__button > span,
+  .topbar--tight .topbar-explore__button > svg:last-child,
+  .topbar--tight .topbar-more__button > span,
+  .topbar--tight .topbar-more__button > svg:last-child,
+  .topbar--compact .nav > .nav__link span {
+    display: none;
+  }
+
+  .topbar--tight .topbar-explore__button,
+  .topbar--tight .topbar-more__button,
+  .topbar--compact .nav > .nav__link {
+    width: 40px;
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+
+/* Explore keeps its label whenever the bar is roomy enough; otherwise it
+   is a plain icon button like the compacted links. */
+@media (min-width: 981px) {
+  .topbar:not(.topbar--tight) .topbar-explore__button {
+    width: auto;
+    padding-inline: 10px;
+  }
+
+  .topbar:not(.topbar--tight) .topbar-explore__button > span {
+    display: inline;
+  }
+}
+
+.topbar-more__menu .menu__item kbd {
+  margin-left: auto;
+}
+
+
+/* ---------- Mobile top bar ---------- */
+
+@media (max-width: 780px) {
+  /* Brand on the left, tools on the right, instead of everything
+     bunched against the left edge. */
+  .topbar__spacer {
+    flex: 1 1 auto;
+  }
+
+  .topbar__tools {
+    gap: 6px;
+  }
+}
+
+
+/* ---------- Mobile tab bar ---------- */
+
+@media (max-width: 780px) {
+  /* Blur is switched off on phones for scrolling performance, so the
+     bar needs a solid surface or page text shows through the labels. */
+  .tabbar {
+    padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
+    border-top: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+    background: var(--surface-solid);
+    box-shadow: 0 -12px 32px -22px rgb(0 0 0 / 0.55);
+  }
+
+  .tabbar__link {
+    gap: 4px;
+    border-radius: 12px;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .tabbar__link[aria-current="page"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 750;
+  }
+}
+
+
+/* ---------- Floating controls ---------- */
+
+/* The player console button. Styled here rather than in cli.css, which
+   only loads once a console opens. It stacks above the chat button on
+   the right, leaving the bottom-left free for the global-cash counter. */
+.player-cli-fab {
+  position: fixed;
+  right: calc(var(--space-4) + 7px);
+  bottom: calc(var(--space-4) + 66px);
+  z-index: 59;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-md);
+
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+
+  opacity: 0.8;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.player-cli-fab:hover {
+  opacity: 1;
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+/* Phones already carry the tab bar and chat button along the bottom
+   edge; the console opens from More instead. */
+@media (max-width: 780px) {
+  .player-cli-fab {
+    display: none;
+  }
+}
+
+
+/* ---------- Sign-in banner (guest sign-ins disabled) ---------- */
+
+.signin-banner {
+  flex-wrap: wrap;
+}
+
+.signin-banner__action {
+  flex: none;
+  min-height: 34px;
+}
+
+/* Phones clip announcement text to one line; this one is the call to
+   action, so it may wrap instead. */
+.signin-banner .announce__body {
+  overflow: visible;
+  white-space: normal;
+}
+
+
+/* ---------- Roll page: side column on wide screens ---------- */
+
+.rare-rolls__group {
+  border-radius: var(--radius-md);
+}
+
+.rare-rolls__toggle {
+  display: none;
+  flex: none;
+}
+
+/* Below the side-column layout the feed sits above the roll button,
+   so it shows only the newest find per list until expanded — keeping
+   the roll button on the first screen. */
+@media (max-width: 1179px) {
+  .rare-rolls:not(.is-expanded) .rare-roll:nth-child(n + 2) {
+    display: none;
+  }
+
+  .rare-rolls:not(.is-expanded) .rare-roll:first-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .rare-rolls__toggle {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .rare-rolls {
+    padding: 16px;
+  }
+
+  .rare-rolls__header {
+    align-items: center;
+    margin-bottom: var(--space-3);
+  }
+
+  /* The two lists sit side by side as swipeable cards; the next one
+     peeks in so the gesture is discoverable. */
+  .rare-rolls:not(.is-expanded) .rare-rolls__columns {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 86%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .rare-rolls:not(.is-expanded) .rare-rolls__columns::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rare-rolls__group {
+    scroll-snap-align: start;
+  }
+}
+
+@media (min-width: 1180px) {
+  .app-main.app-main--roll {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    column-gap: var(--space-5);
+    align-items: start;
+    max-width: 1280px;
+  }
+
+  .app-main--roll > * {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  /* The live feed becomes a sticky side column next to the roll stage.
+     It is first in the markup, so it still reads first. */
+  .app-main--roll > .rare-rolls {
+    position: sticky;
+    top: calc(var(--nav-height) + var(--space-4));
+    grid-column: 2;
+    grid-row: 1 / span 12;
+    max-height: calc(100vh - var(--nav-height) - 2 * var(--space-4));
+    margin-bottom: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .app-main--roll > .rare-rolls .rare-rolls__header {
+    align-items: flex-start;
+  }
+
+  .app-main--roll > .rare-rolls .rare-rolls__header p {
+    display: none;
+  }
+
+  .app-main--roll > .rare-rolls .rare-rolls__columns {
+    grid-template-columns: 1fr;
   }
 }

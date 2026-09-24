@@ -39,11 +39,26 @@ function renderList(element, rows, emptyText) {
     : `<p class="rare-rolls__empty">${escapeHtml(emptyText)}</p>`;
 }
 
+// Below the wide side-column layout the card shows only the newest find
+// per list (see app.css) so the roll button stays on the first screen.
+function bindExpandToggle(card) {
+  const toggle = document.getElementById("rareRollsToggle");
+  if (!toggle) return;
+
+  toggle.addEventListener("click", () => {
+    const expanded = card.classList.toggle("is-expanded");
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded ? "Show less" : "Show all";
+  });
+}
+
 export function initRareRollsCard() {
   const card = document.getElementById("rareRollsCard");
   const baseList = document.getElementById("rareRollsBaseList");
   const mutationList = document.getElementById("rareRollsMutationList");
   if (!card || !baseList || !mutationList) return;
+
+  bindExpandToggle(card);
 
   let refreshTimer = null;
   async function refresh() {

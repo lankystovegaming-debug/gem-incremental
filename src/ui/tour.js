@@ -297,6 +297,11 @@ export function mountTour({ base = "./", page = "" } = {}) {
       return;
     }
 
+    // No session at all (guest sign-ins are switched off): the shell's
+    // log-in banner and the roll button already point at the account
+    // page, and the guest copy below would not be true.
+    if (!user) return;
+
     // Brand-new guest — nudge them to create an account first (once).
     if (!seen(ACCOUNT_PROMPT_KEY)) {
       setTimeout(() => startAccountPrompt(base), 700);

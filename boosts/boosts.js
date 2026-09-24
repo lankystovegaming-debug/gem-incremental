@@ -1,5 +1,9 @@
 import consumables from "../src/data/consumables.js";
-import { ensurePlayerAuth } from "../src/backend/auth.js";
+import {
+  ensurePlayerAuth,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
+} from "../src/backend/auth.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 import {
   buyCloudConsumable,
@@ -211,6 +215,10 @@ async function refresh() {
   const user = await ensurePlayerAuth();
   if (!user) {
     state.loading = false;
+    if (isSignInRequired()) {
+      subtitle.textContent = SIGN_IN_REQUIRED_MESSAGE;
+      return;
+    }
     subtitle.textContent = "Could not sign you in. Refresh to try again.";
     notify.error("Sign-in failed", "The game could not reach your account.");
     return;

@@ -51,7 +51,7 @@
 </head>
 
 <body>
-  <main class="app-main app-main--narrow">
+  <main class="app-main app-main--narrow app-main--roll">
     <section class="card rare-rolls" id="rareRollsCard" aria-labelledby="rareRollsHeading">
       <div class="rare-rolls__header">
         <div>
@@ -59,6 +59,15 @@
           <h2 id="rareRollsHeading">Rare rolls</h2>
         </div>
         <p>Exceptional finds from every player, kept separate from chat.</p>
+        <button
+          class="btn btn--ghost btn--sm rare-rolls__toggle"
+          id="rareRollsToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="rareRollsBaseList rareRollsMutationList"
+        >
+          Show all
+        </button>
       </div>
       <div class="rare-rolls__columns">
         <section class="rare-rolls__group" aria-labelledby="rareRollsBaseHeading">

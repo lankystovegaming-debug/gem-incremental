@@ -674,6 +674,12 @@ function toggle() {
   if (panel) close(); else open();
 }
 
+// The floating button is hidden on phones, where the tab bar and chat
+// button already crowd the bottom edge; the More menu opens it instead.
+export function togglePlayerCli() {
+  toggle();
+}
+
 function onEscape(event) {
   if (event.key === "Escape" && panel) close();
 }

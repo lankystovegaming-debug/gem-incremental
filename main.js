@@ -2,7 +2,9 @@ import recipes from "./src/data/recipes.js";
 
 import {
   ensurePlayerAuth,
-  getLastAuthError
+  getLastAuthError,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
 } from "./src/backend/auth.js";
 import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
 import { invokeFunction } from "./src/backend/invoke.js";
@@ -37,6 +39,7 @@ import { chanceLabelForRollResult } from "./src/logic/chances.js";
 import {
   getSettings,
   hydrateSettingsFromCloud,
+  isSignedOutError,
   updateSettings,
   onSettingsChange,
   shouldAutoKeep
@@ -384,6 +387,22 @@ function showError(message) {
   setButton({ mode: "blocked", label: "Unavailable", disabled: true });
 
   rollHint.textContent = message;
+}
+
+
+// Guest sign-ins are switched off and there is no session: the roll
+// button becomes the way in rather than a dead "Unavailable" state.
+function showSignInRequired() {
+  stopCooldown();
+
+  view.ready = false;
+
+  setButton({ mode: "", label: "Log in to play", disabled: false });
+
+  rollButton.dataset.signIn = "true";
+
+  rollHint.innerHTML =
+    `${escapeHtml(SIGN_IN_REQUIRED_MESSAGE)} <a href="./account/">Log in or sign up</a>`;
 }
 
 
@@ -1235,7 +1254,15 @@ paintSettings(getSettings());
 // INPUT
 // =========================================================
 
-rollButton.addEventListener("click", () => performRoll());
+rollButton.addEventListener("click", () => {
+  if (rollButton.dataset.signIn === "true") {
+    window.location.href = "./account/";
+
+    return;
+  }
+
+  performRoll();
+});
 
 
 clearHistory.addEventListener("click", () => {
@@ -1283,6 +1310,12 @@ async function startGame() {
   renderHistory();
 
   const user = await ensurePlayerAuth();
+
+  if (!user && isSignInRequired()) {
+    showSignInRequired();
+
+    return;
+  }
 
   if (!user) {
     // Which stage failed matters when diagnosing a player who
@@ -1422,6 +1455,9 @@ window.addEventListener('gem:roll-complete', event => {
  if (typeof event.detail?.buffsEnabled === 'boolean') paintBuffs({ enableBuffs:event.detail.buffsEnabled });
 });
 
-hydrateSettingsFromCloud().catch(error => notify.error("Settings unavailable", error.message));
+hydrateSettingsFromCloud().catch(error => {
+  if (isSignedOutError(error)) return;
+  notify.error("Settings unavailable", error.message);
+});
 
 window.addEventListener("gem:settings-error", event => { paintSettings(getSettings()); notify.error("Settings were not saved", event.detail.message); });

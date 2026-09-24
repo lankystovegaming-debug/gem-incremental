@@ -16,7 +16,7 @@ export const supabase={
 };`;
 const stubs={
  '/src/ui/shell.js':'export function mountShell(){}',
- '/src/backend/auth.js':'export async function ensurePlayerAuth(){return {id:"test"}}',
+ '/src/backend/auth.js':'export async function ensurePlayerAuth(){return {id:"test"}}export function isSignInRequired(){return false}export const SIGN_IN_REQUIRED_MESSAGE="Log in or create a free account to start playing.";',
  '/src/backend/supabase.js':backend,
  '/src/backend/account.js':`export function describeAccount(){return {name:'Tester',detail:'Test account',initials:'T',guest:false}};export async function isGoogleEnabled(){return false};export async function signInWithGoogle(){};export function onAccountChange(){};export async function loadUsername(){return 'Tester'};`
 };

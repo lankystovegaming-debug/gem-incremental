@@ -1,4 +1,8 @@
-import { ensurePlayerAuth } from "../src/backend/auth.js";
+import {
+  ensurePlayerAuth,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
+} from "../src/backend/auth.js";
 import { loadCloudGems, loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 import { loadCloudConsumables } from "../src/backend/cloudConsumables.js";
 import {
@@ -859,7 +863,9 @@ async function boot() {
   const user = await ensurePlayerAuth();
   if (!user) {
     state.loading = false;
-    statusEl.textContent = "Could not sign you in. Refresh to try again.";
+    statusEl.textContent = isSignInRequired()
+      ? SIGN_IN_REQUIRED_MESSAGE
+      : "Could not sign you in. Refresh to try again.";
     browseList.innerHTML = "";
     return;
   }

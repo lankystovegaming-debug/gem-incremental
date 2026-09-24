@@ -33,7 +33,8 @@ import {
   getSettings,
   updateSettings,
   onSettingsChange,
-  hydrateSettingsFromCloud
+  hydrateSettingsFromCloud,
+  isSignedOutError
 } from "../src/ui/settings.js";
 
 
@@ -296,7 +297,11 @@ Promise.all([
     rollBulk: (equipment ?? []).reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.roll_bulk_bonus ?? 0) || 0)), 0)
   };
   paintSettings(settings);
-}).catch(error => notify.error("Settings unavailable", error.message));
+}).catch(error => {
+  // Signed-out visitors already see the shell's log-in banner.
+  if (isSignedOutError(error)) return;
+  notify.error("Settings unavailable", error.message);
+});
 
 
 // =========================================================

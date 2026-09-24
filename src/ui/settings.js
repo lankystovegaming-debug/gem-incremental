@@ -136,10 +136,23 @@ async function persistSettingsPatch(patch) {
   return moderationResult;
 }
 
+// Settings live on the account, so a visitor without a session has none to
+// load. Callers check `isSignedOutError` to stay quiet about that expected
+// case instead of toasting an error on every page.
+function signedOutError() {
+  const error = new Error('Sign in to save settings.');
+  error.code = 'signed_out';
+  return error;
+}
+
+export function isSignedOutError(error) {
+  return error?.code === 'signed_out';
+}
+
 export function hydrateSettingsFromCloud() {
   return hydration ??= (async () => {
     const user = await ensurePlayerAuth();
-    if (!user) throw new Error('Sign in to save settings.');
+    if (!user) throw signedOutError();
     const { data, error } = await supabase.from('player_settings').select('settings').eq('player_id', user.id).maybeSingle();
     if (error) throw error;
     const cloud = data?.settings ?? {};
