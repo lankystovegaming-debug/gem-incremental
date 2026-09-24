@@ -29,7 +29,7 @@ const rows=[{category:'pickaxe',equipment_id:'all-in-pickaxe',masterwork_level:5
 assert.deepEqual(equipmentTotals(rows,true),{pickaxe:500,clover:1,luck:500,rollSpeed:.33,mutation:.15,weightLuck:.15,weightMultiplier:.15});
 const allInRecipe=fiveItemRecipes.find(recipe=>recipe.id==='all-in-pickaxe');
 assert.equal(allInRecipe.moneyCost,500_000_000);
-assert.deepEqual(allInRecipe.requirements.map(requirement=>requirement.amount??requirement.rolls),[7500,2000,150,20,3,100000,5,3]);
+assert.deepEqual(allInRecipe.requirements.map(requirement=>requirement.amount??requirement.rolls),[7500,2000,150,20,3,100000,3,3]);
 assert.equal(allInRecipe.requirements.find(requirement=>requirement.type==='lifetime-rolls').rolls,100_000);
 assert.ok(isRequirementComplete({progress:{}},allInRecipe,allInRecipe.requirements[5],5,{totalRolls:100_000}));
 assert.ok(!isRequirementComplete({progress:{}},allInRecipe,allInRecipe.requirements[5],5,{totalRolls:99_999}));

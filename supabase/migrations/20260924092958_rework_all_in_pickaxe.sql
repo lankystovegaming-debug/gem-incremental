@@ -30,7 +30,7 @@ insert into public.game_recipes(id,recipe) values(
       {"id":"all-in-pickaxe-exalted","type":"gem-count","label":"Exalted","amount":20,"minimumRarity":1000000,"maximumRarity":9999999},
       {"id":"all-in-pickaxe-cosmic","type":"gem-count","label":"Cosmic","amount":3,"minimumRarity":10000000,"maximumRarity":99999999},
       {"type":"lifetime-rolls","rolls":100000},
-      {"type":"equipment-history","metric":"endgamePickaxes","amount":5,"label":"Distinct post-Celestial endgame Pickaxes ever owned","consume":false},
+      {"type":"equipment-history","metric":"endgamePickaxes","amount":3,"label":"Distinct post-Celestial endgame Pickaxes ever owned","consume":false},
       {"type":"equipment-history","metric":"raw10m","amount":3,"label":"Historical base-rarity ≥1/10M rolls","consume":false}
     ],
     "reward":{"id":"all-in-pickaxe","name":"All-In Pickaxe","category":"pickaxe","tier":15,
