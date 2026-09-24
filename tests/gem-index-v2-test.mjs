@@ -53,11 +53,15 @@ assert.match(roll, /Number\(player\.total_rolls \?\? 0\) \+ 1/);
 assert.doesNotMatch(roll.slice(roll.indexOf("const rollNumber"), roll.indexOf("const rollNumber") + 200), /equipment_genuine_rolls/);
 assert.doesNotMatch(page, /Math\.pow\(2|2 \*\*/);
 assert.doesNotMatch(page, /private_feature_gems[\s\S]{0,500}\.order\("multiplier"/);
-assert.match(page, /const BAND_PAGE_SIZE = 120/);
+assert.match(page, /const BAND_PAGE_SIZE = 24/);
+assert.match(page, /"transcendent", "secret", "anomalous"/,
+  "Anomalous must render directly below Secret");
+assert.match(page, /renderBandContents\(band, band\.dataset\.tierBand\)/,
+  "opening a band should render only that band instead of rebuilding the full index");
 assert.match(page, /\["name", "found"\]\.includes\(gemSort\.value\)/,
   "non-rarity sorts must remain global rather than being re-sorted into rarity bands");
-assert.match(page, /window\.addEventListener\("focus"/);
-assert.match(page, /postgres_changes/);
+assert.doesNotMatch(page, /window\.addEventListener\("focus"|visibilitychange|postgres_changes/,
+  "the index must not refresh itself while the player is reading it");
 assert.match(mutationIndex, /"ascended", "silly-small", "silly-large", "happy"/);
 
 console.log("Gem Index v2 checks passed.");

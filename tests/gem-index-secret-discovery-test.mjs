@@ -17,8 +17,9 @@ assert.equal(indexed.combinations.has("Secret Gem::gilded+polished"), true,
 assert.match(source, /function identityDiscovered\(entry\)[\s\S]*state\.discoveredGemNames\.has/);
 assert.match(source, /function exactCombinationDiscovered\(entry\)[\s\S]*discoveredRecord\(entry\)/);
 assert.match(source, /Gem identified; this exact mutation combination has not been found\./);
-assert.match(source, /isSecretLocked\(entry\) \? UNKNOWN_TIER/,
-  "a locked secret must not leak its rarity band");
+assert.doesNotMatch(source, /UNKNOWN_TIER/,
+  "locked cards should remain in the visible Secret rarity category");
+assert.match(source, /function displayTier\(entry\)[\s\S]*rarityTier\(entry\.gem\.rarity, entry\.gem\.name\)/);
 assert.match(source, /const searchableName = identityDiscovered\(entry\) \? entry\.gem\.name\.toLowerCase\(\) : ""/,
   "search must not reveal locked names");
 
