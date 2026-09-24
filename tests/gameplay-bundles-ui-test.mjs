@@ -11,7 +11,7 @@ const icons=['💎','🌈','⛏️','🏋️','✦','🌌','👑'];
 const state={bundles:ids.map((id,i)=>({id,name:names[i]+' Collection',icon:icons[i],unlocked:i<6,requirements:i<6?catalog.filter(r=>r.bundle_id===id).map(r=>({...r,contributed:0,auto_contribute:false})):[]})),submissions:[]};
 let submitted=[],enableCalls=0;
 await page.route('**/src/ui/shell.js',r=>r.fulfill({contentType:'text/javascript',body:'export function mountShell(){}'}));
-await page.route('**/src/backend/auth.js',r=>r.fulfill({contentType:'text/javascript',body:'export async function ensurePlayerAuth(){}'}));
+await page.route('**/src/backend/auth.js',r=>r.fulfill({contentType:'text/javascript',body:'export async function ensurePlayerAuth(){}export function isSignInRequired(){return false}export const SIGN_IN_REQUIRED_MESSAGE="Log in or create a free account to start playing.";'}));
 await page.route('**/src/backend/cloudBundles.js',r=>r.fulfill({contentType:'text/javascript',body:`
 const call=(action,body={})=>fetch('/test-bundles',{method:'POST',body:JSON.stringify({action,...body})}).then(r=>r.json());
 export const loadBundles=()=>call('state');

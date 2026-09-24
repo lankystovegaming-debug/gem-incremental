@@ -12,7 +12,11 @@ import {
 } from "./theme.js";
 
 import { supabase } from "../backend/supabase.js";
-import { ensurePlayerAuth } from "../backend/auth.js";
+import {
+  ensurePlayerAuth,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
+} from "../backend/auth.js";
 import { loadCloudPlayerState } from "../backend/cloudInventory.js";
 import { adminRequest } from "../backend/cloudAdmin.js";
 import {
@@ -32,7 +36,7 @@ import {
   loadUsername
 } from "../backend/account.js";
 import { initDevPanel } from "./devpanel.js";
-import { initPlayerCli } from "./cli/playerCli.js";
+import { initPlayerCli, togglePlayerCli } from "./cli/playerCli.js";
 import { mountTour } from "./tour.js";
 import { mountDailyLogin } from "./dailyLogin.js";
 import { mountReferralPromo } from "./referralPromo.js";
@@ -299,6 +303,9 @@ export function mountShell({ page, base = "./" }) {
             <button class="menu__item" type="button" data-more-action="howto">
               ${icons.book}<span>How to play</span>
             </button>
+            <button class="menu__item" type="button" data-more-action="console">
+              <span aria-hidden="true">⌨</span><span>Player console</span><kbd>&#96;</kbd>
+            </button>
             <a class="menu__item" href="${base}codes/">${icons.sparkle}<span>Codes</span></a>
             <a class="menu__item" href="${base}updates/">${icons.sparkle}<span>Update log</span></a>
             <a class="menu__item" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
@@ -350,6 +357,43 @@ export function mountShell({ page, base = "./" }) {
 
   document.body.prepend(header);
 
+  // The primary links share the bar with the wallet, menus and account
+  // chip, whose widths change per player (username, money, admin links,
+  // a custom top bar). Fixed breakpoints could not know that, so the last
+  // links were clipped behind a scrollbar on common 1366-1920px screens.
+  // Measure instead: drop the wordmark first, then the Explore/More
+  // labels, then the link labels, only when the labelled links really do
+  // not fit. Every link keeps its title and aria-label, so icon-only
+  // links stay named.
+  let navFitFrame = 0;
+
+  function navigationOverflows() {
+    const nav = header.querySelector(".nav");
+
+    return Boolean(nav) && nav.clientWidth > 0 && nav.scrollWidth > nav.clientWidth + 1;
+  }
+
+  function fitPrimaryNavigation() {
+    navFitFrame = 0;
+    const steps = ["topbar--no-wordmark", "topbar--tight", "topbar--compact"];
+
+    header.classList.remove(...steps);
+
+    for (const step of steps) {
+      if (!navigationOverflows()) return;
+      header.classList.add(step);
+    }
+  }
+
+  function scheduleNavigationFit() {
+    if (navFitFrame) return;
+    navFitFrame = requestAnimationFrame(fitPrimaryNavigation);
+  }
+
+  scheduleNavigationFit();
+  window.addEventListener("resize", scheduleNavigationFit, { passive: true });
+  document.fonts?.ready.then(scheduleNavigationFit);
+
 
   const tabbar = document.createElement("nav");
 
@@ -370,6 +414,7 @@ export function mountShell({ page, base = "./" }) {
     // feature updates must resolve it from the document rather than header.
     const exploreMenu=document.getElementById("shellExploreMenu");
     if(exploreMenu) exploreMenu.innerHTML=`<div class="menu__label">Explore</div>${renderExploreGroups(getExplorePages(),page,base)}`;
+    scheduleNavigationFit();
   };
   onSettingsChange(rerenderPrimaryNavigation);
 
@@ -520,6 +565,11 @@ export function mountShell({ page, base = "./" }) {
     if (event.target.closest("a")) closeMore();
   });
 
+  moreMenu?.querySelector('[data-more-action="console"]')?.addEventListener("click", () => {
+    closeMore();
+    togglePlayerCli();
+  });
+
   document.addEventListener("click", (event) => {
     // The menus are portaled to <body>, so a click inside a menu is outside its
     // anchor — check the menu too, or clicking inside would close it.
@@ -550,11 +600,12 @@ export function mountShell({ page, base = "./" }) {
   let currentUser = null;
   let currentUsername = null;
   let googleEnabled = false;
+  let signedOut = false;
 
   function paintAccount(user) {
     currentUser = user;
 
-    const account = describeAccount(user, currentUsername);
+    const account = describeAccount(user, currentUsername, { signedOut });
 
     accountName.textContent = account.name;
 
@@ -567,6 +618,8 @@ export function mountShell({ page, base = "./" }) {
     } else {
       avatar.textContent = account.initials;
     }
+
+    scheduleNavigationFit();
   }
 
   paintAccount(null);
@@ -613,7 +666,7 @@ export function mountShell({ page, base = "./" }) {
 
 
   function renderAccountMenu() {
-    const account = describeAccount(currentUser, currentUsername);
+    const account = describeAccount(currentUser, currentUsername, { signedOut });
 
     const menu = document.createElement("div");
 
@@ -640,13 +693,16 @@ export function mountShell({ page, base = "./" }) {
         account.guest
           ? `
             <div class="menu__note">
-              Create an account to keep your gems if you clear this
-              browser or switch device.
+              ${
+                account.signedOut
+                  ? "Log in to continue your save, or create a free account to start playing."
+                  : "Create an account to keep your gems if you clear this browser or switch device."
+              }
             </div>
 
             <a class="btn btn--primary btn--block" href="${base}account/">
               ${icons.user}
-              Create an account
+              ${account.signedOut ? "Log in or sign up" : "Create an account"}
             </a>
 
             ${
@@ -823,6 +879,7 @@ export function mountShell({ page, base = "./" }) {
     walletPill.classList.remove("wallet--loading");
     walletValue.textContent = formatMoney(amount, { exact: true });
     walletPill.title = `Money: ${formatMoney(amount, { exact: true })}`;
+    scheduleNavigationFit();
   }
 
 
@@ -832,7 +889,10 @@ export function mountShell({ page, base = "./" }) {
   // with the same value.
   ensurePlayerAuth()
     .then(async (user) => {
-      if (!user) return { state: null, appeal: null };
+      if (!user) {
+        if (isSignInRequired()) showSignInRequired();
+        return { state: null, appeal: null };
+      }
       const [stateResult, appealResult] = await Promise.allSettled([
         loadCloudPlayerState(),
         loadMyBanAppeal()
@@ -859,6 +919,35 @@ export function mountShell({ page, base = "./" }) {
     .catch(() => {
       /* Non-fatal: the wallet stays in its loading state. */
     });
+
+
+  // Guest sign-ins can be switched off on the backend. The visitor then
+  // has no session at all, so point them at the account page instead of
+  // leaving the header on "Signing in..." forever.
+  function showSignInRequired() {
+    signedOut = true;
+    paintAccount(null);
+    applyWallet(null);
+
+    if (page === "account" || document.getElementById("shellSignInBanner")) {
+      return;
+    }
+
+    const banner = document.createElement("div");
+
+    banner.className = "announce announce--info signin-banner";
+    banner.id = "shellSignInBanner";
+    banner.setAttribute("role", "status");
+    banner.innerHTML = `
+      <span class="announce__icon">${icons.user}</span>
+      <span class="announce__body">${escapeHtml(SIGN_IN_REQUIRED_MESSAGE)}</span>
+      <a class="btn btn--primary btn--sm signin-banner__action" href="${base}account/">
+        Log in or sign up
+      </a>
+    `;
+
+    header.after(banner);
+  }
 
 
   return {

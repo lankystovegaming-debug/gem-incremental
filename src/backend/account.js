@@ -38,7 +38,19 @@ export async function isGoogleEnabled() {
 }
 
 
-export function describeAccount(user, username = null) {
+export function describeAccount(user, username = null, { signedOut = false } = {}) {
+  if (!user && signedOut) {
+    // No session and no guest fallback: the player has to log in.
+    return {
+      name: "Log in",
+      detail: "Log in or create a free account to play",
+      initials: "?",
+      avatarUrl: null,
+      guest: true,
+      signedOut: true
+    };
+  }
+
   if (!user) {
     return {
       name: "Signing in...",

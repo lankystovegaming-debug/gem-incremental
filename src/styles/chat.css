@@ -635,8 +635,9 @@
 .chat-dock[data-layout="side-right"] .chat-dock__resize-height,
 .chat-dock[data-layout="side-left"] .chat-dock__resize-height { display: none; }
 
-/* Sit above the mobile tab bar, and go near-full-width on phones. */
-@media (max-width: 720px) {
+/* Sit above the mobile tab bar, and go near-full-width on phones.
+   Matches the 780px breakpoint where the tab bar appears. */
+@media (max-width: 780px) {
   .chat-fab {
     right: var(--mobile-floating-gap, 12px);
     bottom: calc(var(--mobile-nav-clearance, 78px) + var(--mobile-floating-gap, 12px));

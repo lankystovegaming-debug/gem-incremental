@@ -1,7 +1,7 @@
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { invokeFunction } from "../backend/invoke.js";
 import { loadCloudPlayerState } from "../backend/cloudInventory.js";
-import { updateSettings, hydrateSettingsFromCloud, getSettings, onSettingsChange, shouldAutoKeep } from "./settings.js";
+import { updateSettings, hydrateSettingsFromCloud, isSignedOutError, getSettings, onSettingsChange, shouldAutoKeep } from "./settings.js";
 import { rarityTier, formatMoney, escapeHtml } from "./format.js";
 import { notify, toast } from "./toast.js";
 import { recordSessionRoll } from "./sessionInsights.js";
@@ -265,4 +265,6 @@ window.addEventListener("beforeunload", () => {
   releaseLease();
 });
 
-hydrateSettingsFromCloud().then(sync).catch(error => console.error("Settings unavailable", error));
+hydrateSettingsFromCloud().then(sync).catch(error => {
+  if (!isSignedOutError(error)) console.error("Settings unavailable", error);
+});

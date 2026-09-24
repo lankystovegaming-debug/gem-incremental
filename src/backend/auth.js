@@ -16,12 +16,38 @@ let authPromise =
   null;
 
 
+// Set once the project answers that guest sign-ins are switched off.
+// Every page feature asks for a session, so without this each of them
+// would send its own doomed anonymous sign-in request.
+let guestSignInDisabledError =
+  null;
+
+
 // =========================================================
 // GET LAST AUTH ERROR
 // =========================================================
 
 export function getLastAuthError() {
   return lastAuthError;
+}
+
+
+// =========================================================
+// SIGN-IN REQUIRED
+//
+// When guest (anonymous) sign-ins are switched off on the
+// Supabase project, a visitor without a session is not
+// "failing" to connect — they simply need to log in or
+// create an account. Pages use this to show that call to
+// action instead of a "refresh to try again" error.
+// =========================================================
+
+export const SIGN_IN_REQUIRED_MESSAGE =
+  "Log in or create a free account to start playing.";
+
+
+export function isSignInRequired() {
+  return lastAuthError?.code === "anonymous_provider_disabled";
 }
 
 
@@ -254,6 +280,14 @@ async function ensurePlayerAuthInternal() {
   // CREATE ANONYMOUS USER
   // =======================================================
 
+  if (guestSignInDisabledError) {
+    lastAuthError =
+      guestSignInDisabledError;
+
+    return null;
+  }
+
+
   console.log(
     "[AUTH] Creating anonymous user..."
   );
@@ -270,9 +304,13 @@ async function ensurePlayerAuthInternal() {
   if (error) {
     // Diagnostics are useful when sign-in fails, but running two
     // network probes before every new session made normal startup wait
-    // for slow or blocked requests. Keep them off the happy path.
+    // for slow or blocked requests. Keep them off the happy path — and
+    // skip them when guest sign-ins are simply switched off, since the
+    // backend answered and there is nothing to diagnose.
     const diagnostics =
-      await checkSupabaseConnectivity();
+      error.code === "anonymous_provider_disabled"
+        ? null
+        : await checkSupabaseConnectivity();
 
     lastAuthError = {
       stage:
@@ -296,6 +334,18 @@ async function ensurePlayerAuthInternal() {
 
       diagnostics
     };
+
+
+    if (lastAuthError.code === "anonymous_provider_disabled") {
+      guestSignInDisabledError =
+        lastAuthError;
+
+      console.info(
+        "[AUTH] Guest sign-ins are disabled; waiting for the player to log in."
+      );
+
+      return null;
+    }
 
 
     console.error(

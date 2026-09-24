@@ -43,6 +43,8 @@ export const supabase={
 const authStub = `
 export async function ensurePlayerAuth(){return {id:'mobile-test-player',is_anonymous:true,identities:[]}}
 export function getLastAuthError(){return null}
+export function isSignInRequired(){return false}
+export const SIGN_IN_REQUIRED_MESSAGE="Log in or create a free account to start playing.";
 export async function waitForAuthReady(){return ensurePlayerAuth()}
 `;
 

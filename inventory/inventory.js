@@ -1,6 +1,10 @@
 import { mountEquipmentLoadouts } from '../src/ui/equipmentLoadouts.js';
 import { PICKAXE_STATS } from '../src/data/equipmentOverhaul.js';
-import { ensurePlayerAuth } from "../src/backend/auth.js";
+import {
+  ensurePlayerAuth,
+  isSignInRequired,
+  SIGN_IN_REQUIRED_MESSAGE
+} from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
 import {
   loadCloudGems,
@@ -1597,6 +1601,12 @@ async function refresh() {
 
   if (!user) {
     state.loading = false;
+
+    if (isSignInRequired()) {
+      subtitle.textContent = SIGN_IN_REQUIRED_MESSAGE;
+
+      return;
+    }
 
     subtitle.textContent = "Could not sign you in. Refresh to try again.";
 

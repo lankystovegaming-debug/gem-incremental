@@ -68,6 +68,20 @@ label.setting {
     align-items: flex-start;
     gap: var(--space-3);
   }
+
+  /* A switch is small enough to stay beside its label, which keeps
+     the long list of toggles scannable on a phone. */
+  label.setting.switch {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* A select sizes itself to its longest option, which can run past
+     the edge of a phone; stacked rows give it the full width instead. */
+  .setting > .select {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 
