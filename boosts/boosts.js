@@ -14,6 +14,7 @@ import {
   refreshDailyShop
 } from "../src/backend/cloudConsumables.js";
 import { mountShell } from "../src/ui/shell.js";
+import { signInEmptyStateHtml } from "../src/ui/signInState.js";
 import { icons } from "../src/ui/icons.js";
 import { formatCount, formatMoney, escapeHtml } from "../src/ui/format.js";
 import { notify } from "../src/ui/toast.js";
@@ -217,6 +218,11 @@ async function refresh() {
     state.loading = false;
     if (isSignInRequired()) {
       subtitle.textContent = SIGN_IN_REQUIRED_MESSAGE;
+      potionList.innerHTML = signInEmptyStateHtml({
+        title: "Potions and daily offers",
+        body: "Log in or create a free account to buy boosts for your rolls."
+      });
+      dailyShopList.innerHTML = "";
       return;
     }
     subtitle.textContent = "Could not sign you in. Refresh to try again.";

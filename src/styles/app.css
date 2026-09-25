@@ -5884,3 +5884,326 @@ input[type="radio"] {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   FACETED SVG GEM CUTS
+   gemIconHtml() draws every non-photographic gem as an inline
+   SVG cut (src/ui/gemCut.js). Facets carry a shade class; the
+   palette below turns the gem's own colours into five light
+   levels lit from the top-left. The legacy CSS body/facet/core
+   layers are hidden for these icons but the halo (::before)
+   and mutation aura/ring still render around the cut.
+   ========================================================= */
+
+.gem-icon--cut {
+  --cut-table: color-mix(in srgb, var(--gem-color-a) 62%, white 38%);
+  --cut-hi: color-mix(in srgb, var(--gem-color-a) 78%, white 22%);
+  --cut-lt: color-mix(in srgb, var(--gem-color-a) 92%, white 8%);
+  --cut-md: color-mix(in srgb, var(--gem-color-a) 50%, var(--gem-color-b) 50%);
+  --cut-dk: color-mix(in srgb, var(--gem-color-b) 72%, black 28%);
+  --cut-dp: color-mix(in srgb, var(--gem-color-b) 50%, black 50%);
+  --cut-edge: color-mix(in srgb, var(--gem-color-a) 35%, white 65%);
+  --cut-fire-opacity: 0;
+}
+
+/* From "Gemstone" upward the cut switches to the real-world material
+   palette, and each step adds edge definition and dispersion. */
+.gem-icon--cut[data-gem-realism="gemstone"],
+.gem-icon--cut[data-gem-realism="realistic"],
+.gem-icon--cut[data-gem-realism="studio"],
+.gem-icon--cut[data-gem-realism="photoreal"] {
+  --cut-table: color-mix(in srgb, var(--gem-real-b) 55%, var(--gem-real-c) 45%);
+  --cut-hi: color-mix(in srgb, var(--gem-real-b) 70%, var(--gem-real-c) 30%);
+  --cut-lt: var(--gem-real-b);
+  --cut-md: color-mix(in srgb, var(--gem-real-b) 45%, var(--gem-real-a) 55%);
+  --cut-dk: var(--gem-real-a);
+  --cut-dp: color-mix(in srgb, var(--gem-real-a) 55%, black 45%);
+  --cut-edge: color-mix(in srgb, var(--gem-real-c) 60%, white 40%);
+}
+
+.gem-icon--cut[data-gem-realism="studio"],
+.gem-icon--cut[data-gem-realism="photoreal"] {
+  --cut-fire-opacity: calc(var(--gem-dispersion) * 0.55);
+}
+
+.gem-icon--cut::after,
+.gem-icon--cut .gem-icon__facet,
+.gem-icon--cut .gem-icon__core,
+.gem-icon--cut .gem-icon__shine {
+  display: none;
+}
+
+.gem-icon__cut {
+  position: absolute;
+  inset: 3%;
+  z-index: 2;
+  width: 94%;
+  height: 94%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.gem-icon__cut .cut-facet {
+  stroke: var(--cut-edge);
+  stroke-width: 0.6;
+  stroke-opacity: 0.32;
+  stroke-linejoin: round;
+}
+
+.gem-icon__cut .c-tb { fill: var(--cut-table); }
+.gem-icon__cut .c-hi { fill: var(--cut-hi); }
+.gem-icon__cut .c-lt { fill: var(--cut-lt); }
+.gem-icon__cut .c-md { fill: var(--cut-md); }
+.gem-icon__cut .c-dk { fill: var(--cut-dk); }
+.gem-icon__cut .c-dp { fill: var(--cut-dp); }
+
+.gem-icon__cut .cut-rim {
+  fill: none;
+  stroke: var(--cut-edge);
+  stroke-width: 1.4;
+  stroke-opacity: 0.7;
+  stroke-linejoin: round;
+}
+
+.gem-icon__cut .cut-glint {
+  fill: #fff;
+  opacity: 0.62;
+}
+
+.gem-icon__cut .cut-spark {
+  fill: #fff;
+  opacity: 0.9;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gemCutTwinkle 3.2s ease-in-out infinite;
+}
+
+.gem-icon__cut .cut-fire polygon {
+  opacity: var(--cut-fire-opacity);
+  mix-blend-mode: screen;
+}
+
+.gem-icon__cut .cut-fire polygon:nth-child(5n + 1) { fill: #ff5d8f; }
+.gem-icon__cut .cut-fire polygon:nth-child(5n + 2) { fill: #5ee7ff; }
+.gem-icon__cut .cut-fire polygon:nth-child(5n + 3) { fill: #8dff9c; }
+.gem-icon__cut .cut-fire polygon:nth-child(5n + 4) { fill: #ffd66b; }
+.gem-icon__cut .cut-fire polygon:nth-child(5n + 5) { fill: #b98cff; }
+
+/* Iridescent stones (opal, moonstone…) always show play-of-colour. */
+.gem-icon--cut[data-gem-material="iridescent"] {
+  --cut-fire-opacity: 0.75;
+}
+
+/* Higher realism: crisper facet edges and a stronger rim. */
+.gem-icon--cut[data-gem-realism="faceted"] .cut-facet,
+.gem-icon--cut[data-gem-realism="gemstone"] .cut-facet {
+  stroke-opacity: 0.45;
+}
+
+.gem-icon--cut[data-gem-realism="realistic"] .cut-facet,
+.gem-icon--cut[data-gem-realism="studio"] .cut-facet,
+.gem-icon--cut[data-gem-realism="photoreal"] .cut-facet {
+  stroke-width: 0.5;
+  stroke-opacity: 0.6;
+}
+
+.gem-icon--cut[data-gem-realism="studio"] .cut-glint,
+.gem-icon--cut[data-gem-realism="photoreal"] .cut-glint {
+  opacity: 0.8;
+}
+
+/* Opaque minerals (hematite, obsidian, jasper, agate) don't sparkle
+   through their facets; metals get a hard mirror glint instead. */
+.gem-icon--cut[data-gem-material="opaque-mineral"] .cut-facet {
+  stroke-opacity: 0.18;
+}
+
+.gem-icon--cut[data-gem-material="opaque-mineral"] .cut-spark {
+  display: none;
+}
+
+.gem-icon--cut[data-gem-material="metallic"] .cut-glint {
+  opacity: 0.9;
+}
+
+/* The tiniest icons (showcase pins, chat) drop the fine detail. */
+.gem-icon--mini .gem-icon__cut .cut-facet {
+  stroke-width: 0;
+}
+
+.gem-icon--mini .gem-icon__cut .cut-spark {
+  display: none;
+}
+
+/* ---------- Mutations on SVG cuts ---------- */
+
+.gem-icon--cut.gem-icon--mutation-polished {
+  --cut-edge: #ffffff;
+}
+
+.gem-icon--cut.gem-icon--mutation-polished .cut-glint {
+  opacity: 0.9;
+}
+
+.gem-icon--cut.gem-icon--mutation-gilded .cut-rim {
+  stroke: #ffd45a;
+  stroke-width: 3;
+  stroke-opacity: 1;
+}
+
+.gem-icon--cut.gem-icon--mutation-gilded .cut-facet {
+  stroke: #ffd45a;
+  stroke-width: 1.1;
+  stroke-opacity: 0.85;
+}
+
+.gem-icon--cut.gem-icon--mutation-prismatic .gem-icon__cut {
+  animation: gemCutPrismatic 4s linear infinite;
+}
+
+.gem-icon--cut.gem-icon--mutation-prismatic .cut-fire polygon {
+  opacity: 0.8;
+}
+
+.gem-icon--cut.gem-icon--mutation-celestial .gem-icon__cut {
+  filter:
+    brightness(1.18)
+    drop-shadow(0 0 6px #b9e8ff);
+}
+
+.gem-icon--cut.gem-icon--mutation-corrupted {
+  --cut-dk: color-mix(in srgb, var(--gem-color-b) 45%, #3b0a6b 55%);
+  --cut-dp: #1c0633;
+  --cut-edge: #ef65ff;
+}
+
+.gem-icon--cut.gem-icon--mutation-corrupted .gem-icon__cut {
+  animation: corruptedJitter 1.7s steps(2, end) infinite;
+}
+
+@keyframes gemCutTwinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.55) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@keyframes gemCutPrismatic {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   MOBILE & FRIENDLINESS POLISH
+   ========================================================= */
+
+/* Session insights: short numeric tiles read fine two-up on a phone;
+   one-per-row turned the panel into a very long scroll. */
+@media (max-width: 460px) {
+  .session-insights__stats,
+  .session-insights__highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-insights__stats > div,
+  .session-insights__highlights > div {
+    padding: 11px 12px;
+  }
+}
+
+/* "1 in" prefix on rarity inputs must never wrap under the number. */
+.field-with-prefix > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.field-with-prefix input {
+  flex: 1 1 auto;
+}
+
+/* Scrollable tab strips: soft edge shadows appear only while more
+   tabs are hidden off that side (pure CSS "scroll shadows"). */
+.segmented {
+  background:
+    linear-gradient(to right, var(--surface-sunken) 30%, transparent) left center / 36px 100% no-repeat local,
+    linear-gradient(to left, var(--surface-sunken) 30%, transparent) right center / 36px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--text) 22%, transparent), transparent) left center / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--text) 22%, transparent), transparent) right center / 12px 100% no-repeat scroll,
+    var(--surface-sunken);
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.segmented__item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+
+/* Signed-out empty state shared by Inventory, Crafting, Boosts and the
+   Gem Index (src/ui/signInState.js). */
+.empty--signin {
+  grid-column: 1 / -1;
+  gap: var(--space-2);
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background:
+    radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 62%),
+    var(--surface);
+}
+
+.empty--signin svg {
+  width: 34px;
+  height: 34px;
+  color: var(--accent);
+}
+
+.empty--signin p {
+  max-width: 34ch;
+  margin: 0;
+}
+
+.empty--signin .btn {
+  margin-top: var(--space-2);
+}
+
+/* Comfortable touch targets for small icon buttons on touch screens. */
+@media (pointer: coarse) {
+  .btn--sm {
+    min-height: 40px;
+  }
+
+  .btn--icon {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Session insights header: title on its own row, then the note and
+   Clear button share the row beneath instead of squeezing the title. */
+@media (max-width: 560px) {
+  .session-insights .automation__head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .session-insights .automation__head > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  .session-insights__actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+}

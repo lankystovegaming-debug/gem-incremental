@@ -228,6 +228,57 @@ const MODE_ICONS = {
 };
 
 
+// Tab strips (.segmented) scroll sideways on phones. Bring a tapped tab
+// fully into view, and on load reveal the selected tab if it starts
+// off-screen, so players can always see where they are.
+let segmentedTabsBound = false;
+
+function scrollTabIntoView(tab) {
+  const strip = tab.closest(".segmented");
+
+  if (!strip || strip.scrollWidth <= strip.clientWidth) {
+    return;
+  }
+
+  const stripBox = strip.getBoundingClientRect();
+  const tabBox = tab.getBoundingClientRect();
+  const edge = 24;
+
+  if (tabBox.left < stripBox.left + edge) {
+    strip.scrollBy({ left: tabBox.left - stripBox.left - edge, behavior: "smooth" });
+  } else if (tabBox.right > stripBox.right - edge) {
+    strip.scrollBy({ left: tabBox.right - stripBox.right + edge, behavior: "smooth" });
+  }
+}
+
+function revealSelectedTabs() {
+  const selected = document.querySelectorAll(
+    ".segmented [aria-selected=\"true\"], .segmented [aria-current=\"page\"], .segmented .active, .segmented .is-active"
+  );
+
+  selected.forEach((tab) => scrollTabIntoView(tab));
+}
+
+function keepSegmentedTabsInView() {
+  if (segmentedTabsBound) {
+    return;
+  }
+
+  segmentedTabsBound = true;
+
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest?.(".segmented > *");
+
+    if (tab) {
+      scrollTabIntoView(tab);
+    }
+  });
+
+  window.addEventListener("load", () => {
+    requestAnimationFrame(revealSelectedTabs);
+  }, { once: true });
+}
+
 export function mountShell({ page, base = "./" }) {
   // Start presence reporting once for the entire application. It is silent
   // when the account is not authenticated and never blocks page rendering.
@@ -235,6 +286,7 @@ export function mountShell({ page, base = "./" }) {
   // Rare reveals are an application-shell concern: rolls can complete while
   // the player is on any page, so every route mounts the same durable queue.
   initGlobalCutscenes();
+  keepSegmentedTabsInView();
 
   const header = document.createElement("header");
 

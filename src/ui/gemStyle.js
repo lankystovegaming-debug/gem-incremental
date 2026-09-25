@@ -1,4 +1,5 @@
 import { getSettings } from "./settings.js";
+import { gemCutSvg } from "./gemCut.js";
 // =========================================================
 // GEM STYLE
 //
@@ -708,6 +709,9 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
   const shape = iconShapeForName(safeName);
   const realism = getSettings().gemRealism ?? "classic";
   const specimen = specimenForGem(safeName);
+  // Photoreal specimens are photographs; every other level is drawn as a
+  // faceted SVG cut (see gemCut.js).
+  const usesPhotoSpecimen = realism === "photoreal" && specimen !== "none";
 
   // Mutation ids are part of the icon identity. Keep their order stable so
   // the same specimen renders identically on rolls, profiles, leaderboards,
@@ -727,6 +731,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
     `gem-icon--${shape}`,
     ...normalizedMutations.map((id) => `gem-icon--mutation-${id}`),
     normalizedMutations.length ? "gem-icon--mutated" : "",
+    usesPhotoSpecimen ? "" : "gem-icon--cut",
     extraClass
   ]
     .filter(Boolean)
@@ -762,6 +767,7 @@ export function gemIconHtml(name, extraClass = "", mutationIds = []) {
       <span class="gem-icon__facet gem-icon__facet--b"></span>
       <span class="gem-icon__core"></span>
       <span class="gem-icon__shine"></span>
+      ${usesPhotoSpecimen ? "" : gemCutSvg(shape, hashString(safeName))}
       ${normalizedMutations.length ? `<span class="gem-icon__mutation-aura" aria-hidden="true"></span><span class="gem-icon__mutation-ring" aria-hidden="true"></span>` : ""}
     </span>
   `;
