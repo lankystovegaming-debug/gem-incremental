@@ -1,6 +1,7 @@
 import bundledGems from "../src/data/gems.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
-import { ensurePlayerAuth } from "../src/backend/auth.js";
+import { ensurePlayerAuth, isSignInRequired } from "../src/backend/auth.js";
+import { signInEmptyStateHtml } from "../src/ui/signInState.js";
 import { supabase } from "../src/backend/supabase.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 import { mountShell } from "../src/ui/shell.js";
@@ -352,7 +353,7 @@ function revealedCard(entry, record) {
       <div class="index-card__row"><span class="index-card__key">Exact combination found</span><span class="index-card__val">${record ? formatCount(record.totalFound) : "Not yet"}</span></div>
       ${record ? `<div class="index-card__row"><span class="index-card__key">Highest value</span><span class="index-card__val">${formatMoney(record.highestValue)}</span></div><div class="index-card__row"><span class="index-card__key">First discovered</span><span class="index-card__val">${escapeHtml(formatDate(record.firstDiscoveredAt))}</span></div><div class="index-card__row"><span class="index-card__key">Last discovered</span><span class="index-card__val">${escapeHtml(formatDate(record.lastDiscoveredAt))}</span></div>` : ""}
     </div>
-    ${replayable ? `<button class="button gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
+    ${replayable ? `<button class="btn btn--sm gem-replay-button" type="button" data-replay-gem="${escapeHtml(entry.gem.name)}"${replayAttrs}>▶ Replay Cutscene</button>` : ""}
   </article>`;
 }
 
@@ -468,7 +469,7 @@ function bandContentHtml(id, band) {
   const limit = bandLimits.get(id) ?? BAND_PAGE_SIZE;
   const shown = band.entries.slice(0, limit);
   const remaining = band.entries.length - shown.length;
-  return `${shown.map(gemCard).join("")}${remaining > 0 ? `<button class="button index-band__more" type="button" data-show-more="${escapeHtml(id)}">Show ${formatCount(Math.min(BAND_PAGE_SIZE, remaining))} more</button>` : ""}`;
+  return `${shown.map(gemCard).join("")}${remaining > 0 ? `<button class="btn index-band__more" type="button" data-show-more="${escapeHtml(id)}">Show ${formatCount(Math.min(BAND_PAGE_SIZE, remaining))} more</button>` : ""}`;
 }
 
 function renderBandContents(element, id) {
@@ -483,8 +484,15 @@ function renderList() {
     gemList.innerHTML = '<div class="skeleton skeleton--card"></div>'.repeat(4);
     return;
   }
+  if (state.signedOut) {
+    gemList.innerHTML = `<div class="index-error">${signInEmptyStateHtml({
+      title: "Track every gem you discover",
+      body: "Log in or create a free account to fill in your Gem Index."
+    })}</div>`;
+    return;
+  }
   if (state.error) {
-    gemList.innerHTML = `<div class="empty index-error"><p class="empty__title">Gem Index unavailable</p><p>${escapeHtml(state.error)}</p><button class="button" type="button" data-retry-index>Retry</button></div>`;
+    gemList.innerHTML = `<div class="empty index-error"><p class="empty__title">Gem Index unavailable</p><p>${escapeHtml(state.error)}</p><button class="btn btn--sm" type="button" data-retry-index>Retry</button></div>`;
     return;
   }
   const list = visibleEntries();
@@ -637,6 +645,8 @@ async function refresh({ force = false, quiet = false } = {}) {
     }
     try {
       const user = await ensurePlayerAuth();
+      state.signedOut = !user && isSignInRequired();
+      if (state.signedOut) return;
       if (!user) throw new Error("Could not sign in to load your discoveries.");
       state.playerId = user.id;
       const [discoveries, playerState, gems, mutations] = await Promise.all([

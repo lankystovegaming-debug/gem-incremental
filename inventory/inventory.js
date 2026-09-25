@@ -38,6 +38,7 @@ import { MASTERWORK_PASSIVES, MASTERWORK_ATTUNEMENTS, masterworkLevelCost, maste
 import { gemRollChance, formatChance, exactChanceDenominator, formatExactDenominator } from "../src/logic/chances.js";
 
 import { mountShell } from "../src/ui/shell.js";
+import { signInEmptyStateHtml } from "../src/ui/signInState.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { confirmDialog } from "../src/ui/dialog.js";
@@ -1596,6 +1597,17 @@ savedFilter?.addEventListener("change", () => applySavedFilter(savedFilter.value
 // LOAD
 // =========================================================
 
+// Signed-out visitors get a log-in prompt instead of skeleton cards
+// that would otherwise never resolve.
+function showSignedOutState() {
+  inventoryList.innerHTML = signInEmptyStateHtml({
+    title: "Your gems live here",
+    body: "Log in or create a free account to start rolling and building your collection."
+  });
+  equipmentList.innerHTML = signInEmptyStateHtml({ title: "No equipment yet" });
+  consumableList.innerHTML = signInEmptyStateHtml({ title: "No potions yet" });
+}
+
 async function refresh() {
   const user = await ensurePlayerAuth();
 
@@ -1604,6 +1616,7 @@ async function refresh() {
 
     if (isSignInRequired()) {
       subtitle.textContent = SIGN_IN_REQUIRED_MESSAGE;
+      showSignedOutState();
 
       return;
     }

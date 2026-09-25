@@ -32,6 +32,7 @@ import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "../src/backen
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
 
 import { mountShell } from "../src/ui/shell.js";
+import { signInEmptyStateHtml } from "../src/ui/signInState.js";
 import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import {
@@ -1422,6 +1423,10 @@ async function refresh() {
 
     if (isSignInRequired()) {
       subtitle.textContent = SIGN_IN_REQUIRED_MESSAGE;
+      recipeList.innerHTML = signInEmptyStateHtml({
+        title: "Craft pickaxes, clovers and more",
+        body: "Log in or create a free account to turn your gems into equipment."
+      });
 
       return;
     }
