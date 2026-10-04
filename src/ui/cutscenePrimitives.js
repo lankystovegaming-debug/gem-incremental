@@ -76,10 +76,28 @@ const primitiveMarkup = Object.freeze({
   "sea-bleaching-reef": `<div class="cs-ds-bleaching"><span class="cs-ds-reef-bed"></span><i></i><i></i><i></i><i></i><b></b><em></em></div>`,
   "sea-trench-descent": `<div class="cs-ds-trench"><span class="cs-ds-trench-wall cs-ds-trench-wall--left"></span><span class="cs-ds-trench-wall cs-ds-trench-wall--right"></span><span class="cs-ds-depth-cone"></span><i></i><b></b></div>`,
   "sea-golden-reef": `<div class="cs-ds-golden-reef"><span class="cs-ds-fish"></span><span class="cs-ds-fish cs-ds-fish--two"></span><i></i><i></i><i></i><i></i><b></b></div>`,
-  "sea-leviathan-pass": `<div class="cs-ds-leviathan"><span class="cs-ds-leviathan-body"></span><span class="cs-ds-leviathan-eye"></span><span class="cs-ds-leviathan-wake"></span><i></i></div>`,
-  "sea-heart-impact": `<div class="cs-ds-heart"><span class="cs-ds-surface-light"></span><span class="cs-ds-impact"></span><i></i><div><b></b><b></b><b></b></div></div>`,
-  "sea-neptune-palace": `<div class="cs-ds-palace"><span class="cs-ds-palace-hall"></span><i></i><i></i><i></i><i></i><b></b><em></em></div>`,
-  "sea-soul-awakening": `<div class="cs-ds-soul"><span class="cs-ds-ocean-column"></span><span class="cs-ds-shockwave"></span><span class="cs-ds-bubble"></span><i></i><b></b><em></em></div>`,
+  "sea-leviathan-pass": `<div class="cs-ds-leviathan">
+    <span class="cs-ds-leviathan-wake"></span>
+    <div class="cs-ds-leviathan-dragon"><span class="cs-ds-leviathan-tail"></span><span class="cs-ds-leviathan-body"></span><span class="cs-ds-leviathan-scales"></span><span class="cs-ds-leviathan-spines"></span><span class="cs-ds-leviathan-head"></span><span class="cs-ds-leviathan-eye"></span></div>
+    <span class="cs-ds-fallen-scale"></span>
+  </div>`,
+  "sea-heart-impact": `<div class="cs-ds-heart">
+    <span class="cs-ds-surface-light"></span><span class="cs-ds-heart-seabed"></span>
+    <span class="cs-ds-heart-core"></span><span class="cs-ds-heart-fragment"></span><span class="cs-ds-impact"></span>
+    <div class="cs-ds-heart-waves"><b></b><b></b><b></b></div>
+  </div>`,
+  "sea-neptune-palace": `<div class="cs-ds-palace">
+    <div class="cs-ds-polluted-surface"><span></span><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="cs-ds-palace-water"></span><span class="cs-ds-palace-hall"></span>
+    <div class="cs-ds-palace-columns"><i></i><i></i><i></i><i></i></div><span class="cs-ds-palace-crack"></span>
+    <div class="cs-ds-poseidon cs-ds-poseidon--mourning"><span class="cs-ds-god-head"></span><span class="cs-ds-god-torso"></span><span class="cs-ds-god-arm"></span><span class="cs-ds-plastic-bottle"></span><span class="cs-ds-golden-tear"></span></div>
+  </div>`,
+  "sea-soul-awakening": `<div class="cs-ds-soul"><div class="cs-ds-soul-world">
+    <span class="cs-ds-soul-surface"></span><span class="cs-ds-soul-seabed"></span>
+    <div class="cs-ds-poseidon cs-ds-poseidon--striking"><span class="cs-ds-god-head"></span><span class="cs-ds-god-torso"></span><span class="cs-ds-god-arm"></span><span class="cs-ds-trident"><i></i></span></div>
+    <div class="cs-ds-soul-waves"><i></i><i></i><i></i></div><div class="cs-ds-shockwaves"><i></i><i></i><i></i></div>
+    <span class="cs-ds-soul-bubble"><i></i></span>
+  </div></div>`,
   depth: `<span class="cs-depth-line"></span>`,
   identifier: `<div class="cs-identifier"><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
   lunar: `<div class="cs-lunar-world"><span class="cs-landscape"></span><i></i><i></i><i></i></div>`,

@@ -37,7 +37,7 @@ assert.ok(eventsIndex.indexOf("Deepcore Project")<eventsIndex.indexOf("<h2>Deep 
 assert.match(eventsListing,/deepSeaStatus/);
 assert.doesNotMatch(eventsListing,/grid\.innerHTML/);
 for(const gem of ["prismarine fragment","ancient coin","pearl of the sea","sunken treasure","abyssal coral","trenchstone","leviathan scale","heart of the sea","neptune's tear","soul of the sea god"]){assert.ok(cutscenes.includes(gem),`missing ${gem} cutscene`);}
-for(const token of ["cs-camera--track","cs-camera--plunge","cs-camera--dolly","cs-camera--surge","worldExitAt","revealPosition"]){assert.ok((cutscenes+cutsceneRenderer+cutsceneStyles).includes(token),`missing cinematic behavior ${token}`);}
+for(const token of ["cs-camera--track","cs-camera--plunge","cs-camera--dive","cs-camera--surface-rise","worldExitAt","revealPosition"]){assert.ok((cutscenes+cutsceneRenderer+cutsceneStyles).includes(token),`missing cinematic behavior ${token}`);}
 assert.match(cutsceneRenderer,/definition\.focus === false/);
 assert.match(cutsceneRenderer,/\.cs-camera-stage[^]*is-exiting/);
 assert.match(cutsceneRenderer,/label === "Impossible" && gem\.rarity > 0/);
