@@ -671,6 +671,16 @@ function gemCard(gem) {
         <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
 
         <button
+          class="btn btn--sm"
+          data-action="list"
+          type="button"
+          ${gem.locked ? "disabled" : ""}
+          title="${gem.locked ? "Unlock this gem before listing" : "List through the Black Market or Auction"}"
+        >
+          List item
+        </button>
+
+        <button
           class="btn btn--sm btn--danger"
           data-action="sell"
           type="button"
@@ -713,6 +723,7 @@ function wireGemCard(card) {
 
   const lockButton = card.querySelector('[data-action="lock"]');
   const sellButton = card.querySelector('[data-action="sell"]');
+  const listButton = card.querySelector('[data-action="list"]');
   const deleteButton = card.querySelector('[data-action="delete"]');
   const showcaseButton = card.querySelector('[data-action="showcase"]');
 
@@ -746,6 +757,12 @@ function wireGemCard(card) {
     renderGems();
   });
 
+  listButton?.addEventListener("click", () => {
+    const gem = state.gems.find((entry) => entry.id === id);
+    if (!gem || gem.locked) return;
+    location.href = `../auctions/?sell=gem&id=${encodeURIComponent(id)}`;
+  });
+
   lockButton.addEventListener("click", async () => {
     lockButton.disabled = true;
 
@@ -773,9 +790,9 @@ function wireGemCard(card) {
     if (!gem || gem.locked) return;
     const choice = await confirmDialog({ title: `Delete ${gem.gem_name}?`, body: `<p>This permanently deletes the gem. You will receive no money.</p>`, confirmLabel: "Delete permanently", tone: "danger" });
     if (choice !== "confirm") return;
-    deleteButton.disabled = true; lockButton.disabled = true; if (sellButton) sellButton.disabled = true;
+    deleteButton.disabled = true; lockButton.disabled = true; if (sellButton) sellButton.disabled = true; if (listButton) listButton.disabled = true;
     const { error } = await deleteCloudGem(id);
-    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; if (sellButton) sellButton.disabled = false; return; }
+    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; if (sellButton) sellButton.disabled = false; if (listButton) listButton.disabled = false; return; }
     state.gems = state.gems.filter((entry) => entry.id !== id);
     renderAll();
     notify.success("Gem deleted", gem.gem_name);
@@ -805,6 +822,7 @@ function wireGemCard(card) {
 
     sellButton.disabled = true;
     lockButton.disabled = true;
+    if (listButton) listButton.disabled = true;
 
     const { data, error } = await sellCloudGem(id);
 
@@ -813,6 +831,7 @@ function wireGemCard(card) {
 
       sellButton.disabled = false;
       lockButton.disabled = false;
+      if (listButton) listButton.disabled = false;
 
       return;
     }

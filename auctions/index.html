@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0b0e14">
-  <meta name="description" content="Bid on player-run Gem Incremental auctions.">
+  <meta name="description" content="Trade player lots through auctions and the weekend Black Market.">
 
   <title>Market · Gem Incremental</title>
 
@@ -42,9 +42,9 @@
   <main class="app-main">
     <div class="page-head">
       <div class="page-head__title">
-        <h1>Auction House</h1>
+        <h1>Player Market</h1>
         <p class="page-head__sub">
-          Bid on player lots or auction your own gems and consumables.
+          Bid in auctions or buy fixed-price weekend listings.
         </p>
       </div>
 
@@ -54,6 +54,8 @@
     </div>
 
     <div id="auctionStatus" class="status"></div>
+
+    <div id="blackMarketBanner" class="black-market-banner" aria-live="polite"></div>
 
     <div class="segmented tabs" role="tablist" aria-label="Market">
       <button id="browseTab" class="segmented__item tab-button active" role="tab" type="button" aria-selected="true">
@@ -69,6 +71,10 @@
 
     <!-- BROWSE AUCTIONS -->
     <section id="browseSection">
+      <div class="segmented market-mode" role="tablist" aria-label="Sale method to browse">
+        <button id="browseAuctionMode" class="segmented__item tab-button active" type="button" role="tab" aria-selected="true">Auctions</button>
+        <button id="browseBlackMarketMode" class="segmented__item tab-button" type="button" role="tab" aria-selected="false">Black Market</button>
+      </div>
       <div id="browseList" class="auction-grid">
         <div class="skeleton skeleton--card"></div>
         <div class="skeleton skeleton--card"></div>
@@ -79,13 +85,20 @@
     <!-- SELL -->
     <section id="sellSection" class="hidden">
       <div class="card sell-card">
-        <h2 class="sell-card__title">Create an auction</h2>
-        <p class="sell-card__hint">
-          Build a lot from your gems, relics and consumables. The lot leaves
-          your inventory while listed and returns if nobody bids. The listing
-          fee is charged now and is never refunded. You can have up to
-          <strong>3 auctions</strong> at once.
-        </p>
+        <h2 class="sell-card__title" id="sellTitle">List items</h2>
+        <p class="sell-card__hint" id="sellIntro"></p>
+
+        <fieldset class="sale-method">
+          <legend class="field-label">Sale method</legend>
+          <label class="sale-method__option">
+            <input type="radio" name="saleMethod" value="black-market" id="saleMethodBlack">
+            <span><strong>Black Market</strong><small>Fixed-price instant sale · weekends only</small></span>
+          </label>
+          <label class="sale-method__option">
+            <input type="radio" name="saleMethod" value="auction" id="saleMethodAuction" checked>
+            <span><strong>Auction</strong><small>Timed bidding with existing auction rules</small></span>
+          </label>
+        </fieldset>
 
         <div class="sell-columns">
           <div class="sell-column">
@@ -113,14 +126,14 @@
 
         <div class="sell-row">
           <div class="sell-field">
-            <label class="field-label" for="sellPrice">Starting bid</label>
+            <label class="field-label" for="sellPrice" id="sellPriceLabel">Starting bid</label>
             <div class="auction-money-input">
               <span class="auction-money-input__prefix">$</span>
               <input id="sellPrice" type="number" min="0.0001" step="any" value="100" inputmode="decimal">
             </div>
           </div>
 
-          <div class="sell-field">
+          <div class="sell-field" id="durationField">
             <label class="field-label" for="sellDuration">Duration</label>
             <select class="select auction-select" id="sellDuration">
               <option value="6">6 hours</option>
@@ -134,6 +147,9 @@
 
         <p class="sell-card__hint" id="sellFeePreview"></p>
         <p class="sell-card__hint" id="sellPriceMinimum"></p>
+        <p class="sell-card__hint black-market-disclosure hidden" id="blackMarketDisclosure">
+          Black Market prices must be 0.5×–25× the server-calculated reference value. A 2% fee is charged now and never refunded. A 15% tax is deducted after a sale, so the seller receives 85%.
+        </p>
 
         <button class="btn btn--primary btn--block" id="listButton" type="button" disabled>
           Create auction
@@ -143,7 +159,7 @@
 
     <!-- MY AUCTIONS -->
     <section id="mineSection" class="hidden">
-      <div class="order-board-head"><h2>My auctions</h2></div>
+      <div class="order-board-head"><h2>My listings</h2></div>
       <div id="mineList" class="auction-grid">
         <div class="skeleton skeleton--card"></div>
       </div>

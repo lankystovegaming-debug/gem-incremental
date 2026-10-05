@@ -11,7 +11,13 @@ import {
   loadMyAuctions,
   createAuctionLot,
   placeBid,
-  cancelAuction
+  cancelAuction,
+  getBlackMarketStatus,
+  loadActiveBlackMarketListings,
+  loadMyBlackMarketListings,
+  createBlackMarketListing,
+  buyBlackMarketListing,
+  cancelBlackMarketListing
 } from "../src/backend/cloudAuctions.js";
 import { isRelic } from "../src/data/enchants.js";
 import { getGemMutation } from "../src/data/mutations.js";
@@ -50,19 +56,27 @@ document.getElementById("sellSearchIcon").innerHTML = icons.search;
 const state = {
   auctions: [],
   mine: [],
+  blackMarketListings: [],
+  myBlackMarketListings: [],
+  blackMarketStatus: { open: false, opensAt: null, closesAt: null },
   gems: [],
   consumables: [],
   money: 0,
   userId: null,
   loading: true,
   lot: { gems: new Set(), potions: new Map() },
-  tab: "browse"
+  tab: "browse",
+  browseMode: "auction",
+  saleMethod: "auction"
 };
 
 const statusEl = document.getElementById("auctionStatus");
 const browseList = document.getElementById("browseList");
 const mineList = document.getElementById("mineList");
 const refreshButton = document.getElementById("refreshButton");
+const blackMarketBanner = document.getElementById("blackMarketBanner");
+const browseAuctionMode = document.getElementById("browseAuctionMode");
+const browseBlackMarketMode = document.getElementById("browseBlackMarketMode");
 
 const sellGemSearch = document.getElementById("sellGemSearch");
 const sellGemList = document.getElementById("sellGemList");
@@ -72,6 +86,13 @@ const lotSummaryList = document.getElementById("lotSummaryList");
 const sellPrice = document.getElementById("sellPrice");
 const sellDuration = document.getElementById("sellDuration");
 const listButton = document.getElementById("listButton");
+const saleMethodBlack = document.getElementById("saleMethodBlack");
+const saleMethodAuction = document.getElementById("saleMethodAuction");
+const sellTitle = document.getElementById("sellTitle");
+const sellIntro = document.getElementById("sellIntro");
+const sellPriceLabel = document.getElementById("sellPriceLabel");
+const durationField = document.getElementById("durationField");
+const blackMarketDisclosure = document.getElementById("blackMarketDisclosure");
 
 const sellFeePreview = document.getElementById("sellFeePreview");
 const sellPriceMinimum = document.getElementById("sellPriceMinimum");
@@ -80,19 +101,46 @@ function formatRate(rate) {
   return `${(rate * 100).toFixed(2).replace(/\.00$/, "")}%`;
 }
 
+function isBlackMarketSale() {
+  return state.saleMethod === "black-market";
+}
+
+function formatSgtDateTime(value) {
+  if (!value) return "Saturday at 12:00 AM SGT";
+  return new Intl.DateTimeFormat("en-SG", {
+    timeZone: "Asia/Singapore",
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short"
+  }).format(new Date(value));
+}
+
+function renderBlackMarketStatus() {
+  const open = state.blackMarketStatus.open === true;
+  blackMarketBanner.classList.toggle("is-open", open);
+  blackMarketBanner.innerHTML = open
+    ? `<span><strong>Black Market open.</strong> Fixed-price listings close and unsold items return ${escapeHtml(formatSgtDateTime(state.blackMarketStatus.closesAt))}.</span>`
+    : `<span><strong>Black Market closed.</strong> It opens ${escapeHtml(formatSgtDateTime(state.blackMarketStatus.opensAt))}. Browsing history and auctions remain available.</span>`;
+}
+
 function renderFeePreviews() {
   const startingBid = Math.max(0, Number(sellPrice.value) || 0);
   const hours = Number(sellDuration.value);
   const listingRange = selectedLotPriceRange();
-  const rate = listingFeeRate(hours);
-  const listingFee = listingRange && rate != null ? feeAmount(listingRange.referenceValue, rate) : 0;
-  const estimatedTax = listingRange ? marginalSellerTax(startingBid, listingRange.referenceValue) : 0;
+  const rate = isBlackMarketSale() ? 0.02 : listingFeeRate(hours);
+  const listingFee = listingRange && rate != null
+    ? (isBlackMarketSale() ? feeAmount(startingBid, rate) : feeAmount(listingRange.referenceValue, rate))
+    : 0;
+  const estimatedTax = listingRange
+    ? (isBlackMarketSale() ? startingBid * 0.15 : marginalSellerTax(startingBid, listingRange.referenceValue))
+    : 0;
   sellFeePreview.textContent = listingRange && rate != null
-    ? `Charged now: ${formatMoney(listingFee)} listing fee (${formatRate(rate)} of R), non-refundable. At the starting bid, estimated seller tax is ${formatMoney(estimatedTax)}.`
-    : "Choose items and a duration to see the listing fee.";
+    ? `Charged now: ${formatMoney(listingFee)} listing fee (${formatRate(rate)}${isBlackMarketSale() ? " of the asking price" : " of R"}), non-refundable. ${isBlackMarketSale() ? "Sale tax" : "At the starting bid, estimated seller tax"}: ${formatMoney(estimatedTax)}.`
+    : `Choose items${isBlackMarketSale() ? "" : " and a duration"} to see the listing fee.`;
 
   sellPriceMinimum.textContent = listingRange
-    ? `Reference value R: ${formatMoney(listingRange.referenceValue)}. Starting bid: ${formatMoney(listingRange.minimum)}–${formatMoney(listingRange.maximum)} (0.5×–10× R).`
+    ? `Reference value R: ${formatMoney(listingRange.referenceValue)}. ${isBlackMarketSale() ? "Fixed price" : "Starting bid"}: ${formatMoney(listingRange.minimum)}–${formatMoney(listingRange.maximum)} (0.5×–${isBlackMarketSale() ? "25" : "10"}× R).`
     : "Choose items to see the server-verified reference range.";
 }
 
@@ -110,7 +158,7 @@ function selectedLotPriceRange() {
   return {
     referenceValue,
     minimum: referenceValue * 0.5,
-    maximum: referenceValue * 10
+    maximum: referenceValue * (isBlackMarketSale() ? 25 : 10)
   };
 }
 
@@ -145,6 +193,18 @@ function selectTab(active) {
 for (const entry of TABS) {
   document.getElementById(entry.tab).addEventListener("click", () => selectTab(entry.id));
 }
+
+function selectBrowseMode(mode) {
+  state.browseMode = mode === "black-market" ? "black-market" : "auction";
+  browseAuctionMode.classList.toggle("active", state.browseMode === "auction");
+  browseBlackMarketMode.classList.toggle("active", state.browseMode === "black-market");
+  browseAuctionMode.setAttribute("aria-selected", String(state.browseMode === "auction"));
+  browseBlackMarketMode.setAttribute("aria-selected", String(state.browseMode === "black-market"));
+  renderBrowse();
+}
+
+browseAuctionMode.addEventListener("click", () => selectBrowseMode("auction"));
+browseBlackMarketMode.addEventListener("click", () => selectBrowseMode("black-market"));
 
 // QoL: return to whichever tab you last used instead of always "Buy".
 (function restoreTab() {
@@ -267,6 +327,10 @@ function startTicker() {
 
 function renderBrowse() {
   if (state.loading) return;
+  if (state.browseMode === "black-market") {
+    renderBlackMarketBrowse();
+    return;
+  }
   const live = state.auctions.filter((a) => a.status === "active");
   if (live.length === 0) {
     browseList.innerHTML = `
@@ -370,6 +434,69 @@ function wireBidCard(card) {
   });
 }
 
+function renderBlackMarketBrowse() {
+  const live = state.blackMarketListings.filter((listing) => listing.status === "active");
+  if (live.length === 0) {
+    browseList.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">${icons.gavel}
+        <p class="empty__title">${state.blackMarketStatus.open ? "No Black Market listings right now" : "Black Market closed"}</p>
+        <p>${state.blackMarketStatus.open
+          ? "Create a fixed-price listing from the Sell tab."
+          : "It opens Saturday at 12:00 AM SGT. Auctions remain open."}</p>
+      </div>`;
+    return;
+  }
+  browseList.innerHTML = live.map(blackMarketCard).join("");
+  for (const card of browseList.querySelectorAll(".auction-card")) wireBlackMarketCard(card);
+  startTicker();
+}
+
+function blackMarketCard(listing) {
+  const mine = listing.seller_id === state.userId;
+  const price = Number(listing.asking_price);
+  const canBuy = state.blackMarketStatus.open && !mine && state.money >= price;
+  return `
+    <article class="card auction-card auction-card--black-market" data-id="${listing.id}">
+      ${lotVisual(listing)}
+      <div class="auction-card__body">
+        <div class="auction-line"><span class="auction-line__key">Seller</span><span class="auction-line__val">${escapeHtml(listing.seller_name ?? "Unknown")}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Fixed price</span><span class="auction-line__val auction-line__val--money">${formatMoney(price)}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Reference value (R)</span><span class="auction-line__val">${formatMoney(listing.reference_value)}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Closes in</span><span class="auction-line__val auction-timer js-countdown" data-ends="${listing.expires_at}">${remainingText(listing.expires_at)}</span></div>
+      </div>
+      ${mine
+        ? '<div class="auction-card__note">This is your listing. Sellers cannot buy their own items.</div>'
+        : `<button class="btn btn--primary btn--block black-market-buy" type="button" ${canBuy ? "" : "disabled"}>Buy now · ${formatMoney(price)}</button>
+           ${state.blackMarketStatus.open ? "" : '<div class="auction-card__note">Purchases reopen Saturday at 12:00 AM SGT.</div>'}`}
+    </article>`;
+}
+
+function wireBlackMarketCard(card) {
+  const listing = state.blackMarketListings.find((entry) => Number(entry.id) === Number(card.dataset.id));
+  const button = card.querySelector(".black-market-buy");
+  if (!listing || !button) return;
+  button.addEventListener("click", async () => {
+    const price = Number(listing.asking_price);
+    const choice = await confirmDialog({
+      title: "Buy this Black Market listing?",
+      body: `<p>You will pay <strong>${escapeHtml(formatMoney(price))}</strong>. The item${Number(listing.item_count) === 1 ? "" : "s"} and payment transfer together in one server transaction.</p>`,
+      confirmLabel: `Buy for ${formatMoney(price)}`
+    });
+    if (choice !== "confirm") return;
+    button.disabled = true;
+    const { data, error } = await buyBlackMarketListing(listing.id);
+    if (error) {
+      notify.error("Could not buy listing", error.message);
+      button.disabled = false;
+      if (["black_market_closed", "black_market_listing_closed", "black_market_listing_not_found"].includes(error.code)) refresh();
+      return;
+    }
+    if (data?.money != null) { state.money = Number(data.money); shell?.setWallet(state.money); }
+    notify.success("Purchase complete", "The listing is now in your inventory.");
+    await refresh();
+  });
+}
+
 
 // =========================================================
 // SELL — lot builder
@@ -378,7 +505,8 @@ function wireBidCard(card) {
 function availableGems() {
   const query = sellGemSearch.value.trim().toLowerCase();
   return state.gems
-    .filter((gem) => !gem.locked && !isRelic(gem))
+    .filter((gem) => !gem.locked && !gem.museum_locked && !isRelic(gem))
+    .filter((gem) => !mutationsOf(gem).some((mutation) => mutation.id === "soulbound"))
     .filter((gem) => !query || gem.gem_name.toLowerCase().includes(query))
     .sort((a, b) => Number(b.rarity) - Number(a.rarity));
 }
@@ -397,10 +525,26 @@ function lotItemCount() {
 }
 
 function renderSell() {
+  renderSaleMethodUi();
   renderGemChecklist();
   renderPotionChecklist();
   renderLotSummary();
   renderFeePreviews();
+}
+
+function renderSaleMethodUi() {
+  const blackMarket = isBlackMarketSale();
+  saleMethodBlack.disabled = !state.blackMarketStatus.open;
+  saleMethodBlack.checked = blackMarket;
+  saleMethodAuction.checked = !blackMarket;
+  sellTitle.textContent = blackMarket ? "Create a Black Market listing" : "Create an auction";
+  sellIntro.innerHTML = blackMarket
+    ? `Set a fixed price for an instant public sale. Your lot is escrowed until it sells, is cancelled, or returns when the market closes. You can have up to <strong>3 Black Market listings</strong> at once.`
+    : `Build a lot from your gems and consumables. The lot leaves your inventory while listed and returns if nobody bids. The listing fee is charged now and is never refunded. You can have up to <strong>3 auctions</strong> at once.`;
+  sellPriceLabel.textContent = blackMarket ? "Fixed price" : "Starting bid";
+  durationField.classList.toggle("hidden", blackMarket);
+  blackMarketDisclosure.classList.toggle("hidden", !blackMarket);
+  listButton.textContent = blackMarket ? "Create Black Market listing" : "Create auction";
 }
 
 function renderGemChecklist() {
@@ -463,13 +607,19 @@ function renderLotSummary() {
   lotSummaryList.innerHTML = count === 0
     ? `<p class="lot-picker__empty">Pick gems or potions above to build your lot.</p>`
     : gemChips + potionChips;
-  listButton.disabled = count === 0;
+  listButton.disabled = count === 0 || (isBlackMarketSale() && !state.blackMarketStatus.open);
   renderFeePreviews();
 }
 
 sellGemSearch.addEventListener("input", renderGemChecklist);
 sellPrice.addEventListener("input", renderFeePreviews);
 sellDuration.addEventListener("change", renderFeePreviews);
+for (const radio of [saleMethodBlack, saleMethodAuction]) {
+  radio.addEventListener("change", () => {
+    state.saleMethod = saleMethodBlack.checked ? "black-market" : "auction";
+    renderSell();
+  });
+}
 sellGemList.addEventListener("change", (event) => {
   const box = event.target.closest("[data-gem]");
   if (!box) return;
@@ -497,9 +647,14 @@ lotSummaryList.addEventListener("click", (event) => {
 listButton.addEventListener("click", async () => {
   const count = lotItemCount();
   if (count === 0) return;
+  const blackMarket = isBlackMarketSale();
+  if (blackMarket && !state.blackMarketStatus.open) {
+    notify.error("Black Market closed", "It opens Saturday at 12:00 AM SGT.");
+    return;
+  }
   const price = Number(sellPrice.value);
   const hours = Number(sellDuration.value);
-  if (!Number.isFinite(price) || price <= 0) { notify.error("Invalid starting bid", "Enter a positive starting bid."); return; }
+  if (!Number.isFinite(price) || price <= 0) { notify.error(blackMarket ? "Invalid fixed price" : "Invalid starting bid", "Enter a positive price."); return; }
   const listingRange = selectedLotPriceRange();
   if (!listingRange) {
     notify.error("Cannot price this lot", "One of these consumables does not have a market reference value yet.");
@@ -507,15 +662,15 @@ listButton.addEventListener("click", async () => {
   }
   if (price < listingRange.minimum || price > listingRange.maximum) {
     notify.error(
-      "Starting bid outside allowed range",
-      `Start this auction between ${formatMoney(listingRange.minimum)} and ${formatMoney(listingRange.maximum)}.`
+      blackMarket ? "Fixed price outside allowed range" : "Starting bid outside allowed range",
+      `Choose a price between ${formatMoney(listingRange.minimum)} and ${formatMoney(listingRange.maximum)}.`
     );
     return;
   }
-  const feeRate = listingFeeRate(hours);
+  const feeRate = blackMarket ? 0.02 : listingFeeRate(hours);
   if (feeRate == null) { notify.error("Invalid duration", "Choose a supported auction duration."); return; }
-  const fee = feeAmount(listingRange.referenceValue, feeRate);
-  const sellerTax = marginalSellerTax(price, listingRange.referenceValue);
+  const fee = feeAmount(blackMarket ? price : listingRange.referenceValue, feeRate);
+  const sellerTax = blackMarket ? price * 0.15 : marginalSellerTax(price, listingRange.referenceValue);
   if (fee > state.money) { notify.error("Not enough money", `The non-refundable listing fee is ${formatMoney(fee)}. You have ${formatMoney(state.money)}.`); return; }
 
   const items = [
@@ -528,25 +683,35 @@ listButton.addEventListener("click", async () => {
   ];
 
   const choice = await confirmDialog({
-    title: count === 1 ? "Auction this item?" : `Auction a bundle of ${count} items?`,
+    title: blackMarket
+      ? (count === 1 ? "List this item on the Black Market?" : `List ${count} items on the Black Market?`)
+      : (count === 1 ? "Auction this item?" : `Auction a bundle of ${count} items?`),
     body: `
-      <p>Starting bid <strong>${escapeHtml(formatMoney(price))}</strong>, open for
-      <strong>${hours} hours</strong>.</p>
+      <p>${blackMarket ? "Fixed price" : "Starting bid"} <strong>${escapeHtml(formatMoney(price))}</strong>${blackMarket
+        ? ". Every Black Market listing expires Sunday at 11:59:59 PM SGT."
+        : `, open for <strong>${hours} hours</strong>.`}</p>
       <p style="margin-top:10px"><strong>Reference value:</strong> ${escapeHtml(formatMoney(listingRange.referenceValue))}<br>
       <strong>Listing fee charged now:</strong> ${escapeHtml(formatMoney(fee))} (${escapeHtml(formatRate(feeRate))}, non-refundable)<br>
-      <strong>Estimated seller tax at starting bid:</strong> ${escapeHtml(formatMoney(sellerTax))}</p>
+      <strong>${blackMarket ? "Sale tax" : "Estimated seller tax at starting bid"}:</strong> ${escapeHtml(formatMoney(sellerTax))}${blackMarket ? `<br><strong>Seller receives:</strong> ${escapeHtml(formatMoney(price - sellerTax))}` : ""}</p>
       <p style="margin-top:10px"><strong>Lot:</strong> ${escapeHtml(summary.join(", "))}</p>
-      <p style="margin-top:10px">The lot leaves your inventory while active. Once a valid bid is placed, the auction cannot be cancelled.</p>`,
-    confirmLabel: "Create auction"
+      <p style="margin-top:10px">The lot leaves your inventory while active.${blackMarket ? " Unsold items return when the market closes; the 2% listing fee does not." : " Once a valid bid is placed, the auction cannot be cancelled."}</p>`,
+    confirmLabel: blackMarket ? "Create listing" : "Create auction"
   });
   if (choice !== "confirm") return;
 
   listButton.disabled = true;
-  const { error } = await createAuctionLot(items, price, hours);
+  const { error } = blackMarket
+    ? await createBlackMarketListing(items, price)
+    : await createAuctionLot(items, price, hours);
   if (error) { notify.error("Could not list", error.message); listButton.disabled = false; return; }
 
   state.lot = { gems: new Set(), potions: new Map() };
-  notify.success("Auction created", count === 1 ? "Your item is open for bids." : `Your bundle of ${count} items is open for bids.`);
+  notify.success(
+    blackMarket ? "Black Market listing created" : "Auction created",
+    blackMarket
+      ? "Your fixed-price listing is live until the market closes."
+      : (count === 1 ? "Your item is open for bids." : `Your bundle of ${count} items is open for bids.`)
+  );
   await refresh();
   selectTab("mine");
 });
@@ -563,10 +728,13 @@ const STATUS_LABELS = {
 function renderMine() {
   if (state.loading) return;
 
-  mineList.innerHTML = state.mine.length
-    ? state.mine.map(mineCard).join("")
-    : `<div class="empty" style="grid-column:1/-1">${icons.gavel}<p class="empty__title">No auctions</p><p>Create one from the “Sell” tab.</p></div>`;
-  for (const card of mineList.querySelectorAll(".auction-card")) {
+  const auctionCards = state.mine.map(mineCard).join("");
+  const blackMarketCards = state.myBlackMarketListings.map(myBlackMarketCard).join("");
+  mineList.innerHTML = auctionCards || blackMarketCards
+    ? `${blackMarketCards ? '<h3 class="market-section-label">Black Market</h3>' + blackMarketCards : ""}
+       ${auctionCards ? '<h3 class="market-section-label">Auctions</h3>' + auctionCards : ""}`
+    : `<div class="empty" style="grid-column:1/-1">${icons.gavel}<p class="empty__title">No listings</p><p>Create one from the “Sell” tab.</p></div>`;
+  for (const card of mineList.querySelectorAll(".auction-card--mine:not(.auction-card--black-market)")) {
     const id = Number(card.dataset.id);
     card.querySelector('[data-action="cancel"]')?.addEventListener("click", async () => {
       const choice = await confirmDialog({
@@ -578,6 +746,21 @@ function renderMine() {
       const { error } = await cancelAuction(id);
       if (error) { notify.error("Could not cancel", error.message); return; }
       notify.success("Auction cancelled", "The lot is back in your inventory. The listing fee was not refunded.");
+      await refresh();
+    });
+  }
+  for (const card of mineList.querySelectorAll(".auction-card--black-market")) {
+    const id = Number(card.dataset.id);
+    card.querySelector('[data-action="cancel-black-market"]')?.addEventListener("click", async () => {
+      const choice = await confirmDialog({
+        title: "Cancel this Black Market listing?",
+        body: "<p>The lot returns to your inventory. The 2% listing fee is not refunded.</p>",
+        confirmLabel: "Cancel listing", cancelLabel: "Keep it", tone: "danger"
+      });
+      if (choice !== "confirm") return;
+      const { error } = await cancelBlackMarketListing(id);
+      if (error) { notify.error("Could not cancel", error.message); return; }
+      notify.success("Listing cancelled", "The lot is back in your inventory. The listing fee was not refunded.");
       await refresh();
     });
   }
@@ -613,6 +796,31 @@ function mineCard(auction) {
     </article>`;
 }
 
+function myBlackMarketCard(listing) {
+  const active = listing.status === "active";
+  const sold = listing.status === "sold";
+  const tax = sold ? Number(listing.sale_tax ?? 0) : Number(listing.asking_price) * 0.15;
+  const statusLabel = {
+    active: "Active", sold: "Sold", returned: "Unsold — returned", cancelled: "Cancelled"
+  }[listing.status] ?? listing.status;
+  return `
+    <article class="card auction-card auction-card--mine auction-card--black-market" data-id="${listing.id}">
+      ${lotVisual(listing)}
+      <div class="auction-card__body">
+        <div class="auction-line"><span class="auction-line__key">Status</span><span class="auction-line__val auction-status auction-status--${listing.status}">${statusLabel}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Fixed price</span><span class="auction-line__val auction-line__val--money">${formatMoney(listing.asking_price)}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Reference value (R)</span><span class="auction-line__val">${formatMoney(listing.reference_value)}</span></div>
+        <div class="auction-line"><span class="auction-line__key">${sold ? "Sale tax" : "Sale tax if sold"}</span><span class="auction-line__val">${formatMoney(tax)}</span></div>
+        <div class="auction-line"><span class="auction-line__key">Listing fee paid</span><span class="auction-line__val">${formatMoney(listing.listing_fee)}</span></div>
+        ${sold ? `<div class="auction-line"><span class="auction-line__key">Seller proceeds</span><span class="auction-line__val">${formatMoney(listing.seller_proceeds)}</span></div>` : ""}
+        ${sold && listing.buyer_name ? `<div class="auction-line"><span class="auction-line__key">Buyer</span><span class="auction-line__val">${escapeHtml(listing.buyer_name)}</span></div>` : ""}
+        ${active ? `<div class="auction-line"><span class="auction-line__key">Closes in</span><span class="auction-line__val auction-timer js-countdown" data-ends="${listing.expires_at}">${remainingText(listing.expires_at)}</span></div>` : ""}
+        ${listing.closure_reason ? `<div class="auction-line"><span class="auction-line__key">Closure</span><span class="auction-line__val">${escapeHtml(String(listing.closure_reason).replaceAll("_", " "))}</span></div>` : ""}
+      </div>
+      ${active ? '<button class="btn btn--danger btn--sm btn--block" data-action="cancel-black-market" type="button">Cancel listing</button>' : ""}
+    </article>`;
+}
+
 
 // =========================================================
 // LOAD
@@ -631,22 +839,27 @@ function pruneLot() {
 }
 
 async function refresh() {
-  const [auctions, mine, gems_, playerState, consumables] = await Promise.all([
+  const [auctions, mine, blackMarketListings, myBlackMarketListings, blackMarketStatus, gems_, playerState, consumables] = await Promise.all([
     loadActiveAuctions(), loadMyAuctions(),
+    loadActiveBlackMarketListings(), loadMyBlackMarketListings(), getBlackMarketStatus(),
     loadCloudGems(), loadCloudPlayerState(), loadCloudConsumables()
   ]);
 
   state.loading = false;
   state.auctions = auctions;
   state.mine = mine;
+  state.blackMarketListings = blackMarketListings;
+  state.myBlackMarketListings = myBlackMarketListings;
+  state.blackMarketStatus = blackMarketStatus;
   state.gems = Array.isArray(gems_) ? gems_ : [];
   state.consumables = Array.isArray(consumables) ? consumables : [];
   pruneLot();
 
   if (playerState) { state.money = Number(playerState.money); shell?.setWallet(state.money); }
 
-  statusEl.textContent = `${formatCount(state.auctions.length)} live auction${state.auctions.length === 1 ? "" : "s"}`;
+  statusEl.textContent = `${formatCount(state.auctions.length)} live auction${state.auctions.length === 1 ? "" : "s"} · ${formatCount(state.blackMarketListings.length)} Black Market listing${state.blackMarketListings.length === 1 ? "" : "s"}`;
 
+  renderBlackMarketStatus();
   renderBrowse();
   if (state.tab === "sell") renderSell();
   else if (state.tab === "mine") renderMine();
@@ -674,6 +887,14 @@ async function boot() {
   state.userId = user.id;
   await settleDueAuctions();
   await refresh();
+  const params = new URLSearchParams(location.search);
+  const requestedGem = Number(params.get("id"));
+  if (params.get("sell") === "gem" && Number.isSafeInteger(requestedGem) && requestedGem > 0) {
+    const gem = state.gems.find((entry) => entry.id === requestedGem);
+    if (gem && !gem.locked && !gem.museum_locked && !isRelic(gem)) state.lot.gems.add(requestedGem);
+    selectTab("sell");
+    renderSell();
+  }
 }
 
 boot();

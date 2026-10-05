@@ -47,6 +47,8 @@
     "test:deepcore": "node tests/deepcore-project-2026-test.mjs",
     "test:deep-sea": "node tests/deep-sea-event-test.mjs && node tests/deep-sea-database-test.mjs",
     "test:market-pricing": "node tests/market-pricing-limits-test.mjs",
+    "test:black-market": "node tests/black-market-v1-test.mjs",
+    "test:black-market-ui": "node tests/black-market-ui-test.mjs",
     "test:stacked-relics": "node tests/stacked-relic-balances-test.mjs",
     "test:mutation-safeguards": "node tests/mutation-safeguards-test.mjs && node tests/five-item-handler-test.mjs"
   },
