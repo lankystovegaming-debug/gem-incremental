@@ -26,11 +26,20 @@ async function api(action, extra = {}) {
 }
 function card(row, showLifetime = false) {
   const s = row.specimen;
+  const classifications = Array.isArray(s.classifications) ? s.classifications : [];
+  const classificationBadges = classifications.map(classification => {
+    const bonus = Number(classification.bonus);
+    const suffix = Number.isFinite(bonus) && bonus > 0 ? ` +${number(bonus * 100)}%` : "";
+    return `<span class="badge">${esc(classification.name)}${suffix}</span>`;
+  }).join("");
+  const baseRarity = Number(s.specimen_rarity) || (Number(s.contributions?.gem) * Number(s.contributions?.weight) * Number(s.contributions?.mutations));
+  const classificationBonus = Number(s.classification_bonus) || 0;
   return `<div data-step><div class="specimen-art">${gemIconHtml(s.gem_name)}</div><div class="eyebrow">${esc(row.gemdle_date)} · Singapore</div><h2 class="specimen-name">${esc(s.gem_name)}</h2><p>Normal rarity · 1 in ${odds(s.normal_rarity)}</p></div>
     <div class="result-stat" data-step><small>Weight</small><strong>${number(s.final_weight)} g · ${number(s.weight_multiplier)}×</strong></div>
     <div class="result-stat" data-step><small>Mutations</small><strong>${esc(mutationNames(s))}</strong></div>
-    <div data-step><div class="result-stat overall"><small>Overall Rarity</small><strong>1 in ${odds(s.overall_rarity)}</strong></div><div class="badges">${s.badges.map(b => `<span class="badge">${esc(b)}</span>`).join("")}</div>
-    <details><summary>Rarity breakdown</summary><p>Gem ×${odds(s.contributions.gem)} · Weight ×${odds(s.contributions.weight)} · Mutations ×${odds(s.contributions.mutations)}</p></details></div>
+    <div data-step><div class="result-stat overall"><small>Overall Rarity</small><strong>1 in ${odds(s.overall_rarity)}</strong></div><div class="badges">${(s.badges ?? []).map(b => `<span class="badge">${esc(b)}</span>`).join("")}</div>
+    ${classificationBadges ? `<div class="result-stat"><small>Classifications</small><div class="badges">${classificationBadges}</div></div>` : ""}
+    <details><summary>Rarity breakdown</summary><p>Gem ×${odds(s.contributions.gem)} · Weight ×${odds(s.contributions.weight)} · Mutations ×${odds(s.contributions.mutations)} · Base 1 in ${odds(baseRarity)}${classificationBonus ? ` · Classification bonus +${number(classificationBonus * 100)}%` : ""}</p></details></div>
     ${showLifetime ? `<div id="result-lifetime" class="result-stat lifetime-result" hidden><small>Lifetime Rarity Score</small><span class="lifetime-total"><strong data-lifetime-value></strong><span class="lifetime-gain" data-lifetime-gain hidden></span></span></div>` : ""}`;
 }
 async function showResult(row, animate, generation) {

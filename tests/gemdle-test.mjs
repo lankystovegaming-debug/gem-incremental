@@ -2,12 +2,76 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { singaporeDay, nextReset, rollWeight, weightContribution, gemEligible, selectionProbabilities, gemDistribution, rollMutations, generateResult, badges } from '../supabase/functions/gemdle/rules.ts';
+import { classifySpecimen, scoreSpecimen } from '../supabase/functions/gemdle/classifications.ts';
+import { GEMDLE_GEM_TAGS } from '../supabase/functions/gemdle/gemTags.ts';
 import { createHandler, lifetimeBoardFromRows } from '../supabase/functions/gemdle/handler.ts';
 import { shareText, escapeHtml } from '../gemdle/format.js';
 const gem = (name, rarity, extra = {}) => ({ name, rarity, base_weight: 10, sort_order: 0, enabled: true, ...extra });
 const now = new Date('2026-09-04T14:00:00Z');
 const draws = values => () => { assert.ok(values.length, 'unexpected random draw'); return values.shift(); };
 const approx = (a,b) => assert.ok(Math.abs(a-b) < 1e-12, `${a} != ${b}`);
+const specimen = (gem_name, names, weight_multiplier=1, overall_rarity=999999) => ({
+  gem_name, weight_multiplier, overall_rarity,
+  mutations:names.map((name,i)=>({id:`m${i}`,name})),
+  contributions:{gem:100,weight:2,mutations:3}
+});
+const scoringNames = result => result.classifications.filter(item=>item.bonus>0).map(item=>item.name);
+const scoreBonus = result => result.classifications.filter(item=>item.bonus>0).reduce((sum,item)=>sum+item.bonus,0);
+test('canonical map contains exactly 296 unique explicitly tagged gems',()=>{
+  assert.equal(Object.keys(GEMDLE_GEM_TAGS).length,296);
+  assert.deepEqual(GEMDLE_GEM_TAGS['Amber'],{primary:'Real',semantic:['Ancient/Fossil','Organic/Living']});
+  assert.deepEqual(GEMDLE_GEM_TAGS['Ontological Shard'],{primary:'Anomalous',semantic:[]});
+});
+test('exact named overrides replace generic alignments',()=>{
+  const stars=classifySpecimen({},specimen('Meteorite Peridot',['Celestial'],.8));
+  assert.ok(scoringNames(stars).includes('Written in the Stars'));
+  assert.ok(!scoringNames(stars).includes('Celestial Alignment'));
+  approx(scoreBonus(stars),.18);
+  const critical=classifySpecimen({},specimen('Uranium',['Radioactive'],.8));
+  assert.deepEqual(scoringNames(critical),['Critical Mass']);
+  const blood=classifySpecimen({},specimen('Bloodstone',['Bloody'],.8));
+  assert.deepEqual(scoringNames(blood),['Bloodbath']);
+  const solar=classifySpecimen({},specimen('Sunstone',['Radiant'],.8));
+  assert.deepEqual(scoringNames(solar),['Solar Flare']);
+});
+test('family supersession awards only the strongest size, cuisine and light-weight member',()=>{
+  const size=classifySpecimen({},specimen('Quartz',['Small','Big','Giant','Titanic']));
+  assert.deepEqual(scoringNames(size),['Pocket Titanic','Near Perfect']);
+  const cuisine=classifySpecimen({},specimen('Quartz',['Edible','Moldy','Rotten']));
+  assert.ok(scoringNames(cuisine).includes('Rotten Cuisine'));
+  assert.ok(!scoringNames(cuisine).includes('Questionable Cuisine'));
+  const light=classifySpecimen({},specimen('Quartz',[],.505));
+  assert.ok(scoringNames(light).includes('Bare Minimum'));
+  assert.ok(!scoringNames(light).includes('Very Light'));
+});
+test('independent classification families stack additively without duplicate family bonuses',()=>{
+  const result=classifySpecimen({},specimen('error 404',['Balanced','Corrupted','Chaotic'],.5));
+  assert.deepEqual(scoringNames(result),['Perfectly Balanced','Corrupted Alignment','Perfect Chaos','Bare Minimum']);
+  approx(result.classification_bonus,.30+.65+.25+.15);
+  assert.equal(new Set(result.classifications.map(item=>item.family)).size,result.classifications.length);
+  const scored=scoreSpecimen({},specimen('error 404',['Balanced','Corrupted','Chaotic'],.5));
+  approx(scored.overall_rarity,600*(1+1.35));
+});
+test('representative old specimens are rescored from contribution values idempotently',()=>{
+  const old=specimen('Amber',['Alive','Fossilised'],1,123456789);
+  const first=scoreSpecimen({},old);
+  const second=scoreSpecimen({}, {...old,...first});
+  assert.equal(first.specimen_rarity,600);
+  assert.equal(second.specimen_rarity,600);
+  assert.equal(first.overall_rarity,second.overall_rarity);
+  assert.deepEqual(scoringNames(first),['Deathly Paradox','Living Fossil','Living Alignment','Ancient Alignment','Living Dead','Near Perfect']);
+});
+test('primary crosses, semantic aliases and raw integer weights classify once per family',()=>{
+  const result=classifySpecimen({},specimen('Aquamarine',['Fake','Aquatic'],3.004));
+  assert.deepEqual(scoringNames(result),['Aquatic Alignment','Impostor','Suspiciously Precise']);
+  const celestial=classifySpecimen({},specimen('Tranquillityite',['Cosmic','Starstruck']));
+  assert.equal(scoringNames(celestial).filter(name=>name==='Celestial Alignment').length,1);
+});
+test('structural tags derive from backend fields and remain zero-bonus',()=>{
+  const result=classifySpecimen({affected_by_luck:false,availability_mode:'date_range',metadata:{deepcore_stage:2,creator:'@author'}},specimen('Core Sample',[]));
+  assert.deepEqual(result.gem_tags.structural,['Deepcore','Flat','Community']);
+  assert.ok(result.classifications.filter(item=>item.kind==='structural').every(item=>item.bonus===0));
+});
 test('Singapore date and reset boundary', () => {
   assert.equal(singaporeDay(new Date('2026-09-04T15:59:59.999Z')), '2026-09-04');
   assert.equal(singaporeDay(new Date('2026-09-04T16:00:00Z')), '2026-09-05');
