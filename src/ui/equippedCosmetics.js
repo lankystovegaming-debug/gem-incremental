@@ -1,7 +1,7 @@
 import { supabase } from '../backend/supabase.js';
 import { cosmeticStyle } from './cosmetics.js';
 
-const rollStyles = new Set(['glitched','celestial','overgrown','retro-desktop']);
+const rollStyles = new Set(['glitched','celestial','overgrown','retro-desktop','prismatic']);
 
 export async function mountEquippedRollCard() {
   const stage = document.getElementById('section-roll-stage');

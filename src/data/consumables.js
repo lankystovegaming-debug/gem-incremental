@@ -19,6 +19,7 @@ export const MARKET_REFERENCE_PRICES = Object.freeze({
   "mass-potion-4": 500000,
   "legendary-potion": 3000000,
   "mythic-potion": 15000000,
+  "exotic-potion": undefined,
   "relic-potion": 50000,
   "seismic-potion": 1750000,
   "unstable-core": 10000000,
@@ -83,6 +84,18 @@ consumables.push(
     effectValue: 10000,
     oneRoll: true,
     marketReferencePrice: 0,
+    shop: { purchasable: false, price: null }
+  },
+  {
+    id: "exotic-potion",
+    name: "Exotic Potion",
+    family: "luck",
+    tier: 4,
+    durationMs: null,
+    effectValue: 100000,
+    oneRoll: true,
+    description: "Adds +100,000 Luck to one successful roll. Only found in Prismatic Geodes.",
+    marketReferencePrice: undefined,
     shop: { purchasable: false, price: null }
   }
 );

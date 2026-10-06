@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { singaporeDay, nextReset, rollWeight, weightContribution, gemEligible, selectionProbabilities, gemDistribution, rollMutations, generateResult, badges } from '../supabase/functions/gemdle/rules.ts';
-import { createHandler } from '../supabase/functions/gemdle/handler.ts';
+import { createHandler, lifetimeBoardFromRows } from '../supabase/functions/gemdle/handler.ts';
 import { shareText, escapeHtml } from '../gemdle/format.js';
 const gem = (name, rarity, extra = {}) => ({ name, rarity, base_weight: 10, sort_order: 0, enabled: true, ...extra });
 const now = new Date('2026-09-04T14:00:00Z');
@@ -76,14 +76,14 @@ test('seeded simulation matches old weight band rates', () => {
   for(let i=0;i<200000;i++){const w=rollWeight(rng); counts[w<.85?0:w<1.1?1:w<1.5?2:w<2?3:4]++;}
   [.15,.60,.15,.0375,.0625].forEach((p,i)=>assert.ok(Math.abs(counts[i]/200000-p)<.003));
 });
-function mockAdmin({ authError=false, existing=null, boardError=false }={}) {
+function mockAdmin({ authError=false, existing=null, history=null, lifetimeScore=0, boardError=false, lifetimeBoardError=false, fallbackData=null }={}) {
   const calls=[];
   const admin={calls,auth:{getUser:async token=>({data:{user:authError?null:{id:'real-user'}},error:authError?{}:null})},from(table){
-    const filters=[]; const query={select(){return this},eq(k,v){filters.push([k,v]);return this},order(){return this},range(){return this},limit(){return this},lt(k,v){filters.push([k,v]);return this},maybeSingle(){return this},then(resolve){
-      calls.push({table,filters});const data=table==='players'?{id:'real-user'}:table==='user_roll_luck_rarity_mult'?null:table==='private_feature_gems'?[gem('X',100)]:table==='game_mutations'?[]:existing;
+    const filters=[];let selected=''; const query={select(columns){selected=columns;return this},eq(k,v){filters.push([k,v]);return this},in(k,v){filters.push([k,v]);return this},order(){return this},range(){return this},limit(){return this},lt(k,v){filters.push([k,v]);return this},maybeSingle(){return this},then(resolve){
+      calls.push({table,filters,selected});const data=fallbackData&&table==='gemdle_results'&&selected==='id,player_id,overall_rarity'?fallbackData.results:fallbackData&&table==='players'&&selected==='id,username,leaderboard_hidden'?fallbackData.players:fallbackData&&table==='user_roll_luck_rarity_mult'&&selected==='player_id,active_until'?fallbackData.bans:table==='players'?{id:'real-user'}:table==='user_roll_luck_rarity_mult'?null:table==='private_feature_gems'?[gem('X',100)]:table==='game_mutations'?[]:history??existing;
       return Promise.resolve({data,error:null}).then(resolve);
     }};return query;
-  }, async rpc(name,args){calls.push({name,args});if(name==='get_active_global_event')return {data:null};if(name==='save_gemdle_result')return {data:{gemdle_date:'2026-09-04',rolled_at:now.toISOString(),specimen:args.p_specimen}};return boardError?{error:new Error('board down')}:{data:{entries:[],own_rank:null}};}};
+  }, async rpc(name,args){calls.push({name,args});if(name==='get_active_global_event')return {data:null};if(name==='save_gemdle_result')return {data:{gemdle_date:'2026-09-04',rolled_at:now.toISOString(),specimen:args.p_specimen}};if(name==='gemdle_lifetime_rarity_score')return {data:lifetimeScore};if(name==='gemdle_daily_board')return boardError?{error:new Error('board down')}:{data:{entries:[],own_rank:null}};if(name==='gemdle_lifetime_board')return lifetimeBoardError?{error:new Error('lifetime board down')}:{data:{entries:[{rank:1,username:'Player',total_score:lifetimeScore,discoveries:2,is_you:true}],own_rank:1,participants:1}};throw new Error(`unexpected rpc ${name}`);}};
   return admin;
 }
 const req = body => new Request('http://localhost/gemdle',{method:'POST',headers:{Authorization:'Bearer valid'},body:JSON.stringify(body)});
@@ -100,7 +100,29 @@ test('forged identity, score and date are ignored; existing result does not rero
   assert.deepEqual(admin.calls.find(c=>c.table==='gemdle_results').filters,[['player_id','real-user'],['gemdle_date','2026-09-04']]);
 });
 test('roll saves server output and survives a leaderboard outage',async()=>{
-  const admin=mockAdmin({boardError:true}); const response=await createHandler(admin,()=>now)(req({action:'roll',specimen:{gem_name:'FORGED'}}));
-  assert.equal(response.status,200);const data=await response.json();assert.equal(data.result.specimen.gem_name,'X');assert.equal(data.board,null);
+  const admin=mockAdmin({boardError:true,lifetimeScore:4321}); const response=await createHandler(admin,()=>now)(req({action:'roll',specimen:{gem_name:'FORGED'}}));
+  assert.equal(response.status,200);const data=await response.json();assert.equal(data.result.specimen.gem_name,'X');assert.equal(data.board,null);assert.equal(data.lifetime_rarity_score,4321);assert.equal(data.lifetime_board.own_rank,1);
   const save=admin.calls.find(c=>c.name==='save_gemdle_result');assert.equal(save.args.p_player_id,'real-user');assert.equal(save.args.p_rolled_at,now.toISOString());
+});
+test('a lifetime board outage does not hide the saved result or daily board',async()=>{
+  const fallbackData={results:[{id:'1',player_id:'real-user',overall_rarity:40},{id:'2',player_id:'real-user',overall_rarity:60},{id:'3',player_id:'other',overall_rarity:200}],players:[{id:'real-user',username:'Me',leaderboard_hidden:false},{id:'other',username:'Other',leaderboard_hidden:false}],bans:[]};
+  const admin=mockAdmin({lifetimeBoardError:true,lifetimeScore:100,fallbackData});
+  const response=await createHandler(admin,()=>now)(req({action:'state'}));
+  assert.equal(response.status,200);const data=await response.json();
+  assert.equal(data.lifetime_board.own_rank,2);assert.equal(data.lifetime_board.participants,2);assert.equal(data.lifetime_board.entries[1].total_score,100);assert.deepEqual(data.board,{entries:[],own_rank:null});
+});
+test('lifetime board fallback preserves ties, privacy and active suspensions',()=>{
+  const results=[{player_id:'me',overall_rarity:100},{player_id:'tie',overall_rarity:100},{player_id:'hidden',overall_rarity:999},{player_id:'banned',overall_rarity:888},{player_id:'bad',overall_rarity:'NaN'}];
+  const players=[{id:'me',username:'Me'},{id:'tie',username:''},{id:'hidden',username:'Hidden',leaderboard_hidden:true},{id:'banned',username:'Banned'},{id:'bad',username:'Bad'}];
+  const board=lifetimeBoardFromRows(results,players,[{player_id:'banned',active_until:'2027-01-01T00:00:00Z'}],'me',now);
+  assert.equal(board.participants,2);assert.equal(board.own_rank,1);assert.deepEqual(board.entries.map(entry=>[entry.rank,entry.username,entry.total_score]),[[1,'Me',100],[1,'Player',100]]);
+  assert.ok(board.entries.every(entry=>!('player_id' in entry)));
+});
+test('history includes the server-calculated lifetime rarity score',async()=>{
+  const history=Array.from({length:31},(_,i)=>({gemdle_date:`2026-08-${String(31-i).padStart(2,'0')}`,specimen:{gem_name:'X'}}));
+  const admin=mockAdmin({history,lifetimeScore:123456});
+  const response=await createHandler(admin,()=>now)(req({action:'history'}));
+  assert.equal(response.status,200);const data=await response.json();
+  assert.equal(data.history.length,30);assert.equal(data.next_cursor,'2026-08-02');assert.equal(data.lifetime_rarity_score,123456);
+  assert.deepEqual(admin.calls.find(c=>c.name==='gemdle_lifetime_rarity_score').args,{p_player_id:'real-user'});
 });

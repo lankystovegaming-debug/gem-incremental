@@ -154,9 +154,9 @@ function renderHero(profile) {
 
   const cosmetics = profile.cosmetics || {};
   const previewStyle = new URLSearchParams(location.search).get('cosmeticPreview');
-  const allowedPreview = ['glitched','celestial','overgrown'].includes(previewStyle) ? previewStyle : null;
+  const allowedPreview = ['glitched','celestial','overgrown','prismatic'].includes(previewStyle) ? previewStyle : null;
   const backgroundStyle = allowedPreview || (cosmetics.background ? cosmeticStyle(cosmetics.background) : 'default');
-  const collectibleTitle = allowedPreview ? { name:`[${allowedPreview.toUpperCase()}]`, rarity:'Epic', description:'Cosmetic Store preview', visual_config:{ style:allowedPreview, icon:allowedPreview === 'celestial' ? '✦' : allowedPreview === 'overgrown' ? '❧' : '⌁' } } : cosmetics.title;
+  const collectibleTitle = allowedPreview ? { name:`[${allowedPreview.toUpperCase()}]`, rarity:allowedPreview === 'prismatic' ? 'Mythic' : 'Epic', description:'Cosmetic Store preview', visual_config:{ style:allowedPreview, icon:allowedPreview === 'celestial' ? '✦' : allowedPreview === 'overgrown' ? '❧' : allowedPreview === 'prismatic' ? '◇' : '⌁' } } : cosmetics.title;
   profileHero.dataset.background = backgroundStyle;
   const profilePage = document.querySelector('.profile-page');
   profilePage.dataset.decor = cosmetics.decor ? cosmeticStyle(cosmetics.decor) : 'none';

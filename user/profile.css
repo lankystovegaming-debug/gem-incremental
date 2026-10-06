@@ -454,6 +454,7 @@
 .profile-hero[data-background="sunrise"] { background: radial-gradient(ellipse at top right,#ad77262b,transparent 70%),var(--surface-raised); }
 .profile-hero[data-background="diamond"] { background: radial-gradient(ellipse at top right,#52b0c42b,transparent 70%),var(--surface-raised); }
 .profile-hero[data-background="prismatic"], .profile-hero[data-background="mutation"] { background: linear-gradient(120deg,#8d629523,#34798c23),var(--surface-raised); }
+.profile-hero[data-background="prismatic"]{border-color:#bceff07d;background:linear-gradient(132deg,transparent 0 22%,#c7f8ff24 22.3% 23%,transparent 23.3% 58%,#d7b8ff20 58.3% 59%,transparent 59.3%),linear-gradient(118deg,#07141c,#142838 52%,#251a37);box-shadow:inset 0 0 65px #bff6ff17,0 18px 45px #0007}.profile-hero[data-background="prismatic"]:after{content:"";position:absolute;inset:12px;z-index:-1;border:1px solid #d2f8ff40;clip-path:polygon(0 0,30% 0,34% 7%,71% 0,100% 0,100% 73%,93% 79%,100% 100%,0 100%,0 28%,7% 22%);background:conic-gradient(from 20deg at 70% 30%,#9eeeff18,#d4b7ff1c,#ffe6a81b,#9eeeff18)}
 .profile-hero[data-background="bronze"], .profile-hero[data-background="gold"] { background: radial-gradient(ellipse at top right,#ad77262b,transparent 70%),var(--surface-raised); }
 .profile-hero[data-background="stone"], .profile-hero[data-background="archive"] { background: linear-gradient(135deg,#99b9a41f,transparent),var(--surface-raised); }
 .profile-hero[data-background="impossible"] {

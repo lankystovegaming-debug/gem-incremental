@@ -53,10 +53,17 @@ export const COSMETIC_ITEMS = themes.flatMap(theme => Object.entries(slotDetails
   { id: 'retro-desktop-roll-card', name: 'Retro Desktop', type: 'roll_card', typeLabel: 'Roll Card', price: 250, style: 'retro-desktop', icon: '▣', description: 'Original early-desktop window styling for single and batch rolls. Automatically follows light or dark mode. Concept credit: Flame.', featured: true, credit: 'Flame' }
 ]);
 
+export const PRISMATIC_ITEMS = [
+  { id: 'prismatic-title', name: '[PRISMATIC]', type: 'title', typeLabel: 'Title', shardPrice: 10, style: 'prismatic', icon: '◇', description: 'A title cut from refracted crystal light.' },
+  { id: 'prismatic-leaderboard-skin', name: 'Prismatic Leaderboard Skin', type: 'leaderboard_skin', typeLabel: 'Leaderboard', shardPrice: 15, style: 'prismatic', icon: '◇', description: 'Faceted crystal edges and restrained refracted highlights.' },
+  { id: 'prismatic-roll-card', name: 'Prismatic Roll Card', type: 'roll_card', typeLabel: 'Roll Card', shardPrice: 20, style: 'prismatic', icon: '◇', description: 'A translucent gem-cut roll surface with shifting refraction.' },
+  { id: 'prismatic-background', name: 'Prismatic Profile Background', type: 'background', typeLabel: 'Profile Background', shardPrice: 20, style: 'prismatic', icon: '◇', description: 'Angular crystal planes with subtle split-light highlights.' }
+];
+
 export const STORE_SECTIONS = [
   ['featured', 'Featured'], ['collections', 'Collections'], ['title', 'Titles'],
   ['background', 'Profile Backgrounds'], ['roll_card', 'Roll Cards'],
-  ['leaderboard_skin', 'Leaderboard'], ['my-cosmetics', 'My Cosmetics']
+  ['leaderboard_skin', 'Leaderboard'], ['prismatic', 'Prismatic'], ['my-cosmetics', 'My Cosmetics']
 ];
 
 export const formatFacets = value => `${Number(value || 0).toLocaleString()} Facets`;
@@ -67,4 +74,10 @@ export const collectionUpgradePrice = (collection, ownedIds) => {
     .filter(item => item.collectionId === collection.id && !owned.has(item.id))
     .reduce((sum, item) => sum + item.price, 0);
   return Math.ceil(remaining * 0.75);
+};
+
+export const prismaticCollectionPrice = ownedIds => {
+  const owned = ownedIds instanceof Set ? ownedIds : new Set(ownedIds || []);
+  const remaining = PRISMATIC_ITEMS.filter(item => !owned.has(item.id)).reduce((sum, item) => sum + item.shardPrice, 0);
+  return Math.ceil(remaining * 50 / 65);
 };

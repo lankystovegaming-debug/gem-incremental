@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:request-stress": "node tests/request-stress-test.mjs",
     "test:maintenance": "node tests/game-maintenance-shutdown-test.mjs",
     "test:events": "node tests/global-random-events-test.mjs",
     "test:pending-gems": "node --test tests/pending-gems-test.mjs && node tests/pending-gems-database-test.mjs",
@@ -26,6 +27,7 @@
     "test:bundles": "node tests/gameplay-bundles-test.mjs && node tests/gameplay-bundles-database-test.mjs",
     "test:bundles-ui": "node tests/gameplay-bundles-ui-test.mjs",
     "test:cosmetics": "node tests/player-cosmetics-database-test.mjs && node tests/player-cosmetics-ui-test.mjs && node tests/facets-store-ui-test.mjs",
+    "test:prismatic": "node tests/prismatic-geodes-database-test.mjs && node tests/prismatic-geodes-ui-test.mjs",
     "preview:cosmetics": "PROFILE_PREVIEW_FIXTURE=artifacts/cosmetics-preview.json node tests/player-cosmetics-database-test.mjs && node tests/profile-preview-server.mjs",
     "test:qol": "node tests/qol-rules-test.mjs && node tests/qol-database-test.mjs && node tests/qol-settings-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
     "test:qol-ui": "node tests/qol-ui-test.mjs",

@@ -138,6 +138,8 @@
     repeating-radial-gradient(ellipse at 6% 20%, transparent 0 12px, #79bd6850 13px 15px, transparent 16px 29px);
 }
 
+.leaderboard-row[data-leaderboard-skin="prismatic"]{--row-skin:#baf5ff;--row-skin-2:#ffe7a4;position:relative;isolation:isolate;overflow:hidden;min-height:78px;margin-block:7px;padding:15px 18px;border:1px solid #baf5ff9c;background:linear-gradient(118deg,#07141d,#142838 54%,#251a38)!important;box-shadow:inset 0 0 38px #c7f8ff1a,0 0 24px #a8edff2b}.leaderboard-row[data-leaderboard-skin="prismatic"]:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(132deg,transparent 0 18%,#c8f8ff33 18.3% 19%,transparent 19.3% 47%,#d8b9ff2b 47.3% 48%,transparent 48.3%),linear-gradient(45deg,transparent 0 68%,#ffe8a42b 68.3% 69%,transparent 69.3%)}.leaderboard-row[data-leaderboard-skin="prismatic"]>*{position:relative;z-index:1}.leaderboard-row[data-leaderboard-skin="prismatic"] .rank{color:#ffe7a4!important;text-shadow:0 0 14px currentColor}.leaderboard-row[data-leaderboard-skin="prismatic"] .lb-name-text{color:#e8fbff;text-shadow:0 0 12px #a9efff}
+
 @media (max-width: 620px) {
   .leaderboard-row:is([data-leaderboard-skin="glitched"],[data-leaderboard-skin="celestial"],[data-leaderboard-skin="overgrown"]) {
     min-height: 68px;

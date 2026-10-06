@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { PRISMATIC_ITEMS, STORE_SECTIONS, prismaticCollectionPrice } from '../src/data/cosmeticStore.js';
+
+const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+assert.equal(STORE_SECTIONS.at(-2)[0], 'prismatic');
+assert.equal(STORE_SECTIONS.at(-1)[0], 'my-cosmetics');
+assert.deepEqual(PRISMATIC_ITEMS.map(item => item.shardPrice), [10, 15, 20, 20]);
+assert.equal(prismaticCollectionPrice([]), 50);
+assert.equal(prismaticCollectionPrice(['prismatic-title']), 43);
+assert.equal(prismaticCollectionPrice(PRISMATIC_ITEMS.map(item => item.id)), 0);
+
+const store = read('../store/store.js');
+for (const copy of ['DOUBLE STOCK!', 'Purchase & crack Geode', 'DISCOVERED', 'Skip animations', 'Browse Cosmetics', 'Redeem Voucher']) assert.ok(store.includes(copy));
+assert.match(store, /pendingGeodeRequestId \|\|= crypto\.randomUUID\(\)/);
+const html = read('../store/index.html');
+assert.match(html, /id="geodeDialog"/);
+assert.match(html, /id="voucherDialog"/);
+const css = read('../store/store.css');
+assert.match(css, /\.prismatic-hero/);
+assert.match(store, /FUZZY LOOT TABLE/);
+assert.match(store, /\$50,000–\$500,000/);
+for (const reward of ['Tier IV potions', 'Prismatic Shard', 'Exotic Potion', 'Cosmetic Voucher', 'Ultimate Cosmetic Voucher']) assert.match(store, new RegExp(reward));
+assert.match(css, /\.prismatic-loot__tiers/);
+assert.match(css, /\.reward-ultimate/);
+assert.match(css, /@media\(max-width:560px\).*\.prismatic-hero/);
+assert.match(css, /prefers-reduced-motion:reduce/);
+for (const [file, selector] of [['../style.css','data-roll-card="prismatic"'],['../leaderboards/leaderboards.css','data-leaderboard-skin="prismatic"'],['../user/profile.css','data-background="prismatic"']]) assert.ok(read(file).includes(selector));
+assert.match(read('../src/ui/equippedCosmetics.js'), /rollStyles[^;]+prismatic/);
+assert.match(read('../leaderboards/leaderboards.js'), /leaderboardSkinStyles[^;]+prismatic/);
+console.log('Prismatic Store navigation, mobile layout, opening flow, vouchers and cosmetic previews passed.');

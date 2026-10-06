@@ -60,6 +60,22 @@
       <small>Facets are account-bound digital cosmetic credit. Supporter/donation recognition is separate from this Store.</small>
     </form>
   </dialog>
+
+  <dialog class="store-dialog geode-dialog" id="geodeDialog" aria-label="Prismatic Geode opening">
+    <div class="geode-stage" id="geodeStage"></div>
+    <div class="dialog-actions" id="geodeActions"></div>
+  </dialog>
+
+  <dialog class="store-dialog voucher-dialog" id="voucherDialog" aria-labelledby="voucherDialogTitle">
+    <form method="dialog" id="voucherForm">
+      <button class="dialog-close" value="cancel" aria-label="Close">×</button>
+      <span class="store-kicker">ATOMIC REDEMPTION</span>
+      <h2 id="voucherDialogTitle">Redeem Voucher</h2>
+      <div id="voucherDialogBody"></div>
+      <p id="voucherDialogStatus" role="status" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="btn" value="cancel">Cancel</button><button class="btn btn--voucher" id="confirmVoucher" value="default">Redeem Voucher</button></div>
+    </form>
+  </dialog>
   <script type="module" src="/store/store.js"></script>
 </body>
 </html>

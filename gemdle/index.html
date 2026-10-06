@@ -28,8 +28,15 @@
   <div class="gemdle-columns">
     <section class="gemdle-card"><div class="section-heading"><h2>Today's Gemdle</h2><button id="refresh-board" class="btn">Refresh</button></div>
       <p id="own-rank"></p><div id="leaderboard">Loading leaderboard…</div></section>
-    <section class="gemdle-card"><h2>Your collection</h2><p>Every daily discovery, kept in your history.</p>
-      <div id="history">Loading history…</div><button id="more" class="btn" hidden>Load older results</button></section>
+    <section id="lifetime-board-card" class="gemdle-card"><div class="section-heading"><h2>Lifetime Rarity</h2><button id="refresh-lifetime" class="btn">Refresh</button></div>
+      <p>Total Overall Rarity across every Gemdle discovery.</p><p id="lifetime-own-rank"></p><div id="lifetime-leaderboard">Loading leaderboard…</div></section>
+    <details id="collection-card" class="gemdle-card collection-card" open>
+      <summary class="collection-summary">
+        <span class="collection-copy"><span class="collection-title">Your collection</span><span>Every daily discovery, kept in your history.</span></span>
+        <span class="collection-score"><small>Lifetime rarity score</small><span class="lifetime-total"><strong id="lifetime-score">Loading…</strong><span id="lifetime-gain" class="lifetime-gain" hidden></span></span></span>
+      </summary>
+      <div class="collection-content"><div id="history">Loading history…</div><button id="more" class="btn" hidden>Load older results</button></div>
+    </details>
   </div>
   <details class="gemdle-card"><summary>How Overall Rarity works</summary>
     <p>Overall Rarity considers your gem, successful mutations, and exceptionally heavy weights. Ordinary weights and no mutation do not increase it. It measures impressiveness, not the odds of an exact specimen.</p>

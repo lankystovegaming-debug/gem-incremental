@@ -35,7 +35,7 @@ assert.doesNotMatch(panel, /data-action=/);
 assert.doesNotMatch(panel, /id="devTarget"/);
 
 // Every maintenance command is present.
-for (const name of ["give", "set", "boost", "cooldown", "massroll", "players", "online", "gems", "potions", "equipment", "whoami"]) {
+for (const name of ["give", "set", "boost", "cooldown", "massroll", "request", "players", "online", "gems", "potions", "equipment", "whoami"]) {
   assert.match(panel, new RegExp(`name: "${name}"`), `missing command: ${name}`);
 }
 

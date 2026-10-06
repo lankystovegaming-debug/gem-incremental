@@ -103,7 +103,7 @@ let showcaseMap = {};
 let profileIdMap = {};
 let leaderboardSkinMap = {};
 let impossibleWorldFirstId = null;
-const leaderboardSkinStyles = new Set(['glitched', 'celestial', 'overgrown']);
+const leaderboardSkinStyles = new Set(['glitched', 'celestial', 'overgrown', 'prismatic']);
 
 function showcasePins(username) {
   return showcasePinsHtml(showcaseMap[username]);

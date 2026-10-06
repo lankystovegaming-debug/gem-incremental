@@ -10,6 +10,7 @@ import { rollWeightMultiplier } from "../logic/weight.js";
 import { notify } from "./toast.js";
 import { formatMoney, formatCount, rarityLabel } from "./format.js";
 import { createCliTerminal } from "./cli/terminal.js";
+import { runRequestStress } from "./cli/requestStress.js";
 
 
 // =========================================================
@@ -43,6 +44,7 @@ let progress = 0;
 let panel = null;
 let catalogGems = gems;
 let onlinePlayers = [];
+let requestStressController = null;
 
 
 export function initDevPanel() {
@@ -92,6 +94,7 @@ function toggle() {
 
 function close() {
   massRoll.cancelled = true;
+  requestStressController?.abort();
 
   panel?.remove();
 
@@ -571,6 +574,62 @@ function buildCommands(user) {
     }
   };
 
+  const request = {
+    name: "request",
+    group: "Tools",
+    usage: "/request <number>",
+    summary: "Send read-only database API requests over one minute.",
+    man: [
+      "Sends the requested number of am_i_maintainer database calls over 60 seconds.",
+      "At most 32 calls run at once. The result shows any shortfall or errors.",
+      "Close the CLI (Esc) to stop the test."
+    ],
+    async run(args, term) {
+      const raw = args[0];
+      const total = Number(raw);
+
+      if (args.length !== 1 || !/^\d+$/.test(raw ?? "") ||
+          !Number.isSafeInteger(total) || total < 1) {
+        term.printError("Enter a positive whole number up to 9,007,199,254,740,991.");
+        return;
+      }
+
+      if (requestStressController) {
+        term.printError("A request test is already running.");
+        return;
+      }
+
+      const controller = new AbortController();
+      requestStressController = controller;
+      term.printMuted(`Sending up to ${formatCount(total)} read-only database requests over 60 seconds…`);
+
+      try {
+        const result = await runRequestStress(
+          total,
+          (signal) => supabase.rpc("am_i_maintainer").abortSignal(signal),
+          { controller }
+        );
+
+        if (!controller.signal.aborted || result.timedOut) {
+          const unattempted = total - result.sent;
+          const unfinished = result.sent - result.succeeded - result.failed;
+          term.print(
+            `Requests: ${formatCount(result.sent)} sent, ${formatCount(result.succeeded)} succeeded, ` +
+            `${formatCount(result.failed)} failed in ${(result.elapsedMs / 1000).toFixed(1)}s.`
+          );
+          if (unfinished > 0) {
+            term.printWarn(`${formatCount(unfinished)} were still in flight when the test stopped.`);
+          }
+          if (unattempted > 0) {
+            term.printWarn(`${formatCount(unattempted)} could not be sent within one minute.`);
+          }
+        }
+      } finally {
+        if (requestStressController === controller) requestStressController = null;
+      }
+    }
+  };
+
   const players = {
     name: "players",
     group: "Lookup",
@@ -684,7 +743,7 @@ function buildCommands(user) {
   };
 
   return [
-    give, set, boost, cooldown, massroll,
+    give, set, boost, cooldown, massroll, request,
     players, online, gemsCmd, potions, equipment, whoami
   ];
 }
