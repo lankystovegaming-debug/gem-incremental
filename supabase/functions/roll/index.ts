@@ -3591,7 +3591,9 @@ async function executeSingleRoll(
       if (autoSellRequested && savedGem) {
         const saleReceipt = committedResult?.sale ?? {};
         const supersizerSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? 1.25 : 1;
-        const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' && Date.parse(String(equipmentOutcome.state.supersizerBlessingUntil ?? '')) > Date.now() ? 1.5 : 1;
+        // Use the pre-roll flag so Gargantuan starts its blessing after the
+        // triggering specimen, matching the authoritative sale transaction.
+        const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? supersizerBlessing.finalSell : 1;
         const artifactSellMultiplier = mineArtifacts.has('foreman-seal') ? 1.03 : 1;
         const gemValueBoost = (activeBoosts ?? []).find((b: any) => b.family === 'gemValue');
         const autoSellMultiplier = gemValueBoost ? Number(gemValueBoost.effect_value ?? 1) : 1;
