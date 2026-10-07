@@ -69,10 +69,14 @@ assert.equal(planIncludedMaterial(recipe,{},specimen('Quartz',1,1000),quartz).re
 
 const edge=readFileSync(new URL('../supabase/functions/roll/index.ts',import.meta.url),'utf8');
 const rules=readFileSync(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url),'utf8').trim();
+const persistenceFix=readFileSync(new URL('../supabase/migrations/20261007085435_allow_subunit_mutation_multipliers.sql',import.meta.url),'utf8');
 assert.ok(edge.includes(rules),'optimized single-file roll stays synchronized with pure equipment rules');
 assert.match(edge,/supersizerSizeWeight/);
 assert.match(edge,/luck:flags\.supersizerBlessedRoll\?10000:2/);
 assert.match(edge,/sizeMutation: supersizerSize/);
 assert.match(edge,/history\.supersizerHeavy10=/);
 assert.match(edge,/history\.supersizerRareHeavy5=/);
+assert.match(edge,/blessingSellMultiplier = equipmentContext\.id === 'supersizer-pickaxe' \? supersizerBlessing\.finalSell : 1/);
+assert.match(persistenceFix,/inventory_gems_mutation_multiplier_check[\s\S]*check \(mutation_multiplier > 0\)/);
+assert.match(persistenceFix,/sell_inventory_gem[\s\S]*commit_equipment_roll/);
 console.log('Supersizer rules: exact stats, exclusive size boundaries, genuine-only blessing cadence/refresh, recipe and threshold allocation passed.');
