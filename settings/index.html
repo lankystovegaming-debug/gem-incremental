@@ -47,14 +47,14 @@
 
 <body>
   <main class="app-main app-main--narrow">
-    <div class="page-head">
-      <div class="page-head__title">
+    <header class="page-head page-hero">
+      <div class="page-head__title page-hero__content">
         <h1>Settings</h1>
-        <p class="page-head__sub">
+        <p class="page-head__sub page-hero__description">
           Gameplay preferences sync to your account. Theme and chat layout stay on this device.
         </p>
       </div>
-    </div>
+    </header>
 
 
     <!-- ================= APPEARANCE ================= -->
@@ -95,14 +95,14 @@
         </span>
       </label>
 
-      <div class="setting">
-        <div class="setting__text">
+      <div class="setting form-row">
+        <div class="setting__text form-row__content">
           <label class="setting__title" for="batchSize">Batch size</label>
           <span class="setting__sub" id="batchSizeHelp">
             Larger batches make independent rolls in one request. Cooldown grows proportionally, so total rolls per hour stay unchanged.
           </span>
         </div>
-        <select class="select" id="batchSize" aria-describedby="batchSizeHelp"></select>
+        <select class="select form-row__control" id="batchSize" aria-describedby="batchSizeHelp"></select>
       </div>
 
 
@@ -119,12 +119,12 @@
           <span class="switch__track"></span>
         </label>
       </div>
-      <div class="setting setting--nested" id="autoKeepRarityRow">
-        <div class="setting__copy">
+      <div class="setting setting--nested form-row" id="autoKeepRarityRow">
+        <div class="setting__copy form-row__content">
           <strong>Keep at or above</strong>
           <span>Enter the minimum effective rarity that Auto Keep should protect.</span>
         </div>
-        <input class="input setting-number" id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
+        <input class="input setting-number form-row__control" id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
       </div>
 
 

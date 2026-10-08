@@ -184,14 +184,14 @@
 
 
 
-      <div class="automation__row automation__row--select">
-        <label class="automation__text" for="batchSize">
+      <div class="automation__row automation__row--select form-row">
+        <label class="automation__text form-row__content" for="batchSize">
           <span class="automation__title">Batch size</span>
           <span class="automation__sub" id="batchSizeHelp">
             Independent rolls per request; cooldown scales equally, so rolls per hour do not change.
           </span>
         </label>
-        <select class="select" id="batchSize" aria-describedby="batchSizeHelp"></select>
+        <select class="select form-row__control" id="batchSize" aria-describedby="batchSizeHelp"></select>
       </div>
 
       <label class="automation__row switch">
@@ -205,14 +205,14 @@
         </span>
       </label>
 
-      <div class="automation__row automation__row--select" id="autoKeepRarityRow">
-        <label class="automation__text" for="autoKeepRarity">
+      <div class="automation__row automation__row--select form-row" id="autoKeepRarityRow">
+        <label class="automation__text form-row__content" for="autoKeepRarity">
           <span class="automation__title">Keep at or above</span>
           <span class="automation__sub">
             Enter the minimum effective rarity that Auto Keep should protect.
           </span>
         </label>
-        <div class="field field-with-prefix">
+        <div class="field field-with-prefix form-row__control">
           <span>1 in</span>
           <input id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
         </div>
@@ -262,7 +262,7 @@
           <span class="badge badge--accent">Live session</span>
           <h2 id="sessionInsightsHeading">Session insights</h2>
         </div>
-        <div class="session-insights__actions">
+        <div class="session-insights__actions action-bar">
           <span class="page-head__sub">Kept locally until you clear the session.</span>
           <button class="btn btn--ghost btn--sm" id="clearSessionInsights" type="button">Clear</button>
         </div>

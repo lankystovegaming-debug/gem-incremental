@@ -44,6 +44,7 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { confirmDialog } from "../src/ui/dialog.js";
 import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { mountMobileSheet } from "../src/ui/mobileSheet.js";
 import {
   rarityTier,
   rarityLabel,
@@ -1746,20 +1747,11 @@ refresh();
 
 mountEquipmentLoadouts(document.getElementById('equipmentLoadouts'), refresh);
 
-function setInventoryFiltersOpen(open) {
-  inventoryFilterSheet?.classList.toggle("is-open", open);
-  inventoryFilterToggle?.setAttribute("aria-expanded", String(open));
-  if (inventoryFilterBackdrop) inventoryFilterBackdrop.hidden = !open;
-  document.body.classList.toggle("inventory-filters-open", open);
-  if (open) inventoryFilterClose?.focus({ preventScroll: true });
-  else inventoryFilterToggle?.focus({ preventScroll: true });
-}
-
-inventoryFilterToggle?.addEventListener("click", () => setInventoryFiltersOpen(true));
-inventoryFilterClose?.addEventListener("click", () => setInventoryFiltersOpen(false));
-inventoryFilterBackdrop?.addEventListener("click", () => setInventoryFiltersOpen(false));
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && inventoryFilterSheet?.classList.contains("is-open")) setInventoryFiltersOpen(false);
+mountMobileSheet({
+  sheet: inventoryFilterSheet,
+  trigger: inventoryFilterToggle,
+  closeButton: inventoryFilterClose,
+  backdrop: inventoryFilterBackdrop
 });
 
 let backToTopFrame = 0;

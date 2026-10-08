@@ -40,24 +40,26 @@
 
 <body>
   <main class="app-main">
-    <div class="page-head">
-      <div class="page-head__title">
+    <header class="page-head page-hero">
+      <div class="page-head__title page-hero__content">
         <h1>Player Market</h1>
-        <p class="page-head__sub">
+        <p class="page-head__sub page-hero__description">
           Bid in auctions or buy fixed-price weekend listings.
         </p>
       </div>
 
-      <button class="btn btn--ghost btn--icon" id="refreshButton" title="Refresh" aria-label="Refresh">
-        <span id="refreshIcon"></span>
-      </button>
-    </div>
+      <div class="page-hero__actions action-bar">
+        <button class="btn btn--ghost btn--icon" id="refreshButton" title="Refresh" aria-label="Refresh">
+          <span id="refreshIcon"></span>
+        </button>
+      </div>
+    </header>
 
     <div id="auctionStatus" class="status"></div>
 
     <div id="blackMarketBanner" class="black-market-banner" aria-live="polite"></div>
 
-    <div class="segmented tabs" role="tablist" aria-label="Market">
+    <div class="segmented responsive-tabs tabs" role="tablist" aria-label="Market">
       <button id="browseTab" class="segmented__item tab-button active" role="tab" type="button" aria-selected="true">
         Browse
       </button>
@@ -71,7 +73,7 @@
 
     <!-- BROWSE AUCTIONS -->
     <section id="browseSection">
-      <div class="segmented market-mode" role="tablist" aria-label="Sale method to browse">
+      <div class="segmented responsive-tabs market-mode" role="tablist" aria-label="Sale method to browse">
         <button id="browseAuctionMode" class="segmented__item tab-button active" type="button" role="tab" aria-selected="true">Auctions</button>
         <button id="browseBlackMarketMode" class="segmented__item tab-button" type="button" role="tab" aria-selected="false">Black Market</button>
       </div>
@@ -124,8 +126,8 @@
           <div id="lotSummaryList" class="lot-summary__list"></div>
         </div>
 
-        <div class="sell-row">
-          <div class="sell-field">
+        <div class="sell-row form-row form-row--fields">
+          <div class="sell-field form-row__field">
             <label class="field-label" for="sellPrice" id="sellPriceLabel">Starting bid</label>
             <div class="auction-money-input">
               <span class="auction-money-input__prefix">$</span>
@@ -133,7 +135,7 @@
             </div>
           </div>
 
-          <div class="sell-field" id="durationField">
+          <div class="sell-field form-row__field" id="durationField">
             <label class="field-label" for="sellDuration">Duration</label>
             <select class="select auction-select" id="sellDuration">
               <option value="6">6 hours</option>

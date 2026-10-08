@@ -45,20 +45,20 @@
 
 <body>
   <main class="app-main">
-    <div class="page-head">
-      <div class="page-head__title">
+    <header class="page-head page-hero">
+      <div class="page-head__title page-hero__content">
         <h1>Crafting</h1>
-        <p class="page-head__sub" id="craftingSubtitle">Loading recipes…</p>
+        <p class="page-head__sub page-hero__description" id="craftingSubtitle">Loading recipes…</p>
       </div>
 
-      <div class="row" id="hideOwnedRow">
+      <div class="row page-hero__actions action-bar" id="hideOwnedRow">
         <label class="switch" title="Only show recipes you have not crafted yet">
           <input type="checkbox" id="hideOwned">
           <span class="switch__track"></span>
           <span>Hide crafted</span>
         </label>
       </div>
-    </div>
+    </header>
 
     <section class="card crafting-next" id="craftingNext" aria-live="polite"></section>
 
@@ -84,7 +84,7 @@
 
     <!-- ================= CATEGORY TABS ================= -->
 
-    <div class="segmented crafting-tabs" role="tablist" aria-label="Equipment type">
+    <div class="segmented responsive-tabs crafting-tabs" role="tablist" aria-label="Equipment type">
       <button class="segmented__item" role="tab" type="button" aria-selected="true" data-category="pickaxe">
         Pickaxes
       </button>

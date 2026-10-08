@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
-import { chromium, webkit } from "playwright";
+const { chromium, webkit } = await import(
+  process.env.MOBILE_PLAYWRIGHT_MODULE || "playwright"
+);
 
 const base = process.env.MOBILE_PREVIEW_URL || "http://127.0.0.1:5500/";
+const scope = process.env.MOBILE_TEST_SCOPE || "all";
 const widths = [320, 375, 390, 430, 768, 1280];
 
 const supabaseStub = String.raw`
@@ -117,6 +120,10 @@ async function testGemIndex(browserType) {
 }
 
 await testResponsiveShell(chromium);
-await testGemIndex(chromium);
-await testGemIndex(webkit);
-console.log("PASS: mobile shell 320–1280px, Inventory sheet, no page overflow, and Chromium/WebKit lazy Gem Index bands");
+if (scope !== "shell") {
+  await testGemIndex(chromium);
+  await testGemIndex(webkit);
+}
+console.log(scope === "shell"
+  ? "PASS: mobile shell 320–1280px, Inventory sheet, and no page overflow"
+  : "PASS: mobile shell 320–1280px, Inventory sheet, no page overflow, and Chromium/WebKit lazy Gem Index bands");

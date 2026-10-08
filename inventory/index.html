@@ -47,19 +47,19 @@
 
 <body>
   <main class="app-main">
-    <div class="page-head">
-      <div class="page-head__title">
+    <header class="page-head page-hero">
+      <div class="page-head__title page-hero__content">
         <h1>Inventory</h1>
-        <p class="page-head__sub" id="inventorySubtitle">Loading your collection…</p>
+        <p class="page-head__sub page-hero__description" id="inventorySubtitle">Loading your collection…</p>
       </div>
 
-      <div class="row">
+      <div class="row page-hero__actions action-bar">
         <button class="btn" id="refreshButton" type="button">
           <span id="refreshIcon"></span>
           Refresh
         </button>
       </div>
-    </div>
+    </header>
 
 
     <!-- ================= CAPACITY ================= -->
@@ -97,7 +97,7 @@
     <!-- ================= TABS ================= -->
 
     <div class="inventory-toolbar">
-      <div class="segmented" role="tablist" aria-label="Inventory sections">
+      <div class="segmented responsive-tabs" role="tablist" aria-label="Inventory sections">
         <button
           class="segmented__item"
           id="gemsTab"
@@ -156,8 +156,8 @@
           <button class="btn inventory-filter-toggle" id="inventoryFilterToggle" type="button" aria-expanded="false" aria-controls="inventoryFilterSheet">Filters &amp; actions</button>
         </div>
 
-        <div class="inventory-filter-sheet" id="inventoryFilterSheet">
-          <div class="inventory-filter-sheet__head"><strong>Filters &amp; actions</strong><button class="btn btn--sm" id="inventoryFilterClose" type="button">Done</button></div>
+        <div class="inventory-filter-sheet mobile-sheet" id="inventoryFilterSheet" aria-labelledby="inventoryFilterSheetTitle">
+          <div class="inventory-filter-sheet__head mobile-sheet__header"><strong id="inventoryFilterSheetTitle">Filters &amp; actions</strong><button class="btn btn--sm" id="inventoryFilterClose" type="button">Done</button></div>
 
         <select class="select" id="gemFilter" aria-label="Filter gems">
           <option value="all">All gems</option>
@@ -210,7 +210,7 @@
         </button>
         </div>
       </div>
-      <button class="inventory-filter-backdrop" id="inventoryFilterBackdrop" type="button" aria-label="Close inventory filters" hidden></button>
+      <button class="inventory-filter-backdrop mobile-sheet-backdrop" id="inventoryFilterBackdrop" type="button" aria-label="Close inventory filters" hidden></button>
 
       <div class="delete-rules card" id="deleteRulesPanel" hidden>
         <div class="delete-rules__head">
@@ -222,7 +222,7 @@
           <label class="field" id="deleteRarityField"><span>Rarity</span><select class="select" id="deleteRarityOp"><option value="lte">At or below</option><option value="gte">At or above</option></select><input class="input" id="deleteRarityValue" type="number" min="1" step="1" value="100"></label>
           <label class="field" id="deleteChanceField"><span>Chance</span><select class="select" id="deleteChanceOp"><option value="lte">Less than or equal to</option><option value="gte">Greater than or equal to</option></select><div class="delete-rules__chance-input"><span>1 in</span><input class="input" id="deleteChanceDenominator" type="number" min="1" step="1" value="1000"></div></label>
         </div>
-        <div class="delete-rules__actions"><span id="deleteRulesPreview" class="delete-rules__preview">0 matching unlocked gems</span><button class="btn btn--danger" id="deleteMatchingButton" type="button" disabled>Delete matching</button></div>
+        <div class="delete-rules__actions action-bar"><span id="deleteRulesPreview" class="delete-rules__preview">0 matching unlocked gems</span><button class="btn btn--danger" id="deleteMatchingButton" type="button" disabled>Delete matching</button></div>
       </div>
 
       <div id="inventoryList" class="grid grid--cards"></div>

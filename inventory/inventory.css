@@ -69,13 +69,11 @@
   min-width: 190px;
 }
 
-.inventory-filter-primary,
-.inventory-filter-sheet {
+.inventory-filter-primary {
   display: contents;
 }
 
 .inventory-filter-toggle,
-.inventory-filter-sheet__head,
 .inventory-filter-backdrop { display: none; }
 
 .inventory-load-more {
@@ -545,41 +543,10 @@ details.equipment-passive > span { display: block; margin-top: 5px; }
   .inventory-filter-primary { display: flex; gap: 8px; }
   .inventory-filter-primary .gem-search { min-width: 0; }
   .inventory-filter-toggle { display: inline-flex; flex: 0 0 auto; }
+  /* The sticky filter host is a z-index:35 stacking context. Keep its modal
+     backdrop one layer below the host so the sheet remains interactive. */
+  .inventory-filter-backdrop { --layer-sheet-backdrop: 34; }
 
-  .inventory-filter-sheet {
-    position: fixed;
-    right: 8px;
-    bottom: calc(var(--mobile-nav-clearance, 78px) + 8px);
-    left: 8px;
-    z-index: 181;
-    display: none;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    max-height: min(74dvh, 620px);
-    overflow-y: auto;
-    padding: 16px;
-    border: 1px solid var(--border-strong);
-    border-radius: 20px;
-    background: var(--surface-solid);
-    box-shadow: 0 24px 80px rgb(0 0 0 / .6);
-  }
-  .inventory-filter-sheet.is-open { display: grid; }
-  .inventory-filter-sheet__head { display: flex; align-items: center; justify-content: space-between; }
-  .inventory-filter-sheet .select,
-  .inventory-filter-sheet .btn { width: 100%; min-width: 0; }
-  .inventory-filter-sheet .select,
-  .inventory-filter-sheet .btn { min-height: 44px; }
-  .inventory-filter-backdrop:not([hidden]) {
-    position: fixed;
-    inset: 0;
-    z-index: 34;
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0;
-    background: rgb(0 0 0 / .42);
-  }
-  body.inventory-filters-open { overflow: hidden; }
   .grid--cards { grid-template-columns: 1fr; }
   .gem-card__actions .btn { min-height: 44px; }
   .equipment-passive > span {
