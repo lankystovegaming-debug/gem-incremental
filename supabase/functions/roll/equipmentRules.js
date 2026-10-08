@@ -4,6 +4,7 @@ export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'paradox-pickaxe':[34,3.1,1.5,5.5,1.7],
+ 'convergence-pickaxe':[32,3,1.5,5,1.75],
  'impossible-pickaxe':[1,1,1,1,1],
  'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
@@ -78,6 +79,17 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
+export function convergenceEchoGain(rarity=0) {
+ const r=Number(rarity);return r>=1e9?250:r>=1e8?150:r>=1e7?75:r>=1e6?40:r>=1e5?20:r>=1e4?10:r>=1e3?5:r>=100?3:r>=50?2:r>=1?1:0;
+}
+export function normalizedConvergenceState(saved={}) {
+ const current=saved.convergence&&typeof saved.convergence==='object'?saved.convergence:{};
+ return {echo:Math.min(999,Math.max(0,Math.trunc(Number(current.echo??0))||0)),
+  resonanceRolls:Math.min(5,Math.max(0,Math.trunc(Number(current.resonanceRolls??0))||0)),
+  momentumCharges:Math.min(3,Math.max(0,Math.trunc(Number(current.momentumCharges??0))||0)),
+  surgeRolls:Math.min(10,Math.max(0,Math.trunc(Number(current.surgeRolls??0))||0)),
+  convergenceRolls:Math.max(0,Math.trunc(Number(current.convergenceRolls??0))||0)};
+}
 export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true,now=Date.now()) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
@@ -93,12 +105,21 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
   foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
   supersizerBlessing:blessingActive,
   supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20,
+  convergence:null,
   impossible:genuine&&id==='impossible-pickaxe'&&random()<1/1000000};
  if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='paradox-pickaxe'&&genuine) {
   const paradox=normalizedParadoxState(state);state.paradox=paradox;
   const multiplier=paradoxPassiveMultiplier(state);
   flags.paradox={mode:paradox.mode,criticalRoll:paradox.mode==='critical'?paradox.criticalRoll:null,multiplier,contradiction:paradox.contradiction};
+  stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
+ }
+ if(id==='convergence-pickaxe'&&genuine) {
+  const convergence=normalizedConvergenceState(state);state.convergence=convergence;
+  const surge=convergence.surgeRolls>0;
+  const resonance=!surge&&convergence.resonanceRolls>0;
+  const multiplier=surge?2:resonance?1.5:1;
+  flags.convergence={surge,resonance,multiplier,oneBecomesMany:(convergence.convergenceRolls+1)%250===0};
   stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
  }
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
@@ -158,6 +179,17 @@ export function finishEquipmentRoll(context,{naturalWeight,gem,sizeMutation=null
    else paradox.mode='normal';
   }
   state.paradox=paradox;
+ }
+ if(id==='convergence-pickaxe') {
+  const convergence=normalizedConvergenceState(state);
+  convergence.convergenceRolls+=1;
+  if(flags.convergence?.surge) convergence.surgeRolls=Math.max(0,convergence.surgeRolls-1);
+  else if(flags.convergence?.resonance) convergence.resonanceRolls=Math.max(0,convergence.resonanceRolls-1);
+  else {
+   convergence.echo+=convergenceEchoGain(gem?.rarity??0);
+   if(convergence.echo>=1000){convergence.echo-=1000;convergence.resonanceRolls=5;}
+  }
+  state.convergence=convergence;
  }
  if(id==='supersizer-pickaxe') {
   if(flags.supersizerBlessing) state.supersizerBlessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0))+1;

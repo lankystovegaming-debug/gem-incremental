@@ -46,13 +46,15 @@ export default {
     // =================================
     // SAVE AUTO CRAFT TARGET
     // =================================
-    const { error } = await ctx.supabaseAdmin.from("player_crafting").upsert({
-      player_id: playerId,
-      active_auto_craft: recipeId,
-      updated_at: new Date().toISOString()
-    }, {
-      onConflict: "player_id"
-    });
+    const { data: autoCraftState, error } = recipeId === "convergence-pickaxe"
+      ? await ctx.supabaseAdmin.rpc("set_convergence_auto_craft_for_player", {
+        p_uid: playerId,
+        p_enabled: true
+      })
+      : await ctx.supabaseAdmin.rpc("replace_auto_craft_target", {
+        p_uid: playerId,
+        p_recipe_id: recipeId
+      });
     if (error) {
       console.error("Failed to set Auto Craft:", error);
       return Response.json({
@@ -62,7 +64,7 @@ export default {
       });
     }
     return Response.json({
-      activeAutoCraftRecipeId: recipeId
+      activeAutoCraftRecipeId: autoCraftState?.activeAutoCraftRecipeId ?? recipeId
     });
   })
 };

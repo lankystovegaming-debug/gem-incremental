@@ -34,6 +34,7 @@ import {
 } from "../src/backend/cloudCrafting.js";
 import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "../src/backend/cloudEquipment.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+import { loadConvergenceStatus } from "../src/backend/cloudConvergence.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { signInEmptyStateHtml } from "../src/ui/signInState.js";
@@ -108,6 +109,7 @@ const state = {
   bestRareNaturalWeight1m: 0,
   impossibleStatus: null,
   paradoxStatus: null,
+  convergenceStatus: null,
   category: "pickaxes",
   subcategory: null,
   loading: true
@@ -547,6 +549,13 @@ function renderAutoBanner() {
 }
 
 
+function updateConvergenceCardCountdown() {
+  const node=document.getElementById("convergenceCardCountdown"),target=Date.parse(node?.dataset.target||"");
+  if(!node||!Number.isFinite(target))return;
+  const ms=Math.max(0,target-Date.now()),days=Math.floor(ms/86400000),hours=Math.floor(ms/3600000)%24,minutes=Math.floor(ms/60000)%60,seconds=Math.floor(ms/1000)%60;
+  node.textContent=`${state.convergenceStatus?.status==="scheduled"?"Construction begins":"Construction ends"} in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
 function renderRecipes() {
   shell.setWallet(state.money);
 
@@ -602,6 +611,7 @@ function renderRecipes() {
   }
 
   recipeList.innerHTML = visible.map(recipeCard).join("");
+  updateConvergenceCardCountdown();
 
   for (const card of recipeList.querySelectorAll(".recipe-card")) {
     wireRecipeCard(card);
@@ -677,6 +687,17 @@ function paradoxRequirementsHtml(status = state.paradoxStatus) {
 
 
 function recipeCard(recipe) {
+  if (recipe.convergenceCommunity) {
+    if (Date.now() < Date.parse("2026-10-08T16:00:00Z")) return "";
+    const event=state.convergenceStatus,player=event?.player??{},target=event?.status==="scheduled"?event?.startsAt:event?.deadlineAt;
+    const statusLabel=event?.status==="succeeded"?"Succeeded":event?.status==="failed"?"Failed":event?.status==="active"?"Construction active":"Preview";
+    return `<article class="recipe-card recipe-card--convergence" data-recipe="convergence-pickaxe">
+      <div class="recipe-card__head"><div class="recipe-card__identity"><div class="recipe-card__name">Convergence</div><div class="recipe-card__tier">Tier 16 · Community Pickaxe</div></div><span class="badge badge--accent">${escapeHtml(statusLabel)}</span></div>
+      <div class="recipe-card__bonuses">${formatReward(recipe).join("")}</div>
+      <div class="recipe-card__details"><p class="recipe-card__description">${event?`${Number(event.progressPercent||0).toFixed(2)}% complete · ${formatCount(event.completedRequirements||0)} / ${formatCount(event.requirementCount||0)} requirements · ${formatCount(player.contributionPoints||0)} CP`:`Community status is loading.`}</p><p id="convergenceCardCountdown" data-target="${escapeHtml(target||"")}">${event?.status==="succeeded"?"Construction completed early.":event?.status==="failed"?"The event ended without completion.":"Calculating countdown…"}</p></div>
+      <div class="recipe-card__actions"><a class="btn btn--primary" href="./convergence/">Open Convergence</a></div>
+    </article>`;
+  }
   const progress = ensureRecipeProgress(state.crafting, recipe);
 
   const owned = !isConsumableRecipe(recipe) && ownsRecipe(recipe);
@@ -1544,7 +1565,7 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes, impossibleStatus, paradoxStatus] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes, impossibleStatus, paradoxStatus, convergenceStatus] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
@@ -1552,13 +1573,15 @@ async function refresh() {
     loadEquipmentOverhaulProgress(),
     loadAdminEquipmentRecipes(),
     loadImpossiblePickaxeStatus().catch(() => null),
-    loadParadoxPickaxeStatus().catch(() => null)
+    loadParadoxPickaxeStatus().catch(() => null),
+    Date.now()>=Date.parse("2026-10-08T16:00:00Z")?loadConvergenceStatus().catch(() => null):Promise.resolve(null)
   ]);
 
   state.loading = false;
   state.specialDiscoveries = overhaulProgress ?? {};
   state.impossibleStatus = impossibleStatus;
   state.paradoxStatus = paradoxStatus;
+  state.convergenceStatus = convergenceStatus;
   state.specialDiscoveries.batchHistory = {
     ...(state.specialDiscoveries.batchHistory ?? {}),
     ...(impossibleStatus?.requirements ?? {})
@@ -1606,3 +1629,4 @@ if (hideOwnedRow) {
 
 renderRecipes();
 refresh().then(() => startPotionAutoCraftLoop());
+setInterval(updateConvergenceCardCountdown,1000);

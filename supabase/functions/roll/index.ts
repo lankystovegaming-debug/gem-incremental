@@ -29,6 +29,7 @@ export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'paradox-pickaxe':[34,3.1,1.5,5.5,1.7],
+ 'convergence-pickaxe':[32,3,1.5,5,1.75],
  'impossible-pickaxe':[1,1,1,1,1],
  'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
@@ -103,6 +104,17 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
+export function convergenceEchoGain(rarity=0) {
+ const r=Number(rarity);return r>=1e9?250:r>=1e8?150:r>=1e7?75:r>=1e6?40:r>=1e5?20:r>=1e4?10:r>=1e3?5:r>=100?3:r>=50?2:r>=1?1:0;
+}
+export function normalizedConvergenceState(saved={}) {
+ const current=saved.convergence&&typeof saved.convergence==='object'?saved.convergence:{};
+ return {echo:Math.min(999,Math.max(0,Math.trunc(Number(current.echo??0))||0)),
+  resonanceRolls:Math.min(5,Math.max(0,Math.trunc(Number(current.resonanceRolls??0))||0)),
+  momentumCharges:Math.min(3,Math.max(0,Math.trunc(Number(current.momentumCharges??0))||0)),
+  surgeRolls:Math.min(10,Math.max(0,Math.trunc(Number(current.surgeRolls??0))||0)),
+  convergenceRolls:Math.max(0,Math.trunc(Number(current.convergenceRolls??0))||0)};
+}
 export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true,now=Date.now()) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
@@ -110,7 +122,7 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
  const blessingUntil=Date.parse(String(state.supersizerBlessingUntil??''));
  const blessingActive=id==='supersizer-pickaxe'&&genuine&&Number.isFinite(blessingUntil)&&blessingUntil>Number(now);
  const blessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0));
- const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
+ const flags:any={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
   surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
   crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
   wrongTool:false,closeEnough:false,borrowed:null,
@@ -118,12 +130,21 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
   foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
   supersizerBlessing:blessingActive,
   supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20,
+  convergence:null,
   impossible:genuine&&id==='impossible-pickaxe'&&random()<1/1000000};
  if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='paradox-pickaxe'&&genuine) {
   const paradox=normalizedParadoxState(state);state.paradox=paradox;
   const multiplier=paradoxPassiveMultiplier(state);
   flags.paradox={mode:paradox.mode,criticalRoll:paradox.mode==='critical'?paradox.criticalRoll:null,multiplier,contradiction:paradox.contradiction};
+  stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
+ }
+ if(id==='convergence-pickaxe'&&genuine) {
+  const convergence=normalizedConvergenceState(state);state.convergence=convergence;
+  const surge=convergence.surgeRolls>0;
+  const resonance=!surge&&convergence.resonanceRolls>0;
+  const multiplier=surge?2:resonance?1.5:1;
+  flags.convergence={surge,resonance,multiplier,oneBecomesMany:(convergence.convergenceRolls+1)%250===0};
   stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
  }
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
@@ -183,6 +204,17 @@ export function finishEquipmentRoll(context,{naturalWeight,gem,sizeMutation=null
    else paradox.mode='normal';
   }
   state.paradox=paradox;
+ }
+ if(id==='convergence-pickaxe') {
+  const convergence=normalizedConvergenceState(state);
+  convergence.convergenceRolls+=1;
+  if(flags.convergence?.surge) convergence.surgeRolls=Math.max(0,convergence.surgeRolls-1);
+  else if(flags.convergence?.resonance) convergence.resonanceRolls=Math.max(0,convergence.resonanceRolls-1);
+  else {
+   convergence.echo+=convergenceEchoGain(gem?.rarity??0);
+   if(convergence.echo>=1000){convergence.echo-=1000;convergence.resonanceRolls=5;}
+  }
+  state.convergence=convergence;
  }
  if(id==='supersizer-pickaxe') {
   if(flags.supersizerBlessing) state.supersizerBlessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0))+1;
@@ -1914,6 +1946,16 @@ async function executeSingleRoll(
       const equippedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe"
       ) ?? null;
+      let authoritativeEquipmentState = player.equipment_state ?? {};
+      if (equippedPickaxe?.equipment_id === "convergence-pickaxe") {
+        const { data: convergenceState, error: convergenceStateError } = await ctx.supabaseAdmin
+          .rpc("get_convergence_roll_state", { p_uid: playerId });
+        if (convergenceStateError) {
+          console.error("Convergence roll state unavailable:", convergenceStateError);
+          return jsonResponse({ error: "convergence_state_unavailable" }, { status: 503 });
+        }
+        authoritativeEquipmentState = { ...authoritativeEquipmentState, convergence: convergenceState ?? {} };
+      }
       const allIn = equippedPickaxe?.equipment_id === 'all-in-pickaxe';
       if(allIn) mineArtifacts.clear();
       const enchantedPickaxe = allIn ? null : (equippedEquipment ?? []).find(
@@ -2010,7 +2052,10 @@ async function executeSingleRoll(
       // CALCULATE PLAYER STATS
       // =====================================================
 
-      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', player.equipment_state ?? {}, random01, true, now.getTime());
+      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', authoritativeEquipmentState, random01, true, now.getTime());
+      if (equipmentContext.flags.convergence?.oneBecomesMany && currentInventoryCount + 5 > effectiveInventoryCapacity) {
+        return jsonResponse({ error:"inventory_full",inventoryCount:currentInventoryCount,capacity:effectiveInventoryCapacity,requiredFreeSlots:5 }, { status:409 });
+      }
       const supersizerBlessing = supersizerBlessingMultipliers(equipmentContext.flags);
       const impossibleProc = impossibleProcMultipliers(equipmentContext.flags);
       const relicActive = (activeBoosts ?? []).some((boost: any) => boost.family === 'relic');
@@ -3386,6 +3431,37 @@ async function executeSingleRoll(
         };
       }
 
+      const convergenceBonuses: any[] = [];
+      if (equipmentContext.flags.convergence?.oneBecomesMany) {
+        for (let bonusIndex = 0; bonusIndex < 4; bonusIndex += 1) {
+          const extra = rollEquipmentGem();
+          const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
+          const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+          const extraMutationValue = capCombinedMutationValueMultiplier(extraMutations);
+          const extraMutationMultiplier = extraMutationValue.appliedMultiplier;
+          const extraFinalWeight = extra.baseWeight * extraWeight * weightMultiplier;
+          const extraMutationIds = extraMutations.map((mutation: any) => mutation.id);
+          const extraMutationChanceProduct = extraMutations.reduce(
+            (total: number, mutation: any) => total * Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1)), 1
+          );
+          convergenceBonuses.push({
+            gem_name:extra.name,rarity:extra.rarity,base_weight:extra.baseWeight,value_per_gram:extra.valuePerGram,
+            rolled_weight_multiplier:extraWeight,rolled_weight:extra.baseWeight*extraWeight,final_weight:extraFinalWeight,
+            mutation_id:extraMutations[0]?.id??null,mutation_ids:extraMutationIds,
+            natural_mutation_ids:extraMutationIds,mutation_multiplier:extraMutationMultiplier,
+            mutation_multipliers:Object.fromEntries(extraMutations.map((m:any)=>[m.id,m.multiplier])),
+            mutation_chance_multiplier:mutationChanceMultiplier,effective_rarity:Math.max(1,Number(extra.rarity)*extraMutationChanceProduct),
+            genuine_roll:false,value:extraFinalWeight*extra.valuePerGram*extraMutationMultiplier*researchNumber('gem_value_multiplier')*
+              (extraMutations.length?researchNumber('mutated_value_multiplier')*(1+Math.min(5,extraMutations.length)*Math.max(0,Number(researchEffects.compound_value_per_mutation??0))):1)*
+              crystalGemValueMultiplier*expeditionArtifactGemValueMultiplier*volcanicGemValueMultiplier*
+              (extraWeight>=2?crystalHeavyGemValueMultiplier:1)*(mineArtifacts.has('bedrock-crown')?1.05:1)*eventContext.valueMultiplier,
+            luck_at_roll:luck,locked:false,roll_number:null,source_event_occurrence_id:eventContext.occurrenceId,
+            source_event_key:eventContext.eventKey,event_properties:{convergenceBonus:true,parentGenuineRoll:genuineRoll},
+            value_multiplier_at_roll:eventContext.valueMultiplier,automatic_consumption_protected:extra.metadata?.automaticConsumptionProtected===true
+          });
+        }
+      }
+
       const combinationKey = getMutationCombinationKey(mutationIds);
       const boostTiers = Object.fromEntries(
         activeBoosts.map((boost) => [boost.family, Number(boost.tier ?? 0)])
@@ -3463,6 +3539,7 @@ async function executeSingleRoll(
         p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
         p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
         p_bookkeeping: bookkeepingPayload,
+        p_convergence_bonuses: convergenceBonuses,
         p_include_background: batchExecution.batchSize > 1,
         p_release_on_success: batchIndex === batchExecution.batchSize - 1
       });
@@ -3485,6 +3562,7 @@ async function executeSingleRoll(
         console.error("Vein Hunter duplicate insert failed:", committedResult.duplicateError);
       }
       breakneckGem = equipmentCommit?.bonus ?? null;
+      const savedConvergenceBonuses = Array.isArray(committedResult?.convergenceBonuses) ? committedResult.convergenceBonuses : [];
 
       let paradoxCrafted = false;
       if (equipmentContext.id === 'celestial-pickaxe' && equipmentOutcome.state.paradoxTrial?.completed === true && batchIndex === batchExecution.batchSize - 1) {
@@ -3581,7 +3659,8 @@ async function executeSingleRoll(
           ? currentInventoryCount
           : currentInventoryCount +
             1;
-      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) + (breakneckGem ? 1 : 0);
+      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) +
+        (breakneckGem ? 1 : 0) + savedConvergenceBonuses.length;
 
       let filterSale: any = null;
       if (autoSellRequested && savedGem) {
@@ -3718,7 +3797,12 @@ async function executeSingleRoll(
           } : null,
           paradox: equipmentOutcome.state.paradox ?? null,
           paradoxTrial: equipmentOutcome.state.paradoxTrial ?? null,
-          paradoxCrafted
+          paradoxCrafted,
+          convergence: equipmentContext.id === 'convergence-pickaxe' ? {
+            ...equipmentOutcome.state.convergence,
+            ...equipmentContext.flags.convergence,
+            bonusResults: savedConvergenceBonuses
+          } : null
         },
 
         impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,

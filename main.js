@@ -577,6 +577,24 @@ function appendBatchResults(results, outcomes) {
   gemStage.append(summary);
 }
 
+function appendConvergenceBonusResults(result) {
+  const bonuses = result?.equipmentPassives?.convergence?.bonusResults;
+  if (!Array.isArray(bonuses) || !bonuses.length) return;
+  const cards = bonuses.map((bonus, index) => {
+    const tier = rarityTier(Number(bonus.rarity ?? 0), bonus.gem_name);
+    return `<article class="batch-result tier-${tier.id}">
+      <div class="batch-result__art">${gemIconHtml(bonus.gem_name, "gem-icon--batch", bonus.mutation_ids ?? [])}</div>
+      <div class="batch-result__copy"><span class="batch-result__index">Bonus result ${index + 1} · not genuine</span>
+      <strong class="batch-result__name">${gemNameHtml(bonus.gem_name, escapeHtml)}</strong>
+      <span class="batch-result__meta">${escapeHtml(rarityLabel(bonus.rarity))} · ${formatWeight(bonus.final_weight)} · ${formatGemValue(bonus.value)}</span>
+      <span class="batch-result__outcome">Stored in inventory · no recursive triggers or achievements</span></div></article>`;
+  }).join("");
+  const summary=document.createElement("section");summary.className="batch-results";
+  summary.setAttribute("aria-label","One Becomes Many bonus results");
+  summary.innerHTML=`<div class="batch-results__heading"><strong>One Becomes Many · 5 independent results total</strong><span>Only the primary result is a genuine roll.</span></div><div class="batch-results__grid">${cards}</div>`;
+  gemStage.append(summary);
+}
+
 function renderRoll(data, outcome) {
   const tier = rarityTier(data.gem.rarity, data.gem.name);
   const rarity = Number(data.gem.rarity ?? 0);
@@ -926,6 +944,7 @@ async function performRoll() {
     renderRoll(featured, outcomes.get(featured));
   }
   appendBatchResults(results, outcomes);
+  for (const result of results) appendConvergenceBonusResults(result);
 
   const cooldown = batchCooldown(data);
   if (cooldown?.nextRollAt) {
