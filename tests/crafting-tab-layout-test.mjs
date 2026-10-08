@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import recipes from "../src/data/recipes.js";
 import {
   BASE_PICKAXE_IDS,
@@ -38,5 +39,9 @@ assert.equal(isSpecialistUnlocked("t16", [{ equipment_id: "celestial-pickaxe" }]
 assert.equal(isSpecialistUnlocked("t16", [{ equipment_id: "paradox-pickaxe" }]), true);
 assert.equal(specialistUnlock("t15").message, "LOCKED - Craft the Celestial pickaxe to unlock");
 assert.equal(specialistUnlock("t16").message, "LOCKED - Craft the Paradox pickaxe to unlock");
+
+const inventorySource = readFileSync(new URL("../inventory/inventory.js", import.meta.url), "utf8");
+assert.match(inventorySource, /\["empyrean-pickaxe", "eternity-pickaxe"\][\s\S]*return "Specialist pickaxe"/);
+assert.match(inventorySource, /\$\{forgeEquipmentLabel\(item\)\} · Masterwork/);
 
 console.log("Crafting tabs passed: base pickaxes, specialist tiers and locks, secondary equipment, and all Others subtabs are routed correctly.");

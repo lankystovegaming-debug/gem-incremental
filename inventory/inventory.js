@@ -1008,6 +1008,13 @@ function forgeCostHtml(cost) {
     (cost.ancient ? ` · ${formatCount(cost.ancient)} Ancient Relic${cost.ancient === 1 ? "" : "s"}` : "");
 }
 
+function forgeEquipmentLabel(item) {
+  if (["empyrean-pickaxe", "eternity-pickaxe"].includes(item.equipment_id)) {
+    return "Specialist pickaxe";
+  }
+  return `Tier ${item.tier} ${escapeHtml(item.category)}`;
+}
+
 function renderForge() {
   if (!forgeList) return;
   const eligible = state.equipment.filter((item) => (item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") && Number(item.tier) >= 10);
@@ -1037,7 +1044,7 @@ function renderForge() {
 
     return `<article class="equipment-card forge-card${level === 5 ? " forge-card--perfected" : ""}" data-forge-card="${escapeHtml(item.id)}">
       <div class="equipment-card__head"><div><div class="equipment-card__name">${escapeHtml(item.name)}</div>
-      <div class="equipment-card__meta">Tier ${item.tier} ${escapeHtml(item.category)} · Masterwork ${level}/5</div></div>
+      <div class="equipment-card__meta">${forgeEquipmentLabel(item)} · Masterwork ${level}/5</div></div>
       <span class="badge ${level === 5 ? "badge--accent" : "badge--muted"}">${level === 5 ? "Perfected" : "Beta"}</span></div>
       <div class="meter"><div class="meter__fill" style="width:${level * 20}%"></div></div>
       <p class="equipment-card__meta">Equipment bonuses: +${level}% relative Masterwork bonus.</p>
