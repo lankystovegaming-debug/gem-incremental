@@ -45,6 +45,12 @@ import {
   formatCount,
   escapeHtml
 } from "../src/ui/format.js";
+import {
+  DEFAULT_CRAFTING_SUBTAB,
+  getCraftingSection,
+  isSpecialistUnlocked,
+  specialistUnlock
+} from "../src/logic/craftingTabs.js";
 
 
 const shell = mountShell({ page: "crafting", base: "../" });
@@ -56,7 +62,9 @@ const shell = mountShell({ page: "crafting", base: "../" });
 
 const recipeList = document.getElementById("recipeList");
 const subtitle = document.getElementById("craftingSubtitle");
-const categoryTabs = document.querySelectorAll("[data-category]");
+const categoryTabs = document.querySelectorAll("[data-crafting-group]");
+const subtabGroups = document.querySelectorAll("[data-subtabs]");
+const subcategoryTabs = document.querySelectorAll("[data-subcategory]");
 const hideOwned = document.getElementById("hideOwned");
 const hideOwnedRow = document.getElementById("hideOwnedRow");
 
@@ -72,8 +80,8 @@ const EQUIPMENT_TAB_SECTION_IDS = {
 async function applyEquipmentTabVisibility(){
   const {data}=await supabase.from("game_section_settings").select("id,enabled").in("id",Object.values(EQUIPMENT_TAB_SECTION_IDS));
   const map=Object.fromEntries((data||[]).map(x=>[x.id,!!x.enabled]));
-  document.querySelectorAll("[data-category]").forEach(tab=>{
-    const cat=tab.dataset.category;
+  document.querySelectorAll("[data-crafting-group]").forEach(tab=>{
+    const cat=tab.dataset.craftingGroup;
     const sid=EQUIPMENT_TAB_SECTION_IDS[cat];
     if(!sid)return;
     tab.hidden= sid==="equipment-limited-time" ? false : !(map[sid]===true);
@@ -100,7 +108,8 @@ const state = {
   bestRareNaturalWeight1m: 0,
   impossibleStatus: null,
   paradoxStatus: null,
-  category: "pickaxe",
+  category: "pickaxes",
+  subcategory: null,
   loading: true
 };
 
@@ -135,6 +144,11 @@ function stopPotionAutoCraft() {
 }
 
 async function setEquipmentAutoCraft(recipeId) {
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+  const section = recipe ? getCraftingSection(recipe) : null;
+  if (section?.group === "specialists" && !isSpecialistUnlocked(section.subcategory, state.equipment)) {
+    return { error: new Error(specialistUnlock(section.subcategory).message), clearedPotion: false };
+  }
   const result = await setCloudAutoCraft(recipeId);
   const clearedPotion = !result.error && recipeId ? stopPotionAutoCraft() : false;
   return { ...result, clearedPotion };
@@ -479,18 +493,28 @@ function formatReward(recipe) {
 // RENDER
 // =========================================================
 
-function setCategory(category) {
+function setCategory(category, subcategory = DEFAULT_CRAFTING_SUBTAB[category] ?? null) {
   state.category = category;
+  state.subcategory = subcategory;
 
   if (hideOwnedRow) {
-    hideOwnedRow.hidden = category === "potion";
+    hideOwnedRow.hidden = category === "others" && subcategory === "potion";
   }
 
   for (const tab of categoryTabs) {
     tab.setAttribute(
       "aria-selected",
-      String(tab.dataset.category === category)
+      String(tab.dataset.craftingGroup === category)
     );
+  }
+
+  for (const group of subtabGroups) {
+    group.hidden = group.dataset.subtabs !== category;
+  }
+
+  for (const tab of subcategoryTabs) {
+    const activeGroup = tab.closest("[data-subtabs]")?.dataset.subtabs;
+    tab.setAttribute("aria-selected", String(activeGroup === category && tab.dataset.subcategory === subcategory));
   }
 
   renderRecipes();
@@ -498,7 +522,11 @@ function setCategory(category) {
 
 
 for (const tab of categoryTabs) {
-  tab.addEventListener("click", () => setCategory(tab.dataset.category));
+  tab.addEventListener("click", () => setCategory(tab.dataset.craftingGroup));
+}
+
+for (const tab of subcategoryTabs) {
+  tab.addEventListener("click", () => setCategory(tab.closest("[data-subtabs]").dataset.subtabs, tab.dataset.subcategory));
 }
 
 
@@ -543,9 +571,15 @@ function renderRecipes() {
     `${formatCount(owned)} of ${formatCount(equipmentRecipes.length)} equipment crafted · ` +
     `${formatMoney(state.money)} available`;
 
-  let visible = recipes.filter(
-    (recipe) => (recipe.craftingTab ?? recipe.category) === state.category
-  );
+  if (state.category === "specialists" && !isSpecialistUnlocked(state.subcategory, state.equipment)) {
+    recipeList.innerHTML = `<div class="empty crafting-lock"><p class="empty__title">${escapeHtml(specialistUnlock(state.subcategory).message)}</p></div>`;
+    return;
+  }
+
+  let visible = recipes.filter((recipe) => {
+    const section = getCraftingSection(recipe);
+    return section.group === state.category && (!state.subcategory || section.subcategory === state.subcategory);
+  });
 
   if (hideOwned.checked) {
     visible = visible.filter(
@@ -598,7 +632,11 @@ function renderRecipeInPlace(recipeId, focusSelector = null) {
 }
 
 function renderCraftingRecommendation() {
-  const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsRecipe(recipe));
+  const candidates = recipes.filter((recipe) => {
+    if (isConsumableRecipe(recipe) || ownsRecipe(recipe)) return false;
+    const section = getCraftingSection(recipe);
+    return section.group !== "specialists" || isSpecialistUnlocked(section.subcategory, state.equipment);
+  });
   const next = candidates.sort((a, b) => {
     const aReady = isRecipeReady(a) ? 1 : 0, bReady = isRecipeReady(b) ? 1 : 0;
     return bReady - aReady || Number(a.reward.tier) - Number(b.reward.tier);
@@ -607,7 +645,7 @@ function renderCraftingRecommendation() {
   const ready = isRecipeReady(next);
   craftingNext.innerHTML = `<div><span class="badge badge--accent">Recommended next</span><h2>${escapeHtml(next.name)}</h2><p>${ready ? "Ready to craft now — this is your next available equipment upgrade." : `Choose your next build. Pin this recipe to keep its material goal visible.`}</p></div><div class="row"><button class="btn" data-pin-recipe="${escapeHtml(next.id)}">${pinnedRecipeIds().has(next.id) ? "Unpin recipe" : "Pin recipe"}</button><button class="btn btn--primary" data-open-recipe="${escapeHtml(next.id)}">View recipe</button></div>`;
   craftingNext.querySelector("[data-pin-recipe]")?.addEventListener("click", () => togglePinnedRecipe(next.id));
-  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { setCategory(next.craftingTab ?? next.category); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
+  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { const section = getCraftingSection(next); setCategory(section.group, section.subcategory); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
 }
 
 function paradoxProgressRows(status = state.paradoxStatus) {
@@ -1563,7 +1601,7 @@ window.addEventListener("pageshow", (event) => {
 
 
 if (hideOwnedRow) {
-  hideOwnedRow.hidden = state.category === "potion";
+  hideOwnedRow.hidden = state.category === "others" && state.subcategory === "potion";
 }
 
 renderRecipes();

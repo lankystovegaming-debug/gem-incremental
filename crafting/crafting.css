@@ -42,7 +42,27 @@
 }
 
 .crafting-tabs {
+  margin-bottom: var(--space-2);
+}
+
+.crafting-subtabs {
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: var(--space-4);
+}
+
+.crafting-subtabs[hidden] {
+  display: none;
+}
+
+.crafting-lock {
+  grid-column: 1 / -1;
+  padding: clamp(28px, 6vw, 64px) var(--space-4);
+  text-align: center;
+}
+
+.crafting-lock .empty__title {
+  margin-bottom: 0;
 }
 
 
