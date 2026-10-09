@@ -7,6 +7,7 @@
     "test:events": "node tests/global-random-events-test.mjs",
     "test:pending-gems": "node --test tests/pending-gems-test.mjs && node tests/pending-gems-database-test.mjs",
     "test:weekly-gems": "node tests/weekly-gems-300-test.mjs && node tests/weekly-gems-300-database-test.mjs",
+    "test:custom-discovery-announcements": "node tests/custom-discovery-announcements-test.mjs",
     "test:money-up-potion": "node tests/money-up-potion-database-test.mjs",
     "test:expedition-ui": "node tests/expedition-console-ux-test.mjs",
     "test:crystal-payouts": "node tests/crystal-caverns-payout-rebalance-test.mjs",
