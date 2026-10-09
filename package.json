@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:dungeons": "node tests/dungeon-backend-formulas-test.mjs",
     "test:request-stress": "node tests/request-stress-test.mjs",
     "test:maintenance": "node tests/game-maintenance-shutdown-test.mjs",
     "test:events": "node tests/global-random-events-test.mjs",
