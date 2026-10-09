@@ -122,7 +122,7 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
  const blessingUntil=Date.parse(String(state.supersizerBlessingUntil??''));
  const blessingActive=id==='supersizer-pickaxe'&&genuine&&Number.isFinite(blessingUntil)&&blessingUntil>Number(now);
  const blessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0));
- const flags:any={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
+ const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
   surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
   crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
   wrongTool:false,closeEnough:false,borrowed:null,
@@ -3505,8 +3505,12 @@ async function executeSingleRoll(
       };
 
       const equipmentCommitStartedAt = timingNow(batchExecution);
+      // A declined Auto Craft result may mark the specimen as preserved to
+      // mean "do not consume it". That must not override an explicit Gem
+      // Filter SELL decision. Conservation only keeps the extra specimen when
+      // Auto Craft actually accepted the deposit.
       const autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
-        !bundleKeepInInventory && !autoDeposited && !autoConserved;
+        !bundleKeepInInventory && !autoDeposited;
       let committedResult: any;
       let equipmentCommitError: any;
       if (atomicFinalize) {
@@ -3715,7 +3719,9 @@ async function executeSingleRoll(
       if (autoSellRequested && savedGem) {
         const saleReceipt = committedResult?.sale ?? {};
         const supersizerSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? 1.25 : 1;
-        const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' && Date.parse(String(equipmentOutcome.state.supersizerBlessingUntil ?? '')) > Date.now() ? 1.5 : 1;
+        // Use the pre-roll flag so Gargantuan starts its blessing after the
+        // triggering specimen, matching the authoritative sale transaction.
+        const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? supersizerBlessing.finalSell : 1;
         const artifactSellMultiplier = mineArtifacts.has('foreman-seal') ? 1.03 : 1;
         const gemValueBoost = (activeBoosts ?? []).find((b: any) => b.family === 'gemValue');
         const autoSellMultiplier = gemValueBoost ? Number(gemValueBoost.effect_value ?? 1) : 1;

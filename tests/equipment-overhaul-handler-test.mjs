@@ -118,8 +118,15 @@ qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};c
 for(const preserved of [false,true]){
  craftResponse={deposited:true,preserved,recipeId:'craft',requirementIndex:0};result=await run('celestial-pickaxe');
  assert.equal(result.autoCraft.deposited,true);assert.equal(result.autoCraft.preserved,preserved);
- assert.equal(result.autoCraft.recipeId,'craft');assert.equal(result.autoCraft.requirementIndex,0);assert.ok(!rpcs.includes('sell_inventory_gem'));
+ assert.equal(result.autoCraft.recipeId,'craft');assert.equal(result.autoCraft.requirementIndex,0);assert.equal(commits[0].p_auto_sell,false);
  assert.equal(result.specimenId,preserved?101:null);
 }
+for(const reason of ['not_needed','trial_active']){
+ craftResponse={deposited:false,preserved:true,reason,recipeId:'paradox-pickaxe',requirementIndex:1};result=await run('celestial-pickaxe');
+ assert.equal(result.autoCraft.deposited,false);assert.equal(result.autoCraft.preserved,true);
+ assert.equal(commits[0].p_save_primary,true,`${reason} remains available to the Gem Filter`);
+ assert.equal(commits[0].p_auto_sell,true,`${reason} must not bypass SELL`);
+ assert.equal(result.gemFilter.sold,true);assert.equal(result.specimenId,null);
+}
 qolSettings.gemFilter['Test gem']='KEEP';result=await run('celestial-pickaxe');assert.ok(!rpcs.includes('roll_autocraft_deposit'));assert.equal(result.specimenId,101);
-console.log('QoL crafting integration: deposit before SELL, Conservation retention, and KEEP bypass passed.');
+console.log('QoL crafting integration: deposit before SELL, Conservation retention, declined pickaxe routing, and KEEP bypass passed.');

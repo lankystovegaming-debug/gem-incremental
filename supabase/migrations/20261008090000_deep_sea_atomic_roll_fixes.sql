@@ -187,8 +187,7 @@ begin
     and v_save_primary
     and not coalesce(p_relic_drop, false)
     and not v_bundle_keep
-    and not v_auto_deposited
-    and not v_auto_conserved;
+    and not v_auto_deposited;
 
   v_commit := public.roll_commit_result(
     p_player_id,

@@ -688,6 +688,7 @@ a:hover {
 .rare-roll:last-child { border-bottom: 0; padding-bottom: 0; }
 .rare-roll__copy { display: grid; min-width: 0; gap: 2px; }
 .rare-roll__copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.rare-roll__copy .rare-roll__announcement { overflow: visible; text-overflow: clip; white-space: normal; line-height: 1.35; }
 .rare-roll__player, .rare-roll__odds time { color: var(--text-muted); font-size: .72rem; }
 .rare-roll__details { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; color: var(--text-muted); font-size: .68rem; }
 .rare-roll__details span { padding: 2px 6px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-sunken); }
