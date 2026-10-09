@@ -3137,37 +3137,11 @@ async function executeSingleRoll(
         { ...specimen, effectiveRarity },
         discoveredGemNames
       );
-      if (batchExecution.abyssalPotion) {
-        const { error } = await ctx.supabaseAdmin.rpc("deep_sea_consume_abyssal", { p_player_id:playerId });
-        if (error) return jsonResponse({ error:String(error.message).includes("not_owned") ? "not_owned" : "abyssal_consume_failed" }, { status:409 });
-      }
       let deepSeaCommit: any = null;
-      const deepSeaFirstDiscovery = batchExecution.pool === "deep_sea" && !discoveredGemNames.has(gem.name);
-      const neptuneNeeds = new Set((deepSeaContext?.neptuneNeeded ?? []).map(String));
-      const depthsNeeds = new Set((deepSeaContext?.depthsNeeded ?? []).map(String));
-      const deepSeaPotentialFeed = batchExecution.pool === "deep_sea" && !deepSeaFirstDiscovery && (
-        (deepSeaContext?.state?.neptune_auto_feed === true && neptuneNeeds.has(gem.name)) ||
-        (deepSeaContext?.state?.depths_auto_feed === true && depthsNeeds.has(gem.name))
-      );
-      const commitDeepSea = async (inventoryRequired: boolean) => {
-        if (batchExecution.pool !== "deep_sea" || deepSeaCommit) return deepSeaCommit;
-        const { data, error } = await ctx.supabaseAdmin.rpc("deep_sea_commit_roll", {
-          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
-          p_specimen: specimen, p_neptune: equipmentContext.id === "neptune", p_inventory_required: inventoryRequired
-        });
-        if (error) {
-          const code = String(error.message ?? "deep_sea_commit_failed").match(/[a-z][a-z0-9_]+/)?.[0] ?? "deep_sea_commit_failed";
-          throw Object.assign(new Error(code), { deepSeaCode: code });
-        }
-        deepSeaCommit = data;
-        return data;
-      };
-      if (deepSeaPotentialFeed) {
-        try { await commitDeepSea(false); }
-        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
-      }
+      const atomicFinalize = batchExecution.pool === "deep_sea" || batchExecution.abyssalPotion;
       let deepcoreAutoContribution: any = null;
       if (
+        !atomicFinalize &&
         batchExecution.pool === "normal" &&
         gem.metadata?.automaticConsumptionProtected !== true &&
         deepcoreContext?.status === "active" &&
@@ -3180,11 +3154,18 @@ async function executeSingleRoll(
         if (contributionError) console.error("Deepcore Auto Contribute failed:", contributionError);
         else deepcoreAutoContribution = contribution;
       }
-      const deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
-      const deepSeaDeposited = deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
+      let deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
       const bundleRouteStartedAt = timingNow(batchExecution);
-      const externalDeposit = deepSeaDeposited ? "deep-sea" : deepcoreDeposited ? "deepcore" : null;
-      const routedRequest = externalDeposit
+      const externalDeposit = deepcoreDeposited ? "deepcore" : null;
+      const routedRequest = atomicFinalize
+        ? Promise.resolve({
+          data: {
+            bundle: { status: externalDeposit ?? "pending", keepInInventory: externalDeposit == null },
+            autoCraft: { deposited: false, preserved: false }
+          },
+          error: null
+        })
+        : externalDeposit
         ? Promise.resolve({
           data: {
             bundle: { status: externalDeposit, keepInInventory: false },
@@ -3208,37 +3189,34 @@ async function executeSingleRoll(
           p_active_auto_craft: rollContext.activeAutoCraft ?? null,
           p_external_deposit: null
         });
-      const { data: routedResult, error: bundleRouteError } = await routedRequest;
-      recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
-      recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", bundleRouteStartedAt);
-      if (timingFlags) timingFlags.bundle_route_roll_used = !filterDecision.keep && externalDeposit == null;
+      let { data: routedResult, error: bundleRouteError } = await routedRequest;
+      if (!atomicFinalize) {
+        recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
+        recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", bundleRouteStartedAt);
+      }
+      if (timingFlags) timingFlags.bundle_route_roll_used = !atomicFinalize && !filterDecision.keep && externalDeposit == null;
       if (bundleRouteError || !routedResult?.bundle) {
         // An uncertain commit must never fall back to saving a second copy.
         console.error("Bundle routing failed:", bundleRouteError);
         return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
       }
-      const bundleRoute = routedResult.bundle;
-      const autoCraftResult = routedResult.autoCraft ?? {};
+      let bundleRoute = routedResult.bundle;
+      let autoCraftResult = routedResult.autoCraft ?? {};
       if (routedResult.autoCraftError) {
         console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
       }
-      const bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited || deepSeaDeposited;
-      const bundleKeepInInventory = bundleRoute.keepInInventory === true;
-      const autoDeposited = autoCraftResult?.deposited === true;
-      const autoConserved = autoCraftResult?.preserved === true;
-      const autoCraftRecipeId = autoCraftResult?.recipeId ?? null;
-      const autoCraftRequirementIndex = autoCraftResult?.requirementIndex ?? null;
+      let bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited;
+      let bundleKeepInInventory = bundleRoute.keepInInventory === true;
+      let autoDeposited = autoCraftResult?.deposited === true;
+      let autoConserved = autoCraftResult?.preserved === true;
+      let autoCraftRecipeId = autoCraftResult?.recipeId ?? null;
+      let autoCraftRequirementIndex = autoCraftResult?.requirementIndex ?? null;
       if (autoDeposited) recordRollPhase(batchExecution, batchIndex, "roll_autocraft_deposit_ms", bundleRouteStartedAt);
       if (timingFlags) timingFlags.roll_autocraft_deposit_used = autoDeposited;
 
-      if (batchExecution.pool === "deep_sea" && !deepSeaCommit) {
-        const inventoryRequired = !bundleDeposited && (!autoDeposited || autoConserved) && !relicDrop;
-        try { await commitDeepSea(inventoryRequired); }
-        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
-      }
       // Persistence is deferred until the JS-only duplicate/equipment RNG has
       // finished, then committed atomically with equipment and bookkeeping.
-      const shouldSavePrimary = !bundleDeposited && (!autoDeposited || autoConserved);
+      let shouldSavePrimary = !bundleDeposited && (!autoDeposited || autoConserved);
       const inventorySpecimen = {
         ...specimen,
         value_per_gram: gem.valuePerGram,
@@ -3529,20 +3507,83 @@ async function executeSingleRoll(
       const equipmentCommitStartedAt = timingNow(batchExecution);
       const autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
         !bundleKeepInInventory && !autoDeposited && !autoConserved;
-      const { data: committedResult, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('roll_commit_result', {
-        p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
-        p_primary_specimen: inventorySpecimen,
-        p_save_primary: shouldSavePrimary,
-        p_relic_drop: relicDrop,
-        p_duplicate: veinHunterDuplicatePayload,
-        p_auto_sell: autoSellRequested,
-        p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
-        p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
-        p_bookkeeping: bookkeepingPayload,
-        p_convergence_bonuses: convergenceBonuses,
-        p_include_background: batchExecution.batchSize > 1,
-        p_release_on_success: batchIndex === batchExecution.batchSize - 1
-      });
+      let committedResult: any;
+      let equipmentCommitError: any;
+      if (atomicFinalize) {
+        // Keep event payment/consumable use, automatic routing and the final
+        // specimen commit in the same database transaction.
+        const atomicCommit = await ctx.supabaseAdmin.rpc('roll_finalize_atomic', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_routing_specimen: specimen,
+          p_primary_specimen: inventorySpecimen,
+          p_filter_keep: filterDecision.keep,
+          p_filter_sell: filterDecision.sell,
+          p_active_auto_craft: rollContext.activeAutoCraft ?? null,
+          p_external_deposit: externalDeposit,
+          p_deep_sea: batchExecution.pool === "deep_sea",
+          p_neptune: equipmentContext.id === "neptune",
+          p_consume_abyssal: batchExecution.abyssalPotion,
+          p_deepcore_auto_contribute: batchExecution.pool === "normal" &&
+            gem.metadata?.automaticConsumptionProtected !== true &&
+            deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        equipmentCommitError = atomicCommit.error ??
+          (atomicCommit.data ? null : { message: "atomic_roll_commit_failed" });
+        if (!equipmentCommitError && atomicCommit.data) {
+          deepSeaCommit = atomicCommit.data.deepSea ?? null;
+          deepcoreAutoContribution = atomicCommit.data.deepcore ?? null;
+          deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
+          if (atomicCommit.data.deepcoreError) {
+            console.error("Deepcore Auto Contribute failed:", atomicCommit.data.deepcoreError);
+          }
+          routedResult = atomicCommit.data.route;
+          committedResult = atomicCommit.data.commit;
+          shouldSavePrimary = atomicCommit.data.savePrimary === true;
+          bundleRoute = routedResult?.bundle ?? bundleRoute;
+          autoCraftResult = routedResult?.autoCraft ?? {};
+          bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited ||
+            deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
+          bundleKeepInInventory = bundleRoute.keepInInventory === true;
+          autoDeposited = autoCraftResult.deposited === true;
+          autoConserved = autoCraftResult.preserved === true;
+          autoCraftRecipeId = autoCraftResult.recipeId ?? null;
+          autoCraftRequirementIndex = autoCraftResult.requirementIndex ?? null;
+          if (routedResult?.autoCraftError) {
+            console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
+          }
+          recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", equipmentCommitStartedAt);
+          recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", equipmentCommitStartedAt);
+          if (timingFlags) {
+            timingFlags.bundle_route_roll_used = !filterDecision.keep && !deepcoreDeposited;
+            timingFlags.roll_autocraft_deposit_used = autoDeposited;
+          }
+        }
+      } else {
+        const ordinaryCommit = await ctx.supabaseAdmin.rpc('roll_commit_result', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_primary_specimen: inventorySpecimen,
+          p_save_primary: shouldSavePrimary,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_auto_sell: autoSellRequested,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        committedResult = ordinaryCommit.data;
+        equipmentCommitError = ordinaryCommit.error;
+      }
       const equipmentCommit = committedResult?.equipment ?? {};
       savedGem = committedResult?.primary ?? null;
       veinHunterDuplicate = committedResult?.duplicate ?? null;
@@ -3555,6 +3596,14 @@ async function executeSingleRoll(
       recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_critical_ms", equipmentCommitStartedAt);
       if (batchExecution.batchSize > 1) {
         recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", equipmentCommitStartedAt);
+      }
+      if (equipmentCommitError && atomicFinalize) {
+        const message = String(equipmentCommitError.message ?? "");
+        const expectedCode = [
+          "deep_sea_event_ended", "insufficient_funds", "inventory_full", "not_owned",
+          "invalid_roll_lease", "invalid_genuine_roll", "duplicate_roll_commit"
+        ].find((code) => message.includes(code));
+        if (expectedCode) return jsonResponse({ error: expectedCode }, { status: 409 });
       }
       if (equipmentCommitError) throw equipmentCommitError;
       if (committedResult?.leaseReleased === true) batchExecution.leaseReleased = true;
