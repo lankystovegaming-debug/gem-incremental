@@ -44,6 +44,10 @@ const migration = readFileSync(
   new URL("../supabase/migrations/20261009014151_custom_discovery_announcements.sql", import.meta.url),
   "utf8"
 );
+const claimFixMigration = readFileSync(
+  new URL("../supabase/migrations/20261009031550_fix_anomalous_i_claim_announcement.sql", import.meta.url),
+  "utf8"
+);
 const db = new PGlite();
 await db.exec(`
   create schema private;
@@ -86,12 +90,13 @@ await db.exec(`
     effective_rarity numeric,
     mutation_ids text[] not null default '{}',
     luck_at_roll numeric,
-    created_at timestamptz not null default now()
+    created_at timestamptz not null default now(),
+    constraint global_chat_announcements_rarity_check check (rarity >= 100000)
   );
-  create table public.global_signal_audit (player_id uuid, gem_name text);
+  create table public.global_signal_audit (player_id uuid, gem_name text, rarity numeric);
   create function public.audit_global_signal() returns trigger language plpgsql as $$
   begin
-    insert into public.global_signal_audit values (new.player_id, new.gem_name);
+    insert into public.global_signal_audit values (new.player_id, new.gem_name, new.rarity);
     return new;
   end $$;
   create trigger a_audit_global_signal after insert on public.global_chat_announcements
@@ -119,6 +124,7 @@ await db.query(
 );
 
 await db.exec(migration);
+await db.exec(claimFixMigration);
 let events = (await db.query("select * from public.rare_roll_chat_events order by id")).rows;
 assert.equal(events.length, 1, "the migration backfills a prior i claim once");
 assert.equal(events[0].username, "EarlierPlayer");
@@ -147,6 +153,10 @@ assert.deepEqual(
 );
 assert.equal(Number((await db.query("select count(*) value from public.global_signal_audit")).rows[0].value), 1);
 assert.equal(Number((await db.query("select count(*) value from public.global_chat_announcements")).rows[0].value), 0);
+assert.equal(
+  Number((await db.query("select rarity from public.global_signal_audit where gem_name='i'")).rows[0]?.rarity ?? 0),
+  100000
+);
 
 await assert.rejects(
   () => db.query(
