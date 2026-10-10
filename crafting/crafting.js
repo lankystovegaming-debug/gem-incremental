@@ -34,6 +34,7 @@ import {
 } from "../src/backend/cloudCrafting.js";
 import { loadCloudEquipment, loadEquipmentOverhaulProgress } from "../src/backend/cloudEquipment.js";
 import { loadCloudPlayerState } from "../src/backend/cloudInventory.js";
+import { loadConvergenceStatus } from "../src/backend/cloudConvergence.js";
 
 import { mountShell } from "../src/ui/shell.js";
 import { signInEmptyStateHtml } from "../src/ui/signInState.js";
@@ -45,6 +46,12 @@ import {
   formatCount,
   escapeHtml
 } from "../src/ui/format.js";
+import {
+  DEFAULT_CRAFTING_SUBTAB,
+  getCraftingSection,
+  isSpecialistUnlocked,
+  specialistUnlock
+} from "../src/logic/craftingTabs.js";
 
 
 const shell = mountShell({ page: "crafting", base: "../" });
@@ -56,7 +63,9 @@ const shell = mountShell({ page: "crafting", base: "../" });
 
 const recipeList = document.getElementById("recipeList");
 const subtitle = document.getElementById("craftingSubtitle");
-const categoryTabs = document.querySelectorAll("[data-category]");
+const categoryTabs = document.querySelectorAll("[data-crafting-group]");
+const subtabGroups = document.querySelectorAll("[data-subtabs]");
+const subcategoryTabs = document.querySelectorAll("[data-subcategory]");
 const hideOwned = document.getElementById("hideOwned");
 const hideOwnedRow = document.getElementById("hideOwnedRow");
 
@@ -72,8 +81,8 @@ const EQUIPMENT_TAB_SECTION_IDS = {
 async function applyEquipmentTabVisibility(){
   const {data}=await supabase.from("game_section_settings").select("id,enabled").in("id",Object.values(EQUIPMENT_TAB_SECTION_IDS));
   const map=Object.fromEntries((data||[]).map(x=>[x.id,!!x.enabled]));
-  document.querySelectorAll("[data-category]").forEach(tab=>{
-    const cat=tab.dataset.category;
+  document.querySelectorAll("[data-crafting-group]").forEach(tab=>{
+    const cat=tab.dataset.craftingGroup;
     const sid=EQUIPMENT_TAB_SECTION_IDS[cat];
     if(!sid)return;
     tab.hidden= sid==="equipment-limited-time" ? false : !(map[sid]===true);
@@ -100,7 +109,9 @@ const state = {
   bestRareNaturalWeight1m: 0,
   impossibleStatus: null,
   paradoxStatus: null,
-  category: "pickaxe",
+  convergenceStatus: null,
+  category: "pickaxes",
+  subcategory: null,
   loading: true
 };
 
@@ -135,6 +146,11 @@ function stopPotionAutoCraft() {
 }
 
 async function setEquipmentAutoCraft(recipeId) {
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+  const section = recipe ? getCraftingSection(recipe) : null;
+  if (section?.group === "specialists" && !isSpecialistUnlocked(section.subcategory, state.equipment)) {
+    return { error: new Error(specialistUnlock(section.subcategory).message), clearedPotion: false };
+  }
   const result = await setCloudAutoCraft(recipeId);
   const clearedPotion = !result.error && recipeId ? stopPotionAutoCraft() : false;
   return { ...result, clearedPotion };
@@ -479,18 +495,28 @@ function formatReward(recipe) {
 // RENDER
 // =========================================================
 
-function setCategory(category) {
+function setCategory(category, subcategory = DEFAULT_CRAFTING_SUBTAB[category] ?? null) {
   state.category = category;
+  state.subcategory = subcategory;
 
   if (hideOwnedRow) {
-    hideOwnedRow.hidden = category === "potion";
+    hideOwnedRow.hidden = category === "others" && subcategory === "potion";
   }
 
   for (const tab of categoryTabs) {
     tab.setAttribute(
       "aria-selected",
-      String(tab.dataset.category === category)
+      String(tab.dataset.craftingGroup === category)
     );
+  }
+
+  for (const group of subtabGroups) {
+    group.hidden = group.dataset.subtabs !== category;
+  }
+
+  for (const tab of subcategoryTabs) {
+    const activeGroup = tab.closest("[data-subtabs]")?.dataset.subtabs;
+    tab.setAttribute("aria-selected", String(activeGroup === category && tab.dataset.subcategory === subcategory));
   }
 
   renderRecipes();
@@ -498,7 +524,11 @@ function setCategory(category) {
 
 
 for (const tab of categoryTabs) {
-  tab.addEventListener("click", () => setCategory(tab.dataset.category));
+  tab.addEventListener("click", () => setCategory(tab.dataset.craftingGroup));
+}
+
+for (const tab of subcategoryTabs) {
+  tab.addEventListener("click", () => setCategory(tab.closest("[data-subtabs]").dataset.subtabs, tab.dataset.subcategory));
 }
 
 
@@ -518,6 +548,13 @@ function renderAutoBanner() {
   autoBanner.classList.remove("hidden");
 }
 
+
+function updateConvergenceCardCountdown() {
+  const node=document.getElementById("convergenceCardCountdown"),target=Date.parse(node?.dataset.target||"");
+  if(!node||!Number.isFinite(target))return;
+  const ms=Math.max(0,target-Date.now()),days=Math.floor(ms/86400000),hours=Math.floor(ms/3600000)%24,minutes=Math.floor(ms/60000)%60,seconds=Math.floor(ms/1000)%60;
+  node.textContent=`${state.convergenceStatus?.status==="scheduled"?"Construction begins":"Construction ends"} in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
 
 function renderRecipes() {
   shell.setWallet(state.money);
@@ -543,9 +580,15 @@ function renderRecipes() {
     `${formatCount(owned)} of ${formatCount(equipmentRecipes.length)} equipment crafted · ` +
     `${formatMoney(state.money)} available`;
 
-  let visible = recipes.filter(
-    (recipe) => (recipe.craftingTab ?? recipe.category) === state.category
-  );
+  if (state.category === "specialists" && !isSpecialistUnlocked(state.subcategory, state.equipment)) {
+    recipeList.innerHTML = `<div class="empty crafting-lock"><p class="empty__title">${escapeHtml(specialistUnlock(state.subcategory).message)}</p></div>`;
+    return;
+  }
+
+  let visible = recipes.filter((recipe) => {
+    const section = getCraftingSection(recipe);
+    return section.group === state.category && (!state.subcategory || section.subcategory === state.subcategory);
+  });
 
   if (hideOwned.checked) {
     visible = visible.filter(
@@ -568,6 +611,7 @@ function renderRecipes() {
   }
 
   recipeList.innerHTML = visible.map(recipeCard).join("");
+  updateConvergenceCardCountdown();
 
   for (const card of recipeList.querySelectorAll(".recipe-card")) {
     wireRecipeCard(card);
@@ -598,7 +642,11 @@ function renderRecipeInPlace(recipeId, focusSelector = null) {
 }
 
 function renderCraftingRecommendation() {
-  const candidates = recipes.filter((recipe) => !isConsumableRecipe(recipe) && !ownsRecipe(recipe));
+  const candidates = recipes.filter((recipe) => {
+    if (isConsumableRecipe(recipe) || ownsRecipe(recipe)) return false;
+    const section = getCraftingSection(recipe);
+    return section.group !== "specialists" || isSpecialistUnlocked(section.subcategory, state.equipment);
+  });
   const next = candidates.sort((a, b) => {
     const aReady = isRecipeReady(a) ? 1 : 0, bReady = isRecipeReady(b) ? 1 : 0;
     return bReady - aReady || Number(a.reward.tier) - Number(b.reward.tier);
@@ -607,7 +655,7 @@ function renderCraftingRecommendation() {
   const ready = isRecipeReady(next);
   craftingNext.innerHTML = `<div><span class="badge badge--accent">Recommended next</span><h2>${escapeHtml(next.name)}</h2><p>${ready ? "Ready to craft now — this is your next available equipment upgrade." : `Choose your next build. Pin this recipe to keep its material goal visible.`}</p></div><div class="row"><button class="btn" data-pin-recipe="${escapeHtml(next.id)}">${pinnedRecipeIds().has(next.id) ? "Unpin recipe" : "Pin recipe"}</button><button class="btn btn--primary" data-open-recipe="${escapeHtml(next.id)}">View recipe</button></div>`;
   craftingNext.querySelector("[data-pin-recipe]")?.addEventListener("click", () => togglePinnedRecipe(next.id));
-  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { setCategory(next.craftingTab ?? next.category); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
+  craftingNext.querySelector("[data-open-recipe]")?.addEventListener("click", () => { const section = getCraftingSection(next); setCategory(section.group, section.subcategory); requestAnimationFrame(() => document.querySelector(`[data-recipe="${next.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })); });
 }
 
 function paradoxProgressRows(status = state.paradoxStatus) {
@@ -639,6 +687,17 @@ function paradoxRequirementsHtml(status = state.paradoxStatus) {
 
 
 function recipeCard(recipe) {
+  if (recipe.convergenceCommunity) {
+    if (Date.now() < Date.parse("2026-10-08T16:00:00Z")) return "";
+    const event=state.convergenceStatus,player=event?.player??{},target=event?.status==="scheduled"?event?.startsAt:event?.deadlineAt;
+    const statusLabel=event?.status==="succeeded"?"Succeeded":event?.status==="failed"?"Failed":event?.status==="active"?"Construction active":"Preview";
+    return `<article class="recipe-card recipe-card--convergence" data-recipe="convergence-pickaxe">
+      <div class="recipe-card__head"><div class="recipe-card__identity"><div class="recipe-card__name">Convergence</div><div class="recipe-card__tier">Tier 16 · Community Pickaxe</div></div><span class="badge badge--accent">${escapeHtml(statusLabel)}</span></div>
+      <div class="recipe-card__bonuses">${formatReward(recipe).join("")}</div>
+      <div class="recipe-card__details"><p class="recipe-card__description">${event?`${Number(event.progressPercent||0).toFixed(2)}% complete · ${formatCount(event.completedRequirements||0)} / ${formatCount(event.requirementCount||0)} requirements · ${formatCount(player.contributionPoints||0)} CP`:`Community status is loading.`}</p><p id="convergenceCardCountdown" data-target="${escapeHtml(target||"")}">${event?.status==="succeeded"?"Construction completed early.":event?.status==="failed"?"The event ended without completion.":"Calculating countdown…"}</p></div>
+      <div class="recipe-card__actions"><a class="btn btn--primary" href="./convergence/">Open Convergence</a></div>
+    </article>`;
+  }
   const progress = ensureRecipeProgress(state.crafting, recipe);
 
   const owned = !isConsumableRecipe(recipe) && ownsRecipe(recipe);
@@ -1506,7 +1565,7 @@ async function refresh() {
     return;
   }
 
-  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes, impossibleStatus, paradoxStatus] = await Promise.all([
+  const [craftingState, playerState, equipment, consumables, overhaulProgress, adminEquipmentRecipes, impossibleStatus, paradoxStatus, convergenceStatus] = await Promise.all([
     loadCloudCraftingState(),
     loadCloudPlayerState(),
     loadCloudEquipment(),
@@ -1514,13 +1573,15 @@ async function refresh() {
     loadEquipmentOverhaulProgress(),
     loadAdminEquipmentRecipes(),
     loadImpossiblePickaxeStatus().catch(() => null),
-    loadParadoxPickaxeStatus().catch(() => null)
+    loadParadoxPickaxeStatus().catch(() => null),
+    Date.now()>=Date.parse("2026-10-08T16:00:00Z")?loadConvergenceStatus().catch(() => null):Promise.resolve(null)
   ]);
 
   state.loading = false;
   state.specialDiscoveries = overhaulProgress ?? {};
   state.impossibleStatus = impossibleStatus;
   state.paradoxStatus = paradoxStatus;
+  state.convergenceStatus = convergenceStatus;
   state.specialDiscoveries.batchHistory = {
     ...(state.specialDiscoveries.batchHistory ?? {}),
     ...(impossibleStatus?.requirements ?? {})
@@ -1563,8 +1624,9 @@ window.addEventListener("pageshow", (event) => {
 
 
 if (hideOwnedRow) {
-  hideOwnedRow.hidden = state.category === "potion";
+  hideOwnedRow.hidden = state.category === "others" && state.subcategory === "potion";
 }
 
 renderRecipes();
 refresh().then(() => startPotionAutoCraftLoop());
+setInterval(updateConvergenceCardCountdown,1000);

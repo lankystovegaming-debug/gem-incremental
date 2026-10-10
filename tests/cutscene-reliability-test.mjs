@@ -141,6 +141,9 @@ assert.equal(new Set(deepSeaFinales.map((definition) => definition.cameraMotion)
 assert.ok(deepSeaScenes.slice(1).every((definition) => definition.revealPosition === "center"), "Ancient Coin onward must finish on a centred gem reveal");
 assert.equal(BESPOKE_CUTSCENES["neptune's tear"].secret, true, "Neptune's Tear must reveal as a secret");
 assert.equal(BESPOKE_CUTSCENES["soul of the sea god"].revealPosition, "center", "the final Deep Sea gem must reveal at centre stage");
+assert.deepEqual(BESPOKE_CUTSCENES["leviathan scale"].beats, ["dangerous waters. you risk it all... for what?"]);
+assert.deepEqual(BESPOKE_CUTSCENES["neptune's tear"].beats, ["the sea is dying"]);
+assert.deepEqual(BESPOKE_CUTSCENES["soul of the sea god"].beats, ["Poseidon has been awakened"]);
 assert.ok(
   Object.values(BESPOKE_CUTSCENES).filter((definition) => definition.primitives.includes("reticle")).length <= 3,
   "reticles must be an occasional scene primitive, not a cinematic watermark"
@@ -218,6 +221,14 @@ const config = source("src/ui/cutsceneConfig.js");
 const primitives = source("src/ui/cutscenePrimitives.js");
 const sceneStyles = source("src/ui/cutsceneScenes.css");
 const styles = source("style.css");
+
+for (const token of [
+  "cs-ds-leviathan-dragon", "cs-ds-fallen-scale", "cs-ds-heart-core",
+  "cs-ds-heart-seabed", "cs-ds-heart-fragment", "cs-ds-polluted-surface",
+  "cs-ds-palace-crack", "cs-ds-plastic-bottle", "cs-ds-golden-tear",
+  "cs-ds-poseidon--striking", "cs-ds-trident", "cs-ds-soul-bubble"
+]) assert.match(primitives + sceneStyles, new RegExp(token), `missing Deep Sea story element ${token}`);
+assert.match(sceneStyles, /rgba\(110,236,185,\.8\)/, "Soul bubble must use the approved sea-green colour");
 
 assert.match(main, /isCutsceneEligible\(\{/);
 assert.match(replay, /isCutsceneEligible\(\{/);

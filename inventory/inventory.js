@@ -44,6 +44,7 @@ import { icons } from "../src/ui/icons.js";
 import { notify } from "../src/ui/toast.js";
 import { confirmDialog } from "../src/ui/dialog.js";
 import { gemNameHtml } from "../src/ui/gemStyle.js";
+import { mountMobileSheet } from "../src/ui/mobileSheet.js";
 import {
   rarityTier,
   rarityLabel,
@@ -671,6 +672,16 @@ function gemCard(gem) {
         <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
 
         <button
+          class="btn btn--sm"
+          data-action="list"
+          type="button"
+          ${gem.locked ? "disabled" : ""}
+          title="${gem.locked ? "Unlock this gem before listing" : "List through the Black Market or Auction"}"
+        >
+          List item
+        </button>
+
+        <button
           class="btn btn--sm btn--danger"
           data-action="sell"
           type="button"
@@ -713,6 +724,7 @@ function wireGemCard(card) {
 
   const lockButton = card.querySelector('[data-action="lock"]');
   const sellButton = card.querySelector('[data-action="sell"]');
+  const listButton = card.querySelector('[data-action="list"]');
   const deleteButton = card.querySelector('[data-action="delete"]');
   const showcaseButton = card.querySelector('[data-action="showcase"]');
 
@@ -746,6 +758,12 @@ function wireGemCard(card) {
     renderGems();
   });
 
+  listButton?.addEventListener("click", () => {
+    const gem = state.gems.find((entry) => entry.id === id);
+    if (!gem || gem.locked) return;
+    location.href = `../auctions/?sell=gem&id=${encodeURIComponent(id)}`;
+  });
+
   lockButton.addEventListener("click", async () => {
     lockButton.disabled = true;
 
@@ -773,9 +791,9 @@ function wireGemCard(card) {
     if (!gem || gem.locked) return;
     const choice = await confirmDialog({ title: `Delete ${gem.gem_name}?`, body: `<p>This permanently deletes the gem. You will receive no money.</p>`, confirmLabel: "Delete permanently", tone: "danger" });
     if (choice !== "confirm") return;
-    deleteButton.disabled = true; lockButton.disabled = true; if (sellButton) sellButton.disabled = true;
+    deleteButton.disabled = true; lockButton.disabled = true; if (sellButton) sellButton.disabled = true; if (listButton) listButton.disabled = true;
     const { error } = await deleteCloudGem(id);
-    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; if (sellButton) sellButton.disabled = false; return; }
+    if (error) { notify.error("Could not delete that gem", error.message); deleteButton.disabled = false; lockButton.disabled = false; if (sellButton) sellButton.disabled = false; if (listButton) listButton.disabled = false; return; }
     state.gems = state.gems.filter((entry) => entry.id !== id);
     renderAll();
     notify.success("Gem deleted", gem.gem_name);
@@ -805,6 +823,7 @@ function wireGemCard(card) {
 
     sellButton.disabled = true;
     lockButton.disabled = true;
+    if (listButton) listButton.disabled = true;
 
     const { data, error } = await sellCloudGem(id);
 
@@ -813,6 +832,7 @@ function wireGemCard(card) {
 
       sellButton.disabled = false;
       lockButton.disabled = false;
+      if (listButton) listButton.disabled = false;
 
       return;
     }
@@ -988,6 +1008,13 @@ function forgeCostHtml(cost) {
     (cost.ancient ? ` · ${formatCount(cost.ancient)} Ancient Relic${cost.ancient === 1 ? "" : "s"}` : "");
 }
 
+function forgeEquipmentLabel(item) {
+  if (["empyrean-pickaxe", "eternity-pickaxe"].includes(item.equipment_id)) {
+    return "Specialist pickaxe";
+  }
+  return `Tier ${item.tier} ${escapeHtml(item.category)}`;
+}
+
 function renderForge() {
   if (!forgeList) return;
   const eligible = state.equipment.filter((item) => (item.category === "pickaxe" || item.equipment_id === "plastic-shopping-bag") && Number(item.tier) >= 10);
@@ -1017,7 +1044,7 @@ function renderForge() {
 
     return `<article class="equipment-card forge-card${level === 5 ? " forge-card--perfected" : ""}" data-forge-card="${escapeHtml(item.id)}">
       <div class="equipment-card__head"><div><div class="equipment-card__name">${escapeHtml(item.name)}</div>
-      <div class="equipment-card__meta">Tier ${item.tier} ${escapeHtml(item.category)} · Masterwork ${level}/5</div></div>
+      <div class="equipment-card__meta">${forgeEquipmentLabel(item)} · Masterwork ${level}/5</div></div>
       <span class="badge ${level === 5 ? "badge--accent" : "badge--muted"}">${level === 5 ? "Perfected" : "Beta"}</span></div>
       <div class="meter"><div class="meter__fill" style="width:${level * 20}%"></div></div>
       <p class="equipment-card__meta">Equipment bonuses: +${level}% relative Masterwork bonus.</p>
@@ -1727,20 +1754,11 @@ refresh();
 
 mountEquipmentLoadouts(document.getElementById('equipmentLoadouts'), refresh);
 
-function setInventoryFiltersOpen(open) {
-  inventoryFilterSheet?.classList.toggle("is-open", open);
-  inventoryFilterToggle?.setAttribute("aria-expanded", String(open));
-  if (inventoryFilterBackdrop) inventoryFilterBackdrop.hidden = !open;
-  document.body.classList.toggle("inventory-filters-open", open);
-  if (open) inventoryFilterClose?.focus({ preventScroll: true });
-  else inventoryFilterToggle?.focus({ preventScroll: true });
-}
-
-inventoryFilterToggle?.addEventListener("click", () => setInventoryFiltersOpen(true));
-inventoryFilterClose?.addEventListener("click", () => setInventoryFiltersOpen(false));
-inventoryFilterBackdrop?.addEventListener("click", () => setInventoryFiltersOpen(false));
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && inventoryFilterSheet?.classList.contains("is-open")) setInventoryFiltersOpen(false);
+mountMobileSheet({
+  sheet: inventoryFilterSheet,
+  trigger: inventoryFilterToggle,
+  closeButton: inventoryFilterClose,
+  backdrop: inventoryFilterBackdrop
 });
 
 let backToTopFrame = 0;

@@ -28,9 +28,9 @@ assert.match(migration, /create or replace function public\.get_best_roll_leader
 assert.match(migration, /create or replace function public\.get_raw_rare_roll_leaderboard/);
 assert.match(migration, /update public\.players p set gems_found_score/);
 
-assert.match(crafting, /data-category="lantern"/);
+assert.match(crafting, /data-subcategory="lantern"/);
 assert.doesNotMatch(read("crafting/crafting.js"), /Lanterns have been deprecated\./);
-assert.match(crafting, /data-category="clover"/);
+assert.match(crafting, /data-subcategory="clover"/);
 assert.equal(recipes.some((recipe) => recipe.category === "lantern"), true);
 for (const recipe of recipes.filter((entry) => entry.category === "pickaxe")) {
   assert.ok(Number(recipe.reward?.bonus?.luck) > -1, `${recipe.id} has positive total Luck`);

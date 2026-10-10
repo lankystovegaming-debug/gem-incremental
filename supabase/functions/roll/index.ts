@@ -29,6 +29,7 @@ export const PICKAXE_STATS = {
  'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
  'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
  'paradox-pickaxe':[34,3.1,1.5,5.5,1.7],
+ 'convergence-pickaxe':[32,3,1.5,5,1.75],
  'impossible-pickaxe':[1,1,1,1,1],
  'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
  'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
@@ -103,6 +104,17 @@ export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focu
  return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
 }
 export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
+export function convergenceEchoGain(rarity=0) {
+ const r=Number(rarity);return r>=1e9?250:r>=1e8?150:r>=1e7?75:r>=1e6?40:r>=1e5?20:r>=1e4?10:r>=1e3?5:r>=100?3:r>=50?2:r>=1?1:0;
+}
+export function normalizedConvergenceState(saved={}) {
+ const current=saved.convergence&&typeof saved.convergence==='object'?saved.convergence:{};
+ return {echo:Math.min(999,Math.max(0,Math.trunc(Number(current.echo??0))||0)),
+  resonanceRolls:Math.min(5,Math.max(0,Math.trunc(Number(current.resonanceRolls??0))||0)),
+  momentumCharges:Math.min(3,Math.max(0,Math.trunc(Number(current.momentumCharges??0))||0)),
+  surgeRolls:Math.min(10,Math.max(0,Math.trunc(Number(current.surgeRolls??0))||0)),
+  convergenceRolls:Math.max(0,Math.trunc(Number(current.convergenceRolls??0))||0)};
+}
 export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true,now=Date.now()) {
  const state=structuredClone(saved);
  const rolls=Math.max(0,Number(state.rolls?.[id]??0));
@@ -118,12 +130,21 @@ export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true
   foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
   supersizerBlessing:blessingActive,
   supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20,
+  convergence:null,
   impossible:genuine&&id==='impossible-pickaxe'&&random()<1/1000000};
  if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
  if(id==='paradox-pickaxe'&&genuine) {
   const paradox=normalizedParadoxState(state);state.paradox=paradox;
   const multiplier=paradoxPassiveMultiplier(state);
   flags.paradox={mode:paradox.mode,criticalRoll:paradox.mode==='critical'?paradox.criticalRoll:null,multiplier,contradiction:paradox.contradiction};
+  stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
+ }
+ if(id==='convergence-pickaxe'&&genuine) {
+  const convergence=normalizedConvergenceState(state);state.convergence=convergence;
+  const surge=convergence.surgeRolls>0;
+  const resonance=!surge&&convergence.resonanceRolls>0;
+  const multiplier=surge?2:resonance?1.5:1;
+  flags.convergence={surge,resonance,multiplier,oneBecomesMany:(convergence.convergenceRolls+1)%250===0};
   stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
  }
  if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
@@ -183,6 +204,17 @@ export function finishEquipmentRoll(context,{naturalWeight,gem,sizeMutation=null
    else paradox.mode='normal';
   }
   state.paradox=paradox;
+ }
+ if(id==='convergence-pickaxe') {
+  const convergence=normalizedConvergenceState(state);
+  convergence.convergenceRolls+=1;
+  if(flags.convergence?.surge) convergence.surgeRolls=Math.max(0,convergence.surgeRolls-1);
+  else if(flags.convergence?.resonance) convergence.resonanceRolls=Math.max(0,convergence.resonanceRolls-1);
+  else {
+   convergence.echo+=convergenceEchoGain(gem?.rarity??0);
+   if(convergence.echo>=1000){convergence.echo-=1000;convergence.resonanceRolls=5;}
+  }
+  state.convergence=convergence;
  }
  if(id==='supersizer-pickaxe') {
   if(flags.supersizerBlessing) state.supersizerBlessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0))+1;
@@ -1914,6 +1946,16 @@ async function executeSingleRoll(
       const equippedPickaxe = (equippedEquipment ?? []).find(
         (item) => item.category === "pickaxe"
       ) ?? null;
+      let authoritativeEquipmentState = player.equipment_state ?? {};
+      if (equippedPickaxe?.equipment_id === "convergence-pickaxe") {
+        const { data: convergenceState, error: convergenceStateError } = await ctx.supabaseAdmin
+          .rpc("get_convergence_roll_state", { p_uid: playerId });
+        if (convergenceStateError) {
+          console.error("Convergence roll state unavailable:", convergenceStateError);
+          return jsonResponse({ error: "convergence_state_unavailable" }, { status: 503 });
+        }
+        authoritativeEquipmentState = { ...authoritativeEquipmentState, convergence: convergenceState ?? {} };
+      }
       const allIn = equippedPickaxe?.equipment_id === 'all-in-pickaxe';
       if(allIn) mineArtifacts.clear();
       const enchantedPickaxe = allIn ? null : (equippedEquipment ?? []).find(
@@ -2010,7 +2052,10 @@ async function executeSingleRoll(
       // CALCULATE PLAYER STATS
       // =====================================================
 
-      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', player.equipment_state ?? {}, random01, true, now.getTime());
+      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', authoritativeEquipmentState, random01, true, now.getTime());
+      if (equipmentContext.flags.convergence?.oneBecomesMany && currentInventoryCount + 5 > effectiveInventoryCapacity) {
+        return jsonResponse({ error:"inventory_full",inventoryCount:currentInventoryCount,capacity:effectiveInventoryCapacity,requiredFreeSlots:5 }, { status:409 });
+      }
       const supersizerBlessing = supersizerBlessingMultipliers(equipmentContext.flags);
       const impossibleProc = impossibleProcMultipliers(equipmentContext.flags);
       const relicActive = (activeBoosts ?? []).some((boost: any) => boost.family === 'relic');
@@ -3092,37 +3137,11 @@ async function executeSingleRoll(
         { ...specimen, effectiveRarity },
         discoveredGemNames
       );
-      if (batchExecution.abyssalPotion) {
-        const { error } = await ctx.supabaseAdmin.rpc("deep_sea_consume_abyssal", { p_player_id:playerId });
-        if (error) return jsonResponse({ error:String(error.message).includes("not_owned") ? "not_owned" : "abyssal_consume_failed" }, { status:409 });
-      }
       let deepSeaCommit: any = null;
-      const deepSeaFirstDiscovery = batchExecution.pool === "deep_sea" && !discoveredGemNames.has(gem.name);
-      const neptuneNeeds = new Set((deepSeaContext?.neptuneNeeded ?? []).map(String));
-      const depthsNeeds = new Set((deepSeaContext?.depthsNeeded ?? []).map(String));
-      const deepSeaPotentialFeed = batchExecution.pool === "deep_sea" && !deepSeaFirstDiscovery && (
-        (deepSeaContext?.state?.neptune_auto_feed === true && neptuneNeeds.has(gem.name)) ||
-        (deepSeaContext?.state?.depths_auto_feed === true && depthsNeeds.has(gem.name))
-      );
-      const commitDeepSea = async (inventoryRequired: boolean) => {
-        if (batchExecution.pool !== "deep_sea" || deepSeaCommit) return deepSeaCommit;
-        const { data, error } = await ctx.supabaseAdmin.rpc("deep_sea_commit_roll", {
-          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
-          p_specimen: specimen, p_neptune: equipmentContext.id === "neptune", p_inventory_required: inventoryRequired
-        });
-        if (error) {
-          const code = String(error.message ?? "deep_sea_commit_failed").match(/[a-z][a-z0-9_]+/)?.[0] ?? "deep_sea_commit_failed";
-          throw Object.assign(new Error(code), { deepSeaCode: code });
-        }
-        deepSeaCommit = data;
-        return data;
-      };
-      if (deepSeaPotentialFeed) {
-        try { await commitDeepSea(false); }
-        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
-      }
+      const atomicFinalize = batchExecution.pool === "deep_sea" || batchExecution.abyssalPotion;
       let deepcoreAutoContribution: any = null;
       if (
+        !atomicFinalize &&
         batchExecution.pool === "normal" &&
         gem.metadata?.automaticConsumptionProtected !== true &&
         deepcoreContext?.status === "active" &&
@@ -3135,11 +3154,18 @@ async function executeSingleRoll(
         if (contributionError) console.error("Deepcore Auto Contribute failed:", contributionError);
         else deepcoreAutoContribution = contribution;
       }
-      const deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
-      const deepSeaDeposited = deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
+      let deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
       const bundleRouteStartedAt = timingNow(batchExecution);
-      const externalDeposit = deepSeaDeposited ? "deep-sea" : deepcoreDeposited ? "deepcore" : null;
-      const routedRequest = externalDeposit
+      const externalDeposit = deepcoreDeposited ? "deepcore" : null;
+      const routedRequest = atomicFinalize
+        ? Promise.resolve({
+          data: {
+            bundle: { status: externalDeposit ?? "pending", keepInInventory: externalDeposit == null },
+            autoCraft: { deposited: false, preserved: false }
+          },
+          error: null
+        })
+        : externalDeposit
         ? Promise.resolve({
           data: {
             bundle: { status: externalDeposit, keepInInventory: false },
@@ -3163,37 +3189,34 @@ async function executeSingleRoll(
           p_active_auto_craft: rollContext.activeAutoCraft ?? null,
           p_external_deposit: null
         });
-      const { data: routedResult, error: bundleRouteError } = await routedRequest;
-      recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
-      recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", bundleRouteStartedAt);
-      if (timingFlags) timingFlags.bundle_route_roll_used = !filterDecision.keep && externalDeposit == null;
+      let { data: routedResult, error: bundleRouteError } = await routedRequest;
+      if (!atomicFinalize) {
+        recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
+        recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", bundleRouteStartedAt);
+      }
+      if (timingFlags) timingFlags.bundle_route_roll_used = !atomicFinalize && !filterDecision.keep && externalDeposit == null;
       if (bundleRouteError || !routedResult?.bundle) {
         // An uncertain commit must never fall back to saving a second copy.
         console.error("Bundle routing failed:", bundleRouteError);
         return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
       }
-      const bundleRoute = routedResult.bundle;
-      const autoCraftResult = routedResult.autoCraft ?? {};
+      let bundleRoute = routedResult.bundle;
+      let autoCraftResult = routedResult.autoCraft ?? {};
       if (routedResult.autoCraftError) {
         console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
       }
-      const bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited || deepSeaDeposited;
-      const bundleKeepInInventory = bundleRoute.keepInInventory === true;
-      const autoDeposited = autoCraftResult?.deposited === true;
-      const autoConserved = autoCraftResult?.preserved === true;
-      const autoCraftRecipeId = autoCraftResult?.recipeId ?? null;
-      const autoCraftRequirementIndex = autoCraftResult?.requirementIndex ?? null;
+      let bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited;
+      let bundleKeepInInventory = bundleRoute.keepInInventory === true;
+      let autoDeposited = autoCraftResult?.deposited === true;
+      let autoConserved = autoCraftResult?.preserved === true;
+      let autoCraftRecipeId = autoCraftResult?.recipeId ?? null;
+      let autoCraftRequirementIndex = autoCraftResult?.requirementIndex ?? null;
       if (autoDeposited) recordRollPhase(batchExecution, batchIndex, "roll_autocraft_deposit_ms", bundleRouteStartedAt);
       if (timingFlags) timingFlags.roll_autocraft_deposit_used = autoDeposited;
 
-      if (batchExecution.pool === "deep_sea" && !deepSeaCommit) {
-        const inventoryRequired = !bundleDeposited && (!autoDeposited || autoConserved) && !relicDrop;
-        try { await commitDeepSea(inventoryRequired); }
-        catch (error: any) { return jsonResponse({ error:error.deepSeaCode ?? "deep_sea_commit_failed" }, { status:409 }); }
-      }
       // Persistence is deferred until the JS-only duplicate/equipment RNG has
       // finished, then committed atomically with equipment and bookkeeping.
-      const shouldSavePrimary = !bundleDeposited && (!autoDeposited || autoConserved);
+      let shouldSavePrimary = !bundleDeposited && (!autoDeposited || autoConserved);
       const inventorySpecimen = {
         ...specimen,
         value_per_gram: gem.valuePerGram,
@@ -3386,6 +3409,37 @@ async function executeSingleRoll(
         };
       }
 
+      const convergenceBonuses: any[] = [];
+      if (equipmentContext.flags.convergence?.oneBecomesMany) {
+        for (let bonusIndex = 0; bonusIndex < 4; bonusIndex += 1) {
+          const extra = rollEquipmentGem();
+          const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
+          const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+          const extraMutationValue = capCombinedMutationValueMultiplier(extraMutations);
+          const extraMutationMultiplier = extraMutationValue.appliedMultiplier;
+          const extraFinalWeight = extra.baseWeight * extraWeight * weightMultiplier;
+          const extraMutationIds = extraMutations.map((mutation: any) => mutation.id);
+          const extraMutationChanceProduct = extraMutations.reduce(
+            (total: number, mutation: any) => total * Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1)), 1
+          );
+          convergenceBonuses.push({
+            gem_name:extra.name,rarity:extra.rarity,base_weight:extra.baseWeight,value_per_gram:extra.valuePerGram,
+            rolled_weight_multiplier:extraWeight,rolled_weight:extra.baseWeight*extraWeight,final_weight:extraFinalWeight,
+            mutation_id:extraMutations[0]?.id??null,mutation_ids:extraMutationIds,
+            natural_mutation_ids:extraMutationIds,mutation_multiplier:extraMutationMultiplier,
+            mutation_multipliers:Object.fromEntries(extraMutations.map((m:any)=>[m.id,m.multiplier])),
+            mutation_chance_multiplier:mutationChanceMultiplier,effective_rarity:Math.max(1,Number(extra.rarity)*extraMutationChanceProduct),
+            genuine_roll:false,value:extraFinalWeight*extra.valuePerGram*extraMutationMultiplier*researchNumber('gem_value_multiplier')*
+              (extraMutations.length?researchNumber('mutated_value_multiplier')*(1+Math.min(5,extraMutations.length)*Math.max(0,Number(researchEffects.compound_value_per_mutation??0))):1)*
+              crystalGemValueMultiplier*expeditionArtifactGemValueMultiplier*volcanicGemValueMultiplier*
+              (extraWeight>=2?crystalHeavyGemValueMultiplier:1)*(mineArtifacts.has('bedrock-crown')?1.05:1)*eventContext.valueMultiplier,
+            luck_at_roll:luck,locked:false,roll_number:null,source_event_occurrence_id:eventContext.occurrenceId,
+            source_event_key:eventContext.eventKey,event_properties:{convergenceBonus:true,parentGenuineRoll:genuineRoll},
+            value_multiplier_at_roll:eventContext.valueMultiplier,automatic_consumption_protected:extra.metadata?.automaticConsumptionProtected===true
+          });
+        }
+      }
+
       const combinationKey = getMutationCombinationKey(mutationIds);
       const boostTiers = Object.fromEntries(
         activeBoosts.map((boost) => [boost.family, Number(boost.tier ?? 0)])
@@ -3455,21 +3509,90 @@ async function executeSingleRoll(
       // mean "do not consume it". That must not override an explicit Gem
       // Filter SELL decision. Conservation only keeps the extra specimen when
       // Auto Craft actually accepted the deposit.
-      const autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+      let autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
         !bundleKeepInInventory && !autoDeposited;
-      const { data: committedResult, error: equipmentCommitError } = await ctx.supabaseAdmin.rpc('roll_commit_result', {
-        p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
-        p_primary_specimen: inventorySpecimen,
-        p_save_primary: shouldSavePrimary,
-        p_relic_drop: relicDrop,
-        p_duplicate: veinHunterDuplicatePayload,
-        p_auto_sell: autoSellRequested,
-        p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
-        p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
-        p_bookkeeping: bookkeepingPayload,
-        p_include_background: batchExecution.batchSize > 1,
-        p_release_on_success: batchIndex === batchExecution.batchSize - 1
-      });
+      let committedResult: any;
+      let equipmentCommitError: any;
+      if (atomicFinalize) {
+        // Keep event payment/consumable use, automatic routing and the final
+        // specimen commit in the same database transaction.
+        const atomicCommit = await ctx.supabaseAdmin.rpc('roll_finalize_atomic', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_routing_specimen: specimen,
+          p_primary_specimen: inventorySpecimen,
+          p_filter_keep: filterDecision.keep,
+          p_filter_sell: filterDecision.sell,
+          p_active_auto_craft: rollContext.activeAutoCraft ?? null,
+          p_external_deposit: externalDeposit,
+          p_deep_sea: batchExecution.pool === "deep_sea",
+          p_neptune: equipmentContext.id === "neptune",
+          p_consume_abyssal: batchExecution.abyssalPotion,
+          p_deepcore_auto_contribute: batchExecution.pool === "normal" &&
+            gem.metadata?.automaticConsumptionProtected !== true &&
+            deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        equipmentCommitError = atomicCommit.error ??
+          (atomicCommit.data ? null : { message: "atomic_roll_commit_failed" });
+        if (!equipmentCommitError && atomicCommit.data) {
+          deepSeaCommit = atomicCommit.data.deepSea ?? null;
+          deepcoreAutoContribution = atomicCommit.data.deepcore ?? null;
+          deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
+          if (atomicCommit.data.deepcoreError) {
+            console.error("Deepcore Auto Contribute failed:", atomicCommit.data.deepcoreError);
+          }
+          routedResult = atomicCommit.data.route;
+          committedResult = atomicCommit.data.commit;
+          shouldSavePrimary = atomicCommit.data.savePrimary === true;
+          bundleRoute = routedResult?.bundle ?? bundleRoute;
+          autoCraftResult = routedResult?.autoCraft ?? {};
+          bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited ||
+            deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
+          bundleKeepInInventory = bundleRoute.keepInInventory === true;
+          autoDeposited = autoCraftResult.deposited === true;
+          autoConserved = autoCraftResult.preserved === true;
+          autoCraftRecipeId = autoCraftResult.recipeId ?? null;
+          autoCraftRequirementIndex = autoCraftResult.requirementIndex ?? null;
+          // Atomic Deep Sea/Abyssal routing resolves after the initial
+          // placeholder receipt. Recompute this response-path flag from the
+          // authoritative route so a successful database sale is reported.
+          autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+            !bundleKeepInInventory && !autoDeposited;
+          if (routedResult?.autoCraftError) {
+            console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
+          }
+          recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", equipmentCommitStartedAt);
+          recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", equipmentCommitStartedAt);
+          if (timingFlags) {
+            timingFlags.bundle_route_roll_used = !filterDecision.keep && !deepcoreDeposited;
+            timingFlags.roll_autocraft_deposit_used = autoDeposited;
+          }
+        }
+      } else {
+        const ordinaryCommit = await ctx.supabaseAdmin.rpc('roll_commit_result', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_primary_specimen: inventorySpecimen,
+          p_save_primary: shouldSavePrimary,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_auto_sell: autoSellRequested,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        committedResult = ordinaryCommit.data;
+        equipmentCommitError = ordinaryCommit.error;
+      }
       const equipmentCommit = committedResult?.equipment ?? {};
       savedGem = committedResult?.primary ?? null;
       veinHunterDuplicate = committedResult?.duplicate ?? null;
@@ -3483,12 +3606,21 @@ async function executeSingleRoll(
       if (batchExecution.batchSize > 1) {
         recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", equipmentCommitStartedAt);
       }
+      if (equipmentCommitError && atomicFinalize) {
+        const message = String(equipmentCommitError.message ?? "");
+        const expectedCode = [
+          "deep_sea_event_ended", "insufficient_funds", "inventory_full", "not_owned",
+          "invalid_roll_lease", "invalid_genuine_roll", "duplicate_roll_commit"
+        ].find((code) => message.includes(code));
+        if (expectedCode) return jsonResponse({ error: expectedCode }, { status: 409 });
+      }
       if (equipmentCommitError) throw equipmentCommitError;
       if (committedResult?.leaseReleased === true) batchExecution.leaseReleased = true;
       if (committedResult?.duplicateError) {
         console.error("Vein Hunter duplicate insert failed:", committedResult.duplicateError);
       }
       breakneckGem = equipmentCommit?.bonus ?? null;
+      const savedConvergenceBonuses = Array.isArray(committedResult?.convergenceBonuses) ? committedResult.convergenceBonuses : [];
 
       let paradoxCrafted = false;
       if (equipmentContext.id === 'celestial-pickaxe' && equipmentOutcome.state.paradoxTrial?.completed === true && batchIndex === batchExecution.batchSize - 1) {
@@ -3585,7 +3717,8 @@ async function executeSingleRoll(
           ? currentInventoryCount
           : currentInventoryCount +
             1;
-      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) + (breakneckGem ? 1 : 0);
+      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) +
+        (breakneckGem ? 1 : 0) + savedConvergenceBonuses.length;
 
       let filterSale: any = null;
       if (autoSellRequested && savedGem) {
@@ -3724,7 +3857,12 @@ async function executeSingleRoll(
           } : null,
           paradox: equipmentOutcome.state.paradox ?? null,
           paradoxTrial: equipmentOutcome.state.paradoxTrial ?? null,
-          paradoxCrafted
+          paradoxCrafted,
+          convergence: equipmentContext.id === 'convergence-pickaxe' ? {
+            ...equipmentOutcome.state.convergence,
+            ...equipmentContext.flags.convergence,
+            bonusResults: savedConvergenceBonuses
+          } : null
         },
 
         impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,

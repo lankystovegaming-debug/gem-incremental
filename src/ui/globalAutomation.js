@@ -139,7 +139,11 @@ async function processRoll(data) {
 
   let outcome = "Stored in inventory";
   let sessionOutcome = { type: "kept", tier: rarityTier(Number(data.gem?.rarity ?? 0), data.gem?.name).id };
-  if (data.bundle?.status === "deposited") {
+  if (data.deepSea?.autoFed === "neptune" || data.deepSea?.autoFed === "depths") {
+    const destination = data.deepSea.autoFed === "neptune" ? "Neptune" : "the Depths";
+    outcome = `Auto-fed to ${destination}`;
+    sessionOutcome.type = "deep-sea-fed";
+  } else if (data.bundle?.status === "deposited") {
     outcome = "Contributed to your Collection";
     sessionOutcome.type = "bundle-contributed";
   } else if (data.bundle?.keepInInventory) {

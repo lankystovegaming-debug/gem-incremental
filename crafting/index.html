@@ -45,20 +45,20 @@
 
 <body>
   <main class="app-main">
-    <div class="page-head">
-      <div class="page-head__title">
+    <header class="page-head page-hero">
+      <div class="page-head__title page-hero__content">
         <h1>Crafting</h1>
-        <p class="page-head__sub" id="craftingSubtitle">Loading recipes…</p>
+        <p class="page-head__sub page-hero__description" id="craftingSubtitle">Loading recipes…</p>
       </div>
 
-      <div class="row" id="hideOwnedRow">
+      <div class="row page-hero__actions action-bar" id="hideOwnedRow">
         <label class="switch" title="Only show recipes you have not crafted yet">
           <input type="checkbox" id="hideOwned">
           <span class="switch__track"></span>
           <span>Hide crafted</span>
         </label>
       </div>
-    </div>
+    </header>
 
     <section class="card crafting-next" id="craftingNext" aria-live="polite"></section>
 
@@ -84,41 +84,34 @@
 
     <!-- ================= CATEGORY TABS ================= -->
 
-    <div class="segmented crafting-tabs" role="tablist" aria-label="Equipment type">
-      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-category="pickaxe">
+    <div class="segmented responsive-tabs crafting-tabs" role="tablist" aria-label="Crafting category">
+      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-crafting-group="pickaxes">
         Pickaxes
       </button>
-
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="clover">🍀 Clovers</button>
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="toys">🪣 Toys</button>
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="lantern">
-        Lanterns
-      </button>
-
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="boots">
-        Boots
-      </button>
-
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="bag">
-        Bags
-      </button>
-
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="petGear">
-        🐾 Pet Gear
-      </button>
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="limited-time">
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-crafting-group="specialists">Specialists</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-crafting-group="secondary">Secondary</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-crafting-group="others">Others</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-crafting-group="limited-time">
         ⏳ Limited Time
       </button>
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="armory" data-equipment-future>
-        🛡 Armory
-      </button>
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="weapons" data-equipment-future>
-        ⚔ Weapons
-      </button>
+    </div>
 
-      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-category="potion">
-        Potions
-      </button>
+    <div class="segmented responsive-tabs crafting-subtabs" role="tablist" aria-label="Specialist tier" data-subtabs="specialists" hidden>
+      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-subcategory="t15">T15</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="t16">T16</button>
+    </div>
+
+    <div class="segmented responsive-tabs crafting-subtabs" role="tablist" aria-label="Secondary equipment type" data-subtabs="secondary" hidden>
+      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-subcategory="clover">🍀 Clovers</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="lantern">Lanterns</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="boots">Boots</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="bag">Bags</button>
+    </div>
+
+    <div class="segmented responsive-tabs crafting-subtabs" role="tablist" aria-label="Other crafting type" data-subtabs="others" hidden>
+      <button class="segmented__item" role="tab" type="button" aria-selected="true" data-subcategory="toys">🪣 Toys</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="petGear">🐾 Pet Gear</button>
+      <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="potion">Potions</button>
     </div>
 
 

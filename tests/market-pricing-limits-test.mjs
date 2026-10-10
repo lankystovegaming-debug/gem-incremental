@@ -27,7 +27,8 @@ assert.ok(consumables.every((item) => Number.isFinite(item.marketReferencePrice)
 assert.equal(MARKET_REFERENCE_PRICES["money-up-potion"], 25000);
 assert.equal(MARKET_REFERENCE_PRICES["money-up-potion-2"], 100000);
 
-assert.doesNotMatch(page, /ordersTab|ordersSection|Buy now|fixed price/i);
+assert.doesNotMatch(page, /ordersTab|ordersSection/i);
+assert.match(page, /Black Market/);
 assert.doesNotMatch(market, /buyAuction|createGemOrder|fulfillGemOrder|loadOpenOrders/);
 assert.doesNotMatch(cloudMarket, /buy_auction|create_gem_order|fulfill_gem_order/);
 assert.match(migration, /where id = p_auction_id for update/);

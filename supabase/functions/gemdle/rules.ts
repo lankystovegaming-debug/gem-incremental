@@ -1,5 +1,6 @@
 import { buildEventRollContext, eventGemIsEligible, normalizeGlobalEvent } from "../roll/eventRules.ts";
 import { gemTimeAvailable } from "../roll/availabilityRules.ts";
+import { scoreSpecimen } from "./classifications.ts";
 
 export type Random = () => number;
 export const random01: Random = () => {
@@ -120,11 +121,12 @@ export function generateResult(gems: any[], mutations: any[], event: any, now: D
     weight: weightContribution(weight),
     mutations: successful.reduce((r, m) => r / m.probability, 1)
   };
-  const overall = contributions.gem * contributions.weight * contributions.mutations;
-  if (!Number.isFinite(overall) || !Number.isFinite(Number(gem.base_weight) * weight)) throw new Error("invalid_result");
-  return {
-    version: 1, gem_name: gem.name, normal_rarity: Number(gem.rarity), base_weight: Number(gem.base_weight),
+  const specimen = {
+    version: 2, gem_name: gem.name, normal_rarity: Number(gem.rarity), base_weight: Number(gem.base_weight),
     weight_multiplier: weight, final_weight: Number(gem.base_weight) * weight,
-    mutations: successful, badges: badges(gem, weight, successful), contributions, overall_rarity: overall
+    mutations: successful, badges: badges(gem, weight, successful), contributions
   };
+  const scoring = scoreSpecimen(gem, specimen);
+  if (!Number.isFinite(Number(gem.base_weight) * weight)) throw new Error("invalid_result");
+  return { ...specimen, ...scoring };
 }

@@ -34,6 +34,10 @@ const resolve=new Function('icons','recipes','rarityTier','shouldAutoKeep','shou
 for(const bundle of [{status:'deposited'},{status:'ambiguous',keepInInventory:true},{status:'protected',keepInInventory:true}]){
  const out=await resolve({bundle,specimenId:123,gem:{rarity:2300}});assert.notEqual(out.type,'auto-sold');
 }
+for(const autoFed of ['neptune','depths']){
+ const out=await resolve({deepSea:{autoFed},bundle:{status:'deep-sea',keepInInventory:false},specimenId:null,gem:{rarity:2300}});
+ assert.equal(out.type,'deep-sea-fed');assert.match(out.text,autoFed==='neptune'?/Neptune/:/Depths/);
+}
 console.log('Gameplay Bundle endpoint and presentation tests passed.');
 
 // Background rolling on other pages honors exactly the same protection.
@@ -44,3 +48,5 @@ const processRoll=new Function('rarityTier','shouldAutoKeep','getSettings','shou
  ()=>({id:'common'}),()=>false,()=>({autoSell:true}),()=>true,()=>{throw Error('must not sell');},(_,o)=>recorded.push(o),{dispatchEvent(){}},class{},()=>{});
 for(const bundle of [{status:'deposited'},{status:'ambiguous',keepInInventory:true},{status:'protected',keepInInventory:true}])await processRoll({bundle,specimenId:1,gem:{rarity:2300}});
 assert.deepEqual(recorded.map(o=>o.type),['bundle-contributed','auto-kept','auto-kept']);
+for(const autoFed of ['neptune','depths'])await processRoll({deepSea:{autoFed},bundle:{status:'deep-sea',keepInInventory:false},specimenId:null,gem:{rarity:2300}});
+assert.deepEqual(recorded.slice(-2).map(o=>o.type),['deep-sea-fed','deep-sea-fed']);
