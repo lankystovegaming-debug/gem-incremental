@@ -17,7 +17,7 @@ globalThis.Deno={env:{get:()=>''}};
 Object.defineProperty(globalThis,'crypto',{value:{getRandomValues(a){a[0]=forceProcs && /finishEquipmentRoll|exclusiveMutations/.test(new Error().stack)?0:2**31;return a;}},configurable:true});
 const {default:handler}=await import('data:text/javascript;base64,'+Buffer.from(source+'\n//# sourceURL=roll-handler-under-test.mjs').toString('base64'));
 let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs;
-let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false}, deepSeaMode=false;
+let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false}, deepSeaMode=false, atomicFeedTarget=null;
 const uid='00000000-0000-0000-0000-000000000001';
 class Query {
  constructor(table){this.table=table;this.mode='read';this.singleRow=false;this.payload=null;}
@@ -72,11 +72,14 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
   return {data:{primary:saved,duplicate:args.p_duplicate?{id:103,...args.p_duplicate}:null,leaseReleased:args.p_release_on_success,sale:{sold,money:sold?123:null,error:args.p_auto_sell&&saleFailure?'sale_failed':null},equipment:{bonus:args.p_bonus?{id:102,...args.p_bonus}:null,bookkeeping:{lifetimeStats:{total_rolls:player.total_rolls},mutationCombination:{},guildPoints:null,globalEventProgress:null,errors:[]}}},error:null};
  }
  if(name==='roll_finalize_atomic'){
-  const savePrimary=true,sold=args.p_filter_sell&&!saleFailure;
+  const bundle=atomicFeedTarget?{status:'deep-sea',keepInInventory:false}:args.p_filter_keep?{status:'kept',keepInInventory:true}:bundleResponse;
+  const autoCraft=!atomicFeedTarget&&craftActive&&bundle.status!=='deposited'&&!bundle.keepInInventory?craftResponse:{deposited:false,preserved:false};
+  const savePrimary=!atomicFeedTarget&&bundle.status!=='deposited'&&(!autoCraft.deposited||autoCraft.preserved);
+  const sold=args.p_filter_sell&&savePrimary&&!bundle.keepInInventory&&!autoCraft.deposited&&!saleFailure;
   commits.push({...args,p_save_primary:savePrimary,p_auto_sell:args.p_filter_sell});player.total_rolls+=1;Object.assign(player,args.p_player_patch);
-  saved={id:101,...args.p_primary_specimen};
-  return {data:{deepSea:{awarded:1,tideTokens:1,fed:null,depthStep:0,firstDiscovery:false,offeringConsumed:false},deepcore:null,
-   route:{bundle:{status:'none',keepInInventory:false},autoCraft:{deposited:false,preserved:false}},savePrimary,
+  saved=savePrimary?{id:101,...args.p_primary_specimen}:null;
+  return {data:{deepSea:{awarded:1,tideTokens:1,fed:atomicFeedTarget,depthStep:0,firstDiscovery:false,offeringConsumed:false},deepcore:null,
+   route:{bundle,autoCraft},savePrimary,
    commit:{primary:saved,duplicate:null,leaseReleased:args.p_release_on_success,sale:{sold,money:sold?123:null,error:null},
     equipment:{bonus:null,bookkeeping:{lifetimeStats:{total_rolls:player.total_rolls},mutationCombination:{},guildPoints:null,globalEventProgress:null,errors:[]}}}},error:null};
  }
@@ -134,6 +137,19 @@ assert.equal(commits[0].p_filter_sell,true,'Deep Sea SELL reaches the atomic tra
 assert.equal(result.gemFilter.sold,true,'Deep Sea SELL is reported to the client');
 assert.equal(result.specimenId,null);assert.equal(result.inventory.count,0,'sold Deep Sea gems do not inflate inventory count');
 console.log('Deep Sea optimized-handler auto-sell applies atomically and reports the sale receipt.');
+
+qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};
+for(const target of ['neptune','depths']){
+ atomicFeedTarget=target;result=await run('celestial-pickaxe',{},null,{pool:'deep_sea'});
+ assert.equal(result.deepSea.autoFed,target);assert.equal(result.bundle.status,'deep-sea');
+ assert.equal(result.specimenId,null);assert.equal(result.gemFilter.sold,false,`a ${target} auto-feed must not also auto-sell`);
+}
+atomicFeedTarget=null;craftActive=true;craftResponse={deposited:true,preserved:false,recipeId:'craft',requirementIndex:0};
+result=await run('celestial-pickaxe',{},null,{pool:'deep_sea'});
+assert.equal(result.autoCraft.deposited,true,'Deep Sea gems reach the active Auto Craft target');
+assert.equal(result.specimenId,null);assert.equal(result.gemFilter.sold,false,'a deposited Deep Sea gem must not also auto-sell');
+craftActive=false;
+console.log('Deep Sea auto-feed and Auto Craft deposits are atomic, consume the specimen, and bypass Auto Sell.');
 
 qolSettings={autoKeep:false,discoveryKeep:false,gemFilter:{'Test gem':'SELL'}};craftActive=true;
 for(const preserved of [false,true]){

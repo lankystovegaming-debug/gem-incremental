@@ -974,6 +974,15 @@ async function resolveOutcome(data) {
       note: "deepcore contribution"
     };
   }
+  if (data.deepSea?.autoFed === "neptune" || data.deepSea?.autoFed === "depths") {
+    const destination = data.deepSea.autoFed === "neptune" ? "Neptune" : "the Depths";
+    return {
+      type: "deep-sea-fed",
+      icon: "🌊",
+      text: `Auto-fed to ${destination}`,
+      note: "deep sea auto-feed"
+    };
+  }
   if (data.pet) {
     return {
       type: "pet",
