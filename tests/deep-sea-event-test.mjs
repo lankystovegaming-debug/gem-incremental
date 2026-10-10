@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { DEEP_SEA_GEMS, DEEP_SEA_TIMES, DEPTHS_REWARDS, NEPTUNE_RECIPE, NEPTUNE_STATS, tideTokensFor } from "../src/data/deepSea.js";
+import { mergeDeviceSettings } from "../src/logic/deviceSettings.js";
 
 const sql=readFileSync(new URL("../supabase/migrations/20260919105814_deep_sea_limited_event.sql",import.meta.url),"utf8");
 const atomicFix=readFileSync(new URL("../supabase/migrations/20261008090000_deep_sea_atomic_roll_fixes.sql",import.meta.url),"utf8");
@@ -27,6 +28,13 @@ assert.equal(NEPTUNE_RECIPE.money,250000);
 assert.equal(NEPTUNE_STATS.deepSeaRarityDivisor,10);
 assert.equal(tideTokensFor(1),0);
 assert.equal(tideTokensFor(1_000_000_000),3981);
+assert.equal(mergeDeviceSettings({autoRoll:false},{rollPool:"deep_sea"}).rollPool,"deep_sea","cloud hydration must preserve the selected Deep Sea pool");
+assert.deepEqual(
+  mergeDeviceSettings({autoRoll:true,batchSize:5},{rollPool:"deep_sea"}),
+  {autoRoll:true,batchSize:5,rollPool:"deep_sea"},
+  "turning on Auto Roll must not reset the device-local pool"
+);
+assert.equal(mergeDeviceSettings({autoRoll:true},{rollPool:"normal"},{rollPool:"deep_sea"}).rollPool,"deep_sea","an explicit pool selection must win over the previous local value");
 
 for(const token of ["deep_sea_gems","deep_sea_commit_roll","clock_timestamp()","p_inventory_required","first_discovery","offering_charges","treasure_tonic_rolls","legacy_gem_name","3000000","total_rolls"]){
   assert.match(sql+roll,new RegExp(token));

@@ -4,6 +4,7 @@ import { supabase } from "../backend/supabase.js";
 import { ensurePlayerAuth } from "../backend/auth.js";
 import { normalizeUiBatchSize } from "../logic/batchRolling.js";
 import { normalizeContentFilterLevel } from "../logic/contentModeration.js";
+import { mergeDeviceSettings } from "../logic/deviceSettings.js";
 
 // =========================================================
 // GAMEPLAY SETTINGS
@@ -112,7 +113,7 @@ async function persistSettingsPatch(patch) {
   }
 
   if (result.error) return result;
-  result.data = { ...(result.data ?? state), ...localPatch };
+  result.data = mergeDeviceSettings(result.data ?? state, state, localPatch);
   if (contentFilterLevel === undefined) return result;
 
   const moderationResult = await supabase.rpc('update_content_filter_level', {
@@ -132,7 +133,7 @@ async function persistSettingsPatch(patch) {
     };
   }
 
-  moderationResult.data = { ...(moderationResult.data ?? result.data), ...localPatch };
+  moderationResult.data = mergeDeviceSettings(moderationResult.data ?? result.data, state, localPatch);
   return moderationResult;
 }
 
@@ -169,7 +170,7 @@ export function hydrateSettingsFromCloud() {
       if (migrationError) throw migrationError;
       Object.assign(cloud, migrated);
     }
-    state = sanitise({ ...DEFAULTS, ...cloud });
+    state = sanitise({ ...DEFAULTS, ...mergeDeviceSettings(cloud, state) });
     notify();
     return getSettings();
   })().catch(error => { hydration = null; throw error; });
