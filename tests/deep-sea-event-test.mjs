@@ -5,6 +5,7 @@ import { mergeDeviceSettings } from "../src/logic/deviceSettings.js";
 
 const sql=readFileSync(new URL("../supabase/migrations/20260919105814_deep_sea_limited_event.sql",import.meta.url),"utf8");
 const atomicFix=readFileSync(new URL("../supabase/migrations/20261008090000_deep_sea_atomic_roll_fixes.sql",import.meta.url),"utf8");
+const filterCatalogFix=readFileSync(new URL("../supabase/migrations/20261010032948_include_deep_sea_gems_in_qol_catalog.sql",import.meta.url),"utf8");
 const roll=readFileSync(new URL("../supabase/functions/roll/index.ts",import.meta.url),"utf8");
 const page=readFileSync(new URL("../limited-events/deep-sea/deep-sea.js",import.meta.url),"utf8");
 const main=readFileSync(new URL("../main.js",import.meta.url),"utf8");
@@ -54,6 +55,8 @@ assert.doesNotMatch(roll,/rpc\("deep_sea_commit_roll"/);
 assert.doesNotMatch(roll,/rpc\("deep_sea_consume_abyssal"/);
 assert.match(roll,/authoritative route[\s\S]*autoSellRequested = filterDecision\.sell/);
 assert.match(atomicFix,/v_auto_sell := coalesce\(p_filter_sell, false\)[\s\S]*and not v_auto_deposited;/);
+assert.match(filterCatalogFix,/from public\.deep_sea_gems g[\s\S]*where g\.enabled/);
+assert.match(filterCatalogFix,/join discovered d on d\.gem_name = c\.name/);
 for(const source of [main,automation,lightweightAutomation]){
   assert.match(source,/invokeFunction\("roll", \{ batchSize: getSettings\(\)\.batchSize, pool: getSettings\(\)\.rollPool \}\)/,"Auto Roll must send the selected Deep Sea pool");
   assert.match(source,/deep_sea_event_ended[\s\S]*updateSettings\(\{ autoRoll: false, rollPool: "normal" \}\)/,"Auto Roll must stop safely when the Deep Sea event ends");
