@@ -222,6 +222,12 @@ const primitives = source("src/ui/cutscenePrimitives.js");
 const sceneStyles = source("src/ui/cutsceneScenes.css");
 const styles = source("style.css");
 
+assert.match(
+  sceneStyles,
+  /\.cs-reveal--center\{align-content:center;justify-items:center;text-align:center;padding:6vh 5vw\}/,
+  "centered reveals must have an explicit, symmetric centre-stage layout"
+);
+
 for (const token of [
   "cs-ds-leviathan-dragon", "cs-ds-fallen-scale", "cs-ds-heart-core",
   "cs-ds-heart-seabed", "cs-ds-heart-fragment", "cs-ds-polluted-surface",
