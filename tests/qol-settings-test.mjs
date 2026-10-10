@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const saved=new Map([['gemIncremental.settings',JSON.stringify({autoSell:true,autoSellTier:'mythic',autoKeepEffectiveRarity:234567})]]);
+const saved=new Map([['gemIncremental.settings',JSON.stringify({autoSell:true,autoSellTier:'mythic',autoKeepEffectiveRarity:234567,rollPool:'deep_sea'})]]);
 globalThis.localStorage={getItem:k=>saved.get(k)??null,setItem:(k,v)=>saved.set(k,v)};
 let cloud={},inFlight=0,maxInFlight=0,fail=false,rejectRollingDeploy=true,notices=[];
 globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options.detail;}};
@@ -29,6 +29,7 @@ const source=readFileSync(new URL('../src/ui/settings.js',import.meta.url),'utf8
 .replace("'../../supabase/functions/roll/equipmentRules.js'",JSON.stringify(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url).href))
 .replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href))
 .replace('"../logic/batchRolling.js"',JSON.stringify(new URL('../src/logic/batchRolling.js',import.meta.url).href))
+.replace('"../logic/deviceSettings.js"',JSON.stringify(new URL('../src/logic/deviceSettings.js',import.meta.url).href))
 .replace('"../logic/contentModeration.js"',JSON.stringify(new URL('../src/logic/contentModeration.js',import.meta.url).href));
 const store=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 await Promise.all([store.hydrateSettingsFromCloud(),store.hydrateSettingsFromCloud()]);
@@ -37,6 +38,7 @@ assert.equal(cloud.contentFilterLevel,'standard');
 assert.ok(store.getSettings().topBarMain.includes('minigames'),'default navigation must preserve the existing Minigames tab');
 assert.equal('topBarMain' in cloud,false,'legacy database fallback keeps navigation local');
 assert.equal(store.getSettings().enableBuffs,true);
+assert.equal(store.getSettings().rollPool,'deep_sea','cloud hydration preserves the device-local Deep Sea pool');
 assert.equal(store.getSettings().cutscenesEnabled,true);
 assert.equal(store.getSettings().skipSeenCutscenes,false);
 await store.updateSettings({topBarMain:['roll','minigames']});
@@ -48,6 +50,9 @@ assert.equal('skipSeenCutscenes' in cloud,false,'legacy database fallback keeps 
 rejectRollingDeploy=false;
 await store.updateSettings({cutscenesEnabled:false});
 assert.equal(cloud.cutscenesEnabled,false,'deployed databases cloud-sync cutscene preferences');
+assert.equal(store.getSettings().rollPool,'deep_sea','an unrelated cloud save cannot reset the selected roll pool');
+await store.updateSettings({autoRoll:true});
+assert.equal(store.getSettings().rollPool,'deep_sea','turning on Auto Roll preserves the selected Deep Sea pool');
 await store.updateSettings({contentFilterLevel:'strict'});assert.equal(store.getSettings().contentFilterLevel,'strict');
 await Promise.all([store.updateSettings({gemFilter:{Quartz:'KEEP'}}),store.updateSettings({enableBuffs:false}),store.updateSettings({gemFilter:{Diamond:'SELL'}})]);
 assert.equal(maxInFlight,1);assert.deepEqual(store.getSettings().gemFilter,{Quartz:'KEEP',Diamond:'SELL'});assert.equal(store.getSettings().enableBuffs,false);
