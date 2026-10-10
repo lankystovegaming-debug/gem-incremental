@@ -319,6 +319,7 @@
 .cs-camera-stage{position:absolute;inset:0;z-index:1;overflow:hidden;transform-origin:50% 50%;transition:opacity .38s ease,filter .38s ease}
 .cs-camera-stage.is-exiting{opacity:0;filter:blur(12px) brightness(1.7)}
 .cs-copy.is-exiting{opacity:0;transition:opacity .24s ease}
+.cs-reveal--center{align-content:center;justify-items:center;text-align:center;padding:6vh 5vw}
 .cs-reveal--right{justify-items:end;text-align:right;padding:10vh 7vw 7vh 46vw}
 .cs-reveal--left{justify-items:start;text-align:left;padding:10vh 46vw 7vh 7vw}
 .cs-reveal--upper-right{align-content:start;justify-items:end;text-align:right;padding:14vh 7vw 7vh 46vw}
