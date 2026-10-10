@@ -3509,7 +3509,7 @@ async function executeSingleRoll(
       // mean "do not consume it". That must not override an explicit Gem
       // Filter SELL decision. Conservation only keeps the extra specimen when
       // Auto Craft actually accepted the deposit.
-      const autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+      let autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
         !bundleKeepInInventory && !autoDeposited;
       let committedResult: any;
       let equipmentCommitError: any;
@@ -3560,6 +3560,11 @@ async function executeSingleRoll(
           autoConserved = autoCraftResult.preserved === true;
           autoCraftRecipeId = autoCraftResult.recipeId ?? null;
           autoCraftRequirementIndex = autoCraftResult.requirementIndex ?? null;
+          // Atomic Deep Sea/Abyssal routing resolves after the initial
+          // placeholder receipt. Recompute this response-path flag from the
+          // authoritative route so a successful database sale is reported.
+          autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+            !bundleKeepInInventory && !autoDeposited;
           if (routedResult?.autoCraftError) {
             console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
           }

@@ -40,6 +40,8 @@ assert.ok(atomicFix.indexOf("roll_route_result(")<atomicFix.indexOf("roll_commit
 assert.match(roll,/rpc\('roll_finalize_atomic'/);
 assert.doesNotMatch(roll,/rpc\("deep_sea_commit_roll"/);
 assert.doesNotMatch(roll,/rpc\("deep_sea_consume_abyssal"/);
+assert.match(roll,/authoritative route[\s\S]*autoSellRequested = filterDecision\.sell/);
+assert.match(atomicFix,/v_auto_sell := coalesce\(p_filter_sell, false\)[\s\S]*and not v_auto_deposited;/);
 assert.match(page,/Stop Auto Roll before changing pools/);
 assert.match(page,/now>=target&&!phaseReloading/);
 assert.match(page,/load\(\)\.finally/);
