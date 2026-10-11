@@ -1,12 +1,15 @@
 import { withSupabase } from "npm:@supabase/server";
 import drops from "./drop-data.json" with { type: "json" };
 import {
+  borderAdjacentRegion,
   canonicalEnemyName,
+  completeBossAddDistribution,
   equipmentGemPower,
   gearChance,
   gearMutationChance,
   mutationWeight,
   parseMutationSummary,
+  parseStatMultiplier,
   probability,
   rollEssenceDrops,
   rollMutationTier,
@@ -114,7 +117,8 @@ async function chooseMutation(ctx: any, room: any, tier: string) {
     .select("name,tier,native_regions,value_multiplier,shard_gem_power,core_gem_power,best_odds").eq("tier", tier);
   if (error) throw error;
   const codes = REGION_CODES[room.region] ?? [];
-  return weighted(data ?? [], (mutation: any) => mutationWeight(mutation, codes));
+  const adjacentCodes = REGION_CODES[borderAdjacentRegion(room.room_number)] ?? [];
+  return weighted(data ?? [], (mutation: any) => mutationWeight(mutation, codes, adjacentCodes));
 }
 async function rollRoomMutation(ctx: any, room: any, applyOverallChance: boolean) {
   const summary = parseMutationSummary(room.mutation_summary);
@@ -122,22 +126,30 @@ async function rollRoomMutation(ctx: any, room: any, applyOverallChance: boolean
   const tier = rollMutationTier(summary);
   return tier ? await chooseMutation(ctx, room, tier) : null;
 }
-function enemyBaseStats(room: any, row: any, rank: string, mutation: any, bossRepeat = 0) {
-  const [regionHp, regionDamage] = regionScale(room.region);
-  const [zoneHp, zoneDamage] = zoneScale(room.zone);
-  const role = ROLE[canonicalEnemyName(row.name)] ?? [1, 1];
-  const rankMultiplier = RANK[rank] ?? RANK.Normal;
+function enemyBaseStats(room: any, row: any, rank: string, mutation: any, isBoss = false, bossRepeat = 0) {
+  let baseHp = parseStatMultiplier(row.hp);
+  let baseDamage = parseStatMultiplier(row.dmg);
+  let rankMultiplier = isBoss ? RANK.Normal : (RANK[rank] ?? RANK.Normal);
+  if (baseHp == null || baseDamage == null) {
+    const [regionHp, regionDamage] = regionScale(room.region);
+    const [zoneHp, zoneDamage] = zoneScale(room.zone);
+    const role = ROLE[canonicalEnemyName(row.name)] ?? [1, 1];
+    rankMultiplier = RANK[rank] ?? RANK.Normal;
+    const repeat = isBoss ? 1 + Math.max(0, bossRepeat) : 1;
+    baseHp = regionHp * zoneHp * role[0] * repeat;
+    baseDamage = regionDamage * zoneDamage * role[1] * repeat;
+  }
   const mutationMultiplier = MUTATION_TIER[mutation?.tier] ?? [1, 1, 1];
-  const repeat = 1 + Math.max(0, bossRepeat);
+  const hp = Math.max(1, baseHp * rankMultiplier[0] * mutationMultiplier[0]);
   return {
-    hp: Math.max(1, regionHp * zoneHp * rankMultiplier[0] * role[0] * mutationMultiplier[0] * repeat),
-    damage: Math.max(1, regionDamage * zoneDamage * rankMultiplier[1] * role[1] * mutationMultiplier[1] * repeat),
-    defense: Math.max(0, regionHp * zoneHp * rankMultiplier[0] * role[0] * mutationMultiplier[0] * .01),
+    hp,
+    damage: Math.max(1, baseDamage * rankMultiplier[1] * mutationMultiplier[1]),
+    defense: Math.max(0, hp * .01),
   };
 }
 async function makeCombatant(ctx: any, room: any, row: any, rank: string, lootRole: string, isBoss = false, essenceMultiplier = 1, bossRepeat = 0) {
   const mutation = isBoss ? null : await rollRoomMutation(ctx, room, true);
-  const stats = enemyBaseStats(room, row, rank, mutation, isBoss ? bossRepeat : 0);
+  const stats = enemyBaseStats(room, row, rank, mutation, isBoss, bossRepeat);
   const name = canonicalEnemyName(row.name);
   return {
     id: crypto.randomUUID(), name, rank, lootRole, maxHp: stats.hp, hp: stats.hp,
@@ -183,7 +195,7 @@ async function buildCombatants(ctx: any, room: any) {
   const encounterRows = (room.encounters ?? []).filter((entry: any) => entry?.kind);
   if (isBoss) {
     const bossCountRow = weighted(encounterRows.filter((entry: any) => /boss/i.test(entry.kind)), (entry: any) => probability(entry.chance));
-    const addCountRow = weighted(encounterRows.filter((entry: any) => /add/i.test(entry.kind)), (entry: any) => probability(entry.chance));
+    const addCountRow = weighted(completeBossAddDistribution(encounterRows), (entry: any) => entry.weight);
     const bossCount = Math.max(1, encounterNumber(bossCountRow?.kind ?? "1 boss"));
     const addCount = Math.max(0, encounterNumber(addCountRow?.kind ?? "0 adds"));
     const { data: boss, error } = await ctx.supabaseAdmin.from("dungeon_boss_catalog").select("*").eq("room_number", room.room_number).maybeSingle();
@@ -334,6 +346,19 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       const room = await loadRoom(ctx, Number(body.roomNumber));
       const access = await canEnter(ctx, playerId, room.room_number);
       if (!access.ok) return json(access, 403);
+      const { data: openRun, error: openRunError } = await ctx.supabaseAdmin.from("dungeon_runs")
+        .select("id,status,room_number").eq("player_id", playerId).in("status", ["active", "won"])
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (openRunError) throw openRunError;
+      if (openRun) {
+        return json({
+          error: openRun.status === "won" ? "unclaimed_dungeon_run" : "dungeon_run_in_progress",
+          message: openRun.status === "won"
+            ? "Claim your previous dungeon rewards before starting another room."
+            : "Finish your current dungeon run before starting another room.",
+          runId: openRun.id, roomNumber: openRun.room_number,
+        }, 409);
+      }
       const { data: definition, error: definitionError } = await ctx.supabaseAdmin.from("dungeon_definitions")
         .select("id,entry_requirements").eq("name", "The 1,500-Room Dungeon").single();
       if (definitionError) throw definitionError;
@@ -353,6 +378,9 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
         room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat },
         player_attack: power.attack,
       }).select("*").single();
+      if (error?.code === "23505") {
+        return json({ error: "dungeon_run_in_progress", message: "A dungeon run is already active or waiting to be claimed." }, 409);
+      }
       if (error) throw error;
       return json({ run, room, combatant: built.combatants[0] ?? null, completedWithoutCombat: !built.combatants.length });
     }

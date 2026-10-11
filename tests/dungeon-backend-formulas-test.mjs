@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
+  borderAdjacentRegion,
   canonicalEnemyName,
+  completeBossAddDistribution,
   equipmentGemPower,
   gearChance,
   gearMutationChance,
   mutationWeight,
   parseMutationSummary,
+  parseStatMultiplier,
   probability,
   rollEssenceDrops,
   rollMutationTier,
@@ -15,6 +18,8 @@ import {
 
 assert.equal(probability("84.0%"), 0.84);
 assert.equal(probability("1/15K"), 1 / 15_000);
+assert.equal(parseStatMultiplier("x43,200"), 43_200);
+assert.equal(parseStatMultiplier("not a stat"), null);
 
 const mutationSummary = parseMutationSummary(
   "Mob mutation chance: 15.00% per mob (region base 10% x zone 1.5). " +
@@ -42,6 +47,33 @@ assert.equal(
   native,
   "Any-region mutations receive the universal native weighting",
 );
+assert.equal(mutationWeight({ best_odds: "1 in 10", native_regions: ["Rft"] }, ["Rft"], ["Sky"]), nonNative * 2.4);
+assert.equal(mutationWeight({ best_odds: "1 in 10", native_regions: ["Sky"] }, ["Rft"], ["Sky"]), nonNative * 1.6);
+assert.equal(borderAdjacentRegion(1150), "Time Rift");
+assert.equal(borderAdjacentRegion(1151), "Sky Citadel");
+assert.equal(borderAdjacentRegion(1188), null);
+
+const bossEncounters = [
+  { kind: "1 boss", chance: "96.1%" },
+  { kind: "2 bosses", chance: "3.00%" },
+  { kind: "3 bosses", chance: "0.720%" },
+  { kind: "4 bosses", chance: "0.150%" },
+  { kind: "5 bosses", chance: "0.033%" },
+  { kind: "0 adds", chance: "0.700%", summary: "Avg enemies", value: "4.57" },
+  { kind: "1 add", chance: "1.60%" },
+  { kind: "2 adds", chance: "19.4%" },
+  { kind: "3 adds", chance: "31.0%" },
+  { kind: "4 adds", chance: "27.2%" },
+];
+const completedAdds = completeBossAddDistribution(bossEncounters);
+assert(Math.abs(completedAdds.reduce((sum, row) => sum + row.weight, 0) - 1) < 1e-12);
+assert.deepEqual(completedAdds.filter((row) => row.inferred).map((row) => row.kind), ["5 adds", "6 adds"]);
+const averageBosses = bossEncounters.slice(0, 5).reduce(
+  (sum, row) => sum + Number.parseInt(row.kind, 10) * probability(row.chance),
+  0,
+) / bossEncounters.slice(0, 5).reduce((sum, row) => sum + probability(row.chance), 0);
+const averageAdds = completedAdds.reduce((sum, row) => sum + Number.parseInt(row.kind, 10) * row.weight, 0);
+assert(Math.abs(averageBosses + averageAdds - 4.57) < 1e-12, "boss add tail must reproduce the catalog average");
 
 const essence = rollEssenceDrops(
   { amount: "4-6 ME", te: "6.99%", se: "12.7%", le: "23.1%", me: "42.0%" },
@@ -76,5 +108,18 @@ assert.doesNotMatch(source, /type:\s*"treasure"/, "unclaimable placeholder treas
 assert.doesNotMatch(source, /type:\s*"key"/, "unclaimable placeholder keys must not be emitted");
 const enemyLootBody = source.match(/async function awardEnemyLoot[\s\S]*?\n}\nfunction awardRoomKey/)?.[0] ?? "";
 assert.doesNotMatch(enemyLootBody, /room_key_chance/, "room-key chance must be rolled once per room, not once per enemy");
+assert.match(source, /parseStatMultiplier\(row\.hp\)/, "catalog HP multipliers must drive combat stats");
+assert.match(source, /completeBossAddDistribution\(encounterRows\)/, "boss add probability tails must not be discarded");
+assert.match(source, /\.in\("status", \["active", "won"\]\)/, "new runs must be blocked while an earlier run is unresolved");
+
+const migration = fs.readFileSync(new URL("../supabase/migrations/20261011232956_prevent_parallel_dungeon_runs.sql", import.meta.url), "utf8");
+assert.match(migration, /create unique index[\s\S]*where status in \('active', 'won'\)/i, "parallel starts require a database constraint");
+
+const dungeonUi = fs.readFileSync(new URL("../dungeons/dungeons.js", import.meta.url), "utf8");
+assert.match(dungeonUi, /textContent=d\.defeated\?`Defeated/, "defeat text must only be shown after a lethal attack");
+assert.match(dungeonUi, /d\.gear\?\.length/, "claim feedback must include claimed gear");
+
+const workbenchUi = fs.readFileSync(new URL("../workbench/workbench.js", import.meta.url), "utf8");
+assert.match(workbenchUi, /g\.stats\?\.recipe\|\|g\.stats\?\.name\|\|g\.source_enemy/, "dropped gear must show its item name");
 
 console.log("Dungeon backend formula tests passed.");
