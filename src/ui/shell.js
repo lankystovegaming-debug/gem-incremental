@@ -515,8 +515,7 @@ export function mountShell({ page, base = "./" }) {
 
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
-  renderActiveAdminEvent(header);
-  renderActiveGlobalEvent(header, base);
+  renderActiveEvents(header, base);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -1628,98 +1627,66 @@ async function renderAnnouncements(header) {
   }
 }
 
-async function renderActiveAdminEvent(header) {
+async function renderActiveEvents(header, base = "./") {
   const user = await ensurePlayerAuth();
   if (!user) return;
 
-  const { data, error } = await loadActiveAdminEvent();
-  const event = Array.isArray(data) ? data[0] : data;
-  if (error || !event) return;
+  let activeAdminEvent = null;
+  let activeGlobalEvent = null;
+  let activeAdminEventSignature = "";
+  let serverClockOffsetMs = 0;
+  let adminRefreshInFlight = false;
+  let globalRefreshInFlight = false;
 
-  const boosts = [
-    Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
-    Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
-    Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
-    Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
-    Number(event.luck_multiplier) !== 1 ? `${eventMultiplier(event.luck_multiplier)} Luck` : null,
-    Number(event.roll_speed_multiplier) !== 1 ? `${eventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
-    Number(event.weight_luck_multiplier) !== 1 ? `${eventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
-    Number(event.weight_multiplier_multiplier) !== 1 ? `${eventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
-  ].filter(Boolean);
-
-  const banner = document.createElement("div");
-  banner.className = "admin-event-banner";
-  banner.innerHTML = `
-    <span class="admin-event-banner__icon">${icons.sparkle}</span>
-    <span class="admin-event-banner__content">
-      <strong>${escapeHtml(event.name)}</strong>
-      <span>${escapeHtml(boosts.join(" · "))}</span>
-    </span>
-    <strong class="admin-event-banner__timer" aria-label="Time remaining"></strong>
-  `;
+  const card = document.createElement("details");
+  card.className = "active-events-card";
+  card.innerHTML = `
+    <summary class="active-events-card__summary">
+      <span>Active events</span>
+      <span class="active-events-card__meta">
+        <strong class="active-events-card__count" aria-label="0 active events">0</strong>
+        <span class="active-events-card__arrow" aria-hidden="true">${icons.chevronDown}</span>
+      </span>
+    </summary>
+    <div class="active-events-card__list">
+      <p class="active-events-card__empty">no active events</p>
+    </div>`;
 
   const existingAnnouncements = document.querySelector(".announce-bar");
-  if (existingAnnouncements) existingAnnouncements.after(banner);
-  else header.after(banner);
+  if (existingAnnouncements) existingAnnouncements.after(card);
+  else header.after(card);
 
-  const timer = banner.querySelector(".admin-event-banner__timer");
-  const endsAt = new Date(event.ends_at).getTime();
+  const eventCount = card.querySelector(".active-events-card__count");
+  const eventList = card.querySelector(".active-events-card__list");
 
-  const update = () => {
-    const remaining = endsAt - Date.now();
-    if (remaining <= 0) {
-      banner.remove();
-      clearInterval(interval);
-      return;
-    }
-    timer.textContent = eventTime(remaining);
+  const adminEventHtml = (event) => {
+    const boosts = [
+      Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
+      Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
+      Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
+      Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
+      Number(event.luck_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.luck_multiplier)} Luck` : null,
+      Number(event.roll_speed_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
+      Number(event.weight_luck_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
+      Number(event.weight_multiplier_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
+    ].filter(Boolean);
+
+    return `
+      <div class="active-events-card__event active-events-card__event--admin">
+        <span class="active-events-card__icon" aria-hidden="true">${icons.sparkle}</span>
+        <span class="active-events-card__content">
+          <strong>${escapeHtml(event.name || "Admin event")}</strong>
+          <span>${escapeHtml(boosts.join(" · ") || "Admin event active")}</span>
+        </span>
+        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(event.ends_at)}" aria-label="Time remaining"></strong>
+      </div>`;
   };
 
-  const interval = setInterval(update, 1000);
-  update();
-}
-
-async function renderActiveGlobalEvent(header, base = "./") {
-  const user = await ensurePlayerAuth();
-  if (!user) return;
-  let refreshInterval = null;
-  let timerInterval = null;
-  let activeEndsAt = 0;
-  let serverClockOffsetMs = 0;
-
-  const updateTimer = () => {
-    const banner = document.querySelector(".global-event-banner");
-    const timer = banner?.querySelector(".admin-event-banner__timer");
-    if (!banner || !timer || !activeEndsAt) return;
-
-    const remaining = activeEndsAt - (Date.now() + serverClockOffsetMs);
-    if (remaining <= 0) {
-      banner.remove();
-      activeEndsAt = 0;
-      return;
-    }
-    timer.textContent = eventTime(remaining);
-  };
-
-  const refresh = async () => {
-    const { data, error } = await loadActiveGlobalEvent();
-    const event = data && typeof data === "object" ? data : null;
-    let banner = document.querySelector(".global-event-banner");
-    if (error || !event?.id) {
-      banner?.remove();
-      activeEndsAt = 0;
-      return;
-    }
-
+  const globalEventHtml = (event) => {
     const config = event.config || {};
-    const parsedServerNow = new Date(event.serverNow).getTime();
-    serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
     const now = Date.now() + serverClockOffsetMs;
     const startsAt = new Date(event.startsAt).getTime();
-    const endsAt = new Date(event.endsAt).getTime();
-    activeEndsAt = endsAt;
     const elapsedSeconds = Math.max(0, (now - startsAt) / 1000);
-    const remainingSeconds = Math.max(0, (endsAt - now) / 1000);
     const details = [];
     if (event.eventKey === "unstable_luck") {
       const phase = Math.floor(elapsedSeconds / Number(config.phaseSeconds || 30));
@@ -1735,32 +1702,90 @@ async function renderActiveGlobalEvent(header, base = "./") {
         && elapsedSeconds < Number(window.offsetSeconds) + Number(window.durationSeconds));
       if (active) details.push("Starfall active");
     }
+    const description = details.length ? `${event.description} · ${details.join(" · ")}` : event.description;
 
-    if (!banner) {
-      banner = document.createElement("div");
-      banner.className = `admin-event-banner global-event-banner global-event-banner--${escapeHtml(event.tier)}`;
-      const adminBanner = document.querySelector(".admin-event-banner:not(.global-event-banner)");
-      const announcements = document.querySelector(".announce-bar");
-      if (adminBanner) adminBanner.after(banner);
-      else if (announcements) announcements.after(banner);
-      else header.after(banner);
+    return `
+      <div class="active-events-card__event active-events-card__event--global active-events-card__event--${escapeHtml(event.tier)}">
+        <span class="active-events-card__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
+        <span class="active-events-card__content">
+          <strong>${escapeHtml(event.name)} · ${escapeHtml(event.tier)}</strong>
+          <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
+          <span>${escapeHtml(description || "Random event active")}</span>
+        </span>
+        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(event.endsAt)}" data-server-clock="true" aria-label="Time remaining"></strong>
+      </div>`;
+  };
+
+  const updateTimer = () => {
+    for (const timer of card.querySelectorAll(".active-events-card__timer")) {
+      const endsAt = new Date(timer.dataset.endsAt).getTime();
+      const clockOffset = timer.dataset.serverClock === "true" ? serverClockOffsetMs : 0;
+      timer.textContent = eventTime(endsAt - (Date.now() + clockOffset));
     }
-    banner.innerHTML = `
-      <span class="admin-event-banner__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
-      <span class="admin-event-banner__content">
-        <strong>${escapeHtml(event.name)} · ${escapeHtml(event.tier)}</strong>
-        <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
-        <span>${escapeHtml(details.length ? `${event.description} · ${details.join(" · ")}` : event.description)}</span>
-      </span>
-      <strong class="admin-event-banner__timer" aria-label="Time remaining">${eventTime(remainingSeconds * 1000)}</strong>`;
+  };
+
+  const render = () => {
+    const events = [];
+    if (activeAdminEvent) events.push(adminEventHtml(activeAdminEvent));
+    if (activeGlobalEvent?.id) events.push(globalEventHtml(activeGlobalEvent));
+    const count = events.length;
+    eventCount.textContent = String(count);
+    eventCount.setAttribute("aria-label", `${count} active event${count === 1 ? "" : "s"}`);
+    eventList.innerHTML = count
+      ? events.join("")
+      : '<p class="active-events-card__empty">no active events</p>';
     updateTimer();
   };
 
-  await refresh();
-  refreshInterval = setInterval(refresh, 15_000);
-  timerInterval = setInterval(updateTimer, 1_000);
+  const refreshAdminEvent = async () => {
+    if (adminRefreshInFlight) return;
+    adminRefreshInFlight = true;
+    try {
+      const { data, error } = await loadActiveAdminEvent();
+      if (error) return;
+      const nextEvent = (Array.isArray(data) ? data[0] : data) || null;
+      const nextSignature = JSON.stringify(nextEvent);
+      if (nextSignature !== activeAdminEventSignature) {
+        activeAdminEvent = nextEvent;
+        activeAdminEventSignature = nextSignature;
+        render();
+      }
+    } finally {
+      adminRefreshInFlight = false;
+    }
+  };
+
+  const refreshGlobalEvent = async () => {
+    if (globalRefreshInFlight) return;
+    globalRefreshInFlight = true;
+    try {
+      const { data, error } = await loadActiveGlobalEvent();
+      if (error) return;
+      activeGlobalEvent = data && typeof data === "object" && data.id ? data : null;
+      if (activeGlobalEvent) {
+        const parsedServerNow = new Date(activeGlobalEvent.serverNow).getTime();
+        serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
+      }
+      render();
+    } finally {
+      globalRefreshInFlight = false;
+    }
+  };
+
+  await Promise.all([refreshAdminEvent(), refreshGlobalEvent()]);
+  const globalRefreshInterval = setInterval(refreshGlobalEvent, 15_000);
+  const timerInterval = setInterval(async () => {
+    if (activeAdminEvent) await refreshAdminEvent();
+    const globalEndsAt = new Date(activeGlobalEvent?.endsAt).getTime();
+    if (activeGlobalEvent && globalEndsAt <= Date.now() + serverClockOffsetMs) {
+      activeGlobalEvent = null;
+      render();
+      return;
+    }
+    updateTimer();
+  }, 1_000);
   window.addEventListener("pagehide", () => {
-    clearInterval(refreshInterval);
+    clearInterval(globalRefreshInterval);
     clearInterval(timerInterval);
   }, { once: true });
 }
