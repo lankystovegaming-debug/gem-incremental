@@ -51,6 +51,7 @@
     "test:cutscenes": "node tests/cutscene-reliability-test.mjs && node tests/cutscene-preferences-database-test.mjs",
     "test:deepcore": "node tests/deepcore-project-2026-test.mjs",
     "test:deep-sea": "node tests/deep-sea-event-test.mjs && node tests/deep-sea-database-test.mjs",
+    "test:neptune-crafting": "node tests/neptune-crafting-database-test.mjs && node tests/neptune-crafting-ui-test.mjs && node tests/neptune-crafting-handler-test.mjs",
     "test:convergence": "node tests/convergence-pickaxe-test.mjs && node tests/equipment-overhaul-handler-test.mjs",
     "test:market-pricing": "node tests/market-pricing-limits-test.mjs",
     "test:black-market": "node tests/black-market-v1-test.mjs",
