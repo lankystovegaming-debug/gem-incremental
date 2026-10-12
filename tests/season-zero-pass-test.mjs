@@ -3,8 +3,8 @@ import fs from "node:fs";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const migration = read("supabase/migrations/20260821000001_season_zero_pass.sql");
+const rollBookkeeping = read("supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql");
 const edge = read("supabase/functions/seasons/index.ts");
-const roll = read("supabase/functions/roll/index.ts");
 const sell = read("supabase/functions/sell-gem/index.ts");
 const ui = read("seasons/seasons.js");
 const html = read("seasons/index.html");
@@ -24,7 +24,7 @@ assert.match(migration, /public\.record_season_roll\(uuid,numeric,numeric,intege
 assert.match(edge, /purchase-premium/);
 assert.match(edge, /claim-tier/);
 assert.match(edge, /reroll-daily/);
-assert.match(roll, /record_season_roll/);
+assert.match(rollBookkeeping, /record_season_roll/);
 assert.match(sell, /record_season_sale/);
 assert.match(ui, /data-claim/);
 assert.match(ui, /dailyRerollUsed/);

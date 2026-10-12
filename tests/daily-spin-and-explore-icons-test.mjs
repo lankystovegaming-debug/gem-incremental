@@ -13,7 +13,7 @@ const [shell, icons, privateFeatures, dropMigration] = await Promise.all([
 for (const icon of ["quest", "users", "island", "castle", "swords", "skull", "vault", "calendar", "map", "archive", "flask", "wand", "pickaxe", "caravan", "branch"]) {
   assert.match(icons, new RegExp(`\\b${icon}: svg`));
 }
-assert.match(shell, /icon: item\.icon/);
+assert.match(shell, /\$\{item\.icon\}/);
 assert.doesNotMatch(shell, /section\.icon\s*\?/);
 
 // ── Daily Spin is fully removed ───────────────────────────────────────────

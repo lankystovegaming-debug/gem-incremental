@@ -5,6 +5,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const stats = read("src/backend/cloudDebug.js");
 const migration = read("supabase/migrations/20260830100000_debug_roll_stat_modifiers.sql");
 const roll = read("supabase/functions/roll/index.ts");
+const rollClaim = read("supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql");
 
 assert.match(stats, /player_research_effects/);
 assert.match(stats, /potion_strength_multiplier/);
@@ -22,6 +23,7 @@ assert.match(migration, /museum_artifact_registrations/);
 assert.match(migration, /grant execute on function public\.get_current_roll_stat_modifiers\(\) to authenticated/);
 
 assert.match(roll, /research: researchNumber\("luck_multiplier"\)/);
-assert.match(roll, /guilds\(luck_tier,speed_tier,weight_luck_tier\)/);
+assert.match(rollClaim, /from public\.guild_members gm/);
+assert.match(rollClaim, /'luck_tier', g\.luck_tier/);
 
 console.log("Live stats include research, guild, and permanent roll modifiers.");

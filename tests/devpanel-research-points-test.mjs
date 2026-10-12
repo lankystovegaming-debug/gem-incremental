@@ -12,9 +12,9 @@ const [panel, migration] = await Promise.all([
   )
 ]);
 
-assert.match(panel, /id="devResearchPoints"/);
-assert.match(panel, /data-action="researchpoints"/);
-assert.match(panel, /callDependency\("research_points"/);
+assert.match(panel, /rp <amount>\s+research points/);
+assert.match(panel, /rp: \["research_points", \{ amount: Math\.trunc\(amount\) \}/);
+assert.match(panel, /supabase\.rpc\("dependency_improvement"/);
 assert.match(panel, /Enter 1 to 1,000,000 Research Points\./);
 
 assert.match(migration, /security definer set search_path to ''/);
