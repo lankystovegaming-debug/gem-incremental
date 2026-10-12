@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const migration = read("supabase/migrations/20260901083016_cache_secret_achievement_roll_progress.sql");
 const roll = read("supabase/functions/roll/index.ts");
+const rollBookkeeping = read("supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql");
 
 assert.match(migration, /create table public\.player_secret_roll_progress/);
 assert.match(migration, /create table public\.player_secret_roll_signatures/);
@@ -39,8 +40,16 @@ assert.match(refresh, /refresh_player_achievements_v013_pre_secret_rework/);
 
 assert.match(migration, /revoke all on function public\.accumulate_secret_roll_progress_v1/);
 assert.match(migration, /to service_role/);
-assert.match(roll, /Run independent post-commit systems concurrently/);
-assert.match(roll, /const bestRollHistoryPromise/);
-assert.match(roll, /EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\)/);
+assert.match(roll, /const backgroundPostCommitPromise = checkedBackgroundPromise/);
+assert.match(
+  roll,
+  /registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/
+);
+assert.match(
+  rollBookkeeping,
+  /if p_phase = 'critical'[\s\S]*?return jsonb_build_object\([\s\S]*?end if;[\s\S]*?record_roll_leaderboard_entry/,
+  "roll history should remain in background bookkeeping"
+);
+assert.match(roll, /EdgeRuntime\.waitUntil\(backgroundPromise\)/);
 
 console.log("Secret achievement timeout hotfix checks passed.");

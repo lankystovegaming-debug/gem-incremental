@@ -6,8 +6,11 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const main = fs.readFileSync(path.join(root, "main.js"), "utf8");
-assert.match(main, /renderCutscene/);
+assert.match(main, /globalCutsceneQueue\.enqueueBatch/);
 assert.doesNotMatch(main, /gemName\.toLowerCase\(\) === "ja-ore"/);
+
+const globalCutscenes = fs.readFileSync(path.join(root, "src/ui/globalCutscenes.js"), "utf8");
+assert.match(globalCutscenes, /renderCutscene/);
 
 const cutscene = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.js"), "utf8");
 const cutsceneCss = fs.readFileSync(path.join(root, "src/ui/jaOreCutscene.css"), "utf8");

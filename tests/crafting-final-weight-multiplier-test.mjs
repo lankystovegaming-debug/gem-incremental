@@ -36,20 +36,36 @@ assert.equal(
 );
 assert.equal(inventory.gems.length, 0);
 
-for (const path of [
-  "supabase/functions/manual-deposit/index.ts",
-  "supabase/functions/roll/index.ts"
-]) {
-  const source = readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-  assert.match(source, /finalWeight \/ baseWeight/);
-  assert.match(source, /weightMultiplier </);
-  assert.match(source, /weightMultiplier >/);
-}
-
 const manualDeposit = readFileSync(
   new URL("../supabase/functions/manual-deposit/index.ts", import.meta.url),
   "utf8"
 );
+assert.match(manualDeposit, /finalWeight\s*\/\s*baseWeight/);
+assert.match(manualDeposit, /weightMultiplier\s*</);
+assert.match(manualDeposit, /weightMultiplier\s*>/);
 assert.match(manualDeposit, /rarity,\s+base_weight,\s+rolled_weight_multiplier,/);
+
+const roll = readFileSync(
+  new URL("../supabase/functions/roll/index.ts", import.meta.url),
+  "utf8"
+);
+assert.match(roll, /\.rpc\("roll_route_result",\s*\{[\s\S]*?p_specimen:\s*specimen/);
+
+const rollAutoCraft = readFileSync(
+  new URL(
+    "../supabase/migrations/20260913233627_optimize_roll_autocraft_hot_path.sql",
+    import.meta.url
+  ),
+  "utf8"
+);
+assert.match(rollAutoCraft, /v_final_weight\s*\/\s*v_base_weight/);
+assert.match(
+  rollAutoCraft,
+  /v_weight_multiplier\s*>=\s*\(v_requirement->>'minimumWeightMultiplier'\)::numeric/
+);
+assert.match(
+  rollAutoCraft,
+  /v_weight_multiplier\s*<=\s*\(v_requirement->>'maximumWeightMultiplier'\)::numeric/
+);
 
 console.log("Crafting final weight multiplier checks passed.");

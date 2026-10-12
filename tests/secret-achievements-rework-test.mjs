@@ -51,7 +51,11 @@ assert.match(migration, /to service_role/);
 assert.match(achievementUi, /definition\.metadata\?\.hidden === true/);
 assert.match(achievementUi, /Hidden achievement/);
 assert.match(achievementUi, /progress\?\.completed/);
-assert.match(roll, /Run independent post-commit systems concurrently/);
+assert.match(roll, /const backgroundPostCommitPromise = checkedBackgroundPromise/);
+assert.match(
+  roll,
+  /registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/
+);
 assert.match(roll, /await Promise\.all\(\[/);
 assert.doesNotMatch(roll, /secret-achievements-v1/,
   "secret snapshot scans must stay out of the optimized Roll edge function");

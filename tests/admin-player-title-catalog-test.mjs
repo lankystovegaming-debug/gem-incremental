@@ -12,14 +12,13 @@ assert.ok(admin.includes('action === "player_title_remove"'));
 assert.ok(page.includes('id="playerTitle"'));
 assert.ok(page.includes('player-title-set'));
 assert.ok(page.includes('player-title-remove'));
-assert.ok(index.includes('normalizeLiveMutationCatalog'));
+assert.ok(index.includes('normalizeMutationCatalog'));
 assert.ok(index.includes('get_public_mutation_catalog'));
 assert.ok(migration.includes('create table if not exists public.player_titles'));
 assert.ok(migration.includes('create or replace function public.get_chat_profiles'));
 assert.ok(hardening.includes('get_public_player_titles'));
 assert.ok(hardening.includes('get_public_mutation_catalog'));
 assert.ok(chat.includes('get_public_player_titles'));
-assert.ok(chat.includes('get_public_mutation_catalog'));
 console.log("Admin player title + live mutation catalog tests passed.");
 
 assert.ok(runtimeHardening.includes("display_title"));

@@ -7,6 +7,7 @@ const seasonHtml = read("seasons/index.html");
 const seasonClient = read("seasons/seasons.js");
 const seasonEdge = read("supabase/functions/seasons/index.ts");
 const rollEdge = read("supabase/functions/roll/index.ts");
+const rollBookkeeping = read("supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql");
 const stats = read("src/backend/cloudDebug.js");
 const crafting = read("crafting/index.html");
 const migration = read("supabase/migrations/20260824022714_season_leaderboard_pickaxe_merge.sql");
@@ -20,7 +21,7 @@ assert.match(stats, /masterwork_level/);
 assert.match(stats, /equipmentTotals\(equippedItems/);
 assert.match(read("supabase/functions/roll/equipmentRules.js"), /pick\?\.luck_bonus.*mw/);
 
-assert.match(rollEdge, /record_roll_leaderboard_entry/);
+assert.match(rollBookkeeping, /record_roll_leaderboard_entry/);
 assert.doesNotMatch(rollEdge, /\.rpc\("record_gems_found_score"/);
 assert.match(migration, /create or replace function public\.record_roll_leaderboard_entry/);
 assert.match(migration, /create or replace function public\.get_gems_found_leaderboard/);

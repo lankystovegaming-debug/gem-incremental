@@ -23,7 +23,8 @@ assert.match(upcomingJs, /description:\$\("gemDescription"\)\.value\.trim\(\)/);
 assert.match(privateFeatures, /title: String\(body\.title/);
 assert.match(privateFeatures, /description: String\(body\.description/);
 assert.match(gemIndex, /get_public_gem_catalog/);
-assert.match(gemIndex, /Number\(entry\.gem\.rarity\) < 10_000_000/);
+assert.match(gemIndex, /Number\(gem\.rarity\) >= 10_000_000 \|\| gem\.hideRarityUntilDiscovered === true/);
+assert.match(gemIndex, /const secret = isSecretLocked\(entry\)/);
 assert.doesNotMatch(gemIndex, /secretLocked \? "Undiscovered"/);
 assert.match(gemIndex, /badge badge--tier">\$\{escapeHtml\(tier\.name\)\}/);
 assert.match(concealMigration, /where rarity >= 10000000/);
@@ -32,7 +33,7 @@ assert.match(gemIndex, /get_public_mutation_catalog/);
 assert.match(gemIndex, /\.from\("private_feature_gems"\)\s*\.select\("id,title,name,rarity,base_weight,value_per_gram,description/);
 assert.match(gemIndex, /index-card__desc/);
 assert.match(gemIndex, /index-card__gem-title/);
-assert.match(gemIndex, /mutation-tab__custom/);
+assert.match(gemIndex, /mutation-tab mutation-tab--\$\{escapeHtml\(tab\.id\)\}/);
 
 assert.match(adminHtml, /id="codePotionAdd"/);
 assert.match(adminHtml, /id="codePotionRows"/);

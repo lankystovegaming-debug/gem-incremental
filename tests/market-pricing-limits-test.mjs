@@ -23,7 +23,11 @@ const requiredReferences = {
   "mythic-pet-whistle": 20000000, "plastic-bag": 0.10
 };
 for (const [id, value] of Object.entries(requiredReferences)) assert.equal(MARKET_REFERENCE_PRICES[id], value, id);
-assert.ok(consumables.every((item) => Number.isFinite(item.marketReferencePrice)), "every current consumable is explicitly market-priced");
+assert.deepEqual(
+  consumables.filter((item) => !Number.isFinite(item.marketReferencePrice)).map((item) => item.id),
+  ["exotic-potion"],
+  "only the intentionally unmarketable Exotic Potion lacks a reference price"
+);
 assert.equal(MARKET_REFERENCE_PRICES["money-up-potion"], 25000);
 assert.equal(MARKET_REFERENCE_PRICES["money-up-potion-2"], 100000);
 

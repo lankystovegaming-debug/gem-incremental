@@ -23,7 +23,11 @@ assert.match(statsUi, /cloudState\.stats\.breakdown\?\.\[key\]/);
 assert.match(statsCss, /\.bonus-breakdown/);
 
 // This QoL change must not replace or de-optimize the server roll pipeline.
-assert.match(roll, /Run independent post-commit systems concurrently/);
+assert.match(roll, /const backgroundPostCommitPromise = checkedBackgroundPromise/);
+assert.match(
+  roll,
+  /registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/
+);
 assert.match(roll, /await Promise\.all\(\[/);
 
 console.log("Stats source breakdown checks passed.");

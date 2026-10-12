@@ -9,6 +9,13 @@ const inventory = readFileSync(
   new URL("../inventory/inventory.js", import.meta.url),
   "utf8"
 );
+const rollBookkeeping = readFileSync(
+  new URL(
+    "../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql",
+    import.meta.url
+  ),
+  "utf8"
+);
 
 assert.match(
   rollFunction,
@@ -16,19 +23,29 @@ assert.match(
   "chat should use the same final effective Luck as the roll and debug page"
 );
 assert.doesNotMatch(rollFunction, /luck \/ adminLuckFactor/);
-assert.equal(
-  (rollFunction.match(/luck_at_roll: announcedLuck/g) ?? []).length,
-  3,
-  "all announcement paths should use effective announced Luck"
-);
 assert.match(
   rollFunction,
-  /p_luck_at_roll: announcedLuck/,
-  "the announcement mutation RPC should receive effective announced Luck"
+  /const bookkeepingPayload = \{[\s\S]*?announcedLuck,/,
+  "roll bookkeeping should receive effective announced Luck"
+);
+assert.equal(
+  (rollBookkeeping.match(/p_payload->>'announcedLuck'/g) ?? []).length,
+  2,
+  "all database announcement paths should use effective announced Luck"
+);
+assert.match(
+  rollBookkeeping,
+  /global_chat_announcements[\s\S]*?p_payload->>'announcedLuck'/,
+  "mutation-only announcements should receive effective announced Luck"
+);
+assert.match(
+  rollBookkeeping,
+  /attach_roll_announcement_mutations\([\s\S]*?p_payload->>'announcedLuck'/,
+  "the announcement mutation helper should receive effective announced Luck"
 );
 assert.doesNotMatch(
-  rollFunction,
-  /luck_at_roll: baseLuck|p_luck_at_roll: baseLuck/,
+  rollBookkeeping,
+  /luck_at_roll[^;]*p_payload->>'baseLuck'|attach_roll_announcement_mutations\([\s\S]*?p_payload->>'baseLuck'/,
   "rare-roll chat must not discard legitimate potion Luck"
 );
 assert.match(

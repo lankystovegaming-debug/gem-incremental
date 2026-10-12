@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const migration=await readFile(new URL("../supabase/migrations/20260822000001_guild_rework_beta.sql",import.meta.url),"utf8");
+const rollBookkeeping=await readFile(new URL("../supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql",import.meta.url),"utf8");
 const roll=await readFile(new URL("../supabase/functions/roll/index.ts",import.meta.url),"utf8");
 const features=await readFile(new URL("../supabase/functions/features/index.ts",import.meta.url),"utf8");
 const page=await readFile(new URL("../guilds/index.html",import.meta.url),"utf8");
@@ -15,7 +16,7 @@ assert.match(migration,/interval '6 days'/);
 assert.match(migration,/interval '7 days'/);
 assert.match(migration,/date_trunc\('day',v_now at time zone 'utc'\)/);
 assert.match(migration,/when p_rarity>=10000000 then 500 when p_rarity>=1000000 then 150/);
-assert.equal((roll.match(/record_guild_roll_activity/g)||[]).length,2,"success and House Edge have separate guild activity paths");
+assert.equal((rollBookkeeping.match(/record_guild_roll_activity/g)||[]).length,2,"success and House Edge have separate guild activity paths");
 assert.equal((roll.match(/record_guild_roll_points/g)||[]).length,0,"old double-award RPC must be gone from roll");
 assert.match(features,/guild_manage_member/);
 assert.match(features,/guild_purchase_upgrade/);

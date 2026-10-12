@@ -32,6 +32,6 @@ assert.doesNotMatch(permissionUpdate, /v_member\.role not in/);
 assert.match(permissionUpdate, /m\.role in \('owner','officer'\)/);
 assert.match(client, /\["owner","officer"\]\.includes\(m\.role\)/);
 assert.match(page, /Any guild member can permanently contribute/);
-assert.match(gemIndex, /index-card__hidden[\s\S]*dailyAvailabilityLabel\(entry\.gem\)[\s\S]*index-card__chance/);
+assert.match(gemIndex, /index-card__hidden[\s\S]*secret \? eventSourceHtml\(entry\.gem\) : availabilityHtml\(entry\.gem\)[\s\S]*index-card__chance/);
 
 console.log("Guild Point cash contribution checks passed.");

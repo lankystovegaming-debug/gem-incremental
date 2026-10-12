@@ -6,6 +6,7 @@ const sql=read("supabase/migrations/20260827024337_research_tree_v0140_beta.sql"
 const fastLoadSql=read("supabase/migrations/20260829110000_research_tree_fast_load.sql");
 const valueAmbiguityFix=read("supabase/migrations/20260829150000_fix_research_effect_value_ambiguity.sql");
 const roll=read("supabase/functions/roll/index.ts");
+const rollBookkeeping=read("supabase/migrations/20260913102618_optimize_roll_hot_path_v2.sql");
 const features=read("supabase/functions/features/index.ts");
 const ui=read("research-tree/research-tree.js");
 const css=read("research-tree/research-tree.css");
@@ -31,15 +32,15 @@ assert.match(valueAmbiguityFix,/jsonb_array_elements\(e\) as effect\(entry\)/);
 assert.match(valueAmbiguityFix,/where property\.key in\('flag','cosmetic'\)/);
 assert.doesNotMatch(valueAmbiguityFix,/select distinct value#>>/);
 
-assert.match(roll,/player_research_effects\(/);
+assert.match(rollBookkeeping,/from public\.player_research_effects/);
 assert.match(roll,/effectiveInventoryCapacity/);
 assert.match(roll,/researchNumber\("luck_multiplier"\)/);
 assert.match(roll,/researchNumber\("mutation_chance_multiplier"\)/);
 assert.match(roll,/researchNumber\("potion_strength_multiplier"\)/);
 assert.doesNotMatch(roll,/award_research_points_v014|sync_research_sources_v014|purchase_research_node_v014/,
   "Roll must not write or synchronize research progression");
-assert.equal((roll.match(/player_research_effects\(/g)||[]).length,1,
-  "Roll should load one embedded compiled research row");
+assert.doesNotMatch(roll,/\.from\("player_research_effects"\)/,
+  "Roll should use the research effects embedded in the optimized claim payload");
 
 for(const action of ["research","research-sync","research-purchase","research-reset"]){
   assert(features.includes(`a===\"${action}\"`),`missing ${action} action`);
