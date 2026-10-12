@@ -12,6 +12,7 @@ import {
   parseStatMultiplier,
   probability,
   rollEssenceDrops,
+  rollMobLevel,
   rollMutationTier,
   shouldMutate,
   weighted,
@@ -114,7 +115,7 @@ function pickRank(room: any) {
 }
 async function chooseMutation(ctx: any, room: any, tier: string) {
   const { data, error } = await ctx.supabaseAdmin.from("dungeon_mutations")
-    .select("name,tier,native_regions,value_multiplier,shard_gem_power,core_gem_power,best_odds").eq("tier", tier);
+    .select("name,tier,native_regions,value_multiplier,shard_gem_power,core_gem_power,best_odds,selection_weight").eq("tier", tier);
   if (error) throw error;
   const codes = REGION_CODES[room.region] ?? [];
   const adjacentCodes = REGION_CODES[borderAdjacentRegion(room.room_number)] ?? [];
@@ -147,13 +148,24 @@ function enemyBaseStats(room: any, row: any, rank: string, mutation: any, isBoss
     defense: Math.max(0, hp * .01),
   };
 }
-async function makeCombatant(ctx: any, room: any, row: any, rank: string, lootRole: string, isBoss = false, essenceMultiplier = 1, bossRepeat = 0) {
-  const mutation = isBoss ? null : await rollRoomMutation(ctx, room, true);
+async function makeCombatant(
+  ctx: any,
+  room: any,
+  row: any,
+  rank: string,
+  lootRole: string,
+  isBoss = false,
+  essenceMultiplier = 1,
+  bossRepeat = 0,
+  level = 1,
+  rewardMultiplier = zoneScale(room.zone)[2],
+) {
+  const mutation = await rollRoomMutation(ctx, room, true);
   const stats = enemyBaseStats(room, row, rank, mutation, isBoss, bossRepeat);
   const name = canonicalEnemyName(row.name);
   return {
     id: crypto.randomUUID(), name, rank, lootRole, maxHp: stats.hp, hp: stats.hp,
-    damage: stats.damage, defense: stats.defense, essenceMultiplier,
+    damage: stats.damage, defense: stats.defense, essenceMultiplier, level, rewardMultiplier,
     mutated: !!mutation, mutationTier: mutation?.tier ?? null, mutationName: mutation?.name ?? null,
     mutationData: mutation, drops: (drops as any)[name]?.items ?? [],
   };
@@ -201,18 +213,19 @@ async function buildCombatants(ctx: any, room: any) {
     const { data: boss, error } = await ctx.supabaseAdmin.from("dungeon_boss_catalog").select("*").eq("room_number", room.room_number).maybeSingle();
     if (error) throw error;
     const bossName = String(boss?.boss_name ?? "");
+    const rewardMultiplier = zoneScale(boss?.rating_used ?? room.zone)[2];
     const bossRow = (room.enemies ?? []).find((entry: any) => canonicalEnemyName(entry.name) === bossName)
       ?? { name: bossName || "Dungeon Boss", spawn: "100%", amount: "1 ME", me: "100%" };
     const combatants: any[] = [];
     for (let index = 0; index < bossCount; index++) {
-      combatants.push(await makeCombatant(ctx, room, bossRow, "Boss", "boss", true, 1, num(boss?.repeat_bonus)));
+      combatants.push(await makeCombatant(ctx, room, bossRow, "Boss", "boss", true, 1, num(boss?.repeat_bonus), rollMobLevel(encounterRows, room.room_number), rewardMultiplier));
     }
     const enemyRows = (room.enemies ?? []).filter((entry: any) => !/\(boss\)/i.test(String(entry.name)));
     for (let index = 0; index < addCount; index++) {
       const row = weighted(enemyRows, (entry: any) => probability(entry.spawn));
       if (row) {
         const rank = pickRank(room);
-        combatants.push(await makeCombatant(ctx, room, row, rank.rank, "boss_add", false, rank.essenceMultiplier));
+        combatants.push(await makeCombatant(ctx, room, row, rank.rank, "boss_add", false, rank.essenceMultiplier, 0, rollMobLevel(encounterRows, room.room_number), rewardMultiplier));
       }
     }
     return { combatants, encounter: `${bossCount} boss + ${addCount} adds`, initialLoot: [], boss: boss?.boss_name ?? null, bossRepeat: num(boss?.repeat_bonus) };
@@ -223,14 +236,14 @@ async function buildCombatants(ctx: any, room: any) {
     const guardCount = encounterNumber(kind);
     const combatants: any[] = [];
     if (/mimic/i.test(kind)) {
-      combatants.push(await makeCombatant(ctx, room, { name: "Mimic", amount: "" }, "Elite", "mimic", false, 1.25));
+      combatants.push(await makeCombatant(ctx, room, { name: "Mimic", amount: "" }, "Elite", "mimic", false, 1.25, 0, rollMobLevel(encounterRows, room.room_number)));
     }
     const enemyRows = (room.enemies ?? []).filter((entry: any) => !/\(boss\)/i.test(String(entry.name)));
     for (let index = 0; index < guardCount; index++) {
       const row = weighted(enemyRows, (entry: any) => probability(entry.spawn));
       if (row) {
         const rank = pickRank(room);
-        combatants.push(await makeCombatant(ctx, room, row, rank.rank, "treasure_guard", false, rank.essenceMultiplier));
+        combatants.push(await makeCombatant(ctx, room, row, rank.rank, "treasure_guard", false, rank.essenceMultiplier, 0, rollMobLevel(encounterRows, room.room_number)));
       }
     }
     const chest = { name: /mimic/i.test(kind) ? "Mimic chest" : "Treasure chest", lootRole: "treasure_chest", mutated: false };
@@ -248,7 +261,7 @@ async function buildCombatants(ctx: any, room: any) {
     const row = weighted(enemyRows, (entry: any) => probability(entry.spawn));
     if (row) {
       const rank = pickRank(room);
-      combatants.push(await makeCombatant(ctx, room, row, rank.rank, "enemy", false, rank.essenceMultiplier));
+      combatants.push(await makeCombatant(ctx, room, row, rank.rank, "enemy", false, rank.essenceMultiplier, 0, rollMobLevel(encounterRows, room.room_number)));
     }
   }
   return { combatants, encounter: chosen?.kind ?? String(count), initialLoot: [], boss: null, bossRepeat: 0 };
@@ -273,7 +286,7 @@ async function awardEnemyLoot(ctx: any, room: any, enemy: any, loot: any[]) {
   const essenceRow = (room.enemies ?? []).find((entry: any) => canonicalEnemyName(entry.name) === canonicalEnemyName(enemy.name));
   if (essenceRow) {
     const mutationMultiplier = enemy.mutated ? (MUTATION_TIER[enemy.mutationTier]?.[2] ?? 1) : 1;
-    const rewardMultiplier = zoneScale(room.zone)[2];
+    const rewardMultiplier = num(enemy.rewardMultiplier, zoneScale(room.zone)[2]);
     for (const essence of rollEssenceDrops(essenceRow, enemy.essenceMultiplier ?? 1)) {
       loot.push({
         type: "essence", tier: essence.tier,
@@ -293,6 +306,18 @@ function awardRoomKey(room: any, loot: any[]) {
   if (Math.random() < probability(room.room_key_chance)) {
     loot.push({ type: "material", name: "Dungeon Room Key", quantity: 1, room: room.room_number });
   }
+}
+
+async function currentRun(ctx: any, playerId: string) {
+  const { data: run, error } = await ctx.supabaseAdmin.from("dungeon_runs").select("*")
+    .eq("player_id", playerId).in("status", ["active", "won"])
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  if (!run) return null;
+  const room = await loadRoom(ctx, Number(run.room_number));
+  const combatants = Array.isArray(run.combatants) ? run.combatants : [];
+  const index = Math.max(0, num(run.enemy_index, 1) - 1);
+  return { run, room, combatant: run.status === "active" ? combatants[index] ?? null : null, won: run.status === "won" };
 }
 
 export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
@@ -342,6 +367,9 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       if (error) throw error;
       return json({ progress: data ?? [] });
     }
+    if (action === "current") {
+      return json({ current: await currentRun(ctx, playerId) });
+    }
     if (action === "start") {
       const room = await loadRoom(ctx, Number(body.roomNumber));
       const access = await canEnter(ctx, playerId, room.room_number);
@@ -370,12 +398,13 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       const power = await playerCombatPower(ctx, playerId);
       const loot = built.initialLoot;
       const status = built.combatants.length ? "active" : "won";
+      const fogged = Math.random() < probability(room.fog_chance);
       if (status === "won") awardRoomKey(room, loot);
       const { data: run, error } = await ctx.supabaseAdmin.from("dungeon_runs").insert({
         player_id: playerId, dungeon_id: definition.id, room_number: room.room_number, enemy_ids: [], enemy_index: 1,
         enemy_health: built.combatants[0]?.hp ?? 0, player_health: power.health, status, loot,
         combatants: built.combatants,
-        room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat },
+        room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat, fogged },
         player_attack: power.attack,
       }).select("*").single();
       if (error?.code === "23505") {
@@ -410,8 +439,9 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       const { data: updated, error } = await ctx.supabaseAdmin.from("dungeon_runs").update({
         combatants, enemy_index: next + 1, enemy_health: combatants[next]?.hp ?? 0,
         player_health: Math.max(0, playerHealth), status, loot, updated_at: new Date().toISOString(),
-      }).eq("id", run.id).eq("status", "active").select("*").single();
+      }).eq("id", run.id).eq("status", "active").eq("updated_at", run.updated_at).select("*").maybeSingle();
       if (error) throw error;
+      if (!updated) return json({ error: "stale_dungeon_attack", message: "That run changed during the attack. Refreshing it is safe." }, 409);
       return json({ run: updated, combatant: combatants[next] ?? null, won: status === "won", lost: status === "lost", defeated: enemy.hp <= 0 ? enemy.name : null, damage });
     }
     if (action === "claim") {

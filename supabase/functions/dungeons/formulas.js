@@ -67,16 +67,20 @@ export function mutationWeight(mutation, regionCodes = [], adjacentRegionCodes =
   const universal = nativeRegions.includes("Any");
   const currentNative = nativeRegions.some((code) => regionCodes.includes(code));
   const adjacentNative = nativeRegions.some((code) => adjacentRegionCodes.includes(code));
-  // Native weighting is 3x. Border rooms split the 2x bonus 70/30 with the adjacent region.
+  // Native weighting is 6x. Border rooms split the 5x bonus 70/30 with the adjacent region.
   const share = Math.max(0, Math.min(1, Number(adjacentShare) || 0));
   const nativeBoost = universal || (currentNative && adjacentNative)
-    ? 3
+    ? 6
     : currentNative
-      ? 1 + 2 * (adjacentRegionCodes.length ? 1 - share : 1)
+      ? 1 + 5 * (adjacentRegionCodes.length ? 1 - share : 1)
       : adjacentNative
-        ? 1 + 2 * share
+        ? 1 + 5 * share
         : 1;
-  return (probability(String(mutation?.best_odds ?? "").replace(/^1 in /i, "1/")) || 1) * nativeBoost;
+  const calibratedWeight = Number(mutation?.selection_weight);
+  const baseWeight = Number.isFinite(calibratedWeight) && calibratedWeight > 0
+    ? calibratedWeight
+    : probability(String(mutation?.best_odds ?? "").replace(/^1 in /i, "1/")) || 1;
+  return baseWeight * nativeBoost;
 }
 
 const BORDER_REGIONS = [
@@ -102,6 +106,7 @@ export function completeBossAddDistribution(encounters = []) {
   const addRows = encounters.filter((entry) => /\badds?\b/i.test(String(entry?.kind)));
   if (!addRows.length) return [];
   const weightedRows = addRows.map((entry) => ({ ...entry, weight: probability(entry.chance) }));
+  if (weightedRows.some((entry) => parseRange(entry.kind, 0, () => 0) >= 9)) return weightedRows;
   const explicitMass = weightedRows.reduce((sum, entry) => sum + entry.weight, 0);
   const missingMass = Math.max(0, 1 - explicitMass);
   const averageEnemies = Number(encounters.find((entry) => entry?.summary === "Avg enemies")?.value);
@@ -123,6 +128,12 @@ export function completeBossAddDistribution(encounters = []) {
     { kind: `${lower} adds`, weight: missingMass - upperWeight, inferred: true },
     { kind: `${upper} adds`, weight: upperWeight, inferred: true },
   ];
+}
+
+export function rollMobLevel(encounters = [], fallback = 1, random = Math.random) {
+  const rows = encounters.filter((entry) => entry?.level && probability(entry?.level_chance) > 0);
+  const chosen = weighted(rows, (entry) => probability(entry.level_chance), random);
+  return parseRange(chosen?.level, fallback, random);
 }
 
 export function canonicalEnemyName(value) {
