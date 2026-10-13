@@ -2,6 +2,7 @@
   --cs-c:hsl(var(--gem-hue,210) 92% 68%);
   --cs-c2:hsl(calc(var(--gem-hue,210) + 62) 94% 72%);
   position:fixed!important;inset:0!important;z-index:2147483000!important;overflow:hidden!important;
+  width:100vw!important;height:100dvh!important;
   contain:strict;isolation:isolate;background:#02040a;color:#f7fbff;opacity:0;cursor:default;
   transition:opacity .2s ease;font-family:var(--font-display,system-ui,sans-serif);
 }
@@ -319,7 +320,8 @@
 .cs-camera-stage{position:absolute;inset:0;z-index:1;overflow:hidden;transform-origin:50% 50%;transition:opacity .38s ease,filter .38s ease}
 .cs-camera-stage.is-exiting{opacity:0;filter:blur(12px) brightness(1.7)}
 .cs-copy.is-exiting{opacity:0;transition:opacity .24s ease}
-.cs-reveal--center{align-content:center;justify-items:center;text-align:center;padding:6vh 5vw}
+.cs-reveal--center{grid-template-columns:minmax(0,1fr);align-content:center;justify-items:center;text-align:center;padding:6vh 5vw}
+.cs-reveal--center>*{min-width:0;max-width:100%;justify-self:center;text-align:center;overflow-wrap:anywhere}
 .cs-reveal--right{justify-items:end;text-align:right;padding:10vh 7vw 7vh 46vw}
 .cs-reveal--left{justify-items:start;text-align:left;padding:10vh 46vw 7vh 7vw}
 .cs-reveal--upper-right{align-content:start;justify-items:end;text-align:right;padding:14vh 7vw 7vh 46vw}
