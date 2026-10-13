@@ -71,6 +71,25 @@ try {
       old.ingredients.map((i) => ({ ...i, item: aliases[i.item] || i.item })));
   }
   const drops = JSON.parse(read('supabase/functions/dungeons/drop-data.json'));
+  // Cover the actual backend roster, not just recipe ingredient availability.
+  // A catalog name missing from drop-data silently awards no materials.
+  const catalogRooms = await rows('select room_number,enemies from dungeon_catalog_rooms order by room_number');
+  assert.equal(catalogRooms.length, 1500);
+  const seenVariants = new Map();
+  for (const room of catalogRooms) for (const enemy of room.enemies) {
+    const name = enemy.name.replace(/\s*\(boss\)$/i, '').trim();
+    const table = drops[name]?.items;
+    assert(table?.length > 0, `Room ${room.room_number}: ${name} has no material-drop table`);
+    for (const item of table) {
+      assert(item.name && Number.isFinite(item.chance) && item.chance > 0 && item.chance <= 1,
+        `${name}: invalid material probability for ${item.name}`);
+    }
+    if (['Archer Skeleton', 'Warrior Skeleton'].includes(name)) {
+      assert.deepEqual(table, drops.Skeleton.items);
+      seenVariants.set(name, (seenVariants.get(name) || 0) + 1);
+    }
+  }
+  assert.deepEqual([...seenVariants].sort(), [['Archer Skeleton', 200], ['Warrior Skeleton', 200]]);
   const obtainable = new Set(Object.values(drops).flatMap((enemy) => enemy.items.map((i) => i.name)));
   for (const mutation of await rows('select name from dungeon_mutations')) {
     obtainable.add(`${mutation.name} Shard`); obtainable.add(`${mutation.name} Core`);

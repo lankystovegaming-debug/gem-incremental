@@ -22,6 +22,17 @@ assert.equal(probability("1/15K"), 1 / 15_000);
 assert.equal(parseStatMultiplier("x43,200"), 43_200);
 assert.equal(parseStatMultiplier("not a stat"), null);
 
+const materialDrops = JSON.parse(fs.readFileSync(new URL("../supabase/functions/dungeons/drop-data.json", import.meta.url), "utf8"));
+for (const name of ["Archer Skeleton", "Warrior Skeleton"]) {
+  assert.deepEqual(materialDrops[name], materialDrops.Skeleton,
+    `${name} must use the existing Skeleton material drops, not an empty table`);
+}
+assert.deepEqual(materialDrops.Skeleton.items, [
+  { name: "Bone", chance: 0.60 },
+  { name: "Bone Fragment", chance: 0.15 },
+  { name: "Skeleton Crown", chance: 0.01 },
+], "the variant fix must preserve Skeleton material probabilities");
+
 const mutationSummary = parseMutationSummary(
   "Mob mutation chance: 15.00% per mob (region base 10% x zone 1.5). " +
   "Tier split: Common 45.0%, Uncommon 33.5%, Rare 15.0%, Epic 5.4%, Legendary 1.1%.",
