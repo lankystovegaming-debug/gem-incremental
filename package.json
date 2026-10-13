@@ -49,6 +49,7 @@
     "test:ui-foundation": "node tests/ui-foundation-phase-1-test.mjs",
     "test:ui-foundation-browser": "node tests/ui-foundation-browser-test.mjs",
     "test:cutscenes": "node tests/cutscene-reliability-test.mjs && node tests/cutscene-preferences-database-test.mjs",
+    "test:cutscene-centering": "node tests/cutscene-centering-browser-test.mjs",
     "test:deepcore": "node tests/deepcore-project-2026-test.mjs",
     "test:deep-sea": "node tests/deep-sea-event-test.mjs && node tests/deep-sea-database-test.mjs",
     "test:neptune-crafting": "node tests/neptune-crafting-database-test.mjs && node tests/neptune-crafting-ui-test.mjs && node tests/neptune-crafting-handler-test.mjs",

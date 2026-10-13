@@ -16,7 +16,7 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
-  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"upper-right",revealAt:.66,worldExitAt:.63,includeInReminiscite:false}),
+  "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"center",revealAt:.66,worldExitAt:.63,includeInReminiscite:false}),
   "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"center",revealAt:.67,worldExitAt:.64,includeInReminiscite:false}),
   pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"center",revealAt:.68,worldExitAt:.65,includeInReminiscite:false}),
   "pearl of the sea": scene(5_800,"deep-sea-grand-pearl",[],{focus:false,quiet:true,primitives:["sea-grand-shell"],revealPosition:"center",revealAt:.72,worldExitAt:.69,includeInReminiscite:false}),
