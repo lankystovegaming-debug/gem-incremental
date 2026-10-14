@@ -20,4 +20,6 @@ Implemented from the uploaded `Dungeon_Workbench_Full_Rebalance` PDF using the l
 
 Apply the new migration before deploying the updated `dungeons` and `workbench` Edge Functions.
 
+For manual SQL-editor deployment, the first migration is 9 MB. Use the [numbered deployment files](deployment/pr507-first-migration/README.md) instead of pasting that entire file into the dashboard. Those helpers replace only the first migration; the README lists the four later fixes and the remaining deployment order. Keep maintenance enabled throughout.
+
 The frontend catalog lives under `dungeons/catalog/regions/` and is loaded by region so the browser does not download all 1,500 rooms at once.
