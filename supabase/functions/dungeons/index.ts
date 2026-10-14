@@ -1,5 +1,6 @@
 import { withSupabase } from "npm:@supabase/server";
 import drops from "./drop-data.json" with { type: "json" };
+import { loadDungeonProgress } from "./progress.js";
 import {
   borderAdjacentRegion,
   canonicalEnemyName,
@@ -362,10 +363,7 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       return json({ materials: materials ?? [], essence: essence ?? [], gear: gear ?? [] });
     }
     if (action === "progress") {
-      const { data, error } = await ctx.supabaseAdmin.from("dungeon_room_progress").select("room_number,completed_at")
-        .eq("player_id", playerId).order("room_number");
-      if (error) throw error;
-      return json({ progress: data ?? [] });
+      return json({ progress: await loadDungeonProgress(ctx.supabaseAdmin, playerId) });
     }
     if (action === "current") {
       return json({ current: await currentRun(ctx, playerId) });

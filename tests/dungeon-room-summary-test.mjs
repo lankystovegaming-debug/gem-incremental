@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { renderRoomSummary } from '../dungeons/room-summary.js';
+import { isRoomUnlocked, isRegionUnlocked } from '../dungeons/progression.js';
 const read = (path) => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const sql = read('supabase/migrations/20261008000000_dungeon_workbench_full_rebalance.sql');
 const line = sql.split('\n').find((line) => line.startsWith('insert into public.dungeon_catalog_rooms('));
@@ -35,7 +36,7 @@ const document = { getElementById(id) {
   return nodes.get(id);
 } };
 let fetches = 0;
-const context = vm.createContext({ document, renderRoomSummary, mountShell() {},
+const context = vm.createContext({ document, renderRoomSummary, isRoomUnlocked, isRegionUnlocked, mountShell() {},
   fetch() { throw Error('Opening a room must not download specification sheets'); },
   supabase: { functions: { async invoke(name, { body }) {
     fetches++; assert.equal(name, 'dungeons'); assert.equal(body.action, 'room');
