@@ -19,9 +19,10 @@ assert.match(scheduler, /advance-global-random-events/);
 assert.match(roll, /const globalEventData = batchExecution\.globalEventData[\s\S]*rollContext\.globalEvent/);
 assert.match(hotPath, /'globalEvent', public\.get_active_global_event\(\)/);
 assert.match(roll, /eventGemIsEligible\(availabilityEventContext, entry\)/);
-assert.match(roll, /record_global_event_roll/);
-assert.match(shell, /timerInterval = setInterval\(updateTimer, 1_000\)/);
-assert.match(shell, /activeEndsAt - \(Date\.now\(\) \+ serverClockOffsetMs\)/);
+assert.match(hotPath, /record_global_event_roll/); // folded into transactional bookkeeping
+assert.match(shell, /timerInterval = setInterval\(async[\s\S]*updateTimer\(\)[\s\S]*1_000/);
+assert.match(shell, /eventTime\(endsAt - \(Date\.now\(\) \+ clockOffset\)\)/);
+assert.match(shell, /for \(const event of christmasEvents\) events.push\(globalEventHtml\(event\)\)/);
 
 const at = Date.parse("2026-09-01T00:05:30Z");
 const event = normalizeGlobalEvent({ id:"event-id",eventKey:"singularity",name:"Singularity",icon:"x",tier:"legendary",description:"",startsAt:"2026-08-31T23:59:00Z",endsAt:"2026-09-01T00:06:00Z",serverNow:new Date(at).toISOString(),config:{},mass:100,massTarget:100,collapsedAt:new Date(at).toISOString() }, at);

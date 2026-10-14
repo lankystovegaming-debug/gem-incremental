@@ -25,7 +25,7 @@ import {
   submitBanAppeal
 } from "../backend/cloudBanAppeals.js";
 import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
-import { loadActiveGlobalEvent } from "../backend/cloudGlobalEvents.js";
+import { loadActiveGlobalEvents } from "../backend/cloudGlobalEvents.js";
 import {
   describeAccount,
   isGuest,
@@ -1776,6 +1776,7 @@ async function renderActiveEvents(header, base = "./") {
 
   let activeAdminEvent = null;
   let activeGlobalEvent = null;
+  let christmasEvents = [];
   let activeAdminEventSignature = "";
   let serverClockOffsetMs = 0;
   let adminRefreshInFlight = false;
@@ -1829,6 +1830,7 @@ async function renderActiveEvents(header, base = "./") {
     const config = event.config || {};
     const now = Date.now() + serverClockOffsetMs;
     const startsAt = new Date(event.startsAt).getTime();
+    const approaching = now < startsAt;
     const elapsedSeconds = Math.max(0, (now - startsAt) / 1000);
     const details = [];
     if (event.eventKey === "unstable_luck") {
@@ -1851,11 +1853,11 @@ async function renderActiveEvents(header, base = "./") {
       <div class="active-events-card__event active-events-card__event--global active-events-card__event--${escapeHtml(event.tier)}">
         <span class="active-events-card__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
         <span class="active-events-card__content">
-          <strong>${escapeHtml(event.name)} · ${escapeHtml(event.tier)}</strong>
+          <strong>${escapeHtml(event.name)} · ${approaching ? "Approaching" : escapeHtml(event.tier)}</strong>
           <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
           <span>${escapeHtml(description || "Random event active")}</span>
         </span>
-        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(event.endsAt)}" data-server-clock="true" aria-label="Time remaining"></strong>
+        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(approaching ? event.startsAt : event.endsAt)}" data-server-clock="true" aria-label="${approaching ? "Starts in" : "Time remaining"}"></strong>
       </div>`;
   };
 
@@ -1871,6 +1873,7 @@ async function renderActiveEvents(header, base = "./") {
     const events = [];
     if (activeAdminEvent) events.push(adminEventHtml(activeAdminEvent));
     if (activeGlobalEvent?.id) events.push(globalEventHtml(activeGlobalEvent));
+    for (const event of christmasEvents) events.push(globalEventHtml(event));
     const count = events.length;
     eventCount.textContent = String(count);
     eventCount.setAttribute("aria-label", `${count} active event${count === 1 ? "" : "s"}`);
@@ -1902,11 +1905,13 @@ async function renderActiveEvents(header, base = "./") {
     if (globalRefreshInFlight) return;
     globalRefreshInFlight = true;
     try {
-      const { data, error } = await loadActiveGlobalEvent();
+      const { data, error } = await loadActiveGlobalEvents();
       if (error) return;
-      activeGlobalEvent = data && typeof data === "object" && data.id ? data : null;
-      if (activeGlobalEvent) {
-        const parsedServerNow = new Date(activeGlobalEvent.serverNow).getTime();
+      const occurrences = Array.isArray(data) ? data.filter(event => event?.id) : [];
+      activeGlobalEvent = occurrences.find(event => event.layer !== "christmas") ?? null;
+      christmasEvents = occurrences.filter(event => event.layer === "christmas");
+      if (occurrences.length) {
+        const parsedServerNow = new Date(occurrences[0].serverNow).getTime();
         serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
       }
       render();
@@ -1919,6 +1924,14 @@ async function renderActiveEvents(header, base = "./") {
   const globalRefreshInterval = setInterval(refreshGlobalEvent, 15_000);
   const timerInterval = setInterval(async () => {
     if (activeAdminEvent) await refreshAdminEvent();
+    const now = Date.now() + serverClockOffsetMs;
+    const previousSeasonalCount = christmasEvents.length;
+    christmasEvents = christmasEvents.filter(event => Date.parse(event.endsAt) > now);
+    const warningStarted = christmasEvents.some(event => event.approaching && Date.parse(event.startsAt) <= now);
+    if (warningStarted || previousSeasonalCount !== christmasEvents.length) {
+      christmasEvents.forEach(event => event.approaching = Date.parse(event.startsAt) > now);
+      render();
+    }
     const globalEndsAt = new Date(activeGlobalEvent?.endsAt).getTime();
     if (activeGlobalEvent && globalEndsAt <= Date.now() + serverClockOffsetMs) {
       activeGlobalEvent = null;

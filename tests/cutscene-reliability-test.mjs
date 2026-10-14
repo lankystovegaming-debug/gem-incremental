@@ -62,7 +62,7 @@ assert.equal(getCutsceneDefinition({ rarity: 100_000_000, gemName: "Heart of Xy"
 assert.equal(getCutsceneDefinition({ rarity: 666_666_666, gemName: "one singular grain of sand" }).theme, "singular-sand");
 assert.equal(cutsceneDuration({ rarity: 666_666_666, gemName: "one singular grain of sand", mobile: false, reducedMotion: false }), 15_000);
 assert.deepEqual(BESPOKE_CUTSCENES["one singular grain of sand"].primitives, ["sand"]);
-assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 69, "the locked scenes, Deepcore, Deep Sea, weekly gems, draft material scenes, and legacy XY alias must be registered");
+assert.equal(Object.keys(BESPOKE_CUTSCENES).length, 78, "the locked scenes, Deepcore, Deep Sea, Christmas, weekly gems, draft material scenes, and legacy XY alias must be registered");
 const draftMaterialScenes = [
   ["touch grass", "touch-grass", 12_500],
   ["asterism", "asterism", 13_000],
@@ -120,7 +120,8 @@ for (const definition of deepcoreScenes) {
 }
 for (const [name, definition] of Object.entries(BESPOKE_CUTSCENES)) {
   const isDeepSea = definition.theme.startsWith("deep-sea-");
-  assert.ok(definition.duration >= (isDeepSea ? 4_000 : 11_000) && definition.duration <= 20_000, `${name} must retain appropriate pacing`);
+  const maximum = name === "christmas singularity" ? 22_000 : 20_000;
+  assert.ok(definition.duration >= (isDeepSea ? 4_000 : 11_000) && definition.duration <= maximum, `${name} must retain appropriate pacing`);
   assert.ok(definition.beats.length <= 3, `${name} must use animation rather than explanatory copy`);
   if (definition.theme !== "xy-heart") {
     assert.ok(definition.primitives.length > 0, `${name} must opt into a visual identity`);

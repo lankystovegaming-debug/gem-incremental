@@ -1,4 +1,5 @@
 import { getGemMutation } from "../data/mutations.js";
+import { resultFromEnvelope } from "./cutsceneEnvelope.js";
 import { getSettings } from "./settings.js";
 import { renderCutscene } from "./cutsceneScenes.js";
 import {
@@ -34,4 +35,11 @@ export function replayGemCutscene({ gem, mutationId = null, mutationIds = [] }) 
     duration,
     render: () => renderCutscene(replayData, duration, { replay: true })
   });
+}
+
+export function replayStoredCutscene(envelope) {
+  if (cutsceneController.isActive) return Promise.resolve({ played: false, busy: true });
+  const data = resultFromEnvelope(envelope);
+  const duration = cutsceneDuration({ rarity: data.gem?.rarity, gemName: data.gem?.name });
+  return cutsceneController.play({duration,render:()=>renderCutscene(data,duration,{replay:true})});
 }

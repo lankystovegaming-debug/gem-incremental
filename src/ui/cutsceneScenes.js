@@ -39,6 +39,7 @@ function mutationIdsFor(data) {
 }
 
 function chanceFor(data, gem, mutationIds, replay) {
+  if (data.cutsceneEnvelope) return String(data.actualChanceLabel ?? rarityLabel(gem.rarity));
   try {
     const label = replay
       ? chanceLabelForResult(gem.name, mutationIds)
@@ -67,7 +68,9 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
   const gemName = String(gem.name ?? "Gem");
   const definition = getCutsceneDefinition({ rarity: gem.rarity, gemName });
   const mutationIds = mutationIdsFor(data);
-  const mutations = mutationIds.map((id) => getGemMutation(id)).filter(Boolean);
+  const mutations = mutationIds.map((id) => data.cutsceneEnvelope
+    ? data.mutations?.find(mutation => mutation.id === id)
+    : getGemMutation(id)).filter(Boolean);
   const tier = rarityTier(gem.rarity, gemName);
   const [anchorX, anchorY] = definition.randomAnchor ? randomSafeAnchor() : ["50%", "50%"];
   const hue = [...gemName].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0) % 360;
@@ -115,11 +118,11 @@ function buildStandardScene(data, duration, { replay = false } = {}) {
     </div>` : ""}
     <div class="cs-reveal cs-reveal--${safeClass(definition.revealPosition ?? "center")}">
       <div class="cs-reveal__gem">${specimen}</div>
-      <div class="cs-reveal__tier">${definition.secret ? "SECRET" : escapeHtml(tier.name)}</div>
+      <div class="cs-reveal__tier">${definition.anomalous ? "ANOMALOUS" : definition.secret ? "SECRET" : escapeHtml(tier.name)}</div>
       <h2 class="cs-reveal__name">${gemNameHtml(gemName, escapeHtml)}</h2>
       ${mutationLine}
-      <div class="cs-reveal__rarity">${escapeHtml(rarityLabel(gem.rarity))}</div>
-      <div class="cs-reveal__chance">Actual chance: ${escapeHtml(chanceFor(data, gem, mutationIds, replay))}</div>
+      ${definition.hideChance ? "" : `<div class="cs-reveal__rarity">${escapeHtml(rarityLabel(gem.rarity))}</div>
+      <div class="cs-reveal__chance">Actual chance: ${escapeHtml(chanceFor(data, gem, mutationIds, replay))}</div>`}
     </div>
     <div class="cs-vignette"></div>
     <div class="cs-letterbox cs-letterbox--top"></div>

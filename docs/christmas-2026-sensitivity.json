@@ -1,0 +1,136 @@
+{
+  "scope": "Analytical marginal-throughput check, not a rerun of the missing simulation #2 profiles.",
+  "source": "Supabase roll v178, checked against repository on 2026-10-14; roll/index.ts unchanged.",
+  "baseSeconds": 2.5,
+  "oldHours": 720,
+  "newHours": 736,
+  "extraHours": 16,
+  "uniformParticipationIncreasePercent": 2.2222222222222143,
+  "assumptions": [
+    "Continuous participation during the extra 16 hours, constant final Roll Speed, no cooldown/network overhead.",
+    "Normal Present probabilities, no equipment, consumables or Rush/Storm boosts.",
+    "Batch cooldown is taken from the backend; batching does not multiply throughput."
+  ],
+  "rows": [
+    {
+      "speed": 1,
+      "batch": 1,
+      "additionalRolls": 23040,
+      "expectedPresents": {
+        "small": 4.608,
+        "festive": 0.576,
+        "large": 0.2304,
+        "golden": 0.02304
+      },
+      "expectedPP": 16.128
+    },
+    {
+      "speed": 1,
+      "batch": 10,
+      "additionalRolls": 23040,
+      "expectedPresents": {
+        "small": 4.608,
+        "festive": 0.576,
+        "large": 0.2304,
+        "golden": 0.02304
+      },
+      "expectedPP": 16.128
+    },
+    {
+      "speed": 1,
+      "batch": 100,
+      "additionalRolls": 23000,
+      "expectedPresents": {
+        "small": 4.6,
+        "festive": 0.575,
+        "large": 0.23,
+        "golden": 0.023
+      },
+      "expectedPP": 16.1
+    },
+    {
+      "speed": 5,
+      "batch": 1,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 5,
+      "batch": 10,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 5,
+      "batch": 100,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 20,
+      "batch": 1,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    },
+    {
+      "speed": 20,
+      "batch": 10,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    },
+    {
+      "speed": 20,
+      "batch": 100,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    }
+  ],
+  "resetChanges": {
+    "dailyQuestReset": 0,
+    "weeklyWorkshopReset": 0,
+    "adventDoors": 0,
+    "waves": 0
+  },
+  "limits": [
+    "Rush frequency/duration/spacing and Aurora spacing remain unconfirmed, so boosted-window exposure cannot be calculated.",
+    "Original player profiles, attendance distributions and balance simulation are unavailable. Tree completion probabilities and CS exchange percentiles cannot be reproduced.",
+    "Snowflakes/Ornaments/Lights and Shillings rewards from new Present chains, quests and final specimens are not modeled here."
+  ],
+  "conclusion": "The active interval rises from 720 to 736 hours (+2.2222%). No frozen economy value was changed. A full balance conclusion requires the missing schedules and baseline simulation inputs."
+}
