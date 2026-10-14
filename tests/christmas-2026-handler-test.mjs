@@ -32,6 +32,7 @@ const command={action:'decorate',requestId,playerId:'attacker-supplied-id',state
 const first=await call(command);assert.equal(first.status,200);assert.equal(state.tree,1);assert.equal(state.snowflakes,0);assert.equal(state.inventory.small,2);assert.equal(commits,1);
 const retry=await call(command);assert.equal(retry.status,200);assert.deepEqual(retry.data.rewards,first.data.rewards);assert.equal(commits,1);
 assert.equal((await call({...command,action:'advent',day:1})).data.error,'idempotency_conflict');
+assert.equal((await call({action:'quest',kind:'daily',id:'rolling',period:'1',requestId:'10000000-0000-4000-8000-000000000003',rolls:300,quests:{days:{1:{rolls:300}}}})).data.error,'quest_incomplete');assert.equal(commits,1,'forged quest counters must not create a reward commit');
 conflict=true;rpcs.length=0;
 assert.equal((await call({action:'advent',day:1,requestId:'10000000-0000-4000-8000-000000000002'})).data.error,'version_conflict');
 assert.equal(rpcs.filter(c=>c.name==='christmas_2026_commit').length,3,'bounded CAS retries');

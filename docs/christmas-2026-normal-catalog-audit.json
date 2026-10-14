@@ -1,0 +1,1285 @@
+{
+  "source": "Read-only Supabase igrddscmrdrrwtvyspbf private_feature_gems on 2026-10-14; availability_mode=always, no required event, not special. No player data.",
+  "catalog": [
+    {
+      "name": "Incandescity",
+      "rarity": 2000000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Reminiscite",
+      "rarity": 1987654321,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Heat Death",
+      "rarity": 1500000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Finality",
+      "rarity": 1250000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Glitched Gem",
+      "rarity": 1101001110,
+      "affectedByLuck": true
+    },
+    {
+      "name": "almost secret",
+      "rarity": 999999999,
+      "affectedByLuck": true
+    },
+    {
+      "name": "tonalite-trondhjemite-granodiorite",
+      "rarity": 987654321,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ore+",
+      "rarity": 965000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Cat ore",
+      "rarity": 750000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "sutoronchiumushahouhoakinseki",
+      "rarity": 750000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "one singular grain of sand",
+      "rarity": 666666666,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tranquillityite",
+      "rarity": 550000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Reality Fragment",
+      "rarity": 525000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Liminalite",
+      "rarity": 500000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Serpentite",
+      "rarity": 500000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "False Vacuum",
+      "rarity": 480000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Netherwrong",
+      "rarity": 475000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Last Light",
+      "rarity": 420000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "where gem",
+      "rarity": 404404404,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Edscottite",
+      "rarity": 390000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Parallax",
+      "rarity": 350000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hapkeite",
+      "rarity": 330000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fluorotetraferriphlogopite",
+      "rarity": 320000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Thalassa",
+      "rarity": 311228191,
+      "affectedByLuck": true
+    },
+    {
+      "name": "300",
+      "rarity": 300000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Yttrocolumbite-(Y)",
+      "rarity": 285000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Seraphite",
+      "rarity": 277777777,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chronofracture",
+      "rarity": 275000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Panguite",
+      "rarity": 270000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "the last gem",
+      "rarity": 250000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chromaflux",
+      "rarity": 225000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Allendeite",
+      "rarity": 220000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ascendentite",
+      "rarity": 200000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Infernite",
+      "rarity": 200000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Asterism",
+      "rarity": 185000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tistarite",
+      "rarity": 180000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Deadstar",
+      "rarity": 175000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Eventide",
+      "rarity": 160000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Seifertite",
+      "rarity": 145000000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Tuite",
+      "rarity": 135000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Unobtainium",
+      "rarity": 123456789,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Stishovite",
+      "rarity": 115000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "noobium",
+      "rarity": 111000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "First Light",
+      "rarity": 107082026,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Heart of Xy",
+      "rarity": 100000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite",
+      "rarity": 100000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "touch grass",
+      "rarity": 100000000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Davemaoite",
+      "rarity": 91000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Frostspike",
+      "rarity": 90000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Osbornite",
+      "rarity": 82000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Verity",
+      "rarity": 77000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Bridgmanite",
+      "rarity": 73000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Långbanshyttanite",
+      "rarity": 65000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Nullstone",
+      "rarity": 64000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Krotite",
+      "rarity": 61000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Akimotoite",
+      "rarity": 57000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Redcanyonite",
+      "rarity": 54000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Calmarite",
+      "rarity": 50000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Carmeltazite",
+      "rarity": 50000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Majorite",
+      "rarity": 44000000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Carbonado",
+      "rarity": 41000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kochkarite",
+      "rarity": 38000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Haggertyite",
+      "rarity": 35000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kuannersuite-(Ce)",
+      "rarity": 35000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Bazzite",
+      "rarity": 34000000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Reidite",
+      "rarity": 31000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Zigrasite",
+      "rarity": 29000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tazheranite",
+      "rarity": 27000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Core of Oblivion",
+      "rarity": 24032012,
+      "affectedByLuck": true
+    },
+    {
+      "name": "22 karat diamond",
+      "rarity": 22000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Redshift Crystal",
+      "rarity": 22000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Loveringite",
+      "rarity": 21000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ammolite",
+      "rarity": 18000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Proustite",
+      "rarity": 16000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Sundown Crystal",
+      "rarity": 15750000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Libyan Desert Glass",
+      "rarity": 14000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "False Diamond",
+      "rarity": 13370000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Zirkelite",
+      "rarity": 13000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Neptunite",
+      "rarity": 12500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Peatite-(Y)",
+      "rarity": 12500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Londonite",
+      "rarity": 11500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Lanky Gem",
+      "rarity": 10000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Test Ore",
+      "rarity": 10000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Volcanic Achalite",
+      "rarity": 10000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Potassic-ferro-ferri-sadanagaite",
+      "rarity": 9000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Paradoxite",
+      "rarity": 8800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Nabesite",
+      "rarity": 8250000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Presolar Moissanite",
+      "rarity": 8000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Routhierite",
+      "rarity": 7800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Beryllonite",
+      "rarity": 7500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Monochronite",
+      "rarity": 7200000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Georgbarsanovite",
+      "rarity": 7000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Magnesiohögbomite",
+      "rarity": 6500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ja-ore",
+      "rarity": 6242030,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Martian Opal",
+      "rarity": 6000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Holtite",
+      "rarity": 5900000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kornerupine",
+      "rarity": 5500000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Jadarite",
+      "rarity": 5200000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hydroxycalciomicrolite",
+      "rarity": 4500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Atlas Stone",
+      "rarity": 4200000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Bismuth",
+      "rarity": 4000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Singularity Shard",
+      "rarity": 4000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Crocoite",
+      "rarity": 3800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Bobfergusonite",
+      "rarity": 3500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chkalovite",
+      "rarity": 3200000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "π",
+      "rarity": 3141592,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kurnakovite",
+      "rarity": 3100000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fluorcalciobritholite",
+      "rarity": 2800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "e",
+      "rarity": 2718281,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Wulfenite",
+      "rarity": 2700000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Raspite",
+      "rarity": 2650000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Lunar Diamond",
+      "rarity": 2500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Afterglow",
+      "rarity": 2400000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hutchinsonite",
+      "rarity": 2200000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Scheelite",
+      "rarity": 1900000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Antimatter Crystal",
+      "rarity": 1800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Manganvesuvianite",
+      "rarity": 1700000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ekanite",
+      "rarity": 1650000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Moolooite",
+      "rarity": 1500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Sugilite",
+      "rarity": 1400000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Pallasite Crystal",
+      "rarity": 1300000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Vesuvianite",
+      "rarity": 1250000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Paraershovite",
+      "rarity": 1100000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "cbf detected, loser!",
+      "rarity": 1000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Dark Matter",
+      "rarity": 1000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fate Crystal",
+      "rarity": 1000000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Loading...",
+      "rarity": 999999,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ringwoodite",
+      "rarity": 900000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Piemontite",
+      "rarity": 850000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Rainbow Lattice Sunstone",
+      "rarity": 850000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tremolite",
+      "rarity": 825000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Neutron Crystal",
+      "rarity": 800000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Microlux",
+      "rarity": 750000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hydrokenoelsmoreite",
+      "rarity": 700000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "67",
+      "rarity": 676767,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Jeromite",
+      "rarity": 640000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Meteorite Peridot",
+      "rarity": 620000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Axinite",
+      "rarity": 575000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Zektzerite",
+      "rarity": 550000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Weloganite",
+      "rarity": 525000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "focus.",
+      "rarity": 500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chronite",
+      "rarity": 480000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Papagoite",
+      "rarity": 450000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Boleite",
+      "rarity": 410000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chlorophoenicite",
+      "rarity": 375000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Sinhalite",
+      "rarity": 360000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tugtupite",
+      "rarity": 350000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fukalite",
+      "rarity": 320000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fingerite",
+      "rarity": 300000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ajoite",
+      "rarity": 275000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Probability Crystal",
+      "rarity": 250000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Void Opal",
+      "rarity": 250000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Euclase",
+      "rarity": 230000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Magnesiochloritoid",
+      "rarity": 210000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Black Diamond",
+      "rarity": 190000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hibonite",
+      "rarity": 160000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Phenakite",
+      "rarity": 145000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Aether Quartz",
+      "rarity": 140000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Cryoshock",
+      "rarity": 125000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Natural Moissanite",
+      "rarity": 110000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "97%",
+      "rarity": 97000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Carletonite",
+      "rarity": 95000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Scapolite",
+      "rarity": 88000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Kyawthuite",
+      "rarity": 85000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chambersite",
+      "rarity": 75000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Red Diamond",
+      "rarity": 70000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tinsleyite",
+      "rarity": 65000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Blue Garnet",
+      "rarity": 55000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Dioptase",
+      "rarity": 52000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Void Pearl",
+      "rarity": 50000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Charoite",
+      "rarity": 48000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Paraíba Tourmaline",
+      "rarity": 45000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "error 404",
+      "rarity": 40404,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hauyne",
+      "rarity": 40000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Serendibite",
+      "rarity": 35000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Cummingtonite",
+      "rarity": 32000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hemimorphite",
+      "rarity": 30000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tsavorite",
+      "rarity": 28000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Diaspore",
+      "rarity": 25000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Moltenite",
+      "rarity": 25000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Poudretteite",
+      "rarity": 22000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Eudialyte",
+      "rarity": 21000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Smithsonite",
+      "rarity": 18500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Clinohumite",
+      "rarity": 18000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Uvarovite",
+      "rarity": 18000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Amblygonite",
+      "rarity": 17500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Titanite",
+      "rarity": 16000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Jeremejevite",
+      "rarity": 14000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Danburite",
+      "rarity": 13500,
+      "affectedByLuck": false
+    },
+    {
+      "name": "hiding in your wifi",
+      "rarity": 12000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Pezzottaite",
+      "rarity": 12000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Amber",
+      "rarity": 11000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Rhodochrosite",
+      "rarity": 10500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Painite",
+      "rarity": 10000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "unlucky gem",
+      "rarity": 10000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Musgravite",
+      "rarity": 9300,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Taaffeite",
+      "rarity": 8500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Prehnite",
+      "rarity": 8200,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Lodestone",
+      "rarity": 7777,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Grandidierite",
+      "rarity": 7400,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Demantoid",
+      "rarity": 6800,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Mythril",
+      "rarity": 6500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Black Opal",
+      "rarity": 6300,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Morganite",
+      "rarity": 6000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Red Beryl",
+      "rarity": 5300,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Unakite",
+      "rarity": 5200,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Uranium",
+      "rarity": 5000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Benitoite",
+      "rarity": 4400,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kunzite",
+      "rarity": 4000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Alexandrite",
+      "rarity": 3600,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Lapis Lazuli",
+      "rarity": 3500,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Howlite",
+      "rarity": 3100,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tanzanite",
+      "rarity": 2900,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Larvikite",
+      "rarity": 2750,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Iolite",
+      "rarity": 2600,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Diamond",
+      "rarity": 2300,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Lepidolite",
+      "rarity": 2100,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Labradorite",
+      "rarity": 2000,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Emerald",
+      "rarity": 1800,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kyanite",
+      "rarity": 1600,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Ruby",
+      "rarity": 1400,
+      "affectedByLuck": true
+    },
+    {
+      "name": "random rock I found outside",
+      "rarity": 1337,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Rhodonite",
+      "rarity": 1200,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Sapphire",
+      "rarity": 1100,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Larimar",
+      "rarity": 950,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Spinel",
+      "rarity": 850,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Moonstone",
+      "rarity": 750,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Bloodstone",
+      "rarity": 700,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Zircon",
+      "rarity": 650,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Aventurine",
+      "rarity": 550,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Opal",
+      "rarity": 475,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tourmaline",
+      "rarity": 325,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Azurite",
+      "rarity": 300,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Pyrite",
+      "rarity": 250,
+      "affectedByLuck": false
+    },
+    {
+      "name": "Aquamarine",
+      "rarity": 225,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Amazonite",
+      "rarity": 180,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Topaz",
+      "rarity": 150,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Jade",
+      "rarity": 125,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Tiger's Eye",
+      "rarity": 120,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Peridot",
+      "rarity": 100,
+      "affectedByLuck": true
+    },
+    {
+      "name": "trashcan",
+      "rarity": 100,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Citrine",
+      "rarity": 90,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Carnelian",
+      "rarity": 80,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Garnet",
+      "rarity": 70,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Sodalite",
+      "rarity": 60,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Amethyst",
+      "rarity": 50,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chalcedony",
+      "rarity": 45,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Jasper",
+      "rarity": 35,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Malachite",
+      "rarity": 30,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Agate",
+      "rarity": 25,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Obsidian",
+      "rarity": 18,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Hematite",
+      "rarity": 12,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Fluorite",
+      "rarity": 8,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Feldspar",
+      "rarity": 5,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Calcite",
+      "rarity": 3,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Quartz",
+      "rarity": 2,
+      "affectedByLuck": true
+    }
+  ]
+}

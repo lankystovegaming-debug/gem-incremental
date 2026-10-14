@@ -11,9 +11,9 @@ export const eventDay = now => Math.floor((now - START) / 86400000) + 1;
 export const eventWeek = now => Math.floor((now - START) / (7 * 86400000));
 export const finaleEligible = (now, genuineRolls, acknowledged) => now >= END && now < FINALE_END && genuineRolls > 0 && !acknowledged;
 
-// Null means unconfirmed, not zero and not a default schedule. Configuration
-// must be supplied explicitly before publishing any Christmas occurrences.
-export const SCHEDULING = Object.freeze({rushFrequency: null, rushDurationMinutes: null, rushSpacingMinutes: null, auroraSpacingMinutes: null, stormSpacingMinutes: null, aurorasPerDay: 2, storms: 6, durationMinutes: 20, warningMinutes: 5});
+// Approved shared schedule. Spacing is measured from the previous end to
+// the next start; periods use the 08:00 SGT event-day boundary.
+export const SCHEDULING = Object.freeze({rushFrequency: 3, rushDurationMinutes: 20, rushSpacingMinutes: 180, auroraSpacingMinutes: 240, stormSpacingMinutes: 90, aurorasPerDay: 2, storms: 6, durationMinutes: 20, warningMinutes: 5});
 export const TREE_COSTS = [
   [100,0,0],[150,2,0],[200,4,0],[250,6,0],[300,8,1],
   [400,10,1],[500,14,2],[600,18,2],[700,22,3],[800,28,4],
@@ -38,6 +38,15 @@ export const ADVENT = [
   {'north-star-ornament':1,christmas:1,golden:1,shillings:10000,'merry-christmas':1}
 ];
 export const PRESENT_POINTS = Object.freeze({small:1,festive:5,large:25,golden:125});
+export const GOLDEN_COSMETICS=['golden-snowfall','gilded-holly','golden-workshop','present-of-gold'];
+export const CHRISTMAS_COSMETICS=['aurora-roll-trail','giftwrapped-gem-card','snowglobe-profile-frame','celestial-snowfall-background'];
+export const CHRISTMAS_COLLECTIBLES=['santas-lost-button','miniature-sleigh-bell','north-pole-snowglobe','fragment-of-christmas-star'];
+export const STORY_REQUIREMENTS={
+  II:{startsAt:Date.parse('2026-12-08T00:00:00Z'),presentsOpened:10,combines:1,presentPoints:50,waveIIDiscoveries:1,dailiesAfterUnlock:3},
+  III:{startsAt:Date.parse('2026-12-15T00:00:00Z'),genuineRolls:1500,uniqueChristmasGems:3,minimumWeightMultiplier:2,auroraFallbackRollsAfterUnlock:500},
+  IV:{startsAt:STORM_START,presentsOpened:25,presentPoints:100,exchangeShillingsAfterUnlock:5000,rushOrStorm:true},
+  V:{startsAt:MORNING,reward:{'christmas-day-2026':1,shillings:2500,festive:2,large:1}}
+};
 export const PRESENT_ODDS = Object.freeze({normal:[5000,40000,100000,1000000],boosted:[40,200,1000,10000]});
 const gem = (name,rarity,baseWeight,valuePerGram,wave,source='roll') => ({name,rarity,baseWeight,valuePerGram,wave,source});
 export const GEMS = [
@@ -76,7 +85,7 @@ export const SHOP = [
 ].map(([id,price]) => ({id,price,limit:1,weekly:false})),[
   {id:'christmas',price:25000,subsequentPrice:50000,limit:6,weekly:false,startsAt:MORNING},
   {id:'supply-crate',price:25000,limit:null,weekly:false},
-  {id:'emergency-supply',enabled:false,price:null,limit:null}
+  {id:'emergency-supply',enabled:true,price:10000,limit:3,weekly:false,startsAt:STORM_START,reward:{snowflakes:1000,ornaments:40,lights:8,small:5,festive:2}}
 ]);
 
 function uniform(random) {
@@ -92,9 +101,9 @@ function pick(entries,random) {
 }
 function add(a,b) {for(const [id,n] of Object.entries(b))a[id]=(a[id]||0)+n;return a;}
 const goldenPremium = [[20,{cocoa:1}],[17.5,{toolkit:1}],[15,{tonic:1}],[12.5,{peppermint:1}],[10,{bell:1}],[10,{coin:1}],[10,{list:1}],[5,{miracle:1}]];
-// Polish and the utility/Workshop bundles still need authoritative definitions.
-// Symbolic rewards intentionally do not turn into invented premium rewards.
-const christmasPremium = [[20,{toolkit:1}],[20,{tonic:1}],[15,{polish:1}],[15,{bell:1}],[12.5,{coin:1}],[12.5,{miracle:1}],[5,{'cocoa-utility-bundle':1}]];
+// Peppermint Polish is the existing 1.35× Mutation Luck / 150-roll
+// Peppermint effect. The utility bundle expands into existing consumables.
+const christmasPremium = [[20,{toolkit:1}],[20,{tonic:1}],[15,{peppermint:1}],[15,{bell:1}],[12.5,{coin:1}],[12.5,{miracle:1}],[5,{'cocoa-utility-bundle':1}]];
 export function openPresent(tier,random) {
   let r,bonus;
   if(tier==='small') {

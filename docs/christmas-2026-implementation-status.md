@@ -72,12 +72,13 @@ Nothing was deployed to Supabase.
    inventory/unlocks only. Real equipping, permanent stats, active consumable
    counters and voluntary Bottle activation/subsequent one-roll resolution are
    **not wired**. The pure Bottle check is not a playable consumable flow.
-3. Implement authoritative scheduling once the settings below are confirmed;
-   there are no seeded Christmas occurrences. Apply seasonal and ordinary event
-   effects together in the roll path. The cards alone do not apply gameplay buffs.
-4. Implement daily/weekly quests, all five Story quest chains and exact reward
-   claims. The Story tab currently displays chapter availability, not playable
-   quests or chapter replay controls.
+3. Apply seasonal and ordinary event effects together in the roll path. The
+   approved shared scheduler is implemented and locally tested; cards alone
+   still do not apply gameplay buffs until the roll integration is complete.
+4. Complete all five Story chapter quest chains and replay controls. Daily and
+   weekly quests, claims and primary genuine-roll/acquisition bookkeeping are
+   now implemented. Additional gem sources still require their native reward
+   integration to feed the trusted acquisition counter.
 5. Persist authoritative cutscene envelopes with committed rewards and connect
    them to the live queue, reload recovery, cross-device receipts, batch/partial
    batch handling and source-aware featured-result selection. Finish cinematic
@@ -90,44 +91,79 @@ Nothing was deployed to Supabase.
 7. Complete the four Collection categories, native cosmetic previews, historical
    statistics and archive replay. Read-only resource/inventory views exist;
    absent roll/reward integration means they do not yet form the final archive.
-8. Replace symbolic random cosmetic/collectible/bundle rewards with approved
-   native definitions and duplicate protection. Resolve Polish and utility
-   bundle definitions. No symbolic token should ship as a substitute for a gem,
-   native item or bespoke reward.
+8. Project the approved cosmetic/collectible/bundle rewards into the native
+   systems. Golden duplicate protection, its 5,000 CS exhausted-pool fallback,
+   the utility bundle and Peppermint Polish alias are implemented in the server
+   resolver. Real Wish/Singularity specimens remain unfinished.
 9. Complete an Open All resolver for stacks above 10,000 items. The current
    bounded resolver rejects larger stacks instead of silently opening only part.
 10. Add integration tests for actual roll/reward/quest/cutscene flows and event
     boundaries, including one-roll Bottle use in partial batches and concurrent
     native inventory operations. Existing tests cover the implemented foundation.
 
-## Parameters requiring confirmation
+## Approved follow-up values — 14 October 2026
 
-The user's supplement explicitly says not to invent these values. They are not
-present in the audited existing Christmas implementation/configuration.
+The preceding Design Limited Events proposal was retrieved, and the user
+explicitly approved its scheduling, Story, cosmetics, consumables and Emergency
+Supply values. Their newer daily/weekly targets supersede that proposal's older
+quest targets. No outstanding values in that proposal are treated as blockers.
 
-- Ordinary Present Rush frequency, duration and minimum spacing.
-- Numeric minimum spacing for the two daily 20-minute Auroras and the six
-  20-minute Storms. The Storm period remains 24 Dec 08:00–25 Dec 08:00 SGT.
-- Exact daily/weekly quest pools, Story II PP target, Story IV exchange threshold,
-  Aurora fallback, quest reward bundles and all-five weekly bonus.
-- Emergency Supply contents, exact price and purchase limit. Its listing stays
-  disabled; it is not an extra source of Bottles, Stashes or Anomalous gems.
-- Any outstanding native reward definitions (including Polish and utility
-  bundles) must be settled before random Present rewards can be finalized.
+- Rush: 3/day, 20 minutes, minimum 3-hour end-to-start gap.
+- Aurora: 2/day from Dec 15, 20 minutes, minimum 4-hour gap.
+- Storm: 6 during Dec 24 08:00–Dec 25 08:00 SGT, 20 minutes, minimum 90-minute gap.
+  Rush/Aurora pause during the Storm period. A private seeded server scheduler
+  generates 128 shared occurrences, including the final 16-hour event day;
+  spacing is enforced across daily boundaries as well as within each day.
+- Daily: 300 genuine rolls (150 CS + Small), 20 Christmas gem acquisitions
+  (200 CS + Small), and 3 Present openings OR 15 PP OR 300 genuine rolls
+  (250 CS + Small). All three: 500 CS + Festive.
+- Weekly: 2,000 genuine rolls, 125 Christmas gem acquisitions, 20 ordinary
+  Presents opened, 7,500 gross CS earned, and 12 daily quests completed. Any
+  four: 2,500 CS + Large; all five additionally: 1,000 CS + Festive.
+- Daily reset: 08:00 SGT. Weekly reset: Tuesday 08:00 SGT. Fixed quests; no
+  streaks, rerolls, unique-gem substitution or displayed-batch counting.
+- Story II: 50 PP, at least one Wave II discovery and three daily completions
+  after unlock. Story III: 500 genuine rolls after unlock as the Aurora fallback.
+  Story IV: 5,000 CS from gem exchanges after unlock. Story V bundle: 2,500 CS,
+  two Festive and one Large, plus the Christmas Day collectible. These values
+  are in the server manifest; Story chapter gameplay remains unfinished.
+- Polish is the existing Peppermint effect: 1.35× Mutation Luck for 150 genuine
+  rolls. Utility bundle: two Cocoa, two Cookies and two Rations.
+- Golden-only pool: Golden Snowfall, Gilded Holly, Golden Workshop and Present
+  of Gold; uniformly select an unowned item, then 5,000 CS after all four.
+- Emergency Supply: 10,000 CS, three purchases total, from Dec 24 08:00;
+  each grants 1,000 SF, 40 Ornaments, 8 Lights, five Small and two Festive.
+  No random exclusive rewards. It becomes purchasable only when the overall
+  event release gate is eventually enabled.
+
+The migration extends the audited `record_server_roll` and `commit_jackpot_loss`
+functions locally. Successful primary rolls and genuine House Edge losses feed
+quest progress in their existing transactions; duplicate loss commits do not
+count twice. The Edge Function stays byte-for-byte unchanged, and no per-subroll
+RPC was added. Lifetime numbering uses `total_rolls`, not equipment counts.
+
+Balance check: the extra interval adds one daily set, one boosted hour and 40
+Aurora minutes. Approved Aurora exposure is 10h40m total versus the original
+profile's 20h. Final partial week has only nine available daily quests, so its
+12-daily objective/all-five bonus cannot finish; the approved any-four bonus
+remains reachable. Fixed targets were not silently prorated.
 
 ## Validation completed
 
 - Full existing `npm test` suite passed.
-- `npm run test:christmas`: 14 rule/envelope tests plus authenticated handler and
-  PGlite migration/permission/transaction tests passed.
+- `npm run test:christmas`: 23 rule/envelope/quest tests plus authenticated handler
+  and both PGlite migration/permission/transaction suites passed. SQL/JS progress
+  parity, repeated acquisitions, House Edge losses, rollback, reset boundaries
+  and multiple randomized schedule seeds are covered.
 - Existing cutscene reliability, global random-event, optimized roll-handler,
   Phase 5 hot-path, navigation Phase 2 and responsive foundation checks passed.
 - Hub browser fixtures at 390, 768 and 1440 pixels: six tabs, keyboard navigation,
   no page overflow, committed-response-loss retry without duplicate upgrade,
   and archive action disabling passed. These use fixtures, not deployed Christmas.
 - `tools/christmas-2026-sensitivity.mjs` reads the backend cooldown/batch formulas.
-  Its report does not reproduce simulation #2 completion probabilities: original
-  attendance profiles and confirmed seasonal schedules are unavailable.
+  Its report includes the approved schedule and supplied aggregate attendance
+  profiles. It does not reproduce simulation #2 completion rates without the
+  original loadouts, exact attendance timestamps, RNG seeds and simulation code.
 
 ## Deployment
 
