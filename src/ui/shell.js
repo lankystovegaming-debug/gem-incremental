@@ -534,7 +534,9 @@ export function mountShell({ page, base = "./" }) {
   mountReferralPromo(base);
 
   // Optional global-cash side counter (off by default; toggled in Settings).
-  initGlobalCash();
+  // Keep combat unobstructed, without changing the player's saved preference.
+  // Do not initialize the widget or its polling/settings listeners here.
+  if (page !== "dungeons" && page !== "dungeon") initGlobalCash();
 
 
   const walletPill = header.querySelector("#shellWallet");
