@@ -1,11 +1,6 @@
 {
-  "source": "Read-only Supabase igrddscmrdrrwtvyspbf private_feature_gems on 2026-10-14; availability_mode=always, no required event, not special. No player data.",
+  "source": "Read-only Supabase igrddscmrdrrwtvyspbf private_feature_gems on 2026-10-14: enabled, always available, no required event, no sourceExclusive/deepcore-stage requirement; backend sort_order then rarity order. No player data.",
   "catalog": [
-    {
-      "name": "Incandescity",
-      "rarity": 2000000000,
-      "affectedByLuck": true
-    },
     {
       "name": "Reminiscite",
       "rarity": 1987654321,
@@ -49,6 +44,11 @@
     {
       "name": "sutoronchiumushahouhoakinseki",
       "rarity": 750000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chronofracture",
+      "rarity": 275000000,
       "affectedByLuck": true
     },
     {
@@ -102,11 +102,6 @@
       "affectedByLuck": true
     },
     {
-      "name": "Parallax",
-      "rarity": 350000000,
-      "affectedByLuck": true
-    },
-    {
       "name": "Hapkeite",
       "rarity": 330000000,
       "affectedByLuck": true
@@ -117,13 +112,13 @@
       "affectedByLuck": true
     },
     {
-      "name": "Thalassa",
-      "rarity": 311228191,
+      "name": "Parallax",
+      "rarity": 350000000,
       "affectedByLuck": true
     },
     {
-      "name": "300",
-      "rarity": 300000000,
+      "name": "Thalassa",
+      "rarity": 311228191,
       "affectedByLuck": true
     },
     {
@@ -132,13 +127,13 @@
       "affectedByLuck": true
     },
     {
-      "name": "Seraphite",
-      "rarity": 277777777,
+      "name": "300",
+      "rarity": 300000000,
       "affectedByLuck": true
     },
     {
-      "name": "Chronofracture",
-      "rarity": 275000000,
+      "name": "Seraphite",
+      "rarity": 277777777,
       "affectedByLuck": true
     },
     {
@@ -152,11 +147,6 @@
       "affectedByLuck": true
     },
     {
-      "name": "Chromaflux",
-      "rarity": 225000000,
-      "affectedByLuck": true
-    },
-    {
       "name": "Allendeite",
       "rarity": 220000000,
       "affectedByLuck": true
@@ -164,6 +154,11 @@
     {
       "name": "Ascendentite",
       "rarity": 200000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Chromaflux",
+      "rarity": 225000000,
       "affectedByLuck": true
     },
     {
@@ -207,6 +202,11 @@
       "affectedByLuck": true
     },
     {
+      "name": "Incandescity",
+      "rarity": 2000000000,
+      "affectedByLuck": true
+    },
+    {
       "name": "Stishovite",
       "rarity": 115000000,
       "affectedByLuck": true
@@ -227,14 +227,14 @@
       "affectedByLuck": true
     },
     {
-      "name": "Potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite",
-      "rarity": 100000000,
-      "affectedByLuck": true
-    },
-    {
       "name": "touch grass",
       "rarity": 100000000,
       "affectedByLuck": false
+    },
+    {
+      "name": "Potassic-magnesio-fluoro-chloro-potassic-ferri-magnesiotaramite-potassic-chloro-ferri-magnesiotaramite",
+      "rarity": 100000000,
+      "affectedByLuck": true
     },
     {
       "name": "Davemaoite",
@@ -252,18 +252,8 @@
       "affectedByLuck": true
     },
     {
-      "name": "Verity",
-      "rarity": 77000000,
-      "affectedByLuck": true
-    },
-    {
       "name": "Bridgmanite",
       "rarity": 73000000,
-      "affectedByLuck": true
-    },
-    {
-      "name": "Långbanshyttanite",
-      "rarity": 65000000,
       "affectedByLuck": true
     },
     {
@@ -282,18 +272,23 @@
       "affectedByLuck": true
     },
     {
+      "name": "Verity",
+      "rarity": 77000000,
+      "affectedByLuck": true
+    },
+    {
       "name": "Redcanyonite",
       "rarity": 54000000,
       "affectedByLuck": true
     },
     {
-      "name": "Calmarite",
+      "name": "Carmeltazite",
       "rarity": 50000000,
       "affectedByLuck": true
     },
     {
-      "name": "Carmeltazite",
-      "rarity": 50000000,
+      "name": "Långbanshyttanite",
+      "rarity": 65000000,
       "affectedByLuck": true
     },
     {
@@ -307,17 +302,17 @@
       "affectedByLuck": true
     },
     {
+      "name": "Calmarite",
+      "rarity": 50000000,
+      "affectedByLuck": true
+    },
+    {
       "name": "Kochkarite",
       "rarity": 38000000,
       "affectedByLuck": true
     },
     {
       "name": "Haggertyite",
-      "rarity": 35000000,
-      "affectedByLuck": true
-    },
-    {
-      "name": "Kuannersuite-(Ce)",
       "rarity": 35000000,
       "affectedByLuck": true
     },
@@ -334,6 +329,11 @@
     {
       "name": "Zigrasite",
       "rarity": 29000000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Kuannersuite-(Ce)",
+      "rarity": 35000000,
       "affectedByLuck": true
     },
     {
@@ -392,11 +392,6 @@
       "affectedByLuck": true
     },
     {
-      "name": "Neptunite",
-      "rarity": 12500000,
-      "affectedByLuck": true
-    },
-    {
       "name": "Peatite-(Y)",
       "rarity": 12500000,
       "affectedByLuck": true
@@ -404,6 +399,11 @@
     {
       "name": "Londonite",
       "rarity": 11500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Neptunite",
+      "rarity": 12500000,
       "affectedByLuck": true
     },
     {
@@ -432,13 +432,13 @@
       "affectedByLuck": true
     },
     {
-      "name": "Nabesite",
-      "rarity": 8250000,
+      "name": "Presolar Moissanite",
+      "rarity": 8000000,
       "affectedByLuck": true
     },
     {
-      "name": "Presolar Moissanite",
-      "rarity": 8000000,
+      "name": "Nabesite",
+      "rarity": 8250000,
       "affectedByLuck": true
     },
     {
@@ -617,6 +617,11 @@
       "affectedByLuck": true
     },
     {
+      "name": "Rainbow Lattice Sunstone",
+      "rarity": 850000,
+      "affectedByLuck": true
+    },
+    {
       "name": "cbf detected, loser!",
       "rarity": 1000000,
       "affectedByLuck": true
@@ -643,11 +648,6 @@
     },
     {
       "name": "Piemontite",
-      "rarity": 850000,
-      "affectedByLuck": true
-    },
-    {
-      "name": "Rainbow Lattice Sunstone",
       "rarity": 850000,
       "affectedByLuck": true
     },
@@ -704,6 +704,11 @@
     {
       "name": "focus.",
       "rarity": 500000,
+      "affectedByLuck": true
+    },
+    {
+      "name": "Uvarovite",
+      "rarity": 18000,
       "affectedByLuck": true
     },
     {
@@ -922,11 +927,6 @@
       "affectedByLuck": true
     },
     {
-      "name": "Uvarovite",
-      "rarity": 18000,
-      "affectedByLuck": true
-    },
-    {
       "name": "Amblygonite",
       "rarity": 17500,
       "affectedByLuck": true
@@ -1132,6 +1132,11 @@
       "affectedByLuck": true
     },
     {
+      "name": "Jade",
+      "rarity": 125,
+      "affectedByLuck": true
+    },
+    {
       "name": "Moonstone",
       "rarity": 750,
       "affectedByLuck": true
@@ -1184,11 +1189,6 @@
     {
       "name": "Topaz",
       "rarity": 150,
-      "affectedByLuck": true
-    },
-    {
-      "name": "Jade",
-      "rarity": 125,
       "affectedByLuck": true
     },
     {
