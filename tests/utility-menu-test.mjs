@@ -9,7 +9,7 @@ const updates=fs.readFileSync(new URL("../updates/index.html",import.meta.url),"
 
 assert.match(shell,/shellMoreButton|shellMoreMenu|Utility links are now mounted in the top bar/);
 assert.match(shell,/shellMoreAnchor|shellMoreButton/);
-assert.match(shell,/mountHowToPlay/);
+assert.match(shell,/mountTour/);
 assert.match(shell,/shellMoreMenu|Utility links/);
 assert.match(onboarding,/howtoReady|How to play/i);
 assert.match(upcoming,/sections|utility|More/i);

@@ -15,27 +15,44 @@ export function mountMobileSheet({
   trigger,
   closeButton,
   backdrop,
-  breakpoint = "(max-width: 720px)"
+  breakpoint = "(max-width: 720px)",
+  modalOnly = false
 }) {
   if (!sheet || !trigger || !backdrop) return null;
 
   const media = window.matchMedia(breakpoint);
   let open = false;
+  if (modalOnly) sheet.hidden = true;
+
+  function syncBodyLock() {
+    document.body.classList.toggle(
+      "mobile-sheet-open",
+      Boolean(document.querySelector(".mobile-sheet.is-open"))
+    );
+  }
 
   function focusableElements() {
     return [...sheet.querySelectorAll(FOCUSABLE)].filter((element) => {
-      return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+      const style = window.getComputedStyle(element);
+      return !element.hidden
+        && element.getAttribute("aria-hidden") !== "true"
+        && style.display !== "none"
+        && style.visibility !== "hidden";
     });
   }
 
   function setOpen(nextOpen, { restoreFocus = true } = {}) {
     open = Boolean(nextOpen && media.matches);
     sheet.classList.toggle("is-open", open);
+    if (modalOnly) sheet.hidden = !open;
     trigger.setAttribute("aria-expanded", String(open));
     backdrop.hidden = !open;
-    document.body.classList.toggle("mobile-sheet-open", open);
+    syncBodyLock();
 
     if (open) {
+      document.dispatchEvent(new CustomEvent("mobile-sheet:opening", {
+        detail: { sheet }
+      }));
       sheet.setAttribute("role", "dialog");
       sheet.setAttribute("aria-modal", "true");
       (closeButton ?? focusableElements()[0])?.focus({ preventScroll: true });
@@ -43,6 +60,12 @@ export function mountMobileSheet({
       sheet.removeAttribute("role");
       sheet.removeAttribute("aria-modal");
       if (restoreFocus && media.matches) trigger.focus({ preventScroll: true });
+    }
+  }
+
+  function onOtherSheetOpening(event) {
+    if (open && event.detail?.sheet !== sheet) {
+      setOpen(false, { restoreFocus: false });
     }
   }
 
@@ -74,6 +97,7 @@ export function mountMobileSheet({
   closeButton?.addEventListener("click", () => setOpen(false));
   backdrop.addEventListener("click", () => setOpen(false));
   document.addEventListener("keydown", onKeyDown);
+  document.addEventListener("mobile-sheet:opening", onOtherSheetOpening);
   const onBreakpointChange = () => {
     if (!media.matches && open) setOpen(false, { restoreFocus: false });
   };

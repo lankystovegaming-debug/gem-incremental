@@ -46,6 +46,7 @@ import { getSettings, onSettingsChange } from "./settings.js";
 import { initGlobalCutscenes } from "./globalCutscenes.js";
 import { mountMonthTwoAnniversary } from "./monthTwoAnniversary.js";
 import { mountMaintenanceMode } from "./maintenanceMode.js";
+import { mountMobileSheet } from "./mobileSheet.js";
 
 
 // =========================================================
@@ -107,6 +108,8 @@ const PAGES = [
 
 const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
 const DEFAULT_TOP_BAR_IDS = [...CORE_PAGE_IDS];
+const DESKTOP_PRIMARY_LIMIT = 7;
+const MOBILE_PRIMARY_LIMIT = 4;
 let enabledSectionMap = new Map();
 let shellIsAdmin = false;
 
@@ -128,7 +131,7 @@ function isNavigationPageAvailable(item, settings) {
   return true;
 }
 
-function getNavigationPages(){
+function getConfiguredNavigationPages(){
   const settings=getSettings();
   const configured=Array.isArray(settings.topBarMain) && settings.topBarMain.length ? settings.topBarMain : DEFAULT_TOP_BAR_IDS;
   const wanted=new Set(configured);
@@ -136,6 +139,12 @@ function getNavigationPages(){
   return PAGES
     .filter(item=>item.id!=="limited-events" && !item.settingGated && wanted.has(item.id) && isNavigationPageAvailable(item,settings))
     .map(configuredNavigationPage);
+}
+function getNavigationPages(){
+  return getConfiguredNavigationPages().slice(0, DESKTOP_PRIMARY_LIMIT);
+}
+function getMobileNavigationPages(){
+  return getConfiguredNavigationPages().slice(0, MOBILE_PRIMARY_LIMIT);
 }
 function getExplorePages(){
   const settings=getSettings();
@@ -145,11 +154,26 @@ function getExplorePages(){
     .filter(item=>!main.has(item.id) || item.id==="limited-events")
     .map(configuredNavigationPage);
 }
+function getMobileMorePages(){
+  const settings=getSettings();
+  const main=new Set(getMobileNavigationPages().map(x=>x.id));
+  return PAGES
+    .filter(item=>isNavigationPageAvailable(item,settings))
+    .filter(item=>!main.has(item.id))
+    .map(configuredNavigationPage);
+}
 
 // Explore stays useful as the game grows by grouping related destinations
 // instead of presenting one long, flat list. Feature-switched pages use the
 // same groups when they are enabled later in mountShell().
 const EXPLORE_GROUPS = [
+  {
+    id: "play",
+    label: "Play",
+    icon: icons.dice,
+    pageIds: ["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"],
+    defaultOpen: true
+  },
   {
     id: "indexes",
     label: "Indexes",
@@ -161,25 +185,29 @@ const EXPLORE_GROUPS = [
     id: "progress",
     label: "Progress",
     icon: icons.branch || icons.trophy,
-    pageIds: ["achievements", "quests", "bounties", "seasons", "research-tree"]
+    pageIds: ["achievements", "quests", "bounties", "seasons", "research-tree"],
+    defaultOpen: true
   },
   {
     id: "community",
     label: "Community",
     icon: icons.users,
-    pageIds: ["leaderboards", "roll-counts", "month-two", "month-one", "guilds", "wars", "pvp", "world-bosses"]
+    pageIds: ["leaderboards", "roll-counts", "month-two", "month-one", "guilds", "wars", "pvp", "world-bosses"],
+    defaultOpen: true
   },
   {
     id: "activities",
     label: "Activities",
     icon: icons.dice,
-    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events", "limited-events"]
+    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events", "limited-events"],
+    defaultOpen: true
   },
   {
     id: "labs-economy",
     label: "Labs & Economy",
     icon: icons.flask || icons.coins,
-    pageIds: ["workbench", "bank", "lottery", "gem-fusion", "enchanting-lab", "merchant-caravan", "global-cash-graph"]
+    pageIds: ["workbench", "bank", "lottery", "gem-fusion", "enchanting-lab", "merchant-caravan", "global-cash-graph"],
+    defaultOpen: true
   },
   {
     id: "store",
@@ -322,6 +350,8 @@ export function mountShell({ page, base = "./" }) {
           class="nav__link topbar-explore__button"
           id="shellExploreButton"
           type="button"
+          aria-label="Explore destinations"
+          title="Explore destinations"
           aria-haspopup="true"
           aria-expanded="false"
           aria-controls="shellExploreMenu"
@@ -350,18 +380,19 @@ export function mountShell({ page, base = "./" }) {
             class="btn btn--ghost topbar-more__button"
             id="shellMoreButton"
             type="button"
+            aria-label="Utilities"
+            title="Utilities"
             aria-haspopup="true"
             aria-expanded="false"
             aria-controls="shellMoreMenu"
           >
             ${icons.sparkle}
-            <span>More</span>
+            <span>Utilities</span>
             ${icons.chevronDown || ""}
           </button>
           <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
             <div class="menu__label">Quick links</div>
             <a class="menu__item" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
-            <a class="menu__item" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
             <button class="menu__item shell-quick-nav-trigger" type="button" data-more-action="quicknav">
               ${icons.compass || icons.sparkle}<span>Quick navigation</span><kbd>Ctrl K</kbd>
             </button>
@@ -382,7 +413,7 @@ export function mountShell({ page, base = "./" }) {
         </div>
 
         <a
-          class="btn btn--ghost btn--icon"
+          class="btn btn--ghost btn--icon topbar-settings"
           href="${base}settings/"
           title="Settings"
           aria-label="Settings"
@@ -465,17 +496,121 @@ export function mountShell({ page, base = "./" }) {
 
   tabbar.className = "tabbar";
   tabbar.setAttribute("aria-label", "Primary");
-
-  tabbar.innerHTML = getNavigationPages().map((item) =>
-    navLink(item, page, base, "tabbar__link", true)
-  ).join("");
+  tabbar.innerHTML = `
+    <div class="tabbar__destinations" data-mobile-primary></div>
+    <button
+      class="tabbar__link tabbar__more"
+      id="mobileNavigationTrigger"
+      type="button"
+      aria-label="More destinations"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-controls="mobileNavigationSheet"
+      data-mobile-navigation-trigger
+    >
+      ${icons.compass || icons.sparkle}
+      <span>More</span>
+    </button>
+  `;
 
   document.body.appendChild(tabbar);
+
+  const mobileNavigationTrigger = tabbar.querySelector("#mobileNavigationTrigger");
+  const mobileNavigationBackdrop = document.createElement("button");
+  mobileNavigationBackdrop.className = "mobile-navigation-backdrop mobile-sheet-backdrop";
+  mobileNavigationBackdrop.type = "button";
+  mobileNavigationBackdrop.hidden = true;
+  mobileNavigationBackdrop.setAttribute("aria-label", "Close navigation");
+
+  const mobileNavigationSheet = document.createElement("section");
+  mobileNavigationSheet.className = "mobile-navigation-sheet mobile-sheet";
+  mobileNavigationSheet.id = "mobileNavigationSheet";
+  mobileNavigationSheet.setAttribute("aria-labelledby", "mobileNavigationTitle");
+  mobileNavigationSheet.innerHTML = `
+    <div class="mobile-sheet__header mobile-navigation-sheet__header">
+      <div>
+        <span class="mobile-navigation-sheet__eyebrow">Navigation</span>
+        <h2 id="mobileNavigationTitle">Explore Gem Incremental</h2>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-mobile-navigation-close aria-label="Close navigation">×</button>
+    </div>
+    <label class="mobile-navigation-search" for="mobileNavigationSearch">
+      ${icons.compass || icons.sparkle}
+      <span class="visually-hidden">Find a destination</span>
+      <input id="mobileNavigationSearch" type="search" autocomplete="off" placeholder="Find a destination…">
+    </label>
+    <div class="mobile-navigation-groups" data-mobile-navigation-groups></div>
+    <section class="mobile-navigation-utilities" aria-labelledby="mobileUtilitiesTitle">
+      <h3 id="mobileUtilitiesTitle">Settings &amp; help</h3>
+      <div class="mobile-navigation-grid">
+        <a class="mobile-navigation-row" href="${base}settings/" ${page === "settings" ? 'aria-current="page"' : ""}>${icons.settings}<span>Settings</span></a>
+        <a class="mobile-navigation-row" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
+        <a class="mobile-navigation-row" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
+        <button class="mobile-navigation-row" type="button" data-more-action="howto">${icons.book}<span>How to play</span></button>
+        <button class="mobile-navigation-row" type="button" data-more-action="console"><span aria-hidden="true">⌨</span><span>Player console</span></button>
+        <a class="mobile-navigation-row" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
+        <a class="mobile-navigation-row" href="${base}codes/">${icons.sparkle}<span>Codes</span></a>
+        <a class="mobile-navigation-row" href="${base}updates/">${icons.sparkle}<span>Update log</span></a>
+        <a class="mobile-navigation-row" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
+        <a class="mobile-navigation-row" href="${base}support/">${icons.heart}<span>Support the game</span></a>
+      </div>
+    </section>
+    <p class="mobile-navigation-empty" data-mobile-navigation-empty hidden>No destinations match that search.</p>
+  `;
+  document.body.append(mobileNavigationBackdrop, mobileNavigationSheet);
+
+  const mobileNavigationController = mountMobileSheet({
+    sheet: mobileNavigationSheet,
+    trigger: mobileNavigationTrigger,
+    closeButton: mobileNavigationSheet.querySelector("[data-mobile-navigation-close]"),
+    backdrop: mobileNavigationBackdrop,
+    breakpoint: "(max-width: 780px)",
+    modalOnly: true
+  });
+
+  const renderMobileNavigation = () => {
+    const primary = getMobileNavigationPages();
+    const primaryMount = tabbar.querySelector("[data-mobile-primary]");
+    if (primaryMount) {
+      primaryMount.innerHTML = primary.map((item) => navLink(item, page, base, "tabbar__link", true)).join("");
+    }
+    const moreActive = getMobileMorePages().some((item) => item.id === page || item.match?.includes(page))
+      || ["settings", "info", "referral", "codes", "updates", "bugs", "support"].includes(page);
+    mobileNavigationTrigger?.toggleAttribute("aria-current", moreActive);
+    const groupsMount = mobileNavigationSheet.querySelector("[data-mobile-navigation-groups]");
+    if (groupsMount) groupsMount.innerHTML = renderMobileNavigationGroups(getMobileMorePages(), page, base);
+  };
+
+  renderMobileNavigation();
+
+  const mobileNavigationSearch = mobileNavigationSheet.querySelector("#mobileNavigationSearch");
+  mobileNavigationSearch?.addEventListener("input", () => {
+    const term = mobileNavigationSearch.value.trim().toLocaleLowerCase();
+    let visibleRows = 0;
+    mobileNavigationSheet.querySelectorAll("[data-mobile-navigation-row]").forEach((row) => {
+      const visible = !term || row.dataset.searchText.includes(term);
+      row.hidden = !visible;
+      if (visible) visibleRows += 1;
+    });
+    mobileNavigationSheet.querySelectorAll("[data-mobile-navigation-group]").forEach((group) => {
+      group.hidden = !group.querySelector("[data-mobile-navigation-row]:not([hidden])");
+    });
+    const empty = mobileNavigationSheet.querySelector("[data-mobile-navigation-empty]");
+    if (empty) empty.hidden = visibleRows > 0;
+  });
+
+  mobileNavigationSheet.addEventListener("click", (event) => {
+    if (event.target.closest("a")) mobileNavigationController?.close();
+    if (event.target.closest('[data-more-action="console"]')) {
+      mobileNavigationController?.close();
+      togglePlayerCli();
+    }
+  });
 
   const rerenderPrimaryNavigation=()=>{
     const nav=header.querySelector(".nav");
     if(nav) nav.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"nav__link")).join("");
-    tabbar.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"tabbar__link",true)).join("");
+    renderMobileNavigation();
     // The menu is portaled to <body> later in mountShell, so settings and
     // feature updates must resolve it from the document rather than header.
     const exploreMenu=document.getElementById("shellExploreMenu");
@@ -582,6 +717,7 @@ export function mountShell({ page, base = "./" }) {
       const width = Math.max(270, exploreMenu.offsetWidth || 270);
       exploreMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
       exploreMenu.style.top = `${rect.bottom + 8}px`;
+      requestAnimationFrame(() => exploreMenu.querySelector("summary, a, button")?.focus({ preventScroll: true }));
     }
   };
 
@@ -609,7 +745,10 @@ export function mountShell({ page, base = "./" }) {
     const open = moreMenu.hidden;
     moreMenu.hidden = !open;
     moreButton?.setAttribute("aria-expanded", String(open));
-    if (open) closeExplore();
+    if (open) {
+      closeExplore();
+      requestAnimationFrame(() => moreMenu.querySelector("a, button")?.focus({ preventScroll: true }));
+    }
   };
 
   exploreButton?.addEventListener("click", (event) => {
@@ -644,8 +783,12 @@ export function mountShell({ page, base = "./" }) {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      const restoreExplore = exploreMenu && !exploreMenu.hidden;
+      const restoreMore = moreMenu && !moreMenu.hidden;
       closeExplore();
       closeMore();
+      if (restoreExplore) exploreButton?.focus({ preventScroll: true });
+      else if (restoreMore) moreButton?.focus({ preventScroll: true });
     }
   });
 
@@ -1897,6 +2040,39 @@ function menuNavLink(item, activePage, base) {
   `;
 }
 
+function renderMobileNavigationGroups(items, activePage, base) {
+  return EXPLORE_GROUPS.map((group) => {
+    const groupItems = items.filter((item) => exploreGroupFor(item)?.id === group.id);
+    if (!groupItems.length) return "";
+
+    return `
+      <section class="mobile-navigation-group" data-mobile-navigation-group>
+        <h3>${group.icon}<span>${escapeHtml(group.label)}</span></h3>
+        <div class="mobile-navigation-grid">
+          ${groupItems.map((item) => {
+            const active = item.id === activePage || item.match?.includes(activePage);
+            const label = escapeHtml(item.label);
+            const searchText = escapeHtml(`${item.label} ${item.short} ${group.label}`.toLocaleLowerCase());
+            return `
+              <a
+                class="mobile-navigation-row"
+                href="${base}${item.href}"
+                data-mobile-navigation-row
+                data-search-text="${searchText}"
+                ${active ? 'aria-current="page"' : ""}
+              >
+                ${item.icon}
+                <span>${label}</span>
+                ${active ? '<small>Here</small>' : ""}
+              </a>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 // =========================================================
 // QUICK NAVIGATION
 //
@@ -1923,11 +2099,15 @@ function mountQuickNavigation({ base, page }) {
   let searchInput = null;
   let activeIndex = 0;
   let matching = [];
+  let returnFocus = null;
 
   const close = () => {
     palette?.remove();
     palette = null;
     searchInput = null;
+    document.body.classList.remove("quick-nav-open");
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    returnFocus = null;
   };
 
   const drawResults = () => {
@@ -1960,6 +2140,7 @@ function mountQuickNavigation({ base, page }) {
       searchInput?.focus();
       return;
     }
+    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     activeIndex = 0;
     palette = document.createElement("div");
     palette.className = "quick-nav";
@@ -1980,6 +2161,7 @@ function mountQuickNavigation({ base, page }) {
       </section>
     `;
     document.body.append(palette);
+    document.body.classList.add("quick-nav-open");
     searchInput = palette.querySelector("#quickNavSearch");
     drawResults();
     searchInput?.focus();
@@ -2012,8 +2194,29 @@ function mountQuickNavigation({ base, page }) {
     });
   };
 
-  document.querySelector('[data-more-action="quicknav"]')?.addEventListener("click", open);
+  document.querySelectorAll('[data-more-action="quicknav"]').forEach((trigger) => {
+    trigger.addEventListener("click", open);
+  });
   document.addEventListener("keydown", (event) => {
+    if (palette && event.key === "Tab") {
+      const focusable = [...palette.querySelectorAll('input, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (first && event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (last && !event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+    if (palette && event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       event.preventDefault();
       open();

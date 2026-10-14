@@ -74,7 +74,7 @@ function renderNavigationCustomizer(){
   mount.innerHTML=NAV_ITEMS.map(([id,label])=>{
     const forcedExplore=id==="limited-events";
     const checked=selected.has(id)&&!forcedExplore;
-    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${escapeHtml(label)}</span><span class="setting__sub">${forcedExplore?"Always in Explore":"Main top bar"}</span></span><span class="setting__control"><input type="checkbox" data-topbar-nav="${id}" ${checked?"checked":""} ${forcedExplore?"disabled":""}></span></label>`;
+    return `<label class="setting switch"><span class="setting__text"><span class="setting__title">${escapeHtml(label)}</span><span class="setting__sub">${forcedExplore?"Always in Explore":"Prioritise in navigation"}</span></span><span class="setting__control"><input type="checkbox" data-topbar-nav="${id}" ${checked?"checked":""} ${forcedExplore?"disabled":""}></span></label>`;
   }).join("");
   mount.querySelectorAll("[data-topbar-nav]").forEach(cb=>cb.addEventListener("change",async()=>{
     const main=[...mount.querySelectorAll("[data-topbar-nav]:checked")].map(x=>x.dataset.topbarNav);

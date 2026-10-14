@@ -278,11 +278,11 @@ export function startAccountPrompt(base = "./") {
 // first-run experience on the Roll page: account prompt for guests, then the
 // full walkthrough once they have an account.
 export function mountTour({ base = "./", page = "" } = {}) {
-  const action = document.querySelector('[data-more-action="howto"]');
-  if (action && !action.dataset.tourWired) {
+  document.querySelectorAll('[data-more-action="howto"]').forEach((action) => {
+    if (action.dataset.tourWired) return;
     action.dataset.tourWired = "1";
     action.addEventListener("click", () => startTour(base));
-  }
+  });
 
   // Auto-onboarding only runs on the Roll page (where every step resolves)
   // and only until the player has finished the walkthrough once.

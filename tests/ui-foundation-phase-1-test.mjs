@@ -42,7 +42,9 @@ assert.match(styles, /:where\(\.menu, \.popover, \.dropdown\)[\s\S]*?max-height:
 assert.match(mobileSheet, /export function mountMobileSheet/);
 assert.match(mobileSheet, /event\.key === "Escape"/);
 assert.match(mobileSheet, /event\.key !== "Tab"/);
-assert.match(mobileSheet, /document\.body\.classList\.toggle\("mobile-sheet-open", open\)/);
+assert.match(mobileSheet, /document\.body\.classList\.toggle\([\s\S]*?"mobile-sheet-open"/);
+assert.match(mobileSheet, /mobile-sheet:opening/);
+assert.match(mobileSheet, /document\.querySelector\("\.mobile-sheet\.is-open"\)/);
 assert.match(inventoryJs, /mountMobileSheet\(\{/);
 assert.doesNotMatch(inventoryCss, /\.inventory-filter-sheet\s*\{[\s\S]*?position:\s*fixed/);
 
