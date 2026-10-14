@@ -154,9 +154,9 @@ export function chanceLabelForRollResult(
   if (exactText && /^\d+$/.test(String(exactText))) {
     return formatExactDenominator(BigInt(String(exactText)));
   }
-  const exact = exactChanceDenominator(gemOrName, mutationIds);
-  if (exact != null) return formatExactDenominator(exact);
   const denominator = Number(result?.effectiveRarity ?? result?.effective_rarity);
   if (Number.isFinite(denominator) && denominator > 0) return formatChance(1 / denominator);
+  const exact = exactChanceDenominator(gemOrName, mutationIds);
+  if (exact != null) return formatExactDenominator(exact);
   return chanceLabelForResult(gemOrName, mutationIds);
 }

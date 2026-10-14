@@ -14,6 +14,7 @@ for (const icon of ["quest", "users", "island", "castle", "swords", "skull", "va
   assert.match(icons, new RegExp(`\\b${icon}: svg`));
 }
 assert.match(shell, /function configuredNavigationPage\(item\)[\s\S]*?\.\.\.item/);
+assert.match(shell, /\$\{item\.icon\}/);
 assert.doesNotMatch(shell, /section\.icon\s*\?/);
 
 // ── Daily Spin is fully removed ───────────────────────────────────────────

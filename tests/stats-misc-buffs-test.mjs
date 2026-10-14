@@ -31,7 +31,11 @@ assert.match(migration, /security definer/i);
 assert.match(migration, /set search_path = ''/i);
 assert.match(migration, /revoke all on function public\.get_current_misc_buff_modifiers\(\) from public, anon/i);
 assert.match(migration, /grant execute on function public\.get_current_misc_buff_modifiers\(\) to authenticated, service_role/i);
-assert.match(roll, /Run independent post-commit systems concurrently/);
+assert.match(roll, /const backgroundPostCommitPromise = checkedBackgroundPromise/);
+assert.match(
+  roll,
+  /registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/
+);
 assert.match(roll, /await Promise\.all\(\[/);
 
 console.log("Stats miscellaneous buff card checks passed.");

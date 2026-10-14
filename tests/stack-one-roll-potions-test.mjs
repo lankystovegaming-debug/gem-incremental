@@ -45,8 +45,9 @@ assert.match(migration, /grant execute on function public\.spend_one_roll_charge
 assert.match(migration, /revoke execute on function public\.activate_one_roll_potion\(text\) from public, anon/);
 assert.match(migration, /revoke execute on function public\.spend_one_roll_charge\(uuid\) from public, anon, authenticated/);
 
-// The roll edge function spends one charge (not a blanket delete) after commit.
-assert.match(roll, /"spend_one_roll_charge"/);
+// The roll edge function asks the optimized post-commit pipeline to spend one
+// charge (not a blanket delete).
+assert.match(roll, /consumeOneRollCharge/);
 assert.doesNotMatch(roll, /"player_one_roll_boosts"\s*\)\s*\.delete\(\)/);
 assert.match(roll, /const oneRollBoost = rollContext\.oneRollBoost/);
 assert.match(hotPathMigration, /select effect_value, consumable_id, charges from public\.player_one_roll_boosts/);

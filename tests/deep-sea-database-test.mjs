@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 
-const db=new PGlite();
+export const db=new PGlite();
 await db.exec(await readFile(new URL("./fixtures/cosmetics-live-schema.sql",import.meta.url),"utf8"));
 await db.exec(`
 alter table public.private_feature_gems add constraint private_feature_gems_name_key unique(name);

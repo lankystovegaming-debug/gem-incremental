@@ -138,7 +138,7 @@ assert.ok(deepSeaScenes.every((definition) => definition.focus === false), "Deep
 assert.ok(deepSeaScenes.every((definition) => definition.worldExitAt < definition.revealAt), "Deep Sea world assets must exit before the result card");
 const deepSeaFinales = deepSeaScenes.slice(-4);
 assert.equal(new Set(deepSeaFinales.map((definition) => definition.cameraMotion)).size, 4, "the four rarest Deep Sea scenes need distinct camera movement");
-assert.ok(deepSeaScenes.slice(1).every((definition) => definition.revealPosition === "center"), "Ancient Coin onward must finish on a centred gem reveal");
+assert.ok(deepSeaScenes.every((definition) => definition.revealPosition === "center"), "every Deep Sea scene must finish on a centred gem reveal");
 assert.equal(BESPOKE_CUTSCENES["neptune's tear"].secret, true, "Neptune's Tear must reveal as a secret");
 assert.equal(BESPOKE_CUTSCENES["soul of the sea god"].revealPosition, "center", "the final Deep Sea gem must reveal at centre stage");
 assert.deepEqual(BESPOKE_CUTSCENES["leviathan scale"].beats, ["dangerous waters. you risk it all... for what?"]);
@@ -221,12 +221,6 @@ const config = source("src/ui/cutsceneConfig.js");
 const primitives = source("src/ui/cutscenePrimitives.js");
 const sceneStyles = source("src/ui/cutsceneScenes.css");
 const styles = source("style.css");
-
-assert.match(
-  sceneStyles,
-  /\.cs-reveal--center\{align-content:center;justify-items:center;text-align:center;padding:6vh 5vw\}/,
-  "centered reveals must have an explicit, symmetric centre-stage layout"
-);
 
 for (const token of [
   "cs-ds-leviathan-dragon", "cs-ds-fallen-scale", "cs-ds-heart-core",

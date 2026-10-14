@@ -48,7 +48,11 @@ for (const tier of [10, 25, 50]) {
 
 assert.match(migration, /revoke all on function public\.apply_expedition_research_discount/);
 assert.match(migration, /to service_role/);
-assert.match(roll, /Run independent post-commit systems concurrently/);
+assert.match(roll, /const backgroundPostCommitPromise = checkedBackgroundPromise/);
+assert.match(
+  roll,
+  /registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/
+);
 assert.match(roll, /await Promise\.all\(\[/);
 
 console.log("Current expedition research and season achievement checks passed.");

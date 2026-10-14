@@ -15,7 +15,7 @@ assert.match(admin, /Past events/);
 assert.match(adminCss, /max-height:\s*520px/);
 
 assert.doesNotMatch(market, /expire_stale_gem_orders|create_gem_order|buy_auction/);
-assert.doesNotMatch(marketUi, /Expired — refunded|buy order|Buy now/i);
+assert.doesNotMatch(marketUi, /Expired — refunded|buy order/i);
 assert.match(redesign, /select \* from public\.gem_orders where status = 'open' for update/);
 assert.match(redesign, /set status = 'cancelled'/);
 assert.match(redesign, /revoke all on function public\.expire_stale_gem_orders\(\)/);

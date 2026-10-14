@@ -41,7 +41,7 @@ assert.match(source,/eternityRoll\) mutationChanceMultiplier \+= 50/);
 assert.doesNotMatch(source,/finalWeight \/ gem\.baseWeight >= 5 \? 1\.10 : 1/);
 assert.match(source,/bagPassiveWeightFactor \* \(storageRoll \? 1\.25 : 1\)/);
 assert.match(source,/!autoDeposited \|\| autoConserved/);
-assert.match(source,/EdgeRuntime\.waitUntil\(backgroundPostCommitPromise\)/,'optimized response path retained');
+assert.match(source,/registerRollWaitUntil\(batchExecution, batchIndex, backgroundPostCommitPromise\)/,'optimized response path retained');
 assert.match(read('../crafting/crafting.js'),/\$500,000,000\.10/);
 assert.match(read('../inventory/inventory.js'),/event_properties\?\.bagged/);
 console.log('Live weight sampler simulations, equipment recipes, passives, and price checks passed.');

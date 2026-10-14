@@ -23,7 +23,8 @@ const settingsSource=fs.readFileSync(new URL('../src/ui/settings.js',import.meta
  .replace("'../../supabase/functions/roll/equipmentRules.js'",JSON.stringify(new URL('../supabase/functions/roll/equipmentRules.js',import.meta.url).href))
  .replace('"../data/mutations.js"',JSON.stringify(new URL('../src/data/mutations.js',import.meta.url).href))
  .replace('"../logic/batchRolling.js"',JSON.stringify(new URL('../src/logic/batchRolling.js',import.meta.url).href))
- .replace('"../logic/contentModeration.js"',JSON.stringify(new URL('../src/logic/contentModeration.js',import.meta.url).href));
+ .replace('"../logic/contentModeration.js"',JSON.stringify(new URL('../src/logic/contentModeration.js',import.meta.url).href))
+ .replace('"../logic/deviceSettings.js"',JSON.stringify(new URL('../src/logic/deviceSettings.js',import.meta.url).href));
 const settings=await import('data:text/javascript;base64,'+Buffer.from(settingsSource).toString('base64'));
 
 assert.equal(chances.meetsChatChanceThreshold("Uranium"), false);
