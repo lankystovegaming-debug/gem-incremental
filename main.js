@@ -1,3 +1,4 @@
+import { mountMiningScene } from "./src/ui/miningScene.js";
 import recipes from "./src/data/recipes.js";
 
 import {
@@ -76,6 +77,7 @@ const rollButton = document.getElementById("rollButton");
 const rollButtonLabel = document.getElementById("rollButtonLabel");
 const rollButtonFill = document.getElementById("rollButtonFill");
 const gemStage = document.getElementById("gemStage");
+mountMiningScene(gemStage);
 const rollHint = document.getElementById("rollHint");
 const effectHud = document.getElementById("effectHud");
 
@@ -595,7 +597,7 @@ function appendConvergenceBonusResults(result) {
   gemStage.append(summary);
 }
 
-function renderRoll(data, outcome) {
+function renderRoll(data, outcome, miningResults = [data]) {
   const tier = rarityTier(data.gem.rarity, data.gem.name);
   const rarity = Number(data.gem.rarity ?? 0);
   const isRelic = data.gem.dropType === "relic";
@@ -668,6 +670,7 @@ function renderRoll(data, outcome) {
     ` : ""}
     ${data.impossibleWorldFirst ? impossibleWorldFirstBrand() : ''}
     <div class="gem-reveal">
+      <span class="mining-featured-label">Featured gem</span>
       <div class="gem-reveal__art">${gemIconHtml(data.gem.name, "gem-icon--roll", mutationIds)}</div>
       <span class="badge badge--tier">${isRelic ? "RELIC" : tier.name}</span>
       <h2 class="gem-reveal__name">${gemNameHtml(data.gem.name, escapeHtml)}</h2>
@@ -687,6 +690,7 @@ function renderRoll(data, outcome) {
     </div>
   `;
 
+  mountMiningScene(gemStage, miningResults, { animated: settings.rollAnimations });
   if (!settings.rollAnimations) return Promise.resolve();
   gemStage.classList.add("is-animating");
 
@@ -941,8 +945,9 @@ async function performRoll() {
     gemStage.className = `stage__display is-revealed${featured.impossibleWorldFirst ? ' is-impossible-world-first' : ''}`;
     gemStage.innerHTML = `${featured.impossibleWorldFirst ? impossibleWorldFirstBrand() : ''}<div class="gem-reveal"><h2>House Edge</h2><p>No gem this time. This roll still counts toward progression.</p></div>`;
   } else if (featured) {
-    renderRoll(featured, outcomes.get(featured));
+    renderRoll(featured, outcomes.get(featured), results);
   }
+  if (featured?.houseEdge) mountMiningScene(gemStage, results, { animated: getSettings().rollAnimations });
   appendBatchResults(results, outcomes);
   for (const result of results) appendConvergenceBonusResults(result);
 

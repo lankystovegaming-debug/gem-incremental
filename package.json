@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:mining-card": "node tests/mining-roll-card-browser-test.mjs",
     "test:christmas": "node --test tests/christmas-2026-test.mjs tests/christmas-cutscene-test.mjs tests/christmas-quests-test.mjs && node tests/christmas-2026-handler-test.mjs && node tests/christmas-2026-database-test.mjs && node tests/christmas-quests-database-test.mjs",
     "test:christmas:browser": "node tests/christmas-2026-browser-test.mjs",
     "test:christmas:sensitivity": "node tools/christmas-2026-sensitivity.mjs",
