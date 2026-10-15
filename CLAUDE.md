@@ -19,7 +19,7 @@ There is no bundler/lint/typecheck script. To serve the site with something else
 python3 -m http.server 8423
 ```
 
-`dev-server.mjs` is a plain Node static file server with one special case: `/user/<uuid>/` rewrites to `user/index.html` (mirrors the `vercel.json` rewrite used in production).
+`dev-server.mjs` is a plain Node static file server with one special case: `/user/<username>/` rewrites to `user/index.html` (mirrors the `vercel.json` rewrite used in production).
 
 ### Running a single test
 

@@ -57,7 +57,7 @@ async function present(payload, base) {
       <p class="anniversary-intro__line" data-anniversary-line aria-live="polite"></p>
       <p class="anniversary-intro__counter" data-anniversary-counter hidden></p>
       <div class="anniversary-intro__actions" data-anniversary-actions hidden>
-        <a class="btn btn--primary" href="${base}recap/month-2/">SEE WHAT CHANGED</a>
+        <a class="btn btn--primary" href="${base}recap/month2/">SEE WHAT CHANGED</a>
         <button class="btn btn--ghost" type="button" data-anniversary-dismiss>KEEP ROLLING</button>
       </div>
       <small class="anniversary-intro__hint">Tap or click to accelerate</small>

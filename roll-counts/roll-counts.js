@@ -153,7 +153,7 @@ function setChampion(username, avatarUrl, profileId) {
   counterHeading.textContent = safeUsername;
   championAvatar.replaceChildren();
   champion.href = profileId
-    ? `/user/${encodeURIComponent(profileId)}/`
+    ? `/user/${encodeURIComponent(safeUsername)}/`
     : "../leaderboards/";
   champion.setAttribute("aria-label", profileId
     ? `View ${safeUsername}'s profile`

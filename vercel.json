@@ -5,12 +5,20 @@
   "trailingSlash": true,
   "rewrites": [
     {
-      "source": "/user/:id/",
+      "source": "/user/:username/",
       "destination": "/user/index.html"
     },
     {
-      "source": "/user/:id",
+      "source": "/user/:username",
       "destination": "/user/index.html"
+    },
+    {
+      "source": "/recap/:month(month[1-9][0-9]*)/",
+      "destination": "/recap/index.html"
+    },
+    {
+      "source": "/recap/:month(month[1-9][0-9]*)",
+      "destination": "/recap/index.html"
     }
   ]
 }

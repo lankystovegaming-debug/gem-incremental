@@ -56,7 +56,8 @@ function sendNotFound(response) {
 
 function safePathname(url) {
   const pathname = new URL(url, `http://127.0.0.1:${PORT}`).pathname;
-  const decoded = decodeURIComponent(pathname);
+  let decoded;
+  try { decoded = decodeURIComponent(pathname); } catch { return null; }
   const normalized = path.posix.normalize(decoded);
 
   if (normalized.includes("..")) {
@@ -76,8 +77,13 @@ const server = http.createServer((request, response) => {
   }
 
   // Exact dynamic profile route. This is the part Live Server does not provide.
-  if (/^\/user\/[0-9a-fA-F-]{36}\/?$/.test(pathname)) {
+  if (/^\/user\/[^/.]+\/?$/.test(pathname)) {
     sendFile(response, path.join(ROOT, "user", "index.html"));
+    return;
+  }
+
+  if (/^\/recap\/month[1-9][0-9]*\/?$/.test(pathname)) {
+    sendFile(response, path.join(ROOT, "recap", "index.html"));
     return;
   }
 
@@ -114,5 +120,5 @@ const server = http.createServer((request, response) => {
 
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Gem Incremental dev server: http://127.0.0.1:${PORT}`);
-  console.log(`Dynamic profiles: http://127.0.0.1:${PORT}/user/<uuid>/`);
+  console.log(`Dynamic profiles: http://127.0.0.1:${PORT}/user/<username>/`);
 });

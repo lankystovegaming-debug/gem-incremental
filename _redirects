@@ -1,2 +1,8 @@
-/user/:id/    /user/index.html    200
-/user/:id     /user/index.html    200
+/recap/month-1/    /recap/month1/    301
+/recap/month-1     /recap/month1/    301
+/recap/month-2/    /recap/month2/    301
+/recap/month-2     /recap/month2/    301
+/user/:username/    /user/index.html    200
+/user/:username     /user/index.html    200
+/recap/:month/    /recap/index.html    200
+/recap/:month     /recap/index.html    200
