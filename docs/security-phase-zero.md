@@ -60,7 +60,7 @@ If a migration fails, its transaction rolls back; resolve the schema mismatch be
 
 ## Validation
 
-- Full existing `npm test` passed on the weekly baseline with these changes.
+- Full existing `npm test` passed with these changes, then passed again after merging current main `8ebca9b` into the weekly branch. The pre-existing package-script conflict was resolved by retaining all weekly and main scripts. Dedicated `npm run test:dungeons` and `npm run test:cosmetics` also passed after the merge.
 - `npm run test:roll-hot-path` passed; roll source unchanged against audited main and weekly baseline.
 - `npm run test:security-phase-zero` passes isolated PostgreSQL/PGlite security tests, real client query behavior with a mock transport, and the stripped-TypeScript admin handler with a mocked middleware/context. The SDK pins match current resolution; hosted middleware/browser integration still needs the staging/manual smoke test above.
 - Database fixtures use live function definitions read on 15 October plus existing checked-in schema fixtures; no live player records. Tests cover reproduction of broad reads, migration idempotency, own-row RLS, the two-column view, search, explicit profile/chat/leaderboard outputs, hidden leaderboard entries, forbidden columns/direct sends, read receipts, unrelated-account exclusion, moderation, five-second cooldown, invalid messages, missing identity, authenticated admin checks, editor role preservation, and service access.
