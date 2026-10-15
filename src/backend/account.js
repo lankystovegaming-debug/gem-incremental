@@ -313,7 +313,7 @@ export async function loadUsername(userId) {
   }
 
   const { data, error } = await supabase
-    .from("players")
+    .from("public_player_directory")
     .select("username")
     .eq("id", userId)
     .maybeSingle();

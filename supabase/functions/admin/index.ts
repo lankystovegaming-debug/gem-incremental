@@ -1,11 +1,11 @@
-import { withSupabase } from "npm:@supabase/server";
+import { withSupabase } from "npm:@supabase/server@1.9.2";
 
 
 const OWNER_ADMIN_ID = "004d883f-edbc-4610-b5e3-9068a0de0ca2";
 
-// Read-only administrators may inspect operational data, but only the owner
-// may execute mutations. Keep this allow-list deliberately small: actions not
-// listed here fail closed for non-owner admins.
+// Read-only administrators may inspect operational data; owner and editor
+// administrators may execute mutations. Keep this allow-list deliberately small:
+// actions not listed here fail closed for read-only administrators.
 const READ_ONLY_ACTIONS = new Set([
   "search",
   "inspect",
@@ -228,12 +228,6 @@ export default {
         ctx.userClaims?.id ??
         ctx.jwtClaims?.sub;
 
-      console.log("ADMIN CONTEXT", {
-        userClaims: ctx.userClaims,
-        jwtClaims: ctx.jwtClaims,
-        hasSupabaseAdmin: Boolean(ctx.supabaseAdmin)
-      });
-
       let body: any;
       try {
         body = await req.json();
@@ -243,13 +237,6 @@ export default {
 
       const action = body?.action;
       const targetId = body?.targetId;
-
-      console.log("ADMIN DEBUG", {
-        action,
-        adminId,
-        userClaims: ctx.userClaims,
-        jwtSub: ctx.jwtClaims?.sub
-      });
 
       // Any authenticated user may ask whether they are an admin, so
       // the client can gate its UI without knowing any admin id.

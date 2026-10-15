@@ -1,4 +1,4 @@
-import { withSupabase } from "npm:@supabase/server";
+import { withSupabase } from "npm:@supabase/server@1.9.2";
 
 
 // Admins are stored in the public.admins table, not hardcoded, so
@@ -175,12 +175,6 @@ export default {
         ctx.userClaims?.id ??
         ctx.jwtClaims?.sub;
 
-      console.log("ADMIN CONTEXT", {
-        userClaims: ctx.userClaims,
-        jwtClaims: ctx.jwtClaims,
-        hasSupabaseAdmin: Boolean(ctx.supabaseAdmin)
-      });
-
       let body: any;
       try {
         body = await req.json();
@@ -190,13 +184,6 @@ export default {
 
       const action = body?.action;
       const targetId = body?.targetId;
-
-      console.log("ADMIN DEBUG", {
-        action,
-        adminId,
-        userClaims: ctx.userClaims,
-        jwtSub: ctx.jwtClaims?.sub
-      });
 
       // Any authenticated user may ask whether they are an admin, so
       // the client can gate its UI without knowing any admin id.

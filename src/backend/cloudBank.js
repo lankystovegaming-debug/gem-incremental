@@ -55,7 +55,7 @@ export async function searchChequeRecipients(query = "", offset = 0) {
   const pageSize = 40;
   const pageOffset = Math.max(0, Math.floor(Number(offset) || 0));
   const text = String(query).trim();
-  let request = supabase.from("players")
+  let request = supabase.from("public_player_directory")
     .select("id, username")
     .not("username", "is", null)
     .order("username", { ascending: true })

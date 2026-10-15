@@ -66,7 +66,8 @@
     "test:stacked-relics": "node tests/stacked-relic-balances-test.mjs",
     "test:mutation-safeguards": "node tests/mutation-safeguards-test.mjs && node tests/five-item-handler-test.mjs",
     "test:season-one": "node tests/season-one-database-test.mjs && node tests/season-one-handler-test.mjs",
-    "test:season-one-browser": "node tests/season-one-browser-test.mjs"
+    "test:season-one-browser": "node tests/season-one-browser-test.mjs",
+    "test:security-phase-zero": "node tests/phase-zero-security-database-test.mjs && node tests/phase-zero-client-test.mjs && node tests/phase-zero-admin-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"
