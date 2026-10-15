@@ -667,6 +667,8 @@ export function mountShell({ page, base = "./" }) {
   // Referral promo: once-a-day popup about the limited-time invite bonus.
   mountReferralPromo(base);
 
+  import("./weeklyUpdate.js").then(({ mountWeeklyUpdate }) => mountWeeklyUpdate(base)).catch(() => {});
+
   // Optional global-cash side counter (off by default; toggled in Settings).
   // Keep combat unobstructed, without changing the player's saved preference.
   // Do not initialize the widget or its polling/settings listeners here.

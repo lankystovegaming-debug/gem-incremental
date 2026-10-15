@@ -6913,3 +6913,17 @@ body.quick-nav-open {
 
 .cosmetic--silver-horizon{--cosmetic-color:#d8e5ee;background:linear-gradient(110deg,#a7bbce18,#eff7ff26)}
 .cosmetic--crystal-reverie{--cosmetic-color:#d7c5f8;background:linear-gradient(130deg,#9acbe626,#c2a7ef30)}
+
+/* Weekly release notes use the native dialog for focus containment and Escape. */
+.weekly-update { box-sizing: border-box; width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-solid); color: var(--text); overflow-y: auto; overscroll-behavior: contain; }
+.weekly-update::backdrop { background: rgb(0 0 0 / 65%); }
+.weekly-update__body { padding: clamp(20px, 4vw, 32px); overflow-wrap: anywhere; }
+.weekly-update__eyebrow { color: var(--accent); font-size: .8rem; margin-bottom: 8px; }
+.weekly-update h2 { font-size: clamp(1.3rem, 4vw, 1.8rem); }
+.weekly-update .update-section { margin-top: 20px; }
+.weekly-update .update-section h3 { font-size: 1rem; margin-bottom: 8px; }
+.weekly-update ul { padding-left: 20px; }
+.weekly-update li { color: var(--text-muted); line-height: 1.6; margin-top: 8px; }
+.weekly-update__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.weekly-update__actions .btn { min-height: 44px; }
+.weekly-update-open { overflow: hidden; }
