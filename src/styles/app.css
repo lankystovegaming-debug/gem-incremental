@@ -6910,3 +6910,6 @@ body.quick-nav-open {
     width: 100%;
   }
 }
+
+.cosmetic--silver-horizon{--cosmetic-color:#d8e5ee;background:linear-gradient(110deg,#a7bbce18,#eff7ff26)}
+.cosmetic--crystal-reverie{--cosmetic-color:#d7c5f8;background:linear-gradient(130deg,#9acbe626,#c2a7ef30)}

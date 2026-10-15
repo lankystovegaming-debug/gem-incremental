@@ -1,6 +1,6 @@
 import { escapeHtml } from './format.js';
 
-const STYLES = new Set(['bronze', 'gold', 'diamond', 'prismatic', 'sunrise', 'stone', 'mutation', 'archive', 'impossible', 'glitched', 'celestial', 'overgrown', 'gambler', 'quit99', 'retro-desktop']);
+const STYLES = new Set(['bronze', 'gold', 'diamond', 'prismatic', 'sunrise', 'stone', 'mutation', 'archive', 'impossible', 'glitched', 'celestial', 'overgrown', 'gambler', 'quit99', 'retro-desktop', 'silver-horizon', 'crystal-reverie']);
 const RARITIES = new Set(['Common', 'Rare', 'Epic', 'Legendary', 'Mythic', 'Legacy']);
 export function cosmeticStyle(item) {
   const style = item?.visual_config?.style;

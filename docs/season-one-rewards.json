@@ -1,0 +1,919 @@
+[
+  {
+    "tier": 1,
+    "xp": 0,
+    "free": [
+      {
+        "type": "money",
+        "amount": 5000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-1",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 2,
+    "xp": 200,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-1",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-1",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 3,
+    "xp": 400,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-1",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-2",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 4,
+    "xp": 650,
+    "free": [
+      {
+        "type": "money",
+        "amount": 5000
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 15000
+      }
+    ]
+  },
+  {
+    "tier": 5,
+    "xp": 850,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-1",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 6,
+    "xp": 1050,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-1",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-2",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 7,
+    "xp": 1250,
+    "free": [
+      {
+        "type": "money",
+        "amount": 15000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-2",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 8,
+    "xp": 1450,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-1",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-2",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 9,
+    "xp": 1700,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 25000
+      }
+    ]
+  },
+  {
+    "tier": 10,
+    "xp": 1900,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 11,
+    "xp": 2200,
+    "free": [
+      {
+        "type": "money",
+        "amount": 15000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-2",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 12,
+    "xp": 2500,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 13,
+    "xp": 2850,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 25000
+      }
+    ]
+  },
+  {
+    "tier": 14,
+    "xp": 3150,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 15,
+    "xp": 3450,
+    "free": [
+      {
+        "type": "money",
+        "amount": 20000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-1",
+        "quantity": 1
+      },
+      {
+        "type": "cosmetic",
+        "id": "between-the-lights",
+        "name": "Between the Lights",
+        "cosmeticType": "title"
+      }
+    ]
+  },
+  {
+    "tier": 16,
+    "xp": 3800,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 17,
+    "xp": 4100,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 35000
+      }
+    ]
+  },
+  {
+    "tier": 18,
+    "xp": 4400,
+    "free": [
+      {
+        "type": "money",
+        "amount": 30000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 19,
+    "xp": 4750,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-2",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 20,
+    "xp": 5050,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 21,
+    "xp": 5450,
+    "free": [
+      {
+        "type": "money",
+        "amount": 30000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 22,
+    "xp": 5900,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 50000
+      }
+    ]
+  },
+  {
+    "tier": 23,
+    "xp": 6300,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 24,
+    "xp": 6700,
+    "free": [
+      {
+        "type": "money",
+        "amount": 35000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 25,
+    "xp": 7150,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      },
+      {
+        "type": "cosmetic",
+        "id": "quiet-miner",
+        "name": "Quiet Miner",
+        "cosmeticType": "title"
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Ancient Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 26,
+    "xp": 7550,
+    "free": [
+      {
+        "type": "money",
+        "amount": 40000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 27,
+    "xp": 8000,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 65000
+      }
+    ]
+  },
+  {
+    "tier": 28,
+    "xp": 8400,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 29,
+    "xp": 8800,
+    "free": [
+      {
+        "type": "money",
+        "amount": 50000
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 30,
+    "xp": 9250,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      },
+      {
+        "type": "cosmetic",
+        "id": "silver-horizon",
+        "name": "Silver Horizon",
+        "cosmeticType": "frame"
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 31,
+    "xp": 9850,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 80000
+      }
+    ]
+  },
+  {
+    "tier": 32,
+    "xp": 10500,
+    "free": [
+      {
+        "type": "money",
+        "amount": 55000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 33,
+    "xp": 11150,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "lucky-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 34,
+    "xp": 11750,
+    "free": [
+      {
+        "type": "money",
+        "amount": 65000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 35,
+    "xp": 12400,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 36,
+    "xp": 13050,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 100000
+      }
+    ]
+  },
+  {
+    "tier": 37,
+    "xp": 13650,
+    "free": [
+      {
+        "type": "money",
+        "amount": 70000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mass-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 38,
+    "xp": 14300,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "speed-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "tier": 39,
+    "xp": 14900,
+    "free": [
+      {
+        "type": "money",
+        "amount": 85000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 40,
+    "xp": 15550,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      },
+      {
+        "type": "relic",
+        "id": "Ancient Relic",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Ancient Relic",
+        "quantity": 2
+      },
+      {
+        "type": "cosmetic",
+        "id": "crystal-reverie",
+        "name": "Crystal Reverie",
+        "cosmeticType": "background"
+      }
+    ]
+  },
+  {
+    "tier": 41,
+    "xp": 16400,
+    "free": [
+      {
+        "type": "money",
+        "amount": 85000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-3",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 42,
+    "xp": 17250,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 130000
+      }
+    ]
+  },
+  {
+    "tier": 43,
+    "xp": 18050,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "tier": 44,
+    "xp": 18900,
+    "free": [
+      {
+        "type": "money",
+        "amount": 95000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 45,
+    "xp": 19750,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 4
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "tier": 46,
+    "xp": 20800,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "fortune-potion-3",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 165000
+      }
+    ]
+  },
+  {
+    "tier": 47,
+    "xp": 21850,
+    "free": [
+      {
+        "type": "money",
+        "amount": 110000
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "tier": 48,
+    "xp": 22900,
+    "free": [
+      {
+        "type": "consumable",
+        "id": "legendary-potion",
+        "quantity": 1
+      }
+    ],
+    "premium": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "tier": 49,
+    "xp": 23950,
+    "free": [
+      {
+        "type": "money",
+        "amount": 135000
+      }
+    ],
+    "premium": [
+      {
+        "type": "money",
+        "amount": 250000
+      }
+    ]
+  },
+  {
+    "tier": 50,
+    "xp": 25000,
+    "free": [
+      {
+        "type": "relic",
+        "id": "Enchant Relic",
+        "quantity": 3
+      },
+      {
+        "type": "relic",
+        "id": "Ancient Relic",
+        "quantity": 1
+      },
+      {
+        "type": "cosmetic",
+        "id": "the-interlude",
+        "name": "The Interlude",
+        "cosmeticType": "title"
+      }
+    ],
+    "premium": [
+      {
+        "type": "consumable",
+        "id": "mythic-potion",
+        "quantity": 1
+      },
+      {
+        "type": "cosmetic",
+        "id": "season-one",
+        "name": "Season 1",
+        "cosmeticType": "badge"
+      }
+    ]
+  }
+]

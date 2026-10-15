@@ -14,7 +14,7 @@ const migration = read("supabase/migrations/20260824022714_season_leaderboard_pi
 
 assert.match(seasonHtml, /id="claimAll"/);
 assert.match(seasonClient, /call\("claim-all"/);
-assert.match(seasonEdge, /action==="claim-all"/);
+assert.match(seasonEdge, /action\s*===\s*"claim-all"/);
 assert.match(seasonEdge, /claim_season_tier/);
 
 assert.match(stats, /masterwork_level/);

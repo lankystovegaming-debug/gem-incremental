@@ -64,7 +64,9 @@
     "test:black-market": "node tests/black-market-v1-test.mjs",
     "test:black-market-ui": "node tests/black-market-ui-test.mjs",
     "test:stacked-relics": "node tests/stacked-relic-balances-test.mjs",
-    "test:mutation-safeguards": "node tests/mutation-safeguards-test.mjs && node tests/five-item-handler-test.mjs"
+    "test:mutation-safeguards": "node tests/mutation-safeguards-test.mjs && node tests/five-item-handler-test.mjs",
+    "test:season-one": "node tests/season-one-database-test.mjs && node tests/season-one-handler-test.mjs",
+    "test:season-one-browser": "node tests/season-one-browser-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"
