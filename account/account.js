@@ -4,6 +4,10 @@ import {
 import {
   accountPageUrlFromLocation
 } from "../src/backend/authUrls.js";
+import {
+  signUpWithNetworkRetry,
+  signupErrorMessage
+} from "../src/backend/signup.js";
 
 
 const accountCard =
@@ -32,6 +36,8 @@ const AVATAR_TYPES =
 
 let currentGuestUser =
   null;
+
+let creatingAccount = false;
 
 let passwordRecoveryMode =
   new URLSearchParams(
@@ -889,6 +895,8 @@ function renderCreateAccount() {
 
 
 async function createAccount() {
+  if (creatingAccount) return;
+
   const email =
     document
       .getElementById(
@@ -945,53 +953,69 @@ async function createAccount() {
     "Creating account..."
   );
 
-  const {
-    data,
-    error
-  } =
-    await supabase.auth
-      .signUp({
-        email,
-        password,
-        options: {
-          data: {
-            gem_incremental_password_set:
-              true
-          },
+  const submitButton = document.getElementById("createAccountSubmitButton");
+  const backButton = document.getElementById("backToLoginButton");
+  creatingAccount = true;
+  submitButton.disabled = true;
+  backButton.disabled = true;
 
-          emailRedirectTo:
-            accountPageUrl()
-        }
-      });
-
-  if (error) {
-    console.error(
-      "Account creation failed:",
+  try {
+    const {
+      data,
       error
-    );
+    } =
+      await signUpWithNetworkRetry(
+        supabase.auth,
+        {
+          email,
+          password,
+          options: {
+            data: {
+              gem_incremental_password_set:
+                true
+            },
+
+            emailRedirectTo:
+              accountPageUrl()
+          }
+        },
+        () => setStatus("Connection interrupted. Retrying account creation...")
+      );
+
+    if (error) {
+      console.error(
+        "Account creation failed:",
+        error
+      );
+
+      setStatus(
+        signupErrorMessage(error),
+        true
+      );
+
+      return;
+    }
+
+    if (!data.session) {
+      setStatus(
+        "Check your inbox to verify your email, then log in."
+      );
+
+      return;
+    }
+
+    await renderAccount();
 
     setStatus(
-      error.message ??
-      "Could not create account.",
-      true
+      "Account created successfully."
     );
-
-    return;
+  } catch (error) {
+    setStatus(signupErrorMessage(error), true);
+  } finally {
+    creatingAccount = false;
+    submitButton.disabled = false;
+    backButton.disabled = false;
   }
-
-  if (!data.session) {
-    setStatus(
-      "Check your inbox to verify your email, then log in."
-    );
-
-    return;
-  }
-
-  await renderAccount();
-
-  setStatus(
-    "Account created successfully."
-  );
 }
 
 
