@@ -690,7 +690,8 @@ function renderRoll(data, outcome, miningResults = [data]) {
     </div>
   `;
 
-  mountMiningScene(gemStage, miningResults, { animated: settings.rollAnimations });
+  // The mining swing is core action feedback, independent of optional roll effects.
+  mountMiningScene(gemStage, miningResults, { animated: true });
   if (!settings.rollAnimations) return Promise.resolve();
   gemStage.classList.add("is-animating");
 
@@ -947,7 +948,7 @@ async function performRoll() {
   } else if (featured) {
     renderRoll(featured, outcomes.get(featured), results);
   }
-  if (featured?.houseEdge) mountMiningScene(gemStage, results, { animated: getSettings().rollAnimations });
+  if (featured?.houseEdge) mountMiningScene(gemStage, results, { animated: true });
   appendBatchResults(results, outcomes);
   for (const result of results) appendConvergenceBonusResults(result);
 

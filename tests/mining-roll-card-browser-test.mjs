@@ -72,7 +72,13 @@ try {
     assert.equal(await page.locator('.mining-finds').evaluate(el=>getComputedStyle(el).opacity),'0');
     await page.evaluate(()=>window.previewRoll(1,false));
     assert.equal(await page.locator('.batch-result').count(),0);
-    assert.equal(await page.locator('.is-mining').count(),0);
+    assert.equal(await page.locator('.is-mining').count(),1,'Mining feedback remains enabled when optional roll animations are off');
+    assert.equal(await page.locator('.mining-pickaxe').evaluate(el=>getComputedStyle(el).animationName),'mining-swing');
+    const before=await page.locator('.mining-pickaxe').evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(250);
+    assert.notEqual(await page.locator('.mining-pickaxe').evaluate(el=>getComputedStyle(el).transform),before,'Pickaxe actually swings with roll animations off');
+    await page.waitForTimeout(400);
+    assert.ok(await page.locator('.mining-finds').evaluate(el=>Number(getComputedStyle(el).opacity))>.9,'Returned gem still appears on impact');
     await page.evaluate(()=>window.previewRoll(5,true,true));
     assert.equal(await page.locator('.mining-find').count(),4,'No gem fabricated for House Edge; pet shown');
     assert.equal(await page.locator('.batch-result--house-edge').count(),1);
