@@ -52,6 +52,8 @@ try {
     assert.equal(await page.locator('[data-mobile-navigation-row]:not([hidden])').count(), 1);
     await page.keyboard.press("Escape");
     assert.equal(await page.locator("#mobileNavigationTrigger").getAttribute("aria-expanded"), "false");
+    assert.equal(await sheet.isVisible(), false);
+    assert.equal(await page.locator("#mobileNavigationSearch").isVisible(), false);
     await context.close();
   }
 
@@ -84,6 +86,8 @@ try {
     await page.locator("#shellExploreButton").waitFor();
     assert.ok(await page.locator(".nav > .nav__link").count() <= 7);
     assert.equal(await page.locator(".tabbar").evaluate((element) => getComputedStyle(element).display), "none");
+    assert.equal(await page.locator("#mobileNavigationSheet").evaluate((element) => getComputedStyle(element).display), "none");
+    assert.equal(await page.locator("#mobileNavigationSearch").isVisible(), false);
 
     await page.locator("#shellExploreButton").focus();
     await page.keyboard.press("Enter");

@@ -6295,7 +6295,7 @@ body.quick-nav-open {
   }
 }
 
-.mobile-navigation-sheet {
+.mobile-navigation-sheet.mobile-sheet {
   display: none;
 }
 
@@ -6758,6 +6758,12 @@ body.quick-nav-open {
    exact layout. The same content becomes a modal bottom sheet on phones. */
 .mobile-sheet {
   display: contents;
+}
+
+/* Modal-only sheets must stay hidden even when the desktop in-flow
+   contract or an open-state display rule would override the UA default. */
+.mobile-sheet[hidden] {
+  display: none !important;
 }
 
 .mobile-sheet__header,
