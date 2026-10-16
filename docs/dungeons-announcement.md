@@ -1,0 +1,11 @@
+# Dungeon release announcement
+
+This standalone PR announces the existing dungeon update: 1,500 rooms, regional combat and bosses, sequential room/reward progression, loot and Workbench crafting, compact room summaries and run recovery. It changes no gameplay rules, Supabase migrations or Edge Functions and does not depend on weekly PR #514.
+
+The announcement JSON ships disabled. Only merging the `announce/dungeons-update` PR from this repository into the default branch enables it. The merge workflow records the actual PR number and merge time, then commits only `updates/dungeons-announcement.json` to the default branch. Re-running the same merge is idempotent; closing without merging, merging a weekly/different branch, or merging into another base cannot activate it. Once published, the announcement is bound to that PR number.
+
+The existing hosting pipeline must publish the activation commit. An already-hosted page cannot change at the instant GitHub merges static files. The workflow needs the repository Actions token's explicit contents-write permission and permission to push the activation commit. Actions-token pushes do not trigger other Actions workflows, so an Actions-only hosting process must deploy within the publication job using the approved deployment process. External hosting must respond to the activation commit. No deployment configuration is changed here.
+
+An authenticated player sees the notice once per account on each browser. Dismiss with Close or Escape, or follow Explore Dungeons. It waits for daily rewards, tours, maintenance, other dialogs and cinematics; a cinematic that starts during the notice takes priority and the notice returns afterward. Logout removes it without acknowledging for the wrong account. Storage-disabled browsers retain acknowledgment for the current page session. No version label is shown.
+
+Checks: `node --test tests/dungeons-announcement-test.mjs` and `node tests/dungeons-announcement-browser-test.mjs`. The latter uses isolated browser fixtures and accepts `DUNGEON_NOTICE_PLAYWRIGHT_MODULE` and `DUNGEON_NOTICE_CHROME_PATH` when Playwright/Chrome are provided by the workspace runtime. No live account or database is used.
