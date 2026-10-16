@@ -1,7 +1,7 @@
 {
-  "published": false,
-  "release_pr": null,
-  "merged_at": null,
+  "published": true,
+  "release_pr": 520,
+  "merged_at": "2026-10-16T01:51:48Z",
   "title": "Dungeons are here!",
   "sections": [
     {
