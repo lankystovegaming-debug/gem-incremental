@@ -1,0 +1,31 @@
+name: Publish dungeon announcement after merge
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+permissions:
+  contents: read
+jobs:
+  validate:
+    if: github.event.action != 'closed' && github.event.pull_request.head.ref == 'announce/dungeons-update'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --test tests/dungeons-announcement-test.mjs
+  publish:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'announce/dungeons-update' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Enable the merged dungeon announcement
+        run: |
+          node tools/publish-dungeon-announcement.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add updates/dungeons-announcement.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Enable dungeon announcement after its PR merge'
+          git push

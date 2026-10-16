@@ -1,0 +1,13 @@
+/* Dungeon release announcement: native dialog handles focus and Escape. */
+.dungeon-announcement { box-sizing: border-box; width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-solid); color: var(--text); }
+.dungeon-announcement::backdrop { background: rgb(0 0 0 / 65%); }
+.dungeon-announcement__body { padding: clamp(20px, 4vw, 32px); overflow-wrap: anywhere; }
+.dungeon-announcement__eyebrow { color: var(--accent); font-size: .8rem; margin-bottom: 8px; }
+.dungeon-announcement h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); }
+.dungeon-announcement__section { margin-top: 20px; }
+.dungeon-announcement h3 { font-size: 1rem; margin-bottom: 8px; }
+.dungeon-announcement ul { padding-left: 20px; }
+.dungeon-announcement li { color: var(--text-muted); line-height: 1.6; margin-top: 8px; }
+.dungeon-announcement__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.dungeon-announcement__actions .btn { min-height: 44px; }
+.dungeon-announcement-open { overflow: hidden; }
