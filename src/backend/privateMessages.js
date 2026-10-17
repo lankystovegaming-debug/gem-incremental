@@ -29,7 +29,7 @@ export async function searchPlayers(query, limit = 20) {
   const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
 
   let request = supabase
-    .from("players")
+    .from("public_player_directory")
     .select("id, username")
     .not("username", "is", null)
     .order("username", { ascending: true })
@@ -55,7 +55,7 @@ async function getUsernames(ids) {
   if (!uniqueIds.length) return new Map();
 
   const { data, error } = await supabase
-    .from("players")
+    .from("public_player_directory")
     .select("id, username")
     .in("id", uniqueIds);
 
@@ -297,7 +297,7 @@ export async function findPlayerByUsername(username) {
   if (!name) return null;
 
   const { data, error } = await supabase
-    .from("players")
+    .from("public_player_directory")
     .select("id, username")
     .ilike("username", name)
     .limit(5);

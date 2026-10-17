@@ -78,7 +78,7 @@ function shareStatus(message) {
 }
 async function copy() {
   try {
-    await navigator.clipboard.writeText(`${shareSummary(data)}\n${location.origin}/recap/month-2/`);
+    await navigator.clipboard.writeText(`${shareSummary(data)}\n${location.origin}/recap/month2/`);
     shareStatus("Summary copied.");
   } catch {
     shareStatus("Copy is unavailable here. You can select the summary text or save the card.");
@@ -87,7 +87,7 @@ async function copy() {
 async function share() {
   if (!navigator.share) return copy();
   try {
-    await navigator.share({ title: "My Month Two · Gem RNG", text: shareSummary(data), url: `${location.origin}/recap/month-2/` });
+    await navigator.share({ title: "My Month Two · Gem RNG", text: shareSummary(data), url: `${location.origin}/recap/month2/` });
     shareStatus("Summary shared.");
   } catch (error) {
     if (error.name !== "AbortError") shareStatus("Sharing is unavailable. Try copying the summary.");

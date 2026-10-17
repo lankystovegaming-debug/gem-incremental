@@ -1,51 +1,24 @@
-import { mountShell } from "../src/ui/shell.js";
-import { supabase } from "../src/backend/supabase.js";
-import { escapeHtml } from "../src/ui/format.js";
+import { mountShell } from '../src/ui/shell.js';
+import { loadUpdateHistory, renderUpdate } from '../src/ui/updateLog.js';
+import { searchUpdates } from '../src/logic/updateHistory.js';
 
-mountShell({ page: "updates", base: "../" });
+mountShell({ page: 'updates', base: '../' });
+const list = document.getElementById('publishedUpdates');
+const status = document.getElementById('updateStatus');
+const search = document.getElementById('updateSearch');
+const more = document.getElementById('moreUpdates');
+let entries = [];
+let count = 20;
 
-function formatUpdateDate(value) {
-  const date = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+function render() {
+  const matches = searchUpdates(entries, search.value);
+  list.innerHTML = matches.slice(0, count).map((entry) => renderUpdate(entry, entry === entries[0])).join('');
+  status.textContent = matches.length ? `${Math.min(count, matches.length)} of ${matches.length} updates` : 'No updates found.';
+  more.hidden = count >= matches.length;
 }
-
-function renderUpdate(entry, latest) {
-  const sections = (Array.isArray(entry.sections) ? entry.sections : []).map((section) => `
-    <div class="update-section">
-      <h3>${escapeHtml(section.heading)}</h3>
-      <ul>${(Array.isArray(section.bullets) ? section.bullets : []).map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}</ul>
-    </div>
-  `).join("");
-
-  return `<article class="update-card${latest ? " update-card--latest" : ""}">
-    <header class="update-card__header"><div><div class="update-card__meta">
-      ${latest ? '<span class="update-card__badge">Latest</span>' : ""}
-      <span class="update-card__badge update-card__badge--version">${escapeHtml(entry.version)}</span>
-      <time datetime="${escapeHtml(entry.published_on)}">${escapeHtml(formatUpdateDate(entry.published_on))}</time>
-    </div><h2>${escapeHtml(entry.title)}</h2></div></header>
-    ${sections}
-  </article>`;
-}
-
-async function loadPublishedUpdates() {
-  const dynamicList = document.getElementById("publishedUpdates");
-  if (!dynamicList) return;
-  const { data, error } = await supabase
-    .from("update_logs")
-    .select("id,version,title,published_on,sections,published_at")
-    .eq("published", true)
-    .order("published_on", { ascending: false })
-    .order("published_at", { ascending: false });
-
-  if (error || !data?.length) return;
-  dynamicList.innerHTML = data.map((entry, index) => renderUpdate(entry, index === 0)).join("");
-  dynamicList.hidden = false;
-
-  const firstStatic = document.querySelector("#staticUpdates .update-card--latest");
-  firstStatic?.classList.remove("update-card--latest");
-  firstStatic?.querySelector(".update-card__badge:not(.update-card__badge--version)")?.remove();
-}
-
-loadPublishedUpdates();
+search.addEventListener('input', () => { count = 20; render(); });
+more.addEventListener('click', () => { count += 20; render(); });
+loadUpdateHistory().then((history) => {
+  entries = history.sort((a, b) => Date.parse(b.merged_at) - Date.parse(a.merged_at));
+  render();
+}).catch(() => { status.textContent = 'Updates could not be loaded. Refresh to try again.'; });

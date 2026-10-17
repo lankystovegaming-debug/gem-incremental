@@ -25,7 +25,7 @@ import {
   submitBanAppeal
 } from "../backend/cloudBanAppeals.js";
 import { loadActiveAdminEvent } from "../backend/cloudAdminEvents.js";
-import { loadActiveGlobalEvent } from "../backend/cloudGlobalEvents.js";
+import { loadActiveGlobalEvents } from "../backend/cloudGlobalEvents.js";
 import {
   describeAccount,
   isGuest,
@@ -46,6 +46,7 @@ import { getSettings, onSettingsChange } from "./settings.js";
 import { initGlobalCutscenes } from "./globalCutscenes.js";
 import { mountMonthTwoAnniversary } from "./monthTwoAnniversary.js";
 import { mountMaintenanceMode } from "./maintenanceMode.js";
+import { mountMobileSheet } from "./mobileSheet.js";
 
 
 // =========================================================
@@ -69,8 +70,7 @@ const PAGES = [
   { id: "expeditions", label: "Expeditions", short: "Exped.", href: "expeditions/", icon: icons.map },
   { id: "gem-index", label: "Gem Index", short: "Index", href: "gem-index/", icon: icons.book },
   { id: "mutation-index", label: "Mutation Index", short: "Mutations", href: "mutation-index/", icon: icons.sparkle },
-  { id: "month-two", label: "Month Two", short: "Month 2", href: "recap/month-2/", icon: icons.sparkle },
-  { id: "month-one", label: "Month One", short: "Month 1", href: "recap/month-1/", icon: icons.trophy },
+  { id: "month-recap", label: "Monthly Recap", short: "Recap", href: "recap/month2/", icon: icons.trophy },
   { id: "limited-events", label: "Limited Events", short: "Events", href: "limited-events/", icon: icons.calendar },
   { id: "leaderboards", label: "Leaderboards", short: "Ranks", href: "leaderboards/", icon: icons.trophy },
   { id: "roll-counts", label: "Roll Counts", short: "Rolls", href: "roll-counts/", icon: icons.dice },
@@ -107,6 +107,8 @@ const PAGES = [
 
 const CORE_PAGE_IDS = new Set(["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"]);
 const DEFAULT_TOP_BAR_IDS = [...CORE_PAGE_IDS];
+const DESKTOP_PRIMARY_LIMIT = 7;
+const MOBILE_PRIMARY_LIMIT = 4;
 let enabledSectionMap = new Map();
 let shellIsAdmin = false;
 
@@ -128,7 +130,7 @@ function isNavigationPageAvailable(item, settings) {
   return true;
 }
 
-function getNavigationPages(){
+function getConfiguredNavigationPages(){
   const settings=getSettings();
   const configured=Array.isArray(settings.topBarMain) && settings.topBarMain.length ? settings.topBarMain : DEFAULT_TOP_BAR_IDS;
   const wanted=new Set(configured);
@@ -136,6 +138,12 @@ function getNavigationPages(){
   return PAGES
     .filter(item=>item.id!=="limited-events" && !item.settingGated && wanted.has(item.id) && isNavigationPageAvailable(item,settings))
     .map(configuredNavigationPage);
+}
+function getNavigationPages(){
+  return getConfiguredNavigationPages().slice(0, DESKTOP_PRIMARY_LIMIT);
+}
+function getMobileNavigationPages(){
+  return getConfiguredNavigationPages().slice(0, MOBILE_PRIMARY_LIMIT);
 }
 function getExplorePages(){
   const settings=getSettings();
@@ -145,11 +153,26 @@ function getExplorePages(){
     .filter(item=>!main.has(item.id) || item.id==="limited-events")
     .map(configuredNavigationPage);
 }
+function getMobileMorePages(){
+  const settings=getSettings();
+  const main=new Set(getMobileNavigationPages().map(x=>x.id));
+  return PAGES
+    .filter(item=>isNavigationPageAvailable(item,settings))
+    .filter(item=>!main.has(item.id))
+    .map(configuredNavigationPage);
+}
 
 // Explore stays useful as the game grows by grouping related destinations
 // instead of presenting one long, flat list. Feature-switched pages use the
 // same groups when they are enabled later in mountShell().
 const EXPLORE_GROUPS = [
+  {
+    id: "play",
+    label: "Play",
+    icon: icons.dice,
+    pageIds: ["roll", "inventory", "crafting", "boosts", "auctions", "expeditions", "minigames"],
+    defaultOpen: true
+  },
   {
     id: "indexes",
     label: "Indexes",
@@ -161,25 +184,29 @@ const EXPLORE_GROUPS = [
     id: "progress",
     label: "Progress",
     icon: icons.branch || icons.trophy,
-    pageIds: ["achievements", "quests", "bounties", "seasons", "research-tree"]
+    pageIds: ["achievements", "quests", "bounties", "seasons", "research-tree"],
+    defaultOpen: true
   },
   {
     id: "community",
     label: "Community",
     icon: icons.users,
-    pageIds: ["leaderboards", "roll-counts", "month-two", "month-one", "guilds", "wars", "pvp", "world-bosses"]
+    pageIds: ["leaderboards", "roll-counts", "month-recap", "guilds", "wars", "pvp", "world-bosses"],
+    defaultOpen: true
   },
   {
     id: "activities",
     label: "Activities",
     icon: icons.dice,
-    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events", "limited-events"]
+    pageIds: ["gemdle", "islands", "dungeons", "treasure-expeditions", "mining-events", "limited-events"],
+    defaultOpen: true
   },
   {
     id: "labs-economy",
     label: "Labs & Economy",
     icon: icons.flask || icons.coins,
-    pageIds: ["workbench", "bank", "lottery", "gem-fusion", "enchanting-lab", "merchant-caravan", "global-cash-graph"]
+    pageIds: ["workbench", "bank", "lottery", "gem-fusion", "enchanting-lab", "merchant-caravan", "global-cash-graph"],
+    defaultOpen: true
   },
   {
     id: "store",
@@ -322,6 +349,8 @@ export function mountShell({ page, base = "./" }) {
           class="nav__link topbar-explore__button"
           id="shellExploreButton"
           type="button"
+          aria-label="Explore destinations"
+          title="Explore destinations"
           aria-haspopup="true"
           aria-expanded="false"
           aria-controls="shellExploreMenu"
@@ -350,18 +379,19 @@ export function mountShell({ page, base = "./" }) {
             class="btn btn--ghost topbar-more__button"
             id="shellMoreButton"
             type="button"
+            aria-label="Utilities"
+            title="Utilities"
             aria-haspopup="true"
             aria-expanded="false"
             aria-controls="shellMoreMenu"
           >
             ${icons.sparkle}
-            <span>More</span>
+            <span>Utilities</span>
             ${icons.chevronDown || ""}
           </button>
           <div class="menu topbar-more__menu" id="shellMoreMenu" hidden>
             <div class="menu__label">Quick links</div>
             <a class="menu__item" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
-            <a class="menu__item" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
             <button class="menu__item shell-quick-nav-trigger" type="button" data-more-action="quicknav">
               ${icons.compass || icons.sparkle}<span>Quick navigation</span><kbd>Ctrl K</kbd>
             </button>
@@ -382,7 +412,7 @@ export function mountShell({ page, base = "./" }) {
         </div>
 
         <a
-          class="btn btn--ghost btn--icon"
+          class="btn btn--ghost btn--icon topbar-settings"
           href="${base}settings/"
           title="Settings"
           aria-label="Settings"
@@ -465,17 +495,121 @@ export function mountShell({ page, base = "./" }) {
 
   tabbar.className = "tabbar";
   tabbar.setAttribute("aria-label", "Primary");
-
-  tabbar.innerHTML = getNavigationPages().map((item) =>
-    navLink(item, page, base, "tabbar__link", true)
-  ).join("");
+  tabbar.innerHTML = `
+    <div class="tabbar__destinations" data-mobile-primary></div>
+    <button
+      class="tabbar__link tabbar__more"
+      id="mobileNavigationTrigger"
+      type="button"
+      aria-label="More destinations"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-controls="mobileNavigationSheet"
+      data-mobile-navigation-trigger
+    >
+      ${icons.compass || icons.sparkle}
+      <span>More</span>
+    </button>
+  `;
 
   document.body.appendChild(tabbar);
+
+  const mobileNavigationTrigger = tabbar.querySelector("#mobileNavigationTrigger");
+  const mobileNavigationBackdrop = document.createElement("button");
+  mobileNavigationBackdrop.className = "mobile-navigation-backdrop mobile-sheet-backdrop";
+  mobileNavigationBackdrop.type = "button";
+  mobileNavigationBackdrop.hidden = true;
+  mobileNavigationBackdrop.setAttribute("aria-label", "Close navigation");
+
+  const mobileNavigationSheet = document.createElement("section");
+  mobileNavigationSheet.className = "mobile-navigation-sheet mobile-sheet";
+  mobileNavigationSheet.id = "mobileNavigationSheet";
+  mobileNavigationSheet.setAttribute("aria-labelledby", "mobileNavigationTitle");
+  mobileNavigationSheet.innerHTML = `
+    <div class="mobile-sheet__header mobile-navigation-sheet__header">
+      <div>
+        <span class="mobile-navigation-sheet__eyebrow">Navigation</span>
+        <h2 id="mobileNavigationTitle">Explore Gem Incremental</h2>
+      </div>
+      <button class="btn btn--ghost btn--icon" type="button" data-mobile-navigation-close aria-label="Close navigation">×</button>
+    </div>
+    <label class="mobile-navigation-search" for="mobileNavigationSearch">
+      ${icons.compass || icons.sparkle}
+      <span class="visually-hidden">Find a destination</span>
+      <input id="mobileNavigationSearch" type="search" autocomplete="off" placeholder="Find a destination…">
+    </label>
+    <div class="mobile-navigation-groups" data-mobile-navigation-groups></div>
+    <section class="mobile-navigation-utilities" aria-labelledby="mobileUtilitiesTitle">
+      <h3 id="mobileUtilitiesTitle">Settings &amp; help</h3>
+      <div class="mobile-navigation-grid">
+        <a class="mobile-navigation-row" href="${base}settings/" ${page === "settings" ? 'aria-current="page"' : ""}>${icons.settings}<span>Settings</span></a>
+        <a class="mobile-navigation-row" href="${base}settings/#appearanceHeading">${icons.palette}<span>Appearance</span></a>
+        <a class="mobile-navigation-row" href="${base}info/" ${page === "info" ? 'aria-current="page"' : ""}><span aria-hidden="true">ℹ️</span><span>Info</span></a>
+        <button class="mobile-navigation-row" type="button" data-more-action="howto">${icons.book}<span>How to play</span></button>
+        <button class="mobile-navigation-row" type="button" data-more-action="console"><span aria-hidden="true">⌨</span><span>Player console</span></button>
+        <a class="mobile-navigation-row" href="${base}referral/">${icons.users}<span>Invite friends</span></a>
+        <a class="mobile-navigation-row" href="${base}codes/">${icons.sparkle}<span>Codes</span></a>
+        <a class="mobile-navigation-row" href="${base}updates/">${icons.sparkle}<span>Update log</span></a>
+        <a class="mobile-navigation-row" href="${base}bugs/">${icons.bug}<span>Report a bug</span></a>
+        <a class="mobile-navigation-row" href="${base}support/">${icons.heart}<span>Support the game</span></a>
+      </div>
+    </section>
+    <p class="mobile-navigation-empty" data-mobile-navigation-empty hidden>No destinations match that search.</p>
+  `;
+  document.body.append(mobileNavigationBackdrop, mobileNavigationSheet);
+
+  const mobileNavigationController = mountMobileSheet({
+    sheet: mobileNavigationSheet,
+    trigger: mobileNavigationTrigger,
+    closeButton: mobileNavigationSheet.querySelector("[data-mobile-navigation-close]"),
+    backdrop: mobileNavigationBackdrop,
+    breakpoint: "(max-width: 780px)",
+    modalOnly: true
+  });
+
+  const renderMobileNavigation = () => {
+    const primary = getMobileNavigationPages();
+    const primaryMount = tabbar.querySelector("[data-mobile-primary]");
+    if (primaryMount) {
+      primaryMount.innerHTML = primary.map((item) => navLink(item, page, base, "tabbar__link", true)).join("");
+    }
+    const moreActive = getMobileMorePages().some((item) => item.id === page || item.match?.includes(page))
+      || ["settings", "info", "referral", "codes", "updates", "bugs", "support"].includes(page);
+    mobileNavigationTrigger?.toggleAttribute("aria-current", moreActive);
+    const groupsMount = mobileNavigationSheet.querySelector("[data-mobile-navigation-groups]");
+    if (groupsMount) groupsMount.innerHTML = renderMobileNavigationGroups(getMobileMorePages(), page, base);
+  };
+
+  renderMobileNavigation();
+
+  const mobileNavigationSearch = mobileNavigationSheet.querySelector("#mobileNavigationSearch");
+  mobileNavigationSearch?.addEventListener("input", () => {
+    const term = mobileNavigationSearch.value.trim().toLocaleLowerCase();
+    let visibleRows = 0;
+    mobileNavigationSheet.querySelectorAll("[data-mobile-navigation-row]").forEach((row) => {
+      const visible = !term || row.dataset.searchText.includes(term);
+      row.hidden = !visible;
+      if (visible) visibleRows += 1;
+    });
+    mobileNavigationSheet.querySelectorAll("[data-mobile-navigation-group]").forEach((group) => {
+      group.hidden = !group.querySelector("[data-mobile-navigation-row]:not([hidden])");
+    });
+    const empty = mobileNavigationSheet.querySelector("[data-mobile-navigation-empty]");
+    if (empty) empty.hidden = visibleRows > 0;
+  });
+
+  mobileNavigationSheet.addEventListener("click", (event) => {
+    if (event.target.closest("a")) mobileNavigationController?.close();
+    if (event.target.closest('[data-more-action="console"]')) {
+      mobileNavigationController?.close();
+      togglePlayerCli();
+    }
+  });
 
   const rerenderPrimaryNavigation=()=>{
     const nav=header.querySelector(".nav");
     if(nav) nav.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"nav__link")).join("");
-    tabbar.innerHTML=getNavigationPages().map((item)=>navLink(item,page,base,"tabbar__link",true)).join("");
+    renderMobileNavigation();
     // The menu is portaled to <body> later in mountShell, so settings and
     // feature updates must resolve it from the document rather than header.
     const exploreMenu=document.getElementById("shellExploreMenu");
@@ -515,8 +649,7 @@ export function mountShell({ page, base = "./" }) {
 
   // Announcement banner (admins post these; everyone sees them).
   renderAnnouncements(header);
-  renderActiveAdminEvent(header);
-  renderActiveGlobalEvent(header, base);
+  renderActiveEvents(header, base);
 
 
   // Bottom-left dock: contribute on GitHub / report a bug.
@@ -534,6 +667,8 @@ export function mountShell({ page, base = "./" }) {
 
   // Referral promo: once-a-day popup about the limited-time invite bonus.
   mountReferralPromo(base);
+
+  import("./weeklyUpdate.js").then(({ mountWeeklyUpdate }) => mountWeeklyUpdate(base)).catch(() => {});
 
   // Optional global-cash side counter (off by default; toggled in Settings).
   // Keep combat unobstructed, without changing the player's saved preference.
@@ -587,6 +722,7 @@ export function mountShell({ page, base = "./" }) {
       const width = Math.max(270, exploreMenu.offsetWidth || 270);
       exploreMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
       exploreMenu.style.top = `${rect.bottom + 8}px`;
+      requestAnimationFrame(() => exploreMenu.querySelector("summary, a, button")?.focus({ preventScroll: true }));
     }
   };
 
@@ -614,7 +750,10 @@ export function mountShell({ page, base = "./" }) {
     const open = moreMenu.hidden;
     moreMenu.hidden = !open;
     moreButton?.setAttribute("aria-expanded", String(open));
-    if (open) closeExplore();
+    if (open) {
+      closeExplore();
+      requestAnimationFrame(() => moreMenu.querySelector("a, button")?.focus({ preventScroll: true }));
+    }
   };
 
   exploreButton?.addEventListener("click", (event) => {
@@ -649,8 +788,12 @@ export function mountShell({ page, base = "./" }) {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      const restoreExplore = exploreMenu && !exploreMenu.hidden;
+      const restoreMore = moreMenu && !moreMenu.hidden;
       closeExplore();
       closeMore();
+      if (restoreExplore) exploreButton?.focus({ preventScroll: true });
+      else if (restoreMore) moreButton?.focus({ preventScroll: true });
     }
   });
 
@@ -785,6 +928,11 @@ export function mountShell({ page, base = "./" }) {
             }
           `
           : `
+            <a class="menu__item" href="${currentUsername ? `/user/${encodeURIComponent(currentUsername)}/` : '/user/'}" role="menuitem">
+              ${icons.user}
+              View profile
+            </a>
+
             <a class="menu__item" href="${base}account/" role="menuitem">
               ${icons.user}
               Manage account
@@ -1632,98 +1780,68 @@ async function renderAnnouncements(header) {
   }
 }
 
-async function renderActiveAdminEvent(header) {
+async function renderActiveEvents(header, base = "./") {
   const user = await ensurePlayerAuth();
   if (!user) return;
 
-  const { data, error } = await loadActiveAdminEvent();
-  const event = Array.isArray(data) ? data[0] : data;
-  if (error || !event) return;
+  let activeAdminEvent = null;
+  let activeGlobalEvent = null;
+  let christmasEvents = [];
+  let activeAdminEventSignature = "";
+  let serverClockOffsetMs = 0;
+  let adminRefreshInFlight = false;
+  let globalRefreshInFlight = false;
 
-  const boosts = [
-    Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
-    Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
-    Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
-    Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
-    Number(event.luck_multiplier) !== 1 ? `${eventMultiplier(event.luck_multiplier)} Luck` : null,
-    Number(event.roll_speed_multiplier) !== 1 ? `${eventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
-    Number(event.weight_luck_multiplier) !== 1 ? `${eventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
-    Number(event.weight_multiplier_multiplier) !== 1 ? `${eventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
-  ].filter(Boolean);
-
-  const banner = document.createElement("div");
-  banner.className = "admin-event-banner";
-  banner.innerHTML = `
-    <span class="admin-event-banner__icon">${icons.sparkle}</span>
-    <span class="admin-event-banner__content">
-      <strong>${escapeHtml(event.name)}</strong>
-      <span>${escapeHtml(boosts.join(" · "))}</span>
-    </span>
-    <strong class="admin-event-banner__timer" aria-label="Time remaining"></strong>
-  `;
+  const card = document.createElement("details");
+  card.className = "active-events-card";
+  card.innerHTML = `
+    <summary class="active-events-card__summary">
+      <span>Active events</span>
+      <span class="active-events-card__meta">
+        <strong class="active-events-card__count" aria-label="0 active events">0</strong>
+        <span class="active-events-card__arrow" aria-hidden="true">${icons.chevronDown}</span>
+      </span>
+    </summary>
+    <div class="active-events-card__list">
+      <p class="active-events-card__empty">no active events</p>
+    </div>`;
 
   const existingAnnouncements = document.querySelector(".announce-bar");
-  if (existingAnnouncements) existingAnnouncements.after(banner);
-  else header.after(banner);
+  if (existingAnnouncements) existingAnnouncements.after(card);
+  else header.after(card);
 
-  const timer = banner.querySelector(".admin-event-banner__timer");
-  const endsAt = new Date(event.ends_at).getTime();
+  const eventCount = card.querySelector(".active-events-card__count");
+  const eventList = card.querySelector(".active-events-card__list");
 
-  const update = () => {
-    const remaining = endsAt - Date.now();
-    if (remaining <= 0) {
-      banner.remove();
-      clearInterval(interval);
-      return;
-    }
-    timer.textContent = eventTime(remaining);
+  const adminEventHtml = (event) => {
+    const boosts = [
+      Number(event.luck_bonus) > 0 ? `+${eventPercent(event.luck_bonus)} Luck` : null,
+      Number(event.roll_speed_bonus) > 0 ? `+${eventPercent(event.roll_speed_bonus)} Roll speed` : null,
+      Number(event.weight_luck_bonus) > 0 ? `+${eventPercent(event.weight_luck_bonus)} Weight luck` : null,
+      Number(event.weight_multiplier_bonus) > 0 ? `+${eventPercent(event.weight_multiplier_bonus)} Weight multiplier` : null,
+      Number(event.luck_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.luck_multiplier)} Luck` : null,
+      Number(event.roll_speed_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.roll_speed_multiplier)} Roll speed` : null,
+      Number(event.weight_luck_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.weight_luck_multiplier)} Weight luck` : null,
+      Number(event.weight_multiplier_multiplier ?? 1) !== 1 ? `${eventMultiplier(event.weight_multiplier_multiplier)} Weight multiplier` : null
+    ].filter(Boolean);
+
+    return `
+      <div class="active-events-card__event active-events-card__event--admin">
+        <span class="active-events-card__icon" aria-hidden="true">${icons.sparkle}</span>
+        <span class="active-events-card__content">
+          <strong>${escapeHtml(event.name || "Admin event")}</strong>
+          <span>${escapeHtml(boosts.join(" · ") || "Admin event active")}</span>
+        </span>
+        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(event.ends_at)}" aria-label="Time remaining"></strong>
+      </div>`;
   };
 
-  const interval = setInterval(update, 1000);
-  update();
-}
-
-async function renderActiveGlobalEvent(header, base = "./") {
-  const user = await ensurePlayerAuth();
-  if (!user) return;
-  let refreshInterval = null;
-  let timerInterval = null;
-  let activeEndsAt = 0;
-  let serverClockOffsetMs = 0;
-
-  const updateTimer = () => {
-    const banner = document.querySelector(".global-event-banner");
-    const timer = banner?.querySelector(".admin-event-banner__timer");
-    if (!banner || !timer || !activeEndsAt) return;
-
-    const remaining = activeEndsAt - (Date.now() + serverClockOffsetMs);
-    if (remaining <= 0) {
-      banner.remove();
-      activeEndsAt = 0;
-      return;
-    }
-    timer.textContent = eventTime(remaining);
-  };
-
-  const refresh = async () => {
-    const { data, error } = await loadActiveGlobalEvent();
-    const event = data && typeof data === "object" ? data : null;
-    let banner = document.querySelector(".global-event-banner");
-    if (error || !event?.id) {
-      banner?.remove();
-      activeEndsAt = 0;
-      return;
-    }
-
+  const globalEventHtml = (event) => {
     const config = event.config || {};
-    const parsedServerNow = new Date(event.serverNow).getTime();
-    serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
     const now = Date.now() + serverClockOffsetMs;
     const startsAt = new Date(event.startsAt).getTime();
-    const endsAt = new Date(event.endsAt).getTime();
-    activeEndsAt = endsAt;
+    const approaching = now < startsAt;
     const elapsedSeconds = Math.max(0, (now - startsAt) / 1000);
-    const remainingSeconds = Math.max(0, (endsAt - now) / 1000);
     const details = [];
     if (event.eventKey === "unstable_luck") {
       const phase = Math.floor(elapsedSeconds / Number(config.phaseSeconds || 30));
@@ -1739,32 +1857,101 @@ async function renderActiveGlobalEvent(header, base = "./") {
         && elapsedSeconds < Number(window.offsetSeconds) + Number(window.durationSeconds));
       if (active) details.push("Starfall active");
     }
+    const description = details.length ? `${event.description} · ${details.join(" · ")}` : event.description;
 
-    if (!banner) {
-      banner = document.createElement("div");
-      banner.className = `admin-event-banner global-event-banner global-event-banner--${escapeHtml(event.tier)}`;
-      const adminBanner = document.querySelector(".admin-event-banner:not(.global-event-banner)");
-      const announcements = document.querySelector(".announce-bar");
-      if (adminBanner) adminBanner.after(banner);
-      else if (announcements) announcements.after(banner);
-      else header.after(banner);
+    return `
+      <div class="active-events-card__event active-events-card__event--global active-events-card__event--${escapeHtml(event.tier)}">
+        <span class="active-events-card__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
+        <span class="active-events-card__content">
+          <strong>${escapeHtml(event.name)} · ${approaching ? "Approaching" : escapeHtml(event.tier)}</strong>
+          <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
+          <span>${escapeHtml(description || "Random event active")}</span>
+        </span>
+        <strong class="active-events-card__timer" data-ends-at="${escapeHtml(approaching ? event.startsAt : event.endsAt)}" data-server-clock="true" aria-label="${approaching ? "Starts in" : "Time remaining"}"></strong>
+      </div>`;
+  };
+
+  const updateTimer = () => {
+    for (const timer of card.querySelectorAll(".active-events-card__timer")) {
+      const endsAt = new Date(timer.dataset.endsAt).getTime();
+      const clockOffset = timer.dataset.serverClock === "true" ? serverClockOffsetMs : 0;
+      timer.textContent = eventTime(endsAt - (Date.now() + clockOffset));
     }
-    banner.innerHTML = `
-      <span class="admin-event-banner__icon" aria-hidden="true">${escapeHtml(event.icon || "✦")}</span>
-      <span class="admin-event-banner__content">
-        <strong>${escapeHtml(event.name)} · ${escapeHtml(event.tier)}</strong>
-        <a href="${escapeHtml(base)}info/#random-events" aria-label="Read about Random Events">Event info ↗</a>
-        <span>${escapeHtml(details.length ? `${event.description} · ${details.join(" · ")}` : event.description)}</span>
-      </span>
-      <strong class="admin-event-banner__timer" aria-label="Time remaining">${eventTime(remainingSeconds * 1000)}</strong>`;
+  };
+
+  const render = () => {
+    const events = [];
+    if (activeAdminEvent) events.push(adminEventHtml(activeAdminEvent));
+    if (activeGlobalEvent?.id) events.push(globalEventHtml(activeGlobalEvent));
+    for (const event of christmasEvents) events.push(globalEventHtml(event));
+    const count = events.length;
+    eventCount.textContent = String(count);
+    eventCount.setAttribute("aria-label", `${count} active event${count === 1 ? "" : "s"}`);
+    eventList.innerHTML = count
+      ? events.join("")
+      : '<p class="active-events-card__empty">no active events</p>';
     updateTimer();
   };
 
-  await refresh();
-  refreshInterval = setInterval(refresh, 15_000);
-  timerInterval = setInterval(updateTimer, 1_000);
+  const refreshAdminEvent = async () => {
+    if (adminRefreshInFlight) return;
+    adminRefreshInFlight = true;
+    try {
+      const { data, error } = await loadActiveAdminEvent();
+      if (error) return;
+      const nextEvent = (Array.isArray(data) ? data[0] : data) || null;
+      const nextSignature = JSON.stringify(nextEvent);
+      if (nextSignature !== activeAdminEventSignature) {
+        activeAdminEvent = nextEvent;
+        activeAdminEventSignature = nextSignature;
+        render();
+      }
+    } finally {
+      adminRefreshInFlight = false;
+    }
+  };
+
+  const refreshGlobalEvent = async () => {
+    if (globalRefreshInFlight) return;
+    globalRefreshInFlight = true;
+    try {
+      const { data, error } = await loadActiveGlobalEvents();
+      if (error) return;
+      const occurrences = Array.isArray(data) ? data.filter(event => event?.id) : [];
+      activeGlobalEvent = occurrences.find(event => event.layer !== "christmas") ?? null;
+      christmasEvents = occurrences.filter(event => event.layer === "christmas");
+      if (occurrences.length) {
+        const parsedServerNow = new Date(occurrences[0].serverNow).getTime();
+        serverClockOffsetMs = Number.isFinite(parsedServerNow) ? parsedServerNow - Date.now() : 0;
+      }
+      render();
+    } finally {
+      globalRefreshInFlight = false;
+    }
+  };
+
+  await Promise.all([refreshAdminEvent(), refreshGlobalEvent()]);
+  const globalRefreshInterval = setInterval(refreshGlobalEvent, 15_000);
+  const timerInterval = setInterval(async () => {
+    if (activeAdminEvent) await refreshAdminEvent();
+    const now = Date.now() + serverClockOffsetMs;
+    const previousSeasonalCount = christmasEvents.length;
+    christmasEvents = christmasEvents.filter(event => Date.parse(event.endsAt) > now);
+    const warningStarted = christmasEvents.some(event => event.approaching && Date.parse(event.startsAt) <= now);
+    if (warningStarted || previousSeasonalCount !== christmasEvents.length) {
+      christmasEvents.forEach(event => event.approaching = Date.parse(event.startsAt) > now);
+      render();
+    }
+    const globalEndsAt = new Date(activeGlobalEvent?.endsAt).getTime();
+    if (activeGlobalEvent && globalEndsAt <= Date.now() + serverClockOffsetMs) {
+      activeGlobalEvent = null;
+      render();
+      return;
+    }
+    updateTimer();
+  }, 1_000);
   window.addEventListener("pagehide", () => {
-    clearInterval(refreshInterval);
+    clearInterval(globalRefreshInterval);
     clearInterval(timerInterval);
   }, { once: true });
 }
@@ -1876,6 +2063,39 @@ function menuNavLink(item, activePage, base) {
   `;
 }
 
+function renderMobileNavigationGroups(items, activePage, base) {
+  return EXPLORE_GROUPS.map((group) => {
+    const groupItems = items.filter((item) => exploreGroupFor(item)?.id === group.id);
+    if (!groupItems.length) return "";
+
+    return `
+      <section class="mobile-navigation-group" data-mobile-navigation-group>
+        <h3>${group.icon}<span>${escapeHtml(group.label)}</span></h3>
+        <div class="mobile-navigation-grid">
+          ${groupItems.map((item) => {
+            const active = item.id === activePage || item.match?.includes(activePage);
+            const label = escapeHtml(item.label);
+            const searchText = escapeHtml(`${item.label} ${item.short} ${group.label}`.toLocaleLowerCase());
+            return `
+              <a
+                class="mobile-navigation-row"
+                href="${base}${item.href}"
+                data-mobile-navigation-row
+                data-search-text="${searchText}"
+                ${active ? 'aria-current="page"' : ""}
+              >
+                ${item.icon}
+                <span>${label}</span>
+                ${active ? '<small>Here</small>' : ""}
+              </a>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
+}
+
 // =========================================================
 // QUICK NAVIGATION
 //
@@ -1902,11 +2122,15 @@ function mountQuickNavigation({ base, page }) {
   let searchInput = null;
   let activeIndex = 0;
   let matching = [];
+  let returnFocus = null;
 
   const close = () => {
     palette?.remove();
     palette = null;
     searchInput = null;
+    document.body.classList.remove("quick-nav-open");
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    returnFocus = null;
   };
 
   const drawResults = () => {
@@ -1939,6 +2163,7 @@ function mountQuickNavigation({ base, page }) {
       searchInput?.focus();
       return;
     }
+    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     activeIndex = 0;
     palette = document.createElement("div");
     palette.className = "quick-nav";
@@ -1959,6 +2184,7 @@ function mountQuickNavigation({ base, page }) {
       </section>
     `;
     document.body.append(palette);
+    document.body.classList.add("quick-nav-open");
     searchInput = palette.querySelector("#quickNavSearch");
     drawResults();
     searchInput?.focus();
@@ -1991,8 +2217,29 @@ function mountQuickNavigation({ base, page }) {
     });
   };
 
-  document.querySelector('[data-more-action="quicknav"]')?.addEventListener("click", open);
+  document.querySelectorAll('[data-more-action="quicknav"]').forEach((trigger) => {
+    trigger.addEventListener("click", open);
+  });
   document.addEventListener("keydown", (event) => {
+    if (palette && event.key === "Tab") {
+      const focusable = [...palette.querySelectorAll('input, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (first && event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (last && !event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+    if (palette && event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       event.preventDefault();
       open();

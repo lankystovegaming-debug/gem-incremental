@@ -15,6 +15,8 @@ function mutationIdentity(result) {
 }
 
 export function cutsceneQueueKey(result = {}) {
+  const receipt = result.cutsceneEnvelope;
+  if (receipt?.receiptId && receipt?.source) return `${receipt.source}:${receipt.receiptId}`;
   const specimenId = result.specimenId ?? result.specimen_id;
   if (specimenId != null) return `specimen:${specimenId}`;
   const totalRolls = result?.lifetimeStats?.totalRolls ?? result?.lifetime_stats?.total_rolls;
@@ -30,6 +32,10 @@ export function cutsceneSceneKey(result = {}) {
 }
 
 export function compareCutsceneItems(left, right) {
+  const a = left?.result?.cutsceneEnvelope, b = right?.result?.cutsceneEnvelope;
+  if (a?.operationId && a.operationId === b?.operationId && a.sequence !== b.sequence) {
+    return a.sequence - b.sequence;
+  }
   const leftBespoke = BESPOKE_CUTSCENES[normalizeCutsceneName(left?.result?.gem?.name)] ? 1 : 0;
   const rightBespoke = BESPOKE_CUTSCENES[normalizeCutsceneName(right?.result?.gem?.name)] ? 1 : 0;
   if (leftBespoke !== rightBespoke) return rightBespoke - leftBespoke;

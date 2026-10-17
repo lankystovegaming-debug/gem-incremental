@@ -16,6 +16,15 @@ const scene = (duration, theme, beats = [], extra = {}) => Object.freeze({
 // The registry is keyed by normalized server identity. Rarity remains a fallback
 // boundary, never a substitute for gem identity.
 export const BESPOKE_CUTSCENES = Object.freeze({
+  "north star": scene(12_000,"christmas-north-star",["FOLLOW THE LIGHT."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.82}),
+  "winter's heart": scene(14_000,"christmas-heart",["WINTER NEVER TRULY SLEEPS."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.83}),
+  "aurora borealis": scene(15_000,"christmas-aurora",["THE SKY ITSELF HAS CRYSTALLISED."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.84}),
+  "guiding star": scene(12_500,"christmas-guiding-star",["SOME LIGHTS ARE MEANT TO BE FOLLOWED."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.82}),
+  yuletide: scene(15_000,"christmas-yuletide",["ONCE A YEAR... THE WORLD FEELS A LITTLE WARMER."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.84}),
+  "eternal christmas": scene(20_000,"christmas-eternal",["CHRISTMAS COMES AND GOES... BUT SOME THINGS LAST FOREVER."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,revealAt:.86}),
+  "celestine veil": scene(16_000,"christmas-veil",["SOMETHING MOVES BENEATH THE AURORA."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,hideChance:true,anomalous:true,revealAt:.85}),
+  "wish upon a star": scene(16_500,"christmas-wish",["MAKE A WISH.","YOUR WISH HAS BEEN HEARD."],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,hideChance:true,anomalous:true,revealAt:.85}),
+  "christmas singularity": scene(21_000,"christmas-singularity",["...what?"],{includeInReminiscite:false,primitives:["christmas-world"],theatre:true,hideChance:true,anomalous:true,beatStart:.7,revealAt:.88}),
   "prismarine fragment": scene(4_000,"deep-sea-shard",[],{focus:false,primitives:["sea-shard"],revealPosition:"center",revealAt:.66,worldExitAt:.63,includeInReminiscite:false}),
   "ancient coin": scene(4_200,"deep-sea-coin",[],{focus:false,primitives:["sea-coin"],revealPosition:"center",revealAt:.67,worldExitAt:.64,includeInReminiscite:false}),
   pearl: scene(4_400,"deep-sea-pearl",[],{focus:false,primitives:["sea-shell"],revealPosition:"center",revealAt:.68,worldExitAt:.65,includeInReminiscite:false}),

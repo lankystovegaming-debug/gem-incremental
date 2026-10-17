@@ -6,7 +6,7 @@ const [inventory, playerCloud, css, guildPage, guildJs, features, migration, upd
   read("../inventory/inventory.js"), read("../src/backend/playerCloud.js"),
   read("../src/styles/app.css"), read("../guilds/index.html"),
   read("../guilds/guilds.js"), read("../supabase/functions/features/index.ts"),
-  read("../supabase/migrations/20260822000002_qol_hotfix.sql"), read("../updates/index.html")
+  read("../supabase/migrations/20260822000002_qol_hotfix.sql"), read("../updates/history.json")
 ]);
 
 assert.match(inventory, /inventoryChanceLabel\(gem, mutationIds\)/);
@@ -18,5 +18,5 @@ assert.match(features, /GUILD_COMPETITION_REWARDS/);
 assert.match(migration, /create trigger on_auth_user_created/);
 assert.match(migration, /record_gems_found_score/);
 assert.match(migration, /get_best_roll_leaderboard/);
-assert.match(updates, /v0\.11\.0\.1/);
+assert.match(updates, /core QoL issues/);
 console.log("QoL hotfix v0.11.0.1 tests passed.");

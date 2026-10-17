@@ -1,4 +1,8 @@
 RewriteEngine On
 
-# Keep /user/<uuid>/ as the visible canonical URL while serving the profile shell.
-RewriteRule ^user/([0-9a-fA-F-]{36})/?$ /user/index.html [L]
+# Preserve real assets before serving dynamic page shells.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^user/([^/]+)/?$ /user/index.html [L]
+RewriteRule ^recap/month[1-9][0-9]*/?$ /recap/index.html [L]

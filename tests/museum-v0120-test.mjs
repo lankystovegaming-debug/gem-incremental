@@ -47,8 +47,7 @@ assert.match(leaderboard, /Total Prestige/);
 assert.match(leaderboard, /Active Exhibit Score/);
 assert.match(read("leaderboards/index.html"), /museumPrestigeTab/);
 
-const updates = read("updates/index.html");
-assert.match(updates, /v0\.12\.0 Beta/);
-assert.match(updates, /A long-empty hall has opened its doors/);
+const updates = read("updates/history.json");
+assert.match(updates, /Added the Gem Museum/);
 
 console.log("Gem Museum v0.12.0 Beta tests passed.");

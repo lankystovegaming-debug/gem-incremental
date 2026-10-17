@@ -7,8 +7,12 @@ const { chromium } = await import(
 const base = process.env.UI_FOUNDATION_PREVIEW_URL || "http://127.0.0.1:5500/";
 const pages = ["", "settings/", "crafting/", "auctions/", "inventory/"];
 const viewports = [
+  { name: "small-mobile", width: 360, height: 800 },
   { name: "mobile", width: 390, height: 844 },
-  { name: "desktop", width: 1280, height: 900 }
+  { name: "large-mobile", width: 430, height: 932 },
+  { name: "tablet", width: 768, height: 1024 },
+  { name: "desktop", width: 1366, height: 768 },
+  { name: "large-desktop", width: 1600, height: 1000 }
 ];
 
 const browser = await chromium.launch({ headless: true });
@@ -27,16 +31,13 @@ try {
 
         const metrics = await page.evaluate(() => ({
           viewportWidth: innerWidth,
-          pageWidth: document.documentElement.scrollWidth,
-          minWidth: getComputedStyle(document.documentElement).minWidth
+          pageWidth: document.documentElement.scrollWidth
         }));
 
         assert.ok(
           metrics.pageWidth <= metrics.viewportWidth + 1,
           `${viewport.name} ${path || "roll"} overflowed: ${JSON.stringify(metrics)}`
         );
-        assert.equal(metrics.minWidth, "320px");
-
         if (path && path !== "") {
           const hero = page.locator(".page-hero");
           assert.equal(await hero.count(), 1, `${path} should expose one PageHero`);
@@ -46,7 +47,7 @@ try {
         await page.close();
       }
 
-      if (viewport.name === "mobile") {
+      if (viewport.width === 390) {
         const settings = await context.newPage();
         await settings.goto(new URL("settings/", base).href, { waitUntil: "domcontentloaded" });
         const formWidths = await settings.locator(".form-row").first().evaluate((row) => ({
@@ -60,7 +61,7 @@ try {
 
         const crafting = await context.newPage();
         await crafting.goto(new URL("crafting/", base).href, { waitUntil: "domcontentloaded" });
-        const tabs = await crafting.locator(".responsive-tabs").evaluate((element) => ({
+        const tabs = await crafting.locator(".responsive-tabs").first().evaluate((element) => ({
           client: element.clientWidth,
           scroll: element.scrollWidth,
           overflow: getComputedStyle(element).overflowX
@@ -77,4 +78,4 @@ try {
   await browser.close();
 }
 
-console.log("PASS: Phase 1 representative pages at 390px and 1280px without page overflow");
+console.log("PASS: Phase 1 representative pages at 360, 390, 430, 768, 1366, and 1600px without page overflow");

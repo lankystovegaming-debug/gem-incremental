@@ -1,0 +1,3077 @@
+{
+  "repository": "lankystovegaming-debug/gem-incremental",
+  "audited_on": "2026-10-15",
+  "merged_pr_count": 502,
+  "pull_requests": [
+    {
+      "pr": 518,
+      "title": "bugfix: dungeon summaries, progression locks and Workbench materials",
+      "merged_at": "2026-10-14T06:11:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 507,
+      "title": "dungeon",
+      "merged_at": "2026-10-14T05:32:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 517,
+      "title": "Fix final cutscene reveal centering across pages",
+      "merged_at": "2026-10-13T14:23:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 516,
+      "title": "Fix Neptune inventory deposits, Auto Forge and live progress",
+      "merged_at": "2026-10-12T14:27:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 515,
+      "title": "Fix roll regressions and refresh stale tests",
+      "merged_at": "2026-10-12T06:02:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 513,
+      "title": "Fix centered Deep Sea cutscene reveals",
+      "merged_at": "2026-10-10T08:19:48Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 512,
+      "title": "Fix Deep Sea gems missing from Gem Filter",
+      "merged_at": "2026-10-10T03:35:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 511,
+      "title": "Fix Deep Sea Auto Roll pool selection",
+      "merged_at": "2026-10-10T03:20:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 496,
+      "title": "weekly update 4: 10/10/26",
+      "merged_at": "2026-10-10T03:02:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 510,
+      "title": "Fix dungeon reward and mutation formulas",
+      "merged_at": "2026-10-09T15:23:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 509,
+      "title": "Fix anomalous i claim announcement",
+      "merged_at": "2026-10-09T03:36:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 508,
+      "title": "Add custom global discovery announcements",
+      "merged_at": "2026-10-09T03:09:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 506,
+      "title": "Fix Supersizer pickaxe roll failures and blessing sales",
+      "merged_at": "2026-10-07T09:15:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 505,
+      "title": "Fix pickaxe auto-craft filter routing",
+      "merged_at": "2026-10-07T05:17:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 504,
+      "title": "Revise AI agent database access instructions",
+      "merged_at": "2026-10-07T04:52:27Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 503,
+      "title": "Harden Gemdle lifetime leaderboard loading",
+      "merged_at": "2026-10-05T09:40:11Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 502,
+      "title": "Add Gemdle lifetime rarity leaderboard",
+      "merged_at": "2026-10-05T09:22:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 501,
+      "title": "Fix invalid Gemdle lifetime scores",
+      "merged_at": "2026-10-05T08:55:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 500,
+      "title": "Improve Gemdle collection and lifetime rarity score",
+      "merged_at": "2026-10-05T08:44:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 499,
+      "title": "Fix equipped Prismatic cosmetic rendering",
+      "merged_at": "2026-10-05T04:11:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 498,
+      "title": "Fix Exotic Potion duration and add Geode loot guide",
+      "merged_at": "2026-10-05T01:36:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 497,
+      "title": "Add server-authoritative Prismatic Geodes",
+      "merged_at": "2026-10-05T00:38:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 495,
+      "title": "weekly update 3: 10/10/26",
+      "merged_at": "2026-10-04T14:00:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 494,
+      "title": "weekly update 3: 10/10/26",
+      "merged_at": "2026-10-04T13:34:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 493,
+      "title": "Temporarily restrict sixseven67 from three lottery draws",
+      "merged_at": "2026-10-03T14:40:55Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 492,
+      "title": "Add player autocomplete for cheque recipients",
+      "merged_at": "2026-10-03T09:46:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 491,
+      "title": "Add taxed player cheques",
+      "merged_at": "2026-10-03T09:05:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 490,
+      "title": "Player Dynamics Improvments [feat]",
+      "merged_at": "2026-10-03T08:06:00Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 488,
+      "title": "Grant read-only admins censored economy access",
+      "merged_at": "2026-10-03T07:28:48Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 489,
+      "title": "weekly update 3: 10/10/26",
+      "merged_at": "2026-10-03T07:22:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 483,
+      "title": "weekly update 2: 10/10/26",
+      "merged_at": "2026-10-03T07:15:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 487,
+      "title": "Admin panel read-only access rework",
+      "merged_at": "2026-10-03T06:43:24Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 486,
+      "title": "Add scheduled admin game shutdown controls",
+      "merged_at": "2026-10-03T04:08:39Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 485,
+      "title": "Lottery QoL: live prize pool and result tax",
+      "merged_at": "2026-09-30T14:20:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 484,
+      "title": "Fix crafting history and owned-equipment status",
+      "merged_at": "2026-09-30T13:50:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 482,
+      "title": "Fix lottery ranges with private random ordering",
+      "merged_at": "2026-09-28T15:25:26Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 481,
+      "title": "Lottery: expandable result details",
+      "merged_at": "2026-09-28T14:43:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 480,
+      "title": "fix month 2 migration",
+      "merged_at": "2026-09-28T14:39:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 479,
+      "title": "Cash Market: live 0.7-1s ticker, quote-page style, switchable scale",
+      "merged_at": "2026-09-28T10:26:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 473,
+      "title": "weekly update 1 (3/10/26)",
+      "merged_at": "2026-09-28T10:26:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 478,
+      "title": "Fix lifetime earnings leaderboard to count gem sales only",
+      "merged_at": "2026-09-27T14:23:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 477,
+      "title": "Nerf Deepcore Crystalline Passage to 500 specimens",
+      "merged_at": "2026-09-27T10:10:11Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 476,
+      "title": "Daily Lottery V1",
+      "merged_at": "2026-09-27T09:28:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 475,
+      "title": "Fix Rare Rolls final Luck and serial capture",
+      "merged_at": "2026-09-27T09:11:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 474,
+      "title": "Fix Rare Rolls details and per-category history",
+      "merged_at": "2026-09-27T09:01:02Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 472,
+      "title": "Reduce the Deepcore Crystalline route requirement",
+      "merged_at": "2026-09-25T10:40:54Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 471,
+      "title": "UI polish: faceted SVG gem cuts, signed-out states, mobile fixes",
+      "merged_at": "2026-09-25T04:28:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 470,
+      "title": "Reduce All-In specialist requirement to three",
+      "merged_at": "2026-09-24T14:24:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 469,
+      "title": "UI refresh: measured top bar, roll-page side column, mobile + signed-out fixes",
+      "merged_at": "2026-09-24T12:25:29Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 468,
+      "title": "Rework All-In Pickaxe progression and stats",
+      "merged_at": "2026-09-24T09:44:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 467,
+      "title": "Fix Gem Index category refresh and expansion",
+      "merged_at": "2026-09-24T09:23:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 466,
+      "title": "Fix Gem Index catalog and discovery flow",
+      "merged_at": "2026-09-24T09:11:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 465,
+      "title": "Draft: Add bespoke cutscenes for nine new gems",
+      "merged_at": "2026-09-23T14:44:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 464,
+      "title": "Fix cutscene playback across all game routes",
+      "merged_at": "2026-09-23T04:35:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 463,
+      "title": "Fix Deepcore Phase 5.2 auto contribution and crate results",
+      "merged_at": "2026-09-23T04:32:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 462,
+      "title": "Fix Anomalous Rare Rolls migration catalog table",
+      "merged_at": "2026-09-22T14:22:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 461,
+      "title": "Announce Anomalous gems in Rare Rolls",
+      "merged_at": "2026-09-22T14:17:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 460,
+      "title": "Prioritize base rarity in Rare Rolls",
+      "merged_at": "2026-09-22T09:14:30Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 459,
+      "title": "Admin: remove the Activity Alerts panel and /alerts CLI command",
+      "merged_at": "2026-09-22T03:23:58Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 458,
+      "title": "Add pending gems, Aurorium windows, and Zephyrion",
+      "merged_at": "2026-09-22T01:19:54Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 457,
+      "title": "Show final multiplier on roll results",
+      "merged_at": "2026-09-22T00:38:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 456,
+      "title": "Add Cloudflare Web Analytics",
+      "merged_at": "2026-09-22T00:32:04Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 455,
+      "title": "Optimize Phase 5 roll hot path",
+      "merged_at": "2026-09-21T05:46:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 454,
+      "title": "Reduce Impossible combined weight requirement to 500M g",
+      "merged_at": "2026-09-21T05:34:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 453,
+      "title": "Fix roll preflights so abusive users reach the ban limiter",
+      "merged_at": "2026-09-21T04:31:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 452,
+      "title": "Show luck and serial on base Rare Rolls",
+      "merged_at": "2026-09-21T02:39:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 451,
+      "title": "Remove legacy announcements from Rare Rolls history",
+      "merged_at": "2026-09-21T02:30:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 450,
+      "title": "Harden roll CORS preflights against request floods",
+      "merged_at": "2026-09-21T02:26:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 449,
+      "title": "Exclude market purchases from Rare Rolls",
+      "merged_at": "2026-09-21T02:24:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 448,
+      "title": "Raise mutation Rare Rolls cutoff to 10B",
+      "merged_at": "2026-09-21T02:14:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 447,
+      "title": "Show Impossible combined weight and value requirements",
+      "merged_at": "2026-09-21T00:07:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 446,
+      "title": "Move rare rolls from chat to the roll page",
+      "merged_at": "2026-09-21T00:07:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 445,
+      "title": "Show Deepcore specimen value progress",
+      "merged_at": "2026-09-20T23:23:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 444,
+      "title": "Refresh Deepcore requirements every 30 seconds",
+      "merged_at": "2026-09-20T13:55:11Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 443,
+      "title": "Rebalance Crystal Caverns duplicate payouts",
+      "merged_at": "2026-09-20T13:45:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 442,
+      "title": "Keep crafted specialist pickaxes stored",
+      "merged_at": "2026-09-20T09:47:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 441,
+      "title": "Simplify HTTP error pages",
+      "merged_at": "2026-09-20T07:16:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 440,
+      "title": "Make game navigation easier to use",
+      "merged_at": "2026-09-20T06:44:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 439,
+      "title": "Show Deepcore sacrifice objective progress",
+      "merged_at": "2026-09-20T05:24:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 437,
+      "title": "Add Money-Up Potions",
+      "merged_at": "2026-09-20T04:49:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 438,
+      "title": "Prevent potion and equipment auto-craft from running simultaneously",
+      "merged_at": "2026-09-20T04:49:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 436,
+      "title": "Add Deepcore Top 5 reward packages",
+      "merged_at": "2026-09-20T04:07:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 435,
+      "title": "Raise mutated roll announcements to 1-in-1-billion",
+      "merged_at": "2026-09-20T03:24:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 434,
+      "title": "Fix secret gem discovery reveal in Gem Index",
+      "merged_at": "2026-09-20T02:38:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 433,
+      "title": "Enforce market reference value caps",
+      "merged_at": "2026-09-20T02:37:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 432,
+      "title": "Show Deep Sea on the Limited Events page",
+      "merged_at": "2026-09-19T17:18:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 431,
+      "title": "Fix Deep Sea Abyssal Potion seed ordering",
+      "merged_at": "2026-09-19T17:10:00Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 430,
+      "title": "Enable RLS on Deep Sea private roll commits",
+      "merged_at": "2026-09-19T17:05:58Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 429,
+      "title": "Implement Deep Sea limited event",
+      "merged_at": "2026-09-19T16:59:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 428,
+      "title": "Prevent admin alerts query timeouts",
+      "merged_at": "2026-09-19T13:35:53Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 427,
+      "title": "Add configurable chat content moderation",
+      "merged_at": "2026-09-19T13:35:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 426,
+      "title": "Improve admin anti-cheat alerts and analytics",
+      "merged_at": "2026-09-19T07:46:13Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 425,
+      "title": "Handle Supabase schema rollout compatibility",
+      "merged_at": "2026-09-19T07:33:19Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 424,
+      "title": "admin-panel-pet-equipment-fixes-and-workbench-improvement-and-limited…",
+      "merged_at": "2026-09-19T07:19:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 423,
+      "title": "Roll Count: global counter animates + polls every 3s",
+      "merged_at": "2026-09-19T04:42:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 422,
+      "title": "Roll Count: fix digit clipping after box removal",
+      "merged_at": "2026-09-19T01:40:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 421,
+      "title": "Roll Count page: minimal counters + global roll total",
+      "merged_at": "2026-09-19T00:34:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 420,
+      "title": "Permanently ban roll endpoint rate-limit abusers",
+      "merged_at": "2026-09-17T09:25:02Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 418,
+      "title": "Prevent Deepcore migration deadlocks",
+      "merged_at": "2026-09-16T13:04:12Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 417,
+      "title": "Implement Deepcore Project 2026",
+      "merged_at": "2026-09-16T12:53:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 415,
+      "title": "Add One Singular Grain of Sand cutscene",
+      "merged_at": "2026-09-16T02:58:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 414,
+      "title": "Reward serial #1 gem rolls with a Mythic Potion",
+      "merged_at": "2026-09-16T02:33:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 413,
+      "title": "Add a Masterwork Forge guide",
+      "merged_at": "2026-09-16T01:09:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 412,
+      "title": "Complete Reminiscite's 100M+ memory reel",
+      "merged_at": "2026-09-16T01:01:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 411,
+      "title": "Fix achievement refresh and specimen bulk deposits",
+      "merged_at": "2026-09-16T00:25:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 410,
+      "title": "Player CLI: power-user console for all players (auto-sell/craft/market + more)",
+      "merged_at": "2026-09-15T09:05:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 409,
+      "title": "Revise cutscene visual identities and pacing",
+      "merged_at": "2026-09-15T08:57:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 408,
+      "title": "Add Impossible manual deposit and Auto Craft workspace",
+      "merged_at": "2026-09-15T06:41:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 407,
+      "title": "Fix Impossible craft preview rounding on live weight types",
+      "merged_at": "2026-09-15T06:01:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 406,
+      "title": "Add the Impossible Pickaxe and atomic world-first craft",
+      "merged_at": "2026-09-15T05:52:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 404,
+      "title": "Fix Plastic Bag item integration",
+      "merged_at": "2026-09-15T01:49:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 403,
+      "title": "Fix fixed header and clean up Explore navigation",
+      "merged_at": "2026-09-15T00:40:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 402,
+      "title": "Docs: CLAUDE.md — equipment overhaul + maintenance/admin CLIs",
+      "merged_at": "2026-09-14T11:32:10Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 401,
+      "title": "Maintenance CLI: gem-name autocomplete + uncap /gems",
+      "merged_at": "2026-09-14T11:19:37Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 400,
+      "title": "Migrate inventory relics to stacked balances",
+      "merged_at": "2026-09-14T10:19:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 399,
+      "title": "Instrument optimized roll Edge timing",
+      "merged_at": "2026-09-14T05:44:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 398,
+      "title": "Hide duplicate scanner specimen during cutscene reveals",
+      "merged_at": "2026-09-14T05:32:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 397,
+      "title": "Redesign gem cutscene architecture",
+      "merged_at": "2026-09-14T05:20:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 396,
+      "title": "Add Supersizer pickaxe",
+      "merged_at": "2026-09-14T04:40:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 395,
+      "title": "Fix cutscene reliability and lifecycle",
+      "merged_at": "2026-09-14T02:38:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 394,
+      "title": "Classify historical economy corrections",
+      "merged_at": "2026-09-14T00:19:12Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 393,
+      "title": "Optimize roll Auto Craft hot path",
+      "merged_at": "2026-09-13T23:48:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 392,
+      "title": "Fix roll secret-key auth migration",
+      "merged_at": "2026-09-13T13:00:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 391,
+      "title": "Allow roll RPCs through secret-key admin clients",
+      "merged_at": "2026-09-13T12:52:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 390,
+      "title": "Fix roll context unavailable failures",
+      "merged_at": "2026-09-13T12:40:26Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 388,
+      "title": "Optimize the roll database hot path",
+      "merged_at": "2026-09-13T12:32:19Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 389,
+      "title": "Admin: Activity Alerts panel (unusual money movement — who/when/IP)",
+      "merged_at": "2026-09-13T12:14:09Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 387,
+      "title": "Implement P0 and P1 mobile optimizations",
+      "merged_at": "2026-09-13T11:15:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 386,
+      "title": "Admin CLI: autocomplete player commands from the full roster",
+      "merged_at": "2026-09-13T10:50:22Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 385,
+      "title": "CLI: parameter signature hint while typing arguments",
+      "merged_at": "2026-09-13T10:41:15Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 384,
+      "title": "Use total rolls for crafting and batch unlocks",
+      "merged_at": "2026-09-13T10:09:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 383,
+      "title": "Maintenance CLI: autocomplete target from online players",
+      "merged_at": "2026-09-13T07:30:54Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 382,
+      "title": "CLI: autocomplete + theme-aware styling + fix admin CLI reveal",
+      "merged_at": "2026-09-13T07:22:34Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 381,
+      "title": "Maintenance CLI + Admin CLI (Minecraft-style command lines)",
+      "merged_at": "2026-09-13T07:09:02Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 380,
+      "title": "Dev panel: give equipment (pickaxes, toys, clovers, lanterns, boots, bags)",
+      "merged_at": "2026-09-13T06:01:58Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 379,
+      "title": "Show every result from batch rolls",
+      "merged_at": "2026-09-13T04:32:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 378,
+      "title": "Add server-authoritative batch rolling",
+      "merged_at": "2026-09-13T04:20:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 377,
+      "title": "Add in-game ban appeals and admin review",
+      "merged_at": "2026-09-12T03:35:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 375,
+      "title": "make the description of gems show up",
+      "merged_at": "2026-09-11T09:13:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 374,
+      "title": "make the gem index display the actual backend values",
+      "merged_at": "2026-09-11T04:51:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 373,
+      "title": "Refactor gem catalog mapping for clarity",
+      "merged_at": "2026-09-11T03:23:29Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 372,
+      "title": "Add searchable player Info reference",
+      "merged_at": "2026-09-10T01:56:54Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 371,
+      "title": "Extend guild progression to level 20",
+      "merged_at": "2026-09-10T00:39:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 370,
+      "title": "Fix Mutation Index loading appearance",
+      "merged_at": "2026-09-10T00:21:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 369,
+      "title": "Make Mutation Index discovery based",
+      "merged_at": "2026-09-10T00:05:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 368,
+      "title": "Rebuild the Mutation Index page",
+      "merged_at": "2026-09-09T14:18:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 367,
+      "title": "Fix lifetime roll and Gem Index consistency",
+      "merged_at": "2026-09-09T13:45:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 366,
+      "title": "Add economy cash ledger and detailed admin breakdown",
+      "merged_at": "2026-09-09T13:17:29Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 365,
+      "title": "Rebalance serious post-Celestial pickaxes",
+      "merged_at": "2026-09-09T10:11:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 364,
+      "title": "Add Reality Shifter, Bedrock Pickaxe, and Max Luck",
+      "merged_at": "2026-09-09T07:26:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 363,
+      "title": "Implement finalized five-item equipment batch",
+      "merged_at": "2026-09-09T05:55:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 362,
+      "title": "Add crafting progress preview to the Roll page",
+      "merged_at": "2026-09-09T00:53:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 361,
+      "title": "Fix lifetime roll checks for equipment crafting",
+      "merged_at": "2026-09-09T00:34:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 359,
+      "title": "Implement Player Profiles + Cosmetics v1",
+      "merged_at": "2026-09-08T10:49:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 358,
+      "title": "Keep leaderboards available after partial query failures",
+      "merged_at": "2026-09-08T07:15:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 357,
+      "title": "Show exact gem values and whole-dollar cash",
+      "merged_at": "2026-09-08T06:50:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 356,
+      "title": "Fix exact money formatting regression",
+      "merged_at": "2026-09-08T06:13:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 355,
+      "title": "Restore exact money and weight displays",
+      "merged_at": "2026-09-08T05:51:48Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 354,
+      "title": "Refactor tiers to be an object with specific stats",
+      "merged_at": "2026-09-08T04:03:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 353,
+      "title": "Raise effective-rarity chat threshold to 50m",
+      "merged_at": "2026-09-08T03:31:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 344,
+      "title": "Implement seven permanent gameplay Bundles",
+      "merged_at": "2026-09-08T02:27:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 352,
+      "title": "Explain invalid update log fields",
+      "merged_at": "2026-09-08T00:40:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 351,
+      "title": "Accept plaintext update logs",
+      "merged_at": "2026-09-08T00:30:26Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 350,
+      "title": "Overhaul equipment progression, specialist pickaxes, and Luck calculation",
+      "merged_at": "2026-09-08T00:02:04Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 349,
+      "title": "Lanterns: grant Mutation Luck, gated behind a tier-5+ pickaxe",
+      "merged_at": "2026-09-07T23:30:54Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 348,
+      "title": "Referrals: extend promo to Sept 13 + login popup",
+      "merged_at": "2026-09-07T23:10:20Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 347,
+      "title": "Polish minigame controls, mobile layouts, and connection recovery",
+      "merged_at": "2026-09-07T12:09:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 346,
+      "title": "Add Month One recaps with permanent server-cutoff snapshots",
+      "merged_at": "2026-09-07T07:30:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 345,
+      "title": "Preserve trailing zeroes in abbreviated counts",
+      "merged_at": "2026-09-07T05:10:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 343,
+      "title": "Show exact Total Rolls value",
+      "merged_at": "2026-09-07T02:17:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 342,
+      "title": "Simplify minigame discovery and stabilize gameplay rendering",
+      "merged_at": "2026-09-07T01:08:20Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 341,
+      "title": "Polish equipment recipe cards",
+      "merged_at": "2026-09-06T15:05:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 340,
+      "title": "Add server-authoritative Gem Reels minigame",
+      "merged_at": "2026-09-06T14:34:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 339,
+      "title": "Fix cash history, event bonuses, and stats breakdowns",
+      "merged_at": "2026-09-06T14:26:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 338,
+      "title": "Expand late-game equipment and Masterwork progression",
+      "merged_at": "2026-09-06T07:41:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 337,
+      "title": "Cash Market: refresh graph every 1 minute",
+      "merged_at": "2026-09-05T14:06:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 336,
+      "title": "Admin referrals: flag same-IP (self-referral) abuse",
+      "merged_at": "2026-09-05T12:45:58Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 335,
+      "title": "Admin: referral tracking (count + who referred)",
+      "merged_at": "2026-09-05T12:39:46Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 334,
+      "title": "Crystal Caverns: fix same-run duplicate detection in live cargo",
+      "merged_at": "2026-09-05T12:11:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 332,
+      "title": "Minigames: smoother arcade (60fps + snappier hit feedback)",
+      "merged_at": "2026-09-05T11:10:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 331,
+      "title": "Minigames: fix strikes rejected as out-of-sync (server timing)",
+      "merged_at": "2026-09-05T09:52:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 330,
+      "title": "Perfect Strike: freeze the marker where you stop it",
+      "merged_at": "2026-09-05T09:27:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 329,
+      "title": "Minigames: Ore Slicer blade trail + reactive Minesweeper",
+      "merged_at": "2026-09-05T09:01:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 328,
+      "title": "Minigames: crafted in-game feedback and tidier play surfaces",
+      "merged_at": "2026-09-05T07:59:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 327,
+      "title": "Minigames: add a How to Play guide to every game",
+      "merged_at": "2026-09-05T07:39:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 326,
+      "title": "Minigames: polish visuals + interaction reactivity",
+      "merged_at": "2026-09-05T06:42:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 325,
+      "title": "Admin: Ban Now in IP audit + hourly/daily analytics toggle",
+      "merged_at": "2026-09-05T05:52:16Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 324,
+      "title": "Reduce minigame rendering work and preserve board cells",
+      "merged_at": "2026-09-05T04:43:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 323,
+      "title": "Fix wording on server validation description",
+      "merged_at": "2026-09-05T04:14:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 322,
+      "title": "Add Minigames v1 catalog, permanent navigation and validated runs",
+      "merged_at": "2026-09-05T04:00:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 321,
+      "title": "Reorganise the admin panel into tabs",
+      "merged_at": "2026-09-05T01:27:01Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 320,
+      "title": "Add admin Bank Accounts overview panel",
+      "merged_at": "2026-09-05T00:57:12Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 319,
+      "title": "Add a visible Gemdle link to the main Roll page",
+      "merged_at": "2026-09-04T15:16:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 318,
+      "title": "Add Gemdle daily minigame with server-authoritative results",
+      "merged_at": "2026-09-04T15:10:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 315,
+      "title": "Add Tier IV potion recipes",
+      "merged_at": "2026-09-04T14:14:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 314,
+      "title": "Add bank system: savings interest, credit score, and borrowing",
+      "merged_at": "2026-09-04T10:21:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 317,
+      "title": "Advance every active expedition on each roll",
+      "merged_at": "2026-09-04T10:07:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 316,
+      "title": "Refresh all expedition pages every 30 seconds",
+      "merged_at": "2026-09-04T09:59:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 313,
+      "title": "Modernize expedition consoles and add completion receipts",
+      "merged_at": "2026-09-04T08:00:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 311,
+      "title": "Make Expeditions a permanent top-bar feature",
+      "merged_at": "2026-09-03T10:59:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 310,
+      "title": "Implement Volcanic Depths Normal V1",
+      "merged_at": "2026-09-03T10:52:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 297,
+      "title": "Add Crystal Caverns Hell Mode V1",
+      "merged_at": "2026-09-02T06:18:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 308,
+      "title": "Filter Crystal Caverns artifacts from Abandoned Mine",
+      "merged_at": "2026-09-02T04:44:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 307,
+      "title": "Give Abandoned Mine its own page",
+      "merged_at": "2026-09-02T01:03:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 306,
+      "title": "Give Exalted rarity a distinct color",
+      "merged_at": "2026-09-02T00:43:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 305,
+      "title": "Add detailed player guides to Expeditions and Crystal Caverns",
+      "merged_at": "2026-09-01T23:28:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 304,
+      "title": "Fix late-game equipment crafting requirements",
+      "merged_at": "2026-09-01T14:51:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 303,
+      "title": "Remove hidden achievements pending proper event tracking",
+      "merged_at": "2026-09-01T13:09:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 302,
+      "title": "Replace the broken hidden achievement catalog",
+      "merged_at": "2026-09-01T12:59:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 301,
+      "title": "Stop false retroactive secret achievement unlocks",
+      "merged_at": "2026-09-01T12:29:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 300,
+      "title": "Repair stale secret achievement completions",
+      "merged_at": "2026-09-01T11:19:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 299,
+      "title": "Prevent secret achievement refresh timeouts",
+      "merged_at": "2026-09-01T08:37:13Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 298,
+      "title": "Restore server-authoritative secret achievements",
+      "merged_at": "2026-09-01T08:01:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 296,
+      "title": "Repair expedition and season progression",
+      "merged_at": "2026-09-01T07:29:29Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 294,
+      "title": "Fix leaderboard stale error reference",
+      "merged_at": "2026-09-01T05:52:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 293,
+      "title": "Protect leaderboards from public query abuse",
+      "merged_at": "2026-09-01T05:44:59Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 292,
+      "title": "Optimize roll hot path for concurrent players",
+      "merged_at": "2026-09-01T05:18:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 290,
+      "title": "Allow skipping Crystal Stabilisation Outposts",
+      "merged_at": "2026-09-01T04:09:13Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 291,
+      "title": "Add miscellaneous buffs stats card",
+      "merged_at": "2026-09-01T04:06:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 289,
+      "title": "Make global event timer tick down",
+      "merged_at": "2026-09-01T03:13:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 287,
+      "title": "Add server-authoritative global random events",
+      "merged_at": "2026-09-01T03:07:28Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 288,
+      "title": "Limit special potion luck modifiers to admin events",
+      "merged_at": "2026-09-01T01:31:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 286,
+      "title": "Fix Legendary and Mythic potion luck ordering",
+      "merged_at": "2026-09-01T01:26:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 285,
+      "title": "Add stat bonus breakdowns",
+      "merged_at": "2026-09-01T01:08:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 284,
+      "title": "Enforce market pricing limits",
+      "merged_at": "2026-08-31T14:18:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 280,
+      "title": "Add guild-wide consumable shop buffs",
+      "merged_at": "2026-08-31T13:23:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 283,
+      "title": "Link ban-screen appeal to the ban-appeal form",
+      "merged_at": "2026-08-31T12:41:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 282,
+      "title": "Add shared-IP audit to admin panel for alt-account detection",
+      "merged_at": "2026-08-31T12:10:04Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 281,
+      "title": "Add voluntary Crystal Caverns extraction",
+      "merged_at": "2026-08-31T11:03:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 279,
+      "title": "Account-first onboarding + referral launch promo",
+      "merged_at": "2026-08-31T10:32:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 278,
+      "title": "Make expedition Overdepth descent free",
+      "merged_at": "2026-08-31T09:49:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 277,
+      "title": "Rework Crystal Caverns extraction gameplay and dashboard",
+      "merged_at": "2026-08-31T09:25:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 276,
+      "title": "Add admin update log publishing",
+      "merged_at": "2026-08-31T04:05:02Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 275,
+      "title": "Rebalance referral rewards",
+      "merged_at": "2026-08-31T03:19:20Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 274,
+      "title": "Fix rare-roll chat Luck display",
+      "merged_at": "2026-08-31T03:11:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 273,
+      "title": "Load all paginated inventory gems",
+      "merged_at": "2026-08-31T03:01:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 272,
+      "title": "Spend one stacked potion charge per roll",
+      "merged_at": "2026-08-31T02:52:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 271,
+      "title": "Enforce one-roll potion roll requirements",
+      "merged_at": "2026-08-31T02:47:28Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 270,
+      "title": "Repair stacked one-roll potion charges",
+      "merged_at": "2026-08-31T02:38:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 269,
+      "title": "Fix password recovery redirect",
+      "merged_at": "2026-08-31T00:27:13Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 268,
+      "title": "Referral program + stackable one-roll potions",
+      "merged_at": "2026-08-31T00:11:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 267,
+      "title": "Sync admin gem grants with live catalog",
+      "merged_at": "2026-08-30T23:56:57Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 266,
+      "title": "Fix crafting deposits from large inventories",
+      "merged_at": "2026-08-30T23:48:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 265,
+      "title": "Fix crafting final multiplier eligibility",
+      "merged_at": "2026-08-30T23:37:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 264,
+      "title": "Fix achievement reward claiming",
+      "merged_at": "2026-08-30T13:40:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 263,
+      "title": "Fix roll lease runtime authorization",
+      "merged_at": "2026-08-30T13:30:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 262,
+      "title": "Enforce server-authoritative roll locking",
+      "merged_at": "2026-08-30T13:24:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 261,
+      "title": "Merge known Gmail alias accounts",
+      "merged_at": "2026-08-30T13:16:00Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 260,
+      "title": "Fix legal page Rulebook links to point at the handbook",
+      "merged_at": "2026-08-30T13:03:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 259,
+      "title": "Prevent Gmail alias account abuse",
+      "merged_at": "2026-08-30T12:57:56Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 258,
+      "title": "Add Privacy Policy & Terms page (linked from More menu)",
+      "merged_at": "2026-08-30T12:49:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 257,
+      "title": "Harden achievement refresh pipeline",
+      "merged_at": "2026-08-30T12:43:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 256,
+      "title": "Stats buffs, admin guild roster, devpanel RP fix + research map & mobile QoL",
+      "merged_at": "2026-08-30T12:05:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 255,
+      "title": "Fix forbidden achievement requests",
+      "merged_at": "2026-08-30T09:49:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 254,
+      "title": "Repair achievement catalog tracking",
+      "merged_at": "2026-08-30T09:02:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 253,
+      "title": "Fix Best Roll leaderboard timeout",
+      "merged_at": "2026-08-30T07:51:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 252,
+      "title": "Fix crafting deposit page refresh",
+      "merged_at": "2026-08-30T07:35:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 251,
+      "title": "Handle malformed legacy season achievement data",
+      "merged_at": "2026-08-30T06:41:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 250,
+      "title": "Rebalance market fees by listing duration",
+      "merged_at": "2026-08-30T06:31:11Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 249,
+      "title": "Daily spin wheel + research tree connectors + repo guidance",
+      "merged_at": "2026-08-30T06:09:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 248,
+      "title": "Keep guild flows working before directory migration",
+      "merged_at": "2026-08-30T02:40:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 247,
+      "title": "Keep guild actions working before logo migration",
+      "merged_at": "2026-08-30T02:30:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 246,
+      "title": "Handle stale guild directory action after disband",
+      "merged_at": "2026-08-30T02:21:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 245,
+      "title": "Allow legacy gems in manual crafting deposits",
+      "merged_at": "2026-08-30T00:55:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 244,
+      "title": "Show final weight multiplier on inventory cards",
+      "merged_at": "2026-08-30T00:49:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 239,
+      "title": "Add Crystal Caverns V1",
+      "merged_at": "2026-08-29T17:39:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 238,
+      "title": "Rebalance Normal Mine Overdepth economy",
+      "merged_at": "2026-08-29T14:18:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 243,
+      "title": "Show Research Tree upgrade specifications",
+      "merged_at": "2026-08-29T13:41:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 242,
+      "title": "Fix Research Upgrade Tree purchase failure",
+      "merged_at": "2026-08-29T13:35:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 241,
+      "title": "Fix username saves after profile hardening",
+      "merged_at": "2026-08-29T13:28:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 240,
+      "title": "Fix ambiguous Hell Doom function overload",
+      "merged_at": "2026-08-29T10:48:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 237,
+      "title": "Add Hell Mode artifact passives",
+      "merged_at": "2026-08-29T08:00:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 236,
+      "title": "Rebalance Normal Mine and display artifact passives",
+      "merged_at": "2026-08-29T04:51:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 235,
+      "title": "Normalize Hell curse stacking caps",
+      "merged_at": "2026-08-29T03:14:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 234,
+      "title": "Diversify Hell mode card hands",
+      "merged_at": "2026-08-29T02:43:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 233,
+      "title": "loot table fix, and prevent the same 3 event options",
+      "merged_at": "2026-08-29T02:22:20Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 232,
+      "title": "Preserve Hell Danger between depths",
+      "merged_at": "2026-08-29T02:01:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 231,
+      "title": "Reveal selected Hell card outcomes",
+      "merged_at": "2026-08-29T02:00:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 230,
+      "title": "Show revealed Hell card effects",
+      "merged_at": "2026-08-29T01:48:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 229,
+      "title": "Fix remaining Hell wallet ambiguities",
+      "merged_at": "2026-08-29T01:45:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 228,
+      "title": "Fix null Hell event phases",
+      "merged_at": "2026-08-29T01:40:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 227,
+      "title": "Fix Hell funding money ambiguity",
+      "merged_at": "2026-08-29T01:33:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 226,
+      "title": "Fix decimal Hell objective funding targets",
+      "merged_at": "2026-08-29T01:17:30Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 225,
+      "title": "hell mode v1",
+      "merged_at": "2026-08-29T01:05:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 224,
+      "title": "Add guild logo uploads",
+      "merged_at": "2026-08-28T10:34:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 223,
+      "title": "Handle pre-migration player state reads",
+      "merged_at": "2026-08-28T05:31:13Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 222,
+      "title": "Add late-game boots and bags progression",
+      "merged_at": "2026-08-28T05:21:26Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 221,
+      "title": "Add T14-T15 pickaxes and rebalance roll speed",
+      "merged_at": "2026-08-28T02:51:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 220,
+      "title": "Add v0.15.0 expedition update log",
+      "merged_at": "2026-08-28T02:37:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 219,
+      "title": "add expedition mechanics guide",
+      "merged_at": "2026-08-28T01:40:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 218,
+      "title": "rebalanced artefacts drop rates",
+      "merged_at": "2026-08-28T01:33:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 217,
+      "title": "Add Abandoned Mine loot table and Overdepth funding",
+      "merged_at": "2026-08-28T00:49:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 216,
+      "title": "fixed abandoned mine checkpoint camp flow",
+      "merged_at": "2026-08-28T00:11:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 215,
+      "title": "Redesign Expeditions around Abandoned Mine",
+      "merged_at": "2026-08-27T13:41:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 214,
+      "title": "Remove the Exchange",
+      "merged_at": "2026-08-27T10:42:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 213,
+      "title": "Exchange: manual market-close override",
+      "merged_at": "2026-08-27T08:17:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 212,
+      "title": "Exchange: avg buy price + 2s polling",
+      "merged_at": "2026-08-27T08:13:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 211,
+      "title": "Exchange: honest sell/buy quotes (fix inflated P/L and sell preview)",
+      "merged_at": "2026-08-27T07:22:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 210,
+      "title": "Add Research Tree v0.14.0 Beta",
+      "merged_at": "2026-08-27T06:17:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 209,
+      "title": "Maintenance panel: list all gems (live catalog)",
+      "merged_at": "2026-08-27T05:03:55Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 208,
+      "title": "Exchange: include player cash in the price formula",
+      "merged_at": "2026-08-27T05:03:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 207,
+      "title": "Exchange: midpoint fills stop pump-and-dump (keeps volatility)",
+      "merged_at": "2026-08-27T03:55:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 206,
+      "title": "Exchange: amplify volatility with a price exponent",
+      "merged_at": "2026-08-27T03:52:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 205,
+      "title": "Exchange: capital-driven price (replace random walk)",
+      "merged_at": "2026-08-27T03:31:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 204,
+      "title": "Exchange: volatile mean-reverting price",
+      "merged_at": "2026-08-27T02:36:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 203,
+      "title": "Exchange: tunable price calibration scale",
+      "merged_at": "2026-08-27T02:28:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 202,
+      "title": "Close the Exchange 21:30–07:30 (market hours)",
+      "merged_at": "2026-08-27T01:22:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 201,
+      "title": "Fix expired email link handling",
+      "merged_at": "2026-08-26T13:36:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 200,
+      "title": "Fix abbreviated money dropping a digit (160M showed as 16M)",
+      "merged_at": "2026-08-26T13:30:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 199,
+      "title": "Fix Daily Spin wheel not animating",
+      "merged_at": "2026-08-26T13:21:48Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 198,
+      "title": "Player Wars + daily login streak + Daily Spin",
+      "merged_at": "2026-08-26T12:40:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 197,
+      "title": "First-run guided spotlight tour for new players",
+      "merged_at": "2026-08-26T12:10:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 196,
+      "title": "Fix Explore menu duplicating Cash Market on every settings change",
+      "merged_at": "2026-08-26T10:00:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 195,
+      "title": "Exchange: Show stock price-over-time chart (4dp, live glide)",
+      "merged_at": "2026-08-26T07:40:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 194,
+      "title": "Admin panel: read-only Shareholders view",
+      "merged_at": "2026-08-26T07:02:30Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 193,
+      "title": "Add Luck-independent gems to Gem Builder",
+      "merged_at": "2026-08-26T05:07:27Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 192,
+      "title": "achievements v0.13.0 beta",
+      "merged_at": "2026-08-26T02:34:01Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 191,
+      "title": "Clarify Furnace leaderboard privacy behavior",
+      "merged_at": "2026-08-26T01:11:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 190,
+      "title": "Fix Admin/Guilds/Seasons missing from the Explore menu",
+      "merged_at": "2026-08-26T00:07:33Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 189,
+      "title": "Fix Explore/account dropdowns rendering behind page cards",
+      "merged_at": "2026-08-25T23:55:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 188,
+      "title": "Exchange: invest in shares of the economy (real market, 1% commission)",
+      "merged_at": "2026-08-25T13:26:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 187,
+      "title": "Add Furnace money sink and leaderboard",
+      "merged_at": "2026-08-25T13:25:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 186,
+      "title": "Season pass: polished claim button states",
+      "merged_at": "2026-08-25T08:30:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 185,
+      "title": "Cash counter: smooth 5-second lag (no overshoot)",
+      "merged_at": "2026-08-25T07:58:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 184,
+      "title": "Admin panel & market: live DB gem catalog instead of hardcoded gems",
+      "merged_at": "2026-08-25T07:46:47Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 183,
+      "title": "Label museum leaderboard scores clearly",
+      "merged_at": "2026-08-25T07:18:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 182,
+      "title": "Add Mining Cache loot contents viewer",
+      "merged_at": "2026-08-25T07:01:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 181,
+      "title": "Lower effective global-chat threshold to 1-in-10m",
+      "merged_at": "2026-08-25T05:36:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 180,
+      "title": "Persist qualifying rare rolls for global chat",
+      "merged_at": "2026-08-25T05:32:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 179,
+      "title": "Clean up navigation v0.12.1",
+      "merged_at": "2026-08-25T04:34:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 178,
+      "title": "Museum fixes and navigation cleanup v0.12.1",
+      "merged_at": "2026-08-25T04:29:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 177,
+      "title": "Add Gem Museum v0.12.0 Beta",
+      "merged_at": "2026-08-25T04:07:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 176,
+      "title": "Restore trusted service-role database access",
+      "merged_at": "2026-08-25T02:09:15Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 175,
+      "title": "Harden database permissions and server-authoritative actions",
+      "merged_at": "2026-08-25T00:48:48Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 174,
+      "title": "Fix cloud save bootstrap PGRST116 error",
+      "merged_at": "2026-08-25T00:15:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 173,
+      "title": "Security: fix players PATCH-to-cheat (deny-by-default guard)",
+      "merged_at": "2026-08-24T23:25:15Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 172,
+      "title": "Protect player display titles from client edits",
+      "merged_at": "2026-08-24T14:09:40Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 171,
+      "title": "Apply Mining Caches client and Sandbox removal",
+      "merged_at": "2026-08-24T13:53:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 170,
+      "title": "Replace loot boxes with Mining Caches v0.11.1",
+      "merged_at": "2026-08-24T13:41:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 169,
+      "title": "Render live mutations in inventory",
+      "merged_at": "2026-08-24T09:50:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 168,
+      "title": "Add missing inventory rarity filters",
+      "merged_at": "2026-08-24T09:43:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 167,
+      "title": "added \"updated from 25 aug\" in best roll",
+      "merged_at": "2026-08-24T09:35:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 166,
+      "title": "Rebalance rare announcements and effective leaderboards",
+      "merged_at": "2026-08-24T09:25:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 165,
+      "title": "Show live mutations in chat announcements",
+      "merged_at": "2026-08-24T07:14:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 164,
+      "title": "Show live mutations in roll history",
+      "merged_at": "2026-08-24T05:56:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 163,
+      "title": "Fix live mutation Actual Chance",
+      "merged_at": "2026-08-24T05:50:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 162,
+      "title": "Continuous glide for the global cash counter",
+      "merged_at": "2026-08-24T05:41:30Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 161,
+      "title": "Fix admin Market fee analytics",
+      "merged_at": "2026-08-24T05:07:03Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 160,
+      "title": "Add progressive Market fees",
+      "merged_at": "2026-08-24T04:54:45Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 159,
+      "title": "Clean up admin events and expire market orders",
+      "merged_at": "2026-08-24T04:25:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 158,
+      "title": "added a super super small extra text to leaderboard",
+      "merged_at": "2026-08-24T04:17:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 157,
+      "title": "Rate limit guild creation",
+      "merged_at": "2026-08-24T04:04:49Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 156,
+      "title": "Admin IP display + mobile input-zoom fix",
+      "merged_at": "2026-08-24T03:17:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 155,
+      "title": "Show concealed gem rarity tiers",
+      "merged_at": "2026-08-24T03:16:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 154,
+      "title": "Restore deprecated lantern crafting tab",
+      "merged_at": "2026-08-24T02:56:21Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 153,
+      "title": "Update README for current game systems",
+      "merged_at": "2026-08-24T02:47:39Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 152,
+      "title": "Four system qol",
+      "merged_at": "2026-08-24T02:43:02Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 151,
+      "title": "Show exact time for account dates in admin inspector",
+      "merged_at": "2026-08-23T23:11:53Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 150,
+      "title": "Show account created / last-seen in admin inspector",
+      "merged_at": "2026-08-23T23:06:18Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 149,
+      "title": "rebalanced enchants based on community feedback",
+      "merged_at": "2026-08-23T14:31:02Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 148,
+      "title": "Timed player bans with in-game restriction screen",
+      "merged_at": "2026-08-23T12:51:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 147,
+      "title": "Updated permissions on spending guild points and funding + 1 more",
+      "merged_at": "2026-08-23T09:56:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 146,
+      "title": "Add daily gem availability windows",
+      "merged_at": "2026-08-23T09:30:28Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 145,
+      "title": "Restore guild funding and expand endgame rarities",
+      "merged_at": "2026-08-23T08:25:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 144,
+      "title": "Revert broken guild point cash contribution merge",
+      "merged_at": "2026-08-23T07:02:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 143,
+      "title": "Add progressive guild point cash contributions",
+      "merged_at": "2026-08-23T06:31:38Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 142,
+      "title": "Add optional Cash Market graph page",
+      "merged_at": "2026-08-23T05:49:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 141,
+      "title": "Add a live \"online now\" user counter",
+      "merged_at": "2026-08-23T04:44:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 140,
+      "title": "Fix Player cash stuck at $0.00",
+      "merged_at": "2026-08-22T13:58:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 139,
+      "title": "Add a Player cash counter (money in wallets)",
+      "merged_at": "2026-08-22T13:53:10Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 138,
+      "title": "Add gem descriptions code bundles and specimen serials",
+      "merged_at": "2026-08-22T13:39:33Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 137,
+      "title": "Global cash: live feed of what caused it to rise",
+      "merged_at": "2026-08-22T13:19:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 136,
+      "title": "mutations index fix and some other fixes and some other fixes and some other fixes",
+      "merged_at": "2026-08-22T12:59:52Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 135,
+      "title": "Show member profile pictures in the guild roster",
+      "merged_at": "2026-08-22T11:09:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 134,
+      "title": "Rework guilds UI onto the design system (consistent + theme-aware)",
+      "merged_at": "2026-08-22T11:03:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 133,
+      "title": "Guild members can contribute immediately on joining",
+      "merged_at": "2026-08-22T10:52:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 132,
+      "title": "Clarify missions and show competition contributions",
+      "merged_at": "2026-08-22T07:45:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 131,
+      "title": "Repair guild invites and session insights",
+      "merged_at": "2026-08-22T07:16:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 130,
+      "title": "Repair guild and core QoL issues",
+      "merged_at": "2026-08-22T06:49:46Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 129,
+      "title": "Taller form inputs + wallet shows on every page",
+      "merged_at": "2026-08-22T04:55:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 128,
+      "title": "Global cash to bottom-left + polish form inputs",
+      "merged_at": "2026-08-22T04:43:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 126,
+      "title": "Rebuild guild progression and competitions",
+      "merged_at": "2026-08-22T04:09:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 127,
+      "title": "Global cash counter + Market tab memory (QoL)",
+      "merged_at": "2026-08-22T03:57:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 125,
+      "title": "Add Season Zero pass",
+      "merged_at": "2026-08-22T00:56:41Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 124,
+      "title": "Polish the CSS gem icons (sharper cut, sparkle, glow)",
+      "merged_at": "2026-08-21T12:22:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 123,
+      "title": "Chat shows base Luck (not admin boosts) + gem card polish",
+      "merged_at": "2026-08-21T11:50:13Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 122,
+      "title": "Fix rare roll chat and effective Auto Keep",
+      "merged_at": "2026-08-20T16:55:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 121,
+      "title": "Rebalance Daily Shop and Masterwork Forge prices",
+      "merged_at": "2026-08-20T16:12:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 120,
+      "title": "Market: buy-now listings + buy orders (replaces bidding)",
+      "merged_at": "2026-08-20T06:40:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 118,
+      "title": "Fix session effective rarity and notable rolls",
+      "merged_at": "2026-08-20T02:52:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 117,
+      "title": "Harden auction settlement and escrow tracking",
+      "merged_at": "2026-08-20T01:46:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 116,
+      "title": "Add Session Insights and Auto Keep",
+      "merged_at": "2026-08-19T15:57:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 115,
+      "title": "Add feature-switched utility navigation menu",
+      "merged_at": "2026-08-19T15:22:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 114,
+      "title": "Add feature-switched utility navigation menu",
+      "merged_at": "2026-08-19T14:49:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 113,
+      "title": "Restyle role tags to match chat (smaller, coloured, inline)",
+      "merged_at": "2026-08-19T12:46:48Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 112,
+      "title": "Add [SWEAT] tag for cat, role tags on the leaderboard, restyle",
+      "merged_at": "2026-08-19T12:42:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 111,
+      "title": "Auction lots (bundles + potions + relics) & expedition UX polish",
+      "merged_at": "2026-08-19T12:33:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 110,
+      "title": "Expedition rebalance v0.9.1",
+      "merged_at": "2026-08-19T10:56:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 109,
+      "title": "Add mutation luck to the maintenance (dev) panel",
+      "merged_at": "2026-08-19T09:58:50Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 108,
+      "title": "Consolidate shop and records navigation",
+      "merged_at": "2026-08-19T09:30:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 107,
+      "title": "Leaderboard hide control, 3-gem auction cap, first-run guide",
+      "merged_at": "2026-08-19T09:13:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 106,
+      "title": "expeditions v0.9.0 beta",
+      "merged_at": "2026-08-19T06:18:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 105,
+      "title": "daily shop",
+      "merged_at": "2026-08-19T03:38:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 104,
+      "title": "Add v0.8.3 beta Masterwork Forge",
+      "merged_at": "2026-08-19T01:38:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 103,
+      "title": "Fix authenticated player lookup when crafting",
+      "merged_at": "2026-08-18T22:52:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 102,
+      "title": "Fix relic inventory grouping and capacity",
+      "merged_at": "2026-08-18T16:46:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 101,
+      "title": "Add late-game equipment tiers and pickaxe passives",
+      "merged_at": "2026-08-18T16:33:20Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 100,
+      "title": "Allow manual equipment selection",
+      "merged_at": "2026-08-18T15:59:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 99,
+      "title": "Add v0.8 enchanting update log",
+      "merged_at": "2026-08-18T15:28:17Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 98,
+      "title": "Polish auction house inputs + real Lucide gavel icon",
+      "merged_at": "2026-08-18T12:32:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 97,
+      "title": "Auction house: list gems, bid, lazy settlement",
+      "merged_at": "2026-08-18T12:21:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 96,
+      "title": "Fix roll 500s (rolling down for everyone) + edge-call retries",
+      "merged_at": "2026-08-18T12:06:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 95,
+      "title": "Add pickaxe enchanting system",
+      "merged_at": "2026-08-18T11:52:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 94,
+      "title": "Fix gem card button overflow (2x2 grid)",
+      "merged_at": "2026-08-18T09:31:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 93,
+      "title": "Showcase: pin 3 gems to your profile + leaderboard",
+      "merged_at": "2026-08-18T09:12:42Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 92,
+      "title": "Sync weight luck logic with server",
+      "merged_at": "2026-08-18T08:31:44Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 91,
+      "title": "Heart of Xy cutscene: use the default gem icon",
+      "merged_at": "2026-08-18T07:09:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 90,
+      "title": "Debuff loot box loot",
+      "merged_at": "2026-08-18T06:57:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 89,
+      "title": "Rename Xy Gem -> Heart of Xy (1 in 100,000,000)",
+      "merged_at": "2026-08-18T06:55:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 87,
+      "title": "Bespoke Xy Gem cutscene",
+      "merged_at": "2026-08-18T02:17:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 86,
+      "title": "Add Xy Gem (1 in 15,000,000)",
+      "merged_at": "2026-08-18T00:51:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 85,
+      "title": "Fix one-roll potions: grant service_role DML on player_one_roll_boosts",
+      "merged_at": "2026-08-17T23:52:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 84,
+      "title": "Fix Legendary/Mythic potions (one-roll boost lost in rewrite)",
+      "merged_at": "2026-08-17T23:42:03Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 83,
+      "title": "Admin panel: grant mutated gems + set mutation luck",
+      "merged_at": "2026-08-17T23:31:44Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 82,
+      "title": "Remove cross-tab auth lock for faster rolling",
+      "merged_at": "2026-08-17T23:11:07Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 81,
+      "title": "Mutations UI fix",
+      "merged_at": "2026-08-17T12:42:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 80,
+      "title": "Index fix 1",
+      "merged_at": "2026-08-17T12:10:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 79,
+      "title": "Remove stock market; fix Legendary/Mythic potions",
+      "merged_at": "2026-08-17T10:45:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 78,
+      "title": "Fixes",
+      "merged_at": "2026-08-17T10:01:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 77,
+      "title": "Nice gem 8",
+      "merged_at": "2026-08-17T05:23:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 76,
+      "title": "Roll fix",
+      "merged_at": "2026-08-17T04:31:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 75,
+      "title": "Nice gem 7",
+      "merged_at": "2026-08-17T04:12:16Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 73,
+      "title": "Nice gem 6",
+      "merged_at": "2026-08-17T03:30:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 72,
+      "title": "Mutation cutscene",
+      "merged_at": "2026-08-17T02:17:04Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 70,
+      "title": "Coin Shop nav merge + compact top bar + 100k order cap + trades on leaderboard",
+      "merged_at": "2026-08-17T00:46:33Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 69,
+      "title": "Market: uncapped price, unlimited buy amount, gem shop removed, recent-trades feed",
+      "merged_at": "2026-08-17T00:28:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 68,
+      "title": "Add vercel.json (Vercel-ready static deploy)",
+      "merged_at": "2026-08-17T00:07:35Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 67,
+      "title": "Market: up to 10,000 shares per trade",
+      "merged_at": "2026-08-16T23:45:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 66,
+      "title": "Declutter: floating chat + mobile tab bar",
+      "merged_at": "2026-08-16T23:39:27Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 65,
+      "title": "Market (coin shares + gem shop), $10k coins, potion-craft fix, declutter",
+      "merged_at": "2026-08-16T23:31:40Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 64,
+      "title": "One instance only",
+      "merged_at": "2026-08-16T12:30:19Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 63,
+      "title": "Loot box reveal: never gets stuck on a blur",
+      "merged_at": "2026-08-16T11:35:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 62,
+      "title": "Nice gem 6",
+      "merged_at": "2026-08-16T11:34:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 61,
+      "title": "Nice gem 5",
+      "merged_at": "2026-08-16T11:25:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 60,
+      "title": "Restore Loot Boxes nav entry",
+      "merged_at": "2026-08-16T11:24:22Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 59,
+      "title": "Loot boxes: upgrade potion rewards",
+      "merged_at": "2026-08-16T11:19:18Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 57,
+      "title": "Revert \"Nice gem 4\"",
+      "merged_at": "2026-08-16T11:17:05Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 56,
+      "title": "Loot box tweaks + give-coins + wheel fix",
+      "merged_at": "2026-08-16T11:14:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 55,
+      "title": "Nice gem 4",
+      "merged_at": "2026-08-16T11:14:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 54,
+      "title": "Add loot boxes + coins currency",
+      "merged_at": "2026-08-16T11:01:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 53,
+      "title": "Nice gem 3",
+      "merged_at": "2026-08-16T11:00:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 52,
+      "title": "Add files via upload",
+      "merged_at": "2026-08-16T10:43:15Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 51,
+      "title": "Add Display font setting (Orbitron / Plain)",
+      "merged_at": "2026-08-16T09:08:23Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 50,
+      "title": "Nice gem 2",
+      "merged_at": "2026-08-16T07:49:14Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 49,
+      "title": "Fix equipment craft crash on rarity-points/gem-range recipes",
+      "merged_at": "2026-08-16T05:58:04Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 48,
+      "title": "Nice gems",
+      "merged_at": "2026-08-16T05:54:08Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 47,
+      "title": "Anti-cheat: guard direct client writes to players",
+      "merged_at": "2026-08-16T05:17:30Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 46,
+      "title": "Gate maintenance panel + craft schema-cache fix",
+      "merged_at": "2026-08-16T05:10:49Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 45,
+      "title": "Fix crafting, admin access, and roll-info display (+ maintenance/social features)",
+      "merged_at": "2026-08-16T04:32:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 44,
+      "title": "Miscellaneous fixes",
+      "merged_at": "2026-08-15T14:59:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 43,
+      "title": "Crafting fixes and more UI themes",
+      "merged_at": "2026-08-15T14:36:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 42,
+      "title": "Chat part 5",
+      "merged_at": "2026-08-15T14:19:31Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 41,
+      "title": "Chat part 4",
+      "merged_at": "2026-08-15T13:59:24Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 40,
+      "title": "Fix active potion boosts and pending player updates",
+      "merged_at": "2026-08-15T13:34:25Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 39,
+      "title": "Chat part 3",
+      "merged_at": "2026-08-15T13:07:04Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 38,
+      "title": "Feature/bulk deposit sort",
+      "merged_at": "2026-08-15T13:01:33Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 37,
+      "title": "Fix roll urgent",
+      "merged_at": "2026-08-15T12:49:47Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 36,
+      "title": "Add player QoL, account, and admin updates",
+      "merged_at": "2026-08-15T10:49:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 35,
+      "title": "Chat part 2",
+      "merged_at": "2026-08-15T10:33:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 34,
+      "title": "Implement chat functionality with Supabase",
+      "merged_at": "2026-08-15T10:20:51Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 33,
+      "title": "Add in login/account improvements",
+      "merged_at": "2026-08-15T05:04:58Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 32,
+      "title": "Add error pages",
+      "merged_at": "2026-08-15T01:47:48Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 31,
+      "title": "Feature/bulk deposit sort",
+      "merged_at": "2026-08-15T01:18:02Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 30,
+      "title": "Fix migration version collision (unique timestamps)",
+      "merged_at": "2026-08-14T12:33:53Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 29,
+      "title": "Bug fixes, critical security patch, and maintenance tooling",
+      "merged_at": "2026-08-14T12:27:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 27,
+      "title": "Feature/bulk deposit sort",
+      "merged_at": "2026-08-14T11:26:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 26,
+      "title": "Let players use potions from the inventory",
+      "merged_at": "2026-08-14T06:39:59Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 25,
+      "title": "Feature/potions polish",
+      "merged_at": "2026-08-14T06:23:56Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 24,
+      "title": "UI overhaul: themes, automation, settings",
+      "merged_at": "2026-08-14T01:14:53Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 23,
+      "title": "Leaderboards",
+      "merged_at": "2026-08-13T03:33:06Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 22,
+      "title": "-10% cost",
+      "merged_at": "2026-08-13T02:04:33Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 21,
+      "title": "Account login",
+      "merged_at": "2026-08-13T01:33:57Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 20,
+      "title": "Fix new player",
+      "merged_at": "2026-08-12T15:29:34Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 19,
+      "title": "Bugfix again",
+      "merged_at": "2026-08-12T13:39:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 18,
+      "title": "Update auth.js",
+      "merged_at": "2026-08-12T13:30:39Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 17,
+      "title": "Backend",
+      "merged_at": "2026-08-12T13:18:04Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 16,
+      "title": "Revise cooldown times for game recipes",
+      "merged_at": "2026-08-12T03:09:09Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 15,
+      "title": "Patches",
+      "merged_at": "2026-08-11T08:45:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 14,
+      "title": "Feature/inv upgrade",
+      "merged_at": "2026-08-11T07:59:55Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 13,
+      "title": "Feature/gem index",
+      "merged_at": "2026-08-11T07:45:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 12,
+      "title": "Feature/other equipment",
+      "merged_at": "2026-08-11T07:07:37Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 11,
+      "title": "Url fix",
+      "merged_at": "2026-08-11T05:30:26Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    },
+    {
+      "pr": 10,
+      "title": "Feature/debug",
+      "merged_at": "2026-08-11T05:10:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 9,
+      "title": "Feature/crafting",
+      "merged_at": "2026-08-11T02:48:43Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 8,
+      "title": "Feature/inventory",
+      "merged_at": "2026-08-11T01:28:32Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 7,
+      "title": "added roll cooldown",
+      "merged_at": "2026-08-11T00:45:00Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 6,
+      "title": "Feature/roll UI",
+      "merged_at": "2026-08-11T00:41:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 5,
+      "title": "Feature/roll result",
+      "merged_at": "2026-08-10T23:30:36Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 4,
+      "title": "Feature/weight",
+      "merged_at": "2026-08-10T14:16:35Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 3,
+      "title": "Feature/rolling",
+      "merged_at": "2026-08-10T09:07:12Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 2,
+      "title": "initial gem data",
+      "merged_at": "2026-08-10T08:38:50Z",
+      "disposition": "included"
+    },
+    {
+      "pr": 1,
+      "title": "v0.1 game design doc",
+      "merged_at": "2026-08-10T08:29:34Z",
+      "disposition": "internal",
+      "reason": "Internal tooling, documentation, deployment preparation or security maintenance; no separate player-facing release note."
+    }
+  ]
+}

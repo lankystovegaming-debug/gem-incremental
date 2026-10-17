@@ -5,6 +5,7 @@ const migration = readFileSync(new URL("../supabase/migrations/20260831035947_ad
 const adminFunction = readFileSync(new URL("../supabase/functions/admin/index.ts", import.meta.url), "utf8");
 const adminUi = readFileSync(new URL("../admin/admin.js", import.meta.url), "utf8");
 const updatesUi = readFileSync(new URL("../updates/updates.js", import.meta.url), "utf8");
+const updateRenderer = readFileSync(new URL("../src/ui/updateLog.js", import.meta.url), "utf8");
 const updatesHtml = readFileSync(new URL("../updates/index.html", import.meta.url), "utf8");
 
 assert.match(migration, /create table if not exists public\.update_logs/);
@@ -20,9 +21,10 @@ assert.match(adminUi, /parseUpdateLogContent/);
 assert.match(adminUi, /Version required/);
 assert.match(adminUi, /derivedTitle/);
 assert.match(adminUi, /Raw HTML is never rendered|escapeHtml\(entry\.title\)/);
-assert.match(updatesUi, /\.from\("update_logs"\)/);
-assert.match(updatesUi, /escapeHtml\(section\.heading\)/);
-assert.match(updatesUi, /escapeHtml\(bullet\)/);
+assert.doesNotMatch(updatesUi, /\.from\("update_logs"\)/);
+assert.match(updatesUi, /loadUpdateHistory/);
+assert.match(updateRenderer, /escapeHtml\(section\.heading\)/);
+assert.match(updateRenderer, /escapeHtml\(bullet\)/);
 assert.match(updatesHtml, /id="publishedUpdates"/);
 
 console.log("Admin update publishing checks passed.");

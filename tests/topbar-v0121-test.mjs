@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 const shell = fs.readFileSync(new URL("../src/ui/shell.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../src/styles/app.css", import.meta.url), "utf8");
-const updates = fs.readFileSync(new URL("../updates/index.html", import.meta.url), "utf8");
+const updates = fs.readFileSync(new URL("../updates/history.json", import.meta.url), "utf8");
 
 assert.match(shell, /CORE_PAGE_IDS[^\n]+roll[^\n]+inventory[^\n]+crafting[^\n]+boosts[^\n]+auctions[^\n]+expeditions/);
 assert.match(shell, /id: "expeditions", label: "Expeditions", short: "Exped\.", href: "expeditions\/", icon: icons\.map/);
@@ -13,12 +13,12 @@ assert.match(shell, /function getNavigationPages\(\)/);
 assert.match(shell, /DEFAULT_TOP_BAR_IDS = \[\.\.\.CORE_PAGE_IDS\]/);
 assert.match(shell, /enabledSectionMap\.get\(item\.sectionId\)\?\.enabled === true/);
 assert.match(shell, /\.filter\(item=>item\.id!=="limited-events"/);
-assert.match(shell, /tabbar\.innerHTML = getNavigationPages\(\)\.map/);
+assert.match(shell, /getMobileNavigationPages\(\)\.slice|return getConfiguredNavigationPages\(\)\.slice\(0, MOBILE_PRIMARY_LIMIT\)/);
+assert.match(shell, /data-mobile-navigation-trigger/);
 assert.match(shell, /const exploreMenu=document\.getElementById\("shellExploreMenu"\)/);
 assert.match(shell, /enabledSectionMap = sectionMap;[\s\S]*rerenderPrimaryNavigation\(\)/);
 assert.doesNotMatch(shell, /header\.querySelector\("\.nav"\)\?\.insertAdjacentHTML\("beforeend", navLink\(configured/);
 assert.match(styles, /\.topbar-explore__menu/);
-assert.match(updates, /v0\.12\.1/);
-assert.match(updates, /Cleaner Navigation/);
+assert.match(updates, /Simplified navigation/);
 
 console.log("Topbar v0.12.1 tests passed.");

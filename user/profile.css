@@ -526,3 +526,8 @@
 @media(max-width:500px){.profile-hero:is([data-background="glitched"],[data-background="celestial"],[data-background="overgrown"])::before{left:16px;right:16px;text-align:center}.profile-hero:is([data-background="glitched"],[data-background="celestial"],[data-background="overgrown"]) .profile-hero__glow{display:none}.profile-hero:is([data-background="glitched"],[data-background="celestial"],[data-background="overgrown"]) h1{font-size:2.05rem}}
 /* Shared button/card display rules must not override profile visibility gates. */
 .profile-page [hidden] { display: none !important; }
+
+/* The Interlude: season-exclusive profile collectibles. */
+.profile-hero__avatar[data-frame="silver-horizon"]{border:5px ridge #d8e5ee;box-shadow:0 0 0 4px #b6c5d52b,0 2px 28px #c8deef45;outline:1px solid #eef7ff;outline-offset:3px}
+.profile-hero[data-background="crystal-reverie"]{border-color:#c1ceef90;background:linear-gradient(135deg,transparent 21%,#bedfff24 21.2% 22%,transparent 22.2% 65%,#cbb3ff28 65.2% 66%,transparent 66.2%),radial-gradient(ellipse at 80% 20%,#8674bd55,transparent 55%),linear-gradient(120deg,#111e30,#292343);box-shadow:inset 0 0 55px #c3d9ff20,0 16px 40px #0004}
+.profile-hero[data-background="crystal-reverie"] .profile-hero__glow{background:conic-gradient(from 30deg,#d2e9ff55,#c9a7ef33,#a3dfe655,#d2e9ff55);clip-path:polygon(50% 0,93% 30%,78% 84%,32% 100%,0 42%);filter:drop-shadow(0 0 18px #c8b8ff66);opacity:.6}

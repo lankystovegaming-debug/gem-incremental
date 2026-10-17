@@ -964,7 +964,7 @@ function renderAchievementPoints() {
 //
 // Leaderboard rows keep their existing markup so the boards remain
 // compact, then this pass turns each ranked player identity into a
-// real link. The destination is the canonical /user/<uuid>/ route.
+// real link. The destination is the canonical /user/<username>/ route.
 // =========================================================
 
 function wireProfileLinks() {
@@ -1008,7 +1008,7 @@ function wireProfileLinks() {
     const link = document.createElement("a");
 
     link.className = "leaderboard-profile-link";
-    link.href = `/user/${encodeURIComponent(userId)}/`;
+    link.href = `/user/${encodeURIComponent(username)}/`;
     link.title = `View ${username}'s profile`;
 
     identity.parentNode.insertBefore(link, identity);

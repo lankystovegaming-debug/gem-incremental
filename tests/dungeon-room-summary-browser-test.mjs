@@ -24,9 +24,9 @@ const server = http.createServer((req, res) => {
   if (pathname === '/src/backend/supabase.js') {
     res.setHeader('Content-Type', 'text/javascript');
     res.end(`export const supabase={functions:{async invoke(name,{body}){
-      if(name==='workbench')return {data:body.action==='catalog'?{recipes:[]}:{materials:Array.from({length:130},(_,i)=>({material_name:'Bone '+i,quantity:i+1})),essence:[{essence_tier:'TE',quantity:7}],gear:[]}};
+      if(name==='workbench')return {data:body.action==='catalog'?{recipes:[]}:{materials:Array.from({length:130},(_,i)=>({material_name:'Bone '+i,quantity:i+1})),essence:[{essence_tier:'TE',quantity:7}],gear:[{stats:{name:'Fine <weapon>'},quality:'75%',mutation_name:'Chocolate',gem_power:104560875,combat_gem_power:3216578},{stats:{recipe:'Shark Scale Armor'},quality:'Workbench',gem_power:1144000,combat_gem_power:1144000}]}};
       if(body.action==='progress')return {data:await(await fetch('/progress-fixture')).json()};
-      if(body.action==='start')return {data:{run:{id:'fixture',room_number:body.roomNumber,status:'won'},combatant:null}};
+      if(body.action==='start')return {data:{run:{id:'fixture',room_number:body.roomNumber,status:'won',player_attack:331,player_health:743,room_state:{startingHealth:743,combatGemPower:3216578,balanceVersion:'2026-10-17'}},combatant:null}};
       if(body.action==='claim')return {data:await(await fetch('/claim-fixture')).json()};
       return {data:body.action==='room'?await(await fetch('/fixture/'+body.roomNumber)).json():{current:null}};
     }}};`); return;
@@ -76,6 +76,7 @@ try {
     assert.equal(await page.locator('#pageOne,#pageTwo,.catalog-pages,.global-cash').count(), 0);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No horizontal page overflow');
     await page.locator('#startRoom').click();
+    await page.getByText('Attack 331 · Health 743 / 743 · 3,216,578 combat GP',{exact:true}).waitFor();
     await page.locator('#claim').click();
     await page.locator('[data-room="2"]:not([disabled])').waitFor();
     assert(await page.locator('[data-room="3"]').isDisabled());
@@ -102,6 +103,10 @@ try {
     assert.equal(await page.locator('.inv-row').count(), 130);
     assert(await page.getByRole('heading', { name: 'Your Dungeon Materials' }).isVisible());
     assert.match(await page.locator('#essenceBar').innerText(), /TE: 7/);
+    assert.match(await page.locator('#history').innerText(), /104,560,875 raw GP · 3,216,578 combat GP/);
+    assert.match(await page.locator('#history').innerText(), /1,144,000 raw GP · 1,144,000 combat GP/);
+    assert.match(await page.locator('#history').innerText(), /Fine <weapon>/);
+    assert.equal(await page.locator('#history weapon').count(),0,'gear names remain escaped');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Workbench must fit mobile');
     await page.close();
   }

@@ -32,32 +32,71 @@ test('all verified event tiers are present without hidden scheduler data', () =>
   assert.equal(new Set(events.map(event => event.id)).size, 25);
   assert.doesNotMatch(JSON.stringify({groups, events}), /selection_weight|spawn.percent|tailEntryChance|Math\.exp|Magnum Opus|Mastery/i);
 });
-test('active event reference preserves timer expiry and inactive removal', async () => {
+test('active events are grouped and an active admin event is polled every second', async () => {
   const shell = readFileSync(new URL('../src/ui/shell.js', import.meta.url), 'utf8');
-  const source = shell.slice(shell.indexOf('async function renderActiveGlobalEvent('), shell.indexOf('\nfunction eventPercent('));
+  const source = shell.slice(shell.indexOf('async function renderActiveEvents('), shell.indexOf('\nfunction eventPercent('));
   let now = Date.parse('2026-09-10T00:00:00Z');
-  let banner = null;
+  let card = null;
   const timers = new Map();
-  let event = {id:'test', eventKey:'lucky_hour', name:'Lucky Hour', tier:'common', config:{}, description:'Luck boost', startsAt:new Date(now).toISOString(), endsAt:new Date(now + 10000).toISOString(), serverNow:new Date(now).toISOString()};
+  let adminCalls = 0;
+  let adminEvent = {id:'admin-1', name:'Double luck', luck_multiplier:2, ends_at:new Date(now + 10000).toISOString()};
+  const globalEvent = {id:'global-1', eventKey:'lucky_hour', name:'Lucky Hour', tier:'common', config:{}, description:'Luck boost', startsAt:new Date(now).toISOString(), endsAt:new Date(now + 10000).toISOString(), serverNow:new Date(now).toISOString()};
   class Clock extends Date { static now() { return now; } }
-  const timer = {textContent:''};
+  const count = {textContent:'', setAttribute(name, value) { this[name] = value; }};
+  const list = {innerHTML:''};
+  const eventTimers = [];
+  const syncEventTimers = () => {
+    eventTimers.length = 0;
+    for (const match of list.innerHTML.matchAll(/data-ends-at="([^"]+)"( data-server-clock="true")?/g)) {
+      eventTimers.push({dataset:{endsAt:match[1], serverClock:match[2] ? 'true' : undefined}, textContent:''});
+    }
+  };
+  Object.defineProperty(list, 'innerHTML', {get() { return this.value || ''; }, set(value) { this.value = value; syncEventTimers(); }});
   const context = vm.createContext({
-    Date:Clock, ensurePlayerAuth:async () => ({id:"test"}), loadActiveGlobalEvent:async () => ({data:event}),
-    escapeHtml: value => String(value), eventTime: value => String(value),
+    Date:Clock, icons:{sparkle:'<svg></svg>', chevronDown:'<svg></svg>'},
+    ensurePlayerAuth:async () => ({id:'test'}),
+    loadActiveAdminEvent:async () => {adminCalls += 1; return {data:adminEvent};},
+    loadActiveGlobalEvent:async () => ({data:globalEvent}),
+    escapeHtml: value => String(value ?? ''), eventTime: value => String(Math.max(0, value)),
+    eventPercent: value => `${Number(value) * 100}%`, eventMultiplier: value => `×${Number(value)}`,
     setInterval: (fn, delay) => {timers.set(delay, fn); return delay;}, clearInterval: () => {},
     window:{addEventListener:()=>{}},
-    document:{querySelector: selector => selector === '.global-event-banner' ? banner : null,
-      createElement: () => ({className:'', innerHTML:'', querySelector: () => timer, remove: () => {banner=null;}})}
+    document:{querySelector: () => null, createElement: () => ({
+      className:'', innerHTML:'', querySelector: selector => selector.includes('__count') ? count : list,
+      querySelectorAll: () => eventTimers
+    })}
   });
-  const render = vm.runInContext(`${source}; renderActiveGlobalEvent`, context);
-  await render({after: value => {banner=value;}}, '../../');
-  assert.match(banner.innerHTML, /Lucky Hour · common/);
-  assert.match(banner.innerHTML, /href="\.\.\/\.\.\/info\/#random-events"/);
-  assert.equal(timer.textContent, '10000');
-  now += 10001;
-  timers.get(1000)();
-  assert.equal(banner, null, 'expired event disappears without waiting for polling');
-  event = null;
-  await timers.get(15000)();
-  assert.equal(banner, null, 'inactive event stays absent');
+  const render = vm.runInContext(`${source}; renderActiveEvents`, context);
+  await render({after: value => {card=value;}}, '../../');
+  assert.equal(count.textContent, '2');
+  assert.match(list.innerHTML, /Double luck/);
+  assert.match(list.innerHTML, /Lucky Hour · common/);
+  assert.match(list.innerHTML, /href="\.\.\/\.\.\/info\/#random-events"/);
+  adminEvent = {id:'admin-2', name:'Overrunning event', luck_multiplier:3, ends_at:new Date(now + 20000).toISOString()};
+  await timers.get(1000)();
+  assert.equal(adminCalls, 2, 'active admin event is refreshed once per second');
+  assert.match(list.innerHTML, /Overrunning event/, 'new admin event replaces the previous event in place');
+});
+test('active events card remains available when there are no events', async () => {
+  const shell = readFileSync(new URL('../src/ui/shell.js', import.meta.url), 'utf8');
+  const source = shell.slice(shell.indexOf('async function renderActiveEvents('), shell.indexOf('\nfunction eventPercent('));
+  const count = {textContent:'', setAttribute() {}};
+  const list = {innerHTML:''};
+  let card = null;
+  const context = vm.createContext({
+    Date, icons:{sparkle:'', chevronDown:''}, ensurePlayerAuth:async () => ({id:'test'}),
+    loadActiveAdminEvent:async () => ({data:null}), loadActiveGlobalEvent:async () => ({data:null}),
+    escapeHtml: value => String(value ?? ''), eventTime: value => String(value),
+    eventPercent: value => `${Number(value) * 100}%`, eventMultiplier: value => `×${Number(value)}`,
+    setInterval: () => 1, clearInterval: () => {}, window:{addEventListener:()=>{}},
+    document:{querySelector: () => null, createElement: () => ({
+      className:'', innerHTML:'', querySelector: selector => selector.includes('__count') ? count : list,
+      querySelectorAll: () => []
+    })}
+  });
+  const render = vm.runInContext(`${source}; renderActiveEvents`, context);
+  await render({after: value => {card=value;}}, './');
+  assert.ok(card, 'the expandable card is rendered');
+  assert.equal(count.textContent, '0');
+  assert.match(list.innerHTML, /no active events/);
 });

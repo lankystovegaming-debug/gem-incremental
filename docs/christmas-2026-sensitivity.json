@@ -1,0 +1,276 @@
+{
+  "scope": "Approved-schedule +16-hour sensitivity and illustrative 30-minute daily quest check; not a reproduction of simulation #2 Tree completion rates.",
+  "source": "Supabase roll v178, checked against repository on 2026-10-14; roll/index.ts unchanged.",
+  "baseSeconds": 2.5,
+  "oldHours": 720,
+  "newHours": 736,
+  "extraHours": 16,
+  "uniformParticipationIncreasePercent": 2.2222222222222143,
+  "assumptions": [
+    "Throughput rows assume continuous participation in the extra 16 hours, constant final Roll Speed, and no network overhead.",
+    "Throughput rows use normal Present odds without bonuses. Schedule exposure and original attendance profiles are analyzed separately.",
+    "Profile extensions assume uniform active attendance and unchanged proportional window capture, not known player login times.",
+    "Original Aurora attendance is explicitly rescaled from the published 20-hour maximum to the approved schedule’s 10-hour old-window budget. This is an assumption, not a claim that the old simulation has been reproduced.",
+    "Daily scenarios reuse the backend selector/relic pass with 256 audited always-available ordinary gems plus Wave I; no other events, equipment passives, extra drops, research, consumables or gem-specific bonuses. Luck and final speed are illustrative inputs, not measured player profiles.",
+    "Batch cooldown is taken from the backend; batching does not multiply throughput."
+  ],
+  "rows": [
+    {
+      "speed": 1,
+      "batch": 1,
+      "additionalRolls": 23040,
+      "expectedPresents": {
+        "small": 4.608,
+        "festive": 0.576,
+        "large": 0.2304,
+        "golden": 0.02304
+      },
+      "expectedPP": 16.128
+    },
+    {
+      "speed": 1,
+      "batch": 10,
+      "additionalRolls": 23040,
+      "expectedPresents": {
+        "small": 4.608,
+        "festive": 0.576,
+        "large": 0.2304,
+        "golden": 0.02304
+      },
+      "expectedPP": 16.128
+    },
+    {
+      "speed": 1,
+      "batch": 100,
+      "additionalRolls": 23000,
+      "expectedPresents": {
+        "small": 4.6,
+        "festive": 0.575,
+        "large": 0.23,
+        "golden": 0.023
+      },
+      "expectedPP": 16.1
+    },
+    {
+      "speed": 5,
+      "batch": 1,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 5,
+      "batch": 10,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 5,
+      "batch": 100,
+      "additionalRolls": 115200,
+      "expectedPresents": {
+        "small": 23.04,
+        "festive": 2.88,
+        "large": 1.152,
+        "golden": 0.1152
+      },
+      "expectedPP": 80.64
+    },
+    {
+      "speed": 20,
+      "batch": 1,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    },
+    {
+      "speed": 20,
+      "batch": 10,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    },
+    {
+      "speed": 20,
+      "batch": 100,
+      "additionalRolls": 460800,
+      "expectedPresents": {
+        "small": 92.16,
+        "festive": 11.52,
+        "large": 4.608,
+        "golden": 0.4608
+      },
+      "expectedPP": 322.56
+    }
+  ],
+  "approvedSchedule": {
+    "oldRushStormHours": 31,
+    "newRushStormHours": 32,
+    "oldAuroraHours": 10,
+    "newAuroraHours": 10.666666666666666,
+    "originalSimulationAuroraHours": 20,
+    "windows": 128
+  },
+  "profiles": [
+    {
+      "name": "Casual",
+      "original": {
+        "activeHours": 60,
+        "rushStormHours": 1.7,
+        "auroraHours": 1
+      },
+      "extraActiveHoursAssumingUniformAttendance": 1.3333333333333333,
+      "extraRushStormHoursAssumingSameWindowCapture": 0.054838709677419356,
+      "normalizedAuroraHoursForApprovedOldSchedule": 0.5,
+      "extraAuroraHoursAssumingSameWindowCapture": 0.033333333333333305
+    },
+    {
+      "name": "Regular",
+      "original": {
+        "activeHours": 180,
+        "rushStormHours": 4.1,
+        "auroraHours": 3
+      },
+      "extraActiveHoursAssumingUniformAttendance": 4,
+      "extraRushStormHoursAssumingSameWindowCapture": 0.132258064516129,
+      "normalizedAuroraHoursForApprovedOldSchedule": 1.5,
+      "extraAuroraHoursAssumingSameWindowCapture": 0.09999999999999991
+    },
+    {
+      "name": "Hardcore",
+      "original": {
+        "activeHours": 360,
+        "rushStormHours": 11,
+        "auroraHours": 7
+      },
+      "extraActiveHoursAssumingUniformAttendance": 8,
+      "extraRushStormHoursAssumingSameWindowCapture": 0.3548387096774194,
+      "normalizedAuroraHoursForApprovedOldSchedule": 3.5,
+      "extraAuroraHoursAssumingSameWindowCapture": 0.23333333333333311
+    },
+    {
+      "name": "Extreme",
+      "original": {
+        "activeHours": 540,
+        "rushStormHours": 20.4,
+        "auroraHours": 13
+      },
+      "extraActiveHoursAssumingUniformAttendance": 12,
+      "extraRushStormHoursAssumingSameWindowCapture": 0.6580645161290322,
+      "normalizedAuroraHoursForApprovedOldSchedule": 6.5,
+      "extraAuroraHoursAssumingSameWindowCapture": 0.43333333333333296
+    },
+    {
+      "name": "24/7",
+      "original": {
+        "activeHours": 720,
+        "rushStormHours": 31,
+        "auroraHours": 20
+      },
+      "extraActiveHoursAssumingUniformAttendance": 16,
+      "extraRushStormHoursAssumingSameWindowCapture": 1,
+      "normalizedAuroraHoursForApprovedOldSchedule": 10,
+      "extraAuroraHoursAssumingSameWindowCapture": 0.6666666666666661
+    }
+  ],
+  "dailyScenarios": [
+    {
+      "luck": 1,
+      "speed": 1,
+      "selectionSamples": 20000,
+      "estimatedChristmasGemProbability": 0.00095,
+      "probabilityStandardError": 0.0002178413987285245,
+      "rollsIn30Minutes": 720,
+      "expectedChristmasAcquisitionsIn30Minutes": 0.684,
+      "estimatedChanceOfAtLeast20": 4.6629367034256575e-15,
+      "minutesFor300Rolls": 12.5
+    },
+    {
+      "luck": 18,
+      "speed": 2.6,
+      "selectionSamples": 20000,
+      "estimatedChristmasGemProbability": 0.0182,
+      "probabilityStandardError": 0.0009452184932596273,
+      "rollsIn30Minutes": 1872,
+      "expectedChristmasAcquisitionsIn30Minutes": 34.0704,
+      "estimatedChanceOfAtLeast20": 0.9966040703192404,
+      "minutesFor300Rolls": 4.8076923076923075
+    },
+    {
+      "luck": 50,
+      "speed": 2.8,
+      "selectionSamples": 20000,
+      "estimatedChristmasGemProbability": 0.0412,
+      "probabilityStandardError": 0.0014053924718739601,
+      "rollsIn30Minutes": 2016,
+      "expectedChristmasAcquisitionsIn30Minutes": 83.0592,
+      "estimatedChanceOfAtLeast20": 1,
+      "minutesFor300Rolls": 4.464285714285714
+    },
+    {
+      "luck": 100,
+      "speed": 3,
+      "selectionSamples": 20000,
+      "estimatedChristmasGemProbability": 0.057,
+      "probabilityStandardError": 0.0016393748808616047,
+      "rollsIn30Minutes": 2160,
+      "expectedChristmasAcquisitionsIn30Minutes": 123.12,
+      "estimatedChanceOfAtLeast20": 1,
+      "minutesFor300Rolls": 4.166666666666667
+    }
+  ],
+  "resetChanges": {
+    "dailyQuestReset": 1,
+    "weeklyWorkshopReset": 0,
+    "adventDoors": 0,
+    "waves": 0
+  },
+  "additionalDailyRewardsIfCompleted": {
+    "shillings": 1100,
+    "small": 3,
+    "festive": 1
+  },
+  "emergencySupplyMaximum": {
+    "snowflakes": 3000,
+    "ornaments": 120,
+    "lights": 24,
+    "costCS": 30000,
+    "presentPoints": 45
+  },
+  "finalPartialWeek": {
+    "days": 3,
+    "maximumDailyQuests": 9,
+    "weeklyDailyQuestTarget": 12,
+    "allFiveBonusReachable": false,
+    "anyFourBonusReachable": true,
+    "note": "Fixed approved targets are retained; no unapproved prorating or extra daily quests."
+  },
+  "limits": [
+    "Original profile hours are now known, but original RNG seeds, loadouts, attendance timestamps and simulation code remain unavailable; the 88.1% Tree completion claim cannot be reproduced from hours alone.",
+    "The approved Aurora schedule offers 10 baseline hours, not the original profile’s 20. Its Celestine opportunity estimate must be revised rather than described as a small +16-hour-only change.",
+    "Daily estimates are Monte Carlo scenario checks; they do not guarantee 20 acquisitions within 30 minutes for every account. Base equipment is substantially slower.",
+    "Present reward-chain resource output, quests, spending choices and specimen-value distributions are not combined into a new full Tree completion simulation here."
+  ],
+  "conclusion": "Keep frozen Tree/economy values. The extra interval adds one daily quest set, 1 boosted hour and 40 Aurora minutes. The 30-minute target is equipment-dependent; the approved Aurora budget and unreachable final partial-week all-five bonus are material limitations recorded explicitly."
+}

@@ -32,19 +32,14 @@ function formatMoney(value) {
 }
 
 
-function getProfileIdFromPath() {
-  const pathname = window.location.pathname.replace(/\/+$/, "");
-  const parts = pathname.split("/").filter(Boolean);
-
-  const userIndex = parts.lastIndexOf("user");
-
-  if (userIndex !== -1 && parts[userIndex + 1]) {
-    return parts[userIndex + 1];
+function getProfileRoute() {
+  const match = window.location.pathname.match(/^\/user\/([^/]+)\/?$/);
+  if (match && match[1] !== 'index.html') {
+    try { return decodeURIComponent(match[1]); } catch { return null; }
   }
-
-  return new URLSearchParams(window.location.search).get("id");
+  const query = new URLSearchParams(window.location.search);
+  return query.get('username') || query.get('id');
 }
-
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -243,7 +238,7 @@ function renderNotFound(message) {
       <div class="eyebrow">PLAYER PROFILE</div>
       <h1>Profile unavailable</h1>
       <p>${escapeHtml(message)}</p>
-      <a class="btn btn--primary" href="../leaderboards/">
+      <a class="btn btn--primary" href="/leaderboards/">
         Back to Leaderboards
       </a>
     </div>
@@ -258,15 +253,25 @@ function renderNotFound(message) {
 
 
 async function loadProfile() {
-  let profileId = getProfileIdFromPath();
-
-  if (!profileId) {
+  let route = getProfileRoute();
+  let profileId;
+  if (!route) {
     const { data: sessionData } = await supabase.auth.getSession();
-    profileId = sessionData?.session?.user?.id || profileId;
+    profileId = sessionData?.session?.user?.id;
+  } else if (isUuid(route)) {
+    profileId = route;
+  } else {
+    const { data: ids, error } = await supabase.rpc('get_profile_ids_for_usernames', {
+      p_usernames: [route]
+    });
+    if (error) {
+      renderNotFound('This profile could not be loaded right now.');
+      return;
+    }
+    profileId = Object.hasOwn(ids || {}, route) ? ids[route] : null;
   }
-
   if (!isUuid(profileId)) {
-    renderNotFound("The player ID in this URL is not valid.");
+    renderNotFound(route ? 'That player does not exist.' : 'Sign in to view your profile.');
     return;
   }
 
@@ -285,6 +290,9 @@ async function loadProfile() {
     return;
   }
 
+  if (data.username) {
+    history.replaceState(null, '', `/user/${encodeURIComponent(data.username)}/${location.search}${location.hash}`);
+  }
   document.title = `${data.username || "Player"} · Gem Incremental`;
 
   renderHero(data);

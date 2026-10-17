@@ -36,6 +36,7 @@ export const REMINISCITE_MEMORY_FRAMES = Object.freeze([
 ]);
 
 const primitiveMarkup = Object.freeze({
+  "christmas-world": `<div class="cs-christmas-world"><div class="cs-christmas-sky"></div><div class="cs-christmas-aurora"><i></i><i></i><i></i></div><div class="cs-christmas-reflection"></div><div class="cs-christmas-snow">${Array.from({length:40},(_,i)=>`<i style="--flake:${i};left:${(i*43)%100}%"></i>`).join("")}</div><div class="cs-christmas-trail"></div><div class="cs-christmas-star">✦</div><div class="cs-christmas-heart">♥</div><div class="cs-christmas-frost"></div><div class="cs-christmas-cracks"></div><div class="cs-christmas-fireplace"><i></i><i></i><i></i></div><div class="cs-christmas-tree"><span>✦</span><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cs-christmas-present"><i></i></div><div class="cs-christmas-collapse"></div><div class="cs-christmas-hat">🎅</div></div>`,
   facets: `<div class="cs-facets"><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
   prism: `<div class="cs-prism"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>`,
   resonance: `<div class="cs-resonance"><i></i><i></i><i></i><b></b></div>`,

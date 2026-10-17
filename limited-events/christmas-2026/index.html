@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Christmas 2026 · Gem Incremental</title><link rel="stylesheet" href="../../src/styles/app.css"><link rel="stylesheet" href="./christmas.css"></head>
+<body><main class="christmas-page">
+  <header class="christmas-hero"><p class="eyebrow">LIMITED EVENT · <span id="phase">CONNECTING</span></p><h1>CHRISTMAS<br><span>2026</span></h1><p>Dec 1 – Dec 31 · Singapore time</p><p id="clock">1 Dec, 08:00 → 1 Jan, 00:00 SGT</p></header>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <section id="teaser" class="christmas-panel"><div class="pine-silhouette" aria-hidden="true">✦<br>▲<br>▲▲<br>▲▲▲<br>▉</div><h2>The first snow is on its way.</h2><p>Christmas begins December 1 at 08:00 SGT.</p></section>
+  <section id="hub" hidden>
+    <div id="balances" class="christmas-balances" aria-label="Christmas resources"></div>
+    <p id="archive" hidden>Christmas 2026 has ended. Your Tree, discoveries and memories remain here.</p>
+    <nav class="christmas-tabs" aria-label="Christmas hub" role="tablist">
+      <button role="tab" id="tab-tree" aria-controls="panel-tree" aria-selected="true" data-tab="tree">Tree</button>
+      <button role="tab" id="tab-presents" aria-controls="panel-presents" aria-selected="false" tabindex="-1" data-tab="presents">Presents</button>
+      <button role="tab" id="tab-workshop" aria-controls="panel-workshop" aria-selected="false" tabindex="-1" data-tab="workshop">Workshop</button>
+      <button role="tab" id="tab-advent" aria-controls="panel-advent" aria-selected="false" tabindex="-1" data-tab="advent">Advent</button>
+      <button role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1" data-tab="story">Story</button>
+      <button role="tab" id="tab-collection" aria-controls="panel-collection" aria-selected="false" tabindex="-1" data-tab="collection">Collection</button>
+    </nav>
+    <section id="panel-tree" role="tabpanel" aria-labelledby="tab-tree" class="christmas-panel"></section>
+    <section id="panel-presents" role="tabpanel" aria-labelledby="tab-presents" class="christmas-panel" hidden></section>
+    <section id="panel-workshop" role="tabpanel" aria-labelledby="tab-workshop" class="christmas-panel" hidden></section>
+    <section id="panel-advent" role="tabpanel" aria-labelledby="tab-advent" class="christmas-panel" hidden></section>
+    <section id="panel-story" role="tabpanel" aria-labelledby="tab-story" class="christmas-panel" hidden></section>
+    <section id="panel-collection" role="tabpanel" aria-labelledby="tab-collection" class="christmas-panel" hidden></section>
+  </section>
+</main><script type="module" src="./christmas.js"></script></body></html>

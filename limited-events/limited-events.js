@@ -12,6 +12,8 @@ const DEEPCORE_START=Date.parse("2026-09-20T00:00:00.000Z");
 const DEEPCORE_END=Date.parse("2026-10-04T00:00:00.000Z");
 
 function renderKnownEventStatuses(now=Date.now()){
+  const christmasStatus=document.querySelector('#christmasStatus');
+  if(christmasStatus)christmasStatus.textContent=now<Date.parse('2026-12-01T00:00:00Z')?'COMING SOON':now<Date.parse('2026-12-31T16:00:00Z')?'CHRISTMAS 2026':'ARCHIVED';
   if(deepcoreStatus) deepcoreStatus.textContent=now<DEEPCORE_START?"PREVIEW":now<DEEPCORE_END?"ACTIVE":"ARCHIVED";
   if(deepSeaStatus) deepSeaStatus.textContent=({teaser:"PREVIEW",active:"ACTIVE",redemption:"REDEMPTION",archived:"ARCHIVED"})[deepSeaPhase(now)];
 }
@@ -20,7 +22,7 @@ async function renderEvents(){
   const {data,error}=await supabase.rpc("get_active_limited_events");
   if(error){console.error("[LIMITED EVENTS]",error);return;}
   if(!grid)return;
-  const knownEvents=new Set(["deep-sea","deepcore","deepcore-2026"]);
+  const knownEvents=new Set(["deep-sea","deepcore","deepcore-2026","christmas-2026","christmas_2026"]);
   const cards=[];
   for(const e of (data||[]).filter(x=>!knownEvents.has(x.id))){
     const p=e.config?.presentation||{};
