@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "test:signup": "node --test tests/signup-fetch-error-test.mjs && node tests/password-recovery-redirect-test.mjs && node tests/supabase-client-options-test.mjs",
-    "test:dungeons": "node tests/dungeon-backend-formulas-test.mjs && node tests/dungeon-workbench-database-test.mjs && node tests/dungeon-room-summary-test.mjs && node tests/dungeon-progression-test.mjs",
+    "test:dungeons": "node tests/dungeon-backend-formulas-test.mjs && node tests/dungeon-workbench-database-test.mjs && node tests/dungeon-room-summary-test.mjs && node tests/dungeon-progression-test.mjs && node tests/dungeon-combat-balance-test.mjs && node tests/dungeon-combat-balance-database-test.mjs",
     "test:dungeons:browser": "node tests/dungeon-room-summary-browser-test.mjs",
     "test:request-stress": "node tests/request-stress-test.mjs",
     "test:maintenance": "node tests/game-maintenance-shutdown-test.mjs",

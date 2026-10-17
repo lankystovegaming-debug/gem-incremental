@@ -50,10 +50,12 @@ try {
   const originals = recipes.filter((r) => r.kind === 'original');
   assert.equal(originals.length, 43);
   const reference = JSON.parse(read('workbench/catalog.json'));
+  const balanceChanges = JSON.parse(read('docs/dungeon-balance-recipes.json'));
   for (const r of recipes) {
     const local = reference.recipes.find((item) => item.name === r.name);
     assert.deepEqual(r.ingredients, local.ingredients, `${r.name}: reference ingredients must match the database`);
-    assert.equal(Number(r.gem_power), Number(local.gem_power), `${r.name}: reference power must match the database`);
+    const oldGP = balanceChanges.find(c => c.name === r.name)?.oldGP ?? local.gem_power;
+    assert.equal(Number(r.gem_power), Number(oldGP), `${r.name}: pre-balance power must match its historical baseline`);
   }
   const baselines = [0, 10000, 25000, 50000, 75000, 100000, 125000];
   for (const r of originals) {

@@ -1,0 +1,586 @@
+[
+  {
+    "name": "Broodmother Armor",
+    "tier": 9,
+    "firstMaterialDepth": 858,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 5859000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Elder Wyrm Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 881,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 4980000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Dragonkin Mage Robe",
+    "tier": 9,
+    "firstMaterialDepth": 851,
+    "estimatedReferenceDepth": 893,
+    "oldGP": 4854000,
+    "newGP": 6591000
+  },
+  {
+    "name": "Frost Dragon Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 874,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 4047000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Drake Knight Armor",
+    "tier": 9,
+    "firstMaterialDepth": 844,
+    "estimatedReferenceDepth": 869,
+    "oldGP": 4001000,
+    "newGP": 6422000
+  },
+  {
+    "name": "Wyvern Leathers",
+    "tier": 9,
+    "firstMaterialDepth": 836,
+    "estimatedReferenceDepth": 852,
+    "oldGP": 3316000,
+    "newGP": 6344000
+  },
+  {
+    "name": "Storm Dragon Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 866,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 3289000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Lich Acolyte Robe",
+    "tier": 8,
+    "firstMaterialDepth": 771,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 2733000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Broodmother Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 858,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 2666000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Fallen Seraph Robe",
+    "tier": 8,
+    "firstMaterialDepth": 759,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 2255000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Dragonkin Mage Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 851,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 2162000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Plague Doctor Robe",
+    "tier": 8,
+    "firstMaterialDepth": 748,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 1867600,
+    "newGP": 5473000
+  },
+  {
+    "name": "Drake Knight Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 844,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 1751000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Demon Knight Armor",
+    "tier": 8,
+    "firstMaterialDepth": 737,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 1540500,
+    "newGP": 5473000
+  },
+  {
+    "name": "Wyvern Pendant",
+    "tier": 9,
+    "firstMaterialDepth": 836,
+    "estimatedReferenceDepth": 900,
+    "oldGP": 1418000,
+    "newGP": 6864000
+  },
+  {
+    "name": "Chain Devil Armor",
+    "tier": 8,
+    "firstMaterialDepth": 725,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 1272100,
+    "newGP": 5473000
+  },
+  {
+    "name": "Lich Acolyte Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 771,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 1148000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Bone Colossus Armor",
+    "tier": 8,
+    "firstMaterialDepth": 714,
+    "estimatedReferenceDepth": 773,
+    "oldGP": 1051000,
+    "newGP": 4914000
+  },
+  {
+    "name": "Fallen Seraph Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 759,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 926000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Hellhound Leathers",
+    "tier": 8,
+    "firstMaterialDepth": 703,
+    "estimatedReferenceDepth": 750,
+    "oldGP": 867800,
+    "newGP": 4810000
+  },
+  {
+    "name": "Plague Doctor Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 748,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 749000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Cinder Brute Armor",
+    "tier": 7,
+    "firstMaterialDepth": 636,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 716800,
+    "newGP": 3120000
+  },
+  {
+    "name": "Demon Knight Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 737,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 604000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Flame Salamander Armor",
+    "tier": 7,
+    "firstMaterialDepth": 629,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 591900,
+    "newGP": 3120000
+  },
+  {
+    "name": "Ash Wraith Robe",
+    "tier": 7,
+    "firstMaterialDepth": 622,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 489300,
+    "newGP": 3120000
+  },
+  {
+    "name": "Chain Devil Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 725,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 487000,
+    "newGP": 5473000
+  },
+  {
+    "name": "Obsidian Golem Armor",
+    "tier": 7,
+    "firstMaterialDepth": 616,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 404000,
+    "newGP": 3120000
+  },
+  {
+    "name": "Bone Colossus Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 714,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 392700,
+    "newGP": 5473000
+  },
+  {
+    "name": "Ember Hound Leathers",
+    "tier": 7,
+    "firstMaterialDepth": 609,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 333600,
+    "newGP": 3120000
+  },
+  {
+    "name": "Hellhound Pendant",
+    "tier": 8,
+    "firstMaterialDepth": 703,
+    "estimatedReferenceDepth": 800,
+    "oldGP": 315400,
+    "newGP": 5473000
+  },
+  {
+    "name": "Magma Imp Leathers",
+    "tier": 7,
+    "firstMaterialDepth": 602,
+    "estimatedReferenceDepth": 645,
+    "oldGP": 274800,
+    "newGP": 3094000
+  },
+  {
+    "name": "Cinder Brute Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 636,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 253400,
+    "newGP": 3120000
+  },
+  {
+    "name": "Avalanche Beast Armor",
+    "tier": 7,
+    "firstMaterialDepth": 551,
+    "estimatedReferenceDepth": 575,
+    "oldGP": 227100,
+    "newGP": 2002000
+  },
+  {
+    "name": "Flame Salamander Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 629,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 203400,
+    "newGP": 3120000
+  },
+  {
+    "name": "Ice Wraith Robe",
+    "tier": 7,
+    "firstMaterialDepth": 495,
+    "estimatedReferenceDepth": 538,
+    "oldGP": 187500,
+    "newGP": 1820000
+  },
+  {
+    "name": "Ash Wraith Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 622,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 162900,
+    "newGP": 3120000
+  },
+  {
+    "name": "Abyssal Crown",
+    "tier": 6,
+    "firstMaterialDepth": 901,
+    "estimatedReferenceDepth": 937,
+    "oldGP": 135000,
+    "newGP": 7397000
+  },
+  {
+    "name": "Abyssal Chestplate",
+    "tier": 6,
+    "firstMaterialDepth": 901,
+    "estimatedReferenceDepth": 937,
+    "oldGP": 133000,
+    "newGP": 7397000
+  },
+  {
+    "name": "Abyssal Leggings",
+    "tier": 6,
+    "firstMaterialDepth": 901,
+    "estimatedReferenceDepth": 930,
+    "oldGP": 132000,
+    "newGP": 7345000
+  },
+  {
+    "name": "Obsidian Golem Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 616,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 130200,
+    "newGP": 3120000
+  },
+  {
+    "name": "Abyssal Boots",
+    "tier": 6,
+    "firstMaterialDepth": 901,
+    "estimatedReferenceDepth": 923,
+    "oldGP": 130000,
+    "newGP": 7007000
+  },
+  {
+    "name": "Abyssal Helmet",
+    "tier": 6,
+    "firstMaterialDepth": 901,
+    "estimatedReferenceDepth": 916,
+    "oldGP": 129000,
+    "newGP": 6955000
+  },
+  {
+    "name": "Dragon Crown",
+    "tier": 5,
+    "firstMaterialDepth": 801,
+    "estimatedReferenceDepth": 815,
+    "oldGP": 110000,
+    "newGP": 5629000
+  },
+  {
+    "name": "Dragon Chestplate",
+    "tier": 5,
+    "firstMaterialDepth": 801,
+    "estimatedReferenceDepth": 819,
+    "oldGP": 107000,
+    "newGP": 5642000
+  },
+  {
+    "name": "Dragon Leggings",
+    "tier": 5,
+    "firstMaterialDepth": 801,
+    "estimatedReferenceDepth": 815,
+    "oldGP": 106000,
+    "newGP": 5629000
+  },
+  {
+    "name": "Ember Hound Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 609,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 104100,
+    "newGP": 3120000
+  },
+  {
+    "name": "Dragon Helmet",
+    "tier": 5,
+    "firstMaterialDepth": 801,
+    "estimatedReferenceDepth": 810,
+    "oldGP": 104000,
+    "newGP": 5577000
+  },
+  {
+    "name": "Dragon Boots",
+    "tier": 5,
+    "firstMaterialDepth": 801,
+    "estimatedReferenceDepth": 810,
+    "oldGP": 104000,
+    "newGP": 5577000
+  },
+  {
+    "name": "Queen Spider Armor",
+    "tier": 4,
+    "firstMaterialDepth": 679,
+    "estimatedReferenceDepth": 758,
+    "oldGP": 85000,
+    "newGP": 4862000
+  },
+  {
+    "name": "Blight Armor",
+    "tier": 4,
+    "firstMaterialDepth": 689,
+    "estimatedReferenceDepth": 786,
+    "oldGP": 85000,
+    "newGP": 5135000
+  },
+  {
+    "name": "Necromancer Robe",
+    "tier": 4,
+    "firstMaterialDepth": 651,
+    "estimatedReferenceDepth": 663,
+    "oldGP": 84000,
+    "newGP": 3471000
+  },
+  {
+    "name": "Magma Imp Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 602,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 83100,
+    "newGP": 3120000
+  },
+  {
+    "name": "Reaper Armor",
+    "tier": 4,
+    "firstMaterialDepth": 595,
+    "estimatedReferenceDepth": 650,
+    "oldGP": 83000,
+    "newGP": 3120000
+  },
+  {
+    "name": "Lava Armor",
+    "tier": 4,
+    "firstMaterialDepth": 582,
+    "estimatedReferenceDepth": 613,
+    "oldGP": 83000,
+    "newGP": 2717000
+  },
+  {
+    "name": "Vampire Cloak",
+    "tier": 4,
+    "firstMaterialDepth": 660,
+    "estimatedReferenceDepth": 685,
+    "oldGP": 82000,
+    "newGP": 3757000
+  },
+  {
+    "name": "Ghost Mantle",
+    "tier": 4,
+    "firstMaterialDepth": 670,
+    "estimatedReferenceDepth": 703,
+    "oldGP": 82000,
+    "newGP": 4095000
+  },
+  {
+    "name": "Reaper Hood",
+    "tier": 4,
+    "firstMaterialDepth": 595,
+    "estimatedReferenceDepth": 628,
+    "oldGP": 80000,
+    "newGP": 2938000
+  },
+  {
+    "name": "Avalanche Beast Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 551,
+    "estimatedReferenceDepth": 575,
+    "oldGP": 66000,
+    "newGP": 2002000
+  },
+  {
+    "name": "Mountain Crown",
+    "tier": 3,
+    "firstMaterialDepth": 500,
+    "estimatedReferenceDepth": 541,
+    "oldGP": 60000,
+    "newGP": 1846000
+  },
+  {
+    "name": "Mountain Troll Armor",
+    "tier": 3,
+    "firstMaterialDepth": 474,
+    "estimatedReferenceDepth": 541,
+    "oldGP": 59000,
+    "newGP": 1846000
+  },
+  {
+    "name": "Frostguard Armor",
+    "tier": 3,
+    "firstMaterialDepth": 467,
+    "estimatedReferenceDepth": 499,
+    "oldGP": 58000,
+    "newGP": 1599000
+  },
+  {
+    "name": "Yeti Cloak",
+    "tier": 3,
+    "firstMaterialDepth": 459,
+    "estimatedReferenceDepth": 474,
+    "oldGP": 57000,
+    "newGP": 1417000
+  },
+  {
+    "name": "Goat Horn Helm",
+    "tier": 3,
+    "firstMaterialDepth": 451,
+    "estimatedReferenceDepth": 476,
+    "oldGP": 55000,
+    "newGP": 1430000
+  },
+  {
+    "name": "Yeti Boots",
+    "tier": 3,
+    "firstMaterialDepth": 459,
+    "estimatedReferenceDepth": 470,
+    "oldGP": 55000,
+    "newGP": 1417000
+  },
+  {
+    "name": "Ice Wraith Pendant",
+    "tier": 7,
+    "firstMaterialDepth": 495,
+    "estimatedReferenceDepth": 575,
+    "oldGP": 52500,
+    "newGP": 2002000
+  },
+  {
+    "name": "Shark Scale Armor",
+    "tier": 2,
+    "firstMaterialDepth": 357,
+    "estimatedReferenceDepth": 410,
+    "oldGP": 35000,
+    "newGP": 1144000
+  },
+  {
+    "name": "Panda Hood",
+    "tier": 2,
+    "firstMaterialDepth": 232,
+    "estimatedReferenceDepth": 317,
+    "oldGP": 34000,
+    "newGP": 715000
+  },
+  {
+    "name": "Crab Shell Armor",
+    "tier": 2,
+    "firstMaterialDepth": 342,
+    "estimatedReferenceDepth": 373,
+    "oldGP": 34000,
+    "newGP": 949000
+  },
+  {
+    "name": "Bat Cloak",
+    "tier": 2,
+    "firstMaterialDepth": 206,
+    "estimatedReferenceDepth": 218,
+    "oldGP": 32000,
+    "newGP": 299000
+  },
+  {
+    "name": "Troll Helmet",
+    "tier": 2,
+    "firstMaterialDepth": 217,
+    "estimatedReferenceDepth": 244,
+    "oldGP": 32000,
+    "newGP": 377000
+  },
+  {
+    "name": "Bear Cloak",
+    "tier": 2,
+    "firstMaterialDepth": 227,
+    "estimatedReferenceDepth": 289,
+    "oldGP": 32000,
+    "newGP": 585000
+  },
+  {
+    "name": "Spider Boots",
+    "tier": 2,
+    "firstMaterialDepth": 211,
+    "estimatedReferenceDepth": 236,
+    "oldGP": 31000,
+    "newGP": 325000
+  },
+  {
+    "name": "Snake Hood",
+    "tier": 2,
+    "firstMaterialDepth": 201,
+    "estimatedReferenceDepth": 209,
+    "oldGP": 30000,
+    "newGP": 286000
+  }
+]

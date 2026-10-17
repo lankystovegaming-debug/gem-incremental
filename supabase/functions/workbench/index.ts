@@ -1,4 +1,5 @@
 import { withSupabase } from "npm:@supabase/server";
+import { annotateCombatGear } from "../dungeons/balance.js";
 const CORS={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(x:unknown,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"Content-Type":"application/json",...CORS}});
 const uid=(ctx:any)=>ctx?.userClaims?.id??ctx?.userClaims?.sub??ctx?.jwtClaims?.sub??null;
@@ -21,14 +22,14 @@ export default {fetch:withSupabase({auth:"user"},async(req,ctx)=>{
     ctx.supabaseAdmin.from("player_dungeon_materials").select("*").eq("player_id",playerId).gt("quantity",0).order("material_name"),
     ctx.supabaseAdmin.from("player_dungeon_essence").select("*").eq("player_id",playerId).order("essence_tier"),
     ctx.supabaseAdmin.from("dungeon_gear").select("*").eq("player_id",playerId).order("created_at",{ascending:false}).limit(50)
-   ]); if(me||ee||ge)throw me||ee||ge; return json({materials:materials??[],essence:essence??[],gear:gear??[]});
+   ]); if(me||ee||ge)throw me||ee||ge; return json({materials:materials??[],essence:essence??[],gear:await annotateCombatGear(ctx.supabaseAdmin,gear??[])});
   }
   if(action==="craft"){
    const recipeName=String(body.recipeName??""); if(!recipeName)return json({error:"recipe_required"},400);
    const {data,error}=await ctx.supabaseAdmin.rpc("craft_dungeon_workbench",{p_player_id:playerId,p_recipe_name:recipeName}); if(error)return json({error:"craft_failed",message:error.message},400); return json(data);
   }
   if(action==="history"){
-   const {data,error}=await ctx.supabaseAdmin.from("dungeon_gear").select("*").eq("player_id",playerId).order("created_at",{ascending:false}).limit(50); if(error)throw error; return json({items:data??[]});
+   const {data,error}=await ctx.supabaseAdmin.from("dungeon_gear").select("*").eq("player_id",playerId).order("created_at",{ascending:false}).limit(50); if(error)throw error; return json({items:await annotateCombatGear(ctx.supabaseAdmin,data??[])});
   }
   return json({error:"unknown_action"},400);
  }catch(e){console.error("WORKBENCH_ERROR",e);return json({error:"workbench_server_error",message:e instanceof Error?e.message:String(e)},500);}

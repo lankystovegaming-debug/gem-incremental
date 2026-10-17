@@ -1,6 +1,8 @@
 import { withSupabase } from "npm:@supabase/server";
 import drops from "./drop-data.json" with { type: "json" };
 import { loadDungeonProgress } from "./progress.js";
+import referenceAttack from "./balance-reference.json" with { type: "json" };
+import { BALANCE_VERSION, annotateCombatGear, balancedEnemyHealth, bestCombatGemPower } from "./balance.js";
 import {
   borderAdjacentRegion,
   canonicalEnemyName,
@@ -128,7 +130,7 @@ async function rollRoomMutation(ctx: any, room: any, applyOverallChance: boolean
   const tier = rollMutationTier(summary);
   return tier ? await chooseMutation(ctx, room, tier) : null;
 }
-function enemyBaseStats(room: any, row: any, rank: string, mutation: any, isBoss = false, bossRepeat = 0) {
+function enemyBaseStats(room: any, row: any, rank: string, mutation: any, isBoss = false, bossRepeat = 0, bossZone = room.zone) {
   let baseHp = parseStatMultiplier(row.hp);
   let baseDamage = parseStatMultiplier(row.dmg);
   let rankMultiplier = isBoss ? RANK.Normal : (RANK[rank] ?? RANK.Normal);
@@ -142,11 +144,13 @@ function enemyBaseStats(room: any, row: any, rank: string, mutation: any, isBoss
     baseDamage = regionDamage * zoneDamage * role[1] * repeat;
   }
   const mutationMultiplier = MUTATION_TIER[mutation?.tier] ?? [1, 1, 1];
-  const hp = Math.max(1, baseHp * rankMultiplier[0] * mutationMultiplier[0]);
+  const hp = balancedEnemyHealth(referenceAttack, room, row,
+    rank === "Elite" ? 1.8 : (RANK[rank] ?? RANK.Normal)[0], mutationMultiplier[0],
+    regionScale(room.region)[0], zoneScale(isBoss ? bossZone : room.zone)[0], isBoss, bossRepeat);
   return {
     hp,
     damage: Math.max(1, baseDamage * rankMultiplier[1] * mutationMultiplier[1]),
-    defense: Math.max(0, hp * .01),
+    defense: Math.floor(.25 * Math.sqrt(hp)),
   };
 }
 async function makeCombatant(
@@ -160,9 +164,10 @@ async function makeCombatant(
   bossRepeat = 0,
   level = 1,
   rewardMultiplier = zoneScale(room.zone)[2],
+  bossZone = room.zone,
 ) {
   const mutation = await rollRoomMutation(ctx, room, true);
-  const stats = enemyBaseStats(room, row, rank, mutation, isBoss, bossRepeat);
+  const stats = enemyBaseStats(room, row, rank, mutation, isBoss, bossRepeat, bossZone);
   const name = canonicalEnemyName(row.name);
   return {
     id: crypto.randomUUID(), name, rank, lootRole, maxHp: stats.hp, hp: stats.hp,
@@ -219,7 +224,7 @@ async function buildCombatants(ctx: any, room: any) {
       ?? { name: bossName || "Dungeon Boss", spawn: "100%", amount: "1 ME", me: "100%" };
     const combatants: any[] = [];
     for (let index = 0; index < bossCount; index++) {
-      combatants.push(await makeCombatant(ctx, room, bossRow, "Boss", "boss", true, 1, num(boss?.repeat_bonus), rollMobLevel(encounterRows, room.room_number), rewardMultiplier));
+      combatants.push(await makeCombatant(ctx, room, bossRow, "Boss", "boss", true, 1, num(boss?.repeat_bonus), rollMobLevel(encounterRows, room.room_number), rewardMultiplier, boss?.rating_used ?? room.zone));
     }
     const enemyRows = (room.enemies ?? []).filter((entry: any) => !/\(boss\)/i.test(String(entry.name)));
     for (let index = 0; index < addCount; index++) {
@@ -271,10 +276,7 @@ async function buildCombatants(ctx: any, room: any) {
 async function playerCombatPower(ctx: any, playerId: string) {
   const { data: player, error } = await ctx.supabaseAdmin.from("players").select("max_equipment_tier").eq("id", playerId).single();
   if (error) throw error;
-  const { data: gear, error: gearError } = await ctx.supabaseAdmin.from("dungeon_gear").select("gem_power")
-    .eq("player_id", playerId).order("gem_power", { ascending: false }).limit(10);
-  if (gearError) throw gearError;
-  const gemPower = Math.max(0, ...(gear ?? []).map((item: any) => num(item.gem_power)));
+  const gemPower = await bestCombatGemPower(ctx.supabaseAdmin, playerId);
   const tier = num(player.max_equipment_tier);
   return { attack: 10 + tier * 2 + Math.floor(gemPower / 10000), health: 100 + Math.floor(gemPower / 5000), gemPower };
 }
@@ -360,7 +362,7 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
         ctx.supabaseAdmin.from("dungeon_gear").select("*").eq("player_id", playerId).order("created_at", { ascending: false }).limit(100),
       ]);
       if (materialError || essenceError || gearError) throw materialError || essenceError || gearError;
-      return json({ materials: materials ?? [], essence: essence ?? [], gear: gear ?? [] });
+      return json({ materials: materials ?? [], essence: essence ?? [], gear: await annotateCombatGear(ctx.supabaseAdmin, gear ?? []) });
     }
     if (action === "progress") {
       return json({ progress: await loadDungeonProgress(ctx.supabaseAdmin, playerId) });
@@ -402,7 +404,8 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
         player_id: playerId, dungeon_id: definition.id, room_number: room.room_number, enemy_ids: [], enemy_index: 1,
         enemy_health: built.combatants[0]?.hp ?? 0, player_health: power.health, status, loot,
         combatants: built.combatants,
-        room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat, fogged },
+        room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat, fogged,
+          balanceVersion: BALANCE_VERSION, combatGemPower: power.gemPower, startingHealth: power.health },
         player_attack: power.attack,
       }).select("*").single();
       if (error?.code === "23505") {
