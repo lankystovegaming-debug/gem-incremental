@@ -1,5 +1,61 @@
 [
   {
+    "pr": 514,
+    "title": "Weekly update 5",
+    "merged_at": "2026-10-17T14:48:25Z",
+    "published_on": "2026-10-17",
+    "weekly": true,
+    "sections": [
+      {
+        "heading": "Easier navigation",
+        "bullets": [
+          "On phones, use Roll, Inventory, Craft, Shop and More, with grouped search to find every other destination.",
+          "On desktop, browse grouped Explore destinations with clearer overflow navigation.",
+          "Improved mobile sheets, touch targets and keyboard focus handling."
+        ]
+      },
+      {
+        "heading": "Mining and events",
+        "bullets": [
+          "The roll card now shows a pickaxe mining a faceted rock, with your actual gem results appearing on impact.",
+          "Roll animation settings and reduced-motion preferences are respected.",
+          "Active events now appear together in one expandable card with event counts and countdowns."
+        ]
+      },
+      {
+        "heading": "Season 1 — The Interlude",
+        "bullets": [
+          "Added a scheduled 50-tier Season 1 pass with free and premium rewards, daily and weekly missions, and six exclusive profile cosmetics.",
+          "Season 1 runs from 17 October at 08:00 Singapore time to 16 November at 08:00. Unlocked reward claims remain available until 23 November at 08:00.",
+          "Season Zero progress and previously earned cosmetics remain available in the archive."
+        ]
+      },
+      {
+        "heading": "Update history",
+        "bullets": [
+          "Rebuilt the Update Log with dated game updates from the merged PR history, search and older-update browsing.",
+          "Weekly releases now have a one-time update popup when you enter the game, with the complete history available through All updates."
+        ]
+      },
+      {
+        "heading": "Recaps and profiles",
+        "bullets": [
+          "Find both monthly recaps in one place and switch between Month One and Month Two.",
+          "Profile links now use usernames, and View profile is available from your account menu."
+        ]
+      },
+      {
+        "heading": "Dungeon progression",
+        "bullets": [
+          "Dungeon enemy health now follows a smoother, fixed progression curve, with gentler Elite health and defense scaling.",
+          "Lucky mutations still help, but combat bonuses no longer let a single jackpot trivialize hundreds of rooms. Raw dropped-gear GP stays intact.",
+          "Boosted 73 mid-game Workbench recipes and matching existing crafts without raising their costs.",
+          "Workbench now distinguishes raw and combat GP; fights show your attack and health. Saved fights keep their original stats."
+        ]
+      }
+    ]
+  },
+  {
     "pr": 518,
     "title": "Dungeon summaries, progression and Workbench fixes",
     "merged_at": "2026-10-14T06:11:55Z",
