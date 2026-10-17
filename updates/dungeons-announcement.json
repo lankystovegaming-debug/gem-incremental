@@ -1,0 +1,29 @@
+{
+  "published": true,
+  "release_pr": 520,
+  "merged_at": "2026-10-16T01:51:48Z",
+  "title": "Dungeons are here!",
+  "sections": [
+    {
+      "heading": "A new adventure",
+      "bullets": [
+        "Explore 1,500 dungeon rooms, fight regional enemies and take on bosses.",
+        "Clear rooms in order and claim your rewards to unlock the next room. New regions open as you progress."
+      ]
+    },
+    {
+      "heading": "Loot and crafting",
+      "bullets": [
+        "Collect dungeon equipment, materials and essence from your adventures.",
+        "Use the Workbench to craft dungeon gear, and see all your owned materials in its dedicated inventory section."
+      ]
+    },
+    {
+      "heading": "Ready when you are",
+      "bullets": [
+        "Compact room summaries show what lies ahead, with clear room and region locks.",
+        "Resume unfinished runs and collect unclaimed rewards after refreshing the game."
+      ]
+    }
+  ]
+}

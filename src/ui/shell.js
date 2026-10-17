@@ -663,6 +663,8 @@ export function mountShell({ page, base = "./" }) {
   // Daily login streak: prompts once a day when a reward is claimable.
   mountDailyLogin();
 
+  import("./dungeonAnnouncement.js").then(({ mountDungeonAnnouncement }) => mountDungeonAnnouncement(base)).catch(() => {});
+
   // Referral promo: once-a-day popup about the limited-time invite bonus.
   mountReferralPromo(base);
 
