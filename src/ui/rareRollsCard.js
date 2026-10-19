@@ -44,8 +44,8 @@ function renderList(element, rows, emptyText) {
     : `<p class="rare-rolls__empty">${escapeHtml(emptyText)}</p>`;
 }
 
-// Below the wide side-column layout the card shows only the newest find
-// per list (see app.css) so the roll button stays on the first screen.
+// The secondary discovery card defaults to one find per list at every width
+// (see style.css). Expanding never changes or refetches the live feed.
 function bindExpandToggle(card) {
   const toggle = document.getElementById("rareRollsToggle");
   if (!toggle) return;

@@ -3049,3 +3049,172 @@ html.is-cinematic-active body {
 @keyframes mining-discovery { 0%,28% { opacity:0; transform:translate(-50%,-35%) scale(.7); } 36%,72% { opacity:1; transform:translate(-50%,-50%) scale(1); } 100% { opacity:0; transform:translate(-50%,-80%) scale(.9); } }
 @media(max-width:560px) { .stage .mining-stage .gem-reveal { padding:10px; gap:4px 8px; grid-template-columns:40px minmax(0,1fr) auto; } .stage .mining-stage .gem-reveal__art,.stage .mining-stage .gem-reveal__art .gem-icon { width:36px; height:36px; } }
 @media(prefers-reduced-motion:reduce) { .is-mining .mining-pickaxe,.is-mining .mining-rock,.is-mining .mining-impact { animation:none; } .is-mining .mining-finds { animation:none; opacity:1; transform:translate(-50%,-50%); } }
+
+/* Phase 3: gameplay first in both DOM and visual reading order. */
+.app-main.app-main--roll {
+  max-width: 1440px;
+  display: block;
+}
+.roll-workspace,
+.roll-workspace__primary,
+.roll-workspace__support {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.roll-workspace {
+  margin-bottom: var(--space-4);
+}
+.roll-workspace :where(.stage, .gemdle-entry, .stat-row, .automation, .crafting-preview) {
+  margin-bottom: 0;
+}
+.roll-workspace__support .automation__head {
+  flex-wrap: wrap;
+}
+.roll-workspace__support .form-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.roll-workspace__support .form-row__control {
+  flex: none;
+  width: 100%;
+}
+.roll-workspace__support .stat-row {
+  gap: var(--space-2);
+}
+.app-main--roll :where(.stat__value, .gem-reveal__name, .gem-reveal__mutations, .history__name, .rare-roll__announcement) {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.app-main--roll .rare-rolls {
+  margin-bottom: var(--space-4);
+}
+.app-main--roll .rare-rolls__header {
+  flex-wrap: wrap;
+}
+.app-main--roll .rare-rolls__toggle {
+  display: inline-flex;
+  flex: none;
+}
+.app-main--roll .rare-rolls:not(.is-expanded) .rare-roll:nth-child(n + 2) {
+  display: none;
+}
+.app-main--roll .rare-rolls:not(.is-expanded) .rare-roll:first-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.roll-session__summary {
+  min-height: var(--touch-target);
+  cursor: pointer;
+  color: var(--text);
+}
+.roll-session__summary > span:first-child {
+  display: inline-grid;
+  gap: 4px;
+  vertical-align: middle;
+  max-width: calc(100% - 100px);
+}
+.roll-session__summary small,
+.roll-session__action {
+  color: var(--text-muted);
+  font-size: .8rem;
+}
+.roll-session__action {
+  float: right;
+  padding-block: 12px;
+}
+.roll-session__summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+.roll-session__content {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+.roll-session__content > .card {
+  margin: 0;
+  box-shadow: none;
+}
+@media (min-width: 1180px) {
+  .roll-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    align-items: start;
+    gap: var(--space-5);
+  }
+  .roll-workspace__support .stat-row {
+    grid-template-columns: 1fr;
+  }
+  .roll-workspace__support .stat {
+    padding: var(--space-3);
+  }
+  .roll-session__content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+@media (max-width: 640px) {
+  .app-main--roll .rare-rolls__columns {
+    grid-template-columns: 1fr;
+  }
+  .app-main--roll .rare-rolls__header p {
+    display: none;
+  }
+  .app-main--roll .rare-rolls__group {
+    padding: var(--space-3);
+  }
+  .roll-session__content > .card {
+    padding: var(--space-3);
+  }
+}
+/* Respect server-controlled section visibility inside the new layout. */
+.roll-workspace [hidden], .roll-session [hidden] {
+  display: none !important;
+}
+/* Controls precede the reveal so a large batch cannot push Roll offscreen. */
+.app-main--roll .stage__controls {
+  flex: none;
+}
+.app-main--roll :where(.gem-mutation-line, .batch-result__mutations, .history__mutations, .session-insights__notable strong) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.app-main--roll .mutation-name-effect {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.app-main--roll .mutation-name-effect__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app-main--roll .session-insights__notable > div {
+  min-width: 0;
+}
+/* Potion feedback must not cover the controls now at the top of the stage. */
+.app-main--roll .effect-hud {
+  position: static;
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.app-main--roll .effect-chip {
+  width: min(220px, 100%);
+}
+@media (min-width: 1180px) {
+  .roll-session .session-insights__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .roll-session .session-insights__highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .roll-session .session-insights__notable {
+    grid-template-columns: 1fr;
+  }
+}

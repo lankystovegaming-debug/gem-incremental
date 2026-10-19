@@ -52,6 +52,163 @@
 
 <body>
   <main class="app-main app-main--narrow app-main--roll">
+    <div class="roll-workspace">
+      <div class="roll-workspace__primary">
+        <!-- ================= ROLL STAGE ================= -->
+
+        <section class="stage card" id="section-roll-stage" aria-labelledby="stageHeading">
+          <h1 class="visually-hidden" id="stageHeading">Roll for gems</h1>
+
+          <div class="stage__controls">
+            <button
+              class="roll-button"
+              id="rollButton"
+              type="button"
+              disabled
+            >
+              <span class="roll-button__fill" id="rollButtonFill"></span>
+              <span class="roll-button__label" id="rollButtonLabel">
+                Loading
+              </span>
+            </button>
+
+            <p class="stage__hint" id="rollHint">
+              <kbd>R</kbd> or <kbd>Space</kbd> to roll
+            </p>
+          </div>
+
+          <!-- Active potion effects, shown while rolling (top-right). -->
+          <div class="effect-hud" id="effectHud" aria-live="polite"></div>
+
+          <div class="stage__display" id="gemStage" aria-live="polite">
+            <div class="stage__idle">
+              <div class="stage__idle-mark" id="stageIdleMark"></div>
+              <p class="stage__idle-title">Ready to dig</p>
+              <p class="stage__idle-text">
+                Swing your pickaxe and uncover your next gem.
+              </p>
+            </div>
+          </div>
+
+        </section>
+
+
+        <a class="gemdle-entry card" href="./gemdle/">
+          <span class="gemdle-entry__icon" aria-hidden="true">◇</span>
+          <span class="gemdle-entry__copy">
+            <strong>Today's Gemdle</strong>
+            <span>One daily specimen. Discover your gem, weight and mutations.</span>
+          </span>
+          <span class="gemdle-entry__action">Play Gemdle <span aria-hidden="true">→</span></span>
+        </a>
+
+
+      </div>
+      <aside class="roll-workspace__support" aria-label="Roll status and progression">
+        <!-- ================= SUMMARY ================= -->
+
+        <section class="stat-row" id="section-summary" aria-label="Player summary">
+          <div class="stat">
+            <span class="stat__label">Money</span>
+            <span class="stat__value" id="statMoney">—</span>
+          </div>
+
+          <div class="stat">
+            <span class="stat__label">Inventory</span>
+            <span class="stat__value" id="statInventory">—</span>
+            <div class="meter" style="margin-top:8px">
+              <div class="meter__fill" id="inventoryMeter" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="stat">
+            <span class="stat__label">Total rolls</span>
+            <span class="stat__value" id="statRolls">—</span>
+          </div>
+        </section>
+
+
+        <!-- ================= AUTOMATION ================= -->
+
+        <section class="card automation" id="section-automation" aria-labelledby="automationHeading">
+          <div class="automation__head">
+            <h2 id="automationHeading">Automation</h2>
+            <a class="automation__link" href="./settings/">All settings</a>
+          </div>
+
+          <label class="automation__row switch">
+            <input type="checkbox" id="autoRollToggle">
+            <span class="switch__track"></span>
+            <span class="automation__text">
+              <span class="automation__title">Auto roll</span>
+              <span class="automation__sub">
+                Rolls again the moment the cooldown ends.
+              </span>
+            </span>
+          </label>
+
+
+
+          <div class="automation__row automation__row--select form-row">
+            <label class="automation__text form-row__content" for="batchSize">
+              <span class="automation__title">Batch size</span>
+              <span class="automation__sub" id="batchSizeHelp">
+                Independent rolls per request; cooldown scales equally, so rolls per hour do not change.
+              </span>
+            </label>
+            <select class="select form-row__control" id="batchSize" aria-describedby="batchSizeHelp"></select>
+          </div>
+
+          <label class="automation__row switch">
+            <input type="checkbox" id="autoKeepToggle">
+            <span class="switch__track"></span>
+            <span class="automation__text">
+              <span class="automation__title">Auto keep</span>
+              <span class="automation__sub">
+                Protects valuable rolls using effective rarity.
+              </span>
+            </span>
+          </label>
+
+          <div class="automation__row automation__row--select form-row" id="autoKeepRarityRow">
+            <label class="automation__text form-row__content" for="autoKeepRarity">
+              <span class="automation__title">Keep at or above</span>
+              <span class="automation__sub">
+                Enter the minimum effective rarity that Auto Keep should protect.
+              </span>
+            </label>
+            <div class="field field-with-prefix form-row__control">
+              <span>1 in</span>
+              <input id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
+            </div>
+          </div>
+
+
+
+          <div class="automation__pulse" id="automationPulse" aria-live="polite"></div>
+        </section>
+
+
+        <!-- ================= CRAFTING PROGRESS ================= -->
+
+        <section class="card crafting-preview" id="craftingProgressPreview" aria-labelledby="craftingProgressHeading">
+          <div class="automation__head">
+            <div>
+              <h2 id="craftingProgressHeading">Crafting progress</h2>
+              <p class="crafting-preview__subtitle">A read-only preview of recipes you have started.</p>
+            </div>
+            <a class="automation__link" href="./crafting/">Open crafting</a>
+          </div>
+          <div class="crafting-preview__list" id="craftingProgressList" aria-live="polite">
+            <p class="crafting-preview__empty">Loading crafting progress…</p>
+          </div>
+          <p class="crafting-preview__updated" id="craftingProgressUpdated"></p>
+        </section>
+
+
+      </aside>
+    </div>
+
     <section class="card rare-rolls" id="rareRollsCard" aria-labelledby="rareRollsHeading">
       <div class="rare-rolls__header">
         <div>
@@ -91,186 +248,45 @@
       </div>
     </section>
 
-    <!-- ================= ROLL STAGE ================= -->
+    <details class="card roll-session" id="rollSession">
+      <summary class="roll-session__summary">
+        <span><strong>Session</strong><small>Recent rolls, highlights and insights</small></span>
+        <span class="roll-session__action" aria-hidden="true">View / hide</span>
+      </summary>
+      <div class="roll-session__content">
+        <!-- ================= HISTORY ================= -->
 
-    <section class="stage card" id="section-roll-stage" aria-labelledby="stageHeading">
-      <h1 class="visually-hidden" id="stageHeading">Roll for gems</h1>
+        <section class="card" id="section-session-history" aria-labelledby="historyHeading">
+          <div class="automation__head">
+            <h2 id="historyHeading">This session</h2>
+            <button class="btn btn--ghost btn--sm" id="clearHistory" type="button">
+              Clear
+            </button>
+          </div>
 
-      <!-- Active potion effects, shown while rolling (top-right). -->
-      <div class="effect-hud" id="effectHud" aria-live="polite"></div>
+          <div id="historyList" class="history"></div>
+        </section>
 
-      <div class="stage__display" id="gemStage" aria-live="polite">
-        <div class="stage__idle">
-          <div class="stage__idle-mark" id="stageIdleMark"></div>
-          <p class="stage__idle-title">Ready to dig</p>
-          <p class="stage__idle-text">
-            Swing your pickaxe and uncover your next gem.
-          </p>
-        </div>
+        <!-- ================= SESSION INSIGHTS ================= -->
+
+        <section class="card session-insights" id="sessionInsightsPanel" aria-labelledby="sessionInsightsHeading">
+          <div class="automation__head">
+            <div>
+              <span class="badge badge--accent">Live session</span>
+              <h2 id="sessionInsightsHeading">Session insights</h2>
+            </div>
+            <div class="session-insights__actions action-bar">
+              <span class="page-head__sub">Kept locally until you clear the session.</span>
+              <button class="btn btn--ghost btn--sm" id="clearSessionInsights" type="button">Clear</button>
+            </div>
+          </div>
+          <div id="sessionInsightStats" class="session-insights__stats"></div>
+          <div id="sessionHighlights" class="session-insights__highlights"></div>
+          <div class="session-insights__breakdown" id="sessionBreakdown"></div>
+          <div class="session-insights__notable" id="sessionNotable"></div>
+        </section>
       </div>
-
-      <div class="stage__controls">
-        <button
-          class="roll-button"
-          id="rollButton"
-          type="button"
-          disabled
-        >
-          <span class="roll-button__fill" id="rollButtonFill"></span>
-          <span class="roll-button__label" id="rollButtonLabel">
-            Loading
-          </span>
-        </button>
-
-        <p class="stage__hint" id="rollHint">
-          <kbd>R</kbd> or <kbd>Space</kbd> to roll
-        </p>
-      </div>
-    </section>
-
-
-    <a class="gemdle-entry card" href="./gemdle/">
-      <span class="gemdle-entry__icon" aria-hidden="true">◇</span>
-      <span class="gemdle-entry__copy">
-        <strong>Today's Gemdle</strong>
-        <span>One daily specimen. Discover your gem, weight and mutations.</span>
-      </span>
-      <span class="gemdle-entry__action">Play Gemdle <span aria-hidden="true">→</span></span>
-    </a>
-
-
-    <!-- ================= SUMMARY ================= -->
-
-    <section class="stat-row" id="section-summary" aria-label="Player summary">
-      <div class="stat">
-        <span class="stat__label">Money</span>
-        <span class="stat__value" id="statMoney">—</span>
-      </div>
-
-      <div class="stat">
-        <span class="stat__label">Inventory</span>
-        <span class="stat__value" id="statInventory">—</span>
-        <div class="meter" style="margin-top:8px">
-          <div class="meter__fill" id="inventoryMeter" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div class="stat">
-        <span class="stat__label">Total rolls</span>
-        <span class="stat__value" id="statRolls">—</span>
-      </div>
-    </section>
-
-
-    <!-- ================= AUTOMATION ================= -->
-
-    <section class="card automation" id="section-automation" aria-labelledby="automationHeading">
-      <div class="automation__head">
-        <h2 id="automationHeading">Automation</h2>
-        <a class="automation__link" href="./settings/">All settings</a>
-      </div>
-
-      <label class="automation__row switch">
-        <input type="checkbox" id="autoRollToggle">
-        <span class="switch__track"></span>
-        <span class="automation__text">
-          <span class="automation__title">Auto roll</span>
-          <span class="automation__sub">
-            Rolls again the moment the cooldown ends.
-          </span>
-        </span>
-      </label>
-
-
-
-      <div class="automation__row automation__row--select form-row">
-        <label class="automation__text form-row__content" for="batchSize">
-          <span class="automation__title">Batch size</span>
-          <span class="automation__sub" id="batchSizeHelp">
-            Independent rolls per request; cooldown scales equally, so rolls per hour do not change.
-          </span>
-        </label>
-        <select class="select form-row__control" id="batchSize" aria-describedby="batchSizeHelp"></select>
-      </div>
-
-      <label class="automation__row switch">
-        <input type="checkbox" id="autoKeepToggle">
-        <span class="switch__track"></span>
-        <span class="automation__text">
-          <span class="automation__title">Auto keep</span>
-          <span class="automation__sub">
-            Protects valuable rolls using effective rarity.
-          </span>
-        </span>
-      </label>
-
-      <div class="automation__row automation__row--select form-row" id="autoKeepRarityRow">
-        <label class="automation__text form-row__content" for="autoKeepRarity">
-          <span class="automation__title">Keep at or above</span>
-          <span class="automation__sub">
-            Enter the minimum effective rarity that Auto Keep should protect.
-          </span>
-        </label>
-        <div class="field field-with-prefix form-row__control">
-          <span>1 in</span>
-          <input id="autoKeepRarity" type="number" min="1" step="1000" inputmode="numeric" aria-label="Auto keep minimum effective rarity">
-        </div>
-      </div>
-
-
-
-      <div class="automation__pulse" id="automationPulse" aria-live="polite"></div>
-    </section>
-
-
-    <!-- ================= CRAFTING PROGRESS ================= -->
-
-    <section class="card crafting-preview" id="craftingProgressPreview" aria-labelledby="craftingProgressHeading">
-      <div class="automation__head">
-        <div>
-          <h2 id="craftingProgressHeading">Crafting progress</h2>
-          <p class="crafting-preview__subtitle">A read-only preview of recipes you have started.</p>
-        </div>
-        <a class="automation__link" href="./crafting/">Open crafting</a>
-      </div>
-      <div class="crafting-preview__list" id="craftingProgressList" aria-live="polite">
-        <p class="crafting-preview__empty">Loading crafting progress…</p>
-      </div>
-      <p class="crafting-preview__updated" id="craftingProgressUpdated"></p>
-    </section>
-
-
-    <!-- ================= HISTORY ================= -->
-
-    <section class="card" id="section-session-history" aria-labelledby="historyHeading">
-      <div class="automation__head">
-        <h2 id="historyHeading">This session</h2>
-        <button class="btn btn--ghost btn--sm" id="clearHistory" type="button">
-          Clear
-        </button>
-      </div>
-
-      <div id="historyList" class="history"></div>
-    </section>
-
-    <!-- ================= SESSION INSIGHTS ================= -->
-
-    <section class="card session-insights" id="sessionInsightsPanel" aria-labelledby="sessionInsightsHeading">
-      <div class="automation__head">
-        <div>
-          <span class="badge badge--accent">Live session</span>
-          <h2 id="sessionInsightsHeading">Session insights</h2>
-        </div>
-        <div class="session-insights__actions action-bar">
-          <span class="page-head__sub">Kept locally until you clear the session.</span>
-          <button class="btn btn--ghost btn--sm" id="clearSessionInsights" type="button">Clear</button>
-        </div>
-      </div>
-      <div id="sessionInsightStats" class="session-insights__stats"></div>
-      <div id="sessionHighlights" class="session-insights__highlights"></div>
-      <div class="session-insights__breakdown" id="sessionBreakdown"></div>
-      <div class="session-insights__notable" id="sessionNotable"></div>
-    </section>
+    </details>
 
   </main>
 

@@ -96,16 +96,16 @@ assert.match(settingsCss, /label\.setting\.switch \{\r?\n\s*flex-direction: row;
 
 
 // ---------------------------------------------------------
-// Roll page: rare rolls still come first in the markup, become a sticky
-// side column on wide screens and collapse above the roll button below.
+// Roll page: gameplay comes first, with a supporting desktop column and
+// compact discoveries below the workspace.
 // ---------------------------------------------------------
 
 assert.match(page, /<main class="app-main app-main--narrow app-main--roll">/);
-assert.ok(page.indexOf('id="rareRollsCard"') < page.indexOf('id="section-roll-stage"'));
+assert.ok(page.indexOf('id="section-roll-stage"') < page.indexOf('id="rareRollsCard"'));
 assert.match(page, /id="rareRollsToggle"/);
 assert.match(rareRolls, /function bindExpandToggle\(card\)/);
 assert.match(rareRolls, /bindExpandToggle\(card\);/);
-assert.match(appCss, /\.app-main--roll > \.rare-rolls \{\r?\n\s*position: sticky;/);
-assert.match(appCss, /\.rare-rolls:not\(\.is-expanded\) \.rare-roll:nth-child\(n \+ 2\) \{\r?\n\s*display: none;/);
+assert.match(page, /roll-workspace__support/);
+assert.match(read("style.css"), /\.rare-rolls:not\(\.is-expanded\) \.rare-roll:nth-child\(n \+ 2\) \{\r?\n\s*display: none;/);
 
 console.log("UI refresh shell and layout checks passed.");

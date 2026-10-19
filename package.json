@@ -66,6 +66,8 @@
     "test:christmas": "node --test tests/christmas-2026-test.mjs tests/christmas-cutscene-test.mjs tests/christmas-quests-test.mjs && node tests/christmas-2026-handler-test.mjs && node tests/christmas-2026-database-test.mjs && node tests/christmas-quests-database-test.mjs",
     "test:christmas:browser": "node tests/christmas-2026-browser-test.mjs",
     "test:christmas:sensitivity": "node tools/christmas-2026-sensitivity.mjs",
+    "test:roll-presentation": "node tests/roll-presentation-phase-3-browser-test.mjs",
+    "test:ui-audit": "node tests/phase-1-2-audit-browser-test.mjs",
     "test:navigation-phase-2": "node tests/navigation-phase-2-test.mjs",
     "test:navigation-phase-2-browser": "node tests/navigation-phase-2-browser-test.mjs",
     "test:season-one": "node tests/season-one-database-test.mjs && node tests/season-one-handler-test.mjs",
