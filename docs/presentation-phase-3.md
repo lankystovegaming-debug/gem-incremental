@@ -43,3 +43,7 @@ No known regression remains in the completed checks. Local browser fixtures do n
 The full all-feature/database `npm test` suite was not run for this presentation change. History and insights intentionally start collapsed; expanding them can produce a long page. The control position and all-width compact discoveries are intentional presentation changes. Phase 4 Settings/Crafting/Inventory/Market restructuring, broader navigation redesign and brand/theme changes are deferred.
 
 **No Supabase source, migration, Edge Function or gameplay formula was changed.** Base cooldown remains 2.5 seconds per roll before batching; lifetime display continues to use `total_rolls`. Nothing was deployed. The owner retains all migration/Edge Function deployment responsibility; this change requires frontend publication only.
+
+## Weekly player-note validation
+
+The first PR synchronize check captured the draft description before its `## Player update log` section was added. The completed PR #522 description passes the exact `tools/publish-weekly-update.mjs --check` command with a current PR event payload, producing five player-facing bullets. A follow-up documentation commit triggers a fresh synchronize event so CI validates the completed description rather than the earlier draft snapshot. No workflow checks or publication rules were weakened.
