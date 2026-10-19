@@ -14,6 +14,9 @@ const room = (n) => {
   return { ...r, room_number: r.room, room_type: r.title, room_key_chance: r.key_chance, mutation_summary: r.mutation_line };
 };
 let completed = [];
+let fightMode = null, fightTurn = 0;
+const fixtureRun=(health,status='active')=>({id:'combat-fixture',room_number:1,status,player_attack:10,player_health:health,room_state:{startingHealth:100,combatGemPower:0}});
+const fixtureEnemy={name:'Zombie',hp:25,maxHp:25,rank:'Normal',level:1};
 // Preview only: stub auth/shell services so tests cannot mutate live accounts.
 const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
@@ -26,6 +29,7 @@ const server = http.createServer((req, res) => {
     res.end(`export const supabase={functions:{async invoke(name,{body}){
       if(name==='workbench')return {data:body.action==='catalog'?{recipes:[]}:{materials:Array.from({length:130},(_,i)=>({material_name:'Bone '+i,quantity:i+1})),essence:[{essence_tier:'TE',quantity:7}],gear:[{stats:{name:'Fine <weapon>'},quality:'75%',mutation_name:'Chocolate',gem_power:104560875,combat_gem_power:3216578},{stats:{recipe:'Shark Scale Armor'},quality:'Workbench',gem_power:1144000,combat_gem_power:1144000}]}};
       if(body.action==='progress')return {data:await(await fetch('/progress-fixture')).json()};
+      if(body.action==='current'||body.action==='attack')return {data:await(await fetch('/combat-fixture/'+body.action)).json()};
       if(body.action==='start')return {data:{run:{id:'fixture',room_number:body.roomNumber,status:'won',player_attack:331,player_health:743,room_state:{startingHealth:743,combatGemPower:3216578,balanceVersion:'2026-10-17'}},combatant:null}};
       if(body.action==='claim')return {data:await(await fetch('/claim-fixture')).json()};
       return {data:body.action==='room'?await(await fetch('/fixture/'+body.roomNumber)).json():{current:null}};
@@ -34,6 +38,16 @@ const server = http.createServer((req, res) => {
   if (pathname === '/progress-fixture') {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ progress: completed.map((room_number) => ({ room_number })) })); return;
+  }
+  if (pathname.startsWith('/combat-fixture/')) {
+    res.setHeader('Content-Type','application/json');
+    if(!fightMode){res.end(JSON.stringify({current:null}));return;}
+    if(pathname.endsWith('/current')){res.end(JSON.stringify({current:{run:fixtureRun(fightMode==='lethal'?1:100),combatant:fixtureEnemy,won:false}}));return;}
+    fightTurn++;
+    const legacy=fightMode==='legacy',lethal=fightMode==='lethal',killed=fightTurn===2&&!lethal;
+    const damage=legacy ? .08 : 1.5,health=lethal?0:100-damage;
+    res.end(JSON.stringify({run:fixtureRun(health,lethal?'lost':killed?'won':'active'),combatant:killed?null:{...fixtureEnemy,hp:15},damage:10,
+      won:killed,lost:lethal,defeated:killed?'Zombie':null,...(legacy?{}:{retaliationDamage:killed?0:damage,retaliationEnemy:killed?null:'Zombie'})}));return;
   }
   if (pathname === '/claim-fixture') {
     completed = [1];
@@ -57,6 +71,7 @@ const browser = await chromium.launch({ headless: true,
 try {
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     completed = [];
+    fightMode = null;
     const page = await browser.newPage({ viewport });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -108,6 +123,24 @@ try {
     assert.match(await page.locator('#history').innerText(), /Fine <weapon>/);
     assert.equal(await page.locator('#history weapon').count(),0,'gear names remain escaped');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Workbench must fit mobile');
+    for(const mode of ['new','legacy','lethal']){
+      fightMode=mode;fightTurn=0;
+      await page.goto(`http://127.0.0.1:${server.address().port}/dungeons/`);
+      await page.locator('#attack:enabled').waitFor();await page.locator('#attack').click();
+      const expected=mode==='legacy'?'counterattacked for 0.08 damage':'Zombie counterattacked for 1.5 damage';
+      await page.getByText(expected,{exact:false}).waitFor();
+      assert.match(await page.locator('#playerPower').innerText(),mode==='legacy'?/Health 99\.92 \/ 100/:mode==='lethal'?/Health 0 \/ 100/:/Health 98\.5 \/ 100/);
+      if(mode==='lethal'){
+        assert(await page.locator('#attack').isDisabled());assert(await page.locator('#claim').isHidden());
+        assert.match(await page.locator('#combatLog').innerText(),/You were defeated/);
+      }else{
+        await page.locator('#attack:enabled').click();
+        await page.getByText('Defeated before it could counterattack.',{exact:false}).waitFor();
+        assert(await page.locator('#attack').isDisabled());assert(await page.locator('#claim').isVisible());
+      }
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),'Combat feedback fits mobile');
+    }
+    assert.deepEqual(errors, []);
     await page.close();
   }
   console.log('Dungeon browser checks passed: desktop/mobile room selection, boss/treasure summaries and overflow.');

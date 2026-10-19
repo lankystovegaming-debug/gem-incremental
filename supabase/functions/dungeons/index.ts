@@ -3,6 +3,7 @@ import drops from "./drop-data.json" with { type: "json" };
 import { loadDungeonProgress } from "./progress.js";
 import referenceAttack from "./balance-reference.json" with { type: "json" };
 import { BALANCE_VERSION, annotateCombatGear, balancedEnemyHealth, bestCombatGemPower } from "./balance.js";
+import { RETALIATION_VERSION, computeRetaliationDamage, savedRetaliationDamage } from "./retaliation.js";
 import {
   borderAdjacentRegion,
   canonicalEnemyName,
@@ -169,9 +170,16 @@ async function makeCombatant(
   const mutation = await rollRoomMutation(ctx, room, true);
   const stats = enemyBaseStats(room, row, rank, mutation, isBoss, bossRepeat, bossZone);
   const name = canonicalEnemyName(row.name);
+  const retaliationDamage = computeRetaliationDamage({
+    referenceAttack, roomNumber: room.room_number, rank, isBoss, catalogDamage: row.dmg,
+    regionDamage: regionScale(room.region)[1], zoneDamage: zoneScale(isBoss ? bossZone : room.zone)[1],
+    bossRepeat, fallbackRoleDamage: (ROLE[name] ?? [1, 1])[1],
+    mutationDamage: (MUTATION_TIER[mutation?.tier] ?? [1, 1, 1])[1],
+  });
   return {
     id: crypto.randomUUID(), name, rank, lootRole, maxHp: stats.hp, hp: stats.hp,
     damage: stats.damage, defense: stats.defense, essenceMultiplier, level, rewardMultiplier,
+    retaliationDamage, retaliationVersion: RETALIATION_VERSION,
     mutated: !!mutation, mutationTier: mutation?.tier ?? null, mutationName: mutation?.name ?? null,
     mutationData: mutation, drops: (drops as any)[name]?.items ?? [],
   };
@@ -405,7 +413,8 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
         enemy_health: built.combatants[0]?.hp ?? 0, player_health: power.health, status, loot,
         combatants: built.combatants,
         room_state: { encounter: built.encounter, boss: built.boss, zone: room.zone, region: room.region, bossRepeat: built.bossRepeat, fogged,
-          balanceVersion: BALANCE_VERSION, combatGemPower: power.gemPower, startingHealth: power.health },
+          balanceVersion: BALANCE_VERSION, combatGemPower: power.gemPower, startingHealth: power.health,
+          retaliationVersion: RETALIATION_VERSION },
         player_attack: power.attack,
       }).select("*").single();
       if (error?.code === "23505") {
@@ -425,6 +434,7 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       const damage = Math.max(1, num(run.player_attack, 10) - num(enemy.defense));
       enemy.hp = Math.max(0, num(enemy.hp) - damage);
       let playerHealth = num(run.player_health, 100);
+      let retaliationDamage = 0;
       let loot = Array.isArray(run.loot) ? run.loot : [];
       let next = index;
       if (enemy.hp <= 0) {
@@ -434,7 +444,8 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
         if (next < combatants.length) combatants[next].hp = combatants[next].maxHp;
         else awardRoomKey(room, loot);
       } else {
-        playerHealth -= num(enemy.damage, 10) * .08;
+        retaliationDamage = savedRetaliationDamage(enemy);
+        playerHealth -= retaliationDamage;
       }
       const status = playerHealth <= 0 ? "lost" : next >= combatants.length ? "won" : "active";
       const { data: updated, error } = await ctx.supabaseAdmin.from("dungeon_runs").update({
@@ -443,7 +454,8 @@ export default { fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
       }).eq("id", run.id).eq("status", "active").eq("updated_at", run.updated_at).select("*").maybeSingle();
       if (error) throw error;
       if (!updated) return json({ error: "stale_dungeon_attack", message: "That run changed during the attack. Refreshing it is safe." }, 409);
-      return json({ run: updated, combatant: combatants[next] ?? null, won: status === "won", lost: status === "lost", defeated: enemy.hp <= 0 ? enemy.name : null, damage });
+      return json({ run: updated, combatant: combatants[next] ?? null, won: status === "won", lost: status === "lost", defeated: enemy.hp <= 0 ? enemy.name : null, damage,
+        retaliationDamage, retaliationEnemy: retaliationDamage > 0 ? enemy.name : null });
     }
     if (action === "claim") {
       const { data: run, error: runError } = await ctx.supabaseAdmin.from("dungeon_runs").select("*")

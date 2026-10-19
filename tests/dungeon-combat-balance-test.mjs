@@ -74,7 +74,7 @@ assert.equal(fallback.damage,2.5*1.6*1.5*6*3,'legacy damage fallback remains unc
 const mimic=stats({room_number:1,region:'Entrance',zone:'Easy'},{name:'Mimic'},'Elite',null);
 assert.equal(mimic.hp,Math.round(reference[0]*3.25*1.2*.7*1.8));
 assert.match(source,/balanceVersion: BALANCE_VERSION/);
-assert.match(source,/playerHealth -= num\(enemy.damage, 10\) \* .08/);
+assert.match(source,/retaliationDamage = savedRetaliationDamage\(enemy\)/);
 const attackBody=source.match(/if \(action === "attack"\)[\s\S]*?if \(action === "claim"\)/)[0];
 assert.doesNotMatch(attackBody,/bestCombatGemPower|enemyBaseStats/,'ongoing runs keep their snapshots');
 console.log(`Dungeon combat balance tests passed: ${checks} rank/mutation/room checks, jackpot conversion, complete inventory and saved fights.`);
