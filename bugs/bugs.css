@@ -117,3 +117,60 @@
 .bug-sms .btn {
   flex: none;
 }
+
+.report-inbox[hidden],
+.report-inbox [hidden] {
+  display: none !important;
+}
+
+.report-inbox {
+  margin-bottom: var(--space-5);
+  overflow-wrap: anywhere;
+  scroll-margin-top: calc(var(--nav-height, 60px) + 24px);
+}
+
+.report-inbox__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.report-inbox__controls .select {
+  width: auto;
+  max-width: 100%;
+}
+
+.report-inbox__list {
+  display: grid;
+  gap: 16px;
+  margin-block: 16px;
+}
+
+.report-entry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  min-width: 0;
+}
+
+.report-entry h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.report-entry__body {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  margin-block: 12px;
+}
+
+.report-entry dl {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--text-muted);
+}
+
+.report-entry dt { font-weight: 650; margin-top: 8px; }
+.report-entry dd { margin: 0; white-space: pre-wrap; }
