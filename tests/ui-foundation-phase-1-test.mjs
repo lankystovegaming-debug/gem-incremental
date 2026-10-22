@@ -8,7 +8,7 @@ const [styles, mobileSheet, inventoryCss, inventoryJs, roll, inventory, settings
   read("src/ui/mobileSheet.js"),
   read("inventory/inventory.css"),
   read("inventory/inventory.js"),
-  read("index.html"),
+  read("roll/index.html"),
   read("inventory/index.html"),
   read("settings/index.html"),
   read("crafting/index.html"),

@@ -62,7 +62,7 @@ import { mountMobileSheet } from "./mobileSheet.js";
 // `short` is used on the mobile tab bar, where full labels would not
 // fit across a narrow screen.
 const PAGES = [
-  { id: "roll", label: "Roll", short: "Roll", href: "", icon: icons.dice },
+  { id: "roll", label: "Roll", short: "Roll", href: "roll/", icon: icons.dice },
   { id: "inventory", label: "Inventory", short: "Items", href: "inventory/", icon: icons.bag },
   { id: "crafting", label: "Crafting", short: "Craft", href: "crafting/", icon: icons.anvil },
   { id: "boosts", label: "Shop", short: "Shop", href: "boosts/", icon: icons.potion },
