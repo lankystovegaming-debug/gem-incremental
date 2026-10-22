@@ -12,7 +12,7 @@ const auth = read("src/backend/auth.js");
 const account = read("src/backend/account.js");
 const settings = read("src/ui/settings.js");
 const main = read("main.js");
-const page = read("index.html");
+const page = read("roll/index.html");
 const rareRolls = read("src/ui/rareRollsCard.js");
 const playerCli = read("src/ui/cli/playerCli.js");
 
@@ -56,7 +56,7 @@ assert.match(shell, /if \(isSignInRequired\(\)\) showSignInRequired\(\);/);
 assert.match(shell, /id = "shellSignInBanner"/);
 
 assert.match(main, /if \(!user && isSignInRequired\(\)\) \{\r?\n\s*showSignInRequired\(\);/);
-assert.match(main, /rollButton\.dataset\.signIn === "true"[\s\S]*?window\.location\.href = "\.\/account\/"/);
+assert.match(main, /rollButton\.dataset\.signIn === "true"[\s\S]*?window\.location\.href = "\.\.\/account\/"/);
 assert.match(settings, /error\.code = 'signed_out';/);
 assert.match(settings, /export function isSignedOutError\(error\)/);
 assert.match(main, /if \(isSignedOutError\(error\)\) return;/);
