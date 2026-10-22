@@ -66,6 +66,9 @@
     <button id="landingRetry" class="btn" type="button" hidden>Try again</button>
     <noscript><p>Enable JavaScript to load your player data.</p><a href="./account/">Log in or create an account</a></noscript>
   </main>
+  <footer class="landing-tip" aria-label="Random tip or fun fact">
+    <p id="landingTip">Tip: Lock gems you want to keep before selling from your inventory.</p>
+  </footer>
   <dialog id="latestUpdate" class="landing-changelog" aria-labelledby="changelogTitle">
     <header class="landing-changelog__header">
       <h2 id="changelogTitle">Latest weekly update</h2>
@@ -73,6 +76,7 @@
     </header>
     <div id="changelogContent" role="status"></div>
   </dialog>
+  <script type="module" src="./src/ui/landingTip.js"></script>
   <script type="module" src="./landing.js"></script>
 </body>
 </html>

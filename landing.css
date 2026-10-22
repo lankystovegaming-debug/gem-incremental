@@ -1,6 +1,7 @@
 .landing-page {
   min-height: 100svh;
   display: grid;
+  grid-template-rows: 1fr auto;
   place-items: center;
   padding: 24px;
   background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 65%), var(--bg);
@@ -13,6 +14,18 @@
 }
 
 .landing [hidden] { display: none !important; }
+
+.landing-tip {
+  width: min(100%, 640px);
+  padding: 16px 12px max(8px, env(safe-area-inset-bottom));
+  color: var(--text-muted);
+  font-size: .85rem;
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.landing-tip p { margin: 0; }
 
 .landing__brand { color: var(--text); font-weight: 800; letter-spacing: .2em; text-decoration: none; font-size: .85rem; }
 .landing__gem { color: var(--accent); font-size: 6rem; line-height: 1; margin: 48px 0 32px; text-shadow: 0 0 60px color-mix(in srgb, var(--accent) 45%, transparent); }
