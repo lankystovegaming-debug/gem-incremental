@@ -2138,6 +2138,7 @@ if (!user || !whoami?.isAdmin) {
   notify.error("Access denied", "Administrator access is required.");
 } else {
   canWriteAdmin = whoami.canWrite === true;
+  document.getElementById("bugReportsLink").hidden = !canWriteAdmin;
   const { data: ownPlayer } = await supabase
     .from("players")
     .select("money")

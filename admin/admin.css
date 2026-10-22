@@ -836,3 +836,5 @@
   .admin-maintenance__state { align-items: flex-start; flex-direction: column; }
 }
 
+
+#bugReportsLink[hidden] { display: none; }
