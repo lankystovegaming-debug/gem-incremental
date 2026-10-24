@@ -45,7 +45,7 @@ try {
   assert.equal(await page.locator('.roll-workspace, #rollSession').count(),0);
   assert.equal(await page.locator('#section-session-history').isVisible(),true);
   assert.equal(await page.locator('#sessionInsightsPanel').isVisible(),true);
-  assert.equal(await page.locator('#biomeStatus').count(),1,'Retain newer biome status');
+  assert.equal(await page.locator('#biomeStatus').count(),0,'Biome Index belongs on the Gem Index page');
   assert.match(await page.locator('#craftingProgressList').textContent(),/No recipes/);
   assert.match(await page.locator('#historyList').textContent(),/Your rolls/);
   assert.match(await page.locator('#sessionBreakdown').textContent(),/No rolls/);

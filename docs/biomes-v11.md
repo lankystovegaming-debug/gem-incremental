@@ -43,9 +43,9 @@ The four Native gems stay in the ordinary pool. Seven exclusives are optional pr
 
 ## Phase 3 — index and announcements
 
-The authenticated discovery-aware index returns nine masked biome slots and no Phenomena entry until Distortion is discovered. Discovered entries expose their duration, mean start interval and gem conditions; these are random means, not countdowns to guaranteed appearances. Roll and Gem Index show the authoritative active state using server-clock offset and announce newly observed starts and discoveries. No remote chat messages are sent. Existing independent gem conditions remain visible in the Gem Index.
+The authenticated discovery-aware index returns nine masked biome slots and no Phenomena entry until Distortion is discovered. Discovered entries expose their duration, mean start interval and gem conditions; these are random means, not countdowns to guaranteed appearances. Gem Index shows the authoritative active state using server-clock offset and announce newly observed starts and discoveries. No remote chat messages are sent. Existing independent gem conditions remain visible in the Gem Index.
 
-The widget pauses network polling while hidden, permits one request at a time, and keeps open disclosures/focus through unchanged refreshes. It has no canvas, particle system or continuous animation. Names and countdown text carry meaning independently of color. Countdown updates are excluded from live announcements to avoid screen-reader chatter. The compact status warns when the last accepted batch period exceeds the active occurrence duration and points to batch 1. The dedicated saved mode toggle is separate from Enable Buffs.
+The widget pauses network polling while hidden, permits one request at a time, and keeps open disclosures/focus through unchanged refreshes. It has no canvas, particle system or continuous animation. Names and countdown text carry meaning independently of color. Countdown updates are excluded from live announcements to avoid screen-reader chatter. The dedicated saved mode toggle is separate from Enable Buffs.
 
 ## Phase 4 — regression evidence and limits
 
@@ -59,3 +59,7 @@ The widget pauses network polling while hidden, permits one request at a time, a
 - No migrations or Edge Functions deployed. No production verification claimed. Full all-feature `npm test` was not run.
 
 Browser scripts support `BIOMES_PLAYWRIGHT_MODULE`, `BIOMES_CHROMIUM_PATH`, `ROLL_PLAYWRIGHT_MODULE`, `ROLL_CHROMIUM_PATH` and `ROLL_PREVIEW_URL` for existing local runtimes. Standard CI may use its installed Playwright and browser instead. Screenshots are local QA artifacts, not committed game assets.
+
+## Roll-page cleanup
+
+Removed the redundant Biome Index panel and its polling/event hooks from the Roll page. Biome details and discoveries remain on the Gem Index page. The Phase 2 Roll layout is preserved.
