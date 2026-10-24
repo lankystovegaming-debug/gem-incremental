@@ -1,3 +1,25 @@
+// Request-local only. Canonical rarity remains untouched for every other rule.
+export function biomeSelectionPool(catalog: any[], snapshot: any) {
+  const occurrence = snapshot?.occurrence;
+  const tournament = snapshot?.tournament === true;
+  return catalog.filter((gem: any) => {
+    const required = gem.metadata?.requiredBiome;
+    return !required || (!tournament && required === occurrence?.key);
+  }).map((gem: any) => ({ ...gem,
+    selectionDenominator: !tournament && occurrence?.denominators?.[gem.name] != null
+      ? Number(occurrence.denominators[gem.name]) : Number(gem.rarity)
+  }));
+}
+
+// Explicit deterministic ordering for effective ties; original catalogue order
+// (sort_order, rarity desc, name) is carried by the row rather than DB arrival.
+export function biomeSelectionOrder(a: any, b: any) {
+  return (b.selectionDenominator ?? b.rarity) - (a.selectionDenominator ?? a.rarity)
+    || Number(a.biomeTieOrder ?? 0) - Number(b.biomeTieOrder ?? 0)
+    || b.rarity - a.rarity
+    || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+}
+
 import { gemTimeAvailable, mythicPotionExclusiveGem } from "./availabilityRules.ts";
 
 // QOL_RULES_START
@@ -1227,23 +1249,24 @@ function rollGemWithPickaxePassives(
   timeWindowMultiplier = 1,
   eventContext: any = null,
   equipmentContext: any = null,
-  maxLuck: number | null = null
+  maxLuck: number | null = null,
+  selectionCatalog: any[] = gems
 ) {
   const safeLuck = Math.max(0.000001, capGemLuck(luck, maxLuck));
-  const eligibleGems = eligibleEquipmentGems(gems, equipmentContext?.id);
+  const eligibleGems = eligibleEquipmentGems(selectionCatalog, equipmentContext?.id);
   const maximumRarity = Math.max(...eligibleGems.map((gem) => gem.rarity));
   const rarityFloor = Math.min(safeLuck, maximumRarity);
   const rollable = eligibleGems
     .filter((gem) => gem.affectedByLuck === false || gem.rarity >= rarityFloor)
     .filter((gem) => !eventContext || eventGemIsEligible(eventContext, gem))
-    .sort((a, b) => b.rarity - a.rarity);
+    .sort(biomeSelectionOrder);
 
   for (const gem of rollable) {
     if (gem.affectedByLuck === false) {
       const deepcoreSpecial = gem.specialGem === true
         ? positive(eventContext?.deepcoreSpecialChanceMultiplier)
         : 1;
-      if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) * deepcoreSpecial / gem.rarity, 1)) return gem;
+      if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) * deepcoreSpecial / (gem.selectionDenominator ?? gem.rarity), 1)) return gem;
       continue;
     }
     let gemLuck = Math.max(0.000001, luck) * (eventContext?.buffsDisabled ? 1 : fortuneLuckFactor(equipmentContext?.id, gem)) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
@@ -1259,7 +1282,7 @@ function rollGemWithPickaxePassives(
       }
     }
     gemLuck = capGemLuck(gemLuck, maxLuck);
-    if (random01() < Math.min(gemLuck / gem.rarity, 1)) return gem;
+    if (random01() < Math.min(gemLuck / (gem.selectionDenominator ?? gem.rarity), 1)) return gem;
   }
   const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
   const pool = fallbackPool.length ? fallbackPool : rollable;
@@ -1519,6 +1542,7 @@ export function getLateGameFinalWeightFactor(
 
 type BatchExecution = {
   batchSize: number;
+  biomeSnapshot?: any;
   pool: "normal" | "deep_sea";
   abyssalPotion: boolean;
   requestStartedAt: Date;
@@ -2240,8 +2264,10 @@ async function executeSingleRoll(
       }
 
       if (enchantId === "collectors_edge") {
-        const catalogSize = gems.length;
-        const completion = Math.min(1, discoveredGemNames.size / catalogSize);
+        const catalogSize = gems.filter((g: any) => g.metadata?.optionalCollection !== true).length;
+        const optionalBiomeGems = new Set(['Heart of the Tide','Caldera Heart','Absolute Zero','Telluric Heart','Midnight','Damnation','Aberration']);
+        const ordinaryDiscoveries = [...discoveredGemNames].filter(name => !optionalBiomeGems.has(name)).length;
+        const completion = Math.min(1, ordinaryDiscoveries / Math.max(1,catalogSize));
         const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.25 : 0.12);
         enchantLuck *= strengthenEnchantMultiplier(baseMultiplier);
       }
@@ -2479,6 +2505,7 @@ async function executeSingleRoll(
         );
 
       if (batchIndex === 0) {
+        batchExecution.biomeSnapshot = rollClaim.biomeSnapshot ?? null;
         batchExecution.leaseId = rollLeaseId;
         batchExecution.firstGenuineRoll = genuineRoll;
         batchExecution.nextRollAt = claimedNextRollAt.toISOString();
@@ -2642,6 +2669,7 @@ async function executeSingleRoll(
             .map((entry: any) => ({
             name: String(entry.name),
             rarity: Number(entry.rarity),
+            biomeTieOrder: Number(entry.sort_order ?? 0),
             baseWeight: Number(entry.base_weight),
             valuePerGram: Number(entry.value_per_gram),
             affectedByLuck: entry.affected_by_luck !== false,
@@ -2751,6 +2779,8 @@ async function executeSingleRoll(
           valuePerGram: Number(legacy.value_per_gram), affectedByLuck: true, metadata: { deepSeaLegacy: true }
         }];
       }
+      // Catalogue cache remains canonical; only this accepted request gets denominators.
+      const biomeGems = biomeSelectionPool(gems, batchExecution.biomeSnapshot);
       const neptuneDeepSeaDivisor = equipmentContext.id === "neptune"
         ? (Number(deepSeaContext?.state?.offering_charges ?? 0) > 0 ? 20 : 10)
         : 1;
@@ -2763,7 +2793,7 @@ async function executeSingleRoll(
         buffsEnabled ? extremeGemMultiplier : 1,
         buffsEnabled ? legendaryGemMultiplier : 1,
         buffsEnabled ? timeWindowMultiplier : 1,
-        allIn ? {...availabilityEventContext,buffsDisabled:true} : buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, equipmentContext, maxLuck
+        allIn ? {...availabilityEventContext,buffsDisabled:true} : buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, equipmentContext, maxLuck, biomeGems
       );
 
       // Temporary mutation effects from PREVIOUS rolls.
@@ -3886,6 +3916,7 @@ async function executeSingleRoll(
           objective: deepcoreAutoContribution?.objective ?? null,
           rollCard: deepcoreContext?.rollCard === true
         },
+        biome: batchExecution.biomeSnapshot ?? null,
         deepSea: batchExecution.pool === "deep_sea" ? {
           pool: "deep_sea",
           tideTokensAwarded: Number(deepSeaCommit?.awarded ?? 0),

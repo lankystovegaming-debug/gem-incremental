@@ -30,3 +30,13 @@ Rollback: disable the scheduler; disable the seven exclusive catalogue rows befo
 ## Verification status
 
 Work in progress; final validation and limitations are recorded below when complete. Tests operate on isolated local fixtures. Owner deployment and production verification remain outstanding.
+
+## Phase 2 — selection and commit boundary
+
+The first accepted database lease freezes occurrence, denominator rules and biome-neutral mode. Subsequent subrolls use that exact snapshot through expiry; rejected attempts receive none. The existing `commit_equipment_roll` transaction advances discovery with an AFTER trigger, so rollback, duplicated commits and bonus inventory writes cannot discover. Genuine Deep Sea/Abyssal winners and House Edge losses can discover independently of their selectors. No extra per-subroll RPC is introduced.
+
+Only the normal selector's check denominator and descending selection order change. Canonical rarity continues to drive floors, equipment eligibility, Fortune/research bands, stored specimens, reroll comparisons, value and progression. Effective ties use catalogue sort order, then canonical rarity descending, then name for a deterministic final tie. Saturation and marginal reversals are deliberate. Existing relic and special-pool routing remain untouched. Dedicated selectors receive their original catalogues.
+
+Biome-neutral Tournament Mode is a new saved preference because no tournament subsystem existed in this repository. It excludes all seven required-biome gems and all biome denominator adjustments, preserving personal eligible buffs. It does not add tournament scoring, matchmaking or rewards. The mode and rules version accompany normal roll responses for auditing. Existing Enable Buffs still controls its separate four-stat behavior.
+
+The four Native gems stay in the ordinary pool. Seven exclusives are optional prestige: excluded from ordinary Gem Index completion, Complete Index achievement requirements and Collector's Edge completion. All 11 descriptions are verbatim user-approved text. Damnation/Aberration have metadata and shared formatting overrides. No existing Mantle Core artifact changes.
