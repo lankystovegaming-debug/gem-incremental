@@ -94,3 +94,23 @@ el('qolChatLayout').onchange = () => {
 el('clearLegacyFilter').onclick=()=>save({clearLegacyAutoSell:true});
 
 el('gemFilterClearSelection').onclick=()=>{selected.clear();paint();};
+
+// Kept separate from Enable Buffs: personal eligible bonuses remain active.
+const biomeMode = el('biomeTournamentMode');
+if (biomeMode) {
+  biomeMode.disabled = true;
+  try {
+    const {data,error} = await supabase.rpc('get_biome_index');
+    if (error) throw error;
+    biomeMode.checked = data.tournament === true;
+    biomeMode.disabled = false;
+  } catch { biomeMode.title = 'Deploy Biomes V1.1 to use this mode.'; }
+  biomeMode.addEventListener('change',async () => {
+    biomeMode.disabled = true;
+    try {
+      const {error} = await supabase.rpc('set_biome_tournament_mode',{p_enabled:biomeMode.checked});
+      if (error) throw error;
+    } catch (error) { biomeMode.checked = !biomeMode.checked; notify.error('Mode was not saved',error.message); }
+    finally { biomeMode.disabled = false; }
+  });
+}

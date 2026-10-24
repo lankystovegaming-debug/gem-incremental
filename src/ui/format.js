@@ -20,7 +20,7 @@ const RARITY_TIERS = [
   { id: "secret",       name: "Secret",       max: Infinity }
 ];
 const ANOMALOUS_TIER = Object.freeze({ id: "anomalous", name: "Anomalous", max: Infinity });
-const SOURCE_EXCLUSIVE_ANOMALOUS_GEMS = new Set(["the bottom", "hadopelagic", "zephyrion"]);
+const SOURCE_EXCLUSIVE_ANOMALOUS_GEMS = new Set(["the bottom", "hadopelagic", "zephyrion", "damnation", "aberration"]);
 
 
 export function rarityTier(rarity, gemName = "") {

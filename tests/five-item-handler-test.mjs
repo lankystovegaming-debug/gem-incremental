@@ -20,6 +20,7 @@ let player,equipment,boosts,oneRoll,admin,commits,saved,rpcs,rpcCalls;
 const defaultMutationCatalog=[{id:'polished',name:'Polished',chance:100,multiplier:1.5},{id:'shifted',name:'Shifted',chance:5,multiplier:35}];
 let activeMutationCatalog=defaultMutationCatalog;
 let activeMutationCatalogVersion=1;
+let activeBiomeSnapshot=null,extraBiomeGems=[];
 let qolSettings = { discoveryKeep:false }, bundleResponse = {status:"none"}, saleFailure=false, craftActive=false, craftResponse={deposited:false};
 const uid='00000000-0000-0000-0000-000000000001';
 class Query {
@@ -46,7 +47,7 @@ const rollContext=()=>({
  expeditionArtifactEffects:{luckBonus:3},guild:{membership:null,shopBuffIds:[]},
  deepcoreContext:null,deepSeaContext:null,pets:[],equipmentBonusRows:equipment,contextWarnings:[],
  catalogVersions:{gems:1,mutations:activeMutationCatalogVersion},
- gemCatalog:[{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
+ gemCatalog:[...extraBiomeGems,{name:'Test gem',rarity:100000,base_weight:100,value_per_gram:2,affected_by_luck:true,availability_mode:'always',special_gem:false},{name:'Quartz',rarity:2,base_weight:1,value_per_gram:1,affected_by_luck:true,availability_mode:'always',special_gem:false}],
  mutationCatalog:activeMutationCatalog
 });
 const client={from:t=>new Query(t),rpc:async(name,args)=>{
@@ -63,13 +64,14 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
   return {data:{errors:[]},error:null};
  }
  const responses={qol_roll_context:{settings:qolSettings,discoveries:['Test gem']},crystal_player_effects:{luckBonus:2,finalLuckMultiplier:3},player_expedition_artifact_effects:{luckBonus:3},
-  claim_equipment_roll_batch:{status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString(),mythicSurge:{active:false,boosted:false,progress:0}},record_server_roll:{total_rolls:5001}};
+  claim_equipment_roll_batch:{biomeSnapshot:structuredClone(activeBiomeSnapshot),status:'claimed',genuineRoll:5001,leaseId:'lease',nextRollAt:new Date(Date.now()+1000).toISOString(),mythicSurge:{active:false,boosted:false,progress:0}},record_server_roll:{total_rolls:5001}};
  if(name==='roll_route_result'){
   const bundle=args.p_external_deposit?{status:args.p_external_deposit,keepInInventory:false}:args.p_filter_keep?{status:'kept',keepInInventory:true}:bundleResponse;
   const autoCraft=craftActive&&bundle.status!=='deposited'&&!bundle.keepInInventory?craftResponse:{deposited:false,preserved:false};
   return {data:{bundle,autoCraft},error:null};
  }
  if(name==='roll_commit_result'){
+  activeBiomeSnapshot=null; // ambient state changes after the accepted batch starts
   commits.push(args);player.equipment_state=structuredClone(args.p_state);Object.assign(player,args.p_player_patch);
   player.total_rolls+=1;
   if(args.p_include_background&&args.p_bookkeeping.consumeOneRollCharge)oneRoll=null;
@@ -84,6 +86,7 @@ const client={from:t=>new Query(t),rpc:async(name,args)=>{
 }};
 async function run(id,state={},enchant=null,batchSize=1,options={}) {
  commits=[];saved=null;rpcs=[];rpcCalls=[];
+ activeBiomeSnapshot=options.biomeSnapshot??null;extraBiomeGems=options.biomeGems??[];
  activeMutationCatalog=options.mutationCatalog??defaultMutationCatalog;
  activeMutationCatalogVersion+=1;
  player={id:uid,inventory_capacity:100,total_rolls:5000,next_roll_at:null,mutation_luck:1,equipment_state:state,rarity_resonance:0,misty_mutation_boost_rolls:options.mistyRolls??0,misty_mutation_boost_stacks:options.mistyStacks??0,player_research_effects:{luck_multiplier:9,roll_speed_multiplier:7,mutation_chance_multiplier:30,weight_luck_multiplier:20,gem_value_multiplier:100,extreme_luck_multiplier:50,statistical_breakthrough:true}};
@@ -263,3 +266,31 @@ assert.equal(rpcs.filter(name=>name==='record_server_roll').length,0);
 assert.equal(rpcCalls.filter(call=>call.name==='roll_finish_bookkeeping'&&call.args.p_phase==='loss').length,4);
 forceLoss=false;
 console.log('Optimized handler House Edge batch: four genuine losses and four total-roll increments passed.');
+
+// Run the actual handler through a stale (but accepted) occurrence boundary.
+qolSettings={discoveryKeep:false};
+const biomeGems=[{name:'Permafrost',rarity:12000000,base_weight:850,value_per_gram:8000,affected_by_luck:true,availability_mode:'always'}];
+const acceptedSnapshot={version:'biomes-v1.1',tournament:false,acceptedAt:'2026-01-01T00:00:00Z',occurrence:{id:'frozen-1',key:'Frozen',startsAt:'2026-01-01T00:00:00Z',endsAt:'2026-01-01T00:05:00Z',denominators:{Permafrost:1}}};
+const frozenBatch=await run('all-in-pickaxe',{},null,4,{biomeSnapshot:acceptedSnapshot,biomeGems});
+assert.ok(frozenBatch.results.every(r=>r.gem.name==='Permafrost'));
+assert.ok(frozenBatch.results.every(r=>r.biome.occurrence.id==='frozen-1'));
+assert.ok(frozenBatch.results.every(r=>r.gem.rarity===12000000));
+assert.equal(rpcs.filter(n=>n==='claim_equipment_roll_batch').length,1);
+const noRetrospective=await run('all-in-pickaxe',{},null,4,{biomeGems});
+assert.ok(noRetrospective.results.every(r=>r.gem.name==='Test gem'));
+const neutralBatch=await run('all-in-pickaxe',{},null,4,{biomeSnapshot:{...acceptedSnapshot,tournament:true},biomeGems});
+assert.ok(neutralBatch.results.every(r=>r.gem.name==='Test gem'));
+near(neutralBatch.results[0].luckAtRoll,noRetrospective.results[0].luckAtRoll);
+console.log('Biome actual-handler batch: frozen acceptance survives ambient expiry, no retrospective effects, canonical storage, single claim, and neutral mode retains personal Luck.');
+
+qolSettings={discoveryKeep:false,maxLuck:1};
+forceProcs=true;
+const biomeBreakneck=await run('the-accelerator',{spool:200},null,1,{biomeSnapshot:acceptedSnapshot,biomeGems});
+assert.equal(biomeBreakneck.equipmentPassives.breakneck.gem_name,'Permafrost');
+assert.equal(biomeBreakneck.equipmentPassives.breakneck.rarity,12000000);
+assert.equal(commits.length,1,'bonus specimen never creates another genuine commit');
+const closedExclusive={name:'Absolute Zero',rarity:125000000,base_weight:.01,value_per_gram:5000000000,affected_by_luck:true,availability_mode:'always',metadata:{requiredBiome:'Frozen'}};
+const outsideBreakneck=await run('the-accelerator',{spool:200},null,1,{biomeGems:[closedExclusive]});
+assert.notEqual(outsideBreakneck.equipmentPassives.breakneck.gem_name,'Absolute Zero');
+forceProcs=false;
+console.log('Breakneck bonus uses accepted biome eligibility and cannot leak a closed exclusive; no extra genuine commit.');

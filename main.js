@@ -1334,7 +1334,7 @@ document.addEventListener("keydown", (event) => {
   if (
     target instanceof HTMLElement &&
     (target.isContentEditable ||
-      ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName))
+      ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "SUMMARY"].includes(target.tagName))
   ) {
     return;
   }
