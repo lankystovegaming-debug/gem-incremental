@@ -1,3 +1,4 @@
+import { mountBiomeIndex } from "./src/ui/biomeIndex.js";
 import { mountMiningScene } from "./src/ui/miningScene.js";
 import recipes from "./src/data/recipes.js";
 
@@ -10,6 +11,11 @@ import {
 import { ensureCloudPlayer } from "./src/backend/playerCloud.js";
 import { invokeFunction } from "./src/backend/invoke.js";
 import { supabase } from "./src/backend/supabase.js";
+const stopBiomeStatus = mountBiomeIndex(document.getElementById('biomeStatus'), supabase, {compact:true});
+window.addEventListener('pagehide', stopBiomeStatus, {once:true});
+document.getElementById('biomeStatus')?.addEventListener('biome-start', e => notify.info('Global biome', `${e.detail.key} has begun.`));
+document.getElementById('biomeStatus')?.addEventListener('biome-discovery', e => notify.success('Biome discovered', e.detail.key));
+
 import { runLegacyMigrationGate } from "./src/backend/legacyMigration.js";
 import {
   loadCloudPlayerState,

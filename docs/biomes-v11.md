@@ -40,3 +40,9 @@ Only the normal selector's check denominator and descending selection order chan
 Biome-neutral Tournament Mode is a new saved preference because no tournament subsystem existed in this repository. It excludes all seven required-biome gems and all biome denominator adjustments, preserving personal eligible buffs. It does not add tournament scoring, matchmaking or rewards. The mode and rules version accompany normal roll responses for auditing. Existing Enable Buffs still controls its separate four-stat behavior.
 
 The four Native gems stay in the ordinary pool. Seven exclusives are optional prestige: excluded from ordinary Gem Index completion, Complete Index achievement requirements and Collector's Edge completion. All 11 descriptions are verbatim user-approved text. Damnation/Aberration have metadata and shared formatting overrides. No existing Mantle Core artifact changes.
+
+## Phase 3 — index and announcements
+
+The authenticated discovery-aware index returns nine masked biome slots and no Phenomena entry until Distortion is discovered. Discovered entries expose their duration, mean start interval and gem conditions; these are random means, not countdowns to guaranteed appearances. Roll and Gem Index show the authoritative active state using server-clock offset and announce newly observed starts and discoveries. No remote chat messages are sent. Existing independent gem conditions remain visible in the Gem Index.
+
+The widget pauses network polling while hidden, permits one request at a time, and keeps open disclosures/focus through unchanged refreshes. It has no canvas, particle system or continuous animation. Names and countdown text carry meaning independently of color. Countdown updates are excluded from live announcements to avoid screen-reader chatter. The dedicated saved mode toggle is separate from Enable Buffs.

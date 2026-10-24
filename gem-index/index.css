@@ -593,3 +593,15 @@
   color: #7fc9e8;
   font-weight: 800;
 }
+
+.biome-index { margin-block: 1rem; overflow-wrap: anywhere; }
+.biome-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: .75rem; }
+.biome-card { border: 1px solid var(--border, #667085); border-radius: 12px; padding: 1rem; min-width: 0; }
+.biome-card--unknown { border-style: dashed; }
+.biome-card summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.biome-card summary:focus-visible { outline: 3px solid var(--accent, #a5b4fc); outline-offset: 3px; }
+.biome-card ul { padding-inline-start: 1.25rem; }
+.biome-index > h2 { margin-block: 0 .75rem; }
+.biome-index h3 { margin-block: .5rem; }
+.biome-index > .biome-grid + h3 { margin-top: 1.5rem; }
+.biome-index[data-biome-key="Distortion"] { border-color: #a78bfa; }
