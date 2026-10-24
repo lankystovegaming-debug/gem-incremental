@@ -1,3 +1,11 @@
+# Phase 3 reverted — Phase 2 presentation retained
+
+On 24 October 2026, the owner requested reverting the Phase 3 Roll-page presentation. The implementation below is historical and is no longer the shipped layout. The Phase 1–2 audit fix remains.
+
+Restored the Phase 2 `/roll/` markup and sidebar rules from current main: discoveries before gameplay on mobile, sticky Rare Rolls sidebar on desktop, controls below reveals, and ordinary expanded history/insights. Removed the Phase 3 workspace, Session disclosure and page-specific overrides. Preserved the newer landing page, `/roll/` route, biome status/rules, gameplay, backend work, and mobile-sheet focus fix. Updated the Roll browser regression to check the restored layout while retaining gameplay-state coverage.
+
+---
+
 # Phase 1–2 audit and Phase 3 Roll presentation
 
 Baseline: `1115740` (current main, including merged weekly update 5 and dungeon fixes). Audit gate completed before Roll markup/style changes.
@@ -47,3 +55,5 @@ The full all-feature/database `npm test` suite was not run for this presentation
 ## Weekly player-note validation
 
 The first PR synchronize check captured the draft description before its `## Player update log` section was added. The completed PR #522 description passes the exact `tools/publish-weekly-update.mjs --check` command with a current PR event payload, producing five player-facing bullets. A follow-up documentation commit triggers a fresh synchronize event so CI validates the completed description rather than the earlier draft snapshot. No workflow checks or publication rules were weakened.
+
+Revert validation: restored-layout browser checks pass at 360/390/430/768/1366/2560px with batch 1/5, cooldown, full inventory, auto-roll, expanded history/insights, crafting, responsive rare feeds, cinematic lock and reduced motion. Phase 1 foundation, Phase 2 navigation, shell-layout/responsiveness, rare-feed separation and crafting-preview checks pass. Backend/Supabase files and the landing page are unchanged by the revert.

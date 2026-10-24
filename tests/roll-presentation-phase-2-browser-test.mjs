@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, mkdir } from 'node:fs/promises';
 const {chromium}=await import(process.env.ROLL_PLAYWRIGHT_MODULE || 'playwright');
 const base=process.env.ROLL_PREVIEW_URL || 'http://127.0.0.1:5500';
-const output=process.env.ROLL_PREVIEW_OUTPUT || '/private/tmp/gem-phase-3';
+const output=process.env.ROLL_PREVIEW_OUTPUT || '/private/tmp/gem-phase-2-restored';
 await mkdir(output,{recursive:true});
 const main=await readFile(new URL('../main.js',import.meta.url),'utf8');
 const settings=`const listeners=[];let state={autoRoll:false,autoKeep:true,autoKeepEffectiveRarity:1000000,batchSize:1,rollPool:'normal',gemRealism:'classic',rollAnimations:true};export const getSettings=()=>state;export const hydrateSettingsFromCloud=async()=>state;export const isSignedOutError=()=>false;export const shouldAutoKeep=()=>false;export const onSettingsChange=fn=>listeners.push(fn);export async function updateSettings(patch){Object.assign(state,patch);listeners.forEach(fn=>fn(state));return state;}`;
@@ -38,25 +38,17 @@ try {
   await page.goto(`${base}/roll/`);await page.waitForFunction(()=>window.rollFixture?.view.ready);
   const overflow=async()=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`page overflow ${width}`);
   await overflow();
-  assert.ok((await page.locator('#rollButton').boundingBox()).y<400,'Roll is visible before the reveal');
-  const hud=await page.locator('#effectHud').boundingBox();
-  const control=await page.locator('.stage__controls').boundingBox();
-  assert.ok(hud.y>=control.y+control.height,'Potion HUD clears the Roll controls');
   const stage=await page.locator('#section-roll-stage').boundingBox();
   const feed=await page.locator('#rareRollsCard').boundingBox();
-  const support=await page.locator('.roll-workspace__support').boundingBox();
-  assert.ok(stage.y<feed.y);
-  if(width>=1180)assert.ok(support.x>stage.x+stage.width-1);
-  else assert.ok(support.y>=stage.y+stage.height);
-  assert.equal(await page.locator('#rollSession').getAttribute('open'),null);
+  if(width>=1180)assert.ok(feed.x>=stage.x+stage.width,'Phase 2 discovery sidebar');
+  else assert.ok(feed.y<stage.y,'Phase 2 discoveries precede gameplay');
+  assert.equal(await page.locator('.roll-workspace, #rollSession').count(),0);
+  assert.equal(await page.locator('#section-session-history').isVisible(),true);
+  assert.equal(await page.locator('#sessionInsightsPanel').isVisible(),true);
+  assert.equal(await page.locator('#biomeStatus').count(),1,'Retain newer biome status');
   assert.match(await page.locator('#craftingProgressList').textContent(),/No recipes/);
-  // The disclosure's native keyboard behavior must not hit the roll shortcut.
-  await page.locator('#rollSession summary').focus();await page.keyboard.press('Space');
-  assert.equal(await page.locator('#rollSession').getAttribute('open'),'');
-  assert.equal(await page.evaluate(()=>window.rollCalls??0),0);
   assert.match(await page.locator('#historyList').textContent(),/Your rolls/);
   assert.match(await page.locator('#sessionBreakdown').textContent(),/No rolls/);
-  await page.locator('#rollSession summary').click();
   await page.locator('#rollButton').click();
   await page.locator('.gem-reveal__name').waitFor();
   assert.match(await page.locator('#rollButtonLabel').textContent(),/Ready in/);
@@ -68,8 +60,6 @@ try {
   await page.locator('#rollButton').click();
   await page.waitForFunction(()=>document.querySelectorAll('.batch-result').length===5);
   assert.equal(await page.locator('.history__row').count(),6);
-  assert.ok((await page.locator('#rollButton').boundingBox()).y<(await page.locator('#gemStage').boundingBox()).y,'Batch results stay below Roll');
-  await page.locator('#rollSession summary').click();
   await overflow();
   await page.screenshot({path:`${output}/roll-populated-${width}.png`,fullPage:true});
   await page.locator('#clearHistory').click();assert.equal(await page.locator('.history__row').count(),0);
@@ -101,14 +91,18 @@ try {
     window.refreshRareFixture();
   });
   await page.waitForFunction(()=>document.querySelectorAll('.rare-roll').length===10);
-  assert.equal(await page.locator('.rare-roll:visible').count(),2);
-  await page.locator('#rareRollsToggle').click();assert.equal(await page.locator('.rare-roll:visible').count(),10);
-  await page.locator('#rareRollsToggle').click();assert.equal(await page.locator('.rare-roll:visible').count(),2);
+  if(width<1180) {
+    assert.equal(await page.locator('.rare-roll:visible').count(),2);
+    await page.locator('#rareRollsToggle').click();assert.equal(await page.locator('.rare-roll:visible').count(),10);
+    await page.locator('#rareRollsToggle').click();assert.equal(await page.locator('.rare-roll:visible').count(),2);
+  } else {
+    assert.equal(await page.locator('.rare-roll:visible').count(),10);
+  }
   await overflow();
   await page.emulateMedia({reducedMotion:'reduce'});
   assert.equal(await page.locator('.mining-pickaxe').evaluate(el=>getComputedStyle(el).animationName),'none');
   assert.deepEqual(errors,[]);
   await context.close();
  }
- console.log('PASS: Phase 3 real Roll controller with isolated backend fixtures, 360/390/430/768/1366/2560px; batch 1/5, cooldown, full inventory, auto-roll, session, crafting, rare feeds, long labels, cinematic lock and reduced motion');
+ console.log('PASS: Restored Phase 2 real Roll controller with isolated backend fixtures, 360/390/430/768/1366/2560px; batch 1/5, cooldown, full inventory, auto-roll, session, crafting, rare feeds, long labels, cinematic lock and reduced motion');
 } finally {await browser.close();}
