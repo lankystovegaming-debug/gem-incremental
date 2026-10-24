@@ -1,5 +1,26 @@
 [
   {
+    "pr": 522,
+    "title": "Weekly update 6",
+    "merged_at": "2026-10-24T12:52:53Z",
+    "published_on": "2026-10-24",
+    "weekly": true,
+    "sections": [
+      {
+        "heading": "Overview",
+        "bullets": [
+          "Discover nine global biomes, plus a hidden phenomenon, by completing rolls during their occurrences.",
+          "Explore new native gems and optional biome-exclusive prestige gems.",
+          "Browse discovered biome conditions in the Gem Index.",
+          "Use biome-neutral Tournament Mode to exclude biome amplification and biome-exclusive gems while keeping eligible personal buffs.",
+          "View active biome information in the Gem Index.",
+          "Retain the familiar Roll-page layout and navigation.",
+          "Improved keyboard focus in mobile sheets."
+        ]
+      }
+    ]
+  },
+  {
     "pr": 514,
     "title": "Weekly update 5",
     "merged_at": "2026-10-17T14:48:25Z",
