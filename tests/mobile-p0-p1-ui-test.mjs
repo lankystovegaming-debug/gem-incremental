@@ -83,6 +83,31 @@ async function testResponsiveShell(browserType) {
         assert.ok(await page.locator("#inventoryFilterSheet .btn").first().evaluate(node => node.getBoundingClientRect().height >= 43));
         await page.locator("#inventoryFilterClose").click();
       }
+      await page.locator('#equipmentTab').click();
+      await noPageOverflow(page, `${browserType.name()} equipment ${width}`);
+      if (width <= 720) {
+        await page.locator('#chatFab').click();
+        await page.locator('#chatDock').waitFor({state:'visible'});
+        await noPageOverflow(page, `chat ${width}`);
+        await page.locator('#chatDockClose').click();
+        const cash = page.locator('.global-cash__trigger');
+        if (await cash.isVisible()) {
+          await cash.click();
+          await page.locator('#globalCashPanel').waitFor({state:'visible'});
+          await noPageOverflow(page, `Global Cash ${width}`);
+          await page.locator('.global-cash__close').click();
+        }
+        await page.locator('#mobileNavigationTrigger').click();
+        await page.evaluate(async () => {
+          const {notify} = await import('/src/ui/toast.js');
+          notify.info('Presentation audit', 'Long floating feedback '.repeat(15));
+        });
+        const sheet = await page.locator('#mobileNavigationSheet').boundingBox();
+        const nav = await page.locator('.tabbar').boundingBox();
+        assert.ok(sheet.y + sheet.height <= nav.y + 1, 'More sheet clears bottom navigation');
+        await noPageOverflow(page, `More + toast ${width}`);
+        await page.keyboard.press('Escape');
+      }
       assert.equal(errors.length, 0, `${browserType.name()} inventory errors: ${errors.join(" | ")}`);
       await page.close();
     }
@@ -125,5 +150,5 @@ if (scope !== "shell") {
   await testGemIndex(webkit);
 }
 console.log(scope === "shell"
-  ? "PASS: mobile shell 320–1280px, Inventory sheet, and no page overflow"
+  ? "PASS: mobile shell 320–1280px, Inventory/Equipment, chat, Global Cash, More + toast, and no page overflow"
   : "PASS: mobile shell 320–1280px, Inventory sheet, no page overflow, and Chromium/WebKit lazy Gem Index bands");

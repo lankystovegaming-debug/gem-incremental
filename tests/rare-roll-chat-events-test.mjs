@@ -45,6 +45,13 @@ assert.match(effectiveThresholdMigration, /coalesce\(effective_rarity, 0\) < 100
 assert.match(chanceLogic, /RARE_ROLL_EFFECTIVE_THRESHOLD = 10_000_000_000/);
 assert.match(chanceLogic, /RARE_ROLL_BASE_THRESHOLD = 100_000_000/);
 assert.match(rareRollBackend, /RARE_ROLL_EFFECTIVE_THRESHOLD/);
-assert.match(rareRollBackend, /row\.kind === "mutation"\s*\? row\.effectiveRarity >= RARE_ROLL_EFFECTIVE_THRESHOLD\s*:\s*row\.rarity >= RARE_ROLL_BASE_THRESHOLD/);
+assert.match(rareRollBackend, /row\.kind === "mutation"\s*\? row\.effectiveRarity >= RARE_ROLL_EFFECTIVE_THRESHOLD\s*:\s*row\.isAnomalous \|\| row\.rarity >= RARE_ROLL_BASE_THRESHOLD/);
 
+const qualifySource = rareRollBackend.slice(rareRollBackend.indexOf('function qualifies('), rareRollBackend.indexOf('export async function loadRareRolls'));
+const qualifies = new Function('RARE_ROLL_BASE_THRESHOLD','RARE_ROLL_EFFECTIVE_THRESHOLD', qualifySource+';return qualifies;')(100_000_000,10_000_000_000);
+assert.equal(qualifies({kind:'base',rarity:1,isAnomalous:true}),true);
+assert.equal(qualifies({kind:'base',rarity:99_999_999,isAnomalous:false}),false);
+assert.equal(qualifies({kind:'base',rarity:100_000_000,isAnomalous:false}),true);
+assert.equal(qualifies({kind:'mutation',effectiveRarity:9_999_999_999}),false);
+assert.equal(qualifies({kind:'mutation',effectiveRarity:10_000_000_000}),true);
 console.log("Rare-roll chat event persistence checks passed.");

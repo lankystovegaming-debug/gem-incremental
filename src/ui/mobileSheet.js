@@ -37,7 +37,8 @@ export function mountMobileSheet({
       return !element.hidden
         && element.getAttribute("aria-hidden") !== "true"
         && style.display !== "none"
-        && style.visibility !== "hidden";
+        && style.visibility !== "hidden"
+        && element.getClientRects().length > 0;
     });
   }
 

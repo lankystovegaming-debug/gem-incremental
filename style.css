@@ -3049,3 +3049,12 @@ html.is-cinematic-active body {
 @keyframes mining-discovery { 0%,28% { opacity:0; transform:translate(-50%,-35%) scale(.7); } 36%,72% { opacity:1; transform:translate(-50%,-50%) scale(1); } 100% { opacity:0; transform:translate(-50%,-80%) scale(.9); } }
 @media(max-width:560px) { .stage .mining-stage .gem-reveal { padding:10px; gap:4px 8px; grid-template-columns:40px minmax(0,1fr) auto; } .stage .mining-stage .gem-reveal__art,.stage .mining-stage .gem-reveal__art .gem-icon { width:36px; height:36px; } }
 @media(prefers-reduced-motion:reduce) { .is-mining .mining-pickaxe,.is-mining .mining-rock,.is-mining .mining-impact { animation:none; } .is-mining .mining-finds { animation:none; opacity:1; transform:translate(-50%,-50%); } }
+
+.biome-status { margin-block: .5rem 1rem; padding: .75rem; border: 1px solid var(--border, #667085); border-radius: .75rem; overflow-wrap: anywhere; }
+.biome-status p { margin: .35rem 0; font-size: .875rem; }
+.biome-status a { display: inline-flex; align-items: center; min-height: 44px; }
+.biome-status[data-biome-key="Volcanic"], .biome-status[data-biome-key="Infernal"] { border-inline-start: 4px solid #ef8158; }
+.biome-status[data-biome-key="Oceanic"], .biome-status[data-biome-key="Frozen"] { border-inline-start: 4px solid #4dbad7; }
+.biome-status[data-biome-key="Deep Earth"] { border-inline-start: 4px solid #b79b6a; }
+.biome-status[data-biome-key="Heavenly"] { border-inline-start: 4px solid #d0b660; }
+.biome-status[data-biome-key="Nightfall"], .biome-status[data-biome-key="Cosmic"], .biome-status[data-biome-key="Void"], .biome-status[data-biome-key="Distortion"] { border-inline-start: 4px solid #a78bfa; }

@@ -69,13 +69,18 @@
     "test:christmas": "node --test tests/christmas-2026-test.mjs tests/christmas-cutscene-test.mjs tests/christmas-quests-test.mjs && node tests/christmas-2026-handler-test.mjs && node tests/christmas-2026-database-test.mjs && node tests/christmas-quests-database-test.mjs",
     "test:christmas:browser": "node tests/christmas-2026-browser-test.mjs",
     "test:christmas:sensitivity": "node tools/christmas-2026-sensitivity.mjs",
+    "test:roll-presentation": "node tests/roll-presentation-phase-2-browser-test.mjs",
+    "test:ui-audit": "node tests/phase-1-2-audit-browser-test.mjs",
     "test:navigation-phase-2": "node tests/navigation-phase-2-test.mjs",
     "test:navigation-phase-2-browser": "node tests/navigation-phase-2-browser-test.mjs",
     "test:season-one": "node tests/season-one-database-test.mjs && node tests/season-one-handler-test.mjs",
     "test:season-one-browser": "node tests/season-one-browser-test.mjs",
     "test:security-phase-zero": "node tests/phase-zero-security-database-test.mjs && node tests/phase-zero-client-test.mjs && node tests/phase-zero-admin-test.mjs",
     "test:update-logs": "node --test tests/update-history-test.mjs && node tests/admin-update-publishing-test.mjs",
-    "test:update-logs:browser": "node tests/update-history-browser-test.mjs"
+    "test:update-logs:browser": "node tests/update-history-browser-test.mjs",
+    "test:biomes": "node tests/biomes-v11-database-test.mjs && node tests/biomes-v11-selection-test.mjs && node tests/five-item-handler-test.mjs",
+    "test:biomes:browser": "node tests/biomes-v11-browser-test.mjs",
+    "test:biomes:concurrency": "node tests/biomes-v11-concurrency-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

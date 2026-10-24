@@ -1,3 +1,4 @@
+import { mountBiomeIndex } from "../src/ui/biomeIndex.js";
 import bundledGems from "../src/data/gems.js";
 import { GEM_MUTATIONS } from "../src/data/mutations.js";
 import { ensurePlayerAuth, isSignInRequired } from "../src/backend/auth.js";
@@ -19,6 +20,11 @@ import {
   rawCombinationDenominator
 } from "../src/logic/gemIndex.js";
 
+const stopBiomeIndex = mountBiomeIndex(document.getElementById("biomeIndex"), supabase);
+window.addEventListener("pagehide", stopBiomeIndex, {once:true});
+document.getElementById("biomeIndex").addEventListener("biome-start", e => notify.info("Global biome", `${e.detail.key} has begun.`));
+
+document.getElementById("biomeIndex").addEventListener("biome-discovery", e => notify.success("Biome discovered", e.detail.key));
 const shell = mountShell({ page: "gem-index", base: "../" });
 const byId = (id) => document.getElementById(id);
 const gemList = byId("gemList");
@@ -437,16 +443,17 @@ function renderSummary() {
     return;
   }
   if (exactView) {
-    const entries = entriesForView();
+    const entries = entriesForView().filter(e => e.gem.metadata?.optionalCollection !== true);
     const found = entries.filter(exactCombinationDiscovered).length;
     discoveryCount.textContent = `${formatCount(found)} / ${formatCount(entries.length)} exact combinations discovered`;
     discoveryMeter.style.width = `${entries.length ? found / entries.length * 100 : 0}%`;
     renderTierBreakdown(entries);
     return;
   }
-  const identified = catalogGems.filter((gem) => state.discoveredGemNames.has(gem.name)).length;
-  discoveryCount.textContent = `${formatCount(state.combinations.size)} exact combinations across ${formatCount(identified)} / ${formatCount(catalogGems.length)} identified gems`;
-  discoveryMeter.style.width = `${catalogGems.length ? identified / catalogGems.length * 100 : 0}%`;
+  const ordinaryGems = catalogGems.filter(g => g.metadata?.optionalCollection !== true);
+  const identified = ordinaryGems.filter((gem) => state.discoveredGemNames.has(gem.name)).length;
+  discoveryCount.textContent = `${formatCount(state.combinations.size)} exact combinations across ${formatCount(identified)} / ${formatCount(ordinaryGems.length)} identified gems`;
+  discoveryMeter.style.width = `${ordinaryGems.length ? identified / ordinaryGems.length * 100 : 0}%`;
   renderTierBreakdown(catalogGems.map((gem) => makeEntry(gem, [])));
 }
 
