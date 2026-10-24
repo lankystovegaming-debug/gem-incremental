@@ -1,0 +1,251 @@
+{
+  "status": "Approved Biomes V1.1; user final overrides incorporated",
+  "source": "User final V1.1 handoff in this chat",
+  "biomes": [
+    {
+      "name": "Volcanic",
+      "interval_minutes": 120.0,
+      "duration_minutes": 5.0
+    },
+    {
+      "name": "Oceanic",
+      "interval_minutes": 180.0,
+      "duration_minutes": 5.0
+    },
+    {
+      "name": "Deep Earth",
+      "interval_minutes": 240.0,
+      "duration_minutes": 6.0
+    },
+    {
+      "name": "Frozen",
+      "interval_minutes": 300.0,
+      "duration_minutes": 5.0
+    },
+    {
+      "name": "Nightfall",
+      "interval_minutes": 480.0,
+      "duration_minutes": 4.0
+    },
+    {
+      "name": "Cosmic",
+      "interval_minutes": 1080.0,
+      "duration_minutes": 4.0
+    },
+    {
+      "name": "Void",
+      "interval_minutes": 4320.0,
+      "duration_minutes": 3.0
+    },
+    {
+      "name": "Heavenly",
+      "interval_minutes": 5760.0,
+      "duration_minutes": 3.0
+    },
+    {
+      "name": "Infernal",
+      "interval_minutes": 5760.0,
+      "duration_minutes": 3.0
+    },
+    {
+      "name": "Distortion",
+      "interval_minutes": 20160.0,
+      "duration_minutes": 2.0
+    }
+  ],
+  "boosts": {
+    "Volcanic": {
+      "Obsidian": 6.0,
+      "Pyrite": 100.0,
+      "Moltenite": 5000.0,
+      "Volcanic Achalite": 1000000.0,
+      "Krotite": 12000000.0,
+      "Caldera Heart": 75000000.0
+    },
+    "Oceanic": {
+      "Aquamarine": 75.0,
+      "Larimar": 250.0,
+      "Para\u00edba Tourmaline": 12500.0,
+      "Ammolite": 4500000.0,
+      "Thalassa": 31122819,
+      "Heart of the Tide": 40000000.0
+    },
+    "Deep Earth": {
+      "Diamond": 750.0,
+      "Majorite": 11000000.0,
+      "Akimotoite": 11400000.0,
+      "Bridgmanite": 14600000.0,
+      "Davemaoite": 18200000.0,
+      "Stishovite": 23000000.0,
+      "Seifertite": 29000000.0,
+      "Telluric Heart": 175000000.0
+    },
+    "Frozen": {
+      "Cryoshock": 25000.0,
+      "Permafrost": 1200000.0,
+      "Frostspike": 15000000.0,
+      "Polaris": 45000000.0,
+      "Aurorite": 100000000.0,
+      "Absolute Zero": 125000000.0
+    },
+    "Nightfall": {
+      "Nyx Obsidian": 3000.0,
+      "Noctilucent": 1800000.0,
+      "Umbra shard": 13555555.0,
+      "Eventide": 20000000.0,
+      "Deadstar": 35000000.0,
+      "Midnight": 250000000.0
+    },
+    "Cosmic": {
+      "Martian Opal": 1500000.0,
+      "Presolar Moissanite": 1600000.0,
+      "Redshift Crystal": 4400000.0,
+      "Deadstar": 35000000.0,
+      "Tistarite": 30000000.0,
+      "Asterism": 30000000.0,
+      "Allendeite": 44000000.0,
+      "Panguite": 54000000.0,
+      "Hapkeite": 66000000.0,
+      "Tranquillityite": 110000000.0,
+      "ton 618": 61861861.0
+    },
+    "Void": {
+      "Void Pearl": 12500.0,
+      "Void Opal": 50000.0,
+      "Core of Oblivion": 4806402.0,
+      "Nullstone": 8000000.0,
+      "Last Light": 84000000.0,
+      "False Vacuum": 60000000.0,
+      "Heat Death": 150000000.0
+    },
+    "Heavenly": {
+      "Aether Quartz": 35000.0,
+      "Haloite": 1800000.0,
+      "First Light": 17847004.0,
+      "Ascendentite": 20000000.0,
+      "Seraphite": 39682539.0,
+      "Aurorium": 50000000.0,
+      "Last Light": 84000000.0
+    },
+    "Infernal": {
+      "Moltenite": 10000.0,
+      "Brimstone": 1600000.0,
+      "Infernite": 20000000.0,
+      "Netherwrong": 47500000.0,
+      "Damnation": 333333333.0
+    },
+    "Distortion": {
+      "Probability Crystal": 25000.0,
+      "Singularity Shard": 400000.0,
+      "Paradoxite": 880000.0,
+      "False Vacuum": 48000000.0,
+      "Reality Fragment": 52500000.0,
+      "Glitched Gem": 110100111,
+      "Aberration": 750000000.0
+    }
+  },
+  "new_gems": {
+    "Permafrost": {
+      "canonical": 12000000.0,
+      "weight": 850,
+      "value_per_gram": 8000,
+      "biome": "Frozen",
+      "exclusive": false,
+      "description": "A mineral trapped beneath ice for longer than recorded history. It refuses to thaw."
+    },
+    "Brimstone": {
+      "canonical": 16000000.0,
+      "weight": 666,
+      "value_per_gram": 15000,
+      "biome": "Infernal",
+      "exclusive": false,
+      "description": "A mineral that burns continuously without losing mass."
+    },
+    "Noctilucent": {
+      "canonical": 18000000.0,
+      "weight": 300,
+      "value_per_gram": 40000,
+      "biome": "Nightfall",
+      "exclusive": false,
+      "description": "It only begins to shine after everything around it goes dark."
+    },
+    "Haloite": {
+      "canonical": 18000000.0,
+      "weight": 120,
+      "value_per_gram": 100000,
+      "biome": "Heavenly",
+      "exclusive": false,
+      "description": "A ring-shaped crystal that casts light inward rather than outward."
+    },
+    "Heart of the Tide": {
+      "canonical": 40000000.0,
+      "weight": 1250,
+      "value_per_gram": 16000,
+      "biome": "Oceanic",
+      "exclusive": true,
+      "description": "A crystalline sphere that contains a miniature tide. Water endlessly rises and falls beneath its surface despite having nowhere to go."
+    },
+    "Caldera Heart": {
+      "canonical": 75000000.0,
+      "weight": 4500,
+      "value_per_gram": 7500,
+      "biome": "Volcanic",
+      "exclusive": true,
+      "description": "A crystalline mass formed at the centre of a collapsing magma chamber. Its surface has cooled into black stone, but something beneath it continues to glow."
+    },
+    "Absolute Zero": {
+      "canonical": 125000000.0,
+      "weight": 0.01,
+      "value_per_gram": 5000000000.0,
+      "biome": "Frozen",
+      "exclusive": true,
+      "description": "There is no heat left to take."
+    },
+    "Telluric Heart": {
+      "canonical": 175000000.0,
+      "weight": 12000,
+      "value_per_gram": 5000,
+      "biome": "Deep Earth",
+      "exclusive": true,
+      "description": "A dense crystalline mass carried upward from a depth no drill has ever reached. Even at the surface, it remains under pressures that should be impossible."
+    },
+    "Midnight": {
+      "canonical": 250000000.0,
+      "weight": 12,
+      "value_per_gram": 7500000.0,
+      "biome": "Nightfall",
+      "exclusive": true,
+      "description": "A fragment of the darkest point of night. Light bends around it as though midnight itself has been given form."
+    },
+    "Damnation": {
+      "canonical": 333333333,
+      "weight": 666,
+      "value_per_gram": 200000,
+      "biome": "Infernal",
+      "exclusive": true,
+      "description": "Something that should never have crystallised."
+    },
+    "Aberration": {
+      "canonical": 750000000.0,
+      "weight": 1e-06,
+      "value_per_gram": 150000000000000.0,
+      "biome": "Distortion",
+      "exclusive": true,
+      "description": "Reality tried to correct itself. This was the result."
+    }
+  },
+  "canonical_consumers": [
+    "equipment",
+    "research thresholds",
+    "rarity floor",
+    "restrictions",
+    "progression",
+    "stored rarity",
+    "reroll comparisons"
+  ],
+  "effective_consumers": [
+    "sort",
+    "check denominator"
+  ],
+  "tournament": "No amplification; all seven required-biome gems excluded; personal eligible buffs retained; discovery independent"
+}
