@@ -6,7 +6,7 @@ language sql stable security definer set search_path='' as $$
  select jsonb_build_object(
   'serverTime',statement_timestamp(),
   'tournament',coalesce((select settings->'biomeTournamentMode' from public.player_settings where player_id=auth.uid()),'false'::jsonb),
-  'active',(select jsonb_build_object('id',o.id,'key',o.biome_key,'endsAt',o.ends_at)
+  'active',(select jsonb_build_object('id',o.id,'key',o.biome_key,'startsAt',o.starts_at,'endsAt',o.ends_at)
    from public.biome_scheduler s join public.biome_occurrences o on o.id=s.occurrence_id
    where o.starts_at<=statement_timestamp() and o.ends_at>statement_timestamp()),
   'entries',coalesce((select jsonb_agg(

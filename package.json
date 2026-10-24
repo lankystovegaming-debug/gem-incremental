@@ -77,7 +77,10 @@
     "test:season-one-browser": "node tests/season-one-browser-test.mjs",
     "test:security-phase-zero": "node tests/phase-zero-security-database-test.mjs && node tests/phase-zero-client-test.mjs && node tests/phase-zero-admin-test.mjs",
     "test:update-logs": "node --test tests/update-history-test.mjs && node tests/admin-update-publishing-test.mjs",
-    "test:update-logs:browser": "node tests/update-history-browser-test.mjs"
+    "test:update-logs:browser": "node tests/update-history-browser-test.mjs",
+    "test:biomes": "node tests/biomes-v11-database-test.mjs && node tests/biomes-v11-selection-test.mjs && node tests/five-item-handler-test.mjs",
+    "test:biomes:browser": "node tests/biomes-v11-browser-test.mjs",
+    "test:biomes:concurrency": "node tests/biomes-v11-concurrency-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

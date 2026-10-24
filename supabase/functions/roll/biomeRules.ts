@@ -3,7 +3,7 @@ export function biomeSelectionPool(catalog: any[], snapshot: any) {
   const occurrence = snapshot?.occurrence;
   const tournament = snapshot?.tournament === true;
   return catalog.filter((gem: any) => {
-    const required = gem.metadata?.requiredBiome;
+    const required = snapshot?.exclusiveBiomes?.[gem.name] ?? gem.metadata?.requiredBiome;
     return !required || (!tournament && required === occurrence?.key);
   }).map((gem: any) => ({ ...gem,
     selectionDenominator: !tournament && occurrence?.denominators?.[gem.name] != null

@@ -959,6 +959,7 @@ async function performRoll() {
   for (const result of results) appendConvergenceBonusResults(result);
 
   const cooldown = batchCooldown(data);
+  document.getElementById('biomeStatus')?.dispatchEvent(new CustomEvent('biome-batch-period', {detail:{periodMs:cooldown?.durationMs}}));
   if (cooldown?.nextRollAt) {
     startCooldown(new Date(cooldown.nextRollAt).getTime(), cooldown.durationMs);
   }

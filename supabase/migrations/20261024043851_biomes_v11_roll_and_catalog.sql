@@ -8,6 +8,7 @@ create function public.biome_acceptance_snapshot(p_player_id uuid) returns jsonb
 language sql volatile security definer set search_path='' as $$
  with instant as materialized (select clock_timestamp() as accepted_at)
  select jsonb_build_object('version','biomes-v1.1','acceptedAt',instant.accepted_at,
+  'exclusiveBiomes',(select jsonb_object_agg(gem_name,biome_key) from public.biome_gem_rules where exclusive),
   'tournament',coalesce((select settings->'biomeTournamentMode' from public.player_settings where player_id=p_player_id),'false'::jsonb),
   'occurrence',(
    select jsonb_build_object('id',o.id,'key',o.biome_key,'startsAt',o.starts_at,'endsAt',o.ends_at,

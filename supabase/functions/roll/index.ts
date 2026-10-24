@@ -3,7 +3,7 @@ export function biomeSelectionPool(catalog: any[], snapshot: any) {
   const occurrence = snapshot?.occurrence;
   const tournament = snapshot?.tournament === true;
   return catalog.filter((gem: any) => {
-    const required = gem.metadata?.requiredBiome;
+    const required = snapshot?.exclusiveBiomes?.[gem.name] ?? gem.metadata?.requiredBiome;
     return !required || (!tournament && required === occurrence?.key);
   }).map((gem: any) => ({ ...gem,
     selectionDenominator: !tournament && occurrence?.denominators?.[gem.name] != null
@@ -3399,7 +3399,7 @@ async function executeSingleRoll(
       if (buffsEnabled && equipmentOutcome.breakneck) {
         const extra = rollGemWithPickaxePassives(
           luckBreakdown.ordinary * luckBreakdown.world, discoveredGemNames,
-          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext, null, maxLuck
+          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext, null, maxLuck, biomeGems
         );
         const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
         const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
@@ -3916,7 +3916,18 @@ async function executeSingleRoll(
           objective: deepcoreAutoContribution?.objective ?? null,
           rollCard: deepcoreContext?.rollCard === true
         },
-        biome: batchExecution.biomeSnapshot ?? null,
+        // Return compact audit context, not the internal denominator/routing maps.
+        biome: batchExecution.biomeSnapshot ? {
+          version: batchExecution.biomeSnapshot.version,
+          acceptedAt: batchExecution.biomeSnapshot.acceptedAt,
+          tournament: batchExecution.biomeSnapshot.tournament === true,
+          occurrence: batchExecution.biomeSnapshot.occurrence ? {
+            id: batchExecution.biomeSnapshot.occurrence.id,
+            key: batchExecution.biomeSnapshot.occurrence.key,
+            startsAt: batchExecution.biomeSnapshot.occurrence.startsAt,
+            endsAt: batchExecution.biomeSnapshot.occurrence.endsAt
+          } : null
+        } : null,
         deepSea: batchExecution.pool === "deep_sea" ? {
           pool: "deep_sea",
           tideTokensAwarded: Number(deepSeaCommit?.awarded ?? 0),

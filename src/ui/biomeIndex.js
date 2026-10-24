@@ -29,9 +29,19 @@ export function mountBiomeIndex(root, client, {compact = false} = {}) {
   let offset = 0;
   let renderedSignature;
   let knownDiscoveries = new Set();
-  root.innerHTML = `${compact ? '<a href="../gem-index/">Biome Index</a>' : '<h2>Biome Index</h2>'}<p aria-live="off" data-biome-status>Loading biomes…</p><div data-biome-entries></div>`;
+  let acceptedBatchPeriodMs = 0;
+  root.innerHTML = `${compact ? '<a href="../gem-index/">Biome Index</a>' : '<h2>Biome Index</h2>'}<p aria-live="off" data-biome-status>Loading biomes…</p><div data-biome-entries></div>${compact ? '<p data-biome-batch-warning></p>' : ''}`;
   const status = root.querySelector('[data-biome-status]');
   const content = root.querySelector('[data-biome-entries]');
+  const batchWarning = root.querySelector('[data-biome-batch-warning]');
+  function paintBatchWarning() {
+    if (!batchWarning) return;
+    const duration = Date.parse(latest?.active?.endsAt) - Date.parse(latest?.active?.startsAt);
+    batchWarning.textContent = duration > 0 && acceptedBatchPeriodMs > duration
+      ? `Your last accepted batch period (${Math.ceil(acceptedBatchPeriodMs / 1000)}s) exceeds this occurrence's duration (${Math.round(duration / 1000)}s). Select batch 1 to sample more often.` : '';
+  }
+  const onBatchPeriod = event => { acceptedBatchPeriodMs = Number(event.detail?.periodMs) || 0; paintBatchWarning(); };
+  root.addEventListener('biome-batch-period',onBatchPeriod);
   async function refresh() {
     if (disposed || pending || document.hidden) return;
     pending = true;
@@ -52,6 +62,7 @@ export function mountBiomeIndex(root, client, {compact = false} = {}) {
       if (initialized) for (const key of discoveries) if (!knownDiscoveries.has(key)) root.dispatchEvent(new CustomEvent('biome-discovery',{detail:{key}}));
       knownDiscoveries = discoveries;
       root.dataset.biomeKey = data.active?.key ?? 'Normal';
+      paintBatchWarning();
       activeId = data.active?.id;
       initialized = true;
     } catch { status.textContent = 'Biome Index unavailable'; } finally { pending = false; }
@@ -62,5 +73,5 @@ export function mountBiomeIndex(root, client, {compact = false} = {}) {
   },1000);
   document.addEventListener('visibilitychange',refresh);
   refresh();
-  return () => {disposed=true;clearInterval(poll);clearInterval(countdown);document.removeEventListener('visibilitychange',refresh);};
+  return () => {root.removeEventListener('biome-batch-period',onBatchPeriod);disposed=true;clearInterval(poll);clearInterval(countdown);document.removeEventListener('visibilitychange',refresh);};
 }

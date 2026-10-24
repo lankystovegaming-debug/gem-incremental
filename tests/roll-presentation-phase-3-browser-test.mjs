@@ -24,7 +24,7 @@ const stubs={
  '/src/ui/globalCutscenes.js':`export const globalCutsceneQueue={get isBusy(){return window.cinematicBusy??false},enqueueBatch(){},whenIdle:async()=>{}};`,
  '/src/backend/rareRolls.js':`export const loadRareRolls=async()=>window.rareFixture??[];export const subscribeToRareRolls=fn=>window.refreshRareFixture=fn;export const unsubscribeFromRareRolls=()=>{};`
 };
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.ROLL_CHROMIUM_PATH?{executablePath:process.env.ROLL_CHROMIUM_PATH}:{})});
 try {
  for(const width of [360,390,430,768,1366,2560]) {
   const context=await browser.newContext({viewport:{width,height:width===1366?768:width<1000?900:1440}});
@@ -35,7 +35,7 @@ try {
    if(url.pathname==='/main.js')return route.fulfill({contentType:'text/javascript',body:main+`\nwindow.rollFixture={ready:showReady,refreshCraftingProgressPreview,refreshPlayerState,view,renderSessionInsights};`});
    return route.continue();
   });
-  await page.goto(base);await page.waitForFunction(()=>window.rollFixture?.view.ready);
+  await page.goto(`${base}/roll/`);await page.waitForFunction(()=>window.rollFixture?.view.ready);
   const overflow=async()=>assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`page overflow ${width}`);
   await overflow();
   assert.ok((await page.locator('#rollButton').boundingBox()).y<400,'Roll is visible before the reveal');
