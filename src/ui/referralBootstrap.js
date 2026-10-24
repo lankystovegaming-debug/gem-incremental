@@ -11,7 +11,7 @@ import {
 
 // Pull a ?ref=CODE off the current URL, stash it, and tidy the address bar so
 // the code is not re-shared or repeatedly re-read on refresh.
-function captureCodeFromUrl() {
+export function captureCodeFromUrl() {
   try {
     const params = new URLSearchParams(location.search);
     const code = params.get(REFERRAL_PARAM);

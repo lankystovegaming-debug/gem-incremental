@@ -485,7 +485,7 @@ function renderGems({ reset = false } = {}) {
         ${icons.bag}
         <p class="empty__title">No gems yet</p>
         <p>Head back to the deposit and roll your first specimen.</p>
-        <a class="btn btn--primary" href="../" style="margin-top:8px">Start rolling</a>
+        <a class="btn btn--primary" href="../roll/" style="margin-top:8px">Start rolling</a>
       </div>
     `;
 

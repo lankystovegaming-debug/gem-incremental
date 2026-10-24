@@ -1,0 +1,49 @@
+.landing-page {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 65%), var(--bg);
+}
+
+.landing {
+  width: min(100%, 680px);
+  text-align: center;
+  padding: 48px 12px;
+}
+
+.landing [hidden] { display: none !important; }
+
+.landing-tip {
+  width: min(100%, 640px);
+  padding: 16px 12px max(8px, env(safe-area-inset-bottom));
+  color: var(--text-muted);
+  font-size: .85rem;
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.landing-tip p { margin: 0; }
+
+.landing__brand { color: var(--text); font-weight: 800; letter-spacing: .2em; text-decoration: none; font-size: .85rem; }
+.landing__gem { color: var(--accent); font-size: 6rem; line-height: 1; margin: 48px 0 32px; text-shadow: 0 0 60px color-mix(in srgb, var(--accent) 45%, transparent); }
+.landing__eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 700; margin-bottom: 16px; }
+.landing h1 { font-size: clamp(1.7rem, 5vw, 2.5rem); line-height: 1.25; overflow-wrap: anywhere; }
+.landing__detail { color: var(--text-muted); margin: 18px 0 28px; }
+.landing__actions:not([hidden]) { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.landing__actions .btn { min-width: 150px; min-height: 48px; }
+.landing__login { display: block; margin-top: 22px; color: var(--text-muted); }
+.landing__login[hidden] { display: none; }
+.landing-changelog { width: min(760px, calc(100vw - 32px)); max-height: 85svh; padding: 24px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-y: auto; }
+.landing-changelog::backdrop { background: rgb(0 0 0 / .75); }
+.landing-changelog__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.landing-changelog__header h2 { font-size: 1.1rem; }
+.landing-changelog .update-card { margin: 0; }
+
+@media (max-width: 480px) {
+  .landing-page { padding: 16px; }
+  .landing-changelog { padding: 16px; }
+  .landing__actions .btn { flex: 1; }
+}

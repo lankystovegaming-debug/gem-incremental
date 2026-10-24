@@ -66,7 +66,7 @@ import {
 } from "./src/ui/format.js";
 
 
-const shell = mountShell({ page: "roll", base: "./" });
+const shell = mountShell({ page: "roll", base: "../" });
 initRareRollsCard();
 mountEquippedRollCard();
 
@@ -296,7 +296,7 @@ async function refreshCraftingProgressPreview() {
     craftingProgressList.innerHTML = started.map(({ recipe, results, fraction }) => {
       const completed = results.filter((result) => result.complete).length;
       const percent = Math.round(fraction * 100);
-      return `<a class="crafting-preview__recipe" href="./crafting/" aria-label="Open ${escapeHtml(recipe.name)} in Crafting">
+      return `<a class="crafting-preview__recipe" href="../crafting/" aria-label="Open ${escapeHtml(recipe.name)} in Crafting">
         <span class="crafting-preview__identity"><strong>${escapeHtml(recipe.name)}</strong><small>${recipe.id === activeId ? "Auto Craft · " : ""}${completed} / ${results.length} requirements</small></span>
         <span class="crafting-preview__percent">${percent}%</span>
         <span class="crafting-preview__bar"><span style="width:${percent}%"></span></span>
@@ -371,7 +371,7 @@ function showReady() {
     });
 
     rollHint.innerHTML =
-      'Sell or craft to free a slot — <a href="./inventory/">open inventory</a>';
+      'Sell or craft to free a slot — <a href="../inventory/">open inventory</a>';
     automationStats.status = "Paused · inventory full";
     renderAutomationPulse();
 
@@ -415,7 +415,7 @@ function showSignInRequired() {
   rollButton.dataset.signIn = "true";
 
   rollHint.innerHTML =
-    `${escapeHtml(SIGN_IN_REQUIRED_MESSAGE)} <a href="./account/">Log in or sign up</a>`;
+    `${escapeHtml(SIGN_IN_REQUIRED_MESSAGE)} <a href="../account/">Log in or sign up</a>`;
 }
 
 
@@ -1309,7 +1309,7 @@ paintSettings(getSettings());
 
 rollButton.addEventListener("click", () => {
   if (rollButton.dataset.signIn === "true") {
-    window.location.href = "./account/";
+    window.location.href = "../account/";
 
     return;
   }

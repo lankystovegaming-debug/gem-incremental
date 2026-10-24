@@ -135,3 +135,41 @@
     border-radius: 16px;
   }
 }
+
+/* Keep the policy readable without authentication or the gameplay shell. */
+.legal-back {
+  display: inline-block;
+  margin: 20px max(20px, calc((100% - 800px) / 2));
+  padding: 10px 0;
+}
+
+.legal-page {
+  overflow-wrap: anywhere;
+}
+
+.legal-jump a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.legal-jump a:focus-visible,
+.legal-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+#contact,
+#fair-play {
+  scroll-margin-top: 24px;
+}
+
+.legal-body {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.legal-page > .legal-doc.card {
+  content-visibility: visible;
+}

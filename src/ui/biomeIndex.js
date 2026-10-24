@@ -29,7 +29,7 @@ export function mountBiomeIndex(root, client, {compact = false} = {}) {
   let offset = 0;
   let renderedSignature;
   let knownDiscoveries = new Set();
-  root.innerHTML = `${compact ? '<a href="./gem-index/">Biome Index</a>' : '<h2>Biome Index</h2>'}<p aria-live="off" data-biome-status>Loading biomes…</p><div data-biome-entries></div>`;
+  root.innerHTML = `${compact ? '<a href="../gem-index/">Biome Index</a>' : '<h2>Biome Index</h2>'}<p aria-live="off" data-biome-status>Loading biomes…</p><div data-biome-entries></div>`;
   const status = root.querySelector('[data-biome-status]');
   const content = root.querySelector('[data-biome-entries]');
   async function refresh() {

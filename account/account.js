@@ -2140,7 +2140,8 @@ async function renderAccount() {
   // Do not automatically create an
   // anonymous user on the account page.
   if (!session?.user) {
-    renderLogin();
+    if (new URLSearchParams(location.search).get("create") === "1") renderCreateAccount();
+    else renderLogin();
 
     return;
   }

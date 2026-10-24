@@ -1,3 +1,4 @@
+import { mountReportInbox } from "./reportInbox.js";
 import { ensurePlayerAuth } from "../src/backend/auth.js";
 import { supabase } from "../src/backend/supabase.js";
 import { mountShell } from "../src/ui/shell.js";
@@ -28,6 +29,8 @@ ensurePlayerAuth().then(async (user) => {
   if (!user) {
     return;
   }
+
+  mountReportInbox({ client: supabase, root: document.getElementById("reportInbox") });
 
   const { data } = await supabase
     .from("players")

@@ -6,7 +6,7 @@ const base = process.env.MINING_PREVIEW_URL || 'http://127.0.0.1:5517';
 const output = process.env.MINING_PREVIEW_OUTPUT || '/private/tmp/mining-roll-card';
 await mkdir(output, { recursive: true });
 const main = await readFile(new URL('../main.js', import.meta.url), 'utf8');
-const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const index = await readFile(new URL('../roll/index.html', import.meta.url), 'utf8');
 function section(start, end) { return main.slice(main.indexOf(start), main.indexOf(end, main.indexOf(start))); }
 const renderers = [section('function impossibleWorldFirstBrand()', '// =========================================================\n// GEM REVEAL'), section('function mutationNamesHtml(', 'function addHistory('), section('function historyMutationNamesHtml(', 'function renderHistory(')].join('\n');
 const fixture = `
