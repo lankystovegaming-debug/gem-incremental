@@ -11,7 +11,7 @@ for(const width of [390,1440]) {
  if(url.pathname==='/mailbox-retention-preview')return route.fulfill({contentType:'text/html',body:`<link rel="stylesheet" href="/src/styles/app.css"><button id="profile">Profile</button><button id="open">Open mailbox <span data-mailbox-badge="menu"></span></button><script type="module">import {openMailbox} from '/src/ui/mailbox.js';import {mountMailboxNotifications} from '/src/ui/mailboxNotifications.js';window.badges=mountMailboxNotifications(document.querySelector('#profile'));badges.setAccount({id:'player'},'Miner');document.querySelector('#open').onclick=()=>openMailbox({userId:'player'});</script>`});
  if(url.pathname==='/src/backend/supabase.js')return route.fulfill({contentType:'text/javascript',body:`
  const start=Date.now(),mins=n=>new Date(start+n*60000).toISOString();
- const rows=[{id:1,subject:'Unread plain',rewards:[],read_at:null,claimed_at:null,expires_at:null},{id:2,subject:'Unread reward',rewards:[{type:'money',amount:100}],read_at:null,claimed_at:null,expires_at:null},{id:3,subject:'Expiring plain',rewards:[],read_at:mins(-29),claimed_at:null,expires_at:mins(1)},{id:4,subject:'Expiring claimed',rewards:[{type:'money',amount:1}],read_at:mins(-40),claimed_at:mins(-28),expires_at:mins(2)},{id:5,subject:'Read unclaimed',rewards:[{type:'coins',amount:1}],read_at:mins(-120),claimed_at:null,expires_at:null}].map(r=>({...r,body:'Message body',sender:'System',created_at:mins(-120)}));
+ const rows=[{id:1,subject:'Unread plain',rewards:[],read_at:null,claimed_at:null,expires_at:null},{id:2,subject:'Unread reward',rewards:[{type:'money',amount:100}],read_at:null,claimed_at:null,expires_at:null},{id:3,subject:'Expiring plain',rewards:[],read_at:mins(-29),claimed_at:null,expires_at:mins(1)},{id:4,subject:'Expiring claimed',rewards:[{type:'money',amount:1}],read_at:mins(-40),claimed_at:mins(-28),expires_at:mins(2)},{id:5,subject:'Read unclaimed',rewards:[{type:'coins',amount:1}],read_at:mins(-120),claimed_at:null,expires_at:null},{id:6,subject:'Hard expiry unclaimed',rewards:[{type:'coins',amount:1}],read_at:null,claimed_at:null,expires_at:mins(5)}].map(r=>({...r,body:'Message body',sender:'System',created_at:mins(-120)}));
  const active=r=>!r.expires_at||Date.parse(r.expires_at)>Date.now();
  export const supabase=window.fixture={auth:{onAuthStateChange(cb){window.listeners ||= [];listeners.push(cb);return {data:{subscription:{unsubscribe(){}}}};}},countCalls:0,hold:false,release:null,
  from(){return {select(){return this},order(){return this},limit:async()=>({data:rows.filter(active).sort((a,b)=>b.id-a.id),error:null})}},
@@ -22,12 +22,12 @@ for(const width of [390,1440]) {
  });
  await page.goto(base+'/mailbox-retention-preview');
  const profile=page.locator('[data-mailbox-badge="profile"]'),menu=page.locator('[data-mailbox-badge="menu"]');
- await profile.filter({hasText:'3'}).waitFor();assert.equal(await menu.textContent(),'3');
+ await profile.filter({hasText:'4'}).waitFor();assert.equal(await menu.textContent(),'4');
  await page.click('#open');await page.locator('.mailbox-entry').filter({hasText:'Unread plain'}).click();
- await profile.filter({hasText:'2'}).waitFor();await page.keyboard.press('Escape');
+ await profile.filter({hasText:'3'}).waitFor();await page.keyboard.press('Escape');
  await page.locator('.mailbox-entry').filter({hasText:'Unread reward'}).click();
- await page.getByRole('button',{name:'Claim reward',exact:true}).waitFor();assert.equal(await profile.textContent(),'2','read/unclaimed mail keeps notification');
- await page.getByRole('button',{name:'Claim reward',exact:true}).click();await profile.filter({hasText:'1'}).waitFor();
+ await page.getByRole('button',{name:'Claim reward',exact:true}).waitFor();assert.equal(await profile.textContent(),'3','read/unclaimed mail keeps notification');
+ await page.getByRole('button',{name:'Claim reward',exact:true}).click();await profile.filter({hasText:'2'}).waitFor();
  await page.clock.fastForward(30*60*1000+50);
  await page.waitForFunction(()=>document.querySelectorAll('.mailbox-entry').length===1);
  assert.equal(await page.getByRole('dialog',{name:'Message',exact:true}).count(),0,'expired open message closes itself');
@@ -39,7 +39,7 @@ for(const width of [390,1440]) {
  await page.evaluate(()=>{listeners.forEach(fn=>fn('SIGNED_OUT'));fixture.release();});
  assert.equal(await profile.isVisible(),false);assert.equal(await menu.isVisible(),false);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
- console.log('PASS retention/badge '+width+'px: read/claim notification counts, live 30-minute expiry, unclaimed protection, sign-out race');
+ console.log('PASS retention/badge '+width+'px: read/claim notification counts, live 30-minute expiry, hard-expired unclaimed removal, unclaimed protection, sign-out race');
  await context.close();
 }
 }finally{await browser.close();}

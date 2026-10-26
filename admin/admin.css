@@ -849,3 +849,8 @@
 #mailPreview { margin: 20px 0; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); }
 #mailPreview p { margin: 10px 0; }
 #mailPublicationHistory { margin-top: 12px; }
+#mailPotionRows { display: grid; gap: 12px; margin: 12px 0; }
+#mailPotionRows [data-potion-row] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(80px, 1fr) auto; gap: 8px; align-items: end; }
+@media (max-width: 560px) {
+  #mailPotionRows [data-potion-row] { grid-template-columns: minmax(0, 1fr); }
+}

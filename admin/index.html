@@ -178,8 +178,10 @@
         <label class="field field--wide"><span>Message</span><textarea id="mailBody" class="admin-textarea" rows="6" maxlength="20000" required></textarea></label>
         <label class="field"><span>Cash reward (optional)</span><input id="mailCash" type="number" min="0" max="1000000000000000" step="1" value="0"></label>
         <label class="field"><span>Coin reward (optional)</span><input id="mailCoins" type="number" min="0" max="1000000000000000" step="1" value="0"></label>
-        <label class="field"><span>Potion reward (optional)</span><select id="mailPotion" class="select"><option value="">No potion</option></select></label>
-        <label class="field"><span>Potion quantity</span><input id="mailPotionQuantity" type="number" min="1" max="2147483647" step="1" value="1"></label>
+        <label class="field"><span>Mail expiry</span><select id="mailExpiry" class="select"><option value="3600">1 hour</option><option value="86400">1 day</option><option value="604800" selected>7 days</option><option value="2592000">30 days</option><option value="custom">Choose date and time</option></select></label>
+        <label class="field" id="mailExpiryCustomField" hidden><span>Expiry date and time (your local time)</span><input id="mailExpiryCustom" type="datetime-local"></label>
+        <p class="field--wide">Mail expires at this deadline even if unread or unclaimed. Read mail still clears after 30 minutes once any rewards are claimed.</p>
+        <div class="field--wide"><h3>Potion rewards (optional)</h3><div id="mailPotionRows"></div><button class="btn" type="button" id="mailAddPotion">Add another potion</button></div>
         <div class="field--wide"><button class="btn btn--primary" id="mailReview" type="submit">Review mail</button></div>
       </form>
       <section id="mailPreview" class="admin-event" hidden aria-label="Mail preview"></section>

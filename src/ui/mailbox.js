@@ -86,7 +86,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
     const visibleMail = message?.overlay.isConnected && selectedMail ? rows.concat(selectedMail) : rows;
     const nextExpiry = Math.min(...visibleMail.filter(mail => mail.expires_at).map(mail => Date.parse(mail.expires_at)));
     if (Number.isFinite(nextExpiry)) expiryTimer = setTimeout(() => render(), Math.max(1, nextExpiry - Date.now()));
-    inbox.content.innerHTML = `<p style="color:var(--text-muted)">Messages and gifts from Gem Incremental.</p><p style="color:var(--text-muted)">Read mail clears after 30 minutes. Mail with rewards clears 30 minutes after it is also claimed.</p>
+    inbox.content.innerHTML = `<p style="color:var(--text-muted)">Messages and gifts from Gem Incremental.</p><p style="color:var(--text-muted)">Mail clears at its expiry time, even if unread or unclaimed. Read mail clears sooner: 30 minutes after any rewards are also claimed.</p>
       <p role="status">${escapeHtml(error || (loading ? "Loading mail…" : rows.length ? "" : "Your mailbox is empty."))}</p>
       <div data-mails style="display:grid;gap:8px"></div>
       <div class="dialog__actions"><button class="btn" data-refresh type="button" ${loading ? "disabled" : ""}>Refresh</button>
@@ -95,7 +95,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
       const button = document.createElement("button");
       button.className = "btn mailbox-entry";
       button.style.cssText = "display:block;text-align:left;white-space:normal;width:100%;padding:12px";
-      button.innerHTML = `<strong>${escapeHtml(mail.subject)}</strong><br><small>${escapeHtml(mail.sender)} · ${escapeHtml(new Date(mail.created_at).toLocaleDateString())}<br>${!mail.read_at ? "Unread · " : ""}${mail.rewards?.length ? mail.claimed_at ? "Reward claimed" : "🎁 Reward available" : "Message"}</small>`;
+      button.innerHTML = `<strong>${escapeHtml(mail.subject)}</strong><br><small>${escapeHtml(mail.sender)} · ${escapeHtml(new Date(mail.created_at).toLocaleDateString())}<br>${!mail.read_at ? "Unread · " : ""}${mail.rewards?.length ? mail.claimed_at ? "Reward claimed" : "🎁 Reward available" : "Message"}${mail.expires_at ? `<br>Expires ${escapeHtml(new Date(mail.expires_at).toLocaleString())}` : ""}</small>`;
       button.onclick = () => openMessage(mail);
       inbox.content.querySelector("[data-mails]").append(button);
     }
@@ -132,7 +132,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
         <p style="white-space:pre-wrap">${escapeHtml(mail.body)}</p>
         ${hasReward ? `<h4>Attached rewards</h4><ul>${mail.rewards.map(r => `<li>${escapeHtml(rewardText(r))}</li>`).join("")}</ul><p>${mail.claimed_at ? "Reward claimed." : "Claim your attached rewards below."}</p>
         <button class="btn btn--primary" data-claim type="button" ${mail.claimed_at ? "disabled" : ""}>${mail.claimed_at ? "Claimed" : "Claim reward"}</button>` : ""}
-        <p>${mail.expires_at ? `Automatically clears at ${escapeHtml(new Date(mail.expires_at).toLocaleTimeString())}.` : "This mail stays until it is read and any rewards are claimed."}</p>
+        <p>${mail.expires_at ? `Automatically clears at ${escapeHtml(new Date(mail.expires_at).toLocaleString())}.` : "Read mail clears 30 minutes after any rewards are claimed."}</p>
         <p role="status">${escapeHtml(error)}</p>`;
       view.content.querySelector("[data-claim]")?.addEventListener("click", async event => {
         const button = event.currentTarget;
