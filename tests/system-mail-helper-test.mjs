@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {publishSystemMail} from '../supabase/functions/_shared/mail.ts';
+const requestId='11111111-1111-4111-8111-111111111111';let calls=[];
+const client={async rpc(name,args){calls.push({name,args});return {data:{recipientCount:1},error:null};}};
+await publishSystemMail(client,{requestId,subject:'Reward',body:'Congratulations',recipient:'Miner'});
+await publishSystemMail(client,{requestId,subject:'Reward',body:'Congratulations',recipient:'Miner'});
+assert.deepEqual(calls[0],calls[1]);assert.equal(calls[0].name,'publish_system_mail');
+assert.deepEqual(calls[0].args.p_rewards,[]);assert.equal(calls[0].args.p_sender,'System');
+const error=new Error('delivery_failed');await assert.rejects(publishSystemMail({async rpc(){return {error}}},{requestId,subject:'X',body:'Y'}),e=>e===error);
+console.log('PASS system mail helper: service RPC, stable retry ID, defaults, error propagation');

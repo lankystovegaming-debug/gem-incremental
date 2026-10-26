@@ -167,6 +167,28 @@
       <p class="account-status" id="maintenanceStatus"></p>
     </section>
 
+    <section class="card admin-mail-publisher" id="mailPublisherPanel" hidden>
+      <h2>Mail Publisher</h2>
+      <p class="page-head__sub">Send a message or gift to one player or everyone. Rewards are delivered as attachments for players to claim.</p>
+      <form id="mailPublisherForm" class="admin-update-form">
+        <label class="field"><span>Recipients</span><select id="mailAudience" class="select"><option value="player">One player</option><option value="all">All current players</option></select></label>
+        <label class="field" id="mailRecipientField"><span>Username or Player ID</span><input id="mailRecipient" maxlength="100" required></label>
+        <label class="field"><span>Sender name</span><input id="mailSender" value="Gem Incremental" maxlength="100" required></label>
+        <label class="field field--wide"><span>Subject</span><input id="mailSubject" maxlength="200" required></label>
+        <label class="field field--wide"><span>Message</span><textarea id="mailBody" class="admin-textarea" rows="6" maxlength="20000" required></textarea></label>
+        <label class="field"><span>Cash reward (optional)</span><input id="mailCash" type="number" min="0" max="1000000000000000" step="1" value="0"></label>
+        <label class="field"><span>Coin reward (optional)</span><input id="mailCoins" type="number" min="0" max="1000000000000000" step="1" value="0"></label>
+        <label class="field"><span>Potion reward (optional)</span><select id="mailPotion" class="select"><option value="">No potion</option></select></label>
+        <label class="field"><span>Potion quantity</span><input id="mailPotionQuantity" type="number" min="1" max="2147483647" step="1" value="1"></label>
+        <div class="field--wide"><button class="btn btn--primary" id="mailReview" type="submit">Review mail</button></div>
+      </form>
+      <section id="mailPreview" class="admin-event" hidden aria-label="Mail preview"></section>
+      <p id="mailPublishStatus" class="account-status" role="status"></p>
+      <h3>Recent publications</h3>
+      <button id="mailHistoryRefresh" class="btn" type="button">Refresh history</button>
+      <div id="mailPublicationHistory" class="admin-update-list"></div>
+    </section>
+
     <section class="card admin-updates" id="updatesPanel" hidden>
       <div class="admin-section-head">
         <div>
