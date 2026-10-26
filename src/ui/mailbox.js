@@ -58,7 +58,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
   if (activeMailbox) return;
   const inbox = popup("Mailbox");
   activeMailbox = inbox;
-  let rows = [], more = false, loading = false, message = null, generation = 0;
+  let rows = [], more = false, loading = false, message = null, generation = 0, expiryTimer = null, selectedMail = null;
   const originalClose = inbox.close;
   // Also release singleton state when the popup's own close handler removes it.
   const observer = new MutationObserver(() => {
@@ -72,12 +72,21 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
     }
   });
   function cleanup() {
-    generation++; message?.close(); rows = [];
+    generation++; clearTimeout(expiryTimer); message?.close(); rows = [];
     subscription?.data?.subscription?.unsubscribe(); observer.disconnect();
     if (activeMailbox === inbox) activeMailbox = null;
   }
   function render(error = "") {
-    inbox.content.innerHTML = `<p style="color:var(--text-muted)">Messages and gifts from Gem Incremental.</p>
+    clearTimeout(expiryTimer);
+    const expired = mail => mail.expires_at && Date.parse(mail.expires_at) <= Date.now();
+    if (selectedMail && expired(selectedMail)) message?.close();
+    const hadExpired = rows.some(expired);
+    rows = rows.filter(mail => !expired(mail));
+    if (hadExpired) window.dispatchEvent(new CustomEvent("mailbox:changed"));
+    const visibleMail = message?.overlay.isConnected && selectedMail ? rows.concat(selectedMail) : rows;
+    const nextExpiry = Math.min(...visibleMail.filter(mail => mail.expires_at).map(mail => Date.parse(mail.expires_at)));
+    if (Number.isFinite(nextExpiry)) expiryTimer = setTimeout(() => render(), Math.max(1, nextExpiry - Date.now()));
+    inbox.content.innerHTML = `<p style="color:var(--text-muted)">Messages and gifts from Gem Incremental.</p><p style="color:var(--text-muted)">Read mail clears after 30 minutes. Mail with rewards clears 30 minutes after it is also claimed.</p>
       <p role="status">${escapeHtml(error || (loading ? "Loading mail…" : rows.length ? "" : "Your mailbox is empty."))}</p>
       <div data-mails style="display:grid;gap:8px"></div>
       <div class="dialog__actions"><button class="btn" data-refresh type="button" ${loading ? "disabled" : ""}>Refresh</button>
@@ -112,6 +121,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
   }
   async function openMessage(mail) {
     if (message?.overlay.isConnected) return;
+    selectedMail = mail;
     message = popup("Message", inbox.overlay);
     const view = message;
     view.content.innerHTML = '<p role="status">Opening message…</p>';
@@ -122,6 +132,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
         <p style="white-space:pre-wrap">${escapeHtml(mail.body)}</p>
         ${hasReward ? `<h4>Attached rewards</h4><ul>${mail.rewards.map(r => `<li>${escapeHtml(rewardText(r))}</li>`).join("")}</ul><p>${mail.claimed_at ? "Reward claimed." : "Claim your attached rewards below."}</p>
         <button class="btn btn--primary" data-claim type="button" ${mail.claimed_at ? "disabled" : ""}>${mail.claimed_at ? "Claimed" : "Claim reward"}</button>` : ""}
+        <p>${mail.expires_at ? `Automatically clears at ${escapeHtml(new Date(mail.expires_at).toLocaleTimeString())}.` : "This mail stays until it is read and any rewards are claimed."}</p>
         <p role="status">${escapeHtml(error)}</p>`;
       view.content.querySelector("[data-claim]")?.addEventListener("click", async event => {
         const button = event.currentTarget;
@@ -131,7 +142,9 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
           if (error) throw error;
           if (!inbox.overlay.isConnected) return;
           mail.claimed_at = data.claimedAt; mail.read_at ||= data.claimedAt;
+          mail.expires_at = data.expiresAt ?? null;
           paint(); render();
+          window.dispatchEvent(new CustomEvent("mailbox:changed"));
           // A refresh failure must never turn a successful claim into an error.
           Promise.resolve().then(onClaim).catch(() => {});
         } catch {
@@ -144,6 +157,7 @@ export function openMailbox({ userId = null, onClaim = () => {} } = {}) {
       if (error) throw error;
       if (!view.overlay.isConnected || !inbox.overlay.isConnected) return;
       Object.assign(mail, data); paint(); render();
+      window.dispatchEvent(new CustomEvent("mailbox:changed"));
     } catch {
       if (!view.overlay.isConnected) return;
       view.content.innerHTML = '<p role="status">Could not open this message. Close it and try again.</p>';

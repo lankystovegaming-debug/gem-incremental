@@ -3,6 +3,7 @@ import { formatMoney, escapeHtml } from "./format.js";
 import { notify, toast } from "./toast.js";
 import { confirmDialog } from "./dialog.js";
 import { openMailbox } from "./mailbox.js";
+import { mountMailboxNotifications } from "./mailboxNotifications.js";
 import {
   MODES,
   ACCENTS,
@@ -804,12 +805,15 @@ export function mountShell({ page, base = "./" }) {
 
   accountButton.addEventListener("click", () => {
     menus.toggle(accountAnchor, accountButton, renderAccountMenu);
+    mailNotifications.refresh();
   });
 
 
   // -------------------------------------------------------
   // ACCOUNT DISPLAY
   // -------------------------------------------------------
+
+  const mailNotifications = mountMailboxNotifications(accountButton);
 
   let currentUser = null;
   let currentUsername = null;
@@ -824,6 +828,7 @@ export function mountShell({ page, base = "./" }) {
     accountName.textContent = account.name;
 
     accountButton.setAttribute("aria-label", `Account: ${account.name}`);
+    mailNotifications.setAccount(account.guest ? null : user, account.name);
 
     if (account.avatarUrl) {
       avatar.innerHTML = `<img src="${escapeHtml(
@@ -937,6 +942,7 @@ export function mountShell({ page, base = "./" }) {
             <button class="menu__item" data-action="mailbox" type="button" role="menuitem">
               <span aria-hidden="true">✉</span>
               Mailbox
+              <span data-mailbox-badge="menu" aria-hidden="true" style="display:none;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#dc2626;color:white;font-size:11px;font-weight:800;align-items:center;justify-content:center;margin-left:auto"></span>
             </button>
 
             <a class="menu__item" href="${base}account/" role="menuitem">
@@ -1010,6 +1016,7 @@ export function mountShell({ page, base = "./" }) {
       }
     );
 
+    mailNotifications.paint(menu);
     return menu;
   }
 

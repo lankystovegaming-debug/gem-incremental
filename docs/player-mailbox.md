@@ -1,6 +1,6 @@
 # Player mailbox
 
-Deploy `supabase/migrations/20261026002136_player_mailbox.sql`, then `supabase/migrations/20261026003507_mailbox_publishing.sql`, before publishing the frontend. No Edge Function deployment is needed for the publisher.
+Deploy `supabase/migrations/20261026002136_player_mailbox.sql`, then `supabase/migrations/20261026003507_mailbox_publishing.sql`, then `supabase/migrations/20261026010410_mailbox_read_claim_retention.sql`, then `supabase/migrations/20261026010619_mailbox_pending_notification.sql`, before publishing the frontend. No Edge Function deployment is needed for the publisher.
 
 Signed-in players open **Profile → Mailbox**, then select a message. Attachments are claimed explicitly; opening a message only marks it read. The inbox loads 25 messages at a time, newest first.
 
@@ -60,3 +60,15 @@ Players have SELECT-only access under row-level security. Read/claim functions d
 `node tests/mailbox-browser-test.mjs` uses Playwright and a local dev server on port 5587. `PLAYWRIGHT_MODULE` and `MAILBOX_PREVIEW_URL` can override those defaults. Browser checks use fixtures and never grant live rewards.
 
 `node tests/mailbox-publishing-database-test.mjs` checks owner/service authorization, targeted and broadcast delivery, validation, retry deduplication, publication privacy and subsequent claiming. `node tests/mailbox-publishing-browser-test.mjs` checks the admin composer at phone and desktop sizes. `node tests/system-mail-helper-test.mjs` checks the shared backend helper.
+
+## Automatic cleanup
+
+Unread mail stays in the mailbox. A plain message clears 30 minutes after its first read. A message with rewards clears 30 minutes after both reading and claiming are complete (using the later timestamp). Reading or claiming again does not restart the timer. Unclaimed attachments never expire just because the mail was read.
+
+The backend stores the deadline, immediately hides expired rows from players, and rejects opening or claiming expired mail. A `pg_cron` job removes expired rows every minute in batches of up to 5,000. The existing project has Cron enabled; the retention migration fails clearly if Cron is missing on another project. Open inbox/message popups remove expired mail using the same backend deadline. Publication history stays available so retrying an old publish request cannot recreate mail that was already cleared.
+
+`node tests/mailbox-retention-database-test.mjs` covers timing boundaries, unread/unclaimed protection, reopening, claiming, cleanup, scheduler registration and publication retry safety. `node tests/mailbox-retention-browser-test.mjs` checks expiry while the inbox/message popup stays open.
+
+## Pending-mail notification
+
+A red count bubble on the top-right profile button and the Mailbox menu option shows visible messages that are unread **or** have unclaimed attachments. A mail meeting both conditions counts once. Reading a plain message clears its notification immediately; reading reward mail leaves it pending until claimed. Expired messages do not count. The count refreshes after read/claim/expiry, on opening the account menu, on returning to the tab, and once per minute while the tab is visible. Signing out clears the badge and discards pending responses.
