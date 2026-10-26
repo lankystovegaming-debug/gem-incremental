@@ -9,6 +9,7 @@ export async function publishSystemMail(
     audience?: 'player' | 'all';
     recipient?: string;
     sender?: string;
+    expiresAt?: string; // ISO timestamp. Omit for seven days from publication.
   }
 ) {
   const { data, error } = await serviceClient.rpc('publish_system_mail', {
@@ -18,7 +19,8 @@ export async function publishSystemMail(
     p_rewards: mail.rewards ?? [],
     p_audience: mail.audience ?? 'player',
     p_recipient: mail.recipient ?? null,
-    p_sender: mail.sender ?? 'System'
+    p_sender: mail.sender ?? 'System',
+    p_expires_at: mail.expiresAt ?? null
   });
   if (error) throw error;
   return data;

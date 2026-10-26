@@ -5,6 +5,8 @@ const client={async rpc(name,args){calls.push({name,args});return {data:{recipie
 await publishSystemMail(client,{requestId,subject:'Reward',body:'Congratulations',recipient:'Miner'});
 await publishSystemMail(client,{requestId,subject:'Reward',body:'Congratulations',recipient:'Miner'});
 assert.deepEqual(calls[0],calls[1]);assert.equal(calls[0].name,'publish_system_mail');
-assert.deepEqual(calls[0].args.p_rewards,[]);assert.equal(calls[0].args.p_sender,'System');
+assert.equal(calls[0].args.p_expires_at,null);assert.deepEqual(calls[0].args.p_rewards,[]);assert.equal(calls[0].args.p_sender,'System');
+await publishSystemMail(client,{requestId,subject:'Reward',body:'Body',recipient:'Miner',expiresAt:'2030-01-01T00:00:00Z',rewards:[{type:'potion',amount:2,consumableId:'luck'},{type:'potion',amount:3,consumableId:'speed'}]});
+assert.equal(calls[2].args.p_expires_at,'2030-01-01T00:00:00Z');assert.equal(calls[2].args.p_rewards.length,2);
 const error=new Error('delivery_failed');await assert.rejects(publishSystemMail({async rpc(){return {error}}},{requestId,subject:'X',body:'Y'}),e=>e===error);
 console.log('PASS system mail helper: service RPC, stable retry ID, defaults, error propagation');
