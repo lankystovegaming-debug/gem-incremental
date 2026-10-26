@@ -1,4 +1,3 @@
-import { mountMailPublisher } from "./mailPublisher.js";
 import { mountEconomy } from "./economy.js";
 import { mountAdminCli } from "./adminCli.js";
 import { loadGemCatalog } from "../src/backend/gemCatalog.js";
@@ -2139,7 +2138,6 @@ if (!user || !whoami?.isAdmin) {
   notify.error("Access denied", "Administrator access is required.");
 } else {
   canWriteAdmin = whoami.canWrite === true;
-  if (whoami.access === "owner") mountMailPublisher();
   document.getElementById("bugReportsLink").hidden = !canWriteAdmin;
   const { data: ownPlayer } = await supabase
     .from("players")
@@ -2466,7 +2464,7 @@ const economyBreakdown = mountEconomy({
   const GROUPS = {
     search: ["#adminSearchCard", "#searchResults", "#playerPanel", "#auditPanel"],
     economy: ["#economyPanel", "#analyticsPanel", "#bankPanel"],
-    content: ["#mailPublisherPanel","#maintenancePanel", "#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
+    content: ["#maintenancePanel", "#announcePanel", "#updatesPanel", "#codesPanel", "#eventsPanel", "#mutationEventsPanel", "#mutationCatalogPanel", "#sectionControlsPanel", "#customCatalogPanel", "#featureCatalogPanel"],
     community: ["#guildRosterPanel", "#referralsPanel", "#ipAuditPanel"],
     appeals: ["#appealsPanel"],
     cli: ["#cliPanel"]
