@@ -838,3 +838,14 @@
 
 
 #bugReportsLink[hidden] { display: none; }
+
+/* Form field layouts must not override the publisher's hidden states. */
+#mailPublisherPanel[hidden],
+#mailPublisherPanel [hidden] { display: none; }
+.admin-mail-publisher .page-head__sub { margin-bottom: 16px; }
+.admin-mail-publisher .field { flex-direction: column; align-items: stretch; gap: 6px; }
+.admin-mail-publisher .field > span { font-size: .85rem; color: var(--text-muted); }
+.admin-mail-publisher .field :is(input, select, textarea) { width: 100%; min-width: 0; }
+#mailPreview { margin: 20px 0; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+#mailPreview p { margin: 10px 0; }
+#mailPublicationHistory { margin-top: 12px; }
