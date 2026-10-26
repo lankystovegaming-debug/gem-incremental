@@ -436,3 +436,19 @@
   width: 17px;
   height: 17px;
 }
+
+/* Phase 4 category navigation uses the existing recipe tabs and state. */
+.crafting-workspace { display:grid; grid-template-columns:12rem minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.crafting-categories { position:sticky; top:calc(var(--nav-height) + var(--space-4)); min-width:0; }
+.crafting-content { min-width:0; }
+.crafting-categories .crafting-tabs { display:flex; flex-direction:column; width:100%; }
+.crafting-categories .crafting-tabs > [role="tab"] { min-width:0; white-space:normal; text-align:left; width:100%; min-height:var(--touch-target); }
+.crafting-content .recipe-list { grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); }
+.crafting-category-picker { display:none; }
+@media (max-width:900px) {
+  .crafting-workspace { display:block; }
+  .crafting-categories { position:static; margin-bottom:var(--space-4); }
+  .crafting-category-picker { display:grid; gap:var(--space-2); }
+  .crafting-category-picker .select { min-height:var(--touch-target); width:100%; }
+  .crafting-categories .crafting-tabs { display:none; }
+}

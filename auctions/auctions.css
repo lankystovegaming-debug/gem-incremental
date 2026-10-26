@@ -712,3 +712,22 @@
 }
 
 .auction-buy { margin-top: auto; }
+
+/* Phase 4: stable numbered sell panels, with the existing final review dialog. */
+.sell-stage { min-width:0; margin-top:var(--space-4); padding:var(--space-4); border:1px solid var(--border); border-radius:var(--radius); }
+.sell-stage h3 { margin:0 0 var(--space-4); font-size:1rem; }
+.sell-stage .lot-summary { margin:0; }
+.sell-validation { margin-top:var(--space-3); color:var(--negative); overflow-wrap:anywhere; }
+.sell-stage .lot-option__name, .lot-chip { overflow-wrap:anywhere; }
+@media (max-width:780px) {
+  .sell-stage { padding:var(--space-3); }
+  .lot-chip button { min-width:var(--touch-target); min-height:var(--touch-target); }
+  .sell-stage .lot-qty { min-height:var(--touch-target); }
+}
+@media (min-width:1000px) {
+  .sell-card { max-width:none; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); align-items:start; }
+  .sell-card > .sell-card__title, .sell-card > .sell-card__hint { grid-column:1 / -1; }
+  .sell-card > .sell-stage { margin-top:0; grid-column:2; }
+  .sell-card > .sell-stage:first-of-type { grid-column:1; grid-row:3 / span 3; }
+  .sell-stage .sell-columns { grid-template-columns:minmax(0,1fr); }
+}

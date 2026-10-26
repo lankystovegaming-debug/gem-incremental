@@ -80,7 +80,8 @@
     "test:update-logs:browser": "node tests/update-history-browser-test.mjs",
     "test:biomes": "node tests/biomes-v11-database-test.mjs && node tests/biomes-v11-selection-test.mjs && node tests/five-item-handler-test.mjs",
     "test:biomes:browser": "node tests/biomes-v11-browser-test.mjs",
-    "test:biomes:concurrency": "node tests/biomes-v11-concurrency-test.mjs"
+    "test:biomes:concurrency": "node tests/biomes-v11-concurrency-test.mjs",
+    "test:utility-pages": "node tests/utility-pages-phase-4-browser-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"
