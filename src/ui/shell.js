@@ -2,7 +2,6 @@ import { icons } from "./icons.js";
 import { formatMoney, escapeHtml } from "./format.js";
 import { notify, toast } from "./toast.js";
 import { confirmDialog } from "./dialog.js";
-import { openMailbox } from "./mailbox.js";
 import {
   MODES,
   ACCENTS,
@@ -934,11 +933,6 @@ export function mountShell({ page, base = "./" }) {
               View profile
             </a>
 
-            <button class="menu__item" data-action="mailbox" type="button" role="menuitem">
-              <span aria-hidden="true">✉</span>
-              Mailbox
-            </button>
-
             <a class="menu__item" href="${base}account/" role="menuitem">
               ${icons.user}
               Manage account
@@ -965,17 +959,6 @@ export function mountShell({ page, base = "./" }) {
         button.disabled = false;
       }
     );
-
-    menu.querySelector('[data-action="mailbox"]')?.addEventListener("click", () => {
-      menus.close();
-      openMailbox({ userId: currentUser?.id, onClaim: async () => {
-        const claimant = currentUser?.id;
-        const state = await loadCloudPlayerState();
-        if (claimant !== currentUser?.id) return;
-        if (state?.money != null) applyWallet(state.money);
-        window.dispatchEvent(new CustomEvent("mailbox:reward-claimed"));
-      } });
-    });
 
     menu.querySelector('[data-action="signout"]')?.addEventListener(
       "click",
