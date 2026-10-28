@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import math
+import json
 import os
 import shutil
 import subprocess
@@ -22,7 +23,23 @@ GEMS_DIR = PROJECT / "src" / "assets" / "photoreal" / "specimens2"
 
 W, H = 1280, 720
 FPS = 30
-DURATION = 28.5
+BASE_DURATION = 28.5
+ALMOST_DIR = BASE / "assets" / "almost-secret"
+ALMOST_MANIFEST = json.loads((ALMOST_DIR / "manifest.json").read_text())
+INSERT_AT = 5.0
+ROLLING_FRAMES = 54
+PRE_CUT_FADE_FRAMES = 6
+BLACK_HOLD_FRAMES = 12
+RETURN_FADE_FRAMES = 10
+ALMOST_FRAMES = ALMOST_MANIFEST["frames"]
+INSERT_FRAMES = ROLLING_FRAMES + PRE_CUT_FADE_FRAMES + ALMOST_FRAMES + BLACK_HOLD_FRAMES + RETURN_FADE_FRAMES
+INSERT_DURATION = INSERT_FRAMES / FPS
+CUTSCENE_START = INSERT_AT + (ROLLING_FRAMES + PRE_CUT_FADE_FRAMES) / FPS
+CUTSCENE_END = CUTSCENE_START + ALMOST_FRAMES / FPS
+RETURN_START = CUTSCENE_END + BLACK_HOLD_FRAMES / FPS
+RESUME_AT = INSERT_AT + INSERT_DURATION
+BOOM_AT = 27.85 + INSERT_DURATION
+DURATION = BASE_DURATION + INSERT_DURATION
 FRAME_COUNT = int(DURATION * FPS)
 
 BG = (5, 8, 17)
@@ -347,7 +364,7 @@ def scene_end(t: float) -> Image.Image:
     return image.convert("RGB")
 
 
-def render_frame(t: float) -> Image.Image:
+def render_base_frame(t: float) -> Image.Image:
     if t < 5.0:
         image = scene_roll(t)
     elif t < 11.0:
@@ -366,6 +383,55 @@ def render_frame(t: float) -> Image.Image:
         image = scene_minigames(t)
     else:
         image = scene_end(t)
+    return image
+
+
+def rolling_closeup(elapsed: float) -> Image.Image:
+    """Staged second roll: button only, with the game's 0.7-second spin cadence."""
+    image = Image.new("RGB", (W, H), BG)
+    button_width, button_height = 840, 136
+    xx = np.linspace(0, 1, button_width)[None, :, None]
+    left = np.array([131, 138, 255], dtype=float)
+    right = np.array([99, 111, 231], dtype=float)
+    pixels = np.repeat((left * (1 - xx) + right * xx).astype(np.uint8), button_height, axis=0)
+    button = Image.fromarray(pixels).convert("RGBA")
+    mask = Image.new("L", button.size)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, button_width-1, button_height-1), radius=32, fill=255)
+    button.putalpha(mask)
+    image.paste(button, ((W-button_width)//2, (H-button_height)//2), mask)
+    draw = ImageDraw.Draw(image)
+    draw.text((W//2-38, H//2), "Rolling...", font=font(44, "bold"), fill=(10, 14, 35), anchor="mm")
+    angle = elapsed * 360 / 0.7
+    draw.arc((810, 338, 854, 382), start=angle, end=angle+285, fill=(10,14,35), width=5)
+    return image
+
+
+def render_frame(t: float) -> Image.Image:
+    frame_index = int(round(t * FPS))
+    insert_index = frame_index - int(INSERT_AT * FPS)
+    if 0 <= insert_index < INSERT_FRAMES:
+        if insert_index < ROLLING_FRAMES + PRE_CUT_FADE_FRAMES:
+            image = rolling_closeup(insert_index / FPS)
+            if insert_index >= ROLLING_FRAMES:
+                # Last pre-completion frame is fully black; no result is shown.
+                fade = (insert_index - ROLLING_FRAMES + 1) / PRE_CUT_FADE_FRAMES
+                image = Image.blend(image, Image.new("RGB", (W,H), "black"), ease(fade))
+            return image
+        cutscene_index = insert_index - ROLLING_FRAMES - PRE_CUT_FADE_FRAMES
+        if cutscene_index < ALMOST_FRAMES:
+            with Image.open(ALMOST_DIR / f"frame-{cutscene_index:04d}.jpg") as capture:
+                return capture.convert("RGB")
+        after_cutscene = cutscene_index - ALMOST_FRAMES
+        if after_cutscene < BLACK_HOLD_FRAMES:
+            return Image.new("RGB", (W, H), "black")
+        fade_index = after_cutscene - BLACK_HOLD_FRAMES
+        image = render_base_frame(INSERT_AT)
+        image = Image.blend(Image.new("RGB", (W,H), "black"), image,
+                            ease((fade_index+1)/RETURN_FADE_FRAMES))
+        progress_bar(image, t)
+        return image
+    base_t = t if t < INSERT_AT else t - INSERT_DURATION
+    image = render_base_frame(base_t)
     progress_bar(image, t)
     return image
 
@@ -443,22 +509,44 @@ def build_audio(path: Path) -> None:
             21.0, 21 + 2 / 3, 21 + 4 / 3, 23.0, 23.75, 24.5, 25.25, 26.0]
     for i, ts in enumerate(cuts):
         major = ts in (5.0, 7.5, 11.0, 13.0, 16.0, 18.0, 21.0, 23.0, 26.0)
-        add_transition(track, ts, major)
+        add_transition(track, ts if ts < INSERT_AT else ts + INSERT_DURATION, major)
     for i in range(72):
-        ts = 11.2 + i * 0.025
+        ts = 11.2 + INSERT_DURATION + i * 0.025
         add_tone(track, ts, 0.08, 220 + i * 10, 0.014 + i * 0.0005, "sine", i / 72, 0.002, 0.04)
     for i in range(60):
-        ts = 24.5 + i * 0.025
+        ts = 24.5 + INSERT_DURATION + i * 0.025
         add_tone(track, ts, 0.08, 280 + i * 13, 0.012 + i * 0.00055, "sine", 1 - i / 60, 0.002, 0.04)
     fade = int(0.48 * sample_rate)
     track[-fade:] *= np.linspace(1, 0, fade)[:, None]
+    # Suspend the normal music through the staged roll, count-up and blackout.
+    start_insert = int(INSERT_AT * sample_rate)
+    resume_sample = int(RESUME_AT * sample_rate)
+    ramp_in = int(RETURN_START * sample_rate)
+    track[start_insert:ramp_in] = 0
+    # Fade the normal soundtrack back in with the returning picture.
+    # Subsequent beats retain the existing arrangement and clean transition cues.
+    track[ramp_in:resume_sample] *= np.linspace(0,1,resume_sample-ramp_in)[:,None]
+    # A separate minor-key score builds tension during the real cutscene.
+    for frequency, amplitude in [(41.20,.19),(82.41,.085),(123.47,.05)]:
+        add_tone(track, CUTSCENE_START, ALMOST_FRAMES/FPS, frequency, amplitude,
+                 "sine", .5, .18, .025)
+    for i, ts in enumerate(np.arange(CUTSCENE_START, CUTSCENE_END-.12, .60)):
+        add_tone(track, ts, .30, 55, .22, "sine", .5, .008, .24)
+        add_tone(track, ts+.04, .35, [164.81,174.61,246.94][i%3], .045,
+                 "sine", .25 if i%2 else .75, .015, .28)
+    rise_start = max(CUTSCENE_START, CUTSCENE_END-2.2)
+    for i, ts in enumerate(np.arange(rise_start, CUTSCENE_END-.03, .06)):
+        add_tone(track, ts, min(.09,CUTSCENE_END-ts), 180+i*18, .03+i*.0007,
+                 "sine", .5, .006, .018)
+    # The dramatic score stops on the same frame as the hard black cut.
+    track[int(CUTSCENE_END*sample_rate):int(RETURN_START*sample_rate)] = 0
     # Use the owner's exact Vine Boom sample for the Quartz punchline.
     with wave.open(str(BASE / "assets" / "audio" / "vine-boom-user.wav"), "rb") as source:
         assert source.getframerate() == sample_rate and source.getnchannels() == 2
         boom = np.frombuffer(source.readframes(source.getnframes()), dtype="<i2").reshape(-1, 2).astype(np.float64) / 32768
     # Remove the sample's quiet lead-in so the impact lands with the card reveal.
     boom = boom[int(0.075 * sample_rate):]
-    start = int(27.85 * sample_rate)
+    start = int(BOOM_AT * sample_rate)
     # Stop the music at the punchline so only the Vine Boom remains.
     track[start:] = 0
     count = min(len(boom), len(track) - start)
@@ -496,7 +584,7 @@ def main() -> None:
         "/usr/bin/swiftc", "-parse-as-library", str(BASE / "encode_trailer.swift"), "-o", str(encoder)
     ], check=True, env=environment)
     subprocess.run([str(encoder), str(frames), str(audio), str(video), str(FPS), str(W), str(H)], check=True)
-    render_frame(26.7).save(poster, quality=95, subsampling=0)
+    render_frame(26.7 + INSERT_DURATION).save(poster, quality=95, subsampling=0)
     shutil.rmtree(frames, ignore_errors=True)
     print(video)
 
