@@ -424,7 +424,7 @@ def build_audio(path: Path) -> None:
             add_noise(track, ts, 0.13, 0.15, 700 + i, 0.5, 29)
         add_noise(track, ts + beat / 2, 0.04, 0.05, 1700 + i, 0.25 if i % 2 else 0.75, 48)
     cuts = [1.06, 2.13, 3.2, 4.2, 5.2, 6.2, 9.1, 11.1, 13.1, 16.1,
-            17.1, 18.1, 19.1, 20.1, 21.1, 22.1, 23.1, 23.83, 24.56, 25.29, 26.0, 27.85]
+            17.1, 18.1, 19.1, 20.1, 21.1, 22.1, 23.1, 23.83, 24.56, 25.29, 26.0]
     for i, ts in enumerate(cuts):
         major = ts in (3.2, 6.2, 9.1, 13.1, 16.1, 20.1, 23.1, 26.0)
         add_transition(track, ts, major)
@@ -434,11 +434,20 @@ def build_audio(path: Path) -> None:
     for i in range(60):
         ts = 24.5 + i * 0.025
         add_tone(track, ts, 0.08, 280 + i * 13, 0.012 + i * 0.00055, "sine", 1 - i / 60, 0.002, 0.04)
-    add_noise(track, 27.84, 0.035, 0.34, 90210, 0.5, 90)
-    add_tone(track, 28.02, 0.40, 880, 0.16, "sine", 0.5, 0.004, 0.32)
-    add_tone(track, 28.05, 0.35, 1320, 0.08, "sine", 0.5, 0.004, 0.28)
     fade = int(0.48 * sample_rate)
     track[-fade:] *= np.linspace(1, 0, fade)[:, None]
+    # Use the owner's exact Vine Boom sample for the Quartz punchline.
+    with wave.open(str(BASE / "assets" / "audio" / "vine-boom-user.wav"), "rb") as source:
+        assert source.getframerate() == sample_rate and source.getnchannels() == 2
+        boom = np.frombuffer(source.readframes(source.getnframes()), dtype="<i2").reshape(-1, 2).astype(np.float64) / 32768
+    # Remove the sample's quiet lead-in so the impact lands with the card reveal.
+    boom = boom[int(0.075 * sample_rate):]
+    start = int(27.85 * sample_rate)
+    count = min(len(boom), len(track) - start)
+    boom = boom[:count].copy() * 0.68
+    tail = min(int(0.09 * sample_rate), count)
+    boom[-tail:] *= np.linspace(1, 0, tail)[:, None]
+    track[start:start + count] += boom
     track = np.tanh(track * 1.55) * 0.86
     pcm = (np.clip(track, -1, 1) * 32767).astype("<i2")
     with wave.open(str(path), "wb") as output:
