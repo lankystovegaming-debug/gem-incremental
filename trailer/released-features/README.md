@@ -49,4 +49,4 @@ Render the soundtrack, motion graphics and H.264/AAC MP4:
 
 Outputs are written to `trailer/released-features/dist/`.
 
-The Quartz ending uses the owner's supplied `vine-boom.mp3`, retained in `assets/audio/` alongside a decoded 48 kHz stereo WAV. Its quiet lead-in is trimmed, the hit starts at 27.85 seconds, and the tail fades over the last 90 ms to fit the existing ending. The other transition sounds and picture timing are unchanged. The music is synthesized by the renderer.
+The Quartz ending uses the owner's supplied `vine-boom.mp3`, retained in `assets/audio/` alongside a decoded 48 kHz stereo WAV. Its quiet lead-in is trimmed, the hit starts at 27.85 seconds, and the tail fades over the last 90 ms to fit the existing ending. The music cuts completely at 27.85 seconds, leaving the boom alone. The other transition sounds and picture timing are unchanged. The music is synthesized by the renderer.

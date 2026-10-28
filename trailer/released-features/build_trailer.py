@@ -443,6 +443,8 @@ def build_audio(path: Path) -> None:
     # Remove the sample's quiet lead-in so the impact lands with the card reveal.
     boom = boom[int(0.075 * sample_rate):]
     start = int(27.85 * sample_rate)
+    # Stop the music at the punchline so only the Vine Boom remains.
+    track[start:] = 0
     count = min(len(boom), len(track) - start)
     boom = boom[:count].copy() * 0.68
     tail = min(int(0.09 * sample_rate), count)
