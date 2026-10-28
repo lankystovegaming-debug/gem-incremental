@@ -391,6 +391,22 @@ def add_noise(track: np.ndarray, start: float, length: float, amplitude: float,
     track[start_index:start_index + count, 1] += signal * math.sin(pan * math.pi / 2)
 
 
+def add_transition(track: np.ndarray, start: float, major: bool = False) -> None:
+    """A quiet tonal glide with smooth endpoints and no broadband impact."""
+    sample_rate = 48_000
+    length = 0.18 if major else 0.12
+    count = int(length * sample_rate)
+    start_index = int(start * sample_rate)
+    tt = np.arange(count) / sample_rate
+    progress = tt / length
+    # Integrate a falling sine frequency; a Hann envelope prevents edge clicks.
+    phase = 2 * np.pi * (720 * tt - 180 * tt * tt / length)
+    envelope = np.sin(np.pi * progress) ** 2
+    signal = np.sin(phase) * envelope * (0.065 if major else 0.045)
+    count = min(count, len(track) - start_index)
+    track[start_index:start_index + count] += signal[:count, None] / math.sqrt(2)
+
+
 def build_audio(path: Path) -> None:
     sample_rate = 48_000
     track = np.zeros((int(DURATION * sample_rate), 2), dtype=np.float64)
@@ -411,8 +427,7 @@ def build_audio(path: Path) -> None:
             17.1, 18.1, 19.1, 20.1, 21.1, 22.1, 23.1, 23.83, 24.56, 25.29, 26.0, 27.85]
     for i, ts in enumerate(cuts):
         major = ts in (3.2, 6.2, 9.1, 13.1, 16.1, 20.1, 23.1, 26.0)
-        add_noise(track, ts, 0.24, 0.21 if major else 0.10, 3100 + i, 0.5, 18)
-        add_tone(track, ts, 0.14, 760 if ts < 26 else 610, 0.11, "sine", 0.5, 0.002, 0.11)
+        add_transition(track, ts, major)
     for i in range(72):
         ts = 7.3 + i * 0.025
         add_tone(track, ts, 0.08, 220 + i * 10, 0.014 + i * 0.0005, "sine", i / 72, 0.002, 0.04)
