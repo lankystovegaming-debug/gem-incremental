@@ -141,21 +141,22 @@ def progress_bar(image: Image.Image, t: float) -> None:
 
 
 def scene_roll(t: float) -> Image.Image:
-    phase = t / 3.2
+    phase = t / 5.0
     names = ["roll", "roll-impact", "roll-result"]
-    index = min(2, int(t / (3.2 / 3)))
-    local = (t - index * (3.2 / 3)) / (3.2 / 3)
+    index = min(2, int(t / (5.0 / 3)))
+    local = (t - index * (5.0 / 3)) / (5.0 / 3)
     image = ui_frame(names[index], local, darken=42, zoom_from=1.01, zoom_to=1.08, focus_x=0.43).convert("RGBA")
     draw = ImageDraw.Draw(image)
     badge(draw, "LIVE GAMEPLAY", GREEN)
     shade = Image.new("RGBA", image.size, (0, 0, 0, 90))
     image.alpha_composite(shade)
     alpha = int(255 * ease(clamp(phase / 0.18)))
-    glow_text(image, (W // 2, 290), "ONE CLICK.", font(68, "black"), color=(*INK, alpha), glow=VIOLET)
+    headlines = ["ROLL.", "DISCOVER.", "ROLL AGAIN."]
+    glow_text(image, (W // 2, 290), headlines[index], font(68, "black"), color=(*INK, alpha), glow=VIOLET)
     draw = ImageDraw.Draw(image)
-    draw.text((W // 2, 370), "AN ENTIRE GAME OPENS UP.", font=font(29, "bold"), fill=(*CYAN, alpha), anchor="mm")
-    if t > 2.45:
-        p = (t - 2.45) / 0.75
+    draw.text((W // 2, 370), "YOUR NEXT DISCOVERY IS ONE CLICK AWAY.", font=font(27, "bold"), fill=(*CYAN, alpha), anchor="mm")
+    if t > 4.25:
+        p = (t - 4.25) / 0.75
         radius = int(25 + 160 * ease(p))
         ring_alpha = int(230 * (1 - ease(p)))
         draw.ellipse((W // 2 - radius, 520 - radius, W // 2 + radius, 520 + radius),
@@ -188,7 +189,21 @@ def gem_strip(local: float) -> Image.Image:
 
 
 def scene_rarity(t: float) -> Image.Image:
-    local = (t - 3.2) / 3.0
+    # Give the actual public rare-roll feed its own beat before the odds montage.
+    if t < 7.5:
+        phase = (t - 5.0) / 2.5
+        source = captures["roll-result"].crop((1015, 172, 1415, 900))
+        image = Image.new("RGBA", (W, H), (*BG, 255))
+        feed = cover(source, 470, 610, zoom=1.0 + 0.025 * ease(phase), focus_y=0.1)
+        image.paste(feed, (740, 48))
+        draw = ImageDraw.Draw(image)
+        badge(draw, "REAL PLAYER DISCOVERIES", GREEN)
+        glow_text(image, (370, 270), "CHASE THE", font(48, "black"), glow=VIOLET)
+        glow_text(image, (370, 335), "EXTRAORDINARY.", font(43, "black"), glow=VIOLET)
+        draw.text((370, 430), "RARE GEMS. MUTATIONS. SERIALS.", font=font(21), fill=CYAN, anchor="mm")
+        draw.text((370, 480), "What will your next roll be?", font=font(25, "regular"), fill=MUTED, anchor="mm")
+        return cut_flash(image.convert("RGB"), phase, 70)
+    local = (t - 7.5) / 3.5
     image = gem_strip(local).convert("RGBA")
     if local < 0.20:
         real = ui_frame("roll-result", local / 0.2, darken=100, zoom_from=1.0, zoom_to=1.06, focus_x=0.40).convert("RGBA")
@@ -198,7 +213,7 @@ def scene_rarity(t: float) -> Image.Image:
 
 
 def scene_biomes(t: float) -> Image.Image:
-    local = (t - 6.2) / 2.9
+    local = (t - 11.0) / 2.0
     image = ui_frame("gem-index", local, darken=58, zoom_from=1.0, zoom_to=1.08, focus_y=0.55).convert("RGBA")
     aurora = Image.new("RGBA", image.size, (0, 0, 0, 0))
     ad = ImageDraw.Draw(aurora)
@@ -222,9 +237,9 @@ def scene_biomes(t: float) -> Image.Image:
 
 
 def scene_dungeons(t: float) -> Image.Image:
-    local = t - 9.1
-    index = 0 if local < 2 else 1
-    phase = (local % 2) / 2
+    local = t - 13.0
+    index = 0 if local < 1.5 else 1
+    phase = (local % 1.5) / 1.5
     name = "dungeons" if index == 0 else "workbench"
     image = ui_frame(name, phase, darken=30, zoom_from=1.0, zoom_to=1.065, focus_y=0.54).convert("RGBA")
     draw = ImageDraw.Draw(image)
@@ -238,7 +253,7 @@ def scene_dungeons(t: float) -> Image.Image:
 
 
 def scene_season(t: float) -> Image.Image:
-    local = (t - 13.1) / 3.0
+    local = (t - 16.0) / 2.0
     image = ui_frame("season", local, darken=35, zoom_from=1.0, zoom_to=1.07, focus_y=0.45).convert("RGBA")
     # Rising tier markers echo the reward track without fabricating rewards.
     draw = ImageDraw.Draw(image)
@@ -277,7 +292,7 @@ def scene_progression(t: float) -> Image.Image:
         ("crafting", "CRAFTING", VIOLET),
         ("market", "PLAYER MARKET", MAGENTA),
         ("leaderboards", "LEADERBOARDS", GOLD),
-    ], (t - 16.1) / 4.0, "BUILD A LOADOUT. BUILD A LEGACY.", "COLLECT • CRAFT • TRADE • CLIMB")
+    ], (t - 18.0) / 3.0, "BUILD A LOADOUT. BUILD A LEGACY.", "COLLECT • CRAFT • TRADE • CLIMB")
 
 
 def scene_economy(t: float) -> Image.Image:
@@ -285,7 +300,7 @@ def scene_economy(t: float) -> Image.Image:
         ("guilds", "GUILDS", GREEN),
         ("bank", "BANK", CYAN),
         ("lottery", "DAILY LOTTERY", GOLD),
-    ], (t - 20.1) / 3.0, "A LIVING PLAYER ECONOMY.", "TEAM UP • SAVE • BORROW • TAKE YOUR SHOT")
+    ], (t - 21.0) / 2.0, "A LIVING PLAYER ECONOMY.", "TEAM UP • SAVE • BORROW • TAKE YOUR SHOT")
 
 
 def scene_minigames(t: float) -> Image.Image:
@@ -294,7 +309,7 @@ def scene_minigames(t: float) -> Image.Image:
         ("gem-2048", "GEM 2048", CYAN),
         ("gem-reels", "GEM REELS", GOLD),
         ("gemdle", "GEMDLE", VIOLET),
-    ], (t - 23.1) / 2.9, "ROLLING IS ONLY THE BEGINNING.", "GEM 2048 • GEM REELS • GEMDLE • AND MORE")
+    ], (t - 23.0) / 3.0, "ROLLING IS ONLY THE BEGINNING.", "GEM 2048 • GEM REELS • GEMDLE • AND MORE")
 
 
 def scene_end(t: float) -> Image.Image:
@@ -333,19 +348,19 @@ def scene_end(t: float) -> Image.Image:
 
 
 def render_frame(t: float) -> Image.Image:
-    if t < 3.2:
+    if t < 5.0:
         image = scene_roll(t)
-    elif t < 6.2:
+    elif t < 11.0:
         image = scene_rarity(t)
-    elif t < 9.1:
+    elif t < 13.0:
         image = scene_biomes(t)
-    elif t < 13.1:
+    elif t < 16.0:
         image = scene_dungeons(t)
-    elif t < 16.1:
+    elif t < 18.0:
         image = scene_season(t)
-    elif t < 20.1:
+    elif t < 21.0:
         image = scene_progression(t)
-    elif t < 23.1:
+    elif t < 23.0:
         image = scene_economy(t)
     elif t < 26.0:
         image = scene_minigames(t)
@@ -423,13 +438,14 @@ def build_audio(path: Path) -> None:
         if i % 2:
             add_noise(track, ts, 0.13, 0.15, 700 + i, 0.5, 29)
         add_noise(track, ts + beat / 2, 0.04, 0.05, 1700 + i, 0.25 if i % 2 else 0.75, 48)
-    cuts = [1.06, 2.13, 3.2, 4.2, 5.2, 6.2, 9.1, 11.1, 13.1, 16.1,
-            17.1, 18.1, 19.1, 20.1, 21.1, 22.1, 23.1, 23.83, 24.56, 25.29, 26.0]
+    cuts = [5 / 3, 10 / 3, 5.0, 7.5, 7.5 + 3.5 / 3, 7.5 + 7 / 3,
+            11.0, 13.0, 14.5, 16.0, 18.0, 18.75, 19.5, 20.25,
+            21.0, 21 + 2 / 3, 21 + 4 / 3, 23.0, 23.75, 24.5, 25.25, 26.0]
     for i, ts in enumerate(cuts):
-        major = ts in (3.2, 6.2, 9.1, 13.1, 16.1, 20.1, 23.1, 26.0)
+        major = ts in (5.0, 7.5, 11.0, 13.0, 16.0, 18.0, 21.0, 23.0, 26.0)
         add_transition(track, ts, major)
     for i in range(72):
-        ts = 7.3 + i * 0.025
+        ts = 11.2 + i * 0.025
         add_tone(track, ts, 0.08, 220 + i * 10, 0.014 + i * 0.0005, "sine", i / 72, 0.002, 0.04)
     for i in range(60):
         ts = 24.5 + i * 0.025

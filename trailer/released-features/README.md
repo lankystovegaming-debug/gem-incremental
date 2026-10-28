@@ -23,15 +23,18 @@ The rarity sequence uses the game's existing mineral artwork and general rarity 
 
 | Time | Beat |
 | --- | --- |
-| 0:00–0:03.2 | Current Roll animation and authentic result: one click opens the game. |
-| 0:03.2–0:06.2 | 305 discoveries and the rarity scale, from 1-in-2 to billion-plus odds. |
-| 0:06.2–0:09.1 | Nine global biomes and the live Gem Index. |
-| 0:09.1–0:13.1 | 1,500 Dungeons rooms, combat loot and Workbench crafting. |
-| 0:13.1–0:16.1 | Season 1 — The Interlude: 50 tiers and missions. |
-| 0:16.1–0:20.1 | Inventory, Crafting, Player Market and Leaderboards. |
-| 0:20.1–0:23.1 | Guilds, Bank and Daily Lottery. |
-| 0:23.1–0:26.0 | Minigames, Gem 2048, Gem Reels and Gemdle. |
+| 0:00–0:05.0 | Roll, discover, roll again: current mining UI and authentic result. |
+| 0:05.0–0:07.5 | Actual public rare-roll feed: gems, mutations and serials. |
+| 0:07.5–0:11.0 | 305 discoveries and the rarity scale, from 1-in-2 to billion-plus odds. |
+| 0:11.0–0:13.0 | Nine global biomes and the live Gem Index. |
+| 0:13.0–0:16.0 | 1,500 Dungeons rooms, combat loot and Workbench crafting. |
+| 0:16.0–0:18.0 | Season 1 — The Interlude: 50 tiers and missions. |
+| 0:18.0–0:21.0 | Inventory, Crafting, Player Market and Leaderboards. |
+| 0:21.0–0:23.0 | Guilds, Bank and Daily Lottery. |
+| 0:23.0–0:26.0 | Minigames, Gem 2048, Gem Reels and Gemdle. |
 | 0:26.0–0:28.5 | End card, play call-to-action and the genuine Quartz button. |
+
+Rolling occupies the first 11 seconds plus the final 0.65-second Quartz reveal: 11.65 seconds, or approximately 41% of the trailer.
 
 ## Rebuild
 
