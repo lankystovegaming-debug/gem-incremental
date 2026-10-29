@@ -1,4 +1,5 @@
 import { reelsHtml, bindReelHolds } from "./reels-ui.js";
+import { minesScore, minesMultiplier, minesRisk } from "./mines.js";
 import { mountShell } from "../src/ui/shell.js";
 import { supabase } from "../src/backend/supabase.js";
 import { gemIconHtml } from "../src/ui/gemStyle.js";
@@ -103,6 +104,7 @@ let authGeneration = 0,
   lastFlush = 0,
   keys = new Set();
 const rules = {
+  mines: "Five rounds · 5×5 board · one mine. Bank at any time, even before revealing, or risk another tile. A mine scores 0 for that round; previous rounds are safe. All 24 gems automatically bank 25,000 points. Total score combines all five rounds. Free play, no MT or inventory rewards.",
   "gem-reels": "Eight hands: spin five, hold any, respin once, score. One ticket per rewarded run; unlimited Practice earns 0 MT. Both modes count for the leaderboard. Closing saves your run.",
   "gem-catcher":
     "90 seconds · 3 lives. Move with A/D, arrows, or drag. Catch gems for 10–350 points. Rocks cost a life and reset your combo. Missing gems is harmless. Combos: 10 ×1.25, 25 ×1.5, 50 ×2, 100 ×3.",
@@ -131,6 +133,16 @@ const rules = {
 // Step-by-step "How to Play" for each game. Rendered as a collapsible panel
 // on the game page; `rules` above stays as the one-line fallback.
 const howTo = {
+  mines: {
+    goal: "Bank the highest combined score across five rounds without hitting the mine.",
+    meta: "5 rounds · 24 gems and 1 mine per board · Free play",
+    steps: [
+      "Choose any hidden tile. Every tile has the same chance of hiding the mine, including your first choice.",
+      "Bank at any time: 0 reveals is worth 1,000 points; more safe reveals increase the score and the risk.",
+      "Hitting the mine ends only this round with 0 points. Banked points from earlier rounds stay safe.",
+      "Revealing all 24 gems automatically banks 25,000 points. After five rounds, your combined score enters the leaderboard. Closing the page saves your run.",
+    ],
+  },
   "gem-catcher": {
     goal: "Catch falling gems for points before your three lives run out.",
     meta: "90 seconds · 3 lives",
@@ -294,6 +306,7 @@ const gameCategories = {
   "gem-tower": "Chance",
   "crystal-bags": "Chance",
   "gem-reels": "Chance",
+  mines: "Chance",
   gemdle: "Daily",
 };
 function renderHub() {
@@ -509,6 +522,7 @@ async function act(input) {
   const account = authGeneration;
   const focused = document.activeElement;
   const focusedAction = focused?.dataset.action;
+  const focusedCell = focused?.dataset.cell;
   const hadPlayFocus = $("play")?.contains(focused);
   let updated = false;
   busy = true;
@@ -542,6 +556,8 @@ async function act(input) {
       syncControls();
       if (updated && hadPlayFocus && document.activeElement === document.body) {
         const next = run.state.done ? document.querySelector('[data-start="practice"]')
+          : game.id === "mines" && run.state.phase === "result" ? $("play").querySelector('[data-action="next"]')
+          : game.id === "mines" && focusedCell !== undefined ? $("play").querySelector(`[data-cell="${CSS.escape(focusedCell)}"]`)
           : focusedAction ? $("play").querySelector(`[data-action="${CSS.escape(focusedAction)}"]`) : null;
         (next && !next.disabled ? next : $("play")).focus({ preventScroll: true });
       }
@@ -552,7 +568,7 @@ const actionLabels = {
   left: "Move left", right: "Move right", rotate: "Rotate piece",
   soft: "Soft drop", hard: "Hard drop", hold: "Hold piece",
 };
-const primaryActions = new Set(["strike", "collect", "next"]);
+const primaryActions = new Set(["strike", "collect", "next", "bank"]);
 const button = (text, type, extra = "") =>
   `<button type="button" class="btn ${primaryActions.has(type) ? "btn--primary" : ""} ${type === "abandon" ? "mg-danger" : ""}" data-action="${type}" ${actionLabels[type] ? `aria-label="${actionLabels[type]}"` : ""} ${extra}>${text}</button>`;
 function strike() {
@@ -712,6 +728,17 @@ function render() {
     html += `<div class="mg-tower">${next % 5 === 0 ? "✦" : "♜"}</div><p>Next: Floor ${next} · +${next} MT · ${next % 5 === 0 ? "Guaranteed safe" : "75% safe"}</p><div class="mg-controls">${next % 5 === 0 ? button("Clear safe floor", "door") : [0, 1, 2, 3].map((i) => button(`Door ${i + 1}`, "door", `data-door="${i}"`)).join("")}${s.floor ? button(`Collect ${s.pending} MT & Leave`, "collect") : ""}</div>`;
   }
   if (s.game === "gem-reels") html += reelsHtml(s, icon);
+  if (s.game === "mines") {
+    const count = s.revealed.length, result = s.history.at(-1);
+    html += `<h3>Round ${s.round + 1} of 5</h3><p role="status">${s.phase === "result" ? result.hit ? "Mine hit · 0 points this round" : `Banked ${result.score.toLocaleString()} points` : `${count}/24 gems · ${minesMultiplier(count).toFixed(2)}× · ${minesScore(count).toLocaleString()} points to bank · ${minesRisk(count).toFixed(2)}% mine chance next`}</p>`;
+    html += grid(5, Array.from({ length: 25 }, (_, i) => ({
+      text: s.phase === "result" && i === s.mine ? "💣" : s.revealed.includes(i) ? "💎" : "?",
+      open: s.revealed.includes(i) || (s.phase === "result" && i === s.mine),
+    })), "mg-mines");
+    if (!s.done) html += `<div class="mg-controls">${s.phase === "result" ? button("Next round", "next") : button(`Bank ${minesScore(count).toLocaleString()} points`, "bank")}</div>`;
+    html += `<ol class="mg-mines-history" aria-label="Round scores">${s.history.map(r => `<li>Round ${r.round}: ${r.hit ? "Mine hit" : `${r.revealed} gems banked`} · ${r.score.toLocaleString()} points</li>`).join("")}</ol>`;
+    html += `<details class="mg-note"><summary>Score and risk table</summary><div class="mg-board-scroll"><table class="mg-mines-table"><thead><tr><th>Gems</th><th>Multiplier</th><th>Points</th><th>Mine next</th></tr></thead><tbody>${Array.from({ length: 25 }, (_, i) => `<tr${i === count ? ' class="mg-mines-current"' : ""}><td>${i}</td><td>${minesMultiplier(i).toFixed(2)}×</td><td>${minesScore(i).toLocaleString()}</td><td>${minesRisk(i).toFixed(2)}%</td></tr>`).join("")}</tbody></table></div></details>`;
+  }
   if (s.game === "crystal-bags") {
     html += `<p>${s.choices.map((c) => `R${c.round}: ${esc(c.bag)} +${c.outcome}`).join(" · ")}</p>`;
     if (!s.done)
@@ -769,6 +796,15 @@ function render() {
     for (const cell of boardNode.children) cell._minigameHtml = cell.innerHTML;
   }
   bind();
+  if (s.game === "mines") {
+    document.querySelectorAll("#play [data-cell]").forEach(b => {
+      // Keep revealed cells focusable for arrow navigation; repeat clicks are ignored.
+      b.disabled = s.done || s.phase === "result";
+      b.setAttribute("aria-disabled", String(b.disabled || s.revealed.includes(Number(b.dataset.cell))));
+      const i = Number(b.dataset.cell);
+      b.setAttribute("aria-label", `Row ${Math.floor(i / 5) + 1}, column ${i % 5 + 1}: ${s.phase === "result" && i === s.mine ? "mine" : s.revealed.includes(i) ? "gem revealed" : "hidden tile"}`);
+    });
+  }
   syncControls();
   if (s.game === "perfect-strike" && !s.done) {
     const w = strikeConfig(s.strike).width * 100;
@@ -822,6 +858,7 @@ function bind() {
     }
     let click = (flag) => {
       if (busy || loading || connectionFailed || run.state.done) return;
+      if (game.id === "mines" && (run.state.phase !== "reveal" || run.state.revealed.includes(Number(b.dataset.cell)))) return;
       let n =
           run.state.n ||
           (game.id === "explosive-mining"
@@ -833,7 +870,7 @@ function bind() {
       if (game.id === "gem-2048") return;
       act({
         type:
-          game.id === "mine-sweeper"
+          game.id === "mines" ? "reveal" : game.id === "mine-sweeper"
             ? flag || $("flag-mode")?.checked
               ? "flag"
               : "reveal"

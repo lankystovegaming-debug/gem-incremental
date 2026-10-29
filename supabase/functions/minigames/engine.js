@@ -1,4 +1,5 @@
 import { stepReels } from "./reels.js";
+import { startMinesRound, stepMines } from "./mines.js";
 import gemCatalog from "../../../src/data/gems.js";
 import {
   catalog,
@@ -140,6 +141,11 @@ export function create(
     last: now,
     actions: 0,
   };
+  if (game === "mines") {
+    delete s.seed;
+    Object.assign(s, { n: 5, round: 0, history: [] });
+    startMinesRound(s);
+  }
   if (game === "gem-reels") {
     delete s.seed;
     Object.assign(s, { hand: 0, phase: "spin", symbols: [], history: [], pending: 0 });
@@ -309,6 +315,10 @@ export function step(input, a, now, reelDraw) {
     return s;
   }
   switch (s.game) {
+    case "mines": {
+      stepMines(s, a);
+      break;
+    }
     case "gem-reels": {
       stepReels(s, a, now, reelDraw);
       break;
@@ -710,6 +720,7 @@ export function visible(s) {
   delete o.inputs;
   delete o.finishedSwipes;
   delete o.openSwipe;
+  if (s.game === "mines" && s.phase !== "result") delete o.mine;
   if (s.game === "mine-sweeper") {
     o.cells = Array.from({ length: s.n * s.n }, (_, i) =>
       !s.revealed.includes(i)
