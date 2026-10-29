@@ -61,13 +61,10 @@ try {
 
         const crafting = await context.newPage();
         await crafting.goto(new URL("crafting/", base).href, { waitUntil: "domcontentloaded" });
-        const tabs = await crafting.locator(".responsive-tabs").first().evaluate((element) => ({
-          client: element.clientWidth,
-          scroll: element.scrollWidth,
-          overflow: getComputedStyle(element).overflowX
-        }));
-        assert.equal(tabs.overflow, "auto");
-        assert.ok(tabs.scroll > tabs.client, JSON.stringify(tabs));
+        const picker = crafting.locator('#craftingCategory');
+        assert.ok(await picker.isVisible(), 'compact native category picker at 390px');
+        assert.ok(await picker.evaluate(el => el.getBoundingClientRect().height >= 44));
+        assert.equal(await crafting.locator('.crafting-tabs').isVisible(), false);
         await crafting.close();
       }
     } finally {

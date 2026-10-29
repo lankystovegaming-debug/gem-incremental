@@ -1,0 +1,3796 @@
+[
+  {
+    "id": "aether-lantern",
+    "recipe": {
+      "id": "aether-lantern",
+      "name": "Aether Lantern",
+      "reward": {
+        "id": "aether-lantern",
+        "name": "Aether Lantern",
+        "tier": 7,
+        "bonus": {
+          "mutationChance": 0.14
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 2000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "celestial-lantern"
+        },
+        {
+          "gem": "Void Pearl",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "aether-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 20,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "aether-pickaxe",
+    "recipe": {
+      "id": "aether-pickaxe",
+      "name": "Aether Pickaxe",
+      "reward": {
+        "id": "aether-pickaxe",
+        "name": "Aether Pickaxe",
+        "tier": 7,
+        "bonus": {
+          "luck": 4,
+          "rollSpeed": 0.8
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 40000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "mythic-pickaxe"
+        },
+        {
+          "gem": "Benitoite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Red Beryl",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Black Opal",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "aetherstep-boots",
+    "recipe": {
+      "id": "aetherstep-boots",
+      "name": "Aetherstep Boots",
+      "reward": {
+        "id": "aetherstep-boots",
+        "name": "Aetherstep Boots",
+        "tier": 7,
+        "bonus": {
+          "weightLuck": 0.075
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 1000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "astral-boots"
+        },
+        {
+          "gem": "Diaspore",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "aetherstep-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 15,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "aetherwoven-bag",
+    "recipe": {
+      "id": "aetherwoven-bag",
+      "name": "Aetherwoven Bag",
+      "reward": {
+        "id": "aetherwoven-bag",
+        "name": "Aetherwoven Bag",
+        "tier": 7,
+        "bonus": {
+          "weightMultiplier": 0.08
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 1000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "colossal-bag"
+        },
+        {
+          "gem": "Tsavorite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "aetherwoven-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 15,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "all-in-pickaxe",
+    "recipe": {
+      "id": "all-in-pickaxe",
+      "name": "All-In Pickaxe",
+      "reward": {
+        "id": "all-in-pickaxe",
+        "name": "All-In Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 499,
+          "rollSpeed": -0.67,
+          "weightLuck": -0.85,
+          "mutationChance": -0.85,
+          "weightMultiplier": -0.85
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 500000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "id": "all-in-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 7500,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "all-in-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 2000,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "all-in-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 150,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "all-in-pickaxe-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 20,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "id": "all-in-pickaxe-cosmic",
+          "type": "gem-count",
+          "label": "Cosmic",
+          "amount": 3,
+          "maximumRarity": 99999999,
+          "minimumRarity": 10000000
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 100000
+        },
+        {
+          "type": "equipment-history",
+          "label": "Distinct post-Celestial endgame Pickaxes ever owned",
+          "amount": 3,
+          "metric": "endgamePickaxes",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "Historical base-rarity ≥1/10M rolls",
+          "amount": 3,
+          "metric": "raw10m",
+          "consume": false
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "all-rounder-toy",
+    "recipe": {
+      "id": "all-rounder-toy",
+      "name": "All Rounder Toy",
+      "reward": {
+        "id": "all-rounder-toy",
+        "name": "All Rounder Toy",
+        "tier": 15,
+        "bonus": {
+          "luck": 1,
+          "rollSpeed": 1,
+          "weightLuck": 1,
+          "mutationChance": 1,
+          "weightMultiplier": 1
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 50000000,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "description": "Tired of unbalanced stats and broken abilities? Well, wish no more—introducing the All Rounder Toy with balanced stats.",
+      "requirements": [
+        {
+          "id": "all-rounder-toy-epic",
+          "type": "gem-count",
+          "label": "Epic",
+          "amount": 200,
+          "maximumRarity": 999,
+          "minimumRarity": 100
+        },
+        {
+          "id": "all-rounder-toy-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 100,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "gem": "Uranium",
+          "type": "gem-count",
+          "amount": 50
+        },
+        {
+          "id": "all-rounder-toy-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 20,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "gem": "Cryoshock",
+          "type": "gem-count",
+          "amount": 5
+        },
+        {
+          "id": "all-rounder-toy-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 3,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "ascendant-pickaxe",
+    "recipe": {
+      "id": "ascendant-pickaxe",
+      "name": "Ascendant Pickaxe",
+      "reward": {
+        "id": "ascendant-pickaxe",
+        "name": "Ascendant Pickaxe",
+        "tier": 10,
+        "bonus": {
+          "luck": 14,
+          "rollSpeed": 1.3
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 225000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "veteran-pickaxe"
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 500
+        },
+        {
+          "gem": "Amethyst",
+          "type": "gem-count",
+          "amount": 250
+        },
+        {
+          "gem": "Aquamarine",
+          "type": "gem-count",
+          "amount": 100
+        },
+        {
+          "gem": "Poudretteite",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "astral-boots",
+    "recipe": {
+      "id": "astral-boots",
+      "name": "Astral Boots",
+      "reward": {
+        "id": "astral-boots",
+        "name": "Astral Boots",
+        "tier": 6,
+        "bonus": {
+          "weightLuck": 0.06
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "gravity-boots"
+        },
+        {
+          "gem": "Titanite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "astral-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 10,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "astral-clover",
+    "recipe": {
+      "id": "astral-clover",
+      "name": "Astral Clover",
+      "reward": {
+        "id": "astral-clover",
+        "name": "Astral Clover",
+        "tier": 6,
+        "bonus": {
+          "luck": 0.085
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 7500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "prismatic-clover"
+        },
+        {
+          "gem": "Kyawthuite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "astral-clover-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 60,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "astral-clover-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 10,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "astral-pickaxe",
+    "recipe": {
+      "id": "astral-pickaxe",
+      "name": "Astral Pickaxe",
+      "reward": {
+        "id": "astral-pickaxe",
+        "name": "Astral Pickaxe",
+        "tier": 14,
+        "bonus": {
+          "luck": 23,
+          "rollSpeed": 1.7
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 50000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "transcendent-pickaxe"
+        },
+        {
+          "gem": "Peridot",
+          "type": "gem-count",
+          "amount": 750
+        },
+        {
+          "gem": "Topaz",
+          "type": "gem-count",
+          "amount": 500
+        },
+        {
+          "gem": "Tourmaline",
+          "type": "gem-count",
+          "amount": 250
+        },
+        {
+          "gem": "Antimatter Crystal",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 40000
+        }
+      ]
+    }
+  },
+  {
+    "id": "beacon-lantern",
+    "recipe": {
+      "id": "beacon-lantern",
+      "name": "Beacon Lantern",
+      "reward": {
+        "id": "beacon-lantern",
+        "name": "Beacon Lantern",
+        "tier": 4,
+        "bonus": {
+          "mutationChance": 0.07
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 100000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "radiant-lantern"
+        },
+        {
+          "gem": "Diamond",
+          "type": "gem-count",
+          "amount": 2
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "bedrock-pickaxe",
+    "recipe": {
+      "id": "bedrock-pickaxe",
+      "name": "Bedrock Pickaxe",
+      "reward": {
+        "id": "bedrock-pickaxe",
+        "name": "Bedrock Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 24,
+          "rollSpeed": 2,
+          "weightLuck": 4,
+          "mutationChance": 0,
+          "weightMultiplier": 0.55
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "id": "bedrock-pickaxe-common",
+          "type": "gem-count",
+          "label": "Common",
+          "amount": 10000,
+          "maximumRarity": 9,
+          "minimumRarity": 1
+        },
+        {
+          "id": "bedrock-pickaxe-uncommon",
+          "type": "gem-count",
+          "label": "Uncommon",
+          "amount": 7500,
+          "maximumRarity": 49,
+          "minimumRarity": 10
+        },
+        {
+          "id": "bedrock-pickaxe-rare",
+          "type": "gem-count",
+          "label": "Rare",
+          "amount": 5000,
+          "maximumRarity": 99,
+          "minimumRarity": 50
+        },
+        {
+          "id": "bedrock-pickaxe-epic",
+          "type": "gem-count",
+          "label": "Epic",
+          "amount": 2500,
+          "maximumRarity": 999,
+          "minimumRarity": 100
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 250000
+        }
+      ],
+      "consumeMaterials": true,
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "bottomless-bag",
+    "recipe": {
+      "id": "bottomless-bag",
+      "name": "Bottomless Bag",
+      "reward": {
+        "id": "bottomless-bag",
+        "name": "Bottomless Bag",
+        "tier": 5,
+        "bonus": {
+          "weightMultiplier": 0.05
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 200000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "gemkeeper-bag"
+        },
+        {
+          "gem": "Black Opal",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "bottomless-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 5,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "bright-lantern",
+    "recipe": {
+      "id": "bright-lantern",
+      "name": "Bright Lantern",
+      "reward": {
+        "id": "bright-lantern",
+        "name": "Bright Lantern",
+        "tier": 2,
+        "bonus": {
+          "mutationChance": 0.035
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 10000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "dim-lantern"
+        },
+        {
+          "gem": "Opal",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "celestial-clover",
+    "recipe": {
+      "id": "celestial-clover",
+      "name": "Celestial Clover",
+      "reward": {
+        "id": "celestial-clover",
+        "name": "Celestial Clover",
+        "tier": 7,
+        "bonus": {
+          "luck": 0.1
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 20000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "astral-clover"
+        },
+        {
+          "gem": "Hibonite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "celestial-clover-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 100,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "celestial-clover-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 20,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "celestial-clover-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 2,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "celestial-lantern",
+    "recipe": {
+      "id": "celestial-lantern",
+      "name": "Celestial Lantern",
+      "reward": {
+        "id": "celestial-lantern",
+        "name": "Celestial Lantern",
+        "tier": 6,
+        "bonus": {
+          "mutationChance": 0.115
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 750000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "eternal-lantern"
+        },
+        {
+          "gem": "Titanite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "celestial-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 10,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "celestial-pickaxe",
+    "recipe": {
+      "id": "celestial-pickaxe",
+      "name": "Celestial Pickaxe",
+      "reward": {
+        "id": "celestial-pickaxe",
+        "name": "Celestial Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 25,
+          "rollSpeed": 1.8,
+          "weightLuck": 3.5,
+          "mutationChance": 0,
+          "weightMultiplier": 0.5
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 125000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "astral-pickaxe"
+        },
+        {
+          "gem": "Opal",
+          "type": "gem-count",
+          "amount": 300
+        },
+        {
+          "gem": "Zircon",
+          "type": "gem-count",
+          "amount": 200
+        },
+        {
+          "gem": "Moonstone",
+          "type": "gem-count",
+          "amount": 150
+        },
+        {
+          "gem": "Lunar Diamond",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Singularity Shard",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 60000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "colossal-bag",
+    "recipe": {
+      "id": "colossal-bag",
+      "name": "Colossal Bag",
+      "reward": {
+        "id": "colossal-bag",
+        "name": "Colossal Bag",
+        "tier": 6,
+        "bonus": {
+          "weightMultiplier": 0.065
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "bottomless-bag"
+        },
+        {
+          "gem": "Titanite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "colossal-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 10,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "convergence-pickaxe",
+    "recipe": {
+      "id": "convergence-pickaxe",
+      "name": "Convergence",
+      "reward": {
+        "id": "convergence-pickaxe",
+        "name": "Convergence",
+        "tier": 16,
+        "bonus": {
+          "luck": 31,
+          "rollSpeed": 2,
+          "weightLuck": 4,
+          "mutationChance": 0.5,
+          "weightMultiplier": 0.75
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 0,
+      "horizontal": false,
+      "craftingTab": "limited-time",
+      "description": "A permanent T16 community pickaxe forged by every eligible contribution.",
+      "requirements": [
+        {
+          "id": "convergence-community",
+          "type": "convergence-community",
+          "label": "Community construction and personal entitlement",
+          "amount": 1
+        }
+      ],
+      "consumeMaterials": true,
+      "equipmentOverhaul": true,
+      "convergenceCommunity": true
+    }
+  },
+  {
+    "id": "cosmic-pet-harness",
+    "recipe": {
+      "id": "cosmic-pet-harness",
+      "name": "Cosmic Pet Harness",
+      "reward": {
+        "id": "cosmic-pet-harness",
+        "name": "Cosmic Pet Harness",
+        "tier": 21,
+        "bonus": {
+          "petLuck": 8
+        },
+        "category": "petGear"
+      },
+      "category": "petGear",
+      "moneyCost": 25000000,
+      "horizontal": true,
+      "craftingTab": "petGear",
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "pet-luck-collar"
+        },
+        {
+          "gem": "Aether Quartz",
+          "type": "gem-count",
+          "amount": 5
+        },
+        {
+          "gem": "Void Opal",
+          "type": "gem-count",
+          "amount": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "crude-pickaxe",
+    "recipe": {
+      "id": "crude-pickaxe",
+      "name": "Crude Pickaxe",
+      "reward": {
+        "id": "crude-pickaxe",
+        "name": "Crude Pickaxe",
+        "tier": 1,
+        "bonus": {
+          "luck": 0.05,
+          "rollSpeed": 0.05
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 225,
+      "requirements": [
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 5
+        },
+        {
+          "gem": "Feldspar",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "gem": "Fluorite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Amethyst",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "dim-lantern",
+    "recipe": {
+      "id": "dim-lantern",
+      "name": "Dim Lantern",
+      "reward": {
+        "id": "dim-lantern",
+        "name": "Dim Lantern",
+        "tier": 1,
+        "bonus": {
+          "mutationChance": 0.02
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 2500,
+      "requirements": [
+        {
+          "gem": "Pyrite",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "dimensional-bag",
+    "recipe": {
+      "id": "dimensional-bag",
+      "name": "Dimensional Bag",
+      "reward": {
+        "id": "dimensional-bag",
+        "name": "Dimensional Bag",
+        "tier": 8,
+        "bonus": {
+          "weightMultiplier": 0.095
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 2500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "aetherwoven-bag"
+        },
+        {
+          "gem": "Void Pearl",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "dimensional-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 25,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "dimensional-vault",
+    "recipe": {
+      "id": "dimensional-vault",
+      "name": "Dimensional Vault",
+      "reward": {
+        "id": "dimensional-vault",
+        "name": "Dimensional Vault",
+        "tier": 11,
+        "bonus": {
+          "weightMultiplier": 0.15
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 20000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "vault-of-plenty"
+        },
+        {
+          "gem": "Black Diamond",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "dimensional-vault-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 100,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "dimensional-vault-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 20,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "dimensional-vault-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 2,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "eclipse-pickaxe",
+    "recipe": {
+      "id": "eclipse-pickaxe",
+      "name": "Eclipse Pickaxe",
+      "reward": {
+        "id": "eclipse-pickaxe",
+        "name": "Eclipse Pickaxe",
+        "tier": 11,
+        "bonus": {
+          "luck": 16,
+          "rollSpeed": 1.4
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "ascendant-pickaxe"
+        },
+        {
+          "gem": "Aether Quartz",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Black Diamond",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Void Opal",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 10000
+        }
+      ]
+    }
+  },
+  {
+    "id": "empyrean-pickaxe",
+    "recipe": {
+      "id": "empyrean-pickaxe",
+      "name": "Empyrean Pickaxe",
+      "reward": {
+        "id": "empyrean-pickaxe",
+        "name": "Empyrean Pickaxe",
+        "tier": 16,
+        "bonus": {
+          "luck": 27,
+          "rollSpeed": 2,
+          "weightLuck": 3.25,
+          "mutationChance": 0,
+          "weightMultiplier": 0.5
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 250000000,
+      "horizontal": true,
+      "description": "Heavy specimens are included in the material totals. Each gem fills at most one specimen slot. Deposit specimens first; remaining space is reserved for them.",
+      "requirements": [
+        {
+          "id": "empyrean-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 2000,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "empyrean-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 750,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "empyrean-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 50,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "empyrean-pickaxe-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 2,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "id": "empyrean-pickaxe-cosmic",
+          "type": "gem-count",
+          "label": "Cosmic",
+          "amount": 1,
+          "maximumRarity": 99999999,
+          "minimumRarity": 10000000
+        },
+        {
+          "id": "empyrean-pickaxe-specimen-0",
+          "type": "specimen-condition",
+          "label": "20 Legendary+ ≥5× final weight (included in totals)",
+          "amount": 20,
+          "minimumRarity": 1000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 5
+        },
+        {
+          "id": "empyrean-pickaxe-specimen-1",
+          "type": "specimen-condition",
+          "label": "10 Mythic+ ≥5× final weight (included in totals)",
+          "amount": 10,
+          "minimumRarity": 10000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 5
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 250000
+        }
+      ],
+      "equipmentOverhaul": true,
+      "includedSpecimens": true
+    }
+  },
+  {
+    "id": "eternal-lantern",
+    "recipe": {
+      "id": "eternal-lantern",
+      "name": "Eternal Lantern",
+      "reward": {
+        "id": "eternal-lantern",
+        "name": "Eternal Lantern",
+        "tier": 5,
+        "bonus": {
+          "mutationChance": 0.09
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 300000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "beacon-lantern"
+        },
+        {
+          "gem": "Black Opal",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "eternal-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 5,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "eternity-pickaxe",
+    "recipe": {
+      "id": "eternity-pickaxe",
+      "name": "Eternity Pickaxe",
+      "reward": {
+        "id": "eternity-pickaxe",
+        "name": "Eternity Pickaxe",
+        "tier": 17,
+        "bonus": {
+          "luck": 24,
+          "rollSpeed": 2,
+          "weightLuck": 3.25,
+          "mutationChance": 0.25,
+          "weightMultiplier": 0.5
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 300000000,
+      "horizontal": true,
+      "description": "Heavy specimens are included in the material totals. Each gem fills at most one specimen slot. Deposit specimens first; remaining space is reserved for them.",
+      "requirements": [
+        {
+          "id": "eternity-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 3500,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "eternity-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 1250,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "eternity-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 100,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "eternity-pickaxe-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 3,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "id": "eternity-pickaxe-cosmic",
+          "type": "gem-count",
+          "label": "Cosmic",
+          "amount": 1,
+          "maximumRarity": 99999999,
+          "minimumRarity": 10000000
+        },
+        {
+          "id": "eternity-pickaxe-specimen-0",
+          "type": "specimen-condition",
+          "label": "30 Legendary+ ≥6× final weight (included in totals)",
+          "amount": 30,
+          "minimumRarity": 1000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 6
+        },
+        {
+          "id": "eternity-pickaxe-specimen-1",
+          "type": "specimen-condition",
+          "label": "15 Mythic+ ≥6× final weight (included in totals)",
+          "amount": 15,
+          "minimumRarity": 10000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 6
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 300000
+        }
+      ],
+      "equipmentOverhaul": true,
+      "includedSpecimens": true
+    }
+  },
+  {
+    "id": "event-horizon-boots",
+    "recipe": {
+      "id": "event-horizon-boots",
+      "name": "Event Horizon Boots",
+      "reward": {
+        "id": "event-horizon-boots",
+        "name": "Event Horizon Boots",
+        "tier": 11,
+        "bonus": {
+          "weightLuck": 0.135
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 12500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "singularity-striders"
+        },
+        {
+          "gem": "Hibonite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "event-horizon-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 75,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "event-horizon-boots-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 12,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "event-horizon-lantern",
+    "recipe": {
+      "id": "event-horizon-lantern",
+      "name": "Event Horizon Lantern",
+      "reward": {
+        "id": "event-horizon-lantern",
+        "name": "Event Horizon Lantern",
+        "tier": 9,
+        "bonus": {
+          "mutationChance": 0.205
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 10000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "void-lantern"
+        },
+        {
+          "gem": "Aether Quartz",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "event-horizon-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 60,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "event-horizon-lantern-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 10,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "eventide-boots",
+    "recipe": {
+      "id": "eventide-boots",
+      "name": "Eventide Boots",
+      "reward": {
+        "id": "eventide-boots",
+        "name": "Eventide Boots",
+        "tier": 9,
+        "bonus": {
+          "weightLuck": 0.105
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 5000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "voidwalker-boots"
+        },
+        {
+          "gem": "Red Diamond",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "eventide-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 35,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "eventide-boots-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 5,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "fortune-boots",
+    "recipe": {
+      "id": "fortune-boots",
+      "name": "Fortune Boots",
+      "reward": {
+        "id": "fortune-boots",
+        "name": "Fortune Boots",
+        "tier": 4,
+        "bonus": {
+          "weightLuck": 0.04
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 75000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "prospectors-boots"
+        },
+        {
+          "gem": "Mythril",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "fortune-pickaxe",
+    "recipe": {
+      "id": "fortune-pickaxe",
+      "name": "Fortune Pickaxe",
+      "reward": {
+        "id": "fortune-pickaxe",
+        "name": "Fortune Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 34,
+          "rollSpeed": 1.8,
+          "weightLuck": 3.25,
+          "mutationChance": 0,
+          "weightMultiplier": 0.45
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "description": "A pickaxe made for miners who believe you can never have too much luck. Sacrifices a little of everything else for a simple advantage: more Luck.",
+      "requirements": [
+        {
+          "id": "fortune-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 1000,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "fortune-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 300,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "fortune-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 15,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "fortune-pickaxe-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 1,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "type": "equipment-history",
+          "label": "Raw-rarity ≥1/5M rolls",
+          "amount": 3,
+          "metric": "raw5m",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "Raw-rarity ≥1/10M rolls",
+          "amount": 1,
+          "metric": "raw10m",
+          "consume": false
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "four-leaf-clover",
+    "recipe": {
+      "id": "four-leaf-clover",
+      "name": "Four-Leaf Clover",
+      "reward": {
+        "id": "four-leaf-clover",
+        "name": "Four-Leaf Clover",
+        "tier": 2,
+        "bonus": {
+          "luck": 0.02
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 25000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "three-leaf-clover"
+        },
+        {
+          "gem": "Aventurine",
+          "type": "gem-count",
+          "amount": 4
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "gemkeeper-bag",
+    "recipe": {
+      "id": "gemkeeper-bag",
+      "name": "Gemkeeper Bag",
+      "reward": {
+        "id": "gemkeeper-bag",
+        "name": "Gemkeeper Bag",
+        "tier": 4,
+        "bonus": {
+          "weightMultiplier": 0.04
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 75000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "reinforced-bag"
+        },
+        {
+          "gem": "Diamond",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "golden-clover",
+    "recipe": {
+      "id": "golden-clover",
+      "name": "Golden Clover",
+      "reward": {
+        "id": "golden-clover",
+        "name": "Golden Clover",
+        "tier": 4,
+        "bonus": {
+          "luck": 0.05
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "silver-clover"
+        },
+        {
+          "gem": "Demantoid",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "id": "golden-clover-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 15,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "gravitational-boots",
+    "recipe": {
+      "id": "gravitational-boots",
+      "name": "Gravitational Boots",
+      "reward": {
+        "id": "gravitational-boots",
+        "name": "Gravitational Boots",
+        "tier": 12,
+        "bonus": {
+          "weightLuck": 0.15
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 20000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "event-horizon-boots"
+        },
+        {
+          "gem": "Magnesiochloritoid",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "gravitational-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 100,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "gravitational-boots-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 20,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "gravitational-boots-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 2,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "gravity-boots",
+    "recipe": {
+      "id": "gravity-boots",
+      "name": "Gravity Boots",
+      "reward": {
+        "id": "gravity-boots",
+        "name": "Gravity Boots",
+        "tier": 5,
+        "bonus": {
+          "weightLuck": 0.05
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 200000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "fortune-boots"
+        },
+        {
+          "gem": "Lodestone",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "gravity-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 5,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "impossible-pickaxe",
+    "recipe": {
+      "id": "impossible-pickaxe",
+      "name": "The Impossible Pickaxe",
+      "reward": {
+        "id": "impossible-pickaxe",
+        "name": "The Impossible Pickaxe",
+        "tier": 19,
+        "bonus": {
+          "luck": 0,
+          "rollSpeed": 0,
+          "weightLuck": 0,
+          "mutationChance": 0,
+          "weightMultiplier": 0
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 2500000000,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "description": "Congratulations. Now explain why.",
+      "requirements": [
+        {
+          "type": "impossible-safe-sacrifice",
+          "label": "Reviewed shared sacrifice plan",
+          "amount": 1
+        },
+        {
+          "type": "consumable",
+          "amount": 50,
+          "consumableId": "legendary-potion"
+        },
+        {
+          "type": "consumable",
+          "amount": 25,
+          "consumableId": "mythic-potion"
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 1000000
+        },
+        {
+          "type": "equipment-history",
+          "label": "Lifetime earnings",
+          "amount": 5000000000,
+          "metric": "impossibleLifetimeEarnings"
+        },
+        {
+          "type": "equipment-history",
+          "label": "Frozen specialist set owned",
+          "amount": 6,
+          "metric": "impossibleSpecialists"
+        },
+        {
+          "type": "equipment-history",
+          "label": "1/10M+ base rarity and 5x+ final/base weight",
+          "amount": 10,
+          "metric": "impossibleRareHeavy10m"
+        },
+        {
+          "type": "equipment-history",
+          "label": "1/100M+ base rarity and 10x+ final/base weight",
+          "amount": 1,
+          "metric": "impossibleRareHeavy100m"
+        },
+        {
+          "type": "equipment-history",
+          "label": "1/100M+ base-rarity genuine rolls",
+          "amount": 10,
+          "metric": "impossibleRare100m"
+        },
+        {
+          "type": "equipment-history",
+          "label": "1/500M+ base-rarity genuine roll",
+          "amount": 1,
+          "metric": "impossibleRare500m"
+        },
+        {
+          "type": "equipment-history",
+          "label": "Ordinary mutations discovered",
+          "amount": 50,
+          "metric": "impossibleOrdinaryMutations"
+        },
+        {
+          "type": "equipment-history",
+          "label": "Distinct Special Gems discovered",
+          "amount": 10,
+          "metric": "impossibleSpecialGems"
+        }
+      ],
+      "consumeMaterials": true,
+      "manualReviewOnly": true,
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "jackpot-slot",
+    "recipe": {
+      "id": "jackpot-slot",
+      "name": "Jackpot Slot",
+      "reward": {
+        "id": "jackpot-slot",
+        "name": "Jackpot Slot",
+        "tier": 15,
+        "bonus": {
+          "luck": 6.77,
+          "rollSpeed": 0.77,
+          "weightLuck": 0.77,
+          "mutationChance": -0.23,
+          "weightMultiplier": -0.23
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 77700000,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "description": "Slots slots slots, I bet everything on slots. Ain’t no body taking my spot, I just hit the jackpotttt",
+      "requirements": [
+        {
+          "id": "jackpot-slot-common",
+          "type": "gem-count",
+          "label": "Common",
+          "amount": 7777,
+          "maximumRarity": 9,
+          "minimumRarity": 1
+        },
+        {
+          "id": "jackpot-slot-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 777,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "jackpot-slot-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 77,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "jackpot-slot-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 7,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 77700
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "masterwork-pickaxe",
+    "recipe": {
+      "id": "masterwork-pickaxe",
+      "name": "Masterwork Pickaxe",
+      "reward": {
+        "id": "masterwork-pickaxe",
+        "name": "Masterwork Pickaxe",
+        "tier": 5,
+        "bonus": {
+          "luck": 1.5,
+          "rollSpeed": 0.45
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 18000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "refined-pickaxe"
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 100
+        },
+        {
+          "gem": "Feldspar",
+          "type": "gem-count",
+          "amount": 50
+        },
+        {
+          "gem": "Hematite",
+          "type": "gem-count",
+          "amount": 25
+        },
+        {
+          "gem": "Obsidian",
+          "type": "gem-count",
+          "amount": 15
+        },
+        {
+          "gem": "Sapphire",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "miners-boots",
+    "recipe": {
+      "id": "miners-boots",
+      "name": "Miner's Boots",
+      "reward": {
+        "id": "miners-boots",
+        "name": "Miner's Boots",
+        "tier": 1,
+        "bonus": {
+          "weightLuck": 0.01
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 2500,
+      "requirements": [
+        {
+          "gem": "Pyrite",
+          "type": "gem-count",
+          "amount": 5
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "money-pickaxe",
+    "recipe": {
+      "id": "money-pickaxe",
+      "name": "Money Pickaxe",
+      "reward": {
+        "id": "money-pickaxe",
+        "name": "Money Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": -0.99,
+          "rollSpeed": -0.7,
+          "weightLuck": 9,
+          "mutationChance": 1,
+          "weightMultiplier": 199
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "description": "Rarity doesn't pay the bills. 200× more rock does.",
+      "requirements": [
+        {
+          "id": "money-pickaxe-common",
+          "type": "gem-count",
+          "label": "Common",
+          "amount": 10000,
+          "maximumRarity": 9,
+          "minimumRarity": 1
+        },
+        {
+          "id": "money-pickaxe-rare",
+          "type": "gem-count",
+          "label": "Rare",
+          "amount": 5000,
+          "maximumRarity": 99,
+          "minimumRarity": 50
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 2500
+        },
+        {
+          "gem": "Calcite",
+          "type": "gem-count",
+          "amount": 1000
+        },
+        {
+          "gem": "Feldspar",
+          "type": "gem-count",
+          "amount": 500
+        },
+        {
+          "type": "equipment-history",
+          "label": "Specimens ≥5× natural weight",
+          "amount": 250,
+          "metric": "heavy5",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "Lifetime earnings ($)",
+          "amount": 1000000000,
+          "metric": "lifetimeEarnings",
+          "consume": false
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "mythic-pickaxe",
+    "recipe": {
+      "id": "mythic-pickaxe",
+      "name": "Mythic Pickaxe",
+      "reward": {
+        "id": "mythic-pickaxe",
+        "name": "Mythic Pickaxe",
+        "tier": 6,
+        "bonus": {
+          "luck": 2.5,
+          "rollSpeed": 0.6
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 25000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "masterwork-pickaxe"
+        },
+        {
+          "gem": "Diamond",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Tanzanite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Alexandrite",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "paradox-pickaxe",
+    "recipe": {
+      "id": "paradox-pickaxe",
+      "name": "Paradox Pickaxe",
+      "reward": {
+        "id": "paradox-pickaxe",
+        "name": "Paradox Pickaxe",
+        "tier": 16,
+        "bonus": {
+          "luck": 33,
+          "rollSpeed": 2.1,
+          "weightLuck": 4.5,
+          "mutationChance": 0.5,
+          "weightMultiplier": 0.7
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 4000000000,
+      "horizontal": false,
+      "description": "Resolve impossible specimens into a generalist pickaxe that turns contradictions into escalating rolls.",
+      "requirements": [
+        {
+          "type": "equipment",
+          "consume": false,
+          "equipmentId": "celestial-pickaxe"
+        },
+        {
+          "id": "paradox-workspace",
+          "type": "paradox-workspace",
+          "label": "Paradox recipe and Final Trial",
+          "amount": 1
+        }
+      ],
+      "consumeMaterials": true,
+      "paradoxWorkspace": true,
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "pet-luck-collar",
+    "recipe": {
+      "id": "pet-luck-collar",
+      "name": "Pet Luck Collar",
+      "reward": {
+        "id": "pet-luck-collar",
+        "name": "Pet Luck Collar",
+        "tier": 20,
+        "bonus": {
+          "petLuck": 3
+        },
+        "category": "petGear"
+      },
+      "category": "petGear",
+      "moneyCost": 750000,
+      "horizontal": true,
+      "craftingTab": "petGear",
+      "requirements": [
+        {
+          "gem": "Emerald",
+          "type": "gem-count",
+          "amount": 25
+        },
+        {
+          "gem": "Sapphire",
+          "type": "gem-count",
+          "amount": 15
+        },
+        {
+          "gem": "Chronite",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "plastic-shopping-bag",
+    "recipe": {
+      "id": "plastic-shopping-bag",
+      "name": "Plastic Shopping Bag",
+      "reward": {
+        "id": "plastic-shopping-bag",
+        "name": "Plastic Shopping Bag",
+        "tier": 16,
+        "bonus": {
+          "weightMultiplier": 1.55
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 500000000.1,
+      "craftingTab": "toys",
+      "description": "Somehow holds more than the Omnidimensional Vault. Costs 10¢ at checkout. Heavy specimens are included in bulk totals.",
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "omnidimensional-vault"
+        },
+        {
+          "id": "plastic-shopping-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 10000,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "plastic-shopping-bag-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 4000,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "plastic-shopping-bag-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 500,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "plastic-shopping-bag-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 50,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "id": "plastic-shopping-bag-transcendent",
+          "type": "gem-count",
+          "label": "Transcendent",
+          "amount": 1,
+          "maximumRarity": 999999999,
+          "minimumRarity": 100000000
+        },
+        {
+          "id": "plastic-shopping-bag-specimen-0",
+          "type": "specimen-condition",
+          "label": "15 Mythic+ ≥7× final weight (included in totals)",
+          "amount": 15,
+          "minimumRarity": 10000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 7
+        },
+        {
+          "id": "plastic-shopping-bag-specimen-1",
+          "type": "specimen-condition",
+          "label": "5 Exotic+ ≥8× final weight (included in totals)",
+          "amount": 5,
+          "minimumRarity": 100000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 8
+        },
+        {
+          "id": "plastic-shopping-bag-specimen-2",
+          "type": "specimen-condition",
+          "label": "1 Exalted+ ≥8× final weight (included in totals)",
+          "amount": 1,
+          "minimumRarity": 1000000,
+          "includedInBulk": true,
+          "minimumWeightMultiplier": 8
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 1000000
+        },
+        {
+          "type": "consumable",
+          "amount": 67,
+          "consumableId": "plastic-bag"
+        }
+      ],
+      "includedSpecimens": true
+    }
+  },
+  {
+    "id": "polished-pickaxe",
+    "recipe": {
+      "id": "polished-pickaxe",
+      "name": "Polished Pickaxe",
+      "reward": {
+        "id": "polished-pickaxe",
+        "name": "Polished Pickaxe",
+        "tier": 3,
+        "bonus": {
+          "luck": 0.5,
+          "rollSpeed": 0.2
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 3150,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "reinforced-pickaxe"
+        },
+        {
+          "gem": "Garnet",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Peridot",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Topaz",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Aquamarine",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "prismatic-clover",
+    "recipe": {
+      "id": "prismatic-clover",
+      "name": "Prismatic Clover",
+      "reward": {
+        "id": "prismatic-clover",
+        "name": "Prismatic Clover",
+        "tier": 5,
+        "bonus": {
+          "luck": 0.07
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 2000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "golden-clover"
+        },
+        {
+          "gem": "Tsavorite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "id": "prismatic-clover-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 30,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "prismatic-clover-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 5,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "prospectors-boots",
+    "recipe": {
+      "id": "prospectors-boots",
+      "name": "Prospector's Boots",
+      "reward": {
+        "id": "prospectors-boots",
+        "name": "Prospector's Boots",
+        "tier": 3,
+        "bonus": {
+          "weightLuck": 0.03
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 30000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "reinforced-boots"
+        },
+        {
+          "gem": "Diamond",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "radiant-lantern",
+    "recipe": {
+      "id": "radiant-lantern",
+      "name": "Radiant Lantern",
+      "reward": {
+        "id": "radiant-lantern",
+        "name": "Radiant Lantern",
+        "tier": 3,
+        "bonus": {
+          "mutationChance": 0.05
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 35000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "bright-lantern"
+        },
+        {
+          "gem": "Sapphire",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "reality-shifter",
+    "recipe": {
+      "id": "reality-shifter",
+      "name": "Reality Shifter",
+      "reward": {
+        "id": "reality-shifter",
+        "name": "Reality Shifter",
+        "tier": 15,
+        "bonus": {
+          "luck": 39,
+          "rollSpeed": -0.6,
+          "weightLuck": -0.2,
+          "mutationChance": -1,
+          "weightMultiplier": -0.2
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 125000000,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "description": "Reality shall conform before our power. Kneel, for you are in the presence of a god.",
+      "requirements": [
+        {
+          "gem": "Eternal Glowstone",
+          "type": "gem-count",
+          "amount": 1000
+        },
+        {
+          "gem": "Nyx Obsidian",
+          "type": "gem-count",
+          "amount": 1000
+        },
+        {
+          "gem": "Solarion",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Polaris",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 50000
+        }
+      ],
+      "consumeMaterials": true,
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "refined-pickaxe",
+    "recipe": {
+      "id": "refined-pickaxe",
+      "name": "Refined Pickaxe",
+      "reward": {
+        "id": "refined-pickaxe",
+        "name": "Refined Pickaxe",
+        "tier": 4,
+        "bonus": {
+          "luck": 0.8,
+          "rollSpeed": 0.3
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 6750,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "polished-pickaxe"
+        },
+        {
+          "gem": "Topaz",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Aquamarine",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Tourmaline",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Opal",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "reinforced-bag",
+    "recipe": {
+      "id": "reinforced-bag",
+      "name": "Reinforced Bag",
+      "reward": {
+        "id": "reinforced-bag",
+        "name": "Reinforced Bag",
+        "tier": 3,
+        "bonus": {
+          "weightMultiplier": 0.03
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 30000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "sturdy-bag"
+        },
+        {
+          "gem": "Sapphire",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "reinforced-boots",
+    "recipe": {
+      "id": "reinforced-boots",
+      "name": "Reinforced Boots",
+      "reward": {
+        "id": "reinforced-boots",
+        "name": "Reinforced Boots",
+        "tier": 2,
+        "bonus": {
+          "weightLuck": 0.02
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 10000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "miners-boots"
+        },
+        {
+          "gem": "Bloodstone",
+          "type": "gem-count",
+          "amount": 4
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "reinforced-pickaxe",
+    "recipe": {
+      "id": "reinforced-pickaxe",
+      "name": "Reinforced Pickaxe",
+      "reward": {
+        "id": "reinforced-pickaxe",
+        "name": "Reinforced Pickaxe",
+        "tier": 2,
+        "bonus": {
+          "luck": 0.15,
+          "rollSpeed": 0.1
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 900,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "crude-pickaxe"
+        },
+        {
+          "gem": "Hematite",
+          "type": "gem-count",
+          "amount": 4
+        },
+        {
+          "gem": "Obsidian",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "gem": "Garnet",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Peridot",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "riftwoven-bag",
+    "recipe": {
+      "id": "riftwoven-bag",
+      "name": "Riftwoven Bag",
+      "reward": {
+        "id": "riftwoven-bag",
+        "name": "Riftwoven Bag",
+        "tier": 9,
+        "bonus": {
+          "weightMultiplier": 0.11
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 5000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "dimensional-bag"
+        },
+        {
+          "gem": "Chambersite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "riftwoven-bag-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 40,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "riftwoven-bag-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 5,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "silly-fun-happy-pickaxe",
+    "recipe": {
+      "id": "silly-fun-happy-pickaxe",
+      "name": "Silly Fun Happy Pickaxe",
+      "reward": {
+        "id": "silly-fun-happy-pickaxe",
+        "name": "Silly Fun Happy Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 10,
+          "rollSpeed": -0.5,
+          "weightLuck": 1,
+          "mutationChance": -0.5,
+          "weightMultiplier": -0.5
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 6767676.76,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "requirements": [
+        {
+          "gem": "random rock I found outside",
+          "type": "gem-count",
+          "amount": 10
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 50
+        },
+        {
+          "id": "silly-fun-happy-pickaxe-rare",
+          "type": "gem-count",
+          "label": "Rare",
+          "amount": 100,
+          "maximumRarity": 999,
+          "minimumRarity": 100
+        },
+        {
+          "id": "silly-fun-happy-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 67,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "silly-fun-happy-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 10,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "silly-fun-happy-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 1,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "silly-light-specimens",
+          "type": "specimen-condition",
+          "label": "10 specimens ≤0.6×",
+          "amount": 10,
+          "maximumWeightMultiplier": 0.6
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "silver-clover",
+    "recipe": {
+      "id": "silver-clover",
+      "name": "Silver Clover",
+      "reward": {
+        "id": "silver-clover",
+        "name": "Silver Clover",
+        "tier": 3,
+        "bonus": {
+          "luck": 0.035
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 100000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "four-leaf-clover"
+        },
+        {
+          "gem": "Emerald",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "id": "silver-clover-rare",
+          "type": "gem-count",
+          "label": "Rare",
+          "amount": 5,
+          "maximumRarity": 999,
+          "minimumRarity": 100
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "singularity-lantern",
+    "recipe": {
+      "id": "singularity-lantern",
+      "name": "Singularity Lantern",
+      "reward": {
+        "id": "singularity-lantern",
+        "name": "Singularity Lantern",
+        "tier": 10,
+        "bonus": {
+          "mutationChance": 0.25
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 20000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "event-horizon-lantern"
+        },
+        {
+          "gem": "Void Opal",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "singularity-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 100,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "singularity-lantern-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 20,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "singularity-lantern-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 2,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "singularity-pickaxe",
+    "recipe": {
+      "id": "singularity-pickaxe",
+      "name": "Singularity Pickaxe",
+      "reward": {
+        "id": "singularity-pickaxe",
+        "name": "Singularity Pickaxe",
+        "tier": 12,
+        "bonus": {
+          "luck": 18,
+          "rollSpeed": 1.5
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 1100000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "eclipse-pickaxe"
+        },
+        {
+          "gem": "Tugtupite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Chronite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Meteorite Peridot",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 20000
+        }
+      ]
+    }
+  },
+  {
+    "id": "singularity-striders",
+    "recipe": {
+      "id": "singularity-striders",
+      "name": "Singularity Striders",
+      "reward": {
+        "id": "singularity-striders",
+        "name": "Singularity Striders",
+        "tier": 10,
+        "bonus": {
+          "weightLuck": 0.12
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 7500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "eventide-boots"
+        },
+        {
+          "gem": "Natural Moissanite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "singularity-striders-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 50,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "singularity-striders-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 8,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "sturdy-bag",
+    "recipe": {
+      "id": "sturdy-bag",
+      "name": "Sturdy Bag",
+      "reward": {
+        "id": "sturdy-bag",
+        "name": "Sturdy Bag",
+        "tier": 2,
+        "bonus": {
+          "weightMultiplier": 0.02
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 10000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "worn-bag"
+        },
+        {
+          "gem": "Aventurine",
+          "type": "gem-count",
+          "amount": 4
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "supersizer-pickaxe",
+    "recipe": {
+      "id": "supersizer-pickaxe",
+      "name": "Supersizer Pickaxe",
+      "reward": {
+        "id": "supersizer-pickaxe",
+        "name": "Supersizer Pickaxe",
+        "tier": 18,
+        "bonus": {
+          "luck": 18.91,
+          "finalSell": 0.25,
+          "rollSpeed": 1.75,
+          "weightLuck": 4.5,
+          "mutationChance": -0.5,
+          "weightMultiplier": 1.4
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 1099000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "description": "The mining industry said this was excessive. We made it bigger.",
+      "requirements": [
+        {
+          "id": "supersizer-value-50m",
+          "type": "specimen-condition",
+          "label": "1 gem worth at least $50M",
+          "amount": 1,
+          "minimumValue": 50000000
+        },
+        {
+          "id": "supersizer-value-10m",
+          "type": "specimen-condition",
+          "label": "2 gems worth at least $10M",
+          "amount": 2,
+          "minimumValue": 10000000
+        },
+        {
+          "type": "consumable",
+          "amount": 10,
+          "consumableId": "mythic-potion"
+        },
+        {
+          "type": "consumable",
+          "amount": 25,
+          "consumableId": "legendary-potion"
+        },
+        {
+          "id": "supersizer-quartz",
+          "gem": "Quartz",
+          "type": "specimen-condition",
+          "label": "50 Quartz at 1,000g+ final weight",
+          "amount": 50,
+          "minimumFinalWeight": 1000
+        },
+        {
+          "id": "supersizer-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 75,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "supersizer-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 125,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "type": "equipment-history",
+          "label": "3 historical specimens at ≥10× final/base weight",
+          "amount": 3,
+          "metric": "supersizerHeavy10",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "5 historical 1/10M+ base-rarity specimens at ≥5× final/base weight",
+          "amount": 5,
+          "metric": "supersizerRareHeavy5",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "Lifetime genuine rolls",
+          "amount": 300000,
+          "metric": "genuineRolls",
+          "consume": false
+        },
+        {
+          "type": "equipment-history",
+          "label": "Distinct eligible post-Celestial specialist Pickaxes ever owned",
+          "amount": 3,
+          "metric": "supersizerSpecialists",
+          "consume": false
+        }
+      ],
+      "consumeMaterials": true,
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "tectonic-pickaxe",
+    "recipe": {
+      "id": "tectonic-pickaxe",
+      "name": "Tectonic Pickaxe",
+      "reward": {
+        "id": "tectonic-pickaxe",
+        "name": "Tectonic Pickaxe",
+        "tier": 15,
+        "bonus": {
+          "luck": 23,
+          "rollSpeed": 1.8,
+          "weightLuck": 6,
+          "mutationChance": 0,
+          "weightMultiplier": 0.9
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 125000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "gem": "Ringwoodite",
+          "type": "gem-count",
+          "amount": 5
+        },
+        {
+          "gem": "Paraershovite",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "gem": "Vesuvianite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Fluorcalciobritholite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Singularity Shard",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "tectonic-pickaxe-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 750,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "tectonic-pickaxe-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 200,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "tectonic-pickaxe-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 10,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "tectonic-specimen-5",
+          "type": "specimen-condition",
+          "label": "30 specimens ≥5×",
+          "amount": 30,
+          "minimumWeightMultiplier": 5
+        },
+        {
+          "id": "tectonic-specimen-6",
+          "type": "specimen-condition",
+          "label": "12 specimens ≥6×",
+          "amount": 12,
+          "minimumWeightMultiplier": 6
+        },
+        {
+          "id": "tectonic-specimen-7",
+          "type": "specimen-condition",
+          "label": "4 specimens ≥7×",
+          "amount": 4,
+          "minimumWeightMultiplier": 7
+        },
+        {
+          "id": "tectonic-specimen-8",
+          "type": "specimen-condition",
+          "label": "1 specimens ≥8×",
+          "amount": 1,
+          "minimumWeightMultiplier": 8
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "the-accelerator",
+    "recipe": {
+      "id": "the-accelerator",
+      "name": "The Accelerator",
+      "reward": {
+        "id": "the-accelerator",
+        "name": "The Accelerator",
+        "tier": 15,
+        "bonus": {
+          "luck": 23,
+          "rollSpeed": 2.4,
+          "weightLuck": 3,
+          "mutationChance": 0,
+          "weightMultiplier": 0.4
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "gem": "Chronite",
+          "type": "gem-count",
+          "amount": 3
+        },
+        {
+          "id": "the-accelerator-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 750,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "the-accelerator-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 200,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "the-accelerator-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 10,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 250000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "the-excavator",
+    "recipe": {
+      "id": "the-excavator",
+      "name": "The Excavator",
+      "reward": {
+        "id": "the-excavator",
+        "name": "The Excavator",
+        "tier": 15,
+        "bonus": {
+          "luck": 23,
+          "rollSpeed": 2,
+          "weightLuck": 3,
+          "mutationChance": 0,
+          "weightMultiplier": 0.4
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "id": "the-excavator-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 500,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "the-excavator-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 150,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "the-excavator-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 10,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "tier": 1,
+          "type": "potion-tier",
+          "amount": 75
+        },
+        {
+          "tier": 2,
+          "type": "potion-tier",
+          "amount": 50
+        },
+        {
+          "tier": 3,
+          "type": "potion-tier",
+          "amount": 30
+        },
+        {
+          "tier": 4,
+          "type": "potion-tier",
+          "amount": 10
+        },
+        {
+          "type": "consumable",
+          "amount": 3,
+          "consumableId": "legendary-potion"
+        },
+        {
+          "type": "consumable",
+          "amount": 1,
+          "consumableId": "mythic-potion"
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "the-resonator",
+    "recipe": {
+      "id": "the-resonator",
+      "name": "The Resonator",
+      "reward": {
+        "id": "the-resonator",
+        "name": "The Resonator",
+        "tier": 15,
+        "bonus": {
+          "luck": 23,
+          "rollSpeed": 1.9,
+          "weightLuck": 3,
+          "mutationChance": 0,
+          "weightMultiplier": 0.45
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 100000000,
+      "horizontal": true,
+      "craftingTab": "pickaxe",
+      "requirements": [
+        {
+          "id": "the-resonator-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 600,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "the-resonator-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 200,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "the-resonator-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 10,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "type": "special-discoveries",
+          "amount": 5,
+          "classification": "daily_window"
+        },
+        {
+          "type": "special-discoveries",
+          "amount": 3,
+          "classification": "global_event"
+        },
+        {
+          "type": "special-discoveries",
+          "amount": 10,
+          "classification": "special"
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "three-leaf-clover",
+    "recipe": {
+      "id": "three-leaf-clover",
+      "name": "Three-Leaf Clover",
+      "reward": {
+        "id": "three-leaf-clover",
+        "name": "Three-Leaf Clover",
+        "tier": 1,
+        "bonus": {
+          "luck": 0.01
+        },
+        "category": "clover"
+      },
+      "category": "clover",
+      "moneyCost": 5000,
+      "requirements": [
+        {
+          "gem": "Peridot",
+          "type": "gem-count",
+          "amount": 3
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "toy-shovel",
+    "recipe": {
+      "id": "toy-shovel",
+      "name": "Toy Shovel",
+      "reward": {
+        "id": "toy-shovel",
+        "name": "Toy Shovel",
+        "tier": 15,
+        "bonus": {
+          "luck": 16,
+          "rollSpeed": 1.4,
+          "weightLuck": 1.5,
+          "mutationChance": -0.2,
+          "weightMultiplier": 0.2
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 670000000.67,
+      "horizontal": true,
+      "craftingTab": "toys",
+      "requirements": [
+        {
+          "type": "equipment",
+          "consume": false,
+          "equipmentId": "plastic-shopping-bag"
+        },
+        {
+          "id": "toy-shovel-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 6700,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "toy-shovel-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 2067,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        },
+        {
+          "id": "toy-shovel-exotic",
+          "type": "gem-count",
+          "label": "Exotic",
+          "amount": 67,
+          "maximumRarity": 999999,
+          "minimumRarity": 100000
+        },
+        {
+          "id": "toy-shovel-exalted",
+          "type": "gem-count",
+          "label": "Exalted",
+          "amount": 6,
+          "maximumRarity": 9999999,
+          "minimumRarity": 1000000
+        },
+        {
+          "gem": "random rock I found outside",
+          "type": "gem-count",
+          "amount": 67
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 67
+        },
+        {
+          "type": "consumable",
+          "amount": 67,
+          "consumableId": "plastic-bag"
+        },
+        {
+          "id": "toy-shovel-specimens",
+          "type": "specimen-condition",
+          "label": "67 specimens ≥6.7×",
+          "amount": 67,
+          "minimumWeightMultiplier": 6.7
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "transcendent-pickaxe",
+    "recipe": {
+      "id": "transcendent-pickaxe",
+      "name": "Transcendent Pickaxe",
+      "reward": {
+        "id": "transcendent-pickaxe",
+        "name": "Transcendent Pickaxe",
+        "tier": 13,
+        "bonus": {
+          "luck": 21,
+          "rollSpeed": 1.6
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 2500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "singularity-pickaxe"
+        },
+        {
+          "gem": "Ringwoodite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Pallasite Crystal",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Antimatter Crystal",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "type": "lifetime-rolls",
+          "rolls": 30000
+        }
+      ]
+    }
+  },
+  {
+    "id": "vault-of-plenty",
+    "recipe": {
+      "id": "vault-of-plenty",
+      "name": "Vault of Plenty",
+      "reward": {
+        "id": "vault-of-plenty",
+        "name": "Vault of Plenty",
+        "tier": 10,
+        "bonus": {
+          "weightMultiplier": 0.13
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 10000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "riftwoven-bag"
+        },
+        {
+          "gem": "Natural Moissanite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "vault-of-plenty-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 60,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "vault-of-plenty-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 10,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "veteran-pickaxe",
+    "recipe": {
+      "id": "veteran-pickaxe",
+      "name": "Veteran Pickaxe",
+      "reward": {
+        "id": "veteran-pickaxe",
+        "name": "Veteran Pickaxe",
+        "tier": 9,
+        "bonus": {
+          "luck": 10,
+          "rollSpeed": 1.15
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 110000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "voidbreaker-pickaxe"
+        },
+        {
+          "gem": "Quartz",
+          "type": "gem-count",
+          "amount": 200
+        },
+        {
+          "gem": "Amethyst",
+          "type": "gem-count",
+          "amount": 100
+        },
+        {
+          "gem": "Aquamarine",
+          "type": "gem-count",
+          "amount": 50
+        },
+        {
+          "gem": "Painite",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "void-lantern",
+    "recipe": {
+      "id": "void-lantern",
+      "name": "Void Lantern",
+      "reward": {
+        "id": "void-lantern",
+        "name": "Void Lantern",
+        "tier": 8,
+        "bonus": {
+          "mutationChance": 0.17
+        },
+        "category": "lantern"
+      },
+      "category": "lantern",
+      "moneyCost": 5000000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "aether-lantern"
+        },
+        {
+          "gem": "Carletonite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "void-lantern-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 35,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        },
+        {
+          "id": "void-lantern-mythic",
+          "type": "gem-count",
+          "label": "Mythic",
+          "amount": 5,
+          "maximumRarity": 99999,
+          "minimumRarity": 10000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "voidbreaker-pickaxe",
+    "recipe": {
+      "id": "voidbreaker-pickaxe",
+      "name": "Voidbreaker Pickaxe",
+      "reward": {
+        "id": "voidbreaker-pickaxe",
+        "name": "Voidbreaker Pickaxe",
+        "tier": 8,
+        "bonus": {
+          "luck": 7,
+          "rollSpeed": 1
+        },
+        "category": "pickaxe"
+      },
+      "category": "pickaxe",
+      "moneyCost": 65000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "aether-pickaxe"
+        },
+        {
+          "gem": "Grandidierite",
+          "type": "gem-count",
+          "amount": 2
+        },
+        {
+          "gem": "Taaffeite",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "gem": "Musgravite",
+          "type": "gem-count",
+          "amount": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "voidwalker-boots",
+    "recipe": {
+      "id": "voidwalker-boots",
+      "name": "Voidwalker Boots",
+      "reward": {
+        "id": "voidwalker-boots",
+        "name": "Voidwalker Boots",
+        "tier": 8,
+        "bonus": {
+          "weightLuck": 0.09
+        },
+        "category": "boots"
+      },
+      "category": "boots",
+      "moneyCost": 2500000,
+      "requirements": [
+        {
+          "type": "equipment",
+          "equipmentId": "aetherstep-boots"
+        },
+        {
+          "gem": "Void Pearl",
+          "type": "gem-count",
+          "amount": 1
+        },
+        {
+          "id": "voidwalker-boots-legendary",
+          "type": "gem-count",
+          "label": "Legendary",
+          "amount": 25,
+          "maximumRarity": 9999,
+          "minimumRarity": 1000
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  },
+  {
+    "id": "worn-bag",
+    "recipe": {
+      "id": "worn-bag",
+      "name": "Worn Bag",
+      "reward": {
+        "id": "worn-bag",
+        "name": "Worn Bag",
+        "tier": 1,
+        "bonus": {
+          "weightMultiplier": 0.01
+        },
+        "category": "bag"
+      },
+      "category": "bag",
+      "moneyCost": 2500,
+      "requirements": [
+        {
+          "gem": "Pyrite",
+          "type": "gem-count",
+          "amount": 5
+        }
+      ],
+      "equipmentOverhaul": true
+    }
+  }
+]

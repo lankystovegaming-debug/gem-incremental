@@ -1,4 +1,5 @@
 export const catalog = [
+  ["mines", "Mines", "Reveal gems, bank your points, avoid the hidden mine. Five rounds.", "Highest Total Score"],
   ["gem-reels", "Gem Reels", "Spin five gems, choose your holds, chase an eight-hand record.", "Highest Run Score · earliest completion", true],
   [
     "gem-catcher",

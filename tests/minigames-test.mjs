@@ -10,7 +10,7 @@ import {
 } from "../supabase/functions/minigames/engine.js";
 import { catalog, bagTable, strikeRating } from "../minigames/catalog.js";
 test("catalog launch modes and no rewarded bypass", () => {
-  assert.equal(catalog.length, 13);
+  assert.equal(catalog.length, 14);
   assert.deepEqual(
     catalog.filter((g) => g.mt).map((g) => g.id),
     ["gem-reels", "mine-sweeper", "gem-tower", "crystal-bags"],
