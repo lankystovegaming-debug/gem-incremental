@@ -73,3 +73,70 @@ trigger function and private schema. No `CASCADE` blanket drop is recommended.
 Record migration-history reconciliation through your normal process. Once any
 future gameplay data exists, use a forward repair migration instead of removing
 these foundations.
+
+## Phase 2 owner deployment (still disabled)
+
+Phase 1 is now confirmed present in hosted `igrddscmrdrrwtvyspbf`, with all four
+release flags false. Phase 2 was **not deployed**. Its transaction boundary and
+isolated tests are described in [phase2.md](phase2.md).
+
+1. Review PR #526's Phase 2 commit and rerun the tests in `phase2.md`. Reconcile
+   migration history and rehearse on an isolated copy of the current schema. The
+   captured claim/release/routing fixture is test evidence, never a deployment file.
+2. Verify live `roll` is still the reviewed v179 or inspect newer differences.
+   Recheck actual `claim_server_roll`, `roll_route_result`, inventory insertion,
+   sale/relic helpers, `roll_refresh_context`, batch unlock and player triggers.
+   This additive migration depends on their existing signatures. Resolve drift
+   before applying; do not replace optimized functions with audit snapshots.
+3. As postgres, apply **only**
+   `supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql` after the
+   Phase 1 migration. It is one transaction; dependencies/conflicts must fail the
+   whole migration. Do not blindly push other pending migrations.
+4. Verify `abyss_private.pipeline_config.enabled = false` and its CHECK still
+   forbids true. Keep `abyss_private.release_config`'s four flags false and the
+   active-world/unlock constraints intact. New functions require both the private
+   pipeline gate and the global gameplay gate. Replays remain read-only recoverable.
+5. Optionally deploy the complete current optimized `roll` Edge Function bundle
+   to include the explicit W2-disabled HTTP response. Preserve existing JWT/auth,
+   cache, instrumentation, support files and deployment configuration. **Do not
+   deploy a new W2 gameplay evaluator or connect the executor in Phase 2.** The
+   migration is compatible with existing v179 and needs no frontend publication.
+   The owner performs this step; it was not done by this implementation.
+6. Check ordinary W1 ×1/entitled batches on the designated test account: cooldown,
+   inventory, deposited/sold result and total_rolls increments. Explicit
+   `{ "worldId": 2 }` must return `403 world2_disabled` if the edge update was
+   deployed. No W2 batch, receipt, history or provenance row should be created.
+   Review Supabase security advisors/grants before any later activation.
+
+Read-only verification as database owner:
+
+```sql
+select * from abyss_private.pipeline_config; -- false
+select * from abyss_private.release_config; -- all four flags false
+select conname,pg_get_constraintdef(oid) from pg_constraint
+where conrelid in ('abyss_private.pipeline_config'::regclass,
+                  'public.world2_player_state'::regclass);
+select proname,
+ has_function_privilege('anon',oid,'EXECUTE') as anon_execute,
+ has_function_privilege('authenticated',oid,'EXECUTE') as client_execute,
+ has_function_privilege('service_role',oid,'EXECUTE') as service_execute
+from pg_proc where pronamespace='public'::regnamespace
+ and proname in ('world2_roll_context','world2_claim_batch',
+   'world2_begin_subroll','world2_commit_subroll','world2_switch_world');
+-- Exactly five functions; false, false, true.
+select relname,relrowsecurity from pg_class
+where relnamespace='abyss_private'::regnamespace and relkind='r';
+-- pipeline_config, roll_batches and specimen_links all have RLS.
+select count(*) from abyss_private.roll_batches; -- zero in Phase 2
+```
+
+Preferred rollback retains the inert migration and restores the previous reviewed
+optimized Edge Function bundle if needed. Keep both false gates and all receipts,
+provenance, links and history intact. Since no W2 execution is enabled, no player
+backfill, value rewrite, economic refund, RNG restore or counter rewind is needed.
+If an unexpected future activation has occurred, stop new claims by disabling the
+pipeline through an owner-reviewed forward change, allow only persisted replay,
+and investigate from immutable receipts. Do not remove provenance or decrement
+`players.total_rolls`. Revoking service EXECUTE also stops replay, so prefer a
+false gate when recovery reads are required. Never blanket DROP/CASCADE the new
+private schema, which also contains Phase 1 release configuration and triggers.

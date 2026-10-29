@@ -90,10 +90,17 @@ const snapshot=JSON.parse(read('docs/world2/authority/snapshot.json'));
 for(const [file,hash] of Object.entries(snapshot.files))
  assert.equal(createHash('sha256').update(read('docs/world2/authority/'+file)).digest('hex'),hash,file);
 assert.equal(createHash('sha256').update(source+'\n').digest('hex'),'6921873aaef65246a1aedec55d93056f2b236f5880aaf8ebd504ba04ffe227a7');
-assert.equal(source.trimEnd(),read('supabase/functions/roll/index.ts').trimEnd(),'execution code matches deployed v179; only trailing blank line differs');
-// Strong disabled W1 parity: no pre-existing execution file changes in this work.
-// The pinned weekly commit differs from live v179; retain each byte-for-byte.
-const baseline='e49a6ca732c3038973e9b1a33b4d8ad17a789ab1';
-const changed=execFileSync('git',['diff','--name-only',baseline,'--','supabase/functions/roll','src','main.js'],{encoding:'utf8'}).trim();
-assert.equal(changed,'','W1 execution files must remain untouched');
+// Phase 2 adds only an explicit disabled World 2 dispatch and its isolated module.
+// Strip that exact dispatch, then retain byte parity for the entire W1 path.
+const edge=read('supabase/functions/roll/index.ts');
+const boundary=`      // Phase 2 has no approved W2 evaluator/catalogue. Explicit W2 requests
+      // fail closed before W1 context, claims or RNG. The ordinary path is intact.
+      if (requestBody?.worldId === 2) {
+        return jsonResponse({ error: "world2_disabled", released: false }, { status: 403 });
+      }
+
+`;
+assert(edge.includes(boundary));
+const w1=edge.replace(boundary,'');
+assert.equal(source.trimEnd(),w1.trimEnd(),'entire W1 executable remains equal to deployed v179');
 console.log(`Phase 1 configuration/arithmetic/quest/registry/W1 parity passed: ${byId.size} entries, 264 triples, all six levels.`);

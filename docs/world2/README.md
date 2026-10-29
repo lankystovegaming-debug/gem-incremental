@@ -1,3 +1,8 @@
+> Phase 2 now adds a disabled serialized outcome pipeline on these foundations.
+> See [Phase 2 implementation and verification](phase2.md) and the Phase 2
+> section of [deployment/rollback](deployment.md). The Phase 1 description below
+> remains the original foundation audit; gameplay still cannot be enabled here.
+
 # The Abyss — Phase 1 disabled backend foundations
 
 Implemented against the owner's recovered Phase 1 handoff, with read-only Supabase

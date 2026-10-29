@@ -4042,6 +4042,12 @@ const authenticatedRollHandler = withSupabase(
         // Existing clients send an empty JSON object; a missing body remains ×1.
       }
 
+      // Phase 2 has no approved W2 evaluator/catalogue. Explicit W2 requests
+      // fail closed before W1 context, claims or RNG. The ordinary path is intact.
+      if (requestBody?.worldId === 2) {
+        return jsonResponse({ error: "world2_disabled", released: false }, { status: 403 });
+      }
+
       const batchSize = normalizeRequestedBatchSize(requestBody?.batchSize ?? 1);
       if (batchSize == null) {
         return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
