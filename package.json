@@ -2,6 +2,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:world2": "node tests/world2-phase1-test.mjs && node tests/world2-phase1-database-test.mjs",
+    "test:world2:concurrency": "node tests/world2-phase1-concurrency-test.mjs",
     "test:landing": "node tests/landing-screen-browser-test.mjs",
     "test:bug-reports": "node tests/bug-report-inbox-database-test.mjs",
     "test:bug-reports:browser": "node tests/bug-report-inbox-browser-test.mjs",

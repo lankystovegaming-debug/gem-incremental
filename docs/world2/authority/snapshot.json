@@ -1,0 +1,17 @@
+{
+  "project": "igrddscmrdrrwtvyspbf",
+  "observedDate": "2026-10-29",
+  "rollVersion": 179,
+  "bundleSha256": "98db1737af0776854a7677f091be13c4dca68d112f1f10e876db6248bb3bf65a",
+  "repositoryMain": "07d5b413861ee30f8681ee9c901bd91548187253",
+  "weeklyBaseline": "e49a6ca732c3038973e9b1a33b4d8ad17a789ab1",
+  "files": {
+    "equipment-functions.json": "bf6199c43bc754c271977232dfc47b55fec0c6b1850aec1bff8e514bbe29d1a1",
+    "equipment-recipes.json": "0bfa506d4220a7a20aa6b88e4b7d78c39e187aeef9fd947ef081d5fa57e6e6ae",
+    "roll-v179.ts": "e511b4db5e37b0f3dea262b17e46a3dd385712a2f9d12c679ad3796b80a052e0",
+    "owned-equipment-ids.json": "a91d9535a9481015b587da7bd203c34f8fe4af1ddbbf5843a25d0f3b7bf947ad"
+  },
+  "privacy": "Catalogue, distinct equipment IDs and function definitions only; no account rows or secrets.",
+  "deployedEntrypointSha256": "6921873aaef65246a1aedec55d93056f2b236f5880aaf8ebd504ba04ffe227a7",
+  "normalization": "roll-v179.ts omits one final blank line from the deployed response; source code is unchanged. Append one LF to reconstruct exact deployed entrypoint bytes."
+}
