@@ -1,3 +1,4 @@
+import { prepareUtilityPage } from './utility-page-fixtures.mjs';
 import assert from "node:assert/strict";
 
 const { chromium } = await import(
@@ -16,7 +17,8 @@ try {
   ]) {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
-    await page.goto(base, { waitUntil: "domcontentloaded" });
+    await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href, { waitUntil: "domcontentloaded" });
     await page.locator(".tabbar").waitFor();
 
     const mobile = await page.evaluate(() => ({
@@ -65,14 +67,15 @@ try {
       }));
     });
     const page = await context.newPage();
-    await page.goto(base, { waitUntil: "domcontentloaded" });
+    await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href, { waitUntil: "domcontentloaded" });
     await page.locator(".tabbar").waitFor();
     assert.deepEqual(
       await page.locator(".tabbar__link").allTextContents().then((labels) => labels.map((label) => label.trim())),
       ["Market", "Exped.", "Index", "Mutations", "More"]
     );
     await page.locator("#mobileNavigationTrigger").click();
-    assert.equal(await page.locator('.mobile-navigation-row[href="./"]').count(), 1, "Roll remains reachable in More");
+    assert.equal(await page.locator('.mobile-navigation-row[href="../roll/"]').count(), 1, "Roll remains reachable in More");
     await context.close();
   }
 
@@ -82,7 +85,8 @@ try {
   ]) {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
-    await page.goto(base, { waitUntil: "domcontentloaded" });
+    await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href, { waitUntil: "domcontentloaded" });
     await page.locator("#shellExploreButton").waitFor();
     assert.ok(await page.locator(".nav > .nav__link").count() <= 7);
     assert.equal(await page.locator(".tabbar").evaluate((element) => getComputedStyle(element).display), "none");
@@ -108,7 +112,8 @@ try {
       }));
     });
     const page = await context.newPage();
-    await page.goto(base, { waitUntil: "domcontentloaded" });
+    await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href, { waitUntil: "domcontentloaded" });
     await page.locator(".topbar").waitFor();
     await page.evaluate(() => {
       document.querySelector("#shellWalletValue").textContent = "$999,999,999,999,999";
@@ -127,7 +132,7 @@ try {
     assert.ok(stress.headerRight <= stress.viewport + 1, JSON.stringify(stress));
     assert.equal(stress.primaryCount, 7);
     await page.locator("#shellExploreButton").click();
-    assert.ok(await page.locator('#shellExploreMenu a[href="./mutation-index/"]').count() >= 1);
+    assert.ok(await page.locator('#shellExploreMenu a[href="../mutation-index/"]').count() >= 1);
     await context.close();
   }
 } finally {

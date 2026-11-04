@@ -1,3 +1,4 @@
+import { prepareUtilityPage } from './utility-page-fixtures.mjs';
 import assert from 'node:assert/strict';
 const { chromium } = await import(process.env.NAVIGATION_PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({headless:true});
@@ -5,7 +6,8 @@ const base = process.env.NAVIGATION_PREVIEW_URL || 'http://127.0.0.1:5500/';
 try {
   for (const width of [360,390,430,768,1366,2560]) {
     const page = await browser.newPage({viewport:{width,height:width<1000?900:768}});
-    await page.goto(base);
+    await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href);
     await page.locator('.topbar').waitFor();
     await page.evaluate(() => {
       document.querySelector('#shellAccountName').textContent = 'Extremely_long_player_name_'.repeat(5);
@@ -32,7 +34,8 @@ try {
     await page.close();
   }
   const page=await browser.newPage({viewport:{width:390,height:844}});
-  await page.goto(base);
+  await prepareUtilityPage(page);
+    await page.goto(new URL("inventory/", base).href);
   await page.evaluate(async()=>{
     const {mountMobileSheet}=await import('/src/ui/mobileSheet.js');
     const host=document.createElement('div');

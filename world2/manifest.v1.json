@@ -1,0 +1,677 @@
+{
+  "version": 1,
+  "worlds": {
+    "1": "World 1",
+    "2": "The Abyss"
+  },
+  "phase": 1,
+  "gameplayEnabled": false,
+  "questEnabled": false,
+  "lawEffectsEnabled": false,
+  "adaptationEnabled": false,
+  "rotation": {
+    "seconds": 43200,
+    "utcHours": [
+      0,
+      12
+    ],
+    "singaporeHours": [
+      8,
+      20
+    ],
+    "clock": "database",
+    "independentDraws": true,
+    "repeatsAllowed": true,
+    "combinations": 264,
+    "exclusions": []
+  },
+  "laws": [
+    {
+      "category": "A",
+      "id": "fatigue",
+      "name": "Fatigue",
+      "weight": 1,
+      "contract": {
+        "rollSpeed": 0.75,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "misfortune",
+      "name": "Misfortune",
+      "weight": 1,
+      "contract": {
+        "luck": 0.7,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "imperfection",
+      "name": "Imperfection",
+      "weight": 1,
+      "contract": {
+        "mutationChance": 0.75,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "gravity",
+      "name": "Gravity",
+      "weight": 1,
+      "contract": {
+        "weightLuck": 0.7,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "compression",
+      "name": "Compression",
+      "weight": 1,
+      "contract": {
+        "finalWeight": 0.75,
+        "measurement": "F0_before_laws",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "austerity",
+      "name": "Austerity",
+      "weight": 1,
+      "contract": {
+        "npcLiquidationFactor": 0.8,
+        "scope": "immutable_acquisition; NPC only; no P2P cash tax",
+        "phase": 4,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "fragility",
+      "name": "Fragility",
+      "weight": 1,
+      "contract": {
+        "rawThreshold": [
+          1.5,
+          3
+        ],
+        "refreshGenuineRolls": [
+          100,
+          250
+        ],
+        "finalWeight": [
+          0.7,
+          0.8
+        ],
+        "comparison": "raw_R > retained_threshold",
+        "sampling": "retained threshold and refreshed interval; penalty draw lifetime must be frozen in Phase3",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "impermanence",
+      "name": "Impermanence",
+      "weight": 1,
+      "contract": {
+        "wait": [
+          60,
+          150
+        ],
+        "active": [
+          8,
+          25
+        ],
+        "luck": [
+          0.7,
+          0.9
+        ],
+        "trigger": "wait normal genuine rolls then affected genuine-roll duration; exact Phase3 transition table pending",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "aftershock",
+      "name": "Aftershock",
+      "weight": 1,
+      "contract": {
+        "rawThreshold": [
+          2,
+          3
+        ],
+        "active": [
+          5,
+          10
+        ],
+        "recovery": [
+          5,
+          15
+        ],
+        "weightLuck": [
+          0.5,
+          0.75
+        ],
+        "trigger": "qualifying outcome arms NEXT genuine roll, followed by recovery; rearm ordering requires Phase3 transition tests",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "inequality",
+      "name": "Inequality",
+      "weight": 1,
+      "contract": {
+        "naturalMutationThreshold": [
+          1,
+          2,
+          3
+        ],
+        "thresholdWeights": [
+          90,
+          9,
+          1
+        ],
+        "active": [
+          4,
+          8
+        ],
+        "recovery": [
+          5,
+          15
+        ],
+        "mutationChance": [
+          0.7,
+          0.8
+        ],
+        "trigger": "qualifying outcome arms NEXT genuine roll, followed by recovery; rearm ordering requires Phase3 transition tests",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "A",
+      "id": "envy",
+      "name": "Envy",
+      "weight": 1,
+      "contract": {
+        "threshold": [
+          "Legendary",
+          "Mythic",
+          "Exotic+"
+        ],
+        "thresholdWeights": [
+          1,
+          1,
+          1
+        ],
+        "legendaryDuration": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "legendaryWeights": [
+          25,
+          25,
+          20,
+          15,
+          10,
+          5
+        ],
+        "mythicDuration": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "mythicWeights": [
+          5,
+          10,
+          20,
+          25,
+          20,
+          10,
+          7,
+          3
+        ],
+        "exoticDuration": [
+          25,
+          75
+        ],
+        "luck": [
+          0.7,
+          0.85
+        ],
+        "queue": "uncapped_checked_bigint; add once per genuine outcome based on OBSERVED tier; resample threshold at every trigger",
+        "strength": "once per uninterrupted episode; no multiplication",
+        "expiry": "discard epoch queue",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "B",
+      "id": "repetition",
+      "name": "Repetition",
+      "weight": 1,
+      "contract": {
+        "gemK": 0.15,
+        "gemFloor": 0.6,
+        "mode": "replace_baseline",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "B",
+      "id": "stagnation",
+      "name": "Stagnation",
+      "weight": 1,
+      "contract": {
+        "gemK": 0.025,
+        "gemFloor": 0.75,
+        "mode": "replace_baseline",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "B",
+      "id": "distortion",
+      "name": "Distortion",
+      "weight": 1,
+      "contract": {
+        "gemK": 0.05,
+        "gemFloor": 0.75,
+        "mutationK": 0.5,
+        "mutationFloor": 0.25,
+        "protected": [
+          "misty",
+          "ancient",
+          "enchanted"
+        ],
+        "mode": "singleton_identity_within_multiplier_band; retain empty/stack count/multistacks",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "sacrifice",
+      "name": "Sacrifice",
+      "weight": 47,
+      "contract": {
+        "luck": 0.7,
+        "mutationChance": 1.4,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "extremes",
+      "name": "Extremes",
+      "weight": 47,
+      "contract": {
+        "rollSpeed": 0.8,
+        "weightLuck": 1.25,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "exchange",
+      "name": "Exchange",
+      "weight": 47,
+      "contract": {
+        "finalWeight": 0.7,
+        "luck": 1.3,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "unstable-fortune",
+      "name": "Unstable Fortune",
+      "weight": 47,
+      "contract": {
+        "wait": [
+          40,
+          120
+        ],
+        "active": [
+          5,
+          20
+        ],
+        "branchWeights": [
+          60,
+          40
+        ],
+        "negativeLuck": [
+          0.6,
+          0.85
+        ],
+        "positiveLuck": [
+          1.15,
+          1.5
+        ],
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "reversal",
+      "name": "Reversal",
+      "weight": 47,
+      "contract": {
+        "wait": [
+          50,
+          150
+        ],
+        "active": [
+          10,
+          30
+        ],
+        "luck": [
+          0.7,
+          0.85
+        ],
+        "mutationChance": [
+          1.4,
+          1.8
+        ],
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "burden-of-fortune",
+      "name": "Burden of Fortune",
+      "weight": 47,
+      "contract": {
+        "luck": 1.35,
+        "formula": "F0 * max(0.55, 1/(1+0.08*max(0,F0-1)))",
+        "order": "F0=ordinary_final_weight/base_weight before ALL laws; A penalty afterward; zero-base-weight no ratio",
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "grace",
+      "name": "Grace",
+      "weight": 9,
+      "contract": {
+        "luck": 1.25,
+        "mutationChance": 1.15,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    },
+    {
+      "category": "C",
+      "id": "abundance",
+      "name": "Abundance",
+      "weight": 9,
+      "contract": {
+        "rollSpeed": 1.2,
+        "weightLuck": 1.25,
+        "samplingContract": "range endpoints inclusive; waits/durations/counts integer; real-valued ranges continuous uniform unless explicit weights; no client RNG"
+      }
+    }
+  ],
+  "tiers": [
+    {
+      "id": "Common",
+      "minimum": 1,
+      "maximum": 9
+    },
+    {
+      "id": "Uncommon",
+      "minimum": 10,
+      "maximum": 49
+    },
+    {
+      "id": "Rare",
+      "minimum": 50,
+      "maximum": 99
+    },
+    {
+      "id": "Epic",
+      "minimum": 100,
+      "maximum": 999
+    },
+    {
+      "id": "Legendary",
+      "minimum": 1000,
+      "maximum": 9999
+    },
+    {
+      "id": "Mythic",
+      "minimum": 10000,
+      "maximum": 99999
+    },
+    {
+      "id": "Exotic",
+      "minimum": 100000,
+      "maximum": 999999
+    },
+    {
+      "id": "Exalted",
+      "minimum": 1000000,
+      "maximum": 9999999
+    },
+    {
+      "id": "Cosmic",
+      "minimum": 10000000,
+      "maximum": 99999999
+    },
+    {
+      "id": "Transcendent",
+      "minimum": 100000000,
+      "maximum": 999999999
+    }
+  ],
+  "catalogue": {
+    "approved": false,
+    "entries": [],
+    "proposal": "shared Common/Uncommon/Rare; destination-exclusive higher tiers require separate approval"
+  },
+  "quest": {
+    "id": "call-of-the-abyss",
+    "panel": "Unidentified Transmission",
+    "enabled": false,
+    "prerequisites": {
+      "lifetimeField": "players.total_rolls",
+      "minimumLifetimeRolls": 250000,
+      "craftPickaxeMinimumTier": 12,
+      "craftEvidence": "successful server crafting transaction; ownership/history of ownership is insufficient; never infer absent evidence"
+    },
+    "stages": [
+      {
+        "stage": 1,
+        "kind": "specimen",
+        "gem": "Quartz",
+        "mutations": "all attached mutation IDs must be empty",
+        "measurement": "ordinaryFinalWeightRatio=ordinary finalWeight/baseWeight BEFORE Abyssal Laws, including ordinary equipment/size/masterwork/storage factors",
+        "comparison": "<",
+        "threshold": 1,
+        "zeroBaseWeight": "ineligible"
+      },
+      {
+        "stage": 2,
+        "kind": "specimen",
+        "measurement": "rawRolledWeightMultiplier=R before final equipment/size/law factors",
+        "comparison": ">",
+        "threshold": 5
+      },
+      {
+        "stage": 3,
+        "kind": "specimen",
+        "gem": "Black Opal",
+        "requiredMutation": "glossy",
+        "allowOtherMutations": true
+      },
+      {
+        "stage": 4,
+        "kind": "sale",
+        "eligibleProceeds": 5000000,
+        "eligibility": "eligible sales of newly accepted genuine primary specimens acquired after stage activation; persist actual credited proceeds and deduplicate sale transaction; reject old stock and bonus credit; NPC-only versus market eligibility must be frozen before Phase2 quest activation"
+      },
+      {
+        "stage": 5,
+        "kind": "genuine_rolls",
+        "world": 1,
+        "count": 3000
+      },
+      {
+        "stage": 6,
+        "kind": "explicit_action",
+        "action": "Begin Descent",
+        "automatic": false
+      }
+    ],
+    "activation": "sequential; record timestamp and accepted sequence high-water mark; no retroactive credit; failed attempts and extras excluded"
+  },
+  "histories": {
+    "world": 2,
+    "positions": 250,
+    "genuineOnly": true,
+    "includeEmptyRelicAndLoss": true,
+    "bonusCredit": false,
+    "persistAcrossEpochsAndVisits": true,
+    "mutationHistoryAlwaysUpdates": true,
+    "gemFormula": "s_i=max(floor,exp(-k*count_i)); normalize final-winning mutable band mass, never sequential hazards",
+    "baseline": {
+      "k": 0.05,
+      "floor": 0.75
+    }
+  },
+  "adaptation": {
+    "enabled": false,
+    "provisional": true,
+    "directions": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        1
+      ]
+    ],
+    "levels": [
+      {
+        "level": 0,
+        "factor": 0.5,
+        "qualifyingRolls": 0
+      },
+      {
+        "level": 1,
+        "factor": 0.55,
+        "qualifyingRolls": 2500
+      },
+      {
+        "level": 2,
+        "factor": 0.6,
+        "qualifyingRolls": 7500
+      },
+      {
+        "level": 3,
+        "factor": 0.65,
+        "qualifyingRolls": 20000
+      },
+      {
+        "level": 4,
+        "factor": 0.7,
+        "qualifyingRolls": 45000
+      },
+      {
+        "level": 5,
+        "factor": 0.75,
+        "qualifyingRolls": 100000
+      }
+    ],
+    "credit": "accepted genuine outcome with opposite-native equipped pickaxe; no extra specimens; no retroactive inference from lifetime counter",
+    "scope": [
+      "pickaxe",
+      "clover",
+      "lantern",
+      "boots",
+      "bag"
+    ],
+    "petGear": "separate pet-odds contract; blocked",
+    "rollBulk": "integer capacity unchanged",
+    "legacyNativeWorld": 1,
+    "unknownEquipment": "fail closed for cross-world compatibility; never generic fallback"
+  },
+  "state": {
+    "temporaryLaw": "reset on new epoch; histories persist; repeated laws still reset epoch state",
+    "outsideWorld2": "genuine counters freeze",
+    "equipment": "separate world counters/queues; preserve native equipment-switch reset rules; resolve adaptation level when applying effect",
+    "momentum": "single account resource in deployed convergence_private; never duplicate",
+    "surge": "single activation world; remaining genuine rolls advance there only",
+    "blessing": "single activation world; five minute real-time expiry; no pause/reset on switching"
+  },
+  "outcomeContract": {
+    "phase": 2,
+    "lockOrder": [
+      "players row",
+      "world2 player state",
+      "world buckets/law history",
+      "inventory/routing resources in canonical order"
+    ],
+    "identity": [
+      "player_id",
+      "request_id",
+      "subroll"
+    ],
+    "request": "server authenticated player; canonical request digest; changed payload under same request ID rejected",
+    "batch": "DB claim pins world, epoch/version and state revision AFTER lock; whole accepted batch same tuple",
+    "deadline": "must finalize before accepted lease expires; expired/replaced lease is fenced, never silently recalculate RNG",
+    "boundary": "preclaim context crossing epoch must recompute speed before acceptance",
+    "retry": "lookup immutable receipt before any RNG or mutation; committed retry returns same outcome",
+    "partial": "committed prefix survives once; uncommitted suffix requires a new claim/request; never replay committed RNG",
+    "atomic": "specimen routing, actual payout, total_rolls increment, internal fence, world genuine ordinal, history, law state and receipt commit together; failures abort",
+    "noSpecimen": "accepted House Edge loss/empty/relic advances genuine position exactly once",
+    "worldSwitch": "serialize on players lock; reject while lease active; preserve histories/buckets/timers",
+    "reconnect": "read state only; never initialize-overwrite existing state",
+    "phase1": "no claim/commit/switch/gameplay endpoint implemented"
+  },
+  "provenance": {
+    "legacyDefault": {
+      "originWorld": 1,
+      "npcLiquidationFactor": 1
+    },
+    "immutable": true,
+    "noStoredValueRewrite": true,
+    "npcFactor": 0.8,
+    "p2pCashTax": false,
+    "phase": 4,
+    "sources": [
+      "roll primary",
+      "Astral duplicate",
+      "Breakneck bonus",
+      "Convergence package",
+      "inventory insert/restore",
+      "NPC manual/bulk/auto sale",
+      "auction listing/buy/settle/cancel/expire/relist",
+      "Black Market",
+      "gem orders",
+      "museum",
+      "reward/admin/shop/legacy"
+    ],
+    "transport": "future stable specimen UUID alongside every reconstruction; absent metadata neutral legacy W1; never synthesize current law at sale",
+    "privacy": "acquisition owner is not current owner; provenance table service-only, future read via ownership-checked inventory joins"
+  },
+  "unresolvedGameplayDetails": [
+    "World 2 catalogue and source memberships remain unapproved",
+    "Pet-odds adaptation is deferred",
+    "Phase 3 transition implementation must freeze inclusive sampling and exact tick/trigger ordering before activation",
+    "Crafting proof availability must be evaluated per transaction; no ownership-based backfill",
+    "Stage4 eligible sale channels and provenance for non-primary rewards require explicit activation contract; no sale credit in Phase1"
+  ]
+}

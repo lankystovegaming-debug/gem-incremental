@@ -7,6 +7,10 @@ const root=fileURLToPath(new URL('..',import.meta.url)).replace(/\/$/,'');
 const browser=await chromium.launch({headless:true,channel:'chrome'});
 try {
 const page=await browser.newPage({viewport:{width:1280,height:1000}});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser page error:',e.message)});page.on('requestfailed',request=>console.error('Browser request failed:',request.url(),request.failure()?.errorText));
+async function chooseCategory(value) {
+ if (await page.locator('#craftingCategory').isVisible()) await page.locator('#craftingCategory').selectOption(value);
+ else await page.locator(`[data-crafting-group="${value}"]`).click();
+}
 const stubs={
  '/src/backend/auth.js':'export async function ensurePlayerAuth(){return {id:"test"}}export function isSignInRequired(){return false}export const SIGN_IN_REQUIRED_MESSAGE="Log in or create a free account to start playing.";',
  '/src/backend/supabase.js':'const result=Promise.resolve({data:[],error:null});const chain={select(){return chain},eq(){return chain},in(){return chain},then(resolve,reject){return result.then(resolve,reject)}};export const supabase={from(){return chain}};',
@@ -17,16 +21,16 @@ const stubs={
 };
 await page.route('**/*',async route=>{const url=new URL(route.request().url());if(url.hostname!=='equipment.test')return route.abort();let path=url.pathname;if(stubs[path])return route.fulfill({contentType:'text/javascript',body:stubs[path]});if(path.endsWith('/'))path+='index.html';try{await route.fulfill({contentType:path.endsWith('.js')?'text/javascript':path.endsWith('.css')?'text/css':path.endsWith('.html')?'text/html':'application/octet-stream',body:readFileSync(root+path)})}catch{await route.fulfill({status:404,body:''})}});
 await page.goto('http://equipment.test/crafting/');await page.locator('#recipeList').getByText('Celestial Pickaxe',{exact:true}).waitFor();
-await page.locator('[data-crafting-group="specialists"]').click();
+await chooseCategory('specialists');
 assert.equal(await page.locator('#recipeList').getByText('LOCKED - Craft the Celestial pickaxe to unlock',{exact:true}).count(),1);
 assert.equal(await page.locator('#recipeList [data-action="auto"]').count(),0);
 await page.locator('[data-subtabs="specialists"] [data-subcategory="t16"]').click();
 assert.equal(await page.locator('#recipeList').getByText('LOCKED - Craft the Paradox pickaxe to unlock',{exact:true}).count(),1);
 assert.equal(await page.locator('#recipeList [data-action="auto"]').count(),0);
 await page.evaluate(()=>window.__equipment.push({equipment_id:'celestial-pickaxe'},{equipment_id:'paradox-pickaxe'}));
-await page.locator('[data-crafting-group="secondary"]').click();assert.equal(await page.locator('#recipeList').getByText('Celestial Clover',{exact:true}).count(),1);
+await chooseCategory('secondary');assert.equal(await page.locator('#recipeList').getByText('Celestial Clover',{exact:true}).count(),1);
 await page.locator('[data-subtabs="secondary"] [data-subcategory="lantern"]').click();assert.equal(await page.locator('#recipeList').getByText('Singularity Lantern',{exact:true}).count(),1);
-await page.locator('[data-crafting-group="others"]').click();for(const name of ['Plastic Shopping Bag','Toy Shovel','Silly Fun Happy Pickaxe','All Rounder Toy','Jackpot Slot','Money Pickaxe','Reality Shifter'])assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1,name);
+await chooseCategory('others');for(const name of ['Plastic Shopping Bag','Toy Shovel','Silly Fun Happy Pickaxe','All Rounder Toy','Jackpot Slot','Money Pickaxe','Reality Shifter'])assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1,name);
 assert.ok((await page.locator('#recipeList').innerText()).includes('historical, not consumed'));
 const impossibleCard=page.locator('[data-recipe="impossible-pickaxe"]');
 await impossibleCard.getByRole('button',{name:'Review sacrifice plan'}).click();
@@ -50,7 +54,7 @@ await page.setViewportSize({width:1280,height:1000});
 await page.locator('#impossibleReviewDialog').getByRole('button',{name:'Close'}).click();
 await page.screenshot({path:tmpdir()+'/equipment-toys-desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:tmpdir()+'/equipment-toys-mobile.png',fullPage:true});
-assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');await page.locator('[data-crafting-group="specialists"]').click();
+assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');await chooseCategory('specialists');
 for(const name of ['Fortune Pickaxe','All-In Pickaxe','Bedrock Pickaxe']) assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1);
 assert.ok((await page.locator('#recipeList').innerText()).includes('Uncommon'));
 for(const label of ['Raw rarity','Huge specimens','Roll volume','Special Gems','Consumables','Foundation bursts']) assert.equal(await page.getByText('Best for: '+label,{exact:true}).count(),1,label);
@@ -65,10 +69,10 @@ await page.screenshot({path:tmpdir()+'/bedrock-mobile.png',fullPage:true});
 assert.equal(await page.locator('#recipeList').getByText('Reality Shifter',{exact:true}).count(),0);
 await page.locator('[data-subtabs="specialists"] [data-subcategory="t16"]').click();
 for(const name of ['Empyrean Pickaxe','Eternity Pickaxe','Supersizer Pickaxe']) assert.equal(await page.locator('#recipeList').getByText(name,{exact:true}).count(),1,name);
-await page.locator('[data-crafting-group="pickaxes"]').click();
+await chooseCategory('pickaxes');
 assert.equal(await page.locator('#recipeList').getByText('Paradox Pickaxe',{exact:true}).count(),1);
 assert.equal(await page.locator('#recipeList').getByText('Fortune Pickaxe',{exact:true}).count(),0);
-await page.locator('[data-crafting-group="others"]').click();
+await chooseCategory('others');
 await page.locator('[data-subtabs="others"] [data-subcategory="potion"]').click();
 assert.equal(await page.locator('#recipeList [data-recipe="lucky-potion-2"]').count(),1);
 assert.deepEqual(errors,[]);console.log('Crafting browser passed: Reality Shifter Toy, Bedrock Pickaxe, bulk deposit in four requests, desktop/mobile layout and no page errors.');

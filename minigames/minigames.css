@@ -1009,3 +1009,14 @@
     transition: none;
   }
 }
+.mg-mines { max-width: 430px; margin-inline: auto; }
+.mg-mines .mg-cell { min-height: 48px; font-size: clamp(1.1rem, 4vw, 1.75rem); }
+.mg-mines .mg-cell:disabled { opacity: 1; cursor: default; }
+.mg-mines-history { padding-left: 1.5rem; line-height: 1.8; }
+.mg-mines-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.mg-mines-table th, .mg-mines-table td { padding: .45rem; text-align: right; }
+.mg-mines-current { background: rgba(92, 207, 187, .14); font-weight: 700; }
+@media (max-width: 480px) {
+  .mg-mines-table { font-size: .75rem; }
+  .mg-mines-table th, .mg-mines-table td { padding: .35rem .15rem; }
+}

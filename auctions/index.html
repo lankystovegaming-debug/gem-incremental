@@ -90,6 +90,8 @@
         <h2 class="sell-card__title" id="sellTitle">List items</h2>
         <p class="sell-card__hint" id="sellIntro"></p>
 
+        <section class="sell-stage" aria-labelledby="sellSelectHeading">
+        <h3 id="sellSelectHeading">1. Select items</h3>
         <fieldset class="sale-method">
           <legend class="field-label">Sale method</legend>
           <label class="sale-method__option">
@@ -118,6 +120,9 @@
           </div>
         </div>
 
+        </section>
+        <section class="sell-stage" aria-labelledby="sellInspectHeading">
+        <h3 id="sellInspectHeading">2. Inspect your lot</h3>
         <div class="lot-summary">
           <div class="lot-summary__head">
             <strong>Your lot</strong>
@@ -126,12 +131,15 @@
           <div id="lotSummaryList" class="lot-summary__list"></div>
         </div>
 
+        </section>
+        <section class="sell-stage" aria-labelledby="sellPriceHeading">
+        <h3 id="sellPriceHeading">3. Set price &amp; duration</h3>
         <div class="sell-row form-row form-row--fields">
           <div class="sell-field form-row__field">
             <label class="field-label" for="sellPrice" id="sellPriceLabel">Starting bid</label>
             <div class="auction-money-input">
               <span class="auction-money-input__prefix">$</span>
-              <input id="sellPrice" type="number" min="0.0001" step="any" value="100" inputmode="decimal">
+              <input id="sellPrice" aria-describedby="sellPriceMinimum sellValidation" type="number" min="0.0001" step="any" value="100" inputmode="decimal">
             </div>
           </div>
 
@@ -153,9 +161,15 @@
           Black Market prices must be 0.5×–25× the server-calculated reference value. A 2% fee is charged now and never refunded. A 15% tax is deducted after a sale, so the seller receives 85%.
         </p>
 
+        <p id="sellValidation" class="sell-validation" role="status"></p>
+        </section>
+        <section class="sell-stage" aria-labelledby="sellReviewHeading">
+        <h3 id="sellReviewHeading">4. Review &amp; list</h3>
+        <p class="sell-card__hint">Continue to review your lot, fees and sale terms. Items are listed only after you confirm in the review dialog.</p>
         <button class="btn btn--primary btn--block" id="listButton" type="button" disabled>
           Create auction
         </button>
+        </section>
       </div>
     </section>
 
@@ -175,5 +189,6 @@
   </script>
 
   <script type="module" src="./auctions.js"></script>
+  <script type="module" src="../src/ui/utilityPages.js"></script>
 </body>
 </html>

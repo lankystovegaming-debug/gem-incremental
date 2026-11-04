@@ -142,6 +142,21 @@ function renderFeePreviews() {
   sellPriceMinimum.textContent = listingRange
     ? `Reference value R: ${formatMoney(listingRange.referenceValue)}. ${isBlackMarketSale() ? "Fixed price" : "Starting bid"}: ${formatMoney(listingRange.minimum)}–${formatMoney(listingRange.maximum)} (0.5×–${isBlackMarketSale() ? "25" : "10"}× R).`
     : "Choose items to see the server-verified reference range.";
+  // Presentation only: mirror the existing submission checks and fee helpers.
+  const validation = document.getElementById("sellValidation");
+  if (validation) {
+    const price = Number(sellPrice.value);
+    validation.textContent = !lotItemCount() ? "Select at least one item to continue."
+      : !listingRange ? "This lot has no market reference value."
+      : !Number.isFinite(price) || price <= 0 ? "Enter a positive price."
+      : price < listingRange.minimum || price > listingRange.maximum ? "Price is outside the allowed range shown above."
+      : rate == null ? "Choose a supported duration."
+      : listingFee > state.money ? "You do not have enough money for the listing fee."
+      : isBlackMarketSale() && !state.blackMarketStatus.open ? "The Black Market is closed."
+      : "";
+    sellPrice.setAttribute("aria-invalid", String(Boolean(lotItemCount() && listingRange && (!Number.isFinite(price) || price <= 0 || price < listingRange.minimum || price > listingRange.maximum))));
+  }
+
 }
 
 function selectedLotPriceRange() {

@@ -46,7 +46,7 @@
 </head>
 
 <body>
-  <main class="app-main app-main--narrow">
+  <main class="app-main settings-page">
     <header class="page-head page-hero">
       <div class="page-head__title page-hero__content">
         <h1>Settings</h1>
@@ -59,20 +59,21 @@
 
     <!-- ================= APPEARANCE ================= -->
 
-    <nav class="qol-settings-nav" aria-label="Settings categories">
-      <a class="btn" href="#automationHeading">Rolling</a><a class="btn" href="#gemFilterHeading">Gem Filter</a>
-      <a class="btn" href="#appearanceHeading">Display</a><a class="btn" href="#accountHeading">Account</a>
-      <a class="btn" href="#notificationsHeading">Notifications</a><a class="btn" href="#chatHeading">Chat</a><a class="btn" href="#aboutHeading">Controls</a>
+    <div class="settings-layout">
+    <nav class="qol-settings-nav card" aria-label="Settings categories">
+      <label class="settings-category-picker" for="settingsCategory">Jump to category<select class="select" id="settingsCategory"><option value="gameplayHeading">Gameplay</option><option value="automationHeading">Automation</option><option value="gemFilterHeading">Gem Filter</option><option value="appearanceHeading">Appearance</option><option value="navigationHeading">Navigation</option><option value="notificationsHeading">Notifications &amp; reveals</option><option value="chatHeading">Chat</option><option value="accountHeading">Account</option><option value="aboutHeading">Controls</option></select></label>
+      <div class="settings-category-links"><a class="btn" href="#gameplayHeading">Gameplay</a><a class="btn" href="#automationHeading">Automation</a><a class="btn" href="#gemFilterHeading">Gem Filter</a><a class="btn" href="#appearanceHeading">Appearance</a><a class="btn" href="#navigationHeading">Navigation</a><a class="btn" href="#notificationsHeading">Notifications &amp; reveals</a><a class="btn" href="#chatHeading">Chat</a><a class="btn" href="#accountHeading">Account</a><a class="btn" href="#aboutHeading">Controls</a></div>
     </nav>
+    <div class="settings-sections">
 
 
 
     <!-- ================= AUTOMATION ================= -->
 
-    <section class="card setting-group" aria-labelledby="automationHeading">
+    <section class="card setting-group" aria-labelledby="gameplayHeading">
       <div class="setting-group__head">
         <span id="automationIcon"></span>
-        <h2 id="automationHeading">Rolling & automation</h2>
+        <h2 id="gameplayHeading">Gameplay</h2>
       </div>
 
       <label class="setting switch"><span class="setting__text"><strong class="setting__title">Biome-neutral Tournament Mode</strong><span class="setting__sub">Exclude biome amplification and all seven biome-exclusive gems. Eligible personal buffs remain. Genuine rolls can still discover the ambient biome.</span></span><span class="setting__control"><input id="biomeTournamentMode" type="checkbox" disabled><span class="switch__track"></span></span></label>
@@ -82,6 +83,9 @@
       <p id="maxLuckHelp" class="muted">Blank disables the cap. Limits normal gem-selection Luck only, including burst Luck. Other stats and flat-gem probabilities stay unchanged.</p>
       <label class="setting">Keep new discoveries at or above 1 in <input class="input" id="discoveryKeepRarity" type="number" min="1" max="9007199254740991" value="10000"></label>
       <p><a href="#gemFilterHeading">Configure Gem Filter →</a></p>
+    </section>
+    <section class="card setting-group" aria-labelledby="automationHeading">
+      <h2 id="automationHeading">Rolling & automation</h2>
       <label class="setting switch">
         <span class="setting__text">
           <span class="setting__title">Auto roll</span>
@@ -116,7 +120,7 @@
           <span>Protect valuable rolls using effective rarity.</span>
         </div>
         <label class="switch">
-          <input id="autoKeepToggle" type="checkbox" role="switch">
+          <input aria-label="Auto keep" id="autoKeepToggle" type="checkbox" role="switch">
           <span class="switch__track"></span>
         </label>
       </div>
@@ -327,9 +331,12 @@
         </div>
       </div>
     </section>
+    </div>
+    </div>
   </main>
 
   <script type="module" src="./settings.js"></script>
 <script type="module" src="./qol.js"></script>
+  <script type="module" src="../src/ui/utilityPages.js"></script>
 </body>
 </html>

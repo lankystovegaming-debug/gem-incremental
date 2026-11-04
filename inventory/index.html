@@ -153,11 +153,11 @@
               aria-label="Search gems by name"
             >
           </label>
-          <button class="btn inventory-filter-toggle" id="inventoryFilterToggle" type="button" aria-expanded="false" aria-controls="inventoryFilterSheet">Filters &amp; actions</button>
+          <button class="btn inventory-filter-toggle" id="inventoryFilterToggle" type="button" aria-expanded="false" aria-controls="inventoryFilterSheet">Filters</button>
         </div>
 
         <div class="inventory-filter-sheet mobile-sheet" id="inventoryFilterSheet" aria-labelledby="inventoryFilterSheetTitle">
-          <div class="inventory-filter-sheet__head mobile-sheet__header"><strong id="inventoryFilterSheetTitle">Filters &amp; actions</strong><button class="btn btn--sm" id="inventoryFilterClose" type="button">Done</button></div>
+          <div class="inventory-filter-sheet__head mobile-sheet__header"><strong id="inventoryFilterSheetTitle">Filters</strong><button class="btn btn--sm" id="inventoryFilterClose" type="button">Done</button></div>
 
         <select class="select" id="gemFilter" aria-label="Filter gems">
           <option value="all">All gems</option>
@@ -200,16 +200,22 @@
           <option value="unlocked">Unlocked cleanup</option>
         </select>
 
+        </div>
+      </div>
+      <section class="card inventory-management" aria-labelledby="inventoryActionsHeading">
+        <h2 id="inventoryActionsHeading">Manage gems</h2>
+        <div class="action-bar"><button class="btn" id="lockVisibleButton" type="button" disabled>Lock visible</button><a class="btn" href="../settings/#gemFilterHeading">Gem Filter &amp; Auto Sell settings</a></div>
+        <details class="inventory-cleanup"><summary>Sell or delete gems</summary><p class="muted">Review the confirmation before selling or permanently deleting. Locked gems stay protected.</p><div class="action-bar">
         <button class="btn btn--danger" id="sellAllButton" type="button" disabled>
           Sell unlocked
         </button>
-        <button class="btn" id="lockVisibleButton" type="button" disabled>Lock visible</button>
+
         <button class="btn btn--danger" id="sellDuplicatesButton" type="button" disabled>Sell duplicates</button>
         <button class="btn btn--danger" id="deleteRulesButton" type="button" disabled>
           Delete by rules
         </button>
-        </div>
-      </div>
+        </div></details>
+      </section>
       <button class="inventory-filter-backdrop mobile-sheet-backdrop" id="inventoryFilterBackdrop" type="button" aria-label="Close inventory filters" hidden></button>
 
       <div class="delete-rules card" id="deleteRulesPanel" hidden>
@@ -233,7 +239,14 @@
 
     <section id="equipmentSection" class="hidden" role="tabpanel" aria-labelledby="equipmentTab">
       <p class="equipment-help">Choose any unlocked item to equip. Equipping one automatically stores the other item in the same category.</p>
-      <section id="equipmentLoadouts" aria-label="Equipment Loadouts"></section>
+      <details class="equipment-loadout-panel card"><summary>Equipment loadouts · 5 presets</summary>
+        <section id="equipmentLoadouts" aria-label="Equipment Loadouts"></section>
+      </details>
+      <div class="card equipment-browse" role="search" aria-label="Find equipment">
+        <label>Search equipment<input class="input" id="equipmentSearch" type="search" placeholder="Equipment name"></label>
+        <label>Status<select class="select" id="equipmentStatus"><option value="all">All equipment</option><option value="equipped">Equipped</option><option value="stored">Stored</option></select></label>
+        <p id="equipmentResults" role="status"></p>
+      </div>
       <div id="equipmentList" class="grid grid--wide"></div>
     </section>
 
@@ -271,5 +284,6 @@
   <button class="back-to-top" id="inventoryBackToTop" type="button" aria-label="Back to top" hidden>↑ <span>Top</span></button>
 
   <script type="module" src="./inventory.js"></script>
+  <script type="module" src="../src/ui/utilityPages.js"></script>
 </body>
 </html>

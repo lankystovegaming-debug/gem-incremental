@@ -1,0 +1,100 @@
+import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { create, step, visible } from '../supabase/functions/minigames/engine.js';
+const { chromium } = await import(process.env.MINIGAMES_PLAYWRIGHT_MODULE || 'playwright');
+const browser = await chromium.launch({headless:true,channel:process.env.MINIGAMES_BROWSER_CHANNEL || 'chrome'});
+const page = await browser.newPage({viewport:{width:1280,height:950}});
+const errors=[], requests=[];
+let run=null;
+page.on('pageerror', e => errors.push(e.message));
+await page.route('**/src/ui/shell.js', r=>r.fulfill({contentType:'text/javascript',body:'export function mountShell(){}'}));
+await page.route('**/src/backend/auth.js', r=>r.fulfill({contentType:'text/javascript',body:"export async function ensurePlayerAuth(){return {id:'tester'}} export function isSignInRequired(){return false} export const SIGN_IN_REQUIRED_MESSAGE='Sign in';"}));
+await page.route('**/src/backend/supabase.js',r=>r.fulfill({contentType:'text/javascript',body:"export const supabase={auth:{onAuthStateChange(){}},functions:{async invoke(_, {body}){return {data:await(await fetch('/mines-test-api',{method:'POST',body:JSON.stringify(body)})).json()}}}};"}));
+const pack=()=>run ? {...run,state:visible(run.state)} : null;
+await page.route('**/mines-test-api',async route=>{
+  const b=route.request().postDataJSON(); requests.push(b);
+  if(b.action==='start' && (!run || run.state.done)) run={id:'mines-run-'+requests.length,version:0,game:b.game,mode:b.mode,state:create(b.game,b.mode,{},17,Date.now())};
+  if(b.action==='act' && b.version===run.version && !run.state.done){run.state=step(run.state,b.input,Date.now());run.version++;}
+  const complete=run?.state.done && !run.state.abandoned;
+  await route.fulfill({json:{wallet:{mt:0,tickets:5,regen_at:new Date().toISOString()},server_now:Date.now(),run:pack(),runs:run&&!run.state.done?[pack()]:[],board:{own_rank:complete?1:null,entries:complete?[{rank:1,username:'Tester',score:run.state.score,is_you:true}]:[]}}});
+});
+const base=process.env.MINIGAMES_PREVIEW_URL || 'http://127.0.0.1:5548/minigames/';
+const play=page.locator('#play');
+const action=async name=>{
+  await page.getByRole('button',{name,exact:true}).click();
+  await page.waitForFunction(()=>document.getElementById('play').getAttribute('aria-busy')==='false');
+};
+const cell=async i=>{
+  await play.locator(`[data-cell="${i}"]`).click();
+  await page.waitForFunction(()=>document.getElementById('play').getAttribute('aria-busy')==='false');
+};
+const noOverflow=async()=>assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+try {
+  await page.goto(base);
+  await page.locator('[data-game="mines"]').waitFor();
+  await page.getByRole('button',{name:'Chance',exact:true}).click();
+  assert.equal(await page.locator('[data-game="mines"]').isVisible(),true);
+  await page.locator('[data-game="mines"]').click();
+  await action('Play');
+  assert.equal(await play.locator('[data-cell]').count(),25);
+  assert.equal(await page.locator('[data-start="rewarded"]').count(),0);
+  assert.match(await play.innerText(),/4.00% mine chance next/);
+  // Standard grid arrows and Enter use the same server reveal action.
+  const safe=(run.state.mine+1)%25;
+  await play.locator(`[data-cell="${safe}"]`).focus();
+  await page.keyboard.press('ArrowRight');
+  const next=Number(await page.locator(':focus').getAttribute('data-cell'));
+  assert.equal(next,safe%5<4?safe+1:safe);
+  await play.locator(`[data-cell="${safe}"]`).press('Enter');
+  await page.waitForFunction(()=>document.getElementById('play').getAttribute('aria-busy')==='false');
+  assert.equal(run.state.revealed.length,1);
+  assert.equal(await page.locator(':focus').getAttribute('data-cell'),String(safe));
+  assert.match(await play.innerText(),/4.17% mine chance next/);
+  const count=requests.length;
+  await play.locator(`[data-cell="${safe}"]`).dispatchEvent('click');
+  assert.equal(requests.length,count);
+  await page.reload();
+  await play.getByRole('button',{name:'Bank 1,042 points',exact:true}).waitFor();
+  assert.equal(run.state.revealed.length,1);
+  await action('Bank 1,042 points');
+  assert.match(await play.innerText(),/Banked 1,042 points/);
+  assert.equal(await play.locator('[data-cell]:disabled').count(),25);
+  await action('Next round');
+  await cell(run.state.mine);
+  assert.match(await play.innerText(),/Mine hit · 0 points this round/);
+  assert.equal(run.state.score,1042);
+  await action('Next round');
+  await action('Bank 1,000 points');
+  await action('Next round');
+  // A complete safe board auto-banks, without asking the player to hit tile 25.
+  for(let i=0;i<25;i++) if(i!==run.state.mine) await cell(i);
+  assert.match(await play.innerText(),/Banked 25,000 points/);
+  assert.equal(run.state.phase,'result');
+  await action('Next round');
+  await page.setViewportSize({width:320,height:844});
+  await play.getByText('Score and risk table',{exact:true}).click();
+  assert.equal(await play.locator('tbody tr').count(),25);
+  assert.equal(await play.locator('.mg-mines-table').evaluate(el=>el.scrollWidth<=el.parentElement.clientWidth),true);
+  await noOverflow();
+  mkdirSync(new URL('../artifacts/',import.meta.url),{recursive:true});
+  await page.screenshot({path:new URL('../artifacts/mines-mobile.png',import.meta.url).pathname,fullPage:true});
+  await action('Bank 1,000 points');
+  assert.equal(run.state.done,true);
+  assert.equal(run.state.score,28042);
+  assert.equal(run.state.history.length,5);
+  assert.match(await page.locator('#board').innerText(),/Your rank: #1/);
+  assert.match(await page.locator('#board').innerText(),/28,042/);
+  assert.equal(await play.locator('[data-action="next"]').count(),0);
+  await noOverflow();
+  await page.setViewportSize({width:1280,height:950});
+  await page.screenshot({path:new URL('../artifacts/mines-desktop.png',import.meta.url).pathname,fullPage:true});
+  // Free-play wallet stays unchanged, and a fresh run can be abandoned.
+  assert.match(await page.locator('#wallet').innerText(),/5/);
+  await action('Play');
+  await play.getByText('End this run',{exact:true}).click();
+  await action('Abandon run');
+  assert.equal(run.state.abandoned,true);
+  assert.match(await play.innerText(),/Run ended/);
+  assert.deepEqual(errors,[]);
+  console.log('Mines browser: hub, keyboard, reveal, duplicate click, reload, bank, mine, auto-bank, five rounds, leaderboard, mobile table and abandonment passed.');
+} finally { await browser.close(); }

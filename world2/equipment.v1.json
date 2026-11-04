@@ -1,0 +1,4753 @@
+{
+  "version": 1,
+  "enabled": false,
+  "vectorOrder": [
+    "Luck",
+    "Speed",
+    "Mutation",
+    "Weight Luck",
+    "Weight Multiplier"
+  ],
+  "unknownPolicy": "reject cross-world compatibility; legacy native identity defaults W1 only",
+  "entries": [
+    {
+      "id": "aether-lantern",
+      "name": "Aether Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes aether-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.14
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "aether-pickaxe",
+      "name": "Aether Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes aether-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 4,
+        "rollSpeed": 0.8
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        5,
+        1.8,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "aetherstep-boots",
+      "name": "Aetherstep Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes aetherstep-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.075
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "aetherwoven-bag",
+      "name": "Aetherwoven Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes aetherwoven-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.08
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "all-in-pickaxe",
+      "name": "All-In Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes all-in-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 499,
+        "rollSpeed": -0.67,
+        "weightLuck": -0.85,
+        "mutationChance": -0.85,
+        "weightMultiplier": -0.85
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "all-in",
+          "type": "hard_override",
+          "layer": "equipmentTotals AND final Luck override",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "foreign [1+499*a,.33,.15,.15,.15]; normalize both override sites; preserve isolation exclusions",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [
+            "later Abyssal Potion +100000 Luck exception remains",
+            "sale bonuses evaluated separately"
+          ],
+          "suppressedSources": [
+            "secondary stat contributions",
+            "attached enchant",
+            "masterwork",
+            "research",
+            "crystal context",
+            "expedition context",
+            "artifacts",
+            "one-roll Luck"
+          ],
+          "mustNormalizeAt": [
+            "equipmentTotals fixed vector",
+            "later final Luck=500 admin-adjusted override"
+          ]
+        },
+        {
+          "id": "flat-luck",
+          "type": "probability_multiplier",
+          "layer": "flat selector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "1+3*a",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "tryhard",
+          "type": "value_multiplier",
+          "layer": "exclusive mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "keep 1/2000; F(10)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        500.0,
+        0.33,
+        0.15,
+        0.15,
+        0.15
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "all-rounder-toy",
+      "name": "All Rounder Toy",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes all-rounder-toy",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 1,
+        "rollSpeed": 1,
+        "weightLuck": 1,
+        "mutationChance": 1,
+        "weightMultiplier": 1
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "balanced",
+          "type": "value_multiplier",
+          "layer": "exclusive mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "keep 1/20 chance; F(1.2)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "ascendant-pickaxe",
+      "name": "Ascendant Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes ascendant-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 14,
+        "rollSpeed": 1.3
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        15,
+        2.3,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "astral-boots",
+      "name": "Astral Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes astral-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.06
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "astral-clover",
+      "name": "Astral Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes astral-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.085
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "astral-pickaxe",
+      "name": "Astral Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes astral-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 23,
+        "rollSpeed": 1.7
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "vein-hunter",
+          "type": "bonus_opportunity",
+          "layer": "post primary",
+          "neutralBaseline": 0,
+          "eligibility": "Luck-affected primary raw rarity 10000..1000000 inclusive",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "probability .05*a; full fresh weight/mutation specimen",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        24,
+        2.7,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "beacon-lantern",
+      "name": "Beacon Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes beacon-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.07
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "bedrock-pickaxe",
+      "name": "Bedrock Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes bedrock-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 24,
+        "rollSpeed": 2,
+        "weightLuck": 4,
+        "mutationChance": 0,
+        "weightMultiplier": 0.55
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "foundation",
+          "type": "stateful_multiplier",
+          "layer": "core stats",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "compose native core Luck x1.5, WL x1.25 and WM x1.1 at their own layers, then F once per composed benefit; preserve integer charge/duration",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "threshold": 100,
+            "gainsByRawRarity": [
+              [
+                1,
+                9,
+                2
+              ],
+              [
+                10,
+                49,
+                3
+              ],
+              [
+                50,
+                99,
+                5
+              ]
+            ],
+            "burstRolls": 10,
+            "burstFactors": {
+              "luck": 1.5,
+              "weightLuck": 1.25,
+              "weightMultiplier": 1.1
+            },
+            "duringBurst": "decrement; no ordinary charge gain"
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        25.0,
+        3.0,
+        1.0,
+        5.0,
+        1.55
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "bottomless-bag",
+      "name": "Bottomless Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes bottomless-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.05
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "bright-lantern",
+      "name": "Bright Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes bright-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.035
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "celestial-clover",
+      "name": "Celestial Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes celestial-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.1
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "celestial-lantern",
+      "name": "Celestial Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes celestial-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.115
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "celestial-pickaxe",
+      "name": "Celestial Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes celestial-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 25,
+        "rollSpeed": 1.8,
+        "weightLuck": 3.5,
+        "mutationChance": 0,
+        "weightMultiplier": 0.5
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "rarity-resonance",
+          "type": "stateful_multiplier",
+          "layer": "special Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(3); preserve 100 charge threshold and gains; rare >=100000 may preserve charged meter",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        26.0,
+        2.8,
+        1.0,
+        4.5,
+        1.5
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "colossal-bag",
+      "name": "Colossal Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes colossal-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.065
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "convergence-pickaxe",
+      "name": "Convergence",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes convergence-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 31,
+        "rollSpeed": 2,
+        "weightLuck": 4,
+        "mutationChance": 0.5,
+        "weightMultiplier": 0.75
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "sacrificial-echo",
+          "type": "stateful_multiplier",
+          "layer": "core stats",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "1000 Echo queues five x1.5 rolls; compose with core then F",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "threshold": 1000,
+            "duration": 5,
+            "factor": 1.5,
+            "channels": [
+              "Luck",
+              "Mutation",
+              "Weight Luck",
+              "Weight Multiplier"
+            ],
+            "echoGainsByMinimumRarity": [
+              [
+                1,
+                1
+              ],
+              [
+                50,
+                2
+              ],
+              [
+                100,
+                3
+              ],
+              [
+                1000,
+                5
+              ],
+              [
+                10000,
+                10
+              ],
+              [
+                100000,
+                20
+              ],
+              [
+                1000000,
+                40
+              ],
+              [
+                10000000,
+                75
+              ],
+              [
+                100000000,
+                150
+              ],
+              [
+                1000000000,
+                250
+              ]
+            ],
+            "duringActive": "decrement Surge first, else Resonance; no ordinary Echo gain"
+          }
+        },
+        {
+          "id": "one-becomes-many",
+          "type": "bonus_package",
+          "layer": "post primary",
+          "neutralBaseline": 0,
+          "eligibility": "retain five-slot native preflight",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "every 250th own roll gates whole four-specimen package with probability a; no independent four gates",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "community-momentum",
+          "type": "account_resource",
+          "layer": "shared charge ledger",
+          "neutralBaseline": 1,
+          "eligibility": "same deployed million-total_rolls milestone; cap3",
+          "counterDomain": "account-wide convergence_private",
+          "adaptationPolicy": "do not attenuate or duplicate charges; activated surge x2 composes with core then F",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "surge",
+          "type": "stateful_multiplier",
+          "layer": "core stats",
+          "neutralBaseline": 1,
+          "eligibility": "existing eligibility",
+          "counterDomain": "single activation + originating-world genuine rolls",
+          "adaptationPolicy": "ten-roll activation bound to activation world; Surge precedence over Resonance; F on composed benefit",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        32.0,
+        3.0,
+        1.5,
+        5.0,
+        1.75
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "cosmic-pet-harness",
+      "name": "Cosmic Pet Harness",
+      "category": "petGear",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes cosmic-pet-harness",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "petLuck": 8
+      },
+      "effects": [
+        {
+          "id": "pet-odds",
+          "type": "unsupported",
+          "layer": "pet-specific",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "pet context",
+          "adaptationPolicy": "no generic adaptation; require separate approved odds handler",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "crossWorldStatus": "blocked_pending_pet_odds_contract",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "crude-pickaxe",
+      "name": "Crude Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes crude-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.05,
+        "rollSpeed": 0.05
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        1.05,
+        1.05,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "dim-lantern",
+      "name": "Dim Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes dim-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.02
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "dimensional-bag",
+      "name": "Dimensional Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes dimensional-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.095
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "dimensional-vault",
+      "name": "Dimensional Vault",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes dimensional-vault",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.15
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "eclipse-pickaxe",
+      "name": "Eclipse Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes eclipse-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 16,
+        "rollSpeed": 1.4
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "mutation-resonance",
+          "type": "conditional_multiplier",
+          "layer": "natural mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(1.10); retain caps",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        17,
+        2.4,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "empyrean-pickaxe",
+      "name": "Empyrean Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes empyrean-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 27,
+        "rollSpeed": 2,
+        "weightLuck": 3.25,
+        "mutationChance": 0,
+        "weightMultiplier": 0.5
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "ascension",
+          "type": "stateful_additive",
+          "layer": "personal enchant component",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "+50*a for own-tool rolls 1001..1010 etc.; not final Luck x50",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "ascended",
+          "type": "value_multiplier",
+          "layer": "exclusive mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "keep 1/400 chance; F(2)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        28.0,
+        3.0,
+        1.0,
+        4.25,
+        1.5
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "eternal-lantern",
+      "name": "Eternal Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes eternal-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.09
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "eternity-pickaxe",
+      "name": "Eternity Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes eternity-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 24,
+        "rollSpeed": 2,
+        "weightLuck": 3.25,
+        "mutationChance": 0.25,
+        "weightMultiplier": 0.5
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "mutation-surge",
+          "type": "stateful_additive",
+          "layer": "mutation after admin assembly",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "+50*a; same 1001..1010 own-tool cadence",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        25.0,
+        3.0,
+        1.25,
+        4.25,
+        1.5
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "event-horizon-boots",
+      "name": "Event Horizon Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes event-horizon-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.135
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "event-horizon-lantern",
+      "name": "Event Horizon Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes event-horizon-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.205
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "eventide-boots",
+      "name": "Eventide Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes eventide-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.105
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "fortune-boots",
+      "name": "Fortune Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes fortune-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.04
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "fortune-pickaxe",
+      "name": "Fortune Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes fortune-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 34,
+        "rollSpeed": 1.8,
+        "weightLuck": 3.25,
+        "mutationChance": 0,
+        "weightMultiplier": 0.45
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "fortune-favors-the-bold",
+          "type": "candidate_multiplier",
+          "layer": "candidate Luck",
+          "neutralBaseline": 1,
+          "eligibility": "Luck-affected raw rarity >=1000000",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(1.10)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        35.0,
+        2.8,
+        1.0,
+        4.25,
+        1.45
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "four-leaf-clover",
+      "name": "Four-Leaf Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes four-leaf-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.02
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "gemkeeper-bag",
+      "name": "Gemkeeper Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes gemkeeper-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.04
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "golden-clover",
+      "name": "Golden Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes golden-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.05
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "gravitational-boots",
+      "name": "Gravitational Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes gravitational-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.15
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "gravity-boots",
+      "name": "Gravity Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes gravity-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.05
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "impossible-pickaxe",
+      "name": "The Impossible Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes impossible-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0,
+        "rollSpeed": 0,
+        "weightLuck": 0,
+        "mutationChance": 0,
+        "weightMultiplier": 0
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "impossible",
+          "type": "conditional_multiplier",
+          "layer": "native final layers",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "keep 1/1000000 proc; F(1000000) Luck, F(100) mutation/WL, F(10) WM at their native layers",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "jackpot-slot",
+      "name": "Jackpot Slot",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes jackpot-slot",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 6.77,
+        "rollSpeed": 0.77,
+        "weightLuck": 0.77,
+        "mutationChance": -0.23,
+        "weightMultiplier": -0.23
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "jackpot-house-edge",
+          "type": "stateful_override",
+          "layer": "special Luck and loss",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "preserve native draws, scheduled ordinal and penalties; compose simultaneous positive special factors then F; 0.77% loss has no specimen but remains genuine",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "independentUnluckyChance": "1/77",
+            "unluckyFactor": 0.77,
+            "independentJackpotChance": "1/777",
+            "jackpotFactor": 1.77,
+            "every7thFactor": 0.77,
+            "every777thFactor": 7.77,
+            "independentHouseEdgeChance": 0.0077,
+            "ordinal": "existing internal genuine sequence; never lifetime progression UI"
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        7.77,
+        1.77,
+        0.77,
+        1.77,
+        0.77
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "masterwork-pickaxe",
+      "name": "Masterwork Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes masterwork-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 1.5,
+        "rollSpeed": 0.45
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        2.5,
+        1.45,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "miners-boots",
+      "name": "Miner's Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes miners-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.01
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "money-pickaxe",
+      "name": "Money Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes money-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": -0.99,
+        "rollSpeed": -0.7,
+        "weightLuck": 9,
+        "mutationChance": 1,
+        "weightMultiplier": 199
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "cheap-taste",
+          "type": "selector_restriction",
+          "layer": "normal selector",
+          "neutralBaseline": 1,
+          "eligibility": "normal only",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "preserve raw<100 restriction and negative stats",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [
+            "Deep Sea and source-exclusive potion outcomes bypass normal filter today",
+            "relics excluded"
+          ]
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        0.01,
+        0.3,
+        2.0,
+        10.0,
+        200.0
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "mythic-pickaxe",
+      "name": "Mythic Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes mythic-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 2.5,
+        "rollSpeed": 0.6
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        3.5,
+        1.6,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "paradox-pickaxe",
+      "name": "Paradox Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes paradox-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 33,
+        "rollSpeed": 2.1,
+        "weightLuck": 4.5,
+        "mutationChance": 0.5,
+        "weightMultiplier": 0.7
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "contradiction-critical-resolved",
+          "type": "stateful_multiplier",
+          "layer": "core stats",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "same five conditions/gains/overflow, charge 1000 and ten-step ladder; compose core and ladder/critical before F",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "conditions": [
+              "raw rarity>=1000000",
+              "raw natural weight>=3",
+              "natural mutation count>=1",
+              "value>=25000000",
+              "effective rarity>=1000000000"
+            ],
+            "gainsByConditionCount": [
+              0,
+              1,
+              3,
+              10,
+              40,
+              250
+            ],
+            "threshold": 1000,
+            "criticalLadder": [
+              1.1,
+              1.2,
+              1.3,
+              1.4,
+              1.5,
+              1.6,
+              1.7,
+              1.8,
+              1.9,
+              2
+            ],
+            "resolvedFactor": 3,
+            "channels": [
+              "Luck",
+              "Mutation",
+              "Weight Luck",
+              "Weight Multiplier"
+            ],
+            "resolvedTrigger": "all five conditions on tenth critical roll; one resolved roll, then re-evaluate preserved overflow"
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        34.0,
+        3.1,
+        1.5,
+        5.5,
+        1.7
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "pet-luck-collar",
+      "name": "Pet Luck Collar",
+      "category": "petGear",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes pet-luck-collar",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "petLuck": 3
+      },
+      "effects": [
+        {
+          "id": "pet-odds",
+          "type": "unsupported",
+          "layer": "pet-specific",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "pet context",
+          "adaptationPolicy": "no generic adaptation; require separate approved odds handler",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "crossWorldStatus": "blocked_pending_pet_odds_contract",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "plastic-shopping-bag",
+      "name": "Plastic Shopping Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes plastic-shopping-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 1.55
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "additive-weight",
+          "type": "additive",
+          "layer": "WM assembly",
+          "neutralBaseline": 1,
+          "eligibility": "same native eligibility",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "scale positive native additive bonus*a, including own masterwork, never convert to multiplicative",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "conservation",
+          "type": "resource_opportunity",
+          "layer": "crafting deposit",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "craft transaction",
+          "adaptationPolicy": "eligible conservation plans only .125*a; consumed-material bulk always preserved=false",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "bagged",
+          "type": "cosmetic",
+          "layer": "genuine ordinal",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "unchanged every67th 1/67 chance",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "polished-pickaxe",
+      "name": "Polished Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes polished-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.5,
+        "rollSpeed": 0.2
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        1.5,
+        1.2,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "prismatic-clover",
+      "name": "Prismatic Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes prismatic-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.07
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "prospectors-boots",
+      "name": "Prospector's Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes prospectors-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.03
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "radiant-lantern",
+      "name": "Radiant Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes radiant-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.05
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "reality-shifter",
+      "name": "Reality Shifter",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes reality-shifter",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 39,
+        "rollSpeed": -0.6,
+        "weightLuck": -0.2,
+        "mutationChance": -1,
+        "weightMultiplier": -0.2
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "shift",
+          "type": "hard_override",
+          "layer": "special Luck and mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "every 500th own-tool roll F(400) special Luck, excludes one-roll Luck; forced mutation=0 after additions; preserve Speed .4 and weight .8",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "shifted",
+          "type": "conditional_value",
+          "layer": "exclusive mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "same conditional .20; F(35)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        40.0,
+        0.4,
+        0.0,
+        0.8,
+        0.8
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "refined-pickaxe",
+      "name": "Refined Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes refined-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.8,
+        "rollSpeed": 0.3
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        1.8,
+        1.3,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "reinforced-bag",
+      "name": "Reinforced Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes reinforced-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.03
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "reinforced-boots",
+      "name": "Reinforced Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes reinforced-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.02
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "reinforced-pickaxe",
+      "name": "Reinforced Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes reinforced-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.15,
+        "rollSpeed": 0.1
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        1.15,
+        1.1,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "riftwoven-bag",
+      "name": "Riftwoven Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes riftwoven-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.11
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "silly-fun-happy-pickaxe",
+      "name": "Silly Fun Happy Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes silly-fun-happy-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 10,
+        "rollSpeed": -0.5,
+        "weightLuck": 1,
+        "mutationChance": -0.5,
+        "weightMultiplier": -0.5
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "silly-fun-happy",
+          "type": "composed_multiplier",
+          "layer": "exclusive value",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "keep independent draws and full .5 loss; compose positive 10x and 50x as 500 then F before loss",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "independentEvents": [
+              {
+                "chance": 0.5,
+                "factor": 0.5
+              },
+              {
+                "chance": 0.1,
+                "factor": 10
+              },
+              {
+                "chance": 0.005,
+                "factor": 50
+              }
+            ]
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        11.0,
+        0.5,
+        0.5,
+        2.0,
+        0.5
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "silver-clover",
+      "name": "Silver Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes silver-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.035
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "singularity-lantern",
+      "name": "Singularity Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes singularity-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.25
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "singularity-pickaxe",
+      "name": "Singularity Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes singularity-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 18,
+        "rollSpeed": 1.5
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "event-horizon",
+          "type": "candidate_multiplier",
+          "layer": "candidate Luck",
+          "neutralBaseline": 1,
+          "eligibility": "raw rarity >=100000; cap after factor",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(1.10)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        19,
+        2.5,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "singularity-striders",
+      "name": "Singularity Striders",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes singularity-striders",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.12
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "sturdy-bag",
+      "name": "Sturdy Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes sturdy-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.02
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "supersizer-pickaxe",
+      "name": "Supersizer Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes supersizer-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 18.91,
+        "finalSell": 0.25,
+        "rollSpeed": 1.75,
+        "weightLuck": 4.5,
+        "mutationChance": -0.5,
+        "weightMultiplier": 1.4
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "sizes",
+          "type": "joint_benefit",
+          "layer": "weight AND mutation value",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "s>1: sqrt(1+a*(s*s-1)) in both channels; Small .75 unchanged; one cumulative draw with native size probabilities",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "exclusiveCumulativeDraw": true,
+            "sizes": [
+              {
+                "id": "small",
+                "chance": "1/3",
+                "weightAndMutationValue": 0.75
+              },
+              {
+                "id": "big",
+                "chance": "1/10",
+                "weightAndMutationValue": 1.25
+              },
+              {
+                "id": "giant",
+                "chance": "1/100",
+                "weightAndMutationValue": 2
+              },
+              {
+                "id": "massive",
+                "chance": "1/1000",
+                "weightAndMutationValue": 5
+              },
+              {
+                "id": "colossal",
+                "chance": "1/10000",
+                "weightAndMutationValue": 10
+              },
+              {
+                "id": "titanic",
+                "chance": "1/100000",
+                "weightAndMutationValue": 20
+              },
+              {
+                "id": "gargantuan",
+                "chance": "1/1000000",
+                "weightAndMutationValue": 25
+              }
+            ]
+          }
+        },
+        {
+          "id": "gargantuan-blessing",
+          "type": "real_time_state",
+          "layer": "final Luck/WM/Speed and sale",
+          "neutralBaseline": 1,
+          "eligibility": "existing Gargantuan trigger",
+          "counterDomain": "single account activation",
+          "adaptationPolicy": "one 5-minute real-time expiry and activation world; F(2) Luck, F(2.25) WM, preserve Speed .75; every tenth blessed roll 1/20 REPLACES Luck with F(10000)",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "durationMs": 300000,
+            "refresh": "Gargantuan refreshes five minutes from outcome; keep tenth-roll cadence if already active; new episode starts at zero after trigger"
+          }
+        },
+        {
+          "id": "supersizer-sale",
+          "type": "transaction_multiplier",
+          "layer": "NPC sale",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "sale receipt",
+          "adaptationPolicy": "compose equipped 1.25 and eligible blessing 1.5 then F once; retain immutable origin and destination adaptation rule",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [
+            "deployed commit-before-sale blessing differs from response pre-roll estimate; do not repair W1 here",
+            "manual sale uses current equipment/blessing; Phase4 must bind eligible world without amplification"
+          ]
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        19.91,
+        2.75,
+        0.5,
+        5.5,
+        2.4
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "tectonic-pickaxe",
+      "name": "Tectonic Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes tectonic-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 23,
+        "rollSpeed": 1.8,
+        "weightLuck": 6,
+        "mutationChance": 0,
+        "weightMultiplier": 0.9
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "crushing-depth",
+          "type": "probability_replacement",
+          "layer": "raw weight sampler",
+          "neutralBaseline": "actual event baseline",
+          "eligibility": "pressure 100 queues five rolls",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "baseline+a*(native-baseline) only for benefit; entry .40 vs ordinary .25; continuation .45 vs ordinary 1/3; preserve stronger event baseline downside",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "pressureGains": [
+              {
+                "rawBelow": 0.85,
+                "gain": 4
+              },
+              {
+                "rawBelow": 1.1,
+                "gain": 3
+              },
+              {
+                "rawBelow": 1.5,
+                "gain": 2
+              },
+              {
+                "rawBelow": 2,
+                "gain": 1
+              },
+              {
+                "otherwise": 0
+              }
+            ],
+            "threshold": 100,
+            "duration": 5,
+            "resetOnThreshold": true
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        24.0,
+        2.8,
+        1.0,
+        7.0,
+        1.9
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "the-accelerator",
+      "name": "The Accelerator",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes the-accelerator",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 23,
+        "rollSpeed": 2.4,
+        "weightLuck": 3,
+        "mutationChance": 0,
+        "weightMultiplier": 0.4
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "velocity",
+          "type": "stateful_multiplier",
+          "layer": "preclaim Speed",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "resolve spool stage 3.4/3.5/3.6/3.7/3.8 then F; preserve switch reset",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "spoolThresholds": [
+              0,
+              25,
+              50,
+              100,
+              200
+            ],
+            "speedStages": [
+              3.4,
+              3.5,
+              3.6,
+              3.7,
+              3.8
+            ],
+            "timing": "pre-roll spool for Speed/Breakneck; increment on genuine finish"
+          }
+        },
+        {
+          "id": "breakneck",
+          "type": "bonus_opportunity",
+          "layer": "post primary",
+          "neutralBaseline": 0,
+          "eligibility": "pre-roll spool >=200",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "a/100; whole resolved specimen; exclude one-roll Luck",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        24.0,
+        3.4,
+        1.0,
+        4.0,
+        1.4
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "the-excavator",
+      "name": "The Excavator",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes the-excavator",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 23,
+        "rollSpeed": 2,
+        "weightLuck": 3,
+        "mutationChance": 0,
+        "weightMultiplier": 0.4
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "excavation",
+          "type": "resource_opportunity",
+          "layer": "post primary",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "a/40; whole potion; same mastery loot table; mastery advances only on awarded proc",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "masteryThresholds": [
+              25,
+              100,
+              250,
+              500
+            ],
+            "tierWeightRows": [
+              [
+                34,
+                27,
+                20,
+                10,
+                6,
+                2,
+                1
+              ],
+              [
+                29,
+                29,
+                22,
+                11,
+                6,
+                2,
+                1
+              ],
+              [
+                24,
+                28,
+                25,
+                13,
+                7,
+                2,
+                1
+              ],
+              [
+                19,
+                26,
+                28,
+                16,
+                8,
+                2,
+                1
+              ],
+              [
+                14,
+                24,
+                30,
+                19,
+                9,
+                2,
+                2
+              ]
+            ],
+            "ordinaryPotionFamilies": [
+              "lucky",
+              "speed",
+              "fortune",
+              "mass"
+            ],
+            "wholeReward": true
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        24.0,
+        3.0,
+        1.0,
+        4.0,
+        1.4
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "the-resonator",
+      "name": "The Resonator",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes the-resonator",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 23,
+        "rollSpeed": 1.9,
+        "weightLuck": 3,
+        "mutationChance": 0,
+        "weightMultiplier": 0.45
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "resonance",
+          "type": "composed_multiplier",
+          "layer": "special candidate",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(1.25*(1+.05*r)), r<=10; mastery preserved",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [],
+          "nativeContract": {
+            "masteryGainsByMinimumRarity": [
+              [
+                1,
+                1
+              ],
+              [
+                1000000,
+                2
+              ],
+              [
+                10000000,
+                3
+              ],
+              [
+                100000000,
+                5
+              ],
+              [
+                500000000,
+                10
+              ]
+            ],
+            "cap": 10,
+            "scope": "per special gem identity"
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        24.0,
+        2.9,
+        1.0,
+        4.0,
+        1.45
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "three-leaf-clover",
+      "name": "Three-Leaf Clover",
+      "category": "clover",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes three-leaf-clover",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 0.01
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "base Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "toy-shovel",
+      "name": "Toy Shovel",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes toy-shovel",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 16,
+        "rollSpeed": 1.4,
+        "weightLuck": 1.5,
+        "mutationChance": -0.2,
+        "weightMultiplier": 0.2
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "wrong-tool-close-enough",
+          "type": "borrowed_vector",
+          "layer": "core stats",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "preserve 1/67 replacement and conditional 1/67 special vector; use eight OLD borrowed vectors, stats only; adapt resolved vector once",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": [
+            "never borrow passives",
+            "never update borrowed vectors to modern recipes"
+          ],
+          "nativeContract": {
+            "legacyBorrowedVectors": {
+              "fortune-pickaxe": [
+                33.0,
+                2.7,
+                0.95,
+                4.0,
+                1.4
+              ],
+              "empyrean-pickaxe": [
+                24.0,
+                3.0,
+                1.0,
+                3.5,
+                1.4
+              ],
+              "eternity-pickaxe": [
+                22.0,
+                3.0,
+                1.1,
+                4.0,
+                1.45
+              ],
+              "tectonic-pickaxe": [
+                20.0,
+                2.6,
+                1.0,
+                7.0,
+                1.85
+              ],
+              "the-accelerator": [
+                21.0,
+                3.4,
+                0.9,
+                3.0,
+                1.3
+              ],
+              "the-resonator": [
+                20.0,
+                2.8,
+                1.0,
+                3.5,
+                1.35
+              ],
+              "the-excavator": [
+                19.0,
+                2.9,
+                0.95,
+                3.25,
+                1.3
+              ],
+              "bedrock-pickaxe": [
+                25.0,
+                3.1,
+                1.05,
+                5.0,
+                1.55
+              ]
+            },
+            "eligibleSeriousPickaxes": [
+              "bedrock-pickaxe",
+              "celestial-pickaxe",
+              "paradox-pickaxe",
+              "empyrean-pickaxe",
+              "eternity-pickaxe",
+              "tectonic-pickaxe",
+              "the-accelerator",
+              "the-resonator",
+              "the-excavator",
+              "fortune-pickaxe",
+              "supersizer-pickaxe",
+              "all-in-pickaxe"
+            ],
+            "borrowedSpeedOverride": 2.4,
+            "closeEnoughVector": [
+              67,
+              2.4,
+              6.7,
+              6.7,
+              2.67
+            ],
+            "noBorrowedPassives": true
+          }
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        17.0,
+        2.4,
+        0.8,
+        2.5,
+        1.2
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "transcendent-pickaxe",
+      "name": "Transcendent Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes transcendent-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 21,
+        "rollSpeed": 1.6
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "enchant-conduit",
+          "type": "composed_multiplier",
+          "layer": "personal enchant",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "compose conduit/attunement/enchant excess then attenuate once",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        22,
+        2.6,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "vault-of-plenty",
+      "name": "Vault of Plenty",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes vault-of-plenty",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.13
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "veteran-pickaxe",
+      "name": "Veteran Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes veteran-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 10,
+        "rollSpeed": 1.15
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        11,
+        2.15,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "void-lantern",
+      "name": "Void Lantern",
+      "category": "lantern",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes void-lantern",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "mutationChance": 0.17
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "mutation",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "voidbreaker-pickaxe",
+      "name": "Voidbreaker Pickaxe",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes voidbreaker-pickaxe",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "luck": 7,
+        "rollSpeed": 1
+      },
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve M<=1 and zero; compose own passive at SAME layer before adaptation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "baselineVector": [
+        8,
+        2,
+        1,
+        1,
+        1
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "voidwalker-boots",
+      "name": "Voidwalker Boots",
+      "category": "boots",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes voidwalker-boots",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightLuck": 0.09
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "weight Luck",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "worn-bag",
+      "name": "Worn Bag",
+      "category": "bag",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live game_recipes worn-bag",
+        "roll v179 equipmentTotals"
+      ],
+      "baselineSource": "runtime item columns + native hardcoded override; recipe bonus snapshot is evidence, never a replacement for item instance",
+      "recipeBonus": {
+        "weightMultiplier": 0.01
+      },
+      "effects": [
+        {
+          "id": "secondary",
+          "type": "beneficial_multiplier",
+          "layer": "WM",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "owning equipment instance",
+          "adaptationPolicy": "resolve actual item bonus + relicSecondary strength then F; preserve native negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "roll-bulk",
+          "type": "integer_capacity",
+          "layer": "batch capacity",
+          "neutralBaseline": 0,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "none",
+          "adaptationPolicy": "unchanged integer capacity; no attenuation",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "nativePassiveStatus": "normal bag/boots passives retired in v179; no invented charge/surge/compression effect",
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: equipped secondary contributions; normal boots/bag passive flags=false"
+      ]
+    },
+    {
+      "id": "neptune",
+      "name": "Neptune",
+      "category": "pickaxe",
+      "nativeWorld": 1,
+      "verification": "verified",
+      "evidence": [
+        "live owned equipment IDs",
+        "roll v179 PICKAXE_STATS and rollDeepSeaGem"
+      ],
+      "baselineVector": [
+        30.0,
+        0.7,
+        1.5,
+        1.2,
+        1.2
+      ],
+      "effects": [
+        {
+          "id": "core",
+          "type": "beneficial_multiplier",
+          "layer": "core vector",
+          "neutralBaseline": 1,
+          "eligibility": "native eligibility unchanged",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(M) for M>1; preserve negatives/zero",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        },
+        {
+          "id": "deep-sea-divisor",
+          "type": "selector_divisor",
+          "layer": "Deep Sea selector",
+          "neutralBaseline": 1,
+          "eligibility": "Deep Sea only; this does not identify World 2",
+          "counterDomain": "world bucket",
+          "adaptationPolicy": "F(10) or F(20) with offering; preserve offering consumption/pool fee",
+          "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+          "exceptions": []
+        }
+      ],
+      "evidenceAnchors": [
+        "roll v179: equipmentTotals",
+        "roll v179: prepareEquipmentRoll / finishEquipmentRoll"
+      ]
+    },
+    {
+      "id": "evergrowth",
+      "name": "Evergrowth",
+      "category": "unknown",
+      "nativeWorld": 1,
+      "verification": "unverified",
+      "crossWorldStatus": "blocked_unimplemented",
+      "effects": [],
+      "evidence": [
+        "absent from inspected deployed recipes, equipment IDs and roll source; no invented passive"
+      ]
+    }
+  ],
+  "attachedEffects": [
+    {
+      "id": "deep_strike",
+      "type": "stateful_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "normal every7th x1.35; ancient every5th x1.5; compose strengthening then F",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "fortune_surge",
+      "type": "stateful_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "5%/8% activates NEXT3 x1.35/1.5; no active retrigger; compose strengthening then F",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "collectors_edge",
+      "type": "conditional_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(1+.12*c) / F(1+.25*c); destination discovery denominator must be approved; optional-biome exclusions",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "prospectors_instinct",
+      "type": "stateful_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "raw>=5000/10000 refills NEXT4/6 x1.4/1.6; compose strengthening then F",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "vein_hunter",
+      "type": "stateful_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "miss<=30; F(1+miss/100); raw>=10000 resets; distinct from Astral duplicate",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "jackpot_mining",
+      "type": "random_multiplier",
+      "layer": "enchant Luck",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "keep 8% positive x1.75/2.5 then next4% x.5; F positive strengthened factor; full loss",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "blitz_vein",
+      "type": "stateful_multiplier",
+      "layer": "WL Speed WM",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "every20/10 stack cap10; nonrelic raw>=30000 resets; compose strengthening then F",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "slow_starter",
+      "type": "cooldown_factor",
+      "layer": "cooldown",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "ancient branch only max(.5,1.75-.025*r); c<1 ->1-a*(1-c); preserve c>=1 slowing",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "geologist",
+      "type": "candidate_multiplier",
+      "layer": "candidate Luck",
+      "neutralBaseline": 1,
+      "eligibility": "undiscovered eligible gem",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(strengthened1.5)",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "lucky_break",
+      "type": "reroll_opportunity",
+      "layer": "gem identity",
+      "neutralBaseline": 0,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "5%*a / 10%*a; whole higher-raw-rarity comparison; weight/mutations sampled once",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "steady_hand",
+      "type": "final_weight",
+      "layer": "masterwork",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(1.03/1.05)",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "careful_extraction",
+      "type": "conditional_multiplier",
+      "layer": "masterwork final weight",
+      "neutralBaseline": 1,
+      "eligibility": "raw>=100000",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(1.10/1.15)",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "mutation_resonance",
+      "type": "natural_mutation",
+      "layer": "masterwork",
+      "neutralBaseline": 1,
+      "eligibility": "native eligibility unchanged",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(1.05/1.08)",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    },
+    {
+      "id": "deep_survey",
+      "type": "candidate_multiplier",
+      "layer": "masterwork candidate Luck",
+      "neutralBaseline": 1,
+      "eligibility": "raw>=100000",
+      "counterDomain": "world bucket",
+      "adaptationPolicy": "F(1.05/1.08)",
+      "rewardProvenance": "same acquisition world; extras link primary receipt; no genuine/lifetime/adaptation credit",
+      "exceptions": []
+    }
+  ],
+  "attachedContract": "follow owning equipment native world; compose enchant/conduit/attunement once; preserve old-item masterwork fallback; All-In suppression unchanged",
+  "retiredSecondaries": "normal boots/bag charge/surge/compression mechanics are retired; no new triggers",
+  "generalMutationRewards": "Misty/Ancient/Enchanted are general systems, not innate equipment; separate world attribution required"
+}

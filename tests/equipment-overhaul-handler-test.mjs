@@ -167,3 +167,10 @@ for(const reason of ['not_needed','trial_active']){
 }
 qolSettings.gemFilter['Test gem']='KEEP';result=await run('celestial-pickaxe');assert.ok(!rpcs.includes('roll_autocraft_deposit'));assert.equal(result.specimenId,101);
 console.log('QoL crafting integration: deposit before SELL, Conservation retention, declined pickaxe routing, and KEEP bypass passed.');
+
+// Phase 2 explicit W2 requests fail closed before any claim, RNG or inventory.
+rpcs=[];commits=[];saved=null;
+const disabledW2=await handler.fetch(new Request('http://local/roll',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({worldId:2,requestId:'10000000-0000-0000-0000-000000000001'})}));
+assert.equal(disabledW2.status,403);assert.equal((await disabledW2.json()).error,'world2_disabled');
+assert.deepEqual(rpcs,[]);assert.deepEqual(commits,[]);assert.equal(saved,null);
+console.log('Explicit World 2 HTTP dispatch is disabled with zero roll RPCs or writes.');

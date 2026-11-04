@@ -94,7 +94,7 @@ const base =
   process.env.MINIGAMES_PREVIEW_URL || "http://127.0.0.1:5539/minigames/";
 await page.goto(base);
 await page.locator(".mg-card").first().waitFor();
-assert.equal(await page.locator(".mg-card").count(), 13);
+assert.equal(await page.locator(".mg-card").count(), 14);
 await page.getByRole("button", { name: "Arcade", exact: true }).click();
 assert.equal(await page.locator(".mg-card:visible").count(), 4);
 assert.equal(await page.getByRole("button", { name: "Arcade", exact: true }).getAttribute("aria-pressed"), "true");
@@ -105,7 +105,7 @@ assert.equal(await page.locator(".mg-card:visible").count(), 0);
 assert.equal(await page.locator("#game-empty").isVisible(), true);
 await page.getByRole("searchbox").fill("");
 await page.getByRole("button", { name: "All", exact: true }).click();
-assert.equal(await page.locator(".mg-card:visible").count(), 13);
+assert.equal(await page.locator(".mg-card:visible").count(), 14);
 await page.screenshot({
   path: fileURLToPath(new URL("minigames-hub-desktop.png", artifacts)),
   fullPage: true,

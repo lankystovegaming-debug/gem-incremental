@@ -1,0 +1,4152 @@
+// Request-local only. Canonical rarity remains untouched for every other rule.
+export function biomeSelectionPool(catalog: any[], snapshot: any) {
+  const occurrence = snapshot?.occurrence;
+  const tournament = snapshot?.tournament === true;
+  return catalog.filter((gem: any) => {
+    const required = snapshot?.exclusiveBiomes?.[gem.name] ?? gem.metadata?.requiredBiome;
+    return !required || (!tournament && required === occurrence?.key);
+  }).map((gem: any) => ({ ...gem,
+    selectionDenominator: !tournament && occurrence?.denominators?.[gem.name] != null
+      ? Number(occurrence.denominators[gem.name]) : Number(gem.rarity)
+  }));
+}
+
+// Explicit deterministic ordering for effective ties; original catalogue order
+// (sort_order, rarity desc, name) is carried by the row rather than DB arrival.
+export function biomeSelectionOrder(a: any, b: any) {
+  return (b.selectionDenominator ?? b.rarity) - (a.selectionDenominator ?? a.rarity)
+    || Number(a.biomeTieOrder ?? 0) - Number(b.biomeTieOrder ?? 0)
+    || b.rarity - a.rarity
+    || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+}
+
+import { gemTimeAvailable, mythicPotionExclusiveGem } from "./availabilityRules.ts";
+
+// QOL_RULES_START
+export function gemFilterDecision(settings, specimen, discovered) {
+ const name = specimen.gem_name;
+ const protectedFromAutomaticConsumption = specimen.automatic_consumption_protected === true;
+ const raw = Number(specimen.rarity);
+ const threshold = (v, fallback) => Number.isFinite(Number(v)) && Number(v) >= 1 ? Number(v) : fallback;
+ const rule = settings.gemFilter?.[name];
+ const relic = name === 'Enchant Relic' || name === 'Ancient Relic';
+ const discovery = !discovered.has(name) && settings.discoveryKeep !== false && raw >= threshold(settings.discoveryKeepRarity, 10000);
+ const autoKeep = settings.autoKeep !== false && Number(specimen.effectiveRarity) >= threshold(settings.autoKeepEffectiveRarity, 1000000);
+ const keep = protectedFromAutomaticConsumption || relic || discovery || autoKeep || rule === 'KEEP';
+ const legacyLimit = {common:10,uncommon:50,rare:100,epic:1000,legendary:10000,mythic:100000};
+ const legacy = (settings.legacyAutoSell ?? settings.autoSell) === true && raw <= (legacyLimit[settings.legacyAutoSellTier ?? settings.autoSellTier] ?? 10);
+ return { keep, sell: !keep && (rule === 'SELL' || (rule == null && legacy)),
+  reason: protectedFromAutomaticConsumption ? 'automatic-consumption-protection' : relic ? 'relic' : discovery ? 'discovery' : autoKeep ? 'auto-keep' : rule === 'KEEP' ? 'filter-keep' : 'default' };
+}
+// QOL_RULES_END
+
+// =========================================================
+// ROLL EDGE FUNCTION — SINGLE FILE BUILD
+// Consolidated from equipmentRules.js + eventRules.ts + index.ts
+// =========================================================
+
+// Pure rules shared with the browser. Only the server supplies RNG and saved state.
+export const PICKAXE_STATS = {
+ 'neptune':[30,.7,1.5,1.2,1.2],
+ 'reality-shifter':[40,.4,0,.8,.8], 'bedrock-pickaxe':[25,3,1,5,1.55],
+ 'supersizer-pickaxe':[19.91,2.75,.5,5.5,2.4],
+ 'paradox-pickaxe':[34,3.1,1.5,5.5,1.7],
+ 'convergence-pickaxe':[32,3,1.5,5,1.75],
+ 'impossible-pickaxe':[1,1,1,1,1],
+ 'fortune-pickaxe':[35,2.8,1,4.25,1.45], 'all-in-pickaxe':[500,.33,.15,.15,.15],
+ 'all-rounder-toy':[2,2,2,2,2], 'jackpot-slot':[7.77,1.77,.77,1.77,.77], 'money-pickaxe':[.01,.3,2,10,200],
+ 'celestial-pickaxe':[26,2.8,1,4.5,1.5], 'empyrean-pickaxe':[28,3,1,4.25,1.5],
+ 'eternity-pickaxe':[25,3,1.25,4.25,1.5], 'tectonic-pickaxe':[24,2.8,1,7,1.9],
+ 'the-accelerator':[24,3.4,1,4,1.4], 'the-resonator':[24,2.9,1,4,1.45],
+ 'the-excavator':[24,3,1,4,1.4], 'toy-shovel':[17,2.4,.8,2.5,1.2],
+ 'silly-fun-happy-pickaxe':[11,.5,.5,2,.5]
+};
+// Toy Shovel retains its pre-rebalance borrowed stats.
+const TOY_BORROWED_STATS = {
+ 'fortune-pickaxe':[33,2.7,.95,4,1.4],
+ 'empyrean-pickaxe':[24,3,1,3.5,1.4],
+ 'eternity-pickaxe':[22,3,1.1,4,1.45],
+ 'tectonic-pickaxe':[20,2.6,1,7,1.85],
+ 'the-accelerator':[21,3.4,.9,3,1.3],
+ 'the-resonator':[20,2.8,1,3.5,1.35],
+ 'the-excavator':[19,2.9,.95,3.25,1.3],
+ 'bedrock-pickaxe':[25,3.1,1.05,5,1.55]
+};
+export const ASCENDED_VALUE = 2;
+export const SERIOUS_PICKAXES = ['bedrock-pickaxe','celestial-pickaxe','paradox-pickaxe','empyrean-pickaxe','eternity-pickaxe','tectonic-pickaxe','the-accelerator','the-resonator','the-excavator','fortune-pickaxe','supersizer-pickaxe','all-in-pickaxe'];
+export const SUPERSIZER_SIZE_MUTATIONS = [
+ {id:'supersizer-small',name:'Small',chance:1/3,multiplier:.75,weightMultiplier:.75,sizeMutation:true},
+ {id:'supersizer-big',name:'Big',chance:1/10,multiplier:1.25,weightMultiplier:1.25,sizeMutation:true},
+ {id:'supersizer-giant',name:'Giant',chance:1/100,multiplier:2,weightMultiplier:2,sizeMutation:true},
+ {id:'supersizer-massive',name:'Massive',chance:1/1000,multiplier:5,weightMultiplier:5,sizeMutation:true},
+ {id:'supersizer-colossal',name:'Colossal',chance:1/10000,multiplier:10,weightMultiplier:10,sizeMutation:true},
+ {id:'supersizer-titanic',name:'Titanic',chance:1/100000,multiplier:20,weightMultiplier:20,sizeMutation:true},
+ {id:'supersizer-gargantuan',name:'Gargantuan',chance:1/1000000,multiplier:25,weightMultiplier:25,sizeMutation:true}
+];
+export const POTION_FAMILIES = ['lucky','speed','fortune','mass'];
+export const EXCAVATION_LOOT = [
+ [34,27,20,10,6,2,1], [29,29,22,11,6,2,1],
+ [24,28,25,13,7,2,1], [19,26,28,16,8,2,1], [14,24,30,19,9,2,2]
+];
+export const relicSecondary = (total, active) => 1 + (total - 1) * (active ? 1.5 : 1);
+export const PARADOX_CONTRADICTION_GAINS = [0,1,3,10,40,250];
+export function paradoxConditionCount({rarity=0,naturalWeight=0,naturalMutationCount=0,value=0,effectiveRarity=0}={}) {
+ return [Number(rarity)>=1e6,Number(naturalWeight)>=3,Number(naturalMutationCount)>=1,Number(value)>=25e6,Number(effectiveRarity)>=1e9].filter(Boolean).length;
+}
+function normalizedParadoxState(saved={}) {
+ const paradox=saved.paradox&&typeof saved.paradox==='object'?structuredClone(saved.paradox):{};
+ paradox.contradiction=Math.max(0,Math.trunc(Number(paradox.contradiction??0))||0);
+ paradox.mode=['normal','critical','resolved'].includes(paradox.mode)?paradox.mode:'normal';
+ paradox.criticalRoll=Math.min(10,Math.max(1,Math.trunc(Number(paradox.criticalRoll??1))||1));
+ if(paradox.mode==='normal'&&paradox.contradiction>=1000){paradox.contradiction-=1000;paradox.mode='critical';paradox.criticalRoll=1;}
+ return paradox;
+}
+function finishParadoxSequence(paradox) {
+ if(paradox.contradiction>=1000){paradox.contradiction-=1000;paradox.mode='critical';paradox.criticalRoll=1;}
+ else {paradox.mode='normal';paradox.criticalRoll=1;}
+}
+export function paradoxPassiveMultiplier(state={}) {
+ const paradox=normalizedParadoxState(state);
+ return paradox.mode==='resolved'?3:paradox.mode==='critical'?1+paradox.criticalRoll/10:1;
+}
+export function advanceParadoxTrial(state,rarity) {
+ const trial=state.paradoxTrial;
+ if(!trial?.active||trial.completed)return;
+ trial.rolls=Math.min(10000,Math.max(0,Number(trial.rolls??0))+1);
+ trial.checkpoints={legendary:false,mythic:false,exotic:false,exalted:false,cosmic:false,...trial.checkpoints};
+ const thresholds=[['cosmic',1e7],['exalted',1e6],['exotic',1e5],['mythic',1e4],['legendary',1e3]];
+ const checkpoint=thresholds.find(([key,minimum])=>!trial.checkpoints[key]&&Number(rarity)>=minimum);
+ if(checkpoint)trial.checkpoints[checkpoint[0]]=true;
+ trial.completed=trial.rolls>=10000&&thresholds.every(([key])=>trial.checkpoints[key]);
+}
+export function luckLayers({pickaxe=1,clover=1,enchant=1,guild=1,research=1,focused=1,flat=0,special=1,oneRoll=0,world=1}) {
+ const base=pickaxe*clover;
+ const personal=1+(enchant-1)+(guild-1)+(research-1)+(focused-1);
+ const ordinary=(base*personal+flat)*special;
+ return {base,personal,flat,special,oneRoll,world,ordinary,final:(ordinary+oneRoll)*world};
+}
+export function acceleratorSpeed(spool) {return spool>=200?3.8:spool>=100?3.7:spool>=50?3.6:spool>=25?3.5:3.4;}
+export function convergenceEchoGain(rarity=0) {
+ const r=Number(rarity);return r>=1e9?250:r>=1e8?150:r>=1e7?75:r>=1e6?40:r>=1e5?20:r>=1e4?10:r>=1e3?5:r>=100?3:r>=50?2:r>=1?1:0;
+}
+export function normalizedConvergenceState(saved={}) {
+ const current=saved.convergence&&typeof saved.convergence==='object'?saved.convergence:{};
+ return {echo:Math.min(999,Math.max(0,Math.trunc(Number(current.echo??0))||0)),
+  resonanceRolls:Math.min(5,Math.max(0,Math.trunc(Number(current.resonanceRolls??0))||0)),
+  momentumCharges:Math.min(3,Math.max(0,Math.trunc(Number(current.momentumCharges??0))||0)),
+  surgeRolls:Math.min(10,Math.max(0,Math.trunc(Number(current.surgeRolls??0))||0)),
+  convergenceRolls:Math.max(0,Math.trunc(Number(current.convergenceRolls??0))||0)};
+}
+export function prepareEquipmentRoll(id,saved={},random=Math.random,genuine=true,now=Date.now()) {
+ const state=structuredClone(saved);
+ const rolls=Math.max(0,Number(state.rolls?.[id]??0));
+ let stats=PICKAXE_STATS[id]?.slice()??null;
+ const blessingUntil=Date.parse(String(state.supersizerBlessingUntil??''));
+ const blessingActive=id==='supersizer-pickaxe'&&genuine&&Number.isFinite(blessingUntil)&&blessingUntil>Number(now);
+ const blessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0));
+ const flags={ascension:id==='empyrean-pickaxe'&&rolls>=1000&&rolls%1000<10,
+  surge:id==='eternity-pickaxe'&&rolls>=1000&&rolls%1000<10,
+  crushing:id==='tectonic-pickaxe'&&Number(state.crushing??0)>0,
+  wrongTool:false,closeEnough:false,borrowed:null,
+  realityShift:genuine&&id==='reality-shifter'&&(rolls+1)%500===0,
+  foundationBurst:genuine&&id==='bedrock-pickaxe'&&Number(state.bedrockBurst??0)>0,
+  supersizerBlessing:blessingActive,
+  supersizerBlessedRoll:blessingActive&&(blessedRolls+1)%10===0&&random()<1/20,
+  convergence:null,
+  impossible:genuine&&id==='impossible-pickaxe'&&random()<1/1000000};
+ if(flags.foundationBurst) {stats[0]*=1.5;stats[3]*=1.25;stats[4]*=1.1;}
+ if(id==='paradox-pickaxe'&&genuine) {
+  const paradox=normalizedParadoxState(state);state.paradox=paradox;
+  const multiplier=paradoxPassiveMultiplier(state);
+  flags.paradox={mode:paradox.mode,criticalRoll:paradox.mode==='critical'?paradox.criticalRoll:null,multiplier,contradiction:paradox.contradiction};
+  stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
+ }
+ if(id==='convergence-pickaxe'&&genuine) {
+  const convergence=normalizedConvergenceState(state);state.convergence=convergence;
+  const surge=convergence.surgeRolls>0;
+  const resonance=!surge&&convergence.resonanceRolls>0;
+  const multiplier=surge?2:resonance?1.5:1;
+  flags.convergence={surge,resonance,multiplier,oneBecomesMany:(convergence.convergenceRolls+1)%250===0};
+  stats[0]*=multiplier;stats[2]*=multiplier;stats[3]*=multiplier;stats[4]*=multiplier;
+ }
+ if(id==='the-accelerator') stats[1]=acceleratorSpeed(Number(state.spool??0));
+ if(id==='toy-shovel'&&random()<1/67) {
+  flags.wrongTool=true;
+  if(random()<1/67) {flags.closeEnough=true;stats=[67,2.4,6.7,6.7,2.67];}
+  else {flags.borrowed=SERIOUS_PICKAXES[Math.floor(random()*SERIOUS_PICKAXES.length)];stats=(TOY_BORROWED_STATS[flags.borrowed]??PICKAXE_STATS[flags.borrowed]).slice();stats[1]=2.4;}
+ }
+ return {id,state,stats,flags};
+}
+export function supersizerSizeMutation(id,random=Math.random,genuine=true) {
+ if(id!=='supersizer-pickaxe'||!genuine)return null;
+ const draw=random();let cumulative=0;
+ for(const mutation of SUPERSIZER_SIZE_MUTATIONS){cumulative+=mutation.chance;if(draw<cumulative)return {...mutation};}
+ return null;
+}
+export function supersizerBlessingMultipliers(flags={}) {
+ if(!flags.supersizerBlessing)return {luck:1,weightMultiplier:1,rollSpeed:1,finalSell:1};
+ return {luck:flags.supersizerBlessedRoll?10000:2,weightMultiplier:2.25,rollSpeed:.75,finalSell:1.5};
+}
+export function impossibleProcMultipliers(flags={}) {
+ return flags.impossible
+  ? {luck:1000000,mutationChance:100,weightLuck:100,weightMultiplier:10}
+  : {luck:1,mutationChance:1,weightLuck:1,weightMultiplier:1};
+}
+export function specialChance(id,gem,state) {
+ return id==='the-resonator'&&gem.specialGem===true ? 1.25*(1+.05*Math.min(10,Number(state.resonance?.[gem.name]??0))) : 1;
+}
+export function exclusiveMutations(id,random=Math.random,genuine=true,flags={}) {
+ if(!genuine) return [];
+ if(id==='all-in-pickaxe') return random()<1/2000?[{id:'tryhard',name:'Tryhard',chance:1/2000,multiplier:10}]:[];
+ if(id==='reality-shifter') return flags.realityShift&&random()<.2?[{id:'shifted',name:'Shifted',chance:.2,multiplier:35}]:[];
+ if(id==='all-rounder-toy') return random()<1/20?[{id:'balanced',name:'Balanced',chance:1/20,multiplier:1.2}]:[];
+ if(id==='empyrean-pickaxe') return random()<1/400?[{id:'ascended',name:'Ascended',chance:1/400,multiplier:ASCENDED_VALUE}]:[];
+ if(id!=='silly-fun-happy-pickaxe') return [];
+ return [[.5,'silly-small','Silly',.5],[.1,'silly-large','Silly',10],[.005,'happy','Happy',50]].flatMap(([chance,id,name,multiplier])=>random()<chance?[{id,name,chance,multiplier}]:[]);
+}
+export function finishEquipmentRoll(context,{naturalWeight,gem,sizeMutation=null,naturalMutationCount=0,value=0,effectiveRarity=0,now=Date.now(),random=Math.random,genuine=true}) {
+ const {id,flags}=context;const state=structuredClone(context.state);
+ if(!genuine) return {state,loot:null,breakneck:false};
+ state.rolls={...state.rolls,[id]:Number(state.rolls?.[id]??0)+1};
+ if(id==='celestial-pickaxe') advanceParadoxTrial(state,gem?.rarity);
+ if(id==='paradox-pickaxe') {
+  const paradox=normalizedParadoxState(state);
+  const conditions=paradoxConditionCount({rarity:gem?.rarity,naturalWeight,naturalMutationCount,value,effectiveRarity});
+  paradox.lastConditions=conditions;
+  if(context.flags.paradox?.mode==='critical') {
+   const criticalRoll=Number(context.flags.paradox.criticalRoll??1);
+   if(criticalRoll>=10) {
+    if(conditions===5){paradox.mode='resolved';paradox.criticalRoll=1;}
+    else finishParadoxSequence(paradox);
+   } else {paradox.mode='critical';paradox.criticalRoll=criticalRoll+1;}
+  } else if(context.flags.paradox?.mode==='resolved') finishParadoxSequence(paradox);
+  else {
+   paradox.contradiction+=PARADOX_CONTRADICTION_GAINS[conditions]??0;
+   if(paradox.contradiction>=1000){paradox.contradiction-=1000;paradox.mode='critical';paradox.criticalRoll=1;}
+   else paradox.mode='normal';
+  }
+  state.paradox=paradox;
+ }
+ if(id==='convergence-pickaxe') {
+  const convergence=normalizedConvergenceState(state);
+  convergence.convergenceRolls+=1;
+  if(flags.convergence?.surge) convergence.surgeRolls=Math.max(0,convergence.surgeRolls-1);
+  else if(flags.convergence?.resonance) convergence.resonanceRolls=Math.max(0,convergence.resonanceRolls-1);
+  else {
+   convergence.echo+=convergenceEchoGain(gem?.rarity??0);
+   if(convergence.echo>=1000){convergence.echo-=1000;convergence.resonanceRolls=5;}
+  }
+  state.convergence=convergence;
+ }
+ if(id==='supersizer-pickaxe') {
+  if(flags.supersizerBlessing) state.supersizerBlessedRolls=Math.max(0,Number(state.supersizerBlessedRolls??0))+1;
+  else state.supersizerBlessedRolls=0;
+  if(sizeMutation?.id==='supersizer-gargantuan') {
+   // Refresh to five minutes from this roll. An already-active blessing keeps
+   // its ten-roll cadence; a newly-started blessing begins at zero AFTER it.
+   if(!flags.supersizerBlessing) state.supersizerBlessedRolls=0;
+   state.supersizerBlessingUntil=new Date(Number(now)+300000).toISOString();
+  }
+ }
+ if(id==='bedrock-pickaxe') {
+  if(flags.foundationBurst) state.bedrockBurst=Math.max(0,Number(state.bedrockBurst)-1);
+  else if(gem) {
+   const rarity=Number(gem.rarity);
+   // Matches public.expedition_rarity_rank: Common <10, Uncommon <50, Rare <100.
+   const gain=rarity>=1&&rarity<10?2:rarity>=10&&rarity<50?3:rarity>=50&&rarity<100?5:0;
+   state.foundation=Math.min(100,Math.max(0,Number(state.foundation??0))+gain);
+   if(state.foundation===100) {state.foundation=0;state.bedrockBurst=10;}
+  }
+ }
+ if(id==='the-accelerator') state.spool=Number(state.spool??0)+1;
+ if(id==='tectonic-pickaxe') {
+  if(flags.crushing) state.crushing=Math.max(0,Number(state.crushing)-1);
+  else if(naturalWeight!=null) {
+   state.pressure=Number(state.pressure??0)+(naturalWeight<.85?4:naturalWeight<1.1?3:naturalWeight<1.5?2:naturalWeight<2?1:0);
+   if(state.pressure>=100){state.pressure=0;state.crushing=5;}
+  }
+ }
+ if(id==='the-resonator'&&gem?.specialGem===true) {
+  const rarity=Number(gem.rarity);const gain=rarity>=5e8?10:rarity>=1e8?5:rarity>=1e7?3:rarity>=1e6?2:1;
+  state.resonance={...state.resonance,[gem.name]:Math.min(10,Number(state.resonance?.[gem.name]??0)+gain)};
+ }
+ let loot=null;
+ if(id==='the-excavator'&&random()<1/40) {
+  const mastery=Number(state.excavations??0);
+  const level=[25,100,250,500].filter(n=>mastery>=n).length;
+  let draw=random()*100;let tier=6;
+  for(let i=0;i<7;i++){draw-=EXCAVATION_LOOT[level][i];if(draw<0){tier=i;break;}}
+  loot=tier<4?`${POTION_FAMILIES[Math.floor(random()*4)]}-potion-${tier+1}`:['legendary-potion','relic-potion','mythic-potion'][tier-4];
+  state.excavations=mastery+1;
+ }
+ return {state,loot,breakneck:id==='the-accelerator'&&Number(context.state.spool??0)>=200&&random()<1/100};
+}
+export function equipmentTotals(equipment=[],relic=false,override=null) {
+ const pick=equipment.find(e=>e.category==='pickaxe');
+ const mw=1+Math.min(5,Math.max(0,Number(pick?.masterwork_level??0)))/100;
+ const stats=override??(PICKAXE_STATS[pick?.equipment_id]??[1+Number(pick?.luck_bonus??0)*mw,1+Number(pick?.roll_speed_bonus??0)*mw,1,1,1]);
+ if(pick?.equipment_id==='all-in-pickaxe') return {pickaxe:500,clover:1,luck:500,rollSpeed:.33,mutation:.15,weightLuck:.15,weightMultiplier:.15};
+ const secondary=(category,column)=>relicSecondary(1+Number(equipment.find(e=>e.category===category)?.[column]??0),relic);
+ const plastic=equipment.find(e=>e.category==='bag'&&e.equipment_id==='plastic-shopping-bag');
+ // Plastic's old additive bonus/masterwork behavior is deliberately retained.
+ const wm=plastic?stats[4]+Number(plastic.weight_multiplier_bonus??1.55)*(1+Math.min(5,Math.max(0,Number(plastic.masterwork_level??0)))/100):stats[4]*secondary('bag','weight_multiplier_bonus');
+ const rollBulk = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.roll_bulk_bonus ?? 0), 0));
+ const petLuck = Math.max(0, equipment.reduce((sum, item) => sum + Number(item.pet_luck_bonus ?? 0), 0));
+ return {pickaxe:stats[0],clover:secondary('clover','luck_bonus'),luck:stats[0]*secondary('clover','luck_bonus'),rollSpeed:stats[1],mutation:stats[2]*secondary('lantern','mutation_chance_bonus'),weightLuck:stats[3]*secondary('boots','weight_luck_bonus'),weightMultiplier:wm,rollBulk,petLuck};
+}
+
+// Called only after the server has accepted a genuine roll, before any gem RNG.
+export function jackpotRoll(id, genuineRoll, random=Math.random, genuine=true) {
+ if(id!=='jackpot-slot'||!genuine) return {luck:1,houseEdge:false};
+ const unlucky=random()<1/77, jackpot=random()<1/777;
+ const seventh=genuineRoll%7===0, sevenSeventySeventh=genuineRoll%777===0;
+ return {unlucky,jackpot,seventh,sevenSeventySeventh,
+  luck:(unlucky ? .77 : 1) * (jackpot ? 1.77 : 1) * (seventh ? .77 : 1) * (sevenSeventySeventh ? 7.77 : 1),houseEdge:random()<.0077};
+}
+export const eligibleEquipmentGems = (gems,id) => id==='money-pickaxe' ? gems.filter(g=>Number(g.rarity)<100) : gems;
+export const flatEquipmentChance = id => id==='all-in-pickaxe'?4:1;
+
+// Persisted settings are still checked at the authoritative selection boundary.
+export function sanitizeMaxLuck(value) {
+ if(value==null || (typeof value==='string' && value.trim()==='')) return null;
+ if(!['number','string'].includes(typeof value)) return null;
+ const n=Number(value);
+ return Number.isFinite(n)&&n>=1&&n<=Number.MAX_SAFE_INTEGER?n:null;
+}
+export function capGemLuck(luck,maxLuck) {
+ const cap=sanitizeMaxLuck(maxLuck);return cap==null?luck:Math.min(luck,cap);
+}
+
+export const fortuneLuckFactor = (id,gem) => id==='fortune-pickaxe' && gem.affectedByLuck!==false && Number(gem.rarity)>=1000000 ? 1.1 : 1;
+
+export function normalizeRequestedBatchSize(value: unknown): number | null {
+  const size = Number(value ?? 1);
+  return Number.isSafeInteger(size) && size >= 1 && size <= 100 ? size : null;
+}
+
+export function batchCooldownMs(singleRollCooldownMs: number, batchSize: number): number {
+  const size = normalizeRequestedBatchSize(batchSize);
+  if (size == null || !Number.isFinite(singleRollCooldownMs) || singleRollCooldownMs <= 0) {
+    throw new Error("invalid_batch_cooldown");
+  }
+  return singleRollCooldownMs * size;
+}
+
+
+export type RandomSource = () => number;
+
+export type GlobalEventSnapshot = {
+  id: string;
+  eventKey: string;
+  name: string;
+  icon: string;
+  tier: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  serverNow: string;
+  config: Record<string, any>;
+  mass: number;
+  massTarget: number | null;
+  collapsedAt: string | null;
+};
+
+export type EventRollContext = {
+  occurrenceId: string | null;
+  eventKey: string | null;
+  state: string | null;
+  luckMultiplier: number;
+  rollSpeedMultiplier: number;
+  weightLuckMultiplier: number;
+  mutationMultiplier: number;
+  valueMultiplier: number;
+  luckyRoll: boolean;
+  secondChance: boolean;
+  poorWeightRerollChance: number;
+  tailContinuationChance: number | null;
+  tailEntryChance: number | null;
+  starfallActive: boolean;
+  collapsed: boolean;
+  finalSeconds: number;
+  config: Record<string, any>;
+};
+
+const positive = (value: unknown, fallback = 1) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+};
+
+function weightedState(states: any[], random: RandomSource) {
+  const total = states.reduce((sum, state) => sum + Math.max(0, Number(state.weight) || 0), 0);
+  let draw = random() * total;
+  for (const state of states) {
+    draw -= Math.max(0, Number(state.weight) || 0);
+    if (draw < 0) return state;
+  }
+  return states.at(-1) ?? null;
+}
+
+export function normalizeGlobalEvent(value: any, nowMs = Date.now()): GlobalEventSnapshot | null {
+  if (!value || typeof value !== "object" || !value.id || !value.eventKey) return null;
+  const starts = new Date(value.startsAt).getTime();
+  const ends = new Date(value.endsAt).getTime();
+  if (!Number.isFinite(starts) || !Number.isFinite(ends) || nowMs < starts || nowMs >= ends) return null;
+  return {
+    ...value,
+    config: value.config && typeof value.config === "object" ? value.config : {},
+    mass: Math.max(0, Number(value.mass) || 0),
+    massTarget: value.massTarget == null ? null : Math.max(1, Number(value.massTarget) || 1),
+    collapsedAt: value.collapsedAt ?? null
+  };
+}
+
+export function buildEventRollContext(
+  event: GlobalEventSnapshot | null,
+  random: RandomSource,
+  nowMs = Date.now()
+): EventRollContext {
+  const base: EventRollContext = {
+    occurrenceId: event?.id ?? null, eventKey: event?.eventKey ?? null, state: null,
+    luckMultiplier: 1, rollSpeedMultiplier: 1, weightLuckMultiplier: 1,
+    mutationMultiplier: 1, valueMultiplier: 1, luckyRoll: false,
+    secondChance: false, poorWeightRerollChance: 0, tailContinuationChance: null, tailEntryChance: null,
+    starfallActive: false, collapsed: Boolean(event?.collapsedAt), finalSeconds: Infinity,
+    config: event?.config ?? {}
+  };
+  if (!event) return base;
+  const config = event.config;
+  base.luckMultiplier = positive(config.luckMultiplier);
+  base.rollSpeedMultiplier = positive(config.rollSpeedMultiplier);
+  base.weightLuckMultiplier = positive(config.weightLuckMultiplier);
+  base.mutationMultiplier = positive(config.mutationMultiplier);
+  base.valueMultiplier = positive(config.valueMultiplier);
+  base.poorWeightRerollChance = Math.max(0, Math.min(1, Number(config.poorWeightRerollChance) || 0));
+  base.tailContinuationChance = config.tailContinuationChance == null
+    ? null : Math.max(0, Math.min(0.95, Number(config.tailContinuationChance) || 0));
+  base.tailEntryChance = config.tailEntryChance == null
+    ? null : Math.max(0, Math.min(0.95, Number(config.tailEntryChance) || 0));
+  base.finalSeconds = Math.max(0, (new Date(event.endsAt).getTime() - nowMs) / 1000);
+
+  if (event.eventKey === "lucky_roll" && random() < Number(config.luckyRollChance ?? 0)) {
+    base.luckyRoll = true;
+    base.luckMultiplier *= positive(config.luckyRollMultiplier);
+  }
+  if (event.eventKey === "second_chance") {
+    base.secondChance = random() < Number(config.secondChanceChance ?? 0);
+  }
+  if (event.eventKey === "unstable_luck") {
+    const phaseSeconds = Math.max(1, Number(config.phaseSeconds) || 30);
+    const phase = Math.max(0, Math.floor((nowMs - new Date(event.startsAt).getTime()) / (phaseSeconds * 1000)));
+    base.luckMultiplier *= positive(config.phaseValues?.[phase]);
+    base.state = `phase_${phase}`;
+  }
+  if (event.eventKey === "volatile_veins" || event.eventKey === "total_eclipse") {
+    const state = weightedState(Array.isArray(config.states) ? config.states : [], random);
+    if (state) {
+      base.state = String(state.key);
+      base.luckMultiplier *= positive(state.luck);
+      base.weightLuckMultiplier *= positive(state.weightLuck);
+      base.mutationMultiplier *= positive(state.mutation);
+    }
+  }
+  if (event.eventKey === "falling_stars") {
+    const elapsed = (nowMs - new Date(event.startsAt).getTime()) / 1000;
+    base.starfallActive = (config.windows ?? []).some((window: any) =>
+      elapsed >= Number(window.offsetSeconds) && elapsed < Number(window.offsetSeconds) + Number(window.durationSeconds));
+    base.state = base.starfallActive ? "starfall" : null;
+  }
+  if (event.eventKey === "singularity") {
+    if (base.finalSeconds <= 30) {
+      base.state = "final"; base.luckMultiplier *= 3; base.weightLuckMultiplier *= 2; base.mutationMultiplier *= 1.5;
+    } else if (base.finalSeconds <= 60) {
+      base.state = "surge"; base.luckMultiplier *= 2; base.weightLuckMultiplier *= 1.5;
+    } else if (base.finalSeconds <= 180) {
+      base.state = "compression"; base.luckMultiplier *= 1.5; base.weightLuckMultiplier *= 1.25;
+    } else if (base.finalSeconds <= 300) {
+      base.state = "pull"; base.luckMultiplier *= 1.25; base.weightLuckMultiplier *= 1.1;
+    } else {
+      base.state = "forming"; base.luckMultiplier *= 1.1;
+    }
+    const progress = event.massTarget ? event.mass / event.massTarget : 0;
+    base.rollSpeedMultiplier *= progress >= 0.75 ? 1.15 : progress >= 0.5 ? 1.1 : progress >= 0.25 ? 1.05 : 1;
+  }
+  return base;
+}
+
+export function eventGemLuckFactor(context: EventRollContext, gem: any): number {
+  const rarity = Number(gem.rarity) || 0;
+  const config = context.config;
+  if (gem.metadata?.ignoreEventRarityFactor) return 1;
+  if (context.eventKey === "prospectors_eye" && gem.name === config.targetGem) return positive(config.targetGemLuckMultiplier);
+  if (context.eventKey === "gem_rush" && rarity >= Number(config.rarityMin)) return positive(config.rarityLuckMultiplier);
+  if (context.eventKey === "narrowed_veins" && Array.isArray(config.selectedBand)) {
+    const [minimum, maximum] = config.selectedBand.map(Number);
+    if (rarity >= minimum && rarity < maximum) return positive(config.rarityLuckMultiplier);
+  }
+  if (["cosmic_alignment", "reality_fracture"].includes(String(context.eventKey))) {
+    for (const [minimum, factor] of config.rarityFactors ?? []) if (rarity >= Number(minimum)) return positive(factor);
+  }
+  return 1;
+}
+
+export function eventGemIsEligible(context: EventRollContext, gem: any): boolean {
+  if (!gem.requiredEventKey) return true;
+  if (gem.requiredEventKey !== context.eventKey) return false;
+  if (context.eventKey === "falling_stars" && !context.starfallActive) return false;
+  if (gem.metadata?.requiredRollState && gem.metadata.requiredRollState !== context.state) return false;
+  if (gem.metadata?.requiresCollapse && (!context.collapsed || context.finalSeconds > Number(gem.metadata.finalSeconds ?? 0))) return false;
+  return true;
+}
+
+export function eventMutationFactor(context: EventRollContext, mutation: any): number {
+  if (mutation.id === "charged") return context.eventKey === "mutation_storm" ? 2 : 0;
+  let factor = context.mutationMultiplier;
+  factor *= positive(context.config.mutationFactors?.[mutation.id]);
+  if (context.eventKey === "polished_world" && Number(mutation.multiplier) <= Number(context.config.maxMutationValue)) {
+    factor *= positive(context.config.mutationFactor);
+  }
+  return factor;
+}
+
+export function eventWeightLuckFactor(context: EventRollContext, gem: any): number {
+  if (context.eventKey === "heavy_favorites" && (context.config.targetGems ?? []).includes(gem.name)) {
+    return context.weightLuckMultiplier * positive(context.config.targetWeightLuckMultiplier);
+  }
+  return context.weightLuckMultiplier;
+}
+
+
+import {
+  withSupabase
+} from "npm:@supabase/server";
+import { Redis } from "npm:@upstash/redis@1.38.4";
+import { Ratelimit } from "npm:@upstash/ratelimit@2.1.0";
+
+const ROLL_RATE_LIMIT_MAX_REQUESTS = 120;
+const ROLL_RATE_LIMIT_WINDOW_SECONDS = 10;
+const ROLL_RATE_LIMIT_BAN_CACHE_MS = 30_000;
+const ROLL_RATE_LIMIT_BAN_REASON =
+  "Automated permanent ban: roll request rate limit exceeded.";
+const rollRateLimitBanCache = new Map<string, {
+  bannedUntil: string;
+  reason: string;
+  cacheUntil: number;
+}>();
+const rollRateLimitRedis = new Redis({
+  url: Deno.env.get("UPSTASH_REDIS_REST_URL"),
+  token: Deno.env.get("UPSTASH_REDIS_REST_TOKEN")
+});
+const rollRequestRateLimit = new Ratelimit({
+  redis: rollRateLimitRedis,
+  limiter: Ratelimit.slidingWindow(ROLL_RATE_LIMIT_MAX_REQUESTS, "10 s"),
+  prefix: "ratelimit:roll",
+  analytics: false
+});
+
+// =========================================================
+// PROGRESSION / ACHIEVEMENT ENGINE (INLINE FOR SUPABASE DASHBOARD DEPLOY)
+// =========================================================
+
+// Mutation denominators used by the roll system and progression requirements.
+export const MUTATION_DENOMINATORS: Record<string, number> = {
+  polished: 100,
+  gilded: 500,
+  prismatic: 2500,
+  celestial: 10000,
+  corrupted: 50000
+};
+
+function arr(value: unknown): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function num(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export async function processProgressEvent(
+  supabaseAdmin: any,
+  playerId: string,
+  eventType: string,
+  payload: Record<string, unknown>,
+  rollNumber: number | null = null
+) {
+  const { data, error } = await supabaseAdmin.rpc(
+    "process_private_feature_progress_event_incremental",
+    {
+      p_player_id: playerId,
+      p_event_type: eventType,
+      p_roll_number: rollNumber,
+      p_payload: payload
+    }
+  );
+  if (error) console.error("Equipment material deposit failed:", error);
+  // AP is awarded by the completion trigger; item rewards remain claimable.
+  return { completed: arr(data?.completed) };
+}
+
+async function grantRewards(supabaseAdmin: any, playerId: string, rewards: any[]) {
+  for (const reward of arr(rewards)) {
+    const amount = num(reward.amount, 0);
+    if (reward.type === "money" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: amount, p_coins: 0, p_capacity: 0 });
+      continue;
+    }
+    if (reward.type === "coins" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: 0, p_coins: Math.trunc(amount), p_capacity: 0 });
+      continue;
+    }
+    if (reward.type === "capacity" && amount !== 0) {
+      await supabaseAdmin.rpc("apply_private_feature_currency_reward", { p_player_id: playerId, p_money: 0, p_coins: 0, p_capacity: Math.trunc(amount) });
+      continue;
+    }
+    if (reward.type === "potion" && reward.consumableId && amount > 0) {
+      const { data: existingPotion } = await supabaseAdmin
+        .from("player_consumables")
+        .select("quantity")
+        .eq("player_id", playerId)
+        .eq("consumable_id", String(reward.consumableId))
+        .maybeSingle();
+      await supabaseAdmin.from("player_consumables").upsert({
+        player_id: playerId,
+        consumable_id: String(reward.consumableId),
+        quantity: num(existingPotion?.quantity) + amount,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "player_id,consumable_id" });
+      continue;
+    }
+    if (reward.type === "gem" && reward.gemName) {
+      await supabaseAdmin.from("inventory_gems").insert({
+        player_id: playerId,
+        gem_name: String(reward.gemName),
+        rarity: num(reward.rarity),
+        base_weight: num(reward.baseWeight),
+        value_per_gram: num(reward.valuePerGram),
+        rolled_weight_multiplier: num(reward.weightMultiplier, 1),
+        rolled_weight: num(reward.baseWeight) * num(reward.weightMultiplier, 1),
+        final_weight: num(reward.baseWeight) * num(reward.weightMultiplier, 1),
+        mutation_id: arr(reward.mutationIds)[0] ?? null,
+        mutation_ids: arr(reward.mutationIds),
+        mutation_multiplier: num(reward.mutationMultiplier, 1),
+        mutation_multipliers: reward.mutationMultipliers ?? {},
+        mutation_chance_multiplier: 1,
+        value: num(reward.value, 0),
+        locked: false,
+        luck_at_roll: 1
+      });
+    }
+  }
+}
+
+
+// =========================================================
+// CORS
+// =========================================================
+
+const rollCorsBaseHeaders = {
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, priority, x-retry-count, traceparent, tracestate, baggage",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin"
+};
+
+export function rollCorsHeaders(origin: string | null): Record<string, string> {
+  return {
+    ...rollCorsBaseHeaders,
+    // CORS is not authentication: callers still need a valid user JWT. Echo
+    // the browser's origin so credentialed preflights succeed and are cached;
+    // the authenticated POST can then reach the player limiter and ban path.
+    "Access-Control-Allow-Origin": origin ?? "*"
+  };
+}
+
+function withRollCors(response: Response, origin: string | null): Response {
+  const headers = new Headers(response.headers);
+  const corsHeaders = rollCorsHeaders(origin);
+  for (const [name, value] of Object.entries(corsHeaders)) headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function jsonResponse(body: any, init: ResponseInit = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers ?? {})
+    }
+  });
+}
+
+export async function enforceRollRequestRateLimit(ctx: any): Promise<Response | null> {
+  const playerId = ctx.userClaims?.id ?? ctx.userClaims?.sub ?? ctx.jwtClaims?.sub;
+  if (!playerId) {
+    return jsonResponse({ error: "Could not identify player." }, { status: 401 });
+  }
+
+  const cachedBan = rollRateLimitBanCache.get(playerId);
+  if (cachedBan && cachedBan.cacheUntil > Date.now()) {
+    return jsonResponse(
+      {
+        error: "banned",
+        bannedUntil: cachedBan.bannedUntil,
+        reason: cachedBan.reason
+      },
+      { status: 403 }
+    );
+  }
+  if (cachedBan) rollRateLimitBanCache.delete(playerId);
+
+  let result;
+  try {
+    result = await rollRequestRateLimit.limit(playerId);
+  } catch (error) {
+    console.error("Roll request rate limit check failed:", error);
+    return jsonResponse(
+      {
+        error: "rate_limit_unavailable",
+        message: "Rolling is temporarily unavailable. Please try again shortly."
+      },
+      { status: 503 }
+    );
+  }
+
+  if (result.success) return null;
+
+  const { data: ban, error: banError } = await ctx.supabaseAdmin.rpc(
+    "apply_roll_rate_limit_permanent_ban",
+    {
+      p_player_id: playerId,
+      p_limit: ROLL_RATE_LIMIT_MAX_REQUESTS,
+      p_window_seconds: ROLL_RATE_LIMIT_WINDOW_SECONDS
+    }
+  );
+
+  if (banError || !ban) {
+    console.error("Automatic roll rate-limit ban failed:", banError);
+    return jsonResponse(
+      {
+        error: "rate_limit_ban_failed",
+        message: "Rolling is temporarily unavailable."
+      },
+      { status: 503 }
+    );
+  }
+
+  console.warn("Automatic permanent roll rate-limit ban applied", {
+    playerId,
+    limit: result.limit,
+    reset: result.reset
+  });
+
+  const bannedUntil = String(ban.bannedUntil);
+  const reason = String(ban.reason ?? ROLL_RATE_LIMIT_BAN_REASON);
+  rollRateLimitBanCache.set(playerId, {
+    bannedUntil,
+    reason,
+    cacheUntil: Date.now() + ROLL_RATE_LIMIT_BAN_CACHE_MS
+  });
+
+  return jsonResponse(
+    {
+      error: "banned",
+      bannedUntil,
+      reason
+    },
+    { status: 403 }
+  );
+}
+
+type VersionedCatalogCache = { version: number; data: any[] };
+let mutationCatalogCache: VersionedCatalogCache | null = null;
+let gemCatalogCache: VersionedCatalogCache | null = null;
+
+
+// =========================================================
+// GEM DATA
+// =========================================================
+
+let gems = [
+  {
+    name: "Quartz",
+    rarity: 2,
+    baseWeight: 100,
+    valuePerGram: 0.0575
+  },
+
+  {
+    name: "Calcite",
+    rarity: 3,
+    baseWeight: 110,
+    valuePerGram: 0.0736
+  },
+
+  {
+    name: "Feldspar",
+    rarity: 5,
+    baseWeight: 125,
+    valuePerGram: 0.092
+  },
+
+  {
+    name: "Fluorite",
+    rarity: 8,
+    baseWeight: 140,
+    valuePerGram: 0.115
+  },
+
+  {
+    name: "Hematite",
+    rarity: 12,
+    baseWeight: 160,
+    valuePerGram: 0.13685
+  },
+
+  {
+    name: "Obsidian",
+    rarity: 18,
+    baseWeight: 180,
+    valuePerGram: 0.15985
+  },
+
+  {
+    name: "Agate",
+    rarity: 25,
+    baseWeight: 200,
+    valuePerGram: 0.184
+  },
+
+  {
+    name: "Jasper",
+    rarity: 35,
+    baseWeight: 225,
+    valuePerGram: 0.2093
+  },
+
+  {
+    name: "Amethyst",
+    rarity: 50,
+    baseWeight: 250,
+    valuePerGram: 0.253
+  },
+
+  {
+    name: "Garnet",
+    rarity: 70,
+    baseWeight: 275,
+    valuePerGram: 0.3013
+  },
+
+  {
+    name: "Peridot",
+    rarity: 100,
+    baseWeight: 300,
+    valuePerGram: 0.36455
+  },
+
+  {
+    name: "Topaz",
+    rarity: 150,
+    baseWeight: 325,
+    valuePerGram: 0.47725
+  },
+
+  {
+    name: "Aquamarine",
+    rarity: 225,
+    baseWeight: 350,
+    valuePerGram: 0.60835
+  },
+
+  {
+    name: "Tourmaline",
+    rarity: 325,
+    baseWeight: 375,
+    valuePerGram: 0.76705
+  },
+
+  {
+    name: "Opal",
+    rarity: 475,
+    baseWeight: 400,
+    valuePerGram: 1.035
+  },
+
+  {
+    name: "Zircon",
+    rarity: 650,
+    baseWeight: 425,
+    valuePerGram: 1.2719
+  },
+
+  {
+    name: "Spinel",
+    rarity: 850,
+    baseWeight: 450,
+    valuePerGram: 1.59735
+  },
+
+  {
+    name: "Sapphire",
+    rarity: 1100,
+    baseWeight: 475,
+    valuePerGram: 1.7487475
+  },
+
+  {
+    name: "Ruby",
+    rarity: 1400,
+    baseWeight: 500,
+    valuePerGram: 2.1505
+  },
+
+  {
+    name: "Emerald",
+    rarity: 1800,
+    baseWeight: 525,
+    valuePerGram: 2.6069925
+  },
+
+  {
+    name: "Diamond",
+    rarity: 2300,
+    baseWeight: 550,
+    valuePerGram: 3.28831
+  },
+
+  {
+    name: "Tanzanite",
+    rarity: 2900,
+    baseWeight: 575,
+    valuePerGram: 3.4847875
+  },
+
+  {
+    name: "Alexandrite",
+    rarity: 3600,
+    baseWeight: 600,
+    valuePerGram: 4.3176175
+  },
+
+  {
+    name: "Benitoite",
+    rarity: 4400,
+    baseWeight: 625,
+    valuePerGram: 4.692
+  },
+
+  {
+    name: "Red Beryl",
+    rarity: 5300,
+    baseWeight: 650,
+    valuePerGram: 5.413395
+  },
+
+  {
+    name: "Black Opal",
+    rarity: 6300,
+    baseWeight: 675,
+    valuePerGram: 6.226675
+  },
+
+  {
+    name: "Grandidierite",
+    rarity: 7400,
+    baseWeight: 700,
+    valuePerGram: 6.7027175
+  },
+
+  {
+    name: "Taaffeite",
+    rarity: 8500,
+    baseWeight: 725,
+    valuePerGram: 7.415315
+  },
+
+  {
+    name: "Musgravite",
+    rarity: 9300,
+    baseWeight: 750,
+    valuePerGram: 7.82
+  },
+
+  {
+    name: "Painite",
+    rarity: 10000,
+    baseWeight: 800,
+    valuePerGram: 7.5
+  },
+
+  {
+    name: "Dark Matter",
+    rarity: 1000000,
+    baseWeight: 2500,
+    valuePerGram: 160
+  },
+
+  {
+    name: "Citrine",
+    rarity: 90,
+    baseWeight: 290,
+    valuePerGram: 0.34
+  },
+
+  {
+    name: "Moonstone",
+    rarity: 750,
+    baseWeight: 440,
+    valuePerGram: 1.43
+  },
+
+  {
+    name: "Demantoid",
+    rarity: 6800,
+    baseWeight: 690,
+    valuePerGram: 6.46
+  },
+
+  {
+    name: "Jeremejevite",
+    rarity: 14000,
+    baseWeight: 850,
+    valuePerGram: 9
+  },
+
+  {
+    name: "Poudretteite",
+    rarity: 22000,
+    baseWeight: 925,
+    valuePerGram: 12
+  },
+
+  {
+    name: "Serendibite",
+    rarity: 35000,
+    baseWeight: 1000,
+    valuePerGram: 16.5
+  },
+
+  {
+    name: "Blue Garnet",
+    rarity: 55000,
+    baseWeight: 1100,
+    valuePerGram: 22.5
+  },
+
+  {
+    name: "Kyawthuite",
+    rarity: 85000,
+    baseWeight: 1200,
+    valuePerGram: 31.5
+  },
+
+  {
+    name: "Aether Quartz",
+    rarity: 140000,
+    baseWeight: 1350,
+    valuePerGram: 43.2
+  },
+
+  {
+    name: "Void Opal",
+    rarity: 250000,
+    baseWeight: 1550,
+    valuePerGram: 61.2
+  },
+
+  {
+    name: "Chronite",
+    rarity: 480000,
+    baseWeight: 1800,
+    valuePerGram: 90
+  },
+
+  {
+    name: "Neutron Crystal",
+    rarity: 800000,
+    baseWeight: 2200,
+    valuePerGram: 126
+  },
+
+  {
+    name: "Antimatter Crystal",
+    rarity: 1800000,
+    baseWeight: 2900,
+    valuePerGram: 216
+  },
+
+  {
+    name: "Singularity Shard",
+    rarity: 4000000,
+    baseWeight: 3600,
+    valuePerGram: 378
+  },
+
+  { name: "Pezzottaite", rarity: 12000, baseWeight: 825, valuePerGram: 8.5 },
+  { name: "Clinohumite", rarity: 18000, baseWeight: 875, valuePerGram: 10 },
+  { name: "Tsavorite", rarity: 28000, baseWeight: 960, valuePerGram: 14 },
+  { name: "Paraíba Tourmaline", rarity: 45000, baseWeight: 1050, valuePerGram: 19 },
+  { name: "Red Diamond", rarity: 70000, baseWeight: 1150, valuePerGram: 27 },
+  { name: "Natural Moissanite", rarity: 110000, baseWeight: 1275, valuePerGram: 36 },
+  { name: "Black Diamond", rarity: 190000, baseWeight: 1450, valuePerGram: 51 },
+  { name: "Tugtupite", rarity: 350000, baseWeight: 1650, valuePerGram: 74 },
+  { name: "Meteorite Peridot", rarity: 620000, baseWeight: 1950, valuePerGram: 105 },
+  { name: "Ringwoodite", rarity: 900000, baseWeight: 2350, valuePerGram: 145 },
+  { name: "Pallasite Crystal", rarity: 1300000, baseWeight: 2700, valuePerGram: 185 },
+  { name: "Lunar Diamond", rarity: 2500000, baseWeight: 3100, valuePerGram: 270 },
+  { name: "Martian Opal", rarity: 6000000, baseWeight: 4000, valuePerGram: 420 },
+  { name: "Ja-ore", rarity: 6242026, baseWeight: 90000, valuePerGram: 20 },
+  { name: "Presolar Moissanite", rarity: 8000000, baseWeight: 4800, valuePerGram: 560 },
+  { name: "Lanky Gem", rarity: 10000000, baseWeight: 40500, valuePerGram: 111.1111 },
+  { name: "Heart of Xy", rarity: 100000000, baseWeight: 6500, valuePerGram: 2000 },
+  { name: "Carmeltazite", rarity: 50000000, baseWeight: 6000, valuePerGram: 1250 }
+];
+
+// =========================================================
+// SECURE RANDOM NUMBER
+// =========================================================
+
+function random01() {
+  const values =
+    new Uint32Array(1);
+
+  crypto.getRandomValues(
+    values
+  );
+
+  return (
+    values[0] /
+    4294967296
+  );
+}
+
+
+function randomBetween(
+  min: number,
+  max: number
+) {
+  return (
+    min +
+    random01() *
+    (max - min)
+  );
+}
+
+
+// =========================================================
+// GEM RNG
+// =========================================================
+
+function rollGem(
+  luck = 1
+) {
+  const safeLuck =
+    Math.max(
+      1,
+      luck
+    );
+
+  const maximumRarity =
+    Math.max(
+      ...gems.map(
+        (gem) =>
+          gem.rarity
+      )
+    );
+
+  // Luck also acts as a rarity floor. At 4x Luck, gems with a listed
+  // rarity of 1 in 4 or more common are excluded from the pool.
+  const rarityFloor =
+    Math.min(
+      safeLuck,
+      maximumRarity
+    );
+
+  const rollableGems =
+    gems
+      .filter(
+        (gem) =>
+          gem.affectedByLuck === false ||
+          gem.rarity >= rarityFloor
+      )
+      .sort(
+        (a, b) =>
+          b.rarity -
+          a.rarity
+      );
+
+  const fallbackPool = rollableGems.filter((gem) => gem.affectedByLuck !== false);
+  const fallbackGem = (fallbackPool.length ? fallbackPool : rollableGems)[
+    (fallbackPool.length ? fallbackPool : rollableGems).length - 1
+  ];
+
+
+  for (
+    const gem
+    of rollableGems
+  ) {
+    const chance =
+      Math.min(
+        gem.affectedByLuck === false
+          ? 1 / gem.rarity
+          : safeLuck / gem.rarity,
+        1
+      );
+
+
+    if (
+      random01() <
+      chance
+    ) {
+      return gem;
+    }
+  }
+
+
+  return fallbackGem;
+}
+
+const relics = {
+  enchant: { name: "Enchant Relic", rarity: 250, baseWeight: 0, valuePerGram: 0 },
+  ancient: { name: "Ancient Relic", rarity: 1500, baseWeight: 0, valuePerGram: 0 }
+};
+
+// One draw gives both mutually-exclusive relics their exact marginal odds.
+// Neither player Luck nor any other modifier is involved.
+function rollRelic(ancientChanceMultiplier = 1, allRelicChanceMultiplier = 1) {
+  // Mutation-triggered relic buffs are server-authoritative and only affect
+  // future rolls while their counters are active.
+  const ancientChance = Math.min(1, (1 / 1500) * Math.max(0, ancientChanceMultiplier) * Math.max(0, allRelicChanceMultiplier));
+  const enchantChance = Math.min(1 - ancientChance, (1 / 250) * Math.max(0, allRelicChanceMultiplier));
+  const roll = random01();
+  if (roll < ancientChance) return relics.ancient;
+  if (roll < ancientChance + enchantChance) return relics.enchant;
+  return null;
+}
+
+function isRelic(gem: { name?: string }) {
+  return gem.name === "Enchant Relic" || gem.name === "Ancient Relic";
+}
+
+// Phase 5 is represented as 5.1/5.2-safe integer states in Postgres. Never
+// compare those values numerically: 51 would otherwise unlock Phase 6/Stretch.
+function deepcorePhaseOrder(phase: unknown) {
+  return ({ 1: 1, 2: 2, 3: 3, 4: 4, 51: 5, 52: 6, 6: 7, 7: 8 } as Record<number, number>)[Number(phase)] ?? 0;
+}
+
+function rollGemWithPickaxePassives(
+  luck: number,
+  discovered: Set<string>,
+  geologistMultiplier = 1,
+  extremeGemMultiplier = 1,
+  legendaryGemMultiplier = 1,
+  timeWindowMultiplier = 1,
+  eventContext: any = null,
+  equipmentContext: any = null,
+  maxLuck: number | null = null,
+  selectionCatalog: any[] = gems
+) {
+  const safeLuck = Math.max(0.000001, capGemLuck(luck, maxLuck));
+  const eligibleGems = eligibleEquipmentGems(selectionCatalog, equipmentContext?.id);
+  const maximumRarity = Math.max(...eligibleGems.map((gem) => gem.rarity));
+  const rarityFloor = Math.min(safeLuck, maximumRarity);
+  const rollable = eligibleGems
+    .filter((gem) => gem.affectedByLuck === false || gem.rarity >= rarityFloor)
+    .filter((gem) => !eventContext || eventGemIsEligible(eventContext, gem))
+    .sort(biomeSelectionOrder);
+
+  for (const gem of rollable) {
+    if (gem.affectedByLuck === false) {
+      const deepcoreSpecial = gem.specialGem === true
+        ? positive(eventContext?.deepcoreSpecialChanceMultiplier)
+        : 1;
+      if (random01() < Math.min(flatEquipmentChance(equipmentContext?.id) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {}) * deepcoreSpecial / (gem.selectionDenominator ?? gem.rarity), 1)) return gem;
+      continue;
+    }
+    let gemLuck = Math.max(0.000001, luck) * (eventContext?.buffsDisabled ? 1 : fortuneLuckFactor(equipmentContext?.id, gem)) * specialChance(equipmentContext?.id, gem, equipmentContext?.state ?? {});
+    if (!discovered.has(gem.name)) gemLuck *= geologistMultiplier;
+    if (gem.rarity >= 2300) gemLuck *= legendaryGemMultiplier;
+    if (gem.rarity >= 100000) gemLuck *= extremeGemMultiplier;
+    if ((gem as any).timeWindow === true) gemLuck *= timeWindowMultiplier;
+    if (eventContext && !eventContext.buffsDisabled) gemLuck *= eventGemLuckFactor(eventContext, gem);
+    if (gem.metadata?.deepcore_stage) {
+      gemLuck *= positive(eventContext?.deepcoreGemChanceMultiplier);
+      if (gem.name === "Heart of the Deep") {
+        gemLuck *= positive(eventContext?.deepcore?.heartMultiplier);
+      }
+    }
+    gemLuck = capGemLuck(gemLuck, maxLuck);
+    if (random01() < Math.min(gemLuck / (gem.selectionDenominator ?? gem.rarity), 1)) return gem;
+  }
+  const fallbackPool = rollable.filter((gem) => gem.affectedByLuck !== false);
+  const pool = fallbackPool.length ? fallbackPool : rollable;
+  return pool[pool.length - 1];
+}
+
+export function rollDeepSeaGem(catalog: any[], luck: number, rarityDivisor = 1, random = Math.random) {
+  const ordered = (catalog ?? []).map((row: any) => ({
+    name: String(row.name), rarity: Number(row.rarity), baseWeight: Number(row.base_weight),
+    valuePerGram: Number(row.value_per_gram), affectedByLuck: true,
+    metadata: { deepSea: true, description: row.description }
+  })).sort((a: any, b: any) => b.rarity - a.rarity);
+  const water = ordered.find((gem: any) => gem.name === "Water") ?? { name:"Water",rarity:1,baseWeight:1000,valuePerGram:0.00000324,affectedByLuck:true,metadata:{deepSea:true} };
+  for (const gem of ordered) {
+    if (gem.name === "Water") continue;
+    if (random() < Math.min(1, Math.max(0, luck) * Math.max(1, rarityDivisor) / gem.rarity)) return gem;
+  }
+  return water;
+}
+
+
+// =========================================================
+// MUTATION RNG
+// =========================================================
+
+let gemMutations = [
+  { id: "polished", name: "Polished", chance: 1 / 100, multiplier: 1.5 },
+  { id: "gilded", name: "Gilded", chance: 1 / 500, multiplier: 2.5 },
+  { id: "prismatic", name: "Prismatic", chance: 1 / 2500, multiplier: 5 },
+  { id: "celestial", name: "Celestial", chance: 1 / 10000, multiplier: 12 },
+  { id: "corrupted", name: "Corrupted", chance: 1 / 50000, multiplier: 30 }
+];
+
+export const MAX_MISTY_STACKS = 3;
+export const MAX_COMBINED_MUTATION_VALUE_MULTIPLIER = 100000;
+
+export function capCombinedMutationValueMultiplier(mutations: Array<{ multiplier?: unknown }> = []) {
+  const rawMultiplier = mutations.reduce(
+    (total, mutation) => total * Number(mutation.multiplier ?? 1),
+    1
+  );
+  return {
+    rawMultiplier,
+    appliedMultiplier: Math.min(rawMultiplier, MAX_COMBINED_MUTATION_VALUE_MULTIPLIER),
+    capped: rawMultiplier > MAX_COMBINED_MUTATION_VALUE_MULTIPLIER
+  };
+}
+
+export function nextMistyBoostState(
+  rollsBefore: unknown,
+  stacksBefore: unknown,
+  mistyProcced: boolean
+) {
+  const activeRollsBefore = Math.max(0, Number(rollsBefore ?? 0));
+  const activeStacksBefore = activeRollsBefore > 0
+    ? Math.min(MAX_MISTY_STACKS, Math.max(0, Number(stacksBefore ?? 0)))
+    : 0;
+  let rolls = Math.max(0, activeRollsBefore - 1);
+  let stacks = rolls > 0 ? activeStacksBefore : 0;
+  if (mistyProcced) {
+    stacks = Math.min(MAX_MISTY_STACKS, activeStacksBefore + 1);
+    rolls = 10;
+  }
+  return { rolls, stacks };
+}
+
+export function logMutationValueMultiplierAnomaly(context: Record<string, unknown>) {
+  try {
+    console.warn("MUTATION_VALUE_MULTIPLIER_CAP", {
+      event: "mutation_value_multiplier_cap",
+      timestamp: new Date().toISOString(),
+      ...context
+    });
+  } catch {
+    // Observability is deliberately best-effort: a logging failure must never
+    // turn an otherwise successful authoritative roll into an error.
+  }
+}
+
+// Restore the hardcoded mutation-luck player.
+const MUTATION_LUCK_PLAYER_ID =
+  "38d5e8ce-18af-46d3-aa9e-6e601e75dd78";
+
+function getMutationChanceMultiplier(playerId: string) {
+  return playerId === MUTATION_LUCK_PLAYER_ID ? 1000000 : 1;
+}
+
+// Every mutation is rolled independently. Multiple mutations can stack.
+function rollGemMutations(chanceMultiplier = 1, eventContext: any = null) {
+  const safeMultiplier = Math.max(0, Number.isFinite(Number(chanceMultiplier)) ? Number(chanceMultiplier) : 1);
+
+  return gemMutations.flatMap((mutation) => {
+    if(['balanced','shifted','tryhard'].includes(mutation.id)||mutation.id.startsWith('supersizer-')) return []; // Equipment-exclusive even if added to the admin catalog.
+    const eventFactor = eventContext ? eventMutationFactor(eventContext, mutation) : 1;
+    if (eventFactor <= 0) return [];
+    const chance = Math.min(mutation.chance * safeMultiplier * eventFactor, 1);
+    return random01() < chance ? [{ ...mutation, rolledChance: chance }] : [];
+  });
+}
+
+
+function getMutationCombinationKey(mutationIds: string[]) {
+  const sortedIds = Array.from(
+    new Set(mutationIds.map((id) => String(id).trim().toLowerCase()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  return sortedIds.length ? sortedIds.join("+") : "none";
+}
+
+
+// =========================================================
+// WEIGHT RNG
+// =========================================================
+
+export function rollWeightMultiplier(
+  weightLuck = 1,
+  continuationChance = 1 / 3,
+  maximumMultiplier: number | null = null,
+  tailEntryChance = 1 / 4,
+  tailEntryBonus = 0,
+  forceTail = false
+) {
+  const safeWeightLuck =
+    Math.max(
+      0,
+      weightLuck
+    );
+
+  // Weight Luck has diminishing returns:
+  // 1x = 25% high-region chance, approaching 85% at high values.
+  const highChance =
+    0.25 +
+    0.6 *
+      (
+        1 -
+        Math.exp(
+          -0.35 *
+          Math.max(
+            0,
+            safeWeightLuck - 1
+          )
+        )
+      );
+
+  // Add percentage points to the unconditional tail chance, after Weight Luck.
+  // The existing high-region sampler dedicates at most 40% to its tail.
+  const naturalTailChance = highChance * Math.min(0.4, Math.max(0, Math.min(0.95, tailEntryChance)));
+  if (forceTail || (tailEntryBonus > 0 && random01() < Math.min(1, tailEntryBonus / (1 - naturalTailChance)))) {
+    let whole = 2;
+    while ((maximumMultiplier == null || whole < maximumMultiplier) && random01() < continuationChance) whole++;
+    return maximumMultiplier != null && whole >= maximumMultiplier ? maximumMultiplier : randomBetween(whole, whole + 1);
+  }
+
+  const lowChance =
+    1 - highChance;
+
+  const roll =
+    random01();
+
+
+  // ---------------------------------------------------------
+  // LOW REGION
+  // ---------------------------------------------------------
+
+  if (
+    roll <
+    lowChance
+  ) {
+    const lowRoll =
+      random01();
+
+
+    if (
+      lowRoll < 0.2
+    ) {
+      return randomBetween(
+        0.5,
+        0.85
+      );
+    }
+
+
+    return randomBetween(
+      0.85,
+      1.1
+    );
+  }
+
+
+  // ---------------------------------------------------------
+  // HIGH REGION
+  // ---------------------------------------------------------
+
+  const highRoll =
+    random01();
+
+
+  if (
+    highRoll < 0.6
+  ) {
+    return randomBetween(
+      1.1,
+      1.5
+    );
+  }
+
+
+  if (
+    highRoll < Math.max(0.6, 1 - Math.max(0, Math.min(0.95, tailEntryChance)))
+  ) {
+    return randomBetween(
+      1.5,
+      2
+    );
+  }
+
+
+  // ---------------------------------------------------------
+  // 2x+ TAIL
+  // ---------------------------------------------------------
+
+  let wholeMultiplier =
+    2;
+
+  // Production baseline: each additional whole multiplier is a 1-in-3 roll.
+  while (
+    (maximumMultiplier == null || wholeMultiplier < maximumMultiplier) &&
+    random01() < continuationChance
+  ) {
+    wholeMultiplier++;
+  }
+
+  if (maximumMultiplier != null && wholeMultiplier >= maximumMultiplier) {
+    return maximumMultiplier;
+  }
+
+
+  return randomBetween(
+    wholeMultiplier,
+    wholeMultiplier + 1
+  );
+}
+
+export function getLateGameFinalWeightFactor(
+  equipmentId: string | null,
+  naturalWeight: number,
+  baseRarity: number,
+  compressionRoll = false
+) {
+  return 1; // Normal Bag passives are retired; Plastic has no weight passive.
+}
+
+
+// =========================================================
+// EDGE FUNCTION
+// =========================================================
+
+type BatchExecution = {
+  batchSize: number;
+  biomeSnapshot?: any;
+  pool: "normal" | "deep_sea";
+  abyssalPotion: boolean;
+  requestStartedAt: Date;
+  leaseId?: string;
+  firstGenuineRoll?: number;
+  nextRollAt?: string;
+  cooldownMs?: number;
+  leaseReleased?: boolean;
+  activeAdminEvent?: any | null;
+  globalEventData?: any | null;
+  guildSnapshot?: { membership: any | null; shopBuffIds: string[] };
+  pets?: any[];
+  equipmentBonusRows?: any[];
+  deepcoreContext?: any | null;
+  deepSeaContext?: any | null;
+  initialRollContext?: any;
+  timing?: RollInvocationTiming;
+};
+
+type RollSubrollTiming = {
+  index: number;
+  total_ms?: number;
+  background_awaited: boolean;
+  phases: Record<string, number>;
+  flags: Record<string, boolean | string>;
+};
+
+type RollInvocationTiming = {
+  sample_rate: number;
+  started_at_ms: number;
+  subrolls: RollSubrollTiming[];
+  lease_release_ms: number;
+  wait_until_registered: boolean;
+  response_done: Promise<void>;
+  mark_response_done: () => void;
+};
+
+export function normalizeRollTimingSampleRate(raw: unknown): number {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 0.05;
+}
+
+const ROLL_TIMING_SAMPLE_RATE = normalizeRollTimingSampleRate(
+  (globalThis as any).Deno?.env?.get?.("ROLL_TIMING_SAMPLE_RATE") ?? 0.05
+);
+
+function shouldSampleRollTiming(): boolean {
+  if (ROLL_TIMING_SAMPLE_RATE <= 0) return false;
+  if (ROLL_TIMING_SAMPLE_RATE >= 1) return true;
+  const draw = new Uint32Array(1);
+  crypto.getRandomValues(draw);
+  return draw[0] / 0x100000000 < ROLL_TIMING_SAMPLE_RATE;
+}
+
+function createRollInvocationTiming(startedAtMs: number): RollInvocationTiming {
+  let markResponseDone = () => {};
+  const responseDone = new Promise<void>((resolve) => { markResponseDone = resolve; });
+  return {
+    sample_rate: ROLL_TIMING_SAMPLE_RATE,
+    started_at_ms: startedAtMs,
+    subrolls: [],
+    lease_release_ms: 0,
+    wait_until_registered: false,
+    response_done: responseDone,
+    mark_response_done: markResponseDone
+  };
+}
+
+function timingNow(batchExecution: BatchExecution): number {
+  return batchExecution.timing ? performance.now() : 0;
+}
+
+function recordRollPhase(
+  batchExecution: BatchExecution,
+  batchIndex: number,
+  phase: string,
+  startedAtMs: number
+): void {
+  const subroll = batchExecution.timing?.subrolls[batchIndex];
+  if (!subroll) return;
+  const elapsed = Math.max(0, performance.now() - startedAtMs);
+  subroll.phases[phase] = Math.round(((subroll.phases[phase] ?? 0) + elapsed) * 100) / 100;
+}
+
+function logRollTiming(payload: Record<string, unknown>): void {
+  console.log(`[ROLL_TIMING] ${JSON.stringify(payload)}`);
+}
+
+function registerRollWaitUntil(
+  batchExecution: BatchExecution,
+  batchIndex: number,
+  backgroundPromise: Promise<unknown>
+): void {
+  if (!batchExecution.timing) {
+    EdgeRuntime.waitUntil(backgroundPromise);
+    return;
+  }
+  const waitUntilStartedAt = performance.now();
+  batchExecution.timing.wait_until_registered = true;
+  EdgeRuntime.waitUntil(Promise.all([
+    backgroundPromise,
+    batchExecution.timing.response_done
+  ]).then(() => {
+    const phases = batchExecution.timing?.subrolls[batchIndex]?.phases ?? {};
+    logRollTiming({
+      event: "roll_timing",
+      segment: "waitUntil",
+      batch_size: 1,
+      sample_rate: batchExecution.timing?.sample_rate,
+      wait_until_ms: Math.round((performance.now() - waitUntilStartedAt) * 100) / 100,
+      whole_invocation_ms: Math.round((performance.now() - Number(batchExecution.timing?.started_at_ms)) * 100) / 100,
+      subroll_index: batchIndex + 1,
+      background_phases: Object.fromEntries(
+        Object.entries(phases).filter(([phase]) => phase.includes("bookkeeping_background") || phase.includes("bookkeeping_loss"))
+      )
+    });
+  }));
+}
+
+async function executeSingleRoll(
+  req: Request,
+  ctx: any,
+  batchExecution: BatchExecution,
+  batchIndex: number
+) {
+
+      // =====================================================
+      // IDENTIFY PLAYER
+      // =====================================================
+
+      const playerId =
+        ctx.userClaims?.id;
+
+
+      if (!playerId) {
+        return jsonResponse(
+          {
+            error:
+              "Could not identify player."
+          },
+          {
+            status: 401
+          }
+        );
+      }
+
+      // Deep Sea enforces the event boundary for every committed subroll.
+      // Ordinary displayed batches retain their effectively-simultaneous time.
+      const now = batchExecution.pool === "deep_sea" ? new Date() : batchExecution.requestStartedAt;
+
+      // The first subroll loads the complete authoritative snapshot. Later
+      // subrolls reuse batch-stable fields and combine their changing-state
+      // refresh with the serialized Mythic Surge claim in one RPC.
+      const prepareContextStartedAt = timingNow(batchExecution);
+      let rollContext: any;
+      let rollContextError: any = null;
+      let preclaimedMythicSurge: any = null;
+      if (batchIndex === 0) {
+        const result = await ctx.supabaseAdmin.rpc("roll_prepare_context_v2", {
+          p_player_id: playerId,
+          p_now: now.toISOString(),
+          p_gem_catalog_version: gemCatalogCache?.version ?? null,
+          p_mutation_catalog_version: mutationCatalogCache?.version ?? null
+        });
+        rollContext = result.data;
+        rollContextError = result.error;
+        if (rollContext) batchExecution.initialRollContext = structuredClone(rollContext);
+      } else {
+        const result = await ctx.supabaseAdmin.rpc("roll_begin_batch_subroll_v2", {
+          p_player_id: playerId,
+          p_lease_id: batchExecution.leaseId,
+          p_genuine_roll: Number(batchExecution.firstGenuineRoll) + batchIndex,
+          p_now: now.toISOString(),
+          p_refresh_deep_sea: batchExecution.pool === "deep_sea"
+        });
+        rollContextError = result.error;
+        if (result.data?.context) {
+          rollContext = {
+            ...(batchExecution.initialRollContext ?? {}),
+            ...result.data.context
+          };
+          preclaimedMythicSurge = result.data.mythicSurge ?? null;
+          if (batchExecution.pool === "deep_sea") {
+            batchExecution.deepSeaContext = result.data.deepSeaContext ?? null;
+          }
+        }
+      }
+      recordRollPhase(batchExecution, batchIndex, "roll_prepare_context_ms", prepareContextStartedAt);
+
+      if (rollContextError || !rollContext) {
+        console.error("Roll context load failed:", rollContextError);
+        return jsonResponse({ error: "roll_context_unavailable" }, { status: 503 });
+      }
+
+      if (batchIndex === 0) {
+        batchExecution.deepcoreContext = rollContext.deepcoreContext ?? null;
+        batchExecution.deepSeaContext = rollContext.deepSeaContext ?? null;
+        batchExecution.pets = Array.isArray(rollContext.pets) ? rollContext.pets : [];
+        batchExecution.equipmentBonusRows = Array.isArray(rollContext.equipmentBonusRows)
+          ? rollContext.equipmentBonusRows
+          : [];
+        for (const warning of rollContext.contextWarnings ?? []) {
+          console.warn(`${warning?.context ?? "Roll"} context unavailable:`, warning?.message ?? "unknown");
+        }
+      }
+      const deepcoreContext = batchExecution.deepcoreContext;
+      const deepcoreEffects = deepcoreContext?.effects ?? {};
+      const deepcoreChargeActive = (id: string) =>
+        Number(deepcoreEffects?.[id]?.rollsRemaining ?? 0) > batchIndex;
+      const deepcoreTimedActive = (id: string) =>
+        Date.parse(String(deepcoreEffects?.[id]?.expiresAt ?? "")) > now.getTime();
+
+      const deepSeaContext = batchExecution.deepSeaContext;
+      if (batchExecution.pool === "deep_sea" && deepSeaContext?.phase !== "active") {
+        return jsonResponse({ error:"deep_sea_event_ended", phase:deepSeaContext?.phase ?? "unavailable" }, { status:409 });
+      }
+
+
+      // Load pet definitions and the two new equipment stat columns once per
+      // displayed batch. Pet definitions are server-controlled; no client
+      // payload can change pet odds.
+      // Pet definitions and the two equipment bonus columns are included in
+      // roll_prepare_context_v2 and remain stable for this leased batch.
+
+      // =====================================================
+      // LOAD PLAYER
+      // =====================================================
+
+      const player = rollContext.player;
+
+
+      if (
+        !player
+      ) {
+        console.error(
+          "Player load failed"
+        );
+
+
+        return jsonResponse(
+          {
+            error:
+              "Player record not found."
+          },
+          {
+            status: 400
+          }
+        );
+      }
+      if (batchExecution.pool === "deep_sea" && Number(player.money ?? 0) < 5) {
+        return jsonResponse({ error:"insufficient_funds", required:5 }, { status:409 });
+      }
+
+      // =====================================================
+      // BAN / SUSPENSION CHECK
+      //
+      // A banned player is blocked at the door. The client also shows a ban
+      // screen; enforcing here means removing that overlay buys nothing. Ban
+      // state lives in its own table (user_roll_luck_rarity_mult).
+      // =====================================================
+
+      const banRow = rollContext.ban;
+
+      if (
+        banRow?.active_until &&
+        new Date(banRow.active_until) > new Date()
+      ) {
+        return jsonResponse(
+          {
+            error: "banned",
+            bannedUntil: banRow.active_until,
+            reason: banRow.note ?? null
+          },
+          { status: 403 }
+        );
+      }
+
+
+      // =====================================================
+      // LOAD LIVE MUTATION CATALOG
+      // =====================================================
+      // Admin-created mutations live in game_mutations. Keep the historical
+      // fallback above for old deployments, but prefer the live catalog so
+      // newly-created mutations actually participate in rolls.
+      try {
+        const versions = rollContext.catalogVersions ?? {};
+        if (Array.isArray(rollContext.mutationCatalog)) {
+          mutationCatalogCache = {
+            version: Number(versions.mutations),
+            data: rollContext.mutationCatalog
+          };
+        }
+        const liveMutations = mutationCatalogCache?.data ?? null;
+        const liveMutationError = liveMutations ? null : new Error("mutation_catalog_missing");
+
+        if (!liveMutationError && Array.isArray(liveMutations) && liveMutations.length) {
+          gemMutations = liveMutations
+            .map((mutation: any) => ({
+              id: String(mutation.id),
+              name: String(mutation.name),
+              // game_mutations stores mutation odds as a denominator
+              // (100 = 1 in 100), while the RNG expects a probability.
+              chance: 1 / Number(mutation.chance),
+              multiplier: Number(mutation.multiplier)
+            }))
+            .filter((mutation: any) =>
+              mutation.id &&
+              Number.isFinite(mutation.chance) &&
+              mutation.chance > 0 &&
+              Number.isFinite(mutation.multiplier) &&
+              mutation.multiplier > 0
+            );
+        } else if (liveMutationError) {
+          console.warn("[ROLL] Live mutation catalog unavailable; using bundled mutations:", liveMutationError.message);
+        }
+      } catch (mutationCatalogError) {
+        console.warn("[ROLL] Live mutation catalog lookup failed; using bundled mutations:", mutationCatalogError);
+      }
+
+
+      // =====================================================
+      // CHECK COOLDOWN
+      // =====================================================
+
+      if (
+        batchIndex === 0 &&
+        player.next_roll_at
+      ) {
+        const currentNextRoll =
+          new Date(
+            player.next_roll_at
+          );
+
+
+        if (
+          currentNextRoll >
+          now
+        ) {
+          const remainingMs =
+            currentNextRoll
+              .getTime() -
+            now.getTime();
+
+
+          return jsonResponse(
+            {
+              error:
+                "cooldown",
+
+              remainingMs,
+
+              nextRollAt:
+                currentNextRoll
+                  .toISOString()
+            },
+            {
+              status: 429
+            }
+          );
+        }
+      }
+
+
+      // =====================================================
+      // CHECK INVENTORY CAPACITY
+      // =====================================================
+
+      const currentInventoryCount = Number(rollContext.inventoryCount ?? 0);
+
+      const researchEffectsAtCapacityRaw = (player as any).player_research_effects;
+      const researchEffectsAtCapacity = Array.isArray(researchEffectsAtCapacityRaw)
+        ? researchEffectsAtCapacityRaw[0] ?? {}
+        : researchEffectsAtCapacityRaw ?? {};
+      const researchInventoryBonus = Math.max(
+        0,
+        Math.trunc(Number(researchEffectsAtCapacity.inventory_bonus ?? 0)) || 0
+      );
+      const effectiveInventoryCapacity =
+        Number(player.inventory_capacity ?? 0) + researchInventoryBonus;
+
+
+      if (
+        batchExecution.pool !== "deep_sea" && (
+          currentInventoryCount >= effectiveInventoryCapacity ||
+          (batchIndex === 0 && batchExecution.batchSize > 1 &&
+            currentInventoryCount + batchExecution.batchSize > effectiveInventoryCapacity)
+        )
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "inventory_full",
+
+            inventoryCount:
+              currentInventoryCount,
+
+            capacity:
+              effectiveInventoryCapacity,
+
+            requiredFreeSlots:
+              batchExecution.batchSize
+          },
+          {
+            status: 409
+          }
+        );
+      }
+
+
+      // =====================================================
+      // LOAD EQUIPPED CLOUD EQUIPMENT
+      // =====================================================
+
+      const equipmentBonusById = new Map(
+        (batchExecution.equipmentBonusRows ?? []).map((row: any) => [String(row.id), row])
+      );
+      const equippedEquipment = (Array.isArray(rollContext.equipment) ? rollContext.equipment : []).map((item: any) => ({
+        ...item,
+        ...(equipmentBonusById.get(String(item.id)) ?? {})
+      }));
+      const mineArtifacts = new Set<string>(
+        (Array.isArray(rollContext.mineArtifacts) ? rollContext.mineArtifacts : []).map(String)
+      );
+
+      const equippedPickaxe = (equippedEquipment ?? []).find(
+        (item) => item.category === "pickaxe"
+      ) ?? null;
+      let authoritativeEquipmentState = player.equipment_state ?? {};
+      if (equippedPickaxe?.equipment_id === "convergence-pickaxe") {
+        const { data: convergenceState, error: convergenceStateError } = await ctx.supabaseAdmin
+          .rpc("get_convergence_roll_state", { p_uid: playerId });
+        if (convergenceStateError) {
+          console.error("Convergence roll state unavailable:", convergenceStateError);
+          return jsonResponse({ error: "convergence_state_unavailable" }, { status: 503 });
+        }
+        authoritativeEquipmentState = { ...authoritativeEquipmentState, convergence: convergenceState ?? {} };
+      }
+      const allIn = equippedPickaxe?.equipment_id === 'all-in-pickaxe';
+      if(allIn) mineArtifacts.clear();
+      const enchantedPickaxe = allIn ? null : (equippedEquipment ?? []).find(
+        (item) => item.category === "pickaxe" && item.enchant_id
+      ) ?? null;
+      const hasMutationResonance = equippedPickaxe?.equipment_id === "eclipse-pickaxe";
+      const hasEventHorizon = equippedPickaxe?.equipment_id === "singularity-pickaxe";
+      const hasEnchantConduit = equippedPickaxe?.equipment_id === "transcendent-pickaxe";
+      const hasVeinHunter = equippedPickaxe?.equipment_id === "astral-pickaxe";
+      const hasRarityResonance = equippedPickaxe?.equipment_id === "celestial-pickaxe";
+      const masterworkPickaxe = allIn ? null : equippedPickaxe?.masterwork_passive ?? null;
+      const masterworkPickaxeRank = Number(equippedPickaxe?.masterwork_passive_rank ?? 0);
+      const equippedLantern = (equippedEquipment ?? []).find((item) => item.category === "lantern") ?? null;
+      const equippedBoots = (equippedEquipment ?? []).find((item) => item.category === "boots") ?? null;
+      const equippedBag = (equippedEquipment ?? []).find((item) => item.category === "bag") ?? null;
+      const hasHeavyFooting = false;
+      const hasGravitationalSurge = false;
+      const currentEnchantId = enchantedPickaxe?.enchant_id ?? null;
+      const sharedEnchants = new Set(["deep_strike","lucky_break","fortune_surge","collectors_edge"]);
+      const attunement = equippedPickaxe?.masterwork_attunement ?? null;
+      const attunementFactor = attunement === "amplified" ? 1.03
+        : attunement === "resonant" && sharedEnchants.has(currentEnchantId) ? 1.05
+        : attunement === "specialized" && currentEnchantId && !sharedEnchants.has(currentEnchantId) ? 1.05 : 1;
+      const strengthenEnchantMultiplier = (multiplier: number) =>
+        1 + (multiplier - 1) * (hasEnchantConduit ? 1.1 : 1) * attunementFactor;
+
+      let enchantState: Record<string, number> =
+        enchantedPickaxe?.enchant_state && typeof enchantedPickaxe.enchant_state === "object"
+          ? { ...enchantedPickaxe.enchant_state }
+          : {};
+      let enchantStateChanged = false;
+      let slowStarterCooldownMultiplier = 1;
+
+      // One compact, uncached read supplies authoritative preferences and ALL
+      // distinct discoveries (no Data API row-limit truncation).
+      const qolContext = rollContext.qol;
+      if (!qolContext) return jsonResponse({ error: 'qol_settings_unavailable' }, { status: 503 });
+      const rollSettings = qolContext.settings ?? {};
+      const buffsEnabled = rollSettings.enableBuffs !== false;
+      const discoveredGemNames = new Set<string>(qolContext.discoveries ?? []);
+
+
+      // =====================================================
+      // LOAD ACTIVE PLAYER BOOSTS
+      // =====================================================
+
+      const activeBoosts = Array.isArray(rollContext.activeBoosts)
+        ? rollContext.activeBoosts
+        : [];
+
+
+      // =====================================================
+      // LOAD PENDING ONE-ROLL BOOST (Legendary / Mythic potion)
+      //
+      // Each charge adds the potion's Luck to one successful roll. The row
+      // remains until its final charge is spent.
+      // =====================================================
+
+      const oneRollBoost = rollContext.oneRollBoost ?? null;
+
+
+      // =====================================================
+      // LOAD ACTIVE ADMIN EVENT
+      // =====================================================
+
+      const activeAdminEvent = batchExecution.activeAdminEvent === undefined
+        ? rollContext.activeAdminEvent ?? null
+        : batchExecution.activeAdminEvent;
+      if (batchExecution.activeAdminEvent === undefined) {
+        batchExecution.activeAdminEvent = structuredClone(activeAdminEvent);
+      }
+
+      // One compact authoritative snapshot covers every natural-event rule.
+      // Definitions, phases and selected targets are materialized when the
+      // occurrence starts, so the hot roll path never performs event joins.
+      const globalEventData = batchExecution.globalEventData === undefined
+        ? rollContext.globalEvent ?? null
+        : batchExecution.globalEventData;
+      if (batchExecution.globalEventData === undefined) {
+        batchExecution.globalEventData = structuredClone(globalEventData);
+      }
+      const activeGlobalEvent = normalizeGlobalEvent(globalEventData, now.getTime());
+      const availabilityEventContext = buildEventRollContext(activeGlobalEvent, random01, now.getTime());
+      const eventContext = allIn ? buildEventRollContext(null, random01, now.getTime()) : availabilityEventContext;
+      (eventContext as any).deepcore = deepcoreContext;
+      (eventContext as any).deepcoreGemChanceMultiplier =
+        (deepcoreTimedActive("seismic-potion") ? 1.25 : 1) *
+        (deepcoreChargeActive("unstable-core") ? 25 : 1);
+      (eventContext as any).deepcoreSpecialChanceMultiplier =
+        deepcoreChargeActive("unstable-core") ? 5 : 1;
+
+
+      // =====================================================
+      // CALCULATE PLAYER STATS
+      // =====================================================
+
+      const equipmentContext = prepareEquipmentRoll(equippedPickaxe?.equipment_id ?? '', authoritativeEquipmentState, random01, true, now.getTime());
+      if (equipmentContext.flags.convergence?.oneBecomesMany && currentInventoryCount + 5 > effectiveInventoryCapacity) {
+        return jsonResponse({ error:"inventory_full",inventoryCount:currentInventoryCount,capacity:effectiveInventoryCapacity,requiredFreeSlots:5 }, { status:409 });
+      }
+      const supersizerBlessing = supersizerBlessingMultipliers(equipmentContext.flags);
+      const impossibleProc = impossibleProcMultipliers(equipmentContext.flags);
+      const relicActive = (activeBoosts ?? []).some((boost: any) => boost.family === 'relic');
+      const equipmentStats = equipmentTotals(equippedEquipment ?? [], relicActive, equipmentContext.stats);
+      let luck = equipmentStats.luck;
+      let baseLuck = luck;
+      let rollSpeed = equipmentStats.rollSpeed;
+      let weightLuck = equipmentStats.weightLuck;
+      let weightMultiplier = equipmentStats.weightMultiplier;
+      let rollBulk = Number(equipmentStats.rollBulk ?? 0);
+      let petLuck = Number(equipmentStats.petLuck ?? 0);
+      const deepSeaDiverActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.diver_until ?? "")) > now.getTime();
+      const deepSeaTidalActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.tidal_rush_until ?? "")) > now.getTime();
+      const deepSeaPressureActive = batchExecution.pool === "deep_sea" && Date.parse(String(deepSeaContext?.state?.pressure_until ?? "")) > now.getTime();
+      if (buffsEnabled && deepSeaTidalActive) rollSpeed *= 1.5;
+      if (buffsEnabled && deepSeaPressureActive) { weightLuck *= 2; weightMultiplier *= 1.5; }
+      if (!allIn && deepcoreChargeActive("deepcore-catalyst")) weightLuck *= 1.5;
+      if (!allIn && deepcoreTimedActive("pressurized-catalyst")) {
+        weightLuck *= 2;
+        weightMultiplier *= 1.15;
+      }
+      const maxBatchFromStats = Math.min(100, 5 + Math.max(0, Math.floor(rollBulk)));
+      if (batchExecution.batchSize > maxBatchFromStats) {
+        return jsonResponse({ error: "invalid_batch_size", maximumBatchSize: maxBatchFromStats }, { status: 400 });
+      }
+      let enchantLuck = 1;
+      let guildLuck = 1;
+      let specialLuck = 1;
+      const focusedLuck = 1; // Focused Beam is retired; this personal layer remains explicit.
+      // Normal Abandoned Mine Museum passives are permanent collection bonuses.
+      if (mineArtifacts.has("miners-lamp")) rollSpeed += 0.02;
+      if (mineArtifacts.has("clockwork-drill")) rollSpeed += 0.05;
+      if (mineArtifacts.has("surveyors-compass")) weightLuck += 0.03;
+      if (mineArtifacts.has("silver-pick")) weightMultiplier += 0.05;
+      if (mineArtifacts.has("vein-prism")) luck += 0.05;
+
+
+      const crystalEffectsData = rollContext.crystalEffects ?? {};
+      const expeditionArtifactEffectsData = rollContext.expeditionArtifactEffects ?? {};
+
+      const researchEffectsRaw = (player as any).player_research_effects;
+      const researchEffects = allIn ? {} : Array.isArray(researchEffectsRaw)
+        ? researchEffectsRaw[0] ?? {}
+        : researchEffectsRaw ?? {};
+      const researchNumber = (key: string, fallback = 1) => {
+        const value = Number(researchEffects[key] ?? fallback);
+        return Number.isFinite(value) && value > 0 ? value : fallback;
+      };
+
+      const crystalEffects = allIn ? {} : crystalEffectsData ?? {};
+      const crystalLuckBonus = Math.max(0, Number(crystalEffects.luckBonus ?? 0));
+      const crystalFinalLuckMultiplier = Math.max(1, Number(crystalEffects.finalLuckMultiplier ?? 1));
+      const crystalWeightLuckMultiplier = Math.max(1, Number(crystalEffects.weightLuckMultiplier ?? 1));
+      const crystalWeightMultiplierMultiplier = Math.max(1, Number(crystalEffects.weightMultiplierMultiplier ?? 1));
+      const crystalMutationMultiplier = Math.max(1, Number(crystalEffects.mutationChanceMultiplier ?? 1));
+      const crystalGemValueMultiplier = Math.max(1, Number(crystalEffects.gemValueMultiplier ?? 1));
+      const crystalHeavyGemValueMultiplier = Math.max(1, Number(crystalEffects.heavyGemValueMultiplier ?? 1));
+
+      const expeditionArtifactEffects = allIn ? {} : expeditionArtifactEffectsData ?? {};
+      const expeditionArtifactLuckBonus = Math.max(0, Number(expeditionArtifactEffects.luckBonus ?? 0));
+      const expeditionArtifactMutationMultiplier = Math.max(1, Number(expeditionArtifactEffects.mutationChanceMultiplier ?? 1));
+      const expeditionArtifactGemValueMultiplier = Math.max(1, Number(expeditionArtifactEffects.gemValueMultiplier ?? 1));
+
+      const volcanicEffects = expeditionArtifactEffects;
+      const volcanicLuckBonus = Math.max(0, Number(volcanicEffects.luckBonus ?? 0));
+      const volcanicRollSpeedBonus = Math.max(0, Number(volcanicEffects.rollSpeedBonus ?? 0));
+      const volcanicRollSpeedMultiplier = Math.max(1, Number(volcanicEffects.rollSpeedMultiplier ?? 1));
+      const volcanicWeightLuckMultiplier = Math.max(1, Number(volcanicEffects.weightLuckMultiplier ?? 1));
+      const volcanicWeightMultiplierMultiplier = Math.max(1, Number(volcanicEffects.weightMultiplierMultiplier ?? 1));
+      const volcanicMutationMultiplier = Math.max(1, Number(volcanicEffects.mutationChanceMultiplier ?? 1));
+      const volcanicGemValueMultiplier = Math.max(1, Number(volcanicEffects.gemValueMultiplier ?? 1));
+
+      // Research joins the additive personal layer below.
+      luck += crystalLuckBonus;
+      luck += expeditionArtifactLuckBonus;
+      // volcanicEffects aliases expeditionArtifactEffects; count its Luck once.
+      rollSpeed *= researchNumber("roll_speed_multiplier");
+      rollSpeed += volcanicRollSpeedBonus;
+      weightLuck *= researchNumber("weight_luck_multiplier");
+      weightLuck *= crystalWeightLuckMultiplier;
+      weightLuck *= volcanicWeightLuckMultiplier;
+      weightMultiplier *= crystalWeightMultiplierMultiplier;
+      weightMultiplier *= volcanicWeightMultiplierMultiplier;
+      const researchPotionStrength = researchNumber("potion_strength_multiplier");
+
+
+      baseLuck =
+        luck;
+
+      for (
+        const boost
+        of (allIn ? [] : activeBoosts) ??
+        []
+      ) {
+        let effectValue =
+          Number(
+            boost.effect_value ??
+            0
+          ) * researchPotionStrength;
+
+
+
+        if (
+          !Number.isFinite(
+            effectValue
+          ) ||
+          effectValue <=
+          0
+        ) {
+          continue;
+        }
+
+
+        switch (
+          boost.family
+        ) {
+          case "luck":
+            luck +=
+              effectValue;
+            break;
+
+          case "rollSpeed":
+            rollSpeed +=
+              effectValue;
+            break;
+
+          case "weightLuck":
+            weightLuck +=
+              effectValue;
+            break;
+
+          case "weightMultiplier":
+            weightMultiplier +=
+              effectValue;
+            break;
+
+          case "petLuck":
+            petLuck +=
+              effectValue;
+            break;
+        }
+      }
+
+
+
+      // A one-roll potion (Legendary / Mythic) is special Luck. Keep it
+      // separate until after enchant and guild multipliers so they cannot
+      // multiply it. The charge is consumed after the roll commits.
+      const oneRollLuck = allIn ? 0 :
+        Number(
+          oneRollBoost
+            ?.effect_value ??
+          0
+        );
+
+      // Enchants multiply ordinary Luck only. Only the equipped pickaxe owns
+      // and advances its state.
+      const enchantId = enchantedPickaxe?.enchant_id ?? null;
+      const enchantGrade = enchantedPickaxe?.enchant_grade === "ancient" ? "ancient" : "normal";
+
+      if (enchantId === "deep_strike") {
+        const every = enchantGrade === "ancient" ? 5 : 7;
+        const counter = Number(enchantState.rolls ?? 0) + 1;
+        if (counter >= every) {
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
+          enchantState.rolls = 0;
+        } else enchantState.rolls = counter;
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "fortune_surge") {
+        const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
+        if (remaining > 0) {
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.5 : 1.35);
+          enchantState.remaining = remaining - 1;
+          enchantStateChanged = true;
+        } else if (random01() < (enchantGrade === "ancient" ? 0.08 : 0.05)) {
+          // The proc affects the next rolls, not the trigger roll.
+          enchantState.remaining = 3;
+          enchantStateChanged = true;
+        }
+      }
+
+      if (enchantId === "collectors_edge") {
+        const catalogSize = gems.filter((g: any) => g.metadata?.optionalCollection !== true).length;
+        const optionalBiomeGems = new Set(['Heart of the Tide','Caldera Heart','Absolute Zero','Telluric Heart','Midnight','Damnation','Aberration']);
+        const ordinaryDiscoveries = [...discoveredGemNames].filter(name => !optionalBiomeGems.has(name)).length;
+        const completion = Math.min(1, ordinaryDiscoveries / Math.max(1,catalogSize));
+        const baseMultiplier = 1 + completion * (enchantGrade === "ancient" ? 0.25 : 0.12);
+        enchantLuck *= strengthenEnchantMultiplier(baseMultiplier);
+      }
+
+      if (enchantId === "prospectors_instinct") {
+        const remaining = Math.max(0, Number(enchantState.remaining ?? 0));
+        if (remaining > 0) {
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 1.6 : 1.4);
+          enchantState.remaining = remaining - 1;
+          enchantStateChanged = true;
+        }
+      }
+
+      if (enchantId === "vein_hunter") {
+        const misses = Math.min(30, Math.max(0, Number(enchantState.misses ?? 0)));
+        enchantLuck *= strengthenEnchantMultiplier(1 + misses / 100);
+      }
+
+      if (enchantId === "jackpot_mining") {
+        const outcome = random01();
+        if (outcome < 0.08) {
+          enchantLuck *= strengthenEnchantMultiplier(enchantGrade === "ancient" ? 2.5 : 1.75);
+        } else if (outcome < 0.12) {
+          enchantLuck *= 0.5;
+        }
+      }
+
+      if (enchantId === "blitz_vein") {
+        const stacks = Math.min(10, Math.max(0, Number(enchantState.stacks ?? 0)));
+        const progress = stacks / 10;
+        const weightLuckMaximum = enchantGrade === "ancient" ? 1.3 : 1.2;
+        const rollSpeedMaximum = enchantGrade === "ancient" ? 1.25 : 1.15;
+        const multiplierMaximum = enchantGrade === "ancient" ? 1.1 : 1.05;
+        weightLuck *= strengthenEnchantMultiplier(1 + (weightLuckMaximum - 1) * progress);
+        rollSpeed *= strengthenEnchantMultiplier(1 + (rollSpeedMaximum - 1) * progress);
+        weightMultiplier *= strengthenEnchantMultiplier(1 + (multiplierMaximum - 1) * progress);
+      }
+
+      if (enchantId === "slow_starter" && enchantGrade === "ancient") {
+        const rolls = Math.min(99, Math.max(0, Number(enchantState.rolls ?? 0)));
+        slowStarterCooldownMultiplier = Math.max(0.5, 1.75 - rolls * 0.025);
+      }
+
+      let guildShopBuffIds: string[] = [];
+
+      // Eligible guild members receive small permanent multiplicative
+      // enhancements. The 24-hour delay prevents join-hopping for bonuses.
+      try {
+        const guildSnapshot = batchExecution.guildSnapshot ?? rollContext.guild ?? { membership: null, shopBuffIds: [] };
+        if (!batchExecution.guildSnapshot) batchExecution.guildSnapshot = structuredClone(guildSnapshot);
+        const guildMembership = guildSnapshot.membership ?? null;
+        guildShopBuffIds = Array.isArray(guildSnapshot.shopBuffIds)
+          ? guildSnapshot.shopBuffIds.map(String)
+          : [];
+        if (guildMembership && Date.parse(guildMembership.eligible_at) <= now.getTime()) {
+          const guild = Array.isArray(guildMembership.guilds)
+            ? guildMembership.guilds[0]
+            : guildMembership.guilds;
+          guildLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.luck_tier ?? 0))) / 100;
+          rollSpeed *= 1 + Math.min(10, Math.max(0, Number(guild?.speed_tier ?? 0))) / 100;
+          weightLuck *= 1 + Math.min(10, Math.max(0, Number(guild?.weight_luck_tier ?? 0))) / 100;
+        }
+        if (guildMembership) {
+          for (const potionId of guildShopBuffIds) {
+            if (potionId === "lucky_brew") guildLuck *= 1.05;
+            if (potionId === "haste_brew") rollSpeed *= 1.05;
+            if (potionId === "heavy_brew") weightLuck *= 1.10;
+            if (potionId === "prosperity_brew") weightMultiplier *= 1.10;
+            if (potionId === "greater_lucky") guildLuck *= 1.10;
+            if (potionId === "greater_haste") rollSpeed *= 1.10;
+            if (potionId === "legendary") {
+              guildLuck *= 1.10; rollSpeed *= 1.10; weightLuck *= 1.15; weightMultiplier *= 1.10;
+            }
+            if (potionId === "mythic") {
+              guildLuck *= 1.15; rollSpeed *= 1.15; weightLuck *= 1.20; weightMultiplier *= 1.15;
+            }
+          }
+        }
+      } catch (guildBonusError) {
+        // Guild progression is best-effort and must never prevent a roll.
+        console.error("Guild bonus lookup failed:", guildBonusError);
+      }
+
+      // =====================================================
+      // CALCULATE + CLAIM COOLDOWN
+      // =====================================================
+
+      const baseCooldownSeconds =
+        2.5;
+
+
+      // The lease is claimed before the remainder of the roll is generated,
+      // so assemble every final Roll Speed modifier here as well. Previously
+      // natural/admin events were only applied later, after the cooldown had
+      // already been persisted by claim_server_roll.
+      const adminRollSpeedBonus = Number(activeAdminEvent?.roll_speed_bonus ?? 0);
+      const adminRollSpeedMultiplier = Number(activeAdminEvent?.roll_speed_multiplier ?? 1);
+      if(allIn) { rollSpeed=.33; weightLuck=.15; weightMultiplier=.15; enchantLuck=1; guildLuck=1; specialLuck=1; luck=500; baseLuck=500; }
+      const effectiveRollSpeed = buffsEnabled ? (
+        rollSpeed * eventContext.rollSpeedMultiplier +
+        (Number.isFinite(adminRollSpeedBonus) ? adminRollSpeedBonus : 0)
+      ) * (
+        Number.isFinite(adminRollSpeedMultiplier) && adminRollSpeedMultiplier > 0
+          ? adminRollSpeedMultiplier
+          : 1
+      ) * volcanicRollSpeedMultiplier * supersizerBlessing.rollSpeed : 1;
+
+      const singleCooldownMs =
+        (
+          baseCooldownSeconds /
+          Math.max(0.000001, effectiveRollSpeed)
+        ) * (buffsEnabled ? slowStarterCooldownMultiplier : 1) *
+        1000;
+
+      const cooldownMs = batchIndex === 0
+        ? batchCooldownMs(singleCooldownMs, batchExecution.batchSize)
+        : Number(batchExecution.cooldownMs);
+
+
+      // Browser visibility is not a security boundary. Claim a database
+      // lease using the database clock so multiple tabs, direct requests,
+      // and userscripts all serialize through one authoritative gate.
+      let rollClaim: any;
+      let rollClaimError: any = null;
+      const leaseClaimStartedAt = timingNow(batchExecution);
+      if (batchIndex === 0) {
+        const claimResult = await ctx.supabaseAdmin
+          .rpc("claim_equipment_roll_batch", {
+          p_player_id: playerId,
+          p_equipment_state: player.equipment_state ?? {},
+          p_equipment_ids: (equippedEquipment ?? []).map((item: any) => item.id),
+          p_cooldown_ms: cooldownMs,
+          p_batch_size: batchExecution.batchSize
+          });
+        rollClaim = claimResult.data;
+        rollClaimError = claimResult.error;
+      } else {
+        rollClaim = {
+          status: "claimed",
+          leaseId: batchExecution.leaseId,
+          nextRollAt: batchExecution.nextRollAt,
+          genuineRoll: Number(batchExecution.firstGenuineRoll) + batchIndex
+        };
+      }
+      recordRollPhase(batchExecution, batchIndex, "lease_claim_ms", leaseClaimStartedAt);
+      const timingFlags = batchExecution.timing?.subrolls[batchIndex]?.flags;
+      if (timingFlags) timingFlags.lease_claim = batchIndex === 0 ? "rpc" : "batch_reuse";
+
+
+      if (
+        rollClaimError
+      ) {
+        console.error(
+          "Roll lease claim failed:",
+          rollClaimError
+        );
+
+
+        return jsonResponse(
+          {
+            error:
+              "Failed to claim roll lease."
+          },
+          {
+            status: 500
+          }
+        );
+      }
+
+
+      if (
+        rollClaim?.status !== "claimed"
+      ) {
+        if (rollClaim?.status === "invalid_batch_size") {
+          return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
+        }
+        if (rollClaim?.status === "batch_locked") {
+          return jsonResponse({ error: "batch_locked", ...rollClaim }, { status: 403 });
+        }
+        if (rollClaim?.status === "state_changed") {
+          return jsonResponse({ error: "roll_state_changed" }, { status: 409 });
+        }
+        const blockedUntil =
+          rollClaim?.retryAt
+            ? new Date(
+                rollClaim.retryAt
+              )
+            : new Date(
+                Date.now() +
+                cooldownMs
+              );
+
+
+        return jsonResponse(
+          {
+            error:
+              "cooldown",
+
+            remainingMs:
+              Math.max(
+                0,
+                blockedUntil.getTime() -
+                Date.now()
+              ),
+
+            nextRollAt:
+              blockedUntil.toISOString()
+          },
+          {
+            status: 429
+          }
+        );
+      }
+
+
+      // Returned from the serialized lease claim; rejected attempts and extra
+      // copies never advance this persisted, account-wide genuine-roll counter.
+      const genuineRoll = Number(rollClaim.genuineRoll);
+      if (!Number.isSafeInteger(genuineRoll) || genuineRoll < 1) throw new Error("equipment_counter_migration_required");
+      const alignmentRoll = equipmentContext.flags.ascension;
+      const eternityRoll = equipmentContext.flags.surge;
+      const heavyStepRoll = false;
+      const collapseRoll = false;
+      const storageRoll = false;
+      const bagged = !allIn && equippedBag?.equipment_id === "plastic-shopping-bag" && genuineRoll % 67 === 0 && random01() < 1 / 67;
+
+      const claimedNextRollAt =
+        new Date(
+          rollClaim.nextRollAt
+        );
+
+      const rollLeaseId =
+        String(
+          rollClaim.leaseId
+        );
+
+      if (batchIndex === 0) {
+        batchExecution.biomeSnapshot = rollClaim.biomeSnapshot ?? null;
+        batchExecution.leaseId = rollLeaseId;
+        batchExecution.firstGenuineRoll = genuineRoll;
+        batchExecution.nextRollAt = claimedNextRollAt.toISOString();
+        batchExecution.cooldownMs = cooldownMs;
+      }
+
+      const slotOutcome = jackpotRoll(equipmentContext.id, genuineRoll, random01);
+      if(slotOutcome.houseEdge) {
+        const lostState=finishEquipmentRoll(equipmentContext,{naturalWeight:null,gem:null,random:random01}).state;
+        const {data:loss,error:lossError}=await ctx.supabaseAdmin.rpc('commit_jackpot_loss',{
+          p_player_id:playerId,p_lease_id:rollLeaseId,p_genuine_roll:genuineRoll,p_state:lostState
+        });
+        if(lossError) throw lossError;
+        if(!loss.duplicate) {
+          if(enchantId==='vein_hunter') {enchantState.misses=Math.min(30,Number(enchantState.misses??0)+1);enchantStateChanged=true;}
+          if(enchantId==='blitz_vein') {
+            const interval=enchantGrade==='ancient'?10:20;
+            const count=Number(enchantState.rolls??0)+1;
+            enchantState.rolls=count>=interval?0:count;
+            if(count>=interval) enchantState.stacks=Math.min(10,Number(enchantState.stacks??0)+1);
+            enchantStateChanged=true;
+          }
+          if(enchantId==='slow_starter'&&enchantGrade==='ancient') {enchantState.rolls=(Number(enchantState.rolls??0)+1)%100;enchantStateChanged=true;}
+          const houseEdgeBookkeepingStartedAt = timingNow(batchExecution);
+          const houseEdgeBookkeeping = ctx.supabaseAdmin.rpc('roll_finish_bookkeeping', {
+            p_player_id: playerId,
+            p_phase: 'loss',
+            p_payload: {
+              rollNumber: loss.total_rolls,
+              eventOccurrenceId: availabilityEventContext.occurrenceId,
+              consumeOneRollCharge: Boolean(buffsEnabled && oneRollLuck > 0),
+              enchantedEquipmentId: enchantedPickaxe?.id ?? null,
+              enchantStateChanged: Boolean(enchantedPickaxe && enchantStateChanged),
+              enchantState,
+              progressPayload: {
+                gemName: null, gemRarity: 0, finalWeight: 0, value: 0,
+                mutationIds: [], usedOneRollPotion: buffsEnabled && oneRollLuck > 0
+              }
+            }
+          }).then(({ data, error }: any) => {
+            recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_loss_ms", houseEdgeBookkeepingStartedAt);
+            if (error) console.error('House Edge bookkeeping failed', error);
+            else if (data?.errors?.length) console.warn('House Edge bookkeeping partial failures', data.errors);
+          });
+          if (batchExecution.batchSize > 1) await houseEdgeBookkeeping;
+          else registerRollWaitUntil(batchExecution, batchIndex, houseEdgeBookkeeping);
+        }
+        return jsonResponse({playerId,houseEdge:true,gem:null,specimenId:null,
+          equipmentPassives:{genuineRoll,specialist:slotOutcome,state:lostState},
+          impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,
+          lifetimeStats:{totalRolls:loss.total_rolls},cooldown:{nextRollAt:claimedNextRollAt.toISOString(),durationMs:cooldownMs}});
+      }
+
+      // The first surge was claimed atomically with the lease; later ones were
+      // claimed by roll_begin_batch_subroll after the prior roll committed.
+      // There is no standalone PostgREST round trip on the roll hot path.
+      const mythicSurge = batchIndex === 0
+        ? rollClaim.mythicSurge ?? null
+        : preclaimedMythicSurge;
+      if (!allIn && mythicSurge?.boosted === true) specialLuck *= 2;
+
+      // One-roll Luck and world effects are applied only after all special mechanics.
+      rollSpeed *= eventContext.rollSpeedMultiplier;
+
+
+      // Rare-roll chat reports the exact effective Luck used for this roll,
+      // including the active admin event (matching Luck at Roll in debug).
+
+
+      if (activeAdminEvent) {
+        const applyEventModifier = (
+          currentValue: number,
+          rawBonus: unknown,
+          rawMultiplier: unknown
+        ) => {
+          const parsedBonus =
+            Number(rawBonus ?? 0);
+
+          const parsedMultiplier =
+            Number(rawMultiplier ?? 1);
+
+          const bonus =
+            Number.isFinite(parsedBonus)
+              ? parsedBonus
+              : 0;
+
+          const multiplier =
+            Number.isFinite(parsedMultiplier) &&
+            parsedMultiplier > 0
+              ? parsedMultiplier
+              : 1;
+
+          return (
+            currentValue + bonus
+          ) * multiplier;
+        };
+
+        rollSpeed =
+          applyEventModifier(
+            rollSpeed,
+            activeAdminEvent.roll_speed_bonus,
+            activeAdminEvent.roll_speed_multiplier
+          );
+
+        weightLuck =
+          applyEventModifier(
+            weightLuck,
+            activeAdminEvent.weight_luck_bonus,
+            activeAdminEvent.weight_luck_multiplier
+          );
+
+        weightMultiplier =
+          applyEventModifier(
+            weightMultiplier,
+            activeAdminEvent.weight_multiplier_bonus,
+            activeAdminEvent.weight_multiplier_multiplier
+          );
+      }
+
+      // Heart of the Volcano is a final Roll Speed multiplier.
+      rollSpeed *= volcanicRollSpeedMultiplier;
+      if (!buffsEnabled) { rollSpeed = 1; weightLuck = 1; weightMultiplier = 1; }
+      if (buffsEnabled) weightMultiplier *= supersizerBlessing.weightMultiplier;
+      weightLuck *= impossibleProc.weightLuck;
+      weightMultiplier *= impossibleProc.weightMultiplier;
+
+
+
+      // =====================================================
+      // LOAD ADMIN-MANAGED GEM CATALOG
+      //
+      // The database catalog is the authoritative editable catalog.
+      // If the migration has not been installed yet, retain the bundled
+      // catalog so ordinary rolling continues to work during deployment.
+      // =====================================================
+      try {
+        const versions = rollContext.catalogVersions ?? {};
+        if (Array.isArray(rollContext.gemCatalog)) {
+          gemCatalogCache = {
+            version: Number(versions.gems),
+            data: rollContext.gemCatalog
+          };
+        }
+        const configuredGems = gemCatalogCache?.data ?? null;
+        const configuredGemError = configuredGems ? null : new Error("gem_catalog_missing");
+
+        if (!configuredGemError && configuredGems) {
+          // An installed-but-empty catalog means the admin deliberately
+          // removed/disabled every gem. Do not silently resurrect deleted
+          // gems from the bundled source.
+          if (configuredGems.length === 0) {
+            return jsonResponse(
+              { error: "no_gems_available", message: "No enabled gems are currently available." },
+              { status: 503 }
+            );
+          }
+
+          gems = configuredGems
+            .filter((entry: any) => gemTimeAvailable(entry, now))
+            .filter((entry: any) => entry.metadata?.sourceExclusive !== true)
+            .map((entry: any) => ({
+            name: String(entry.name),
+            rarity: Number(entry.rarity),
+            biomeTieOrder: Number(entry.sort_order ?? 0),
+            baseWeight: Number(entry.base_weight),
+            valuePerGram: Number(entry.value_per_gram),
+            affectedByLuck: entry.affected_by_luck !== false,
+            specialGem: entry.special_gem === true,
+            timeWindow: ["daily", "date_range_daily"].includes(String(entry.availability_mode)),
+            requiredEventKey: entry.required_event_key ? String(entry.required_event_key) : null,
+            metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}
+          })).filter((entry: any) => eventGemIsEligible(availabilityEventContext, entry)).filter((entry: any) => {
+            const requiredStage = Number(entry.metadata?.deepcore_stage ?? 0);
+            if (!requiredStage) return true;
+            if (deepcoreContext?.status !== "active") return false;
+            if (deepcorePhaseOrder(deepcoreContext?.phase) < deepcorePhaseOrder(requiredStage)) return false;
+            const route = entry.metadata?.deepcore_route;
+            return !route || route === deepcoreContext?.routeWinner;
+          });
+        } else if (configuredGemError) {
+          console.error("Configured gem catalog load failed; using bundled catalog:", configuredGemError);
+        }
+      } catch (catalogError) {
+        console.error("Configured gem catalog unavailable; using bundled catalog:", catalogError);
+      }
+
+      // =====================================================
+      // GENERATE ROLL
+      // =====================================================
+
+      let rngJsStartedAt = timingNow(batchExecution);
+
+      const geologistMultiplier = enchantId === "geologist"
+        ? strengthenEnchantMultiplier(1.5)
+        : 1;
+      const extremeGemMultiplier = (hasEventHorizon ? 1.1 : 1) *
+        (masterworkPickaxe === "deep_survey" ? (masterworkPickaxeRank >= 2 ? 1.08 : 1.05) : 1) *
+        researchNumber("extreme_luck_multiplier");
+      const legendaryGemMultiplier = researchNumber("legendary_luck_multiplier");
+      const timeWindowMultiplier = researchNumber("window_luck_multiplier");
+      if (researchEffects.statistical_breakthrough === true && (Number(player.total_rolls ?? 0) + 1) % 250 === 0) {
+        specialLuck *= 1.2;
+      }
+      const resonanceBeforeRoll = Math.min(100, Math.max(0, Number(player.rarity_resonance ?? 0)));
+      const resonanceEmpowered = hasRarityResonance && resonanceBeforeRoll >= 100;
+      if (resonanceEmpowered) specialLuck *= 3;
+      // Heart of Resonance is a true final multiplier: apply it after every
+      // additive bonus and every other Luck source assembled for this roll.
+      specialLuck *= crystalFinalLuckMultiplier;
+      const luckBreakdown = luckLayers({
+        pickaxe: equipmentStats.pickaxe, clover: equipmentStats.clover,
+        enchant: enchantLuck + (alignmentRoll ? 50 : 0), guild: guildLuck,
+        research: researchNumber("luck_multiplier"), focused: focusedLuck,
+        flat: luck - equipmentStats.luck, special: specialLuck * slotOutcome.luck * (equipmentContext.flags.realityShift ? 400 : 1) * (!allIn && deepcoreTimedActive("seismic-potion") ? 5 : 1),
+        oneRoll: Number.isFinite(oneRollLuck) ? Math.max(0, oneRollLuck) : 0,
+        world: eventContext.luckMultiplier * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1))
+      });
+      // Legacy additive admin events remain a final world adjustment.
+      const adminWorldBonus = Number(activeAdminEvent?.luck_bonus ?? 0) * Math.max(0.000001, Number(activeAdminEvent?.luck_multiplier ?? 1));
+      luckBreakdown.world += adminWorldBonus / Math.max(0.000001, luckBreakdown.ordinary + luckBreakdown.oneRoll);
+      luckBreakdown.final = (luckBreakdown.ordinary + luckBreakdown.oneRoll) * luckBreakdown.world;
+      luck = luckBreakdown.final;
+      baseLuck = luckBreakdown.base * luckBreakdown.personal;
+      if (!buffsEnabled) {
+        luck = baseLuck = 1;
+        Object.assign(luckBreakdown, { base:1, personal:1, ordinary:1, oneRoll:0, world:1, final:1 });
+      }
+      if(allIn && buffsEnabled) {
+        baseLuck=500;
+        luck=(500+Number(activeAdminEvent?.luck_bonus??0))*Math.max(.000001,Number(activeAdminEvent?.luck_multiplier??1));
+        Object.assign(luckBreakdown,{base:500,personal:1,flat:0,special:1,ordinary:500,oneRoll:0,world:luck/500,final:luck});
+      }
+      if (buffsEnabled && supersizerBlessing.luck !== 1) {
+        luck *= supersizerBlessing.luck;
+        luckBreakdown.world *= supersizerBlessing.luck;
+        luckBreakdown.final = luck;
+      }
+      if (impossibleProc.luck !== 1) {
+        luck *= impossibleProc.luck;
+        luckBreakdown.world *= impossibleProc.luck;
+        luckBreakdown.final = luck;
+      }
+      if (buffsEnabled && deepSeaDiverActive) {
+        luck *= 1.5;
+        luckBreakdown.world *= 1.5;
+        luckBreakdown.final = luck;
+      }
+      let abyssalExclusiveGem: any = null;
+      if (batchExecution.abyssalPotion) {
+        if (random01() < 1 / 2000) abyssalExclusiveGem = { name:"The Bottom",rarity:2000,baseWeight:11000,valuePerGram:100000,affectedByLuck:false,metadata:{abyssalPotion:true,exclusive:true} };
+        else if (random01() < 1 / 100) abyssalExclusiveGem = { name:"Hadopelagic",rarity:100,baseWeight:6000,valuePerGram:850,affectedByLuck:false,metadata:{abyssalPotion:true,exclusive:true} };
+        else {
+          luck += 100000;
+          luckBreakdown.oneRoll += 100000;
+          luckBreakdown.final = luck;
+        }
+      }
+      const usedOneRollConsumable = String(oneRollBoost?.consumable_id ?? "");
+      const mythicExclusiveGem = !abyssalExclusiveGem && batchExecution.pool === "normal" && !allIn && buffsEnabled && oneRollLuck > 0
+        ? mythicPotionExclusiveGem(usedOneRollConsumable, random01)
+        : null;
+      const uncappedLuck = luck;
+      const maxLuck = sanitizeMaxLuck(rollSettings.maxLuck);
+      luck = capGemLuck(luck, maxLuck);
+      Object.assign(luckBreakdown, {maxLuck, used:luck});
+      const announcedLuck = luck;
+      if (batchExecution.pool === "normal" && deepSeaContext?.state?.legacy_gem_name) {
+        const legacy = (deepSeaContext.gems ?? []).find((row: any) => row.name === deepSeaContext.state.legacy_gem_name);
+        if (legacy && !gems.some((row: any) => row.name === legacy.name)) gems = [...gems, {
+          name: String(legacy.name), rarity: Number(legacy.rarity), baseWeight: Number(legacy.base_weight),
+          valuePerGram: Number(legacy.value_per_gram), affectedByLuck: true, metadata: { deepSeaLegacy: true }
+        }];
+      }
+      // Catalogue cache remains canonical; only this accepted request gets denominators.
+      const biomeGems = biomeSelectionPool(gems, batchExecution.biomeSnapshot);
+      const neptuneDeepSeaDivisor = equipmentContext.id === "neptune"
+        ? (Number(deepSeaContext?.state?.offering_charges ?? 0) > 0 ? 20 : 10)
+        : 1;
+      const rollEquipmentGem = () => batchExecution.pool === "deep_sea"
+        ? rollDeepSeaGem(deepSeaContext?.gems ?? [], luck, neptuneDeepSeaDivisor, random01)
+        : rollGemWithPickaxePassives(
+        uncappedLuck,
+        discoveredGemNames,
+        buffsEnabled ? geologistMultiplier : 1,
+        buffsEnabled ? extremeGemMultiplier : 1,
+        buffsEnabled ? legendaryGemMultiplier : 1,
+        buffsEnabled ? timeWindowMultiplier : 1,
+        allIn ? {...availabilityEventContext,buffsDisabled:true} : buffsEnabled ? eventContext : { ...eventContext, buffsDisabled: true }, equipmentContext, maxLuck, biomeGems
+      );
+
+      // Temporary mutation effects from PREVIOUS rolls.
+      const mistyBoostRollsBefore = Math.max(0, Number(player.misty_mutation_boost_rolls ?? 0));
+      const mistyBoostStacksBefore = mistyBoostRollsBefore > 0
+        ? Math.min(MAX_MISTY_STACKS, Math.max(0, Number(player.misty_mutation_boost_stacks ?? 0)))
+        : 0;
+      const ancientRelicBoostRollsBefore = Math.max(0, Number(player.ancient_relic_boost_rolls ?? 0));
+      const enchantedRelicBoostRollsBefore = Math.max(0, Number(player.enchanted_relic_boost_rolls ?? 0));
+      const allRelicChanceMultiplier = !allIn && enchantedRelicBoostRollsBefore > 0 ? 1.1 : 1;
+      const ancientRelicChanceMultiplier = !allIn && ancientRelicBoostRollsBefore > 0 ? 1.3 : 1;
+
+      let gem = abyssalExclusiveGem ?? mythicExclusiveGem ?? ((batchExecution.pool === "normal" && equipmentContext.id !== 'money-pickaxe' ? rollRelic(ancientRelicChanceMultiplier, allRelicChanceMultiplier) : null) ?? rollEquipmentGem());
+
+      // Pets use a separate luck layer. Normal Luck never affects this roll;
+      // only pet-luck equipment and the pet-luck boosts above can improve it.
+      // The default denominator is 1/100,000,000 and is admin-customizable.
+      const petLuckMultiplier = Math.max(1, 1 + Number(petLuck || 0));
+      let petDrop: any = null;
+      if (!allIn && buffsEnabled && Array.isArray(batchExecution.pets) && batchExecution.pets.length) {
+        const eligiblePets = batchExecution.pets.filter((pet: any) => {
+          const denominator = Number(pet.chance_denominator);
+          return pet?.enabled !== false && Number.isFinite(denominator) && denominator >= 1;
+        });
+        // Each enabled pet has its own independent configured chance.
+        // This keeps every pet individually rare while allowing multiple pet
+        // designs to coexist without changing ordinary gem Luck.
+        for (const pet of eligiblePets) {
+          const denominator = Number(pet.chance_denominator);
+          const chance = Math.min(1, petLuckMultiplier / denominator);
+          if (random01() < chance) {
+            petDrop = pet;
+            break;
+          }
+        }
+      }
+
+      const relicDrop = isRelic(gem);
+      const luckBasedGem = !relicDrop && gem.affectedByLuck !== false;
+
+      // Lucky Break keeps the rarer result.
+      if (
+        buffsEnabled && !relicDrop && !mythicExclusiveGem && enchantId === "lucky_break" &&
+        random01() < (enchantGrade === "ancient" ? 0.10 : 0.05)
+      ) {
+        const candidate = rollEquipmentGem();
+        if (candidate.rarity > gem.rarity) gem = candidate;
+      }
+
+      // Second Chance compares only base rarity; weight and mutations are
+      // generated exactly once for the winner.
+      if (buffsEnabled && !relicDrop && !mythicExclusiveGem && eventContext.secondChance) {
+        const candidate = rollEquipmentGem();
+        if (candidate.rarity > gem.rarity) gem = candidate;
+      }
+
+      if (
+        !relicDrop && enchantId === "prospectors_instinct" &&
+        gem.rarity >= (enchantGrade === "ancient" ? 10000 : 5000)
+      ) {
+        enchantState.remaining = enchantGrade === "ancient" ? 6 : 4;
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "vein_hunter") {
+        enchantState.misses = gem.rarity >= 10000
+          ? 0
+          : Math.min(30, Number(enchantState.misses ?? 0) + 1);
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "blitz_vein") {
+        if (!relicDrop && gem.rarity >= 30000) {
+          enchantState.stacks = 0;
+          enchantState.rolls = 0;
+        } else {
+          const interval = enchantGrade === "ancient" ? 10 : 20;
+          const rolls = Number(enchantState.rolls ?? 0) + 1;
+          if (rolls >= interval) {
+            enchantState.stacks = Math.min(10, Number(enchantState.stacks ?? 0) + 1);
+            enchantState.rolls = 0;
+          } else enchantState.rolls = rolls;
+        }
+        enchantStateChanged = true;
+      }
+
+      if (enchantId === "slow_starter" && enchantGrade === "ancient") {
+        const rolls = Number(enchantState.rolls ?? 0) + 1;
+        enchantState.rolls = (!relicDrop && gem.rarity >= 10000) || rolls >= 100 ? 0 : rolls;
+        enchantStateChanged = true;
+      }
+
+
+      const surgeProgress = Number(player.gravitational_surge_progress ?? 0);
+      const surgeReady = false;
+      const eventWeightLuck = buffsEnabled ? weightLuck * eventWeightLuckFactor(eventContext, gem) : 1;
+      const backendTailChance = !buffsEnabled ? 1 / 3 : eventContext.tailContinuationChance ??
+        (surgeReady && hasGravitationalSurge ? 2 / 3 : 1 / 3);
+      const ordinaryTailChance = buffsEnabled && equipmentContext.flags.crushing ? 0.45 : backendTailChance;
+      const eventTailChance = collapseRoll ? 0.40 : ordinaryTailChance;
+      let rolledWeightMultiplier = rollWeightMultiplier(
+        eventWeightLuck,
+        eventTailChance,
+        surgeReady && hasGravitationalSurge ? 10 : null,
+        buffsEnabled && equipmentContext.flags.crushing ? 0.40 : (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4,
+        heavyStepRoll ? 0.10 : 0,
+        collapseRoll
+      );
+      if (buffsEnabled && rolledWeightMultiplier < 1 && random01() < eventContext.poorWeightRerollChance) {
+        rolledWeightMultiplier = rollWeightMultiplier(
+          eventWeightLuck,
+          eventTailChance,
+          surgeReady && hasGravitationalSurge ? 10 : null,
+          buffsEnabled && equipmentContext.flags.crushing ? 0.40 : (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4,
+          heavyStepRoll ? 0.10 : 0,
+          collapseRoll
+        );
+      }
+      const compressionProgress = Number(player.bag_compression_progress ?? 0);
+      const compressionRoll = false;
+      // One cumulative draw preserves each stated marginal probability while
+      // making the seven Supersizer sizes mutually exclusive.
+      const supersizerSize = relicDrop ? null : supersizerSizeMutation(equipmentContext.id, random01, true);
+      const supersizerSizeWeight = Number(supersizerSize?.weightMultiplier ?? 1);
+
+      const rolledWeight =
+        gem.baseWeight *
+        rolledWeightMultiplier;
+
+
+      let masterworkWeightFactor = 1;
+      if (masterworkPickaxe === "steady_hand") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.05 : 1.03;
+      if (gem.rarity >= 100000 && masterworkPickaxe === "careful_extraction") masterworkWeightFactor *= masterworkPickaxeRank >= 2 ? 1.15 : 1.10;
+
+      const bagPassiveWeightFactor = getLateGameFinalWeightFactor(
+        null, // Normal Bag passives are retired.
+        rolledWeightMultiplier,
+        Number(gem.rarity),
+        compressionRoll
+      );
+
+      const finalWeight =
+        rolledWeight *
+        weightMultiplier *
+        supersizerSizeWeight *
+        (buffsEnabled ? masterworkWeightFactor * bagPassiveWeightFactor * (storageRoll ? 1.25 : 1) : 1);
+
+
+      // Load the admin-managed mutation catalog when available. The bundled
+      // definitions remain the safe fallback for older deployments.
+      try {
+        const configuredMutations = mutationCatalogCache?.data ?? null;
+        const mutationCatalogError = configuredMutations ? null : new Error("mutation_catalog_missing");
+
+        if (!mutationCatalogError && configuredMutations?.length) {
+          gemMutations = configuredMutations.map((mutation: any) => ({
+            id: String(mutation.id),
+            name: String(mutation.name),
+            chance: Math.min(1, 1 / Math.max(0.000001, Number(mutation.chance))),
+            multiplier: Math.max(0.000001, Number(mutation.multiplier)),
+            description: String(mutation.description ?? ""),
+            icon: String(mutation.icon ?? "✦"),
+            color: String(mutation.color ?? "#9fdcff")
+          }));
+        }
+      } catch (mutationCatalogError) {
+        console.warn("Mutation catalog unavailable; using bundled definitions:", mutationCatalogError);
+      }
+
+      // Mutation odds are independent, so one roll can have any
+      // combination of the five mutations (32 combinations). The
+      // multiplier is the higher of the legacy hardcoded boost and the
+      // player's admin-granted mutation_luck column (default 1).
+      let mutationChanceMultiplier =
+        Math.max(
+          getMutationChanceMultiplier(playerId),
+          Number(player.mutation_luck ?? 1) || 1
+        );
+
+      mutationChanceMultiplier *= equipmentStats.mutation;
+      if (hasMutationResonance) mutationChanceMultiplier *= 1.1;
+      if (mineArtifacts.has("black-geode")) mutationChanceMultiplier *= 1.05;
+      if (masterworkPickaxe === "mutation_resonance") mutationChanceMultiplier *= masterworkPickaxeRank >= 2 ? 1.08 : 1.05;
+      mutationChanceMultiplier *= researchNumber("mutation_chance_multiplier");
+      mutationChanceMultiplier *= crystalMutationMultiplier;
+      mutationChanceMultiplier *= expeditionArtifactMutationMultiplier;
+      mutationChanceMultiplier *= volcanicMutationMultiplier;
+      if (!allIn && deepcoreTimedActive("seismic-potion")) mutationChanceMultiplier *= 2;
+
+      // Misty: ×2.5 mutation chance for the next 10 rolls. Re-triggering
+      // Misty while active stacks the strength and refreshes the duration.
+      if (!allIn && mistyBoostRollsBefore > 0 && mistyBoostStacksBefore > 0) {
+        mutationChanceMultiplier *= Math.pow(2.5, mistyBoostStacksBefore);
+      }
+
+      if(allIn) mutationChanceMultiplier=.15;
+      // Global admin mutation-luck events apply after personal mutation luck
+      // and all permanent equipment passives.
+      if (activeAdminEvent) {
+        const mutationBonus = Number(activeAdminEvent.mutation_luck_bonus ?? 0);
+        const mutationEventMultiplier = Number(activeAdminEvent.mutation_luck_multiplier ?? 1);
+        if (Number.isFinite(mutationBonus)) mutationChanceMultiplier += Math.max(0, mutationBonus);
+        if (Number.isFinite(mutationEventMultiplier) && mutationEventMultiplier > 0) {
+          mutationChanceMultiplier *= mutationEventMultiplier;
+        }
+      }
+
+      if (eternityRoll) mutationChanceMultiplier += 50;
+      if(equipmentContext.id==='reality-shifter') mutationChanceMultiplier=0;
+      mutationChanceMultiplier *= impossibleProc.mutationChance;
+      const naturalMutations = relicDrop ? [] : rollGemMutations(mutationChanceMultiplier, eventContext);
+      const mutations = relicDrop
+        ? []
+        : [...naturalMutations, ...exclusiveMutations(equipmentContext.id, random01, true, equipmentContext.flags), ...(supersizerSize ? [supersizerSize] : [])];
+
+      const mutationValueMultiplier = capCombinedMutationValueMultiplier(mutations);
+      const rawMutationMultiplier = mutationValueMultiplier.rawMultiplier;
+      const mutationMultiplier = mutationValueMultiplier.appliedMultiplier;
+
+      // Effective rarity uses mutation odds, not their specimen-value boosts.
+      // Every mutation is independent, so their chance denominators multiply.
+      const mutationChanceProduct = mutations.reduce(
+        (total, mutation) => total * Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1)),
+        1
+      );
+      const effectiveRarity = Math.max(1, Number(gem.rarity) * mutationChanceProduct);
+      // Exact base rarity denominator as an arbitrary-size integer string.
+      // Never serialize Infinity for extremely rare mutation combinations.
+      let effectiveRarityExact = BigInt(Math.max(1, Math.round(Number(gem.rarity))));
+      for (const mutation of mutations) {
+        const denominator = Math.max(1, Math.round(1 / Number(mutation.chance || 1)));
+        effectiveRarityExact *= BigInt(denominator);
+      }
+
+      const primaryMutation =
+        mutations[0] ?? null;
+
+      const mutationIds =
+        mutations.map((mutation) => mutation.id);
+
+      const mutationMultipliers =
+        Object.fromEntries(
+          mutations.map((mutation) => [
+            mutation.id,
+            mutation.multiplier
+          ])
+        );
+
+      const rollNumber = Number(player.total_rolls ?? 0) + 1;
+      if (mutationValueMultiplier.capped) {
+        logMutationValueMultiplierAnomaly({
+          rawCalculatedMultiplier: rawMutationMultiplier,
+          appliedMultiplier: mutationMultiplier,
+          mutationIds,
+          playerId,
+          gemName: gem.name,
+          rollNumber,
+          genuineRoll,
+          batchIndex,
+          pool: batchExecution.pool,
+          specimenKind: "primary",
+          sourceEventOccurrenceId: eventContext.occurrenceId,
+          sourceEventKey: eventContext.eventKey
+        });
+      }
+
+      // Consume temporary mutation effects for this roll, then grant/refresh
+      // effects earned by mutations on this roll. The roll lease ensures one
+      // authoritative roll is processed for a player at a time.
+      const rolledMutationIdsSet = new Set(mutationIds);
+      const nextMisty = nextMistyBoostState(
+        mistyBoostRollsBefore,
+        mistyBoostStacksBefore,
+        rolledMutationIdsSet.has("misty")
+      );
+      let nextMistyRolls = nextMisty.rolls;
+      let nextMistyStacks = nextMisty.stacks;
+      let nextAncientRelicRolls = Math.max(0, ancientRelicBoostRollsBefore - 1);
+      let nextEnchantedRelicRolls = Math.max(0, enchantedRelicBoostRollsBefore - 1);
+      const playerPatch: Record<string, unknown> = {};
+
+      if (rolledMutationIdsSet.has("ancient")) {
+        nextAncientRelicRolls = 3;
+      }
+      if (rolledMutationIdsSet.has("enchanted")) {
+        nextEnchantedRelicRolls = 5;
+      }
+
+      if (
+        nextMistyRolls !== mistyBoostRollsBefore ||
+        nextMistyStacks !== mistyBoostStacksBefore ||
+        nextAncientRelicRolls !== ancientRelicBoostRollsBefore ||
+        nextEnchantedRelicRolls !== enchantedRelicBoostRollsBefore
+      ) {
+        Object.assign(playerPatch, {
+          misty_mutation_boost_rolls: nextMistyRolls,
+          misty_mutation_boost_stacks: nextMistyStacks,
+          ancient_relic_boost_rolls: nextAncientRelicRolls,
+          enchanted_relic_boost_rolls: nextEnchantedRelicRolls
+        });
+      }
+
+      const researchMutationValue = mutations.length
+        ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, mutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
+        : 1;
+      const value = allIn ? finalWeight * gem.valuePerGram * mutationMultiplier :
+        finalWeight *
+        gem.valuePerGram *
+        mutationMultiplier *
+        researchNumber("gem_value_multiplier") *
+        researchMutationValue *
+        crystalGemValueMultiplier *
+        expeditionArtifactGemValueMultiplier *
+        volcanicGemValueMultiplier *
+        (rolledWeightMultiplier >= 2 ? crystalHeavyGemValueMultiplier : 1) *
+        (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) *
+        eventContext.valueMultiplier;
+
+
+      const specimen = {
+        gem_name:
+          gem.name,
+
+        base_weight:
+          gem.baseWeight,
+
+        rarity:
+          gem.rarity,
+
+        rolled_weight_multiplier:
+          rolledWeightMultiplier,
+
+        final_weight:
+          finalWeight,
+
+        mutation_id:
+          primaryMutation?.id ?? null,
+
+        mutation_multiplier:
+          mutationMultiplier,
+
+        mutation_ids:
+          mutationIds,
+
+        mutation_multipliers:
+          mutationMultipliers,
+
+        natural_mutation_ids:
+          naturalMutations.map((mutation) => mutation.id),
+
+        effective_rarity:
+          effectiveRarity,
+
+        genuine_roll:
+          true,
+
+        value,
+
+        automatic_consumption_protected:
+          gem.metadata?.automaticConsumptionProtected === true
+      };
+      recordRollPhase(batchExecution, batchIndex, "rng_js_ms", rngJsStartedAt);
+
+
+      // =====================================================
+      // TRY SERVER AUTO CRAFT
+      // =====================================================
+
+      const filterDecision = gemFilterDecision(
+        rollSettings,
+        { ...specimen, effectiveRarity },
+        discoveredGemNames
+      );
+      let deepSeaCommit: any = null;
+      const atomicFinalize = batchExecution.pool === "deep_sea" || batchExecution.abyssalPotion;
+      let deepcoreAutoContribution: any = null;
+      if (
+        !atomicFinalize &&
+        batchExecution.pool === "normal" &&
+        gem.metadata?.automaticConsumptionProtected !== true &&
+        deepcoreContext?.status === "active" &&
+        deepcoreContext?.autoContribute === true
+      ) {
+        const { data: contribution, error: contributionError } = await ctx.supabaseAdmin.rpc(
+          "deepcore_auto_contribute_roll",
+          { p_player_id: playerId, p_specimen: specimen }
+        );
+        if (contributionError) console.error("Deepcore Auto Contribute failed:", contributionError);
+        else deepcoreAutoContribution = contribution;
+      }
+      let deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
+      const bundleRouteStartedAt = timingNow(batchExecution);
+      const externalDeposit = deepcoreDeposited ? "deepcore" : null;
+      const routedRequest = atomicFinalize
+        ? Promise.resolve({
+          data: {
+            bundle: { status: externalDeposit ?? "pending", keepInInventory: externalDeposit == null },
+            autoCraft: { deposited: false, preserved: false }
+          },
+          error: null
+        })
+        : externalDeposit
+        ? Promise.resolve({
+          data: {
+            bundle: { status: externalDeposit, keepInInventory: false },
+            autoCraft: { deposited: false, preserved: false }
+          },
+          error: null
+        })
+        : filterDecision.keep
+        ? Promise.resolve({
+          data: {
+            bundle: { status: "kept", keepInInventory: true, reason: filterDecision.reason },
+            autoCraft: { deposited: false, preserved: false }
+          },
+          error: null
+        })
+        : ctx.supabaseAdmin.rpc("roll_route_result", {
+          p_player_id: playerId,
+          p_lease_id: rollLeaseId,
+          p_specimen: specimen,
+          p_filter_keep: false,
+          p_active_auto_craft: rollContext.activeAutoCraft ?? null,
+          p_external_deposit: null
+        });
+      let { data: routedResult, error: bundleRouteError } = await routedRequest;
+      if (!atomicFinalize) {
+        recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", bundleRouteStartedAt);
+        recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", bundleRouteStartedAt);
+      }
+      if (timingFlags) timingFlags.bundle_route_roll_used = !atomicFinalize && !filterDecision.keep && externalDeposit == null;
+      if (bundleRouteError || !routedResult?.bundle) {
+        // An uncertain commit must never fall back to saving a second copy.
+        console.error("Bundle routing failed:", bundleRouteError);
+        return jsonResponse({ error: "bundle_routing_failed" }, { status: 503 });
+      }
+      let bundleRoute = routedResult.bundle;
+      let autoCraftResult = routedResult.autoCraft ?? {};
+      if (routedResult.autoCraftError) {
+        console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
+      }
+      let bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited;
+      let bundleKeepInInventory = bundleRoute.keepInInventory === true;
+      let autoDeposited = autoCraftResult?.deposited === true;
+      let autoConserved = autoCraftResult?.preserved === true;
+      let autoCraftRecipeId = autoCraftResult?.recipeId ?? null;
+      let autoCraftRequirementIndex = autoCraftResult?.requirementIndex ?? null;
+      if (autoDeposited) recordRollPhase(batchExecution, batchIndex, "roll_autocraft_deposit_ms", bundleRouteStartedAt);
+      if (timingFlags) timingFlags.roll_autocraft_deposit_used = autoDeposited;
+
+      // Persistence is deferred until the JS-only duplicate/equipment RNG has
+      // finished, then committed atomically with equipment and bookkeeping.
+      let shouldSavePrimary = !bundleDeposited && (!autoDeposited || autoConserved);
+      const inventorySpecimen = {
+        ...specimen,
+        value_per_gram: gem.valuePerGram,
+        rolled_weight: rolledWeight,
+        mutation_chance_multiplier: mutationChanceMultiplier,
+        locked: false,
+        roll_number: Number(player.total_rolls ?? 0) + 1,
+        luck_at_roll: luck,
+        source_event_occurrence_id: eventContext.occurrenceId,
+        source_event_key: eventContext.eventKey,
+        event_properties: {
+          bagged,
+          state: eventContext.state,
+          luckyRoll: eventContext.luckyRoll,
+          secondChance: eventContext.secondChance,
+          starfallActive: eventContext.starfallActive
+        },
+        value_multiplier_at_roll: eventContext.valueMultiplier
+      };
+      let savedGem: any = null;
+      let veinHunterDuplicate: any = null;
+      let veinHunterDuplicatePayload: any = null;
+
+      // Vein Hunter creates a true second specimen: only the base gem is
+      // copied. Weight and every mutation are rolled again independently.
+      // The bonus specimen does not count as another lifetime roll.
+      const primaryOccupiesSlot = !bundleDeposited && (!autoDeposited || autoConserved) && !relicDrop;
+      const hasDuplicateCapacity = currentInventoryCount + (primaryOccupiesSlot ? 1 : 0) < effectiveInventoryCapacity;
+      if (
+        hasVeinHunter &&
+        luckBasedGem &&
+        gem.rarity >= 10000 &&
+        gem.rarity <= 1000000 &&
+        random01() < 0.05 &&
+        hasDuplicateCapacity
+      ) {
+        let duplicateWeightMultiplier = rollWeightMultiplier(
+          eventWeightLuck,
+          ordinaryTailChance,
+          surgeReady && hasGravitationalSurge ? 10 : null,
+          (buffsEnabled ? eventContext.tailEntryChance : null) ?? 1 / 4
+        );
+        const duplicateRolledWeight = gem.baseWeight * duplicateWeightMultiplier;
+        const duplicateBagPassiveFactor = getLateGameFinalWeightFactor(
+          null,
+          duplicateWeightMultiplier,
+          Number(gem.rarity),
+          compressionRoll
+        );
+        const duplicateFinalWeight = duplicateRolledWeight * weightMultiplier * (buffsEnabled ? masterworkWeightFactor * duplicateBagPassiveFactor : 1);
+        const duplicateMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+        const duplicateMutationValueMultiplier = capCombinedMutationValueMultiplier(duplicateMutations);
+        const duplicateMutationMultiplier = duplicateMutationValueMultiplier.appliedMultiplier;
+        const duplicateMutationIds = duplicateMutations.map((mutation) => mutation.id);
+        const duplicateMutationMultipliers = Object.fromEntries(
+          duplicateMutations.map((mutation) => [mutation.id, mutation.multiplier])
+        );
+        if (duplicateMutationValueMultiplier.capped) {
+          logMutationValueMultiplierAnomaly({
+            rawCalculatedMultiplier: duplicateMutationValueMultiplier.rawMultiplier,
+            appliedMultiplier: duplicateMutationMultiplier,
+            mutationIds: duplicateMutationIds,
+            playerId,
+            gemName: gem.name,
+            rollNumber,
+            genuineRoll,
+            batchIndex,
+            pool: batchExecution.pool,
+            specimenKind: "vein_hunter_duplicate",
+            sourceEventOccurrenceId: eventContext.occurrenceId,
+            sourceEventKey: eventContext.eventKey
+          });
+        }
+        const duplicateResearchMutationValue = duplicateMutations.length
+          ? researchNumber("mutated_value_multiplier") * (1 + Math.min(5, duplicateMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0)))
+          : 1;
+        const duplicateValue = duplicateFinalWeight * gem.valuePerGram * duplicateMutationMultiplier *
+            researchNumber("gem_value_multiplier") * duplicateResearchMutationValue *
+          (mineArtifacts.has("bedrock-crown") ? 1.05 : 1) * eventContext.valueMultiplier;
+
+        veinHunterDuplicatePayload = {
+            gem_name: gem.name,
+            rarity: gem.rarity,
+            base_weight: gem.baseWeight,
+            value_per_gram: gem.valuePerGram,
+            rolled_weight_multiplier: duplicateWeightMultiplier,
+            rolled_weight: duplicateRolledWeight,
+            final_weight: duplicateFinalWeight,
+            mutation_id: duplicateMutations[0]?.id ?? null,
+            mutation_multiplier: duplicateMutationMultiplier,
+            mutation_ids: duplicateMutationIds,
+            mutation_multipliers: duplicateMutationMultipliers,
+            mutation_chance_multiplier: mutationChanceMultiplier,
+            value: duplicateValue,
+            locked: false,
+            roll_number: Number(player.total_rolls ?? 0) + 1,
+            luck_at_roll: luck
+            ,source_event_occurrence_id: eventContext.occurrenceId
+            ,source_event_key: eventContext.eventKey
+            ,event_properties: { state: eventContext.state, duplicate: true }
+            ,value_multiplier_at_roll: eventContext.valueMultiplier
+          };
+      }
+
+      if (hasRarityResonance && luckBasedGem) {
+        // A 1/100,000+ result never changes the meter, including while it is
+        // charged. The charge is consumed only by an eligible common result.
+        const rarityResonance = gem.rarity >= 100000
+          ? resonanceBeforeRoll
+          : resonanceEmpowered
+            ? 0
+            : Math.min(100, resonanceBeforeRoll + 1);
+        playerPatch.rarity_resonance = rarityResonance;
+      }
+
+      const progressionStateUpdate: Record<string, unknown> = {};
+      if (!relicDrop && gem.rarity >= 100000) {
+        progressionStateUpdate.best_rare_natural_weight_100k = Math.max(
+          Number(player.best_rare_natural_weight_100k ?? 0),
+          rolledWeightMultiplier,
+          Number(veinHunterDuplicatePayload?.rolled_weight_multiplier ?? 0)
+        );
+      }
+      if (!relicDrop && gem.rarity >= 1000000) {
+        progressionStateUpdate.best_rare_natural_weight_1m = Math.max(
+          Number(player.best_rare_natural_weight_1m ?? 0),
+          rolledWeightMultiplier,
+          Number(veinHunterDuplicatePayload?.rolled_weight_multiplier ?? 0)
+        );
+      }
+      Object.assign(playerPatch, progressionStateUpdate);
+
+      const equipmentOutcome = finishEquipmentRoll(equipmentContext, {
+        naturalWeight: relicDrop ? null : rolledWeightMultiplier, gem: relicDrop ? null : gem,
+        sizeMutation: supersizerSize, naturalMutationCount: naturalMutations.length,
+        value: relicDrop ? 0 : value, effectiveRarity: relicDrop ? 0 : effectiveRarity,
+        now: now.getTime(), random: random01
+      });
+      const history={...(equipmentOutcome.state.batchHistory??{})};
+      if(!relicDrop) {
+        history.raw5m=Number(history.raw5m??0)+(gem.rarity>=5000000?1:0);
+        history.raw10m=Number(history.raw10m??0)+(gem.rarity>=10000000?1:0);
+        history.heavy5=Number(history.heavy5??0)+(rolledWeightMultiplier>=5?1:0);
+        const finalWeightRatio=gem.baseWeight>0?finalWeight/gem.baseWeight:0;
+        history.supersizerHeavy10=Number(history.supersizerHeavy10??0)+(finalWeightRatio>=10?1:0);
+        history.supersizerRareHeavy5=Number(history.supersizerRareHeavy5??0)+(gem.rarity>=10000000&&finalWeightRatio>=5?1:0);
+      }
+      equipmentOutcome.state.batchHistory=history;
+      let breakneckGem: any = null;
+      if (buffsEnabled && equipmentOutcome.breakneck) {
+        const extra = rollGemWithPickaxePassives(
+          luckBreakdown.ordinary * luckBreakdown.world, discoveredGemNames,
+          geologistMultiplier, extremeGemMultiplier, legendaryGemMultiplier, timeWindowMultiplier, eventContext, null, maxLuck, biomeGems
+        );
+        const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
+        const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+        const extraMutationValueMultiplier = capCombinedMutationValueMultiplier(extraMutations);
+        const extraMutationMultiplier = extraMutationValueMultiplier.appliedMultiplier;
+        const extraFinalWeight = extra.baseWeight * extraWeight * weightMultiplier;
+        const extraMutationIds = extraMutations.map((mutation: any) => mutation.id);
+        if (extraMutationValueMultiplier.capped) {
+          logMutationValueMultiplierAnomaly({
+            rawCalculatedMultiplier: extraMutationValueMultiplier.rawMultiplier,
+            appliedMultiplier: extraMutationMultiplier,
+            mutationIds: extraMutationIds,
+            playerId,
+            gemName: extra.name,
+            rollNumber,
+            genuineRoll,
+            batchIndex,
+            pool: batchExecution.pool,
+            specimenKind: "breakneck_bonus",
+            sourceEventOccurrenceId: eventContext.occurrenceId,
+            sourceEventKey: eventContext.eventKey
+          });
+        }
+        breakneckGem = {
+          gem_name: extra.name, rarity: extra.rarity, base_weight: extra.baseWeight, value_per_gram: extra.valuePerGram,
+          rolled_weight_multiplier: extraWeight, rolled_weight: extra.baseWeight * extraWeight, final_weight: extraFinalWeight,
+          mutation_id: extraMutations[0]?.id ?? null, mutation_ids: extraMutationIds,
+          mutation_multiplier: extraMutationMultiplier, mutation_multipliers: Object.fromEntries(extraMutations.map((m: any) => [m.id,m.multiplier])),
+          mutation_chance_multiplier: mutationChanceMultiplier,
+          value: extraFinalWeight * extra.valuePerGram * extraMutationMultiplier * researchNumber('gem_value_multiplier') *
+            (extraMutations.length ? researchNumber('mutated_value_multiplier') * (1 + Math.min(5,extraMutations.length) * Math.max(0, Number(researchEffects.compound_value_per_mutation ?? 0))) : 1) *
+            crystalGemValueMultiplier * expeditionArtifactGemValueMultiplier * volcanicGemValueMultiplier *
+            (extraWeight >= 2 ? crystalHeavyGemValueMultiplier : 1) * (mineArtifacts.has('bedrock-crown') ? 1.05 : 1) * eventContext.valueMultiplier,
+          luck_at_roll: capGemLuck(luckBreakdown.ordinary * luckBreakdown.world, maxLuck),
+          roll_number: Number(player.total_rolls ?? 0) + 1,
+          locked: false
+        };
+      }
+
+      const convergenceBonuses: any[] = [];
+      if (equipmentContext.flags.convergence?.oneBecomesMany) {
+        for (let bonusIndex = 0; bonusIndex < 4; bonusIndex += 1) {
+          const extra = rollEquipmentGem();
+          const extraWeight = rollWeightMultiplier(weightLuck * eventWeightLuckFactor(eventContext, extra));
+          const extraMutations = rollGemMutations(mutationChanceMultiplier, eventContext);
+          const extraMutationValue = capCombinedMutationValueMultiplier(extraMutations);
+          const extraMutationMultiplier = extraMutationValue.appliedMultiplier;
+          const extraFinalWeight = extra.baseWeight * extraWeight * weightMultiplier;
+          const extraMutationIds = extraMutations.map((mutation: any) => mutation.id);
+          const extraMutationChanceProduct = extraMutations.reduce(
+            (total: number, mutation: any) => total * Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1)), 1
+          );
+          convergenceBonuses.push({
+            gem_name:extra.name,rarity:extra.rarity,base_weight:extra.baseWeight,value_per_gram:extra.valuePerGram,
+            rolled_weight_multiplier:extraWeight,rolled_weight:extra.baseWeight*extraWeight,final_weight:extraFinalWeight,
+            mutation_id:extraMutations[0]?.id??null,mutation_ids:extraMutationIds,
+            natural_mutation_ids:extraMutationIds,mutation_multiplier:extraMutationMultiplier,
+            mutation_multipliers:Object.fromEntries(extraMutations.map((m:any)=>[m.id,m.multiplier])),
+            mutation_chance_multiplier:mutationChanceMultiplier,effective_rarity:Math.max(1,Number(extra.rarity)*extraMutationChanceProduct),
+            genuine_roll:false,value:extraFinalWeight*extra.valuePerGram*extraMutationMultiplier*researchNumber('gem_value_multiplier')*
+              (extraMutations.length?researchNumber('mutated_value_multiplier')*(1+Math.min(5,extraMutations.length)*Math.max(0,Number(researchEffects.compound_value_per_mutation??0))):1)*
+              crystalGemValueMultiplier*expeditionArtifactGemValueMultiplier*volcanicGemValueMultiplier*
+              (extraWeight>=2?crystalHeavyGemValueMultiplier:1)*(mineArtifacts.has('bedrock-crown')?1.05:1)*eventContext.valueMultiplier,
+            luck_at_roll:luck,locked:false,roll_number:null,source_event_occurrence_id:eventContext.occurrenceId,
+            source_event_key:eventContext.eventKey,event_properties:{convergenceBonus:true,parentGenuineRoll:genuineRoll},
+            value_multiplier_at_roll:eventContext.valueMultiplier,automatic_consumption_protected:extra.metadata?.automaticConsumptionProtected===true
+          });
+        }
+      }
+
+      const combinationKey = getMutationCombinationKey(mutationIds);
+      const boostTiers = Object.fromEntries(
+        activeBoosts.map((boost) => [boost.family, Number(boost.tier ?? 0)])
+      );
+      const progressPayload = {
+        gemName: gem.name,
+        gemRarity: gem.rarity,
+        finalWeight,
+        value,
+        mutationIds,
+        mutationMultiplier,
+        mutationChanceMultiplier,
+        rawLuck: luck,
+        baseLuck,
+        usedOneRollPotion: Boolean(buffsEnabled && oneRollLuck > 0),
+        usedLegendaryPotion: buffsEnabled && usedOneRollConsumable === "legendary-potion",
+        usedMythicPotion: buffsEnabled && usedOneRollConsumable === "mythic-potion",
+        usedAnyPotion: Boolean(buffsEnabled && oneRollLuck > 0)
+      };
+      const expeditionPayload = {
+        gemName: relicDrop ? null : gem.name,
+        rarity: relicDrop ? 0 : gem.rarity,
+        weightMultiplier: relicDrop ? 0 : rolledWeightMultiplier,
+        finalWeight: relicDrop ? 0 : finalWeight,
+        displayedValue: relicDrop ? 0 : value,
+        mutationIds: relicDrop ? [] : mutationIds,
+        boostFamilies: activeBoosts.map((boost) => boost.family),
+        boostTiers,
+        relicName: relicDrop ? gem.name : null
+      };
+      const bookkeepingPayload = {
+        username: player.username ?? playerId,
+        gemName: gem.name,
+        rarity: gem.rarity,
+        effectiveRarity,
+        finalWeight,
+        value,
+        rolledWeightMultiplier,
+        mutationId: primaryMutation?.id ?? null,
+        mutationIds,
+        mutationMultiplier,
+        mutationMultipliers,
+        combinationKey,
+        rawLuck: luck,
+        baseLuck,
+        announcedLuck,
+        rollNumber,
+        relic: relicDrop,
+        eventOccurrenceId: availabilityEventContext.occurrenceId,
+        bonusCombination: breakneckGem ? {
+          gemName: breakneckGem.gem_name,
+          combinationKey: getMutationCombinationKey(breakneckGem.mutation_ids ?? []),
+          mutationIds: breakneckGem.mutation_ids ?? [],
+          mutationMultipliers: breakneckGem.mutation_multipliers ?? {},
+          value: breakneckGem.value
+        } : null,
+        enchantedEquipmentId: enchantedPickaxe?.id ?? null,
+        enchantStateChanged: Boolean(enchantedPickaxe && enchantStateChanged),
+        enchantState,
+        consumeOneRollCharge: Boolean(!allIn && buffsEnabled && oneRollLuck > 0),
+        progressPayload,
+        expeditionPayload
+      };
+
+      const equipmentCommitStartedAt = timingNow(batchExecution);
+      // A declined Auto Craft result may mark the specimen as preserved to
+      // mean "do not consume it". That must not override an explicit Gem
+      // Filter SELL decision. Conservation only keeps the extra specimen when
+      // Auto Craft actually accepted the deposit.
+      let autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+        !bundleKeepInInventory && !autoDeposited;
+      let committedResult: any;
+      let equipmentCommitError: any;
+      if (atomicFinalize) {
+        // Keep event payment/consumable use, automatic routing and the final
+        // specimen commit in the same database transaction.
+        const atomicCommit = await ctx.supabaseAdmin.rpc('roll_finalize_atomic', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_routing_specimen: specimen,
+          p_primary_specimen: inventorySpecimen,
+          p_filter_keep: filterDecision.keep,
+          p_filter_sell: filterDecision.sell,
+          p_active_auto_craft: rollContext.activeAutoCraft ?? null,
+          p_external_deposit: externalDeposit,
+          p_deep_sea: batchExecution.pool === "deep_sea",
+          p_neptune: equipmentContext.id === "neptune",
+          p_consume_abyssal: batchExecution.abyssalPotion,
+          p_deepcore_auto_contribute: batchExecution.pool === "normal" &&
+            gem.metadata?.automaticConsumptionProtected !== true &&
+            deepcoreContext?.status === "active" && deepcoreContext?.autoContribute === true,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        equipmentCommitError = atomicCommit.error ??
+          (atomicCommit.data ? null : { message: "atomic_roll_commit_failed" });
+        if (!equipmentCommitError && atomicCommit.data) {
+          deepSeaCommit = atomicCommit.data.deepSea ?? null;
+          deepcoreAutoContribution = atomicCommit.data.deepcore ?? null;
+          deepcoreDeposited = deepcoreAutoContribution?.contributed === true;
+          if (atomicCommit.data.deepcoreError) {
+            console.error("Deepcore Auto Contribute failed:", atomicCommit.data.deepcoreError);
+          }
+          routedResult = atomicCommit.data.route;
+          committedResult = atomicCommit.data.commit;
+          shouldSavePrimary = atomicCommit.data.savePrimary === true;
+          bundleRoute = routedResult?.bundle ?? bundleRoute;
+          autoCraftResult = routedResult?.autoCraft ?? {};
+          bundleDeposited = bundleRoute.status === "deposited" || deepcoreDeposited ||
+            deepSeaCommit?.fed === "neptune" || deepSeaCommit?.fed === "depths";
+          bundleKeepInInventory = bundleRoute.keepInInventory === true;
+          autoDeposited = autoCraftResult.deposited === true;
+          autoConserved = autoCraftResult.preserved === true;
+          autoCraftRecipeId = autoCraftResult.recipeId ?? null;
+          autoCraftRequirementIndex = autoCraftResult.requirementIndex ?? null;
+          // Atomic Deep Sea/Abyssal routing resolves after the initial
+          // placeholder receipt. Recompute this response-path flag from the
+          // authoritative route so a successful database sale is reported.
+          autoSellRequested = filterDecision.sell && shouldSavePrimary && !relicDrop &&
+            !bundleKeepInInventory && !autoDeposited;
+          if (routedResult?.autoCraftError) {
+            console.error("Auto Craft deposit failed:", routedResult.autoCraftError);
+          }
+          recordRollPhase(batchExecution, batchIndex, "bundle_route_roll_ms", equipmentCommitStartedAt);
+          recordRollPhase(batchExecution, batchIndex, "roll_route_result_ms", equipmentCommitStartedAt);
+          if (timingFlags) {
+            timingFlags.bundle_route_roll_used = !filterDecision.keep && !deepcoreDeposited;
+            timingFlags.roll_autocraft_deposit_used = autoDeposited;
+          }
+        }
+      } else {
+        const ordinaryCommit = await ctx.supabaseAdmin.rpc('roll_commit_result', {
+          p_player_id: playerId, p_lease_id: rollLeaseId, p_genuine_roll: genuineRoll,
+          p_primary_specimen: inventorySpecimen,
+          p_save_primary: shouldSavePrimary,
+          p_relic_drop: relicDrop,
+          p_duplicate: veinHunterDuplicatePayload,
+          p_auto_sell: autoSellRequested,
+          p_state: equipmentOutcome.state, p_loot: equipmentOutcome.loot, p_bonus: breakneckGem,
+          p_capacity: effectiveInventoryCapacity, p_player_patch: playerPatch,
+          p_bookkeeping: bookkeepingPayload,
+          p_convergence_bonuses: convergenceBonuses,
+          p_include_background: batchExecution.batchSize > 1,
+          p_release_on_success: batchIndex === batchExecution.batchSize - 1
+        });
+        committedResult = ordinaryCommit.data;
+        equipmentCommitError = ordinaryCommit.error;
+      }
+      const equipmentCommit = committedResult?.equipment ?? {};
+      savedGem = committedResult?.primary ?? null;
+      veinHunterDuplicate = committedResult?.duplicate ?? null;
+      recordRollPhase(batchExecution, batchIndex, "commit_equipment_roll_ms", equipmentCommitStartedAt);
+      recordRollPhase(batchExecution, batchIndex, "roll_commit_result_ms", equipmentCommitStartedAt);
+      if (shouldSavePrimary || veinHunterDuplicatePayload) {
+        recordRollPhase(batchExecution, batchIndex, "inventory_insert_ms", equipmentCommitStartedAt);
+        if (timingFlags) timingFlags.inventory_insert_used = true;
+      }
+      recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_critical_ms", equipmentCommitStartedAt);
+      if (batchExecution.batchSize > 1) {
+        recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", equipmentCommitStartedAt);
+      }
+      if (equipmentCommitError && atomicFinalize) {
+        const message = String(equipmentCommitError.message ?? "");
+        const expectedCode = [
+          "deep_sea_event_ended", "insufficient_funds", "inventory_full", "not_owned",
+          "invalid_roll_lease", "invalid_genuine_roll", "duplicate_roll_commit"
+        ].find((code) => message.includes(code));
+        if (expectedCode) return jsonResponse({ error: expectedCode }, { status: 409 });
+      }
+      if (equipmentCommitError) throw equipmentCommitError;
+      if (committedResult?.leaseReleased === true) batchExecution.leaseReleased = true;
+      if (committedResult?.duplicateError) {
+        console.error("Vein Hunter duplicate insert failed:", committedResult.duplicateError);
+      }
+      breakneckGem = equipmentCommit?.bonus ?? null;
+      const savedConvergenceBonuses = Array.isArray(committedResult?.convergenceBonuses) ? committedResult.convergenceBonuses : [];
+
+      let paradoxCrafted = false;
+      if (equipmentContext.id === 'celestial-pickaxe' && equipmentOutcome.state.paradoxTrial?.completed === true && batchIndex === batchExecution.batchSize - 1) {
+        const { data: paradoxCompletion, error: paradoxCompletionError } = await ctx.supabaseAdmin.rpc('complete_paradox_trial', {
+          p_player_id: playerId
+        });
+        if (paradoxCompletionError) console.error('Paradox trial completion failed:', paradoxCompletionError);
+        else paradoxCrafted = paradoxCompletion?.crafted === true || paradoxCompletion?.alreadyOwned === true;
+      }
+
+      let petReward: any = null;
+      if (petDrop) {
+        try {
+          const { data: petClaim, error: petClaimError } = await ctx.supabaseAdmin.rpc("claim_pet_reward", {
+            p_player_id: playerId,
+            p_pet_id: String(petDrop.id)
+          });
+          if (petClaimError) throw petClaimError;
+          petReward = { ...petDrop, quantity: Number(petClaim?.quantity ?? 1) };
+        } catch (petError) {
+          console.error("[ROLL] Pet reward claim failed:", petError);
+        }
+      }
+
+      const criticalBookkeeping = equipmentCommit?.bookkeeping ?? {};
+      if (criticalBookkeeping?.errors?.length) {
+        console.warn("Critical roll bookkeeping partial failures:", criticalBookkeeping.errors);
+      }
+      const criticalBookkeepingPromise = Promise.resolve(criticalBookkeeping);
+      const consolidatedBackgroundPromise = batchExecution.batchSize > 1
+        ? Promise.resolve({ data: equipmentCommit?.backgroundBookkeeping ?? {}, error: null })
+        : (() => {
+        const backgroundBookkeepingStartedAt = timingNow(batchExecution);
+        return ctx.supabaseAdmin.rpc("roll_finish_bookkeeping", {
+          p_player_id: playerId,
+          p_phase: "background",
+          p_payload: bookkeepingPayload
+        }).then((result: any) => {
+          recordRollPhase(batchExecution, batchIndex, "roll_finish_bookkeeping_background_ms", backgroundBookkeepingStartedAt);
+          return result;
+        });
+      })();
+      const checkedBackgroundPromise = consolidatedBackgroundPromise.then(({ data, error }: any) => {
+        if (error) console.error("Background roll bookkeeping failed:", error);
+        else if (data?.errors?.length) console.warn("Background roll bookkeeping partial failures:", data.errors);
+      });
+
+      const lifetimeStatsPromise = criticalBookkeepingPromise.then(
+        (data: any) => data.lifetimeStats ?? null
+      );
+      const mutationCombinationPromise = criticalBookkeepingPromise.then(
+        (data: any) => data.mutationCombination ?? null
+      );
+      const guildPromise = criticalBookkeepingPromise.then(
+        (data: any) => data.guildPoints ?? null
+      );
+      const globalEventRollPromise = criticalBookkeepingPromise.then(
+        (data: any) => data.globalEventProgress ?? null
+      );
+
+      // The specimen is already committed. Ordinary single rolls keep the
+      // best-effort phase off the response path; batches await it so state used
+      // by the next item (including potion charges) is current.
+      const backgroundPostCommitPromise = checkedBackgroundPromise
+        .then(() => undefined)
+        .catch((error) => {
+          console.error("Background roll bookkeeping crashed:", error);
+        });
+      if (batchExecution.batchSize > 1) await backgroundPostCommitPromise;
+      else registerRollWaitUntil(batchExecution, batchIndex, backgroundPostCommitPromise);
+
+
+      // These values are included in the response (or are prerequisites for
+      // response-visible state), so wait only for this smaller critical set.
+      const [
+        lifetimeStats,
+        mutationCombination,
+        guildPoints,
+        globalEventProgress
+      ] = await Promise.all([
+        lifetimeStatsPromise,
+        mutationCombinationPromise,
+        guildPromise,
+        globalEventRollPromise
+      ]);
+
+
+      // =====================================================
+      // FINAL INVENTORY COUNT
+      // =====================================================
+
+      const finalInventoryCount =
+        bundleDeposited || (autoDeposited && !autoConserved) || relicDrop
+          ? currentInventoryCount
+          : currentInventoryCount +
+            1;
+      let inventoryCountWithDuplicate = finalInventoryCount + (veinHunterDuplicate ? 1 : 0) +
+        (breakneckGem ? 1 : 0) + savedConvergenceBonuses.length;
+
+      let filterSale: any = null;
+      if (autoSellRequested && savedGem) {
+        const saleReceipt = committedResult?.sale ?? {};
+        const supersizerSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? 1.25 : 1;
+        // Use the pre-roll flag so Gargantuan starts its blessing after the
+        // triggering specimen, matching the authoritative sale transaction.
+        const blessingSellMultiplier = equipmentContext.id === 'supersizer-pickaxe' ? supersizerBlessing.finalSell : 1;
+        const artifactSellMultiplier = mineArtifacts.has('foreman-seal') ? 1.03 : 1;
+        const gemValueBoost = (activeBoosts ?? []).find((b: any) => b.family === 'gemValue');
+        const autoSellMultiplier = gemValueBoost ? Number(gemValueBoost.effect_value ?? 1) : 1;
+        if (saleReceipt.sold === true) { filterSale = { sold: true, soldValue: value * supersizerSellMultiplier * blessingSellMultiplier * artifactSellMultiplier * autoSellMultiplier, money: saleReceipt.money }; inventoryCountWithDuplicate -= 1; }
+        else if (saleReceipt.error) console.error('Gem Filter sale failed; specimen retained:', saleReceipt.error);
+      }
+
+      // =====================================================
+      // RETURN SUCCESSFUL ROLL
+      // =====================================================
+
+      return jsonResponse({
+        playerId,
+        buffsEnabled,
+        finalStats: { luck, uncappedLuck, maxLuck, rollSpeed: effectiveRollSpeed, weightLuck, weightMultiplier },
+        gemFilter: { ...filterDecision, ...(filterSale ?? { sold: false }) },
+
+        specimenId:
+          (filterSale ? null : savedGem?.id) ??
+          null,
+
+        pet: petReward,
+
+        gem: {
+          name:
+            gem.name,
+
+          affectedByLuck: gem.affectedByLuck !== false,
+          flatChanceMultiplier: flatEquipmentChance(equipmentContext.id),
+          rarity:
+            gem.rarity,
+
+          baseWeight:
+            gem.baseWeight,
+
+          valuePerGram:
+            gem.valuePerGram,
+
+          dropType:
+            relicDrop ? "relic" : "gem"
+        },
+
+        enchant: enchantedPickaxe ? {
+          id: enchantId,
+          grade: enchantGrade,
+          state: enchantState
+        } : null,
+
+        weightMultiplier:
+          rolledWeightMultiplier,
+
+        rolledWeight,
+
+        finalWeight,
+
+        mutation:
+          primaryMutation
+            ? {
+                id: primaryMutation.id,
+                name: primaryMutation.name,
+                multiplier: primaryMutation.multiplier
+              }
+            : null,
+
+        mutations:
+          mutations.map((mutation) => ({
+            id: mutation.id,
+            name: mutation.name,
+            multiplier: mutation.multiplier,
+            chance: Math.max(1, 1 / Number(mutation.chance || 1)),
+            effectiveChance: Math.max(1, 1 / Number(mutation.rolledChance || mutation.chance || 1))
+          })),
+
+        mutationIds,
+
+        mutationMultiplier,
+
+        effectiveRarity: Number.isFinite(effectiveRarity) ? effectiveRarity : Number.MAX_VALUE,
+        effectiveRarityExact: effectiveRarityExact.toString(),
+
+        activeMutationEffects: allIn ? [] : [
+          ...(nextMistyRolls > 0 ? [{ id: "misty", name: "Misty Mutation Surge", multiplier: Math.pow(2.5, nextMistyStacks), rollsRemaining: nextMistyRolls, description: "Mutation chance boosted" }] : []),
+          ...(nextAncientRelicRolls > 0 ? [{ id: "ancient", name: "Ancient Relic Hunt", multiplier: 1.3, rollsRemaining: nextAncientRelicRolls, description: "Ancient Relic chance boosted" }] : []),
+          ...(nextEnchantedRelicRolls > 0 ? [{ id: "enchanted", name: "Enchanted Relic Hunt", multiplier: 1.1, rollsRemaining: nextEnchantedRelicRolls, description: "All relic chances boosted" }] : [])
+        ],
+
+        // Exact effective luck used for this server-authoritative roll.
+        luckAtRoll: luck,
+        luckBreakdown,
+
+        mutationCombination: {
+          key: combinationKey,
+          record: mutationCombination ?? null
+        },
+
+        value,
+
+        globalEvent: activeGlobalEvent ? {
+          occurrenceId: eventContext.occurrenceId,
+          eventKey: eventContext.eventKey,
+          name: activeGlobalEvent.name,
+          tier: activeGlobalEvent.tier,
+          startsAt: activeGlobalEvent.startsAt,
+          endsAt: activeGlobalEvent.endsAt,
+          state: eventContext.state,
+          luckyRoll: eventContext.luckyRoll,
+          secondChance: eventContext.secondChance,
+          starfallActive: eventContext.starfallActive,
+          mass: globalEventProgress?.mass ?? activeGlobalEvent.mass,
+          massTarget: globalEventProgress?.massTarget ?? activeGlobalEvent.massTarget,
+          collapsedAt: globalEventProgress?.collapsedAt ?? activeGlobalEvent.collapsedAt
+        } : null,
+
+        equipmentPassives: {
+          bagged,
+          genuineRoll,
+          specialist: {...equipmentContext.flags,...slotOutcome},
+          state: equipmentOutcome.state,
+          excavation: equipmentOutcome.loot,
+          breakneck: breakneckGem,
+          alignmentRoll, eternityRoll, heavyStepRoll, collapseRoll, storageRoll,
+          veinHunterDuplicate,
+          rarityResonance: hasRarityResonance ? {
+            before: resonanceBeforeRoll,
+            after: luckBasedGem ? (gem.rarity >= 100000 ? resonanceBeforeRoll : resonanceEmpowered ? 0 : Math.min(100, resonanceBeforeRoll + 1)) : resonanceBeforeRoll,
+            empowered: resonanceEmpowered && luckBasedGem,
+            consumed: resonanceEmpowered && luckBasedGem && gem.rarity < 100000
+          } : null,
+          paradox: equipmentOutcome.state.paradox ?? null,
+          paradoxTrial: equipmentOutcome.state.paradoxTrial ?? null,
+          paradoxCrafted,
+          convergence: equipmentContext.id === 'convergence-pickaxe' ? {
+            ...equipmentOutcome.state.convergence,
+            ...equipmentContext.flags.convergence,
+            bonusResults: savedConvergenceBonuses
+          } : null
+        },
+
+        impossibleWorldFirst: player.equipment_state?.impossibleWorldFirst === true,
+
+        bundle: bundleRoute,
+
+        autoCraft: {
+          deposited:
+            autoDeposited,
+          preserved: autoConserved,
+
+          recipeId:
+            autoCraftRecipeId,
+
+          requirementIndex:
+            autoCraftRequirementIndex
+        },
+
+        deepcore: {
+          autoContributed: deepcoreDeposited,
+          objective: deepcoreAutoContribution?.objective ?? null,
+          rollCard: deepcoreContext?.rollCard === true
+        },
+        // Return compact audit context, not the internal denominator/routing maps.
+        biome: batchExecution.biomeSnapshot ? {
+          version: batchExecution.biomeSnapshot.version,
+          acceptedAt: batchExecution.biomeSnapshot.acceptedAt,
+          tournament: batchExecution.biomeSnapshot.tournament === true,
+          occurrence: batchExecution.biomeSnapshot.occurrence ? {
+            id: batchExecution.biomeSnapshot.occurrence.id,
+            key: batchExecution.biomeSnapshot.occurrence.key,
+            startsAt: batchExecution.biomeSnapshot.occurrence.startsAt,
+            endsAt: batchExecution.biomeSnapshot.occurrence.endsAt
+          } : null
+        } : null,
+        deepSea: batchExecution.pool === "deep_sea" ? {
+          pool: "deep_sea",
+          tideTokensAwarded: Number(deepSeaCommit?.awarded ?? 0),
+          tideTokens: Number(deepSeaCommit?.tideTokens ?? 0),
+          autoFed: deepSeaCommit?.fed ?? null,
+          depthStep: Number(deepSeaCommit?.depthStep ?? deepSeaContext?.state?.depth_step ?? 0),
+          firstDiscoveryProtected: deepSeaCommit?.firstDiscovery === true,
+          offeringConsumed: deepSeaCommit?.offeringConsumed === true
+        } : null,
+
+        lifetimeStats:
+          lifetimeStats ??
+          null,
+
+        guild: {
+          rollPoints: guildPoints,
+          mythicSurge
+        },
+
+        inventory: {
+          count:
+            inventoryCountWithDuplicate,
+
+          capacity:
+            effectiveInventoryCapacity
+        },
+
+        cooldown: {
+          durationMs:
+            cooldownMs,
+
+          nextRollAt:
+            claimedNextRollAt
+              .toISOString()
+        }
+      });
+}
+
+type MaintenanceWindow = { starts_at: string | null; ends_at: string | null; message: string | null } | null;
+const MAINTENANCE_OWNER_ID = "38d5e8ce-18af-46d3-aa9e-6e601e75dd78";
+let maintenanceCache: { checkedAt: number; window: MaintenanceWindow } = { checkedAt: 0, window: null };
+
+// Keep the optimized roll hot path intact: each isolate refreshes this tiny
+// singleton at most once every five seconds instead of adding a database read
+// to every roll. A newly-started shutdown therefore becomes authoritative
+// within five seconds, while the player UI polls the same source separately.
+async function activeMaintenanceWindow(ctx: any): Promise<MaintenanceWindow> {
+  const now = Date.now();
+  if (now - maintenanceCache.checkedAt >= 5_000) {
+    const { data, error } = await ctx.supabaseAdmin
+      .from("game_maintenance")
+      .select("starts_at,ends_at,message")
+      .eq("id", "global")
+      .maybeSingle();
+    if (error) {
+      // Deploying the function before its migration must not accidentally
+      // take the game offline. Log once per cache interval and fail open.
+      console.error("Maintenance status check failed:", error.message);
+      maintenanceCache = { checkedAt: now, window: null };
+    } else {
+      maintenanceCache = { checkedAt: now, window: data ?? null };
+    }
+  }
+
+  const window = maintenanceCache.window;
+  if (!window?.starts_at || !window?.ends_at) return null;
+  const startsAt = Date.parse(window.starts_at);
+  const endsAt = Date.parse(window.ends_at);
+  return Number.isFinite(startsAt) && Number.isFinite(endsAt) && startsAt <= now && now < endsAt
+    ? window
+    : null;
+}
+
+async function rollIsAllowedDuringMaintenance(ctx: any, playerId: string): Promise<boolean> {
+  if (playerId === MAINTENANCE_OWNER_ID) return true;
+  const { data } = await ctx.supabaseAdmin
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", playerId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+const authenticatedRollHandler = withSupabase(
+  {
+    auth: "user",
+    // Handle preflights outside the Supabase wrapper. Otherwise its automatic
+    // 204 response bypasses both this function and the player rate limiter.
+    cors: "disabled"
+  },
+  async (req, ctx) => {
+      const playerId = String(ctx.userClaims?.id ?? ctx.userClaims?.sub ?? ctx.jwtClaims?.sub ?? "");
+      const maintenance = await activeMaintenanceWindow(ctx);
+      if (maintenance && !(await rollIsAllowedDuringMaintenance(ctx, playerId))) {
+        return jsonResponse({
+          error: "game_maintenance",
+          message: maintenance.message || "The game is temporarily offline for an update.",
+          endsAt: maintenance.ends_at
+        }, { status: 503 });
+      }
+
+      const rateLimitResponse = await enforceRollRequestRateLimit(ctx);
+      if (rateLimitResponse) return rateLimitResponse;
+
+      const timingSampled = shouldSampleRollTiming();
+      const invocationTimingStartedAt = timingSampled ? performance.now() : 0;
+
+      let requestBody: any = {};
+      try {
+        requestBody = await req.json();
+      } catch {
+        // Existing clients send an empty JSON object; a missing body remains ×1.
+      }
+
+      const batchSize = normalizeRequestedBatchSize(requestBody?.batchSize ?? 1);
+      if (batchSize == null) {
+        return jsonResponse({ error: "invalid_batch_size" }, { status: 400 });
+      }
+      const pool = requestBody?.pool === "deep_sea" ? "deep_sea" : "normal";
+      const abyssalPotion = requestBody?.abyssalPotion === true;
+      if (abyssalPotion && (batchSize !== 1 || pool !== "normal")) return jsonResponse({ error:"invalid_abyssal_roll" }, { status:400 });
+
+      const execution: BatchExecution = {
+        batchSize,
+        pool,
+        abyssalPotion,
+        requestStartedAt: new Date(),
+        timing: timingSampled ? createRollInvocationTiming(invocationTimingStartedAt) : undefined
+      };
+      const results: any[] = [];
+
+      try {
+        for (let batchIndex = 0; batchIndex < batchSize; batchIndex += 1) {
+          const subrollTiming = execution.timing ? {
+            index: batchIndex + 1,
+            background_awaited: batchSize > 1,
+            phases: {},
+            flags: {
+              bundle_route_roll_used: false,
+              roll_autocraft_deposit_used: false,
+              inventory_insert_used: false
+            }
+          } satisfies RollSubrollTiming : null;
+          if (subrollTiming) execution.timing?.subrolls.push(subrollTiming);
+          const subrollStartedAt = timingNow(execution);
+          let response: Response;
+          try {
+            response = await executeSingleRoll(req, ctx, execution, batchIndex);
+          } finally {
+            if (subrollTiming) {
+              subrollTiming.total_ms = Math.round((performance.now() - subrollStartedAt) * 100) / 100;
+            }
+          }
+          const payload = await response.json();
+          if (!response.ok) {
+            if (results.length === 0) {
+              return jsonResponse(payload, { status: response.status });
+            }
+            return jsonResponse({
+              error: "batch_incomplete",
+              completed: results.length,
+              requested: batchSize,
+              results,
+              cause: payload,
+              cooldown: execution.nextRollAt ? {
+                durationMs: execution.cooldownMs,
+                nextRollAt: execution.nextRollAt
+              } : null
+            }, { status: 500 });
+          }
+          results.push(payload);
+        }
+      } finally {
+        const leaseReleaseStartedAt = timingNow(execution);
+        if (execution.leaseId && !execution.leaseReleased) {
+          const { error } = await ctx.supabaseAdmin.rpc("release_server_roll", {
+            p_player_id: ctx.userClaims?.id,
+            p_lease_id: execution.leaseId
+          });
+          if (error) console.error("Roll lease release failed:", error);
+        }
+        if (execution.timing) {
+          execution.timing.lease_release_ms = Math.round((performance.now() - leaseReleaseStartedAt) * 100) / 100;
+          const responsePathMs = Math.round((performance.now() - execution.timing.started_at_ms) * 100) / 100;
+          logRollTiming({
+            event: "roll_timing",
+            segment: "response",
+            batch_size: batchSize,
+            sample_rate: execution.timing.sample_rate,
+            response_path_ms: responsePathMs,
+            whole_invocation_ms:
+              batchSize > 1 || !execution.timing.wait_until_registered ? responsePathMs : null,
+            lease_release_ms: execution.timing.lease_release_ms,
+            subrolls: execution.timing.subrolls
+          });
+          execution.timing.mark_response_done();
+        }
+      }
+
+      if (batchSize === 1) return jsonResponse(results[0]);
+      return jsonResponse({
+        batchSize,
+        results,
+        cooldown: {
+          durationMs: execution.cooldownMs,
+          nextRollAt: execution.nextRollAt
+        }
+      });
+  }
+);
+
+export default {
+  async fetch(req: Request) {
+    const origin = req.headers.get("Origin");
+    if (req.method === "OPTIONS") {
+      const headers = rollCorsHeaders(origin);
+      return new Response(null, { status: 204, headers });
+    }
+
+    return withRollCors(await authenticatedRollHandler(req), origin);
+  }
+};

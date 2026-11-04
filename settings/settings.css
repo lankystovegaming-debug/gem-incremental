@@ -256,3 +256,23 @@ label.setting {
   .qol-rule-buttons { grid-column:1 / -1; width:100%; }
   .qol-rule-button { min-height:44px; }
 }
+
+/* Phase 4: a complete index; native anchors keep every setting reachable. */
+.settings-layout { display:grid; grid-template-columns:13rem minmax(0,1fr); gap:var(--space-5); align-items:start; }
+.settings-sections { min-width:0; }
+.settings-layout .qol-settings-nav { position:sticky; top:calc(var(--nav-height) + var(--space-4)); display:block; margin:0; padding:var(--space-3); }
+.settings-category-links { display:grid; gap:var(--space-1); }
+.settings-category-links .btn { justify-content:flex-start; white-space:normal; text-align:left; }
+.settings-category-links [aria-current] { background:var(--accent-soft); border-color:var(--accent); }
+.settings-category-picker { display:none; }
+@media (max-width:900px) {
+  .settings-layout { display:block; }
+  .settings-layout .qol-settings-nav { position:static; margin:0 0 var(--space-4); }
+  .settings-category-picker { display:grid; gap:var(--space-2); }
+  .settings-category-picker .select { width:100%; min-height:var(--touch-target); }
+  .settings-category-links { display:none; }
+}
+@media (max-width:900px) {
+  .settings-layout .qol-settings-nav { position:sticky; top:var(--nav-height); z-index:35; background:var(--surface); }
+  .settings-sections [id$="Heading"] { scroll-margin-top:calc(var(--nav-height) + 8rem); }
+}

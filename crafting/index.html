@@ -84,6 +84,9 @@
 
     <!-- ================= CATEGORY TABS ================= -->
 
+    <div class="crafting-workspace">
+    <aside class="crafting-categories" aria-label="Recipe categories">
+    <label class="crafting-category-picker" for="craftingCategory">Crafting category<select class="select" id="craftingCategory"></select></label>
     <div class="segmented responsive-tabs crafting-tabs" role="tablist" aria-label="Crafting category">
       <button class="segmented__item" role="tab" type="button" aria-selected="true" data-crafting-group="pickaxes">
         Pickaxes
@@ -96,6 +99,8 @@
       </button>
     </div>
 
+    </aside>
+    <div class="crafting-content">
     <div class="segmented responsive-tabs crafting-subtabs" role="tablist" aria-label="Specialist tier" data-subtabs="specialists" hidden>
       <button class="segmented__item" role="tab" type="button" aria-selected="true" data-subcategory="t15">T15</button>
       <button class="segmented__item" role="tab" type="button" aria-selected="false" data-subcategory="t16">T16</button>
@@ -115,9 +120,12 @@
     </div>
 
 
-    <div id="recipeList" class="recipe-list"></div>
+    <div id="recipeList" class="recipe-list" role="tabpanel" aria-label="Recipes"></div>
+    </div>
+    </div>
   </main>
 
   <script type="module" src="./crafting.js"></script>
+  <script type="module" src="../src/ui/utilityPages.js"></script>
 </body>
 </html>

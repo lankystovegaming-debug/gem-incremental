@@ -669,8 +669,6 @@ function gemCard(gem) {
           ${gem.locked ? "Unlock" : "Lock"}
         </button>
 
-        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
-
         <button
           class="btn btn--sm"
           data-action="list"
@@ -681,6 +679,7 @@ function gemCard(gem) {
           List item
         </button>
 
+        <div class="gem-card__destructive" role="group" aria-label="Sell or delete this gem">
         <button
           class="btn btn--sm btn--danger"
           data-action="sell"
@@ -690,6 +689,8 @@ function gemCard(gem) {
         >
           Sell
         </button>
+        <button class="btn btn--sm btn--danger" data-action="delete" type="button" ${gem.locked ? "disabled" : ""}>Delete</button>
+        </div>
       </div>
     </article>
   `;
@@ -1161,7 +1162,7 @@ function renderEquipment() {
         (relicCount("Enchant Relic") > 0 || relicCount("Ancient Relic") > 0);
 
       return `
-        <article class="equipment-card">
+        <article class="equipment-card" data-equipment-name="${escapeHtml(item.name)}" data-equipped="${item.equipped}">
           <div class="equipment-card__head">
             <div>
               <div class="equipment-card__name">${escapeHtml(item.name)}</div>

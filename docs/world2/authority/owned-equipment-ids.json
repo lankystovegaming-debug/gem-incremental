@@ -1,0 +1,302 @@
+[
+  {
+    "equipment_id": "aetherwoven-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "bottomless-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "colossal-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "dimensional-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "dimensional-vault",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "gemkeeper-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "plastic-shopping-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "reinforced-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "riftwoven-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "sturdy-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "vault-of-plenty",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "worn-bag",
+    "category": "bag"
+  },
+  {
+    "equipment_id": "aetherstep-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "astral-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "event-horizon-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "eventide-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "fortune-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "gravitational-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "gravity-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "miners-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "prospectors-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "reinforced-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "singularity-striders",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "voidwalker-boots",
+    "category": "boots"
+  },
+  {
+    "equipment_id": "astral-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "celestial-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "four-leaf-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "golden-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "prismatic-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "silver-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "three-leaf-clover",
+    "category": "clover"
+  },
+  {
+    "equipment_id": "aether-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "beacon-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "bright-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "celestial-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "dim-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "eternal-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "event-horizon-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "radiant-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "singularity-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "void-lantern",
+    "category": "lantern"
+  },
+  {
+    "equipment_id": "cosmic-pet-harness",
+    "category": "petGear"
+  },
+  {
+    "equipment_id": "pet-luck-collar",
+    "category": "petGear"
+  },
+  {
+    "equipment_id": "aether-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "all-in-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "all-rounder-toy",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "ascendant-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "astral-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "bedrock-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "celestial-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "crude-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "eclipse-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "empyrean-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "eternity-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "fortune-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "impossible-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "jackpot-slot",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "masterwork-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "money-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "mythic-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "neptune",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "polished-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "reality-shifter",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "refined-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "reinforced-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "silly-fun-happy-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "singularity-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "supersizer-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "tectonic-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "the-accelerator",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "the-excavator",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "the-resonator",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "transcendent-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "veteran-pickaxe",
+    "category": "pickaxe"
+  },
+  {
+    "equipment_id": "voidbreaker-pickaxe",
+    "category": "pickaxe"
+  }
+]
