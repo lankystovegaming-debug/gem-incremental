@@ -1,8 +1,14 @@
 {
   "repository": "lankystovegaming-debug/gem-incremental",
-  "audited_on": "2026-10-24",
-  "merged_pr_count": 504,
+  "audited_on": "2026-11-05",
+  "merged_pr_count": 505,
   "pull_requests": [
+    {
+      "pr": 526,
+      "title": "weekly update 7 (31/10/26)",
+      "merged_at": "2026-11-04T23:48:09Z",
+      "disposition": "included"
+    },
     {
       "pr": 522,
       "title": "weekly update 6 (31/10/26)",

@@ -1,5 +1,37 @@
 [
   {
+    "pr": 526,
+    "title": "Weekly update 7",
+    "merged_at": "2026-11-04T23:48:09Z",
+    "published_on": "2026-11-05",
+    "weekly": true,
+    "sections": [
+      {
+        "heading": "Easier navigation and management",
+        "bullets": [
+          "Reorganized Settings and Crafting navigation for desktop and mobile.",
+          "Improved Equipment filters, item management and long-name layouts.",
+          "Made Market listing steps, price validation and sale review clearer.",
+          "Improved keyboard navigation, mobile layouts and filter-panel focus."
+        ]
+      },
+      {
+        "heading": "Mines",
+        "bullets": [
+          "Added a five-round Mines minigame: reveal gems, bank your points and avoid the hidden mine.",
+          "Play free practice rounds and compete for a combined score of up to 125,000.",
+          "View the next-pick risk, score table and round history as you play."
+        ]
+      },
+      {
+        "heading": "Looking ahead",
+        "bullets": [
+          "Started preparations for The Abyss. World 2 gameplay, its unlock quest and law effects remain unavailable."
+        ]
+      }
+    ]
+  },
+  {
     "pr": 522,
     "title": "Weekly update 6",
     "merged_at": "2026-10-24T12:52:53Z",
