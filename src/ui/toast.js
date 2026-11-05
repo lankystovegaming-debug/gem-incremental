@@ -54,12 +54,28 @@ export function toast(title, { text = "", type = "info", duration, compact = fal
     </div>
   `;
 
+  const dismissButton = document.createElement('button');
+  dismissButton.className = 'toast__dismiss';
+  dismissButton.type = 'button';
+  dismissButton.setAttribute('aria-label', 'Dismiss notification');
+  dismissButton.textContent = '×';
+  element.append(dismissButton);
   host.appendChild(element);
+  while (host.children.length > 3) host.firstElementChild.remove();
 
   // Errors linger; confirmations get out of the way.
   const life = duration ?? (type === "error" ? 6000 : 3600);
 
-  const timer = setTimeout(() => dismiss(element), life);
+  let timer = setTimeout(() => dismiss(element), life);
+  const pause = () => clearTimeout(timer);
+  const resume = () => {
+    clearTimeout(timer);
+    if (!element.matches(':hover') && !element.contains(document.activeElement)) timer = setTimeout(() => dismiss(element), life);
+  };
+  element.addEventListener('mouseenter', pause);
+  element.addEventListener('mouseleave', resume);
+  element.addEventListener('focusin', pause);
+  element.addEventListener('focusout', resume);
 
   element.addEventListener("click", () => {
     clearTimeout(timer);

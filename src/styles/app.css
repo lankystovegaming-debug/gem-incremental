@@ -1591,7 +1591,8 @@ a.btn--icon[aria-current="page"] {
   text-decoration: none;
 }
 
-.menu__item[aria-checked="true"] {
+.menu__item[aria-checked="true"],
+.menu__item[aria-pressed="true"] {
   color: var(--accent);
 }
 
@@ -6933,3 +6934,67 @@ body.quick-nav-open {
 .weekly-update__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .weekly-update__actions .btn { min-height: 44px; }
 .weekly-update-open { overflow: hidden; }
+
+/* Phase 5: shared interaction and floating-surface contracts. Cinematic layers
+   retain their own higher stacking context and existing visibility rules. */
+:root {
+  --layer-floating: 60;
+  --layer-menu: 1400;
+  --layer-dialog: 1500;
+  --layer-sheet-backdrop: 1300;
+  --layer-sheet: 1301;
+  --layer-toast: 1250;
+}
+body.ui-modal-open { overflow: hidden; }
+.menu { overflow-wrap: anywhere; }
+.menu__item { min-width: 0; min-height: 44px; white-space: normal; text-align: start; }
+.menu__identity-text, .menu__identity-name { min-width: 0; overflow-wrap: anywhere; }
+.menu__identity-name { white-space: normal; }
+:where(button, a, select, input, textarea, summary, [role="button"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.btn:disabled, .btn[aria-disabled="true"], .btn[aria-busy="true"] { opacity: .55; cursor: wait; }
+.btn:disabled, .btn[aria-disabled="true"] { cursor: not-allowed; }
+.btn:not(:disabled):active { filter: brightness(.9); }
+:where(select) { max-width: 100%; min-width: 0; }
+.dialog { display: flex; flex-direction: column; overflow: hidden; }
+.dialog--wide { width: min(720px, 100%); }
+.dialog__title, .dialog__actions { flex-shrink: 0; overflow-wrap: anywhere; }
+.dialog__actions .btn { max-width: 100%; white-space: normal; }
+.dialog__body { overflow: auto; overscroll-behavior: contain; min-height: 0; overflow-wrap: anywhere; }
+.dialog__actions { padding-top: var(--space-4); }
+.wallet { cursor: pointer; max-width: min(28vw, 340px); }
+#shellWalletValue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallet.wallet--expanded {
+  position: absolute; right: 12px; top: calc(100% + 8px);
+  max-width: calc(100vw - 24px); height: auto; z-index: 4;
+  padding: 12px; background: var(--surface-solid); border: 1px solid var(--border-strong);
+}
+.wallet.wallet--expanded #shellWalletValue { display: block; white-space: normal; overflow-wrap: anywhere; }
+.announce__body { min-width: 0; overflow-wrap: anywhere; }
+.announce__expand { flex-shrink: 0; min-height: 44px; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; }
+.announce__expand[hidden] { display: none; }
+.announce__close { min-width: 44px; min-height: 44px; }
+.announce:not(.announce--expanded) .announce__body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; }
+.announce.announce--expanded .announce__body { display: block; overflow: visible; white-space: normal; }
+.announce__link { white-space: normal; overflow-wrap: anywhere; }
+.toast-region { z-index: var(--layer-toast); bottom: var(--floating-bottom); max-height: min(40dvh, 300px); overflow-y: auto; overscroll-behavior: contain; }
+.toast { flex-shrink: 0; }
+.toast__body { min-width: 0; overflow-wrap: anywhere; }
+.toast__dismiss { flex-shrink: 0; border: 0; background: transparent; color: inherit; cursor: pointer; min-width: 32px; min-height: 32px; }
+body:has(.chat-dock:not(.hidden)) .toast-region { top: calc(var(--nav-height) + var(--safe-area-top) + 12px); bottom: auto; }
+body:has(.mobile-sheet.is-open, .dialog-overlay, .quick-nav) .toast-region { top: calc(var(--safe-area-top) + 8px); bottom: auto; }
+@media (max-width: 780px) {
+  .toast-region { bottom: calc(var(--floating-bottom) + 52px); }
+  .toast__dismiss { min-width: 44px; min-height: 44px; }
+  .wallet { max-width: 44px; }
+  .wallet.wallet--expanded { max-width: calc(100vw - 24px); }
+  .announce { flex-wrap: wrap; }
+  .announce__body { flex: 1 1 calc(100% - 100px); }
+  .announce__expand { order: 2; margin-inline-start: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu, .dialog, .dialog-overlay, .toast { animation: none; transition: none; }
+}
+.control-tooltip { position: fixed; z-index: var(--layer-menu); max-width: min(240px, calc(100vw - 16px)); padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-solid); color: var(--text); font-size: .8rem; pointer-events: none; }

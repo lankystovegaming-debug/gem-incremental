@@ -698,6 +698,7 @@ listButton.addEventListener("click", async () => {
   ];
 
   const choice = await confirmDialog({
+    size: "wide",
     title: blackMarket
       ? (count === 1 ? "List this item on the Black Market?" : `List ${count} items on the Black Market?`)
       : (count === 1 ? "Auction this item?" : `Auction a bundle of ${count} items?`),

@@ -1,3 +1,7 @@
+> Phase 3 supersedes the persistent-Envy and uncertain-response behavior below.
+> See [Phase 3 audit and fixes](phase3.md); the original Phase 2 report is retained
+> as implementation history. World 2 remains disabled.
+
 # Phase 2: serialized atomic outcome pipeline
 
 Implemented on `dc011aa` in `weekly-update-7-2026-10-31` for weekly PR #526.

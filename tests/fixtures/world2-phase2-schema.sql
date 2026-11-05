@@ -32,7 +32,7 @@ create function paradox_autocraft_deposit(uuid,jsonb) returns jsonb language sql
 create function roll_insert_inventory_specimen(uuid,jsonb) returns inventory_gems language plpgsql set search_path=public,pg_catalog as $$declare r inventory_gems;begin
  if $2->>'gem_name'='insert-error' then raise exception 'injected_insert_error'; end if;
  insert into inventory_gems(player_id,gem_name,value,final_weight,genuine_roll)
- values($1,$2->>'gem_name',($2->>'value')::numeric,1,($2->>'genuine_roll')::boolean) returning * into r;return r;
+ values($1,$2->>'gem_name',($2->>'value')::numeric,coalesce(($2->>'final_weight')::numeric,1),($2->>'genuine_roll')::boolean) returning * into r;return r;
 end$$;
 create function sell_inventory_gem(uuid,bigint,text) returns numeric language plpgsql set search_path=public,pg_catalog as $$declare r inventory_gems;begin
  select * into strict r from inventory_gems where id=$2 and player_id=$1;

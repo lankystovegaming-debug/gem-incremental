@@ -1,14 +1,7 @@
 // Shared responsive bottom-sheet behaviour. The sheet remains ordinary
 // in-flow content above the breakpoint and becomes modal on small screens.
 
-const FOCUSABLE = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "[tabindex]:not([tabindex='-1'])"
-].join(",");
+import { containFocus, focusableElements } from './focus.js';
 
 export function mountMobileSheet({
   sheet,
@@ -16,12 +9,14 @@ export function mountMobileSheet({
   closeButton,
   backdrop,
   breakpoint = "(max-width: 720px)",
-  modalOnly = false
+  modalOnly = false,
+  canDismiss = () => true
 }) {
   if (!sheet || !trigger || !backdrop) return null;
 
   const media = window.matchMedia(breakpoint);
   let open = false;
+  let releaseFocus = null;
   if (modalOnly) sheet.hidden = true;
 
   function syncBodyLock() {
@@ -31,19 +26,10 @@ export function mountMobileSheet({
     );
   }
 
-  function focusableElements() {
-    return [...sheet.querySelectorAll(FOCUSABLE)].filter((element) => {
-      const style = window.getComputedStyle(element);
-      return !element.hidden
-        && element.getAttribute("aria-hidden") !== "true"
-        && style.display !== "none"
-        && style.visibility !== "hidden"
-        && element.getClientRects().length > 0;
-    });
-  }
-
   function setOpen(nextOpen, { restoreFocus = true } = {}) {
+    const wasOpen = open;
     open = Boolean(nextOpen && media.matches);
+    if (wasOpen === open) return;
     sheet.classList.toggle("is-open", open);
     if (modalOnly) sheet.hidden = !open;
     trigger.setAttribute("aria-expanded", String(open));
@@ -56,11 +42,16 @@ export function mountMobileSheet({
       }));
       sheet.setAttribute("role", "dialog");
       sheet.setAttribute("aria-modal", "true");
-      (closeButton ?? focusableElements()[0])?.focus({ preventScroll: true });
+      releaseFocus = containFocus(sheet, {
+        returnTo: trigger,
+        onEscape: () => { if (canDismiss()) setOpen(false); }
+      });
+      (closeButton ?? focusableElements(sheet)[0] ?? sheet).focus({ preventScroll: true });
     } else {
       sheet.removeAttribute("role");
       sheet.removeAttribute("aria-modal");
-      if (restoreFocus && media.matches) trigger.focus({ preventScroll: true });
+      releaseFocus?.({ restoreFocus: restoreFocus && media.matches });
+      releaseFocus = null;
     }
   }
 
@@ -70,34 +61,9 @@ export function mountMobileSheet({
     }
   }
 
-  function onKeyDown(event) {
-    if (!open) return;
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setOpen(false);
-      return;
-    }
-
-    if (event.key !== "Tab") return;
-    const focusable = focusableElements();
-    if (!focusable.length) return;
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
   trigger.addEventListener("click", () => setOpen(true));
-  closeButton?.addEventListener("click", () => setOpen(false));
-  backdrop.addEventListener("click", () => setOpen(false));
-  document.addEventListener("keydown", onKeyDown);
+  closeButton?.addEventListener("click", () => { if (canDismiss()) setOpen(false); });
+  backdrop.addEventListener("click", () => { if (canDismiss()) setOpen(false); });
   document.addEventListener("mobile-sheet:opening", onOtherSheetOpening);
   const onBreakpointChange = () => {
     if (!media.matches && open) setOpen(false, { restoreFocus: false });

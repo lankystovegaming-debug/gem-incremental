@@ -56,7 +56,13 @@ export async function executeWorld2Batch({rpc, playerId, body, priceContext, eva
       catch (error) {
         // A lost commit response is uncertain. Lookup the receipt; do not run
         // evaluate again, fall back to another writer, or release the lease.
-        const recovery = await call('world2_begin_subroll', args);
+        let recovery;
+        try { recovery = await call('world2_begin_subroll', args); }
+        catch {
+          // Both acknowledgements were lost. A durable result may exist;
+          // return uncertainty and require the SAME request UUID for lookup.
+          return {status: 'in_flight', requested: request.batchSize, completed: outcomes.length, outcomes, uncertain: true};
+        }
         if (recovery.status !== 'replay') throw error;
         committed = recovery.outcome;
       }

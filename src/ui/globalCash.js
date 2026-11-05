@@ -1,3 +1,4 @@
+import { containFocus } from './focus.js';
 import { supabase } from "../backend/supabase.js";
 import { getSettings, onSettingsChange } from "./settings.js";
 
@@ -193,15 +194,24 @@ function mount() {
 
   const trigger = widget.querySelector(".global-cash__trigger");
   const closeButton = widget.querySelector(".global-cash__close");
+  let releaseFocus = null;
   const close = () => {
+    releaseFocus?.(); releaseFocus = null;
     widget?.classList.remove("is-open");
     trigger?.setAttribute("aria-expanded", "false");
     if (backdrop) backdrop.hidden = true;
+    const panel = widget?.querySelector('.global-cash__panel');
+    panel?.removeAttribute('role'); panel?.removeAttribute('aria-modal');
   };
   const open = () => {
+    document.dispatchEvent(new CustomEvent('mobile-sheet:opening', { detail: { sheet: widget } }));
     widget?.classList.add("is-open");
     trigger?.setAttribute("aria-expanded", "true");
     if (backdrop) backdrop.hidden = false;
+    const panel = widget.querySelector('.global-cash__panel');
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-label', 'Global cash');
+    releaseFocus = containFocus(panel, { returnTo: trigger, onEscape: close });
     closeButton?.focus({ preventScroll: true });
   };
   trigger?.addEventListener("click", open);
@@ -209,9 +219,12 @@ function mount() {
   backdrop.addEventListener("click", close);
   widget._closePanel = close;
   keydownHandler = (event) => {
-    if (event.key === "Escape" && widget?.classList.contains("is-open")) close();
+    if (widget?.classList.contains('is-open') && (event.key === 'Escape' || (event.type === 'mobile-sheet:opening' && event.detail?.sheet !== widget) || event.type === 'dialog:opening' || (event.type === 'resize' && innerWidth > 680))) close();
   };
   document.addEventListener("keydown", keydownHandler);
+  document.addEventListener('mobile-sheet:opening', keydownHandler);
+  document.addEventListener('dialog:opening', keydownHandler);
+  window.addEventListener('resize', keydownHandler);
 
   displayed = { total: null, cash: null };
   fromVal = { total: null, cash: null };
@@ -223,9 +236,16 @@ function mount() {
 }
 
 function unmount() {
+  widget?._closePanel?.();
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
-  if (keydownHandler) { document.removeEventListener("keydown", keydownHandler); keydownHandler = null; }
+  if (keydownHandler) {
+    document.removeEventListener("keydown", keydownHandler);
+    document.removeEventListener('mobile-sheet:opening', keydownHandler);
+    document.removeEventListener('dialog:opening', keydownHandler);
+    window.removeEventListener('resize', keydownHandler);
+    keydownHandler = null;
+  }
   widget?.remove();
   backdrop?.remove();
   widget = null;
