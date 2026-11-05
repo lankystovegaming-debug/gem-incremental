@@ -20,9 +20,9 @@ assert.match(shell, /id="mobileNavigationSearch"/);
 assert.match(shell, /renderMobileNavigationGroups\(getMobileMorePages\(\), page, base\)/);
 assert.match(shell, /Settings &amp; help/);
 assert.match(shell, /data-more-action="console"/);
-assert.match(shell, /requestAnimationFrame\(\(\) => exploreMenu\.querySelector/);
+assert.match(shell, /mountPopover\(\{ button: exploreButton/);
 assert.match(shell, /body\.classList\.add\("quick-nav-open"\)/);
-assert.match(shell, /event\.key === "Tab"/);
+assert.match(await read("src/ui/focus.js"), /event\.key === 'Tab'/);
 assert.match(shell, /returnFocus\.focus/);
 
 assert.match(styles, /\.topbar-explore__menu:not\(\[hidden\]\)[\s\S]*?display: grid/);

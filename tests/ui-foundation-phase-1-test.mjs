@@ -40,8 +40,8 @@ assert.match(styles, /@media \(max-width: 560px\)[\s\S]*?\.dialog-overlay[\s\S]*
 assert.match(styles, /:where\(\.menu, \.popover, \.dropdown\)[\s\S]*?max-height: var\(--popover-max-height\)/);
 
 assert.match(mobileSheet, /export function mountMobileSheet/);
-assert.match(mobileSheet, /event\.key === "Escape"/);
-assert.match(mobileSheet, /event\.key !== "Tab"/);
+assert.match(await read("src/ui/focus.js"), /event\.key === 'Escape'/);
+assert.match(await read("src/ui/focus.js"), /event\.key === 'Tab'/);
 assert.match(mobileSheet, /document\.body\.classList\.toggle\([\s\S]*?"mobile-sheet-open"/);
 assert.match(mobileSheet, /mobile-sheet:opening/);
 assert.match(mobileSheet, /document\.querySelector\("\.mobile-sheet\.is-open"\)/);

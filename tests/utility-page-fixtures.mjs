@@ -45,6 +45,10 @@ export async function waitForAuthReady(){return ensurePlayerAuth()}
 `;
 
 export async function prepareUtilityPage(page) {
+  // Release-note onboarding is tested separately; it must not interrupt utility
+  // and interaction fixtures after a newly merged weekly release.
+  await page.route('**/src/ui/dungeonAnnouncement.js', route => route.fulfill({ contentType: 'text/javascript', body: 'export async function mountDungeonAnnouncement(){}' }));
+  await page.route('**/src/ui/weeklyUpdate.js', route => route.fulfill({ contentType: 'text/javascript', body: 'export async function mountWeeklyUpdate(){}' }));
   await page.route("**/src/backend/supabase.js", route => route.fulfill({ contentType: "text/javascript", body: supabaseStub }));
   await page.route("**/src/backend/auth.js", route => route.fulfill({ contentType: "text/javascript", body: authStub }));
   await page.route("**/src/ui/dailyLogin.js", route => route.fulfill({ contentType: "text/javascript", body: "export async function mountDailyLogin(){}" }));

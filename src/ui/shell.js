@@ -1,3 +1,6 @@
+import { containFocus } from './focus.js';
+import { mountTooltip } from './tooltip.js';
+import { mountPopover } from './popover.js';
 import { icons } from "./icons.js";
 import { formatMoney, escapeHtml } from "./format.js";
 import { notify, toast } from "./toast.js";
@@ -440,6 +443,7 @@ export function mountShell({ page, base = "./" }) {
         <div class="menu-anchor" id="shellAccountAnchor">
           <button
             class="account-btn"
+            aria-label="Account menu"
             id="shellAccountButton"
             type="button"
             aria-haspopup="true"
@@ -692,111 +696,51 @@ export function mountShell({ page, base = "./" }) {
   // value without changing the header width permanently.
   walletPill?.setAttribute("role", "button");
   walletPill?.setAttribute("tabindex", "0");
-  const toggleWallet = () => walletPill?.classList.toggle("wallet--expanded");
+  walletPill?.setAttribute('aria-expanded', 'false');
+  const setWalletOpen = open => {
+    walletPill?.classList.toggle('wallet--expanded', open);
+    walletPill?.setAttribute('aria-expanded', String(open));
+  };
+  const toggleWallet = () => setWalletOpen(!walletPill.classList.contains('wallet--expanded'));
+  document.addEventListener('pointerdown', event => {
+    if (!walletPill?.contains(event.target)) setWalletOpen(false);
+  });
+  walletPill?.addEventListener('blur', () => setWalletOpen(false));
   walletPill?.addEventListener("click", toggleWallet);
   walletPill?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setWalletOpen(false);
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       toggleWallet();
     }
   });
 
+  for (const control of header.querySelectorAll('.btn--icon[aria-label], #shellAccountButton')) {
+    mountTooltip(control, control.getAttribute('aria-label'));
+  }
   const menus = createMenuController();
+  menus.register(themeButton, renderThemeMenu);
+  menus.register(accountButton, renderAccountMenu);
 
-  const exploreAnchor = header.querySelector("#shellExploreAnchor");
   const exploreButton = header.querySelector("#shellExploreButton");
   const exploreMenu = document.getElementById("shellExploreMenu");
 
-  const closeExplore = () => {
-    if (!exploreMenu) return;
-    exploreMenu.hidden = true;
-    exploreButton?.setAttribute("aria-expanded", "false");
-  };
-
-  const toggleExplore = () => {
-    if (!exploreMenu || !exploreButton) return;
-    const open = exploreMenu.hidden;
-    exploreMenu.hidden = !open;
-    exploreButton.setAttribute("aria-expanded", String(open));
-    if (open) {
-      closeMore();
-      const rect = exploreButton.getBoundingClientRect();
-      const width = Math.max(270, exploreMenu.offsetWidth || 270);
-      exploreMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
-      exploreMenu.style.top = `${rect.bottom + 8}px`;
-      requestAnimationFrame(() => exploreMenu.querySelector("summary, a, button")?.focus({ preventScroll: true }));
-    }
-  };
-
-  // The utility links belong in the top bar so they remain discoverable on
-  // desktop and mobile instead of living in a floating corner dock.
-  const moreAnchor = header.querySelector("#shellMoreAnchor");
   const moreButton = header.querySelector("#shellMoreButton");
   const moreMenu = header.querySelector("#shellMoreMenu");
-
-  // Portal the dropdowns out of the topbar. The topbar uses backdrop-filter,
-  // which traps position:fixed descendants inside its (low) stacking context,
-  // so page cards and overlays could paint over the menus. As direct children
-  // of <body> their z-index competes at the document root and they sit on top.
-  if (exploreMenu) document.body.appendChild(exploreMenu);
-  if (moreMenu) document.body.appendChild(moreMenu);
-
-  const closeMore = () => {
-    if (!moreMenu) return;
-    moreMenu.hidden = true;
-    moreButton?.setAttribute("aria-expanded", "false");
-  };
-
-  const toggleMore = () => {
-    if (!moreMenu) return;
-    const open = moreMenu.hidden;
-    moreMenu.hidden = !open;
-    moreButton?.setAttribute("aria-expanded", String(open));
-    if (open) {
-      closeExplore();
-      requestAnimationFrame(() => moreMenu.querySelector("a, button")?.focus({ preventScroll: true }));
-    }
-  };
-
-  exploreButton?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleExplore();
+  const explore = mountPopover({ button: exploreButton, panel: exploreMenu, align: 'start' });
+  const more = mountPopover({ button: moreButton, panel: moreMenu });
+  const closeExplore = () => explore.close();
+  const closeMore = () => more.close();
+  exploreButton.addEventListener('click', () => explore.toggle());
+  moreButton.addEventListener('click', () => more.toggle());
+  exploreMenu.addEventListener('click', event => {
+    if (event.target.closest('a')) closeExplore();
   });
-
-  exploreMenu?.addEventListener("click", (event) => {
-    if (event.target.closest("a")) closeExplore();
-  });
-
-  moreButton?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleMore();
-  });
-
-  moreMenu?.addEventListener("click", (event) => {
-    if (event.target.closest("a")) closeMore();
-  });
-
-  moreMenu?.querySelector('[data-more-action="console"]')?.addEventListener("click", () => {
-    closeMore();
-    togglePlayerCli();
-  });
-
-  document.addEventListener("click", (event) => {
-    // The menus are portaled to <body>, so a click inside a menu is outside its
-    // anchor — check the menu too, or clicking inside would close it.
-    if (exploreAnchor && !exploreAnchor.contains(event.target) && !exploreMenu?.contains(event.target)) closeExplore();
-    if (moreAnchor && !moreAnchor.contains(event.target) && !moreMenu?.contains(event.target)) closeMore();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      const restoreExplore = exploreMenu && !exploreMenu.hidden;
-      const restoreMore = moreMenu && !moreMenu.hidden;
-      closeExplore();
-      closeMore();
-      if (restoreExplore) exploreButton?.focus({ preventScroll: true });
-      else if (restoreMore) moreButton?.focus({ preventScroll: true });
-    }
+  moreMenu.addEventListener('click', event => {
+    if (event.target.closest('a, button')) more.close({ restoreFocus: Boolean(event.target.closest('button')) });
+  }, true);
+  moreMenu.querySelector('[data-more-action="console"]')?.addEventListener('click', () => {
+    closeMore(); togglePlayerCli();
   });
 
   themeButton.addEventListener("click", () => {
@@ -890,7 +834,7 @@ export function mountShell({ page, base = "./" }) {
     const menu = document.createElement("div");
 
     menu.className = "menu";
-    menu.setAttribute("role", "menu");
+    menu.setAttribute("role", "group");
 
     menu.innerHTML = `
       <div class="menu__identity">
@@ -934,23 +878,23 @@ export function mountShell({ page, base = "./" }) {
             }
           `
           : `
-            <a class="menu__item" href="${currentUsername ? `/user/${encodeURIComponent(currentUsername)}/` : '/user/'}" role="menuitem">
+            <a class="menu__item" href="${currentUsername ? `/user/${encodeURIComponent(currentUsername)}/` : '/user/'}">
               ${icons.user}
               View profile
             </a>
 
-            <button class="menu__item" data-action="mailbox" type="button" role="menuitem">
+            <button class="menu__item" data-action="mailbox" type="button">
               <span aria-hidden="true">✉</span>
               Mailbox
               <span data-mailbox-badge="menu" aria-hidden="true" style="display:none;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#dc2626;color:white;font-size:11px;font-weight:800;align-items:center;justify-content:center;margin-left:auto"></span>
             </button>
 
-            <a class="menu__item" href="${base}account/" role="menuitem">
+            <a class="menu__item" href="${base}account/">
               ${icons.user}
               Manage account
             </a>
 
-            <button class="menu__item" data-action="signout" type="button" role="menuitem">
+            <button class="menu__item" data-action="signout" type="button">
               ${icons.logout}
               Sign out
             </button>
@@ -1025,7 +969,7 @@ export function mountShell({ page, base = "./" }) {
     const menu = document.createElement("div");
 
     menu.className = "menu";
-    menu.setAttribute("role", "menu");
+    menu.setAttribute("role", "group");
 
     const mode = getMode();
     const accent = getAccent();
@@ -1037,9 +981,8 @@ export function mountShell({ page, base = "./" }) {
         (entry) => `
           <button
             class="menu__item"
-            role="menuitemradio"
             type="button"
-            aria-checked="${entry.id === mode}"
+            aria-pressed="${entry.id === mode}"
             data-mode="${entry.id}"
           >
             ${MODE_ICONS[entry.id] ?? icons.palette}
@@ -1121,6 +1064,7 @@ export function mountShell({ page, base = "./" }) {
     walletPill.classList.remove("wallet--loading");
     walletValue.textContent = formatMoney(amount, { exact: true });
     walletPill.title = `Money: ${formatMoney(amount, { exact: true })}`;
+    walletPill.setAttribute("aria-label", walletPill.title);
     scheduleNavigationFit();
   }
 
@@ -1769,7 +1713,8 @@ async function renderAnnouncements(header) {
             : "info"
         }" data-id="${entry.id}">
           <span class="announce__icon">${icons.megaphone}</span>
-          <span class="announce__body">${announcementHtml(entry.body)}</span>
+          <span class="announce__body" id="announcementBody${entry.id}">${announcementHtml(entry.body)}</span>
+          <button class="announce__expand" type="button" aria-expanded="false" aria-controls="announcementBody${entry.id}" hidden>Read more</button>
           <button class="announce__close" type="button" aria-label="Dismiss">×</button>
         </div>
       `
@@ -1779,6 +1724,19 @@ async function renderAnnouncements(header) {
   header.after(bar);
 
   for (const item of bar.querySelectorAll(".announce")) {
+    const body = item.querySelector('.announce__body');
+    const expand = item.querySelector('.announce__expand');
+    const measure = () => {
+      if (!item.classList.contains('announce--expanded')) expand.hidden = body.scrollHeight <= body.clientHeight + 1 && body.scrollWidth <= body.clientWidth + 1;
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    expand.addEventListener('click', () => {
+      const open = item.classList.toggle('announce--expanded');
+      expand.setAttribute('aria-expanded', String(open));
+      expand.textContent = open ? 'Show less' : 'Read more';
+      if (!open) measure();
+    });
     item.querySelector(".announce__close").addEventListener("click", () => {
       const id = Number(item.dataset.id);
 
@@ -1795,6 +1753,7 @@ async function renderAnnouncements(header) {
         /* localStorage unavailable — the dismissal is not remembered. */
       }
 
+      observer.disconnect();
       item.remove();
 
       if (!bar.querySelector(".announce")) {
@@ -2147,12 +2106,14 @@ function mountQuickNavigation({ base, page }) {
   let activeIndex = 0;
   let matching = [];
   let returnFocus = null;
+  let releaseFocus = null;
 
   const close = () => {
     palette?.remove();
     palette = null;
     searchInput = null;
     document.body.classList.remove("quick-nav-open");
+    releaseFocus?.({ restoreFocus: false }); releaseFocus = null;
     if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
     returnFocus = null;
   };
@@ -2187,6 +2148,7 @@ function mountQuickNavigation({ base, page }) {
       searchInput?.focus();
       return;
     }
+    document.dispatchEvent(new CustomEvent("dialog:opening"));
     returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     activeIndex = 0;
     palette = document.createElement("div");
@@ -2210,6 +2172,7 @@ function mountQuickNavigation({ base, page }) {
     document.body.append(palette);
     document.body.classList.add("quick-nav-open");
     searchInput = palette.querySelector("#quickNavSearch");
+    releaseFocus = containFocus(palette.querySelector('.quick-nav__dialog'), { returnTo: returnFocus, onEscape: close });
     drawResults();
     searchInput?.focus();
 
@@ -2245,25 +2208,7 @@ function mountQuickNavigation({ base, page }) {
     trigger.addEventListener("click", open);
   });
   document.addEventListener("keydown", (event) => {
-    if (palette && event.key === "Tab") {
-      const focusable = [...palette.querySelectorAll('input, button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
-        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none");
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (first && event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (last && !event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-      return;
-    }
-    if (palette && event.key === "Escape") {
-      event.preventDefault();
-      close();
-      return;
-    }
+    if (event.defaultPrevented || document.documentElement.classList.contains("is-cinematic-active")) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       event.preventDefault();
       open();
@@ -2272,103 +2217,21 @@ function mountQuickNavigation({ base, page }) {
 }
 
 
-function positionMenu(anchor, button, menu) {
-  const rect = button.getBoundingClientRect();
-  const width = Math.max(230, menu.offsetWidth || 230);
-  const margin = 8;
-  const left = Math.min(Math.max(margin, rect.right - width), Math.max(margin, window.innerWidth - width - margin));
-  const top = Math.min(rect.bottom + margin, Math.max(margin, window.innerHeight - menu.offsetHeight - margin));
-  menu.style.position = "fixed";
-  menu.style.left = `${left}px`;
-  menu.style.top = `${top}px`;
-  menu.style.right = "auto";
-}
-
 function createMenuController() {
-  let openMenu = null;
-  let openAnchor = null;
-  let openButton = null;
-
-  function close() {
-    if (!openMenu) {
-      return;
-    }
-
-    openMenu.remove();
-
-    openButton?.setAttribute("aria-expanded", "false");
-
-    openMenu = null;
-    openAnchor = null;
-    openButton = null;
-  }
-
-  function open(anchor, button, render) {
-    close();
-
-    openMenu = render();
-    openAnchor = anchor;
-    openButton = button;
-
-    document.body.appendChild(openMenu);
-    positionMenu(anchor, button, openMenu);
-
-    button.setAttribute("aria-expanded", "true");
-  }
-
-  document.addEventListener("click", (event) => {
-    if (!openMenu) {
-      return;
-    }
-
-    if (!openAnchor.contains(event.target) && !openMenu.contains(event.target)) {
-      close();
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (openMenu && openButton && openAnchor) positionMenu(openAnchor, openButton, openMenu);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && openMenu) {
-      close();
-
-      openButton?.focus();
-    }
-  });
-
+  let current = null;
+  const controllers = new Map();
   return {
-    close,
-
-    toggle(anchor, button, render) {
-      if (openAnchor === anchor) {
-        close();
-
-        return;
-      }
-
-      open(anchor, button, render);
+    close() { current?.close({ restoreFocus: true }); },
+    register(button, render) {
+      controllers.set(button, mountPopover({ button, render }));
+      button.addEventListener('keydown', () => { current = controllers.get(button); });
     },
-
-    // Re-render in place after a setting changes.
-    refresh(render) {
-      if (!openAnchor) {
-        return;
-      }
-
-      const anchor = openAnchor;
-      const button = openButton;
-
-      openMenu.remove();
-      openMenu = render();
-
-      document.body.appendChild(openMenu);
-      positionMenu(anchor, button, openMenu);
-
-      openAnchor = anchor;
-      openButton = button;
-    }
+    toggle(anchor, button, render) {
+      if (!controllers.has(button)) controllers.set(button, mountPopover({ button, render }));
+      current = controllers.get(button);
+      current.toggle();
+    },
+    refresh() { current?.refresh(); }
   };
 }
 

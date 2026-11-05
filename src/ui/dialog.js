@@ -1,3 +1,4 @@
+import { containFocus } from './focus.js';
 import { escapeHtml } from "./format.js";
 
 
@@ -10,6 +11,8 @@ import { escapeHtml } from "./format.js";
 // =========================================================
 
 
+let dialogSequence = 0;
+
 export function confirmDialog({
   title,
   body = "",
@@ -17,11 +20,15 @@ export function confirmDialog({
   cancelLabel = "Cancel",
   tone = "default",
   extraLabel = null,
-  defaultAction = "confirm",
-  preventEnter = false
+  defaultAction = tone === "danger" ? "cancel" : "confirm",
+  preventEnter = false,
+  size = "default",
+  dismissible = true
 }) {
   return new Promise((resolve) => {
+    document.dispatchEvent(new CustomEvent("dialog:opening"));
     const previouslyFocused = document.activeElement;
+    const id = `dialogTitle${++dialogSequence}`;
 
     const overlay = document.createElement("div");
 
@@ -29,12 +36,12 @@ export function confirmDialog({
 
     overlay.innerHTML = `
       <div
-        class="dialog"
+        class="dialog ${size === "wide" ? "dialog--wide" : ""}"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialogTitle"
+        aria-labelledby="${id}"
       >
-        <h2 class="dialog__title" id="dialogTitle">
+        <h2 class="dialog__title" id="${id}">
           ${escapeHtml(title)}
         </h2>
 
@@ -66,60 +73,33 @@ export function confirmDialog({
 
     document.body.appendChild(overlay);
 
-    const buttons = [...overlay.querySelectorAll("button")];
-
-    (overlay.querySelector(`[data-action="${defaultAction}"]`) ?? overlay.querySelector('[data-action="cancel"]')).focus();
+    const buttons = [...overlay.querySelectorAll('.dialog__actions [data-action]')];
+    let settled = false;
+    const releaseFocus = containFocus(overlay.querySelector('.dialog'), {
+      returnTo: previouslyFocused,
+      onEscape: () => { if (dismissible) close('cancel'); }
+    });
+    (overlay.querySelector(`.dialog__actions [data-action="${defaultAction}"]`) ?? buttons[0]).focus();
 
     function close(result) {
-      document.removeEventListener("keydown", onKeyDown, true);
-
+      if (settled) return;
+      settled = true;
+      overlay.removeEventListener('keydown', onKeyDown, true);
       overlay.remove();
-
-      if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus();
-      }
-
+      releaseFocus();
       resolve(result);
     }
-
     function onKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-
-        close("cancel");
-
-        return;
-      }
-
-      if (preventEnter && event.key === "Enter") {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-
-      if (event.key !== "Tab") {
-        return;
-      }
-
-      // Keep focus inside the dialog.
-      const first = buttons[0];
-      const last = buttons[buttons.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-
-        first.focus();
+      if (preventEnter && event.key === 'Enter') {
+        event.preventDefault(); event.stopPropagation();
       }
     }
+    overlay.addEventListener('keydown', onKeyDown, true);
 
-    document.addEventListener("keydown", onKeyDown, true);
-
+    let backdropPress = false;
+    overlay.addEventListener('pointerdown', event => { backdropPress = event.target === overlay; });
     overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
+      if (dismissible && backdropPress && event.target === overlay) {
         close("cancel");
       }
     });
