@@ -31,6 +31,7 @@ try {
  const before=await q('select to_jsonb(p) v from players p order by id');
  const triggers=await q("select pg_get_triggerdef(oid) v from pg_trigger where tgrelid='players'::regclass order by oid");
  await db.exec(read('supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql'));
+ if(process.env.WORLD2_PHASE3==='1')await db.exec(read('supabase/migrations/20261104235634_world2_abyss_phase3_laws.sql'));
  assert.deepEqual(await q('select to_jsonb(p) v from players p order by id'),before);
  assert.deepEqual(await q("select pg_get_triggerdef(oid) v from pg_trigger where tgrelid='players'::regclass order by oid"),triggers);
  assert.equal((await executeWorld2Batch(options(body()))).status,'disabled');
@@ -119,7 +120,7 @@ try {
  const epoch=await val(`select row_to_json(e) v from world2_epochs e where starts_at=(select epoch_start from abyss_private.roll_batches where request_id='${x.args.p_request_id}')`);
  await db.exec(`insert into world2_epochs(world_id,starts_at,ends_at,version,a_id,b_id,c_id) select 2,starts_at+interval '12 hours',ends_at+interval '12 hours',version,a_id,b_id,c_id from world2_epochs order by starts_at desc limit 1`);
  const second=await call('world2_commit_subroll',{...x.sub,p_subroll:1,p_outcome:outcome('loss')});assert.equal(second.epochStart,first.epochStart);
- assert.equal(await val('select envy_remaining v from world2_player_law_state'),7);
+ assert.equal(await val('select envy_remaining::text v from world2_player_law_state'),'7');
  // Forged outcome, changed equipment, inventory capacity and bonus errors
  // cannot leave a primary, cash mutation, history slot or receipt behind.
  x=await claim();await db.exec(`update player_equipment set equipped=false where player_id='${uid}'`);

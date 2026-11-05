@@ -16,7 +16,7 @@ let started=false;
 try {
  await run(path.join(bin,'initdb'),['-D',path.join(root,'data'),'-U','postgres','--auth=trust','--locale=C']);
  await run(path.join(bin,'pg_ctl'),['-D',path.join(root,'data'),'-l',path.join(root,'log'),'-o',`-k ${root} -h '' -p 55444`,'-w','start']);started=true;
- for(const file of ['tests/fixtures/world2-phase1-schema.sql','tests/fixtures/world2-phase2-schema.sql','tests/fixtures/world2-phase2-live-functions.sql','supabase/migrations/20261029002115_world2_abyss_phase1_foundations.sql','supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql'])await sql(await read(file));
+ for(const file of ['tests/fixtures/world2-phase1-schema.sql','tests/fixtures/world2-phase2-schema.sql','tests/fixtures/world2-phase2-live-functions.sql','supabase/migrations/20261029002115_world2_abyss_phase1_foundations.sql','supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql',...(process.env.WORLD2_PHASE3==='1'?['supabase/migrations/20261104235634_world2_abyss_phase3_laws.sql']:[])])await sql(await read(file));
  await sql(`alter table abyss_private.release_config drop constraint release_config_gameplay_enabled_check;update abyss_private.release_config set gameplay_enabled=true;alter table abyss_private.pipeline_config drop constraint pipeline_config_enabled_check;update abyss_private.pipeline_config set enabled=true;
  alter table world2_player_state drop constraint world2_player_state_active_world_check;alter table world2_player_state drop constraint world2_player_state_abyss_unlocked_check;
  insert into world2_player_state(player_id,active_world,abyss_unlocked) values('${uid}',2,true)`);
@@ -25,12 +25,18 @@ try {
  assert.equal(claims.filter(x=>x.status==='claimed').length,1);
  assert.equal(claims.filter(x=>x.status==='in_flight').length,23);
  const accepted=claims.find(x=>x.status==='claimed');
- const outcome=JSON.stringify({kind:'ordinary',primary:{gem_name:'Quartz',value:12,natural_mutation_ids:['glossy']},extras:[],bucket:{charge:1},lawState:{step:1}});
+ let lawState={step:1};
+ if(process.env.WORLD2_PHASE3==='1') {
+  const {beginLawRoll,finishLawRoll}=await import('../supabase/functions/roll/world2Laws.js');
+  lawState=finishLawRoll(beginLawRoll({epoch:accepted.epoch,state:{},random:()=>0}),{kind:'ordinary',rarity:1000,rawWeight:4,naturalMutationCount:1},()=>0).lawState;
+ }
+ const outcome=JSON.stringify({kind:'ordinary',primary:{gem_name:'Quartz',value:12,natural_mutation_ids:['glossy']},extras:[],bucket:{charge:1},lawState});
  const commit=(sub=0,token=accepted.workerToken)=>`select world2_commit_subroll('${uid}','${request}',repeat('a',64),${sub},'${token}','${outcome}')`;
  const results=await Promise.all(Array.from({length:24},()=>json(`set role service_role;${commit()}`)));
  assert(results.every(r=>JSON.stringify(r)===JSON.stringify(results[0])));
  assert.equal(await sql('select count(*) from world2_outcome_receipts'),'1');
  assert.equal(await sql('select count(*) from world2_specimen_provenance'),'1');
+ assert.deepEqual(await json('select temporary_state from world2_player_law_state'),lawState);
  assert.equal(await sql(`select total_rolls from players where id='${uid}'`),'300001');
  // Concurrent different requests cannot claim while this batch lease is live.
  const competing=await Promise.all(Array.from({length:12},(_,i)=>json(claim(`20000000-0000-0000-0000-${String(i).padStart(12,'0')}`))));

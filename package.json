@@ -86,7 +86,9 @@
     "test:biomes:concurrency": "node tests/biomes-v11-concurrency-test.mjs",
     "test:utility-pages": "node tests/utility-pages-phase-4-browser-test.mjs",
     "test:world2:phase2": "node tests/world2-phase2-database-test.mjs && node tests/world2-phase2-epoch-test.mjs",
-    "test:world2:phase2:concurrency": "node tests/world2-phase2-concurrency-test.mjs"
+    "test:world2:phase2:concurrency": "node tests/world2-phase2-concurrency-test.mjs",
+    "test:world2:phase3": "node tests/world2-phase3-laws-test.mjs && node tests/world2-phase3-database-test.mjs && WORLD2_PHASE3=1 npm run test:world2:phase2",
+    "test:world2:phase3:concurrency": "WORLD2_PHASE3=1 node tests/world2-phase2-concurrency-test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14"

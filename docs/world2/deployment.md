@@ -1,3 +1,7 @@
+> For the additive Phase 3 migration order, release blockers and rollback, see
+> [Phase 3 deployment and verification](phase3.md#owner-deployment-verification-and-rollback).
+> Keep all World 2 gates closed.
+
 # Manual deployment and rollback — owner only
 
 **Nothing has been deployed. World 2 must stay disabled.**

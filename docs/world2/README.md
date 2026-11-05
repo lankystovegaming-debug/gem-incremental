@@ -169,3 +169,9 @@ The handoff does not settle all of those details; the manifest marks them as
 pending instead of silently enabling assumptions. Later phases also need complete
 atomic-routing/fault-injection, real replay, sale/transfer provenance and workload
 performance tests. No production concurrency or full-game browser test was run.
+
+## Phase 3
+
+See [Phase 3 laws, audit, verification, release blockers and deployment](phase3.md).
+The law engine and persistence corrections are implemented behind closed gates;
+production ordinary-engine binding is still required before gameplay activation.

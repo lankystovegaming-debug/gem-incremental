@@ -13,7 +13,7 @@ try {
  create function public.test_now() returns timestamptz language sql stable as $$select at from public.test_clock$$;`);
  // Execute the ACTUAL migrations/functions with only clock_timestamp replaced
  // by a controlled DB clock. All state/locks/claims/receipts use real SQL.
- for(const p of ['tests/fixtures/world2-phase1-schema.sql','tests/fixtures/world2-phase2-schema.sql','tests/fixtures/world2-phase2-live-functions.sql','supabase/migrations/20261029002115_world2_abyss_phase1_foundations.sql','supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql']) {
+ for(const p of ['tests/fixtures/world2-phase1-schema.sql','tests/fixtures/world2-phase2-schema.sql','tests/fixtures/world2-phase2-live-functions.sql','supabase/migrations/20261029002115_world2_abyss_phase1_foundations.sql','supabase/migrations/20261029010322_world2_abyss_phase2_pipeline.sql',...(process.env.WORLD2_PHASE3==='1'?['supabase/migrations/20261104235634_world2_abyss_phase3_laws.sql']:[])]) {
   await db.exec(readFileSync(new URL('../'+p,import.meta.url),'utf8').replaceAll('clock_timestamp()','public.test_now()'));
  }
  await db.exec(`alter table abyss_private.release_config drop constraint release_config_gameplay_enabled_check;update abyss_private.release_config set gameplay_enabled=true;alter table abyss_private.pipeline_config drop constraint pipeline_config_enabled_check;update abyss_private.pipeline_config set enabled=true;
@@ -33,11 +33,11 @@ try {
   await db.exec(`update players set next_roll_at=null where id='${uid}'`);
   // Old preclaim pricing is stale at BOTH 08:00 and 20:00 SGT.
   const stale=await call('world2_claim_batch',[uid,req(),digest,1,2500,pre]);assert.equal(stale.status,'stale_context');
-  const fresh=await call('world2_roll_context',[uid]);assert.deepEqual(fresh.temporaryLawState,{});assert.equal(fresh.envyRemaining,5);
+  const fresh=await call('world2_roll_context',[uid]);assert.deepEqual(fresh.temporaryLawState,{});assert.equal(fresh.envyRemaining,process.env.WORLD2_PHASE3==='1'?'0':5);
   assert.equal(new Date(fresh.epoch.starts_at).toISOString(),new Date(boundary).toISOString());
   const id=req();const c=await call('world2_claim_batch',[uid,id,digest,1,2500,fresh]);assert.equal(c.status,'claimed');
   const begin=await call('world2_begin_subroll',[uid,id,digest,0,c.workerToken]);
-  assert.deepEqual(begin.lawState,{});assert.equal(begin.envyRemaining,5);assert.deepEqual(begin.bucket,{charge:42});
+  assert.deepEqual(begin.lawState,{});assert.equal(begin.envyRemaining,process.env.WORLD2_PHASE3==='1'?'0':5);assert.deepEqual(begin.bucket,{charge:42});
   assert(begin.history.length>=2);
   await call('world2_commit_subroll',[uid,id,digest,0,c.workerToken,loss]);
  }
@@ -70,5 +70,5 @@ try {
  const snapshot=await q(`select jsonb_build_array(total_rolls,money,(select count(*) from world2_outcome_receipts)) v from players where id='${uid}'`);
  await assert.rejects(call('world2_commit_subroll',[uid,lateId,digest,0,late.workerToken,{...loss,kind:'ordinary',primary:{gem_name:'Quartz',value:12},filterSell:true}]),/stale_lease/);
  assert.deepEqual(await q(`select jsonb_build_array(total_rolls,money,(select count(*) from world2_outcome_receipts)) v from players where id='${uid}'`),snapshot);
- console.log('World 2 controlled DB clock: 08:00/20:00 SGT stale preclaim rejection, whole-batch epoch pinning, epoch-local reset, persistent envy/history/bucket, exact lease deadline passed.');
+ console.log('World 2 controlled DB clock: 08:00/20:00 SGT stale preclaim rejection, whole-batch epoch pinning, epoch-local reset, history/bucket persistence, exact lease deadline passed.');
 } finally {await db.close();}
